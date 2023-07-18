@@ -101,7 +101,7 @@ import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState,
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
 
-import Noodle.Text.NetworkFile.Command as Cmd
+import Noodle.Text.NdfFile.Command as Cmd
 
 import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra

@@ -26,7 +26,7 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
 
-import Noodle.Text.NetworkFile.Command (commandsToNdf)
+import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 
 width :: Int -> Dimension

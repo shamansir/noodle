@@ -75,8 +75,8 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
-import Noodle.Text.NetworkFile.Apply as File
-import Noodle.Text.NetworkFile.Command as Cmd
+import Noodle.Text.NdfFile.Apply as File
+import Noodle.Text.NdfFile.Command as Cmd
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)

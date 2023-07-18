@@ -1,4 +1,4 @@
-module Noodle.Text.NetworkFile.Apply where
+module Noodle.Text.NdfFile.Apply where
 
 import Prelude
 
@@ -41,8 +41,8 @@ import Noodle.Toolkit3 as Toolkit
 import Unsafe.Coerce (unsafeCoerce)
 
 
-import Noodle.Text.NetworkFile.Command (Command)
-import Noodle.Text.NetworkFile.Command (Command(..)) as C
+import Noodle.Text.NdfFile.Command (Command)
+import Noodle.Text.NdfFile.Command (Command(..)) as C
 
 
 type Handlers x gstate instances m repr =
@@ -95,8 +95,6 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
             -- pure unit
 
         applyCommand :: (Network gstate families instances /\ IdMapping x gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping x gstate instances m repr)
-
-        applyCommand pair (C.Header _ _) = pure pair
 
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)

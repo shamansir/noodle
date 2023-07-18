@@ -1,5 +1,6 @@
 hydra 0.1
 osc 40 60 osc-0
+osc 40 60 osc-0
 pi 20 20 pi-0
 number 40 40 num-0
 <> pi-0 0 osc-0 0

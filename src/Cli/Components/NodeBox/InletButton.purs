@@ -58,8 +58,8 @@ import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
-import Noodle.Text.NetworkFile.Command as Cmd
-import Noodle.Text.NetworkFile.Command (commandsToNdf)
+import Noodle.Text.NdfFile.Command as Cmd
+import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra

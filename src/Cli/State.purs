@@ -31,7 +31,7 @@ import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox
 import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
-import Noodle.Text.NetworkFile.Command (Command) as NdfFile
+import Noodle.Text.NdfFile.Command (Command) as NdfFile
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra

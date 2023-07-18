@@ -1,4 +1,4 @@
-module Noodle.Text.NetworkFile.Command where
+module Noodle.Text.NdfFile.Command where
 
 import Prelude (show, ($), (<$>), identity, class Eq)
 
@@ -11,8 +11,7 @@ import Type.Proxy (Proxy)
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, toCode, NDF, ndf)
 
 data Command
-    = Header String String
-    | MakeNode String Int Int String
+    = MakeNode String Int Int String
     | Connect String Int String Int
     | Send String Int String
     | SendO String Int String
@@ -28,7 +27,6 @@ instance ToCode NDF Command where
     toCode :: Proxy NDF -> Command -> String
     toCode _ =
         case _ of
-            Header toolkit version -> toolkit <> " " <> version
             MakeNode family top left nodeId -> family <> " " <> show top <> " " <> show left <> " " <> nodeId
             Connect fromNode oindex toNode iindex -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
             Send nodeId iindex value -> "-> " <> nodeId <> " " <> show iindex <> " " <> value

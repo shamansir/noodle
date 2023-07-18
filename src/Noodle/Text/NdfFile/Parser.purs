@@ -1,23 +1,22 @@
-module Noodle.Text.NetworkFile.Parser where
+module Noodle.Text.NdfFile.Parser where
 
 import Prelude
 
-import Data.Foldable (class Foldable, fold)
 import Data.Semigroup.Foldable (class Foldable1)
-import Effect (Effect)
-import Parsing (Parser, runParser)
-import Parsing.String (char, string, anyChar, anyTill)
-import Parsing.String.Basic (alphaNum, space, number, intDecimal)
-import Parsing.Combinators (try, many1Till, sepEndBy, sepEndBy1, many1)
-import Control.Alt ((<|>))
 import Data.Array (many)
-import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty as NEL
-import Data.String as String
 import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
+
+import Parsing (Parser)
+import Parsing.String (char, string, anyTill)
+import Parsing.String.Basic (alphaNum, space, number, intDecimal)
+import Parsing.Combinators (many1, many1Till, try)
+import Control.Alt ((<|>))
 import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested ((/\))
+import Noodle.Text.NdfFile.Command (Command(..))
+import Noodle.Text.NdfFile (NdfFile(..), Header(..))
 
 myFile :: String
 myFile =
@@ -31,23 +30,6 @@ number 40 40 num-0
 -> osc-0 0 N 20.0
 ~> num-0 0 N 40.0
 """
-
-data Command
-    = MakeNode String Int Int String
-    | Connect String Int String Int
-    | Send String Int String
-    | SendO String Int String
-    | Connect_ String String String String
-    | Send_ String String String
-    | SendO_ String String String
-
-
-derive instance Eq Command
-
-
-newtype Header = Header (String /\ Number)
-
-data Program = Program Header (Array Command)
 
 
 createCommand :: Parser String Command
@@ -150,38 +132,13 @@ command =
   <|> try createCommand
 
 
-parser :: Parser String Program
+parser :: Parser String NdfFile
 parser = do
   toolkit <- tokenTill space
   version <- number
   eol
   cmds <- many1 command
-  pure $ Program (Header $ toolkit /\ version) $ NEL.toUnfoldable cmds
-
-
-class ToCode x where
-  toCode :: x -> String
-
-
-instance ToCode Command where
-    toCode :: Command -> String
-    toCode =
-        case _ of
-            -- Header toolkit version -> toolkit <> " " <> version
-            MakeNode family top left nodeId -> family <> " " <> show top <> " " <> show left <> " " <> nodeId
-            Connect fromNode oindex toNode iindex -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
-            Send nodeId iindex value -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
-            SendO nodeId oindex value -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
-            Connect_ fromNode oname toNode iname -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
-            Send_ nodeId iname value -> "-> " <> nodeId <> " " <> iname <> " " <> value
-            SendO_ nodeId oname value -> "~> " <> nodeId <> " " <> oname <> " " <> value
-
-
-instance Show Program where
-  show :: Program -> String
-  show (Program (Header (tk /\ version)) commands) =
-    tk <> " " <> show version <> "\n" <>
-    (String.joinWith "\n" $ toCode <$> commands)
+  pure $ NdfFile (Header $ toolkit /\ version) $ NEL.toUnfoldable cmds
 
 
 tokenChar :: Parser String Char
