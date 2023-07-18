@@ -55,6 +55,7 @@ to generate this file without the comments in this block.
   , "node-buffer"
   , "node-fs"
   , "node-fs-aff"
+  , "node-http"
   , "node-path"
   , "node-streams"
   , "nonempty"
@@ -84,6 +85,7 @@ to generate this file without the comments in this block.
   , "variant"
   , "web-events"
   , "web-html"
+  , "web-socket"
   , "web-uievents"
   ]
 , packages = ./packages.dhall

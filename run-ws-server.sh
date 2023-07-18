@@ -1,0 +1,1 @@
+spago run -m Cli.WsServer
