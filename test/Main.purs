@@ -18,7 +18,8 @@ import Test.Protocol2 (spec) as Protocol2
 import Test.Patch4 (spec) as Patch4
 import Test.Flex (spec) as Flex
 import Test.UniqueHash (spec) as UniqueHash
-import Test.Parsing (spec) as Parsing
+import Test.Generating (spec) as Generating
+import Test.NdfParsing (spec) as NdfParsing
 import Test.SOrder (spec) as SOrder
 import Test.NodeKey (spec) as NodeKey
 
@@ -43,8 +44,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Toolkit3.spec
   describe "Protocol2"
     Protocol2.spec
-  describe "Parsing / Generating"
-    Parsing.spec
+  describe "NDF Parsing"
+    NdfParsing.spec
+  describe "Parsing & Generating Toolkits"
+    Generating.spec
   describe "Flex"
     Flex.spec
   describe "SOrder"

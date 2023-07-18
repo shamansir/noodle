@@ -18,19 +18,6 @@ import Data.Tuple.Nested ((/\))
 import Noodle.Text.NdfFile.Command (Command(..))
 import Noodle.Text.NdfFile (NdfFile(..), Header(..))
 
-myFile :: String
-myFile =
-  """hydra 0.1
-osc 40 60 osc-0
-osc 40 60 osc-0
-pi 20 20 pi-0
-number 40 40 num-0
-<> pi-0 0 osc-0 0
-<> num-0 0 osc-0 1
--> osc-0 0 N 20.0
-~> num-0 0 N 40.0
-"""
-
 
 createCommand :: Parser String Command
 createCommand = do

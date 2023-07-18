@@ -19,6 +19,10 @@ newtype Header = Header (String /\ Number)
 data NdfFile = NdfFile Header (Array Command)
 
 
+derive instance Eq Header
+derive instance Eq NdfFile
+
+
 instance Show NdfFile where
   show :: NdfFile -> String
   show (NdfFile (Header (tk /\ version)) commands) =
