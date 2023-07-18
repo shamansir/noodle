@@ -2,7 +2,8 @@ module Noodle.Text.NetworkFile.Parser where
 
 import Prelude
 
-import Data.Foldable (fold)
+import Data.Foldable (class Foldable, fold)
+import Data.Semigroup.Foldable (class Foldable1)
 import Effect (Effect)
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, anyTill)
@@ -10,6 +11,7 @@ import Parsing.String.Basic (alphaNum, space, number, intDecimal)
 import Parsing.Combinators (try, many1Till, sepEndBy, sepEndBy1, many1)
 import Control.Alt ((<|>))
 import Data.Array (many)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty as NEL
 import Data.String as String
 import Data.String.NonEmpty.CodeUnits as CU
@@ -48,22 +50,6 @@ newtype Header = Header (String /\ Number)
 data Program = Program Header (Array Command)
 
 
-tokenChar :: Parser String Char
-tokenChar = alphaNum <|> char '-'
-
-
-nelToString p = p <#> CU.fromFoldable1 <#> StringX.toString
-
-
-tokenTill :: forall a. Parser String a -> Parser String String
-tokenTill stopAt =
-  nelToString $ many1Till tokenChar stopAt
-
-
-eol :: Parser String Unit
-eol = char '\n' *> pure unit
-
-
 createCommand :: Parser String Command
 createCommand = do
     family <- tokenTill space
@@ -91,6 +77,20 @@ connectCommand = do
     pure $ Connect instanceFromId outputIndex instanceToId inputIndex
 
 
+connectCommand_ :: Parser String Command
+connectCommand_ = do
+    _ <- string "<>"
+    _ <- many1 space
+    instanceFromId <- tokenTill space
+    _ <- many space
+    outputId <- tokenTill space
+    _ <- many space
+    instanceToId <- tokenTill space
+    _ <- many space
+    inputId <- tokenTill eol
+    pure $ Connect_ instanceFromId outputId instanceToId inputId
+
+
 sendCommand :: Parser String Command
 sendCommand = do
     _ <- string "->"
@@ -101,6 +101,18 @@ sendCommand = do
     _ <- many1 space
     valueStr <- Tuple.fst <$> anyTill eol
     pure $ Send instanceId inputIndex valueStr
+
+
+sendCommand_ :: Parser String Command
+sendCommand_ = do
+    _ <- string "->"
+    _ <- many1 space
+    instanceId <- tokenTill space
+    _ <- many space
+    inputId <- tokenTill space
+    _ <- many space
+    valueStr <- Tuple.fst <$> anyTill eol
+    pure $ Send_ instanceId inputId valueStr
 
 
 sendOCommand :: Parser String Command
@@ -115,11 +127,26 @@ sendOCommand = do
     pure $ SendO instanceId outputIndex valueStr
 
 
+sendOCommand_ :: Parser String Command
+sendOCommand_ = do
+    _ <- string "~>"
+    _ <- many1 space
+    instanceId <- tokenTill space
+    _ <- many space
+    outputId <- tokenTill space
+    _ <- many space
+    valueStr <- Tuple.fst <$> anyTill eol
+    pure $ SendO_ instanceId outputId valueStr
+
+
 command :: Parser String Command
 command =
   try connectCommand
+  <|> try connectCommand_
   <|> try sendCommand
+  <|> try sendCommand_
   <|> try sendOCommand
+  <|> try sendOCommand_
   <|> try createCommand
 
 
@@ -156,73 +183,26 @@ instance Show Program where
     tk <> " " <> show version <> "\n" <>
     (String.joinWith "\n" $ toCode <$> commands)
 
-{-
-import Data.Array (fromFoldable, (:))
-import Parsing (Parser, runParser)
-import Parsing.Combinators (skipMany, try)
-import Parsing.Combinators.Array (many1)
-import Parsing.String (anyChar, char, string)
-import Parsing.String.Basic (skipSpaces, letter, digit, number, intDecimal)
-import Control.Alt ((<|>))
-import Data.String.NonEmpty.CodeUnits as CU
-import Data.String.NonEmpty.Internal as String
-import Data.Int as Int
-import Data.Maybe (fromMaybe)
--- import Read (read)
 
--- Types for different commands
-data NodeType = Osc | Pi | Number
--- derive instance eqNodeType :: Eq NodeType
--- derive instance showNodeType :: Show NodeType
-
-data Command
-  = CreateNode NodeType Int Int String
-  | ConnectNodes String Int String Int
-  | SendDataToInput String Int Number
-  | SendDataToOutput String Int Number
+tokenChar :: Parser String Char
+tokenChar = alphaNum <|> char '-'
 
 
--- derive instance eqCommand :: Eq Command
--- derive instance showCommand :: Show Command
+token :: Parser String String
+token =
+  f1ts <$> many1 tokenChar
+  where
+    f1ts :: forall f. Foldable1 f => f Char -> String
+    f1ts = CU.fromFoldable1 >>> StringX.toString
 
 
--- Helper functions
-parseNodeType :: Parser String NodeType
-parseNodeType =
-  try (string "osc" *> pure Osc)
-  <|> try (string "pi" *> pure Pi)
-  <|> try (string "number" *> pure Number)
+tokenTill :: forall a. Parser String a -> Parser String String
+tokenTill stopAt =
+  f1ts <$> many1Till tokenChar stopAt
+  where
+    f1ts :: forall f. Foldable1 f => f Char -> String
+    f1ts = CU.fromFoldable1 >>> StringX.toString
 
 
--- parseInt :: Parser String Int
--- parseInt = map (CU.fromNonEmptyCharArray >>> String.toString >>> Int.fromString >>> fromMaybe 0) $ many1 digit
-
-
--- parseFloat :: Parser String Number
--- parseFloat = map ?wh $ (<>) <$> many1 digit <*> ((:) <$> char '.' <*> many1 digit)
-
-
-parseCommand :: Parser String Command
-parseCommand =
-  try (char '<' *> char '>' *>
-       ConnectNodes <$> (skipSpaces *> many1 letter <* skipSpaces)
-                    <*> (intDecimal <* skipSpaces)
-                    <*> (many1 letter <* skipSpaces)
-                    <*> intDecimal)
-  <|> try (char '~' *> char '>' *>
-           SendDataToOutput <$> (skipSpaces *> many1 letter <* skipSpaces)
-                            <*> (intDecimal <* skipSpaces <* char 'N')
-                            <*> number)
-  <|> try (char '~' *> char '>' *>
-           SendDataToInput <$> (skipSpaces *> many1 letter <* skipSpaces)
-                           <*> (intDecimal <* skipSpaces <* char 'N')
-                           <*> number)
-  <|> try (CreateNode <$> (skipSpaces *> parseNodeType <* skipSpaces)
-                      <*> (intDecimal <* skipSpaces)
-                      <*> (intDecimal <* skipSpaces)
-                      <*> many1 letter)
-
-
-parseFile :: Parser (Array Command)
-parseFile = skipMany (char ' ') *> many1 parseCommand <* skipMany (char ' ')
--}
+eol :: Parser String Unit
+eol = char '\n' *> pure unit
