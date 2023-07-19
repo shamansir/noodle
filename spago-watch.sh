@@ -1,2 +1,4 @@
 #!/bin/bash
-rm -Rf ./outuput && spago build --watch
+
+# rm -Rf ./output && spago build --watch
+spago build --watch

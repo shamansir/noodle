@@ -14,8 +14,8 @@ import Node.HTTP (Request)
 import Web.Socket.Server (Port(Port), WebSocketConnection, WebSocketMessage(WebSocketMessage), close, createWebSocketServerWithPort, onConnection, onError, onMessage, onServerError, sendMessage) as WSS
 
 handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> Effect Unit
-handleMessage ws msg = do
-  Console.log $ show msg
+handleMessage ws (WSS.WebSocketMessage msg) = do
+  Console.log $ "received " <> msg
   WSS.close ws
 
 handleError :: Error -> Effect Unit
@@ -32,7 +32,7 @@ handleConnection ws req = do
 main
   :: Effect Unit
 main = do
-  wss <- WSS.createWebSocketServerWithPort (WSS.Port 8080) {} $ const do
-    Console.log "Listening on port 8080."
+  wss <- WSS.createWebSocketServerWithPort (WSS.Port 9999) {} $ const do
+    Console.log "Listening on port 9999."
   WSS.onConnection wss handleConnection
   WSS.onServerError wss handleError

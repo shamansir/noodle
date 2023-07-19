@@ -1,4 +1,4 @@
-module Web.App2 (App, run) where
+module Web.App3 (App, run) where
 
 import Prelude
 
