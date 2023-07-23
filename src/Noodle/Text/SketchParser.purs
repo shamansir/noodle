@@ -7,7 +7,7 @@ import Data.Foldable (class Foldable, fold)
 import Data.Semigroup.Foldable (class Foldable1)
 import Effect (Effect)
 import Parsing (Parser, runParser)
-import Parsing.String (char, string, anyChar, anyTill)
+import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
 import Parsing.Combinators (between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
 import Control.Alt ((<|>))
@@ -94,18 +94,20 @@ comment = do
 
 numberx :: Parser String Expr
 numberx = do
+    _ <- many space
     idigits <- many digit
     _ <- char '.'
     fldigits <- many1 digit
     pure $ Num (fromFoldable idigits) (fromFoldable fldigits)
 
 
+
 chainStart :: Parser String Expr
 chainStart = do
     _ <- many space
     token <- many1 tokenChar
-    _ <- between (char '(') (char ')') $ sepBy (char ',') expr
-    pure $ ChainStart (f1ts token) []
+    exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
+    pure $ ChainStart (f1ts token) $ fromFoldable exprs
 
 
 chainContinue :: Parser String Expr
@@ -113,8 +115,8 @@ chainContinue = do
     _ <- many space
     _ <- char '.'
     token <- many1 tokenChar
-    -- _ <- between (char '(') (char ')') $ sepBy (char ',') expr
-    pure $ ChainContinue "foo" []
+    exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
+    pure $ ChainContinue "foo" $ fromFoldable exprs
 
 
 fnInline :: Parser String Expr
@@ -122,7 +124,7 @@ fnInline = do
     _ <- string "()=>"
     -- inner <- many1Till anyChar (try $ char ',')
     -- inner <- many1Till anyChar (try $ char ',')
-    inner <- many1 anyChar
+    inner <- many1 $ satisfy ((/=) ',')
     -- TODO
     pure $ FnInline $ f1ts inner
 
@@ -179,24 +181,12 @@ main =
 
     , h3 $ code $ text $ show $ runParser myFile script
     , h3 $ code $ text $ show $ runParser "()=>Math.sin(time)+1*3" fnInline
-    , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3)" script
-    , h3 $ code $ text $ show $ runParser "shape(0.5)" $ do
-        _ <- many space
-        token <- many1 tokenChar
-        pair <- between (char '(') (char ')') $ do
-          da <- many digit
-          _ <- char '.'
-          db <- many1 digit
-          pure $ da /\ db
-        pure pair
-    , h3 $ code $ text $ show $ runParser "shape(0.5,0.2)" $ do
-        _ <- many space
-        token <- many1 tokenChar
-        pair <- between (char '(') (char ')') $ sepBy (do
-          da <- many digit
-          _ <- char '.'
-          db <- many1 digit
-          pure $ da /\ db) $ char ','
-        pure pair
+    -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3)" script
+    , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3, .5,.01)" chainStart
+    , h3 $ code $ text $ show $ runParser "shape()" chainStart
+    , h3 $ code $ text $ show $ runParser "shape(0.5)" chainStart
+    , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
+    , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
+    , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
     ]
 -}
