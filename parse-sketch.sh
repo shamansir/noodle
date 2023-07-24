@@ -1,0 +1,1 @@
+spago run -m Noodle.Text.ParseSketch

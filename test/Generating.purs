@@ -205,8 +205,8 @@ spec = do
         -- let parseResult = P.runParser file QDP.familyListParser
 
         it "parses file" $ do
-            fileContent <- readTextFile UTF8 textFile
-            let parseResult = QDP.familyList fileContent
+            fileContents <- readTextFile UTF8 textFile
+            let parseResult = QDP.familyList fileContents
             case parseResult of
               Right result ->
                 Array.length result `shouldEqual` 84
@@ -214,8 +214,8 @@ spec = do
                 fail $ show error
 
         it "converts properly" $ do
-            fileContent <- readTextFile UTF8 textFile
-            let parseResult = QDP.familyList fileContent
+            fileContents <- readTextFile UTF8 textFile
+            let parseResult = QDP.familyList fileContents
             sampleContent <- readTextFile UTF8 $ out_file_path_sample textFile
             case parseResult of
               Right familiesList -> do
@@ -244,7 +244,7 @@ spec = do
                           (String.split (String.Pattern "\n") tpursFileContent)
                           (String.split (String.Pattern "\n") sampleContent)
                 pure unit
-                -- fileContent `shouldEqual` sampleContent
+                -- fileContents `shouldEqual` sampleContent
               Left error ->
                 fail $ show error
 

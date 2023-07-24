@@ -1,19 +1,25 @@
-module Main where
+module Noodle.Text.SketchParser where
 
 import Prelude
 
+import Type.Proxy (Proxy)
+
 -- import TryPureScript (h1, h3, p, text, render, code)
-import Data.Foldable (class Foldable, fold)
 import Data.Semigroup.Foldable (class Foldable1)
 import Data.CodePoint.Unicode as U
 import Data.String.CodePoints (codePointFromChar)
-import Effect (Effect)
-import Parsing (Parser, runParser)
+import Data.Array as Array
+
+import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
 import Parsing.Combinators (optional, option, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
+
+import Node.Encoding (Encoding(..))
+import Node.FS.Sync (readTextFile, writeTextFile, appendTextFile)
 
 import Data.Array (many, fromFoldable)
 import Data.List.NonEmpty (NonEmptyList)
@@ -23,6 +29,8 @@ import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+
 
 myFile :: String
 myFile =
@@ -238,27 +246,53 @@ instance Show Script where
     String.joinWith "\n" $ show <$> exprs
 
 
-{-
-main :: Effect Unit
-main =
-  render $ fold
-    [ h1 $ text "Test parsing script"
+instance ToCode PS Script where
+  toCode :: Proxy PS -> Script -> String
+  toCode _ (Script exprs) = String.joinWith "\n" $ toCode pureScript <$> exprs
 
-    , h3 $ code $ text $ show $ runParser myFile script
-    , h3 $ code $ text $ show $ runParser test2 script
-    , h3 $ code $ text $ show $ runParser test3 script
-    -- , h3 $ code $ text $ show $ runParser "()=>Math.sin(time)+1*3" fnInline
-    -- , h3 $ code $ text $ show $ runParser "()=>a.fft[1]*2" fnInline
-    -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3)" script
-    -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3, .5,.01)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape()" chainStart
-    -- , h3 $ code $ text $ show $ runParser "src(o1)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape(0.5)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
-    -- , h3 $ code $ text $ show $ runParser "shape(5,3, o1, .5,.01)" chainStart
-    -- , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
-    -- , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
-    ]
--}
+
+instance ToCode PS Expr where
+  toCode :: Proxy PS -> Expr -> String
+  toCode _ = case _ of
+    Token str -> str
+    Num num -> "(n " <> show num <> ")"
+    FnInline code -> "(fn $ \\_ -> {- " <> code <> " -})"
+    Chain fn args next ->
+      if Array.length args == 1 then
+        String.joinWith "" ((\arg -> toCode pureScript arg) <$> args) <> " # " <> fn
+      else if Array.length args /= 0 then
+          fn <> " " <> String.joinWith " " ((\arg -> toCode pureScript arg) <$> args)
+        else
+          fn
+      <>
+      if Array.length next > 0 then
+          " # " <> String.joinWith "\n" ((\(ifn /\ iargs) -> " # " <> (toCode pureScript $ Chain ifn iargs [])) <$> next)
+        else
+          ""
+    Comment text -> "-- " <> text
+    EmptyLine -> "\n\n"
+
+
+instance ToCode JS Script where
+  toCode :: Proxy JS -> Script -> String
+  toCode _ (Script exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
+
+
+instance ToCode JS Expr where
+  toCode :: Proxy JS -> Expr -> String
+  toCode _ = case _ of
+    Token str -> str
+    Num num -> show num
+    FnInline code -> code
+    Chain fn args next ->
+      if Array.length args /= 0 then
+          fn <> "(" <> String.joinWith "," ((\arg -> toCode javaScript arg) <$> args) <> ")"
+        else
+          fn <> "()"
+      <>
+      if Array.length next > 0 then
+          "." <> String.joinWith "\n" ((\(ifn /\ iargs) -> "." <> (toCode javaScript $ Chain ifn iargs [])) <$> next)
+        else
+          ""
+    Comment text -> "// " <> text
+    EmptyLine -> "\n\n"

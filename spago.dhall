@@ -81,6 +81,7 @@ to generate this file without the comments in this block.
   , "typelevel"
   , "typelevel-prelude"
   , "unfoldable"
+  , "unicode"
   , "unsafe-coerce"
   , "variant"
   , "web-events"
