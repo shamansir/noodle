@@ -9,7 +9,7 @@ import Effect (Effect)
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
-import Parsing.Combinators (between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+import Parsing.Combinators (optional, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
 
@@ -52,7 +52,7 @@ render(o0)
 
 data Expr
     = Token String
-    | Num (Array Char) (Array Char)
+    | Num Number
     | ChainStart String (Array Expr)
     | ChainContinue String (Array Expr)
     | FnInline String
@@ -95,10 +95,14 @@ comment = do
 numberx :: Parser String Expr
 numberx = do
     _ <- many space
+    num <- number
+    pure $ Num num
+  {- do
+    _ <- many space
     idigits <- many digit
-    _ <- char '.'
+    _ <- optional $ char '.'
     fldigits <- many1 digit
-    pure $ Num (fromFoldable idigits) (fromFoldable fldigits)
+    pure $ Num (fromFoldable idigits) (fromFoldable fldigits) -}
 
 
 
@@ -107,6 +111,7 @@ chainStart = do
     _ <- many space
     token <- many1 tokenChar
     exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
+    _ <- optional $ try eol
     pure $ ChainStart (f1ts token) $ fromFoldable exprs
 
 
@@ -116,11 +121,13 @@ chainContinue = do
     _ <- char '.'
     token <- many1 tokenChar
     exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
-    pure $ ChainContinue "foo" $ fromFoldable exprs
+    _ <- optional $ try eol
+    pure $ ChainContinue (f1ts token) $ fromFoldable exprs
 
 
 fnInline :: Parser String Expr
 fnInline = do
+    _ <- many space
     _ <- string "()=>"
     -- inner <- many1Till anyChar (try $ char ',')
     -- inner <- many1Till anyChar (try $ char ',')
@@ -136,6 +143,14 @@ emptyLine = do
     pure $ EmptyLine
 
 
+token :: Parser String Expr
+token = do
+  _ <- many space
+  token <- many1 tokenChar
+  _ <- many space
+  pure $ Token $ f1ts token
+
+
 expr :: Parser String Expr
 expr =
   try comment
@@ -143,6 +158,7 @@ expr =
   <|> try numberx
   <|> try (defer \_ -> chainStart)
   <|> try (defer \_ -> chainContinue)
+  <|> try token
 
 
 script :: Parser String Script
@@ -154,7 +170,7 @@ script = do
 instance Show Expr where
   show = case _ of
     Token str -> "%" <> str <> "%"
-    Num is fs -> show is <> "." <> show fs
+    Num num -> show num
     ChainStart fn exprs ->
       fn <> " " <> String.joinWith " @ " (show <$> exprs)
     ChainContinue fn exprs ->
@@ -173,8 +189,7 @@ instance Show Script where
     String.joinWith "\n" $ show <$> exprs
 
 
-{-
-main :: Effect Unit
+{-main :: Effect Unit
 main =
   render $ fold
     [ h1 $ text "Test parsing script"
@@ -188,5 +203,7 @@ main =
     , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
+    , h3 $ code $ text $ show $ runParser "shape(5,3, o1, .5,.01)" chainStart
+    , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
     ]
 -}
