@@ -2,6 +2,8 @@ module Noodle.Text.ParseSketch where
 
 import Prelude
 
+import Data.Either (Either(..))
+
 import Effect (Effect)
 import Effect.Console as Console
 
@@ -18,9 +20,17 @@ main :: Effect Unit
 main = do
   fileContents <- readTextFile UTF8 "test/hydra-examples/examples-website/mahalia_3.js"
   let parseResult = runParser fileContents Parser.script
-  Console.log $ show parseResult
-  Console.log "======\n"
-  Console.log $ show $ toCode pureScript <$> parseResult
-  Console.log "======\n"
-  Console.log $ show $ toCode javaScript <$> parseResult
+  case parseResult of
+    Right script -> do
+        Console.log "ORIGINAL: ======\n"
+        Console.log fileContents
+        Console.log "EXPR: ======\n"
+        Console.log $ show script
+        Console.log "PURS ======\n"
+        Console.log $ toCode pureScript script
+        Console.log "JS ======\n"
+        Console.log $ toCode javaScript script
+    Left error -> do
+        Console.log "Parse failed."
+        Console.log $ show error
   -- Console.log $

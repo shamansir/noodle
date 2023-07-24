@@ -258,17 +258,19 @@ instance ToCode PS Expr where
     Num num -> "(n " <> show num <> ")"
     FnInline code -> "(fn $ \\_ -> {- " <> code <> " -})"
     Chain fn args next ->
-      if Array.length args == 1 then
+      ( if Array.length args == 1 then
         String.joinWith "" ((\arg -> toCode pureScript arg) <$> args) <> " # " <> fn
       else if Array.length args /= 0 then
           fn <> " " <> String.joinWith " " ((\arg -> toCode pureScript arg) <$> args)
-        else
+      else
           fn
+      )
       <>
-      if Array.length next > 0 then
+      ( if Array.length next > 0 then
           " # " <> String.joinWith "\n" ((\(ifn /\ iargs) -> " # " <> (toCode pureScript $ Chain ifn iargs [])) <$> next)
         else
           ""
+      )
     Comment text -> "-- " <> text
     EmptyLine -> "\n\n"
 
@@ -283,16 +285,18 @@ instance ToCode JS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> show num
-    FnInline code -> code
+    FnInline code -> "()=>" <> code
     Chain fn args next ->
-      if Array.length args /= 0 then
+      ( if Array.length args /= 0 then
           fn <> "(" <> String.joinWith "," ((\arg -> toCode javaScript arg) <$> args) <> ")"
         else
           fn <> "()"
+      )
       <>
-      if Array.length next > 0 then
-          "." <> String.joinWith "\n" ((\(ifn /\ iargs) -> "." <> (toCode javaScript $ Chain ifn iargs [])) <$> next)
+      ( if Array.length next > 0 then
+          "\n" <> String.joinWith "\n" ((\(ifn /\ iargs) -> "." <> (toCode javaScript $ Chain ifn iargs [])) <$> next)
         else
           ""
+      )
     Comment text -> "// " <> text
     EmptyLine -> "\n\n"
