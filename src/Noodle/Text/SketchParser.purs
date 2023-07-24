@@ -5,6 +5,8 @@ import Prelude
 -- import TryPureScript (h1, h3, p, text, render, code)
 import Data.Foldable (class Foldable, fold)
 import Data.Semigroup.Foldable (class Foldable1)
+import Data.CodePoint.Unicode as U
+import Data.String.CodePoints (codePointFromChar)
 import Effect (Effect)
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
@@ -70,6 +72,10 @@ tokenChar :: Parser String Char
 tokenChar = alphaNum
 
 
+spaceOrEol :: Parser String Char
+spaceOrEol = satisfy $ \c -> U.isSpace (codePointFromChar c) || (c == '\n') || (c == '\t')
+
+
 f1ts :: forall f. Foldable1 f => f Char -> String
 f1ts = CU.fromFoldable1 >>> StringX.toString
 
@@ -94,40 +100,60 @@ comment = do
 
 numberx :: Parser String Expr
 numberx = do
-    _ <- many space
     num <- number
     pure $ Num num
   {- do
-    _ <- many space
     idigits <- many digit
     _ <- optional $ char '.'
     fldigits <- many1 digit
     pure $ Num (fromFoldable idigits) (fromFoldable fldigits) -}
 
 
+beforeArgs :: Parser String Unit
+beforeArgs = do
+  _ <- many spaceOrEol
+  _ <- char '('
+  _ <- many spaceOrEol
+  pure unit
+
+
+afterArgs :: Parser String Unit
+afterArgs = do
+  _ <- many spaceOrEol
+  _ <- char ')'
+  _ <- many spaceOrEol
+  pure unit
+
+
+separator :: Parser String Unit
+separator = do
+  _ <- many spaceOrEol
+  _ <- char ','
+  _ <- many spaceOrEol
+  pure unit
+
 
 chainStart :: Parser String Expr
 chainStart = do
-    _ <- many space
+    _ <- many spaceOrEol
     token <- many1 tokenChar
-    exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
-    _ <- optional $ try eol
+    exprs <- between beforeArgs afterArgs $ sepBy expr separator
+    -- _ <- optional $ try eol
     pure $ ChainStart (f1ts token) $ fromFoldable exprs
 
 
 chainContinue :: Parser String Expr
 chainContinue = do
-    _ <- many space
+    _ <- many spaceOrEol
     _ <- char '.'
     token <- many1 tokenChar
-    exprs <- between (char '(') (char ')') $ sepBy expr $ char ','
-    _ <- optional $ try eol
+    exprs <- between beforeArgs afterArgs $ sepBy expr separator
+    -- _ <- optional $ try eol
     pure $ ChainContinue (f1ts token) $ fromFoldable exprs
 
 
 fnInline :: Parser String Expr
 fnInline = do
-    _ <- many space
     _ <- string "()=>"
     -- inner <- many1Till anyChar (try $ char ',')
     -- inner <- many1Till anyChar (try $ char ',')
@@ -145,9 +171,7 @@ emptyLine = do
 
 token :: Parser String Expr
 token = do
-  _ <- many space
   token <- many1 tokenChar
-  _ <- many space
   pure $ Token $ f1ts token
 
 
@@ -189,21 +213,25 @@ instance Show Script where
     String.joinWith "\n" $ show <$> exprs
 
 
-{-main :: Effect Unit
+{-
+main :: Effect Unit
 main =
   render $ fold
     [ h1 $ text "Test parsing script"
 
     , h3 $ code $ text $ show $ runParser myFile script
     , h3 $ code $ text $ show $ runParser "()=>Math.sin(time)+1*3" fnInline
+    , h3 $ code $ text $ show $ runParser "()=>a.fft[1]*2" fnInline
     -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3)" script
     , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3, .5,.01)" chainStart
     , h3 $ code $ text $ show $ runParser "shape()" chainStart
+    , h3 $ code $ text $ show $ runParser "src(o1)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(0.5)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
     , h3 $ code $ text $ show $ runParser "shape(5,3, o1, .5,.01)" chainStart
+    , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
     , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
     ]
 -}
