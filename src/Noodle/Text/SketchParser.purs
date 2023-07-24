@@ -11,7 +11,7 @@ import Effect (Effect)
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
-import Parsing.Combinators (optional, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+import Parsing.Combinators (optional, option, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
 
@@ -52,11 +52,37 @@ render(o0)
 // https://hydra.ojack.xyz/?sketch_id=mahalia_3
 """
 
+
+test2 =
+  """
+  osc(40, 0.09, 0.9)
+  .color(.9,0,5)
+  .modulate(osc(10).rotate(1, 0.5))
+  .rotate(1, 0.2)
+  .out(o1)
+  """
+
+
+test3 =
+  """
+  shape(()=>Math.sin(time)+1*3, .5,.01)
+  .repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)
+  .scrollY(.5,0.1)
+  .modulate(o1,.02)
+  .out(o0)
+
+  osc(40, 0.09, 0.9)
+  .color(.9,0,5)
+  .rotate(1, 0.2)
+  .out(o1)
+
+  render(o0)
+  """
+
 data Expr
     = Token String
     | Num Number
-    | ChainStart String (Array Expr)
-    | ChainContinue String (Array Expr)
+    | Chain String (Array Expr) (Array (String /\ Array Expr))
     | FnInline String
     | Comment String
     | EmptyLine
@@ -133,23 +159,20 @@ separator = do
   pure unit
 
 
-chainStart :: Parser String Expr
-chainStart = do
+chain :: Parser String Expr
+chain = do
     _ <- many spaceOrEol
     token <- many1 tokenChar
     exprs <- between beforeArgs afterArgs $ sepBy expr separator
+    chainCont <- option [] $ many $ do
+      _ <- many spaceOrEol
+      _ <- char '.'
+      token <- many1 tokenChar
+      innerExprs <- between beforeArgs afterArgs $ sepBy expr separator
+      _ <- many spaceOrEol
+      pure $ (f1ts token) /\ fromFoldable innerExprs
     -- _ <- optional $ try eol
-    pure $ ChainStart (f1ts token) $ fromFoldable exprs
-
-
-chainContinue :: Parser String Expr
-chainContinue = do
-    _ <- many spaceOrEol
-    _ <- char '.'
-    token <- many1 tokenChar
-    exprs <- between beforeArgs afterArgs $ sepBy expr separator
-    -- _ <- optional $ try eol
-    pure $ ChainContinue (f1ts token) $ fromFoldable exprs
+    pure $ Chain (f1ts token) (fromFoldable exprs) (fromFoldable chainCont)
 
 
 fnInline :: Parser String Expr
@@ -180,8 +203,7 @@ expr =
   try comment
   <|> try fnInline
   <|> try numberx
-  <|> try (defer \_ -> chainStart)
-  <|> try (defer \_ -> chainContinue)
+  <|> try (defer \_ -> chain)
   <|> try token
 
 
@@ -195,10 +217,13 @@ instance Show Expr where
   show = case _ of
     Token str -> "%" <> str <> "%"
     Num num -> show num
-    ChainStart fn exprs ->
-      fn <> " " <> String.joinWith " @ " (show <$> exprs)
-    ChainContinue fn exprs ->
-      "." <> fn <> " " <> String.joinWith " @ " (show <$> exprs)
+    Chain fn exprs cont ->
+      fn <> " " <> String.joinWith " @ " (show <$> exprs) <> "-->" <>
+      (String.joinWith " @@ " $
+        (\(fnc /\ exprc) ->
+          "." <> fnc <> " " <> String.joinWith " @ " (show <$> exprc)
+        ) <$> cont
+      )
     FnInline str ->
       ">> " <> str <> " <<"
     Comment str ->
@@ -220,18 +245,20 @@ main =
     [ h1 $ text "Test parsing script"
 
     , h3 $ code $ text $ show $ runParser myFile script
-    , h3 $ code $ text $ show $ runParser "()=>Math.sin(time)+1*3" fnInline
-    , h3 $ code $ text $ show $ runParser "()=>a.fft[1]*2" fnInline
+    , h3 $ code $ text $ show $ runParser test2 script
+    , h3 $ code $ text $ show $ runParser test3 script
+    -- , h3 $ code $ text $ show $ runParser "()=>Math.sin(time)+1*3" fnInline
+    -- , h3 $ code $ text $ show $ runParser "()=>a.fft[1]*2" fnInline
     -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3)" script
-    , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3, .5,.01)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape()" chainStart
-    , h3 $ code $ text $ show $ runParser "src(o1)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape(0.5)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
-    , h3 $ code $ text $ show $ runParser "shape(5,3, o1, .5,.01)" chainStart
-    , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
-    , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
+    -- , h3 $ code $ text $ show $ runParser "shape(()=>Math.sin(time)+1*3, .5,.01)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape()" chainStart
+    -- , h3 $ code $ text $ show $ runParser "src(o1)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape(0.5)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape(0.5,.2)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape(0.5,.2, 0.2)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape(1.0, .5,.01)" chainStart
+    -- , h3 $ code $ text $ show $ runParser "shape(5,3, o1, .5,.01)" chainStart
+    -- , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
+    -- , h3 $ code $ text $ show $ runParser ".repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)" chainContinue
     ]
 -}
