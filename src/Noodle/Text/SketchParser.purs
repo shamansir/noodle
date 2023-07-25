@@ -317,19 +317,24 @@ instance ToCode JS Expr where
     FnInline { args, code } -> "(" <> args <> ")=>" <> code
     Chain l { subj, startOp, args, tail } ->
       let
-        indent =
+        tailIndent =
           case l of
             Top -> ""
             Arg -> "    "
             Tail -> "    "
+        firstIndent =
+          case l of
+            Top -> ""
+            Arg -> "\n"
+            Tail -> ""
       in ( if Array.length args /= 0 then
-          startOp <> "(" <> String.joinWith "," (toCode javaScript <$> args) <> ")"
+          firstIndent <> startOp <> "(" <> String.joinWith "," (toCode javaScript <$> args) <> ")"
         else
-          startOp <> "()"
+          firstIndent <> startOp <> "()"
       )
       <>
       ( if Array.length tail > 0 then
-          "\n" <> String.joinWith "\n" ((\op -> indent <> "." <> (toCode javaScript $ subOpInChain op)) <$> tail)
+          "\n" <> String.joinWith "\n" ((\op -> tailIndent <> "." <> (toCode javaScript $ subOpInChain op)) <$> tail)
         else
           ""
       )

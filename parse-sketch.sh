@@ -1,1 +1,1 @@
-spago run -m Noodle.Text.ParseSketch
+spago run -m Noodle.Text.ParseSketch --exec-args '-i ./test/hydra-examples/examples-website/mahalia_3.js'
