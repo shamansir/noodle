@@ -13,6 +13,7 @@ import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.String.Pattern
 import Data.Tuple (uncurry)
+import Data.Maybe (Maybe(..))
 
 import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
@@ -36,66 +37,16 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 
-myFile :: String
-myFile =
-  """// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
-// by Mahalia H-R
-// IG: mm_hr_
-
-shape(()=>Math.sin(time)+1*3, .5,.01)
-.repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)
-.scrollY(.5,0.1)
-.layer(
-  src(o1)
-  .mask(o0)
-  .luma(.01, .1)
-  .invert(.2)
-)
-.modulate(o1,.02)
-.out(o0)
-
-osc(40, 0.09, 0.9)
-.color(.9,0,5)
-.modulate(osc(10).rotate(1, 0.5))
-.rotate(1, 0.2)
-.out(o1)
-
-render(o0)
-// https://hydra.ojack.xyz/?sketch_id=mahalia_3
-"""
-
-
-test2 =
-  """
-  osc(40, 0.09, 0.9)
-  .color(.9,0,5)
-  .modulate(osc(10).rotate(1, 0.5))
-  .rotate(1, 0.2)
-  .out(o1)
-  """
-
-
-test3 =
-  """
-  shape(()=>Math.sin(time)+1*3, .5,.01)
-  .repeat(5,3, ()=>a.fft[0]*2, ()=>a.fft[1]*2)
-  .scrollY(.5,0.1)
-  .modulate(o1,.02)
-  .out(o0)
-
-  osc(40, 0.09, 0.9)
-  .color(.9,0,5)
-  .rotate(1, 0.2)
-  .out(o1)
-
-  render(o0)
-  """
-
 data Expr
     = Token String
     | Num Number
-    | Chain String (Array Expr) (Array (String /\ Array Expr))
-    | FnInline String String
+    | Chain
+        { subj :: Maybe String
+        , startOp :: String
+        , args :: Array Expr
+        , tail :: Array { op :: String, args :: Array Expr }
+        }
+    | FnInline { args :: String, code :: String }
     | Comment String
     | EmptyLine
 
@@ -174,22 +125,27 @@ separator = do
 chain :: Parser String Expr
 chain = do
     _ <- many spaceOrEol
-    maybeSubj <- optionMaybe $ try $ do
-      token <- many1 tokenChar
-      _ <- many space
-      _ <- char '.'
-      pure token
-    token <- many1 tokenChar
-    exprs <- between beforeArgs afterArgs $ sepBy expr separator
-    chainCont <- option [] $ many $ do
-      _ <- many spaceOrEol
-      _ <- char '.'
-      token <- many1 tokenChar
-      innerExprs <- between beforeArgs afterArgs $ sepBy expr separator
-      _ <- many spaceOrEol
-      pure $ (f1ts token) /\ fromFoldable innerExprs
+    mbSubj <- optionMaybe $ try $ do
+        subj <- many1 tokenChar
+        _ <- many space
+        _ <- char '.'
+        pure subj
+    startOp <- many1 tokenChar
+    args <- between beforeArgs afterArgs $ sepBy expr separator
+    tail <- option [] $ many $ do
+        _ <- many spaceOrEol
+        _ <- char '.'
+        op <- many1 tokenChar
+        innerExprs <- between beforeArgs afterArgs $ sepBy expr separator
+        _ <- many spaceOrEol
+        pure $ { op : f1ts op, args : fromFoldable innerExprs }
     _ <- optional $ try $ char ';'
-    pure $ Chain (f1ts token) (fromFoldable exprs) (fromFoldable chainCont)
+    pure $ Chain
+        { subj : f1ts <$> mbSubj
+        , startOp : f1ts startOp
+        , args : fromFoldable args
+        , tail : fromFoldable tail
+        }
 
 
 fnInline :: Parser String Expr
@@ -206,7 +162,7 @@ fnInline = do
     -- inner <- foldl ?wh 0 <$> many1 digit
     -- inner <- consumeWith ?wh
     -- TODO
-    pure $ FnInline (fromCharArray args) $ f1ts inner
+    pure $ FnInline { args : fromCharArray args, code : f1ts inner }
 
 
 emptyLine :: Parser String Expr
@@ -242,9 +198,10 @@ traverseExprs f (Script exprs) =
   Script $ deeper <$> exprs
   where
     deeper :: Expr -> Expr
-    deeper (Chain name args tail) =
-      f $ Chain name (deeper <$> args) $ map (map deeper) <$> tail
+    deeper (Chain { subj, startOp, args, tail }) =
+      f $ Chain { subj, startOp, args : deeper <$> args, tail : mapSubOp deeper <$> tail }
     deeper otherExpr = f otherExpr
+    mapSubOp f { op, args } = { op, args : f <$> args }
 
 
 replacements :: Array (Pattern /\ Replacement)
@@ -260,8 +217,8 @@ prepare str = foldr (uncurry String.replaceAll) str replacements
 fixback :: Script -> Script
 fixback = traverseExprs fixExpr
   where
-    fixExpr (FnInline args contents) =
-      FnInline args $ foldr (uncurry String.replaceAll) contents $ swapPR <$> replacements
+    fixExpr (FnInline { args, code }) =
+      FnInline { args, code : foldr (uncurry String.replaceAll) code $ swapPR <$> replacements }
     fixExpr otherExpr = otherExpr
     swapPR (Pattern pattern /\ Replacement replacement) =
       Pattern replacement /\ Replacement pattern
@@ -271,15 +228,15 @@ instance Show Expr where
   show = case _ of
     Token str -> "%" <> str <> "%"
     Num num -> show num
-    Chain fn exprs cont ->
-      fn <> " " <> String.joinWith " @ " (show <$> exprs) <> "-->" <>
+    Chain { subj, startOp, args, tail } ->
+      startOp <> " " <> String.joinWith " @ " (show <$> args) <> "-->" <>
       (String.joinWith " @@ " $
-        (\(fnc /\ exprc) ->
-          "." <> fnc <> " " <> String.joinWith " @ " (show <$> exprc)
-        ) <$> cont
+        (\{ op, args } ->
+          "." <> op <> " " <> String.joinWith " @ " (show <$> args)
+        ) <$> tail
       )
-    FnInline args str ->
-      ">> " <> args <> " -> " <> str <> " <<"
+    FnInline { args, code } ->
+      ">> " <> args <> " -> " <> code <> " <<"
     Comment str ->
       "// " <> str <> " //"
     EmptyLine ->
@@ -301,25 +258,26 @@ instance ToCode PS Expr where
   toCode :: Proxy PS -> Expr -> String
   toCode _ = case _ of
     Token str -> str
-    Num num -> "(n " <> show num <> ")"
-    FnInline args code -> "(fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -})"
-    Chain fn args next ->
+    Num num -> "n " <> show num <> ""
+    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -}"
+    Chain { subj, startOp, args, tail } ->
       ( if Array.length args == 1 then
-        String.joinWith "" ((\arg -> toCode pureScript arg) <$> args) <> " # " <> fn
+        String.joinWith "" ((\arg -> "(" <> toCode pureScript arg <> ")") <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
-          fn <> " " <> String.joinWith " " ((\arg -> toCode pureScript arg) <$> args)
+          startOp <> " " <> String.joinWith " " ((\arg ->  "(" <> toCode pureScript arg <> ")") <$> args)
       else
-          fn
+          startOp
       )
       <>
-      ( if Array.length next > 0 then
-          "(\n" <> String.joinWith "\n" ((\(ifn /\ iargs) -> " # " <> (toCode pureScript $ Chain ifn iargs [])) <$> next) <> "\n)"
+      ( if Array.length tail > 0 then
+          "\n" <> String.joinWith "\n" ((\op -> " # " <> (toCode pureScript $ subOpInChain op)) <$> tail) <> "\n"
         else
           ""
       )
     Comment text -> "-- " <> text
     EmptyLine -> "\n\n"
     where
+      subOpInChain { op, args } = Chain { subj : Nothing, startOp : op, args, tail : [] }
       friendlyArgs args = if String.null args then "_"  else args
 
 
@@ -333,18 +291,20 @@ instance ToCode JS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> show num
-    FnInline args code -> "(" <> args <> ")=>" <> code
-    Chain fn args next ->
+    FnInline { args, code } -> "(" <> args <> ")=>" <> code
+    Chain  { subj, startOp, args, tail } ->
       ( if Array.length args /= 0 then
-          fn <> "(" <> String.joinWith "," ((\arg -> toCode javaScript arg) <$> args) <> ")"
+          startOp <> "(" <> String.joinWith "," (toCode javaScript <$> args) <> ")"
         else
-          fn <> "()"
+          startOp <> "()"
       )
       <>
-      ( if Array.length next > 0 then
-          "\n" <> String.joinWith "\n" ((\(ifn /\ iargs) -> "." <> (toCode javaScript $ Chain ifn iargs [])) <$> next)
+      ( if Array.length tail > 0 then
+          "\n" <> String.joinWith "\n" ((\op -> "." <> (toCode javaScript $ subOpInChain op)) <$> tail)
         else
           ""
       )
     Comment text -> "// " <> text
     EmptyLine -> "\n\n"
+    where
+      subOpInChain { op, args } = Chain { subj : Nothing, startOp : op, args, tail : [] }
