@@ -9,6 +9,7 @@ import Data.Semigroup.Foldable (class Foldable1)
 import Data.CodePoint.Unicode as U
 import Data.String.CodePoints (codePointFromChar)
 import Data.String.CodeUnits (fromCharArray)
+import Data.String.Utils (lines) as String
 import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.String.Pattern
@@ -64,7 +65,10 @@ data Expr
 derive instance Eq Expr
 
 
-data Script = Script (Array Expr)
+type ModuleName = String
+
+
+data Script = Script ModuleName (Array Expr)
 
 
 tokenChar :: Parser String Char
@@ -198,15 +202,15 @@ expr level =
   <|> try token
 
 
-script :: Parser String Script
-script = do
+script :: ModuleName -> Parser String Script
+script mn = do
   lines <- many1 $ expr Top
-  pure $ Script $ fromFoldable lines
+  pure $ Script mn $ fromFoldable lines
 
 
 traverseExprs :: (Expr -> Expr) -> Script -> Script
-traverseExprs f (Script exprs) =
-  Script $ deeper <$> exprs
+traverseExprs f (Script moduleName exprs) =
+  Script moduleName $ deeper <$> exprs
   where
     deeper :: Expr -> Expr
     deeper (Chain l { subj, startOp, args, tail }) =
@@ -237,32 +241,40 @@ fixback = traverseExprs fixExpr
 
 instance Show Expr where
   show = case _ of
-    Token str -> "%" <> str <> "%"
-    Num num -> show num
+    Token str -> "Token [" <> str <> "]"
+    Num num -> "Num [" <> show num <> "]"
     Chain _ { subj, startOp, args, tail } ->
-      startOp <> " " <> String.joinWith " @ " (show <$> args) <> "-->" <>
-      (String.joinWith " @@ " $
-        (\{ op, args } ->
-          "." <> op <> " " <> String.joinWith " @ " (show <$> args)
-        ) <$> tail
-      )
+      "Chain "
+        <> case subj of
+          Just s -> "{" <> s <> "} "
+          Nothing -> ""
+        <> startOp
+        <> " [ " <> String.joinWith " , " (show <$> args) <> " ] [ " <>
+        (String.joinWith " , " $
+          (\{ op, args } ->
+            "Next " <> op <> " [ " <> String.joinWith " , " (show <$> args) <> " ] "
+          ) <$> tail
+        ) <> " ]"
     FnInline { args, code } ->
-      ">> " <> args <> " -> " <> code <> " <<"
+      "Fn [ " <> args <> " ] [ " <> code <> " ]"
     Comment str ->
-      "// " <> str <> " //"
+      "Comment [" <> str <> " ]"
     EmptyLine ->
-      "***"
+      "Empty"
 
 
 instance Show Script where
   show :: Script -> String
-  show (Script exprs) =
+  show (Script moduleName exprs) =
     String.joinWith "\n" $ show <$> exprs
 
 
 instance ToCode PS Script where
   toCode :: Proxy PS -> Script -> String
-  toCode _ (Script exprs) = String.joinWith "\n" $ toCode pureScript <$> exprs
+  toCode _ (Script moduleName exprs) =
+    (String.joinWith "\n" $ pursHeader moduleName) <> "\n\n" <>
+    (String.joinWith "\n" pursPrefix) <> "\n    " <>
+    (String.joinWith "\n    " $ Array.concat $ String.lines <$> toCode pureScript <$> exprs)
 
 
 instance ToCode PS Expr where
@@ -306,7 +318,7 @@ instance ToCode PS Expr where
 
 instance ToCode JS Script where
   toCode :: Proxy JS -> Script -> String
-  toCode _ (Script exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
+  toCode _ (Script _ exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
 
 
 instance ToCode JS Expr where
@@ -346,3 +358,27 @@ instance ToCode JS Expr where
     EmptyLine -> "\n\n"
     where
       subOpInChain { op, args } = Chain Tail { subj : Nothing, startOp : op, args, tail : [] }
+
+
+
+pursHeader ∷ String → Array String
+pursHeader moduleName =
+  [ "module " <> moduleName <> " where"
+  , ""
+  , "import Prelude (Unit, discard, (#), ($))"
+  , "import Prelude (show) as Core"
+  , ""
+  , "import Effect (Effect)"
+  , "import Effect.Console as Console"
+  , ""
+  , "import Toolkit.Hydra2.Lang"
+  , "import Toolkit.Hydra2.Lang.ToCode (toCode, pureScript, javaScript)"
+  , "import Toolkit.Hydra2.Lang.Api"
+  ]
+
+
+pursPrefix :: Array String
+pursPrefix =
+  [ "example :: Program Unit"
+  , "example = do"
+  ]

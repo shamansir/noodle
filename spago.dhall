@@ -75,6 +75,7 @@ to generate this file without the comments in this block.
   , "signal"
   , "sized-vectors"
   , "strings"
+  , "stringutils"
   , "tailrec"
   , "transformers"
   , "tuples"
