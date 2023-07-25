@@ -62,7 +62,7 @@ run opts = do
         ]
     if not $ String.null opts.sourceList then do
       listContents <- readTextFile UTF8 opts.sourceList
-      let fileNames = String.lines listContents # Array.filter (String.startsWith "#")
+      let fileNames = Array.filter (not <<< String.startsWith "#") $ String.lines listContents
       traverse_ parseAndWrite fileNames
     else do
       parseAndWrite opts.sourceFile
@@ -111,6 +111,7 @@ options = ado
     [ OA.long "source"
     , OA.short 'i'
     , OA.metavar "SOURCE"
+    , OA.value ""
     , OA.help "The name of the toolkit defines the name of the corresponding module and the directories to create and use"
     ]
 

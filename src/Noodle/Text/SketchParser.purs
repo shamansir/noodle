@@ -168,15 +168,7 @@ fnInline = do
     _ <- char '('
     args <- many tokenChar
     _ <- string ")=>"
-    -- _ <- string "()=>"
-    -- inner <- many1Till anyChar (try $ char ',')
-    -- inner <- many1Till anyChar (try $ char ',')
     inner <- many1 $ satisfy $ \c -> c /= ',' && c /= ')'
-    -- let charIdx =
-    -- inner <- chainl1
-    -- inner <- foldl ?wh 0 <$> many1 digit
-    -- inner <- consumeWith ?wh
-    -- TODO
     pure $ FnInline { args : fromCharArray args, code : f1ts inner }
 
 
@@ -184,6 +176,7 @@ emptyLine :: Parser String Expr
 emptyLine = do
     _ <- many space
     eol
+    _ <- optional eol
     pure $ EmptyLine
 
 
@@ -200,6 +193,7 @@ expr level =
   <|> try numberx
   <|> try (defer \_ -> chain level)
   <|> try token
+  <|> try emptyLine
 
 
 script :: ModuleName -> Parser String Script
