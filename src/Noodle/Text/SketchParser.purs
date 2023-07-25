@@ -8,12 +8,16 @@ import Type.Proxy (Proxy)
 import Data.Semigroup.Foldable (class Foldable1)
 import Data.CodePoint.Unicode as U
 import Data.String.CodePoints (codePointFromChar)
+import Data.String.CodeUnits (fromCharArray)
 import Data.Array as Array
+import Data.Foldable (foldr)
+import Data.String.Pattern
+import Data.Tuple (uncurry)
 
 import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
-import Parsing.Combinators (optional, option, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+import Parsing.Combinators (optional, option, optionMaybe, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
 
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
@@ -91,7 +95,7 @@ data Expr
     = Token String
     | Num Number
     | Chain String (Array Expr) (Array (String /\ Array Expr))
-    | FnInline String
+    | FnInline String String
     | Comment String
     | EmptyLine
 
@@ -170,6 +174,11 @@ separator = do
 chain :: Parser String Expr
 chain = do
     _ <- many spaceOrEol
+    maybeSubj <- optionMaybe $ try $ do
+      token <- many1 tokenChar
+      _ <- many space
+      _ <- char '.'
+      pure token
     token <- many1 tokenChar
     exprs <- between beforeArgs afterArgs $ sepBy expr separator
     chainCont <- option [] $ many $ do
@@ -179,18 +188,25 @@ chain = do
       innerExprs <- between beforeArgs afterArgs $ sepBy expr separator
       _ <- many spaceOrEol
       pure $ (f1ts token) /\ fromFoldable innerExprs
-    -- _ <- optional $ try eol
+    _ <- optional $ try $ char ';'
     pure $ Chain (f1ts token) (fromFoldable exprs) (fromFoldable chainCont)
 
 
 fnInline :: Parser String Expr
 fnInline = do
-    _ <- string "()=>"
+    _ <- char '('
+    args <- many tokenChar
+    _ <- string ")=>"
+    -- _ <- string "()=>"
     -- inner <- many1Till anyChar (try $ char ',')
     -- inner <- many1Till anyChar (try $ char ',')
-    inner <- many1 $ satisfy ((/=) ',')
+    inner <- many1 $ satisfy $ \c -> c /= ',' && c /= ')'
+    -- let charIdx =
+    -- inner <- chainl1
+    -- inner <- foldl ?wh 0 <$> many1 digit
+    -- inner <- consumeWith ?wh
     -- TODO
-    pure $ FnInline $ f1ts inner
+    pure $ FnInline (fromCharArray args) $ f1ts inner
 
 
 emptyLine :: Parser String Expr
@@ -221,6 +237,36 @@ script = do
   pure $ Script $ fromFoldable lines
 
 
+traverseExprs :: (Expr -> Expr) -> Script -> Script
+traverseExprs f (Script exprs) =
+  Script $ deeper <$> exprs
+  where
+    deeper :: Expr -> Expr
+    deeper (Chain name args tail) =
+      f $ Chain name (deeper <$> args) $ map (map deeper) <$> tail
+    deeper otherExpr = f otherExpr
+
+
+replacements :: Array (Pattern /\ Replacement)
+replacements = -- this helps to fix bracket parsing in `FnInline` without specifically parsing any contents of functions' code
+  [ Pattern "sin(time)" /\ Replacement "sin{[time]}"
+  ]
+
+
+prepare :: String -> String
+prepare str = foldr (uncurry String.replaceAll) str replacements
+
+
+fixback :: Script -> Script
+fixback = traverseExprs fixExpr
+  where
+    fixExpr (FnInline args contents) =
+      FnInline args $ foldr (uncurry String.replaceAll) contents $ swapPR <$> replacements
+    fixExpr otherExpr = otherExpr
+    swapPR (Pattern pattern /\ Replacement replacement) =
+      Pattern replacement /\ Replacement pattern
+
+
 instance Show Expr where
   show = case _ of
     Token str -> "%" <> str <> "%"
@@ -232,8 +278,8 @@ instance Show Expr where
           "." <> fnc <> " " <> String.joinWith " @ " (show <$> exprc)
         ) <$> cont
       )
-    FnInline str ->
-      ">> " <> str <> " <<"
+    FnInline args str ->
+      ">> " <> args <> " -> " <> str <> " <<"
     Comment str ->
       "// " <> str <> " //"
     EmptyLine ->
@@ -256,7 +302,7 @@ instance ToCode PS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> "(n " <> show num <> ")"
-    FnInline code -> "(fn $ \\_ -> {- " <> code <> " -})"
+    FnInline args code -> "(fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -})"
     Chain fn args next ->
       ( if Array.length args == 1 then
         String.joinWith "" ((\arg -> toCode pureScript arg) <$> args) <> " # " <> fn
@@ -267,12 +313,14 @@ instance ToCode PS Expr where
       )
       <>
       ( if Array.length next > 0 then
-          " # " <> String.joinWith "\n" ((\(ifn /\ iargs) -> " # " <> (toCode pureScript $ Chain ifn iargs [])) <$> next)
+          "(\n" <> String.joinWith "\n" ((\(ifn /\ iargs) -> " # " <> (toCode pureScript $ Chain ifn iargs [])) <$> next) <> "\n)"
         else
           ""
       )
     Comment text -> "-- " <> text
     EmptyLine -> "\n\n"
+    where
+      friendlyArgs args = if String.null args then "_"  else args
 
 
 instance ToCode JS Script where
@@ -285,7 +333,7 @@ instance ToCode JS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> show num
-    FnInline code -> "()=>" <> code
+    FnInline args code -> "(" <> args <> ")=>" <> code
     Chain fn args next ->
       ( if Array.length args /= 0 then
           fn <> "(" <> String.joinWith "," ((\arg -> toCode javaScript arg) <$> args) <> ")"

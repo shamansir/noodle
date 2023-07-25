@@ -19,8 +19,8 @@ import Noodle.Text.SketchParser as Parser
 main :: Effect Unit
 main = do
   fileContents <- readTextFile UTF8 "test/hydra-examples/examples-website/mahalia_3.js"
-  let parseResult = runParser fileContents Parser.script
-  case parseResult of
+  let parseResult = runParser (Parser.prepare fileContents) Parser.script
+  case Parser.fixback <$> parseResult of
     Right script -> do
         Console.log "ORIGINAL: ======\n"
         Console.log fileContents
