@@ -167,7 +167,9 @@ fnInline :: Parser String Expr
 fnInline = do
     _ <- char '('
     args <- many tokenChar
-    _ <- string ")=>"
+    _ <- char ')'
+    _ <- many space
+    _ <- string "=>"
     inner <- many1 $ satisfy $ \c -> c /= ',' && c /= ')'
     pure $ FnInline { args : fromCharArray args, code : f1ts inner }
 
@@ -284,7 +286,13 @@ instance ToCode PS Expr where
             Top -> ""
             Arg -> "    "
             Tail -> "    "
-      in ( if Array.length args == 1 && l == Top then
+      in
+      (case subj of
+        Just s -> s <> " # "
+        Nothing -> ""
+      )
+      <>
+      ( if Array.length args == 1 && l == Top then
         String.joinWith "" (wrapIfNeeded <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
           startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)
@@ -295,7 +303,10 @@ instance ToCode PS Expr where
       ( if Array.length tail > 0 then
           "\n" <> String.joinWith "\n" ((\op -> indent <> "# " <> (toCode pureScript $ subOpInChain op)) <$> tail) <> "\n"
         else
-          ""
+          (case subj of
+            Just s -> "\n"
+            Nothing -> ""
+          )
       )
     Comment text -> "-- " <> text
     EmptyLine -> "\n\n"
@@ -304,7 +315,11 @@ instance ToCode PS Expr where
         case arg of
           Num _ -> "(" <> toCode pureScript arg <> ")"
           FnInline _ -> "(" <> toCode pureScript arg <> ")"
-          Chain _ _ -> "(\n" <> "    " <> toCode pureScript arg <> ")"
+          Chain _ c ->
+            if Array.length c.tail > 0 then
+               "(\n" <> "    " <> toCode pureScript arg <> ")"
+            else
+              "(" <> toCode pureScript arg <> ")"
           _ -> toCode pureScript arg
       subOpInChain { op, args } = Chain Tail { subj : Nothing, startOp : op, args, tail : [] }
       friendlyArgs args = if String.null args then "_"  else args
@@ -333,7 +348,13 @@ instance ToCode JS Expr where
             Top -> ""
             Arg -> "\n"
             Tail -> ""
-      in ( if Array.length args /= 0 then
+      in
+      (case subj of
+        Just s -> s <> "."
+        Nothing -> ""
+      )
+      <>
+      ( if Array.length args /= 0 then
           firstIndent <> startOp <> "(" <> String.joinWith "," (toCode javaScript <$> args) <> ")"
         else
           firstIndent <> startOp <> "()"
