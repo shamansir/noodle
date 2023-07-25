@@ -12,7 +12,7 @@ import Data.String.CodeUnits (fromCharArray)
 import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.String.Pattern
-import Data.Tuple (uncurry)
+import Data.Tuple (curry, uncurry)
 import Data.Maybe (Maybe(..))
 
 import Parsing (Parser)
@@ -249,62 +249,112 @@ instance Show Script where
     String.joinWith "\n" $ show <$> exprs
 
 
+data ExprLevel
+  = Top
+  | Arg
+  | Tail Int
+
+
+derive instance Eq ExprLevel
+
+
+newtype LeveledExpr = LeveledExpr (ExprLevel /\ Expr)
+
+
+level :: ExprLevel -> Expr -> LeveledExpr
+level = curry LeveledExpr
+
+
+exprFrom :: LeveledExpr -> Expr
+exprFrom (LeveledExpr (_ /\ ex)) = ex
+
+
 instance ToCode PS Script where
   toCode :: Proxy PS -> Script -> String
-  toCode _ (Script exprs) = String.joinWith "\n" $ toCode pureScript <$> exprs
+  toCode _ (Script exprs) = String.joinWith "\n" $ toCode pureScript <$> level Top <$> exprs
 
 
-instance ToCode PS Expr where
-  toCode :: Proxy PS -> Expr -> String
+instance ToCode PS LeveledExpr where
+  toCode :: Proxy PS -> LeveledExpr -> String
   toCode _ = case _ of
-    Token str -> str
-    Num num -> "n " <> show num <> ""
-    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -}"
-    Chain { subj, startOp, args, tail } ->
-      ( if Array.length args == 1 then
-        String.joinWith "" ((\arg -> "(" <> toCode pureScript arg <> ")") <$> args) <> " # " <> startOp
+    LeveledExpr (_ /\ Token str) -> str
+    LeveledExpr (_ /\ Num num) -> "n " <> show num <> ""
+    LeveledExpr (_ /\ FnInline { args, code }) -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -}"
+    LeveledExpr (l /\ Chain { subj, startOp, args, tail }) ->
+      let
+        indent =
+          case l of
+            Top -> ""
+            Arg -> "    "
+            Tail _ -> "    "
+        tailLevel = case l of
+            Top -> Tail 0
+            Arg -> Tail 0
+            Tail n -> Tail $ n + 1
+      in ( if Array.length args == 1 && l == Top then
+        String.joinWith "" (wrapIfNeeded <$> level Arg <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
-          startOp <> " " <> String.joinWith " " ((\arg ->  "(" <> toCode pureScript arg <> ")") <$> args)
+          startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> level Arg <$> args)
       else
           startOp
       )
       <>
       ( if Array.length tail > 0 then
-          "\n" <> String.joinWith "\n" ((\op -> " # " <> (toCode pureScript $ subOpInChain op)) <$> tail) <> "\n"
+          "\n" <> String.joinWith "\n" ((\op -> indent <> "# " <> (toCode pureScript $ subOpInChain tailLevel op)) <$> tail) <> "\n"
         else
           ""
       )
-    Comment text -> "-- " <> text
-    EmptyLine -> "\n\n"
+    LeveledExpr (_ /\ Comment text) -> "-- " <> text
+    LeveledExpr (_ /\ EmptyLine) -> "\n\n"
     where
-      subOpInChain { op, args } = Chain { subj : Nothing, startOp : op, args, tail : [] }
+      wrapIfNeeded arg =
+        case exprFrom arg of
+          Num _ -> "(" <> toCode pureScript arg <> ")"
+          FnInline _ -> "(" <> toCode pureScript arg <> ")"
+          Chain _ -> "(\n" <> "    " <> toCode pureScript arg <> ")"
+          _ -> toCode pureScript arg
+      subOpInChain tl { op, args } = level tl $ Chain { subj : Nothing, startOp : op, args, tail : [] }
       friendlyArgs args = if String.null args then "_"  else args
 
 
 instance ToCode JS Script where
   toCode :: Proxy JS -> Script -> String
-  toCode _ (Script exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
+  toCode _ (Script exprs) = String.joinWith "\n" $ toCode javaScript <$> level Top <$> exprs
 
 
-instance ToCode JS Expr where
-  toCode :: Proxy JS -> Expr -> String
+instance ToCode JS LeveledExpr where
+  toCode :: Proxy JS -> LeveledExpr -> String
   toCode _ = case _ of
-    Token str -> str
-    Num num -> show num
-    FnInline { args, code } -> "(" <> args <> ")=>" <> code
-    Chain  { subj, startOp, args, tail } ->
-      ( if Array.length args /= 0 then
-          startOp <> "(" <> String.joinWith "," (toCode javaScript <$> args) <> ")"
+    LeveledExpr (_ /\ Token str) -> str
+    LeveledExpr (_ /\ Num num) -> show num
+    LeveledExpr (_ /\ FnInline { args, code }) -> "(" <> args <> ")=>" <> code
+    LeveledExpr (l /\ Chain { subj, startOp, args, tail }) ->
+      let
+        indent =
+          case l of
+            Top -> ""
+            Arg -> "    "
+            Tail _ -> "    "
+        tailLevel = case l of
+            Top -> Tail 0
+            Arg -> Tail 0
+            Tail n -> Tail $ n + 1
+      in ( if Array.length args /= 0 then
+          startOp <> "(" <> String.joinWith "," (toCode javaScript <$> level Arg <$> args) <> ")"
         else
           startOp <> "()"
       )
       <>
       ( if Array.length tail > 0 then
-          "\n" <> String.joinWith "\n" ((\op -> "." <> (toCode javaScript $ subOpInChain op)) <$> tail)
+          "\n" <> String.joinWith "\n" ((\op -> indent <> "." <> (toCode javaScript $ subOpInChain tailLevel op)) <$> tail)
         else
           ""
       )
-    Comment text -> "// " <> text
-    EmptyLine -> "\n\n"
+      <> (case l of
+        Top -> ";\n"
+        _ -> ""
+      )
+    LeveledExpr (_ /\ Comment text) -> "// " <> text
+    LeveledExpr (_ /\ EmptyLine) -> "\n\n"
     where
-      subOpInChain { op, args } = Chain { subj : Nothing, startOp : op, args, tail : [] }
+      subOpInChain tl { op, args } = level tl $ Chain { subj : Nothing, startOp : op, args, tail : [] }
