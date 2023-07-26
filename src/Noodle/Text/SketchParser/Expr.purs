@@ -14,7 +14,7 @@ import Data.Either (Either(..), either)
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, satisfy)
 import Parsing.String.Basic (number)
-import Parsing.Combinators (between, many1, many1Till, option, optionMaybe, optional, sepBy, try)
+import Parsing.Combinators (choice, between, many1, many1Till, option, optionMaybe, optional, sepBy, try)
 
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
@@ -25,7 +25,7 @@ import Data.String as String
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 import Noodle.Text.SketchParser.Utils
-import Noodle.Text.SketchParser.IExpr (IExpr, parseIexpr)
+import Noodle.Text.SketchParser.IExpr (IExpr, inlineExprParser)
 
 
 data Level
@@ -48,6 +48,7 @@ data Expr
         , tail :: Array { op :: String, args :: Array Expr }
         }
     | FnInline { args :: String, code :: Either String IExpr }
+    | Inline IExpr
     | Comment String
     | EmptyLine
 
@@ -133,15 +134,17 @@ fnInline = do
     _ <- spaces
     _ <- string "=>"
     _ <- spaces
-    -- code <- choice
-    --     [ Right <$> parseIexpr
-    --     , Left <$> f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
-    --     ]
-    codeStr <- f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
+    code <- choice
+        [ Right <$> inlineExprParser
+        , Left <$> f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
+        ]
+    {- codeStr <- f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
     let
-      code' = either (const $ Left codeStr) Right $ runParser codeStr parseIexpr
+      code' = either (const $ Left codeStr) Right $ runParser codeStr inlineExprParser
+    -}
     _ <- spaces
-    pure $ FnInline { args : fromCharArray args, code : code' }
+    -- pure $ FnInline { args : fromCharArray args, code : code' }
+    pure $ FnInline { args : fromCharArray args, code : code }
 
 
 emptyLine :: Parser String Expr
@@ -160,12 +163,21 @@ tokenExpr = do
   pure $ Token $ f1ts t
 
 
+inlineExpr :: Parser String Expr
+inlineExpr = do
+  _ <- spaces
+  ie <- inlineExprParser
+  _ <- spaces
+  pure $ Inline ie
+
+
 expr :: Level -> Parser String Expr
 expr level =
   try comment
   <|> try fnInline
   <|> try numberx
   <|> try (defer \_ -> chain level)
+  <|> try inlineExpr
   <|> try tokenExpr
   <|> try emptyLine
 
@@ -188,6 +200,8 @@ instance Show Expr where
         ) <> " ]"
     FnInline { args, code } ->
       "Fn [ " <> args <> " ] [ " <> either String.trim show code <> " ]"
+    Inline iexpr ->
+      "IExpr [ " <> show iexpr <> " ]"
     Comment str ->
       "Comment [" <> str <> " ]"
     EmptyLine ->
@@ -200,6 +214,7 @@ instance ToCode PS Expr where
     Token str -> str
     Num num -> "n " <> show num <> ""
     FnInline fn -> formatInlineFn fn
+    Inline iexpr -> toCode pureScript iexpr
     Chain l { subj, startOp, args, tail } ->
       let
         indent =
@@ -238,6 +253,7 @@ instance ToCode PS Expr where
         case arg of
           Num _ -> "(" <> toCode pureScript arg <> ")"
           FnInline _ -> "(" <> toCode pureScript arg <> ")"
+          Inline _ -> "(" <> toCode pureScript arg <> ")"
           Chain _ c ->
             if Array.length c.tail > 0 then
                "(\n" <> "    " <> toCode pureScript arg <> ")"
@@ -258,6 +274,7 @@ instance ToCode JS Expr where
     Token str -> str
     Num num -> show num
     FnInline fn -> formatInlineFn fn
+    Inline iexpr -> toCode javaScript iexpr
     Chain l { subj, startOp, args, tail } ->
       let
         tailIndent =

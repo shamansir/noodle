@@ -114,8 +114,8 @@ bracketsIExpr = do
   _ <- spaces
   pure $ Brackets iexpr
 
-parseIexpr :: Parser String IExpr
-parseIexpr =
+operand :: Parser String IExpr
+operand =
   try numberIExpr
   <|> try piIExpr
   <|> try timeIExpr
@@ -132,7 +132,7 @@ inlineExprParser =
                   , [ Infix (string "*" $> Mul) AssocRight ]
                   , [ Infix (string "-" $> Sub) AssocRight ]
                   , [ Infix (string "+" $> Add) AssocRight ]
-                  ] $ defer (\_ -> parseIexpr)
+                  ] $ defer (\_ -> operand)
 
 instance Show IExpr where
   show (INum n) = show n
