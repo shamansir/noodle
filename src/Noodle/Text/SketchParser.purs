@@ -15,12 +15,13 @@ import Data.Foldable (foldr)
 import Data.String.Pattern
 import Data.Tuple (curry, uncurry)
 import Data.Maybe (Maybe(..), isJust, fromMaybe)
+import Data.Either (Either(..), either)
 import Data.Int as Int
 
-import Parsing (Parser)
+import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
-import Parsing.Combinators (optional, option, optionMaybe, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+import Parsing.Combinators (choice, optional, option, optionMaybe, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
 import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 import Control.Alt ((<|>))
@@ -57,6 +58,18 @@ data IExpr
   | Height
 
 
+derive instance Eq IExpr
+
+
+betweenSpaces :: forall a. Parser String a -> Parser String a
+betweenSpaces parser = do
+    -- between (many space) (many space)
+    _ <- spaces
+    p <- parser
+    _ <- spaces
+    pure p
+
+
 numberIExpr :: Parser String IExpr
 numberIExpr = do
   _ <- spaces
@@ -68,9 +81,19 @@ numberIExpr = do
 piIExpr :: Parser String IExpr
 piIExpr = do
   _ <- spaces
-  _ <- string "Math.pi"
+  _ <- string "Math.PI"
   _ <- spaces
   pure $ Pi
+
+
+mouseXIExpr :: Parser String IExpr
+mouseXIExpr = do
+  betweenSpaces $ string "mouse.x" *> pure MouseX
+
+
+mouseYIExpr :: Parser String IExpr
+mouseYIExpr = do
+  betweenSpaces $ string "mouse.y" *> pure MouseY
 
 
 fftIExpr :: Parser String IExpr
@@ -125,6 +148,8 @@ parseIexpr =
   <|> try piIExpr
   <|> try timeIExpr
   <|> try fftIExpr
+  <|> try mouseXIExpr
+  <|> try mouseYIExpr
   <|> try (defer \_ -> mathIExpr)
   <|> try (defer \_ -> bracketsIExpr)
 
@@ -136,6 +161,22 @@ inlineExprParser =
                   , [ Infix (string "-" $> Sub) AssocRight ]
                   , [ Infix (string "+" $> Add) AssocRight ]
                   ] $ defer (\_ -> parseIexpr)
+
+instance Show IExpr where
+  show (INum n) = show n
+  show Pi = "Pi"
+  show Time = "Time"
+  show (Div a b) = show a <> "/" <> show b
+  show (Mul a b) = show a <> "*" <> show b
+  show (Add a b) = show a <> "+" <> show b
+  show (Sub a b) = show a <> "-" <> show b
+  show (Fft n) = "a.fft[" <> show n <> "]"
+  show (Math method expr) = "Math." <> method <> "(" <> show expr <> ")"
+  show (Brackets expr) = "(" <> show expr <> ")"
+  show MouseX = "mouse.x"
+  show MouseY = "mouse.y"
+  show Width = "width"
+  show Height = "height"
 
 
 data Level
@@ -157,7 +198,7 @@ data Expr
         , args :: Array Expr
         , tail :: Array { op :: String, args :: Array Expr }
         }
-    | FnInline { args :: String, code :: String }
+    | FnInline { args :: String, code :: Either String IExpr }
     | Comment String
     | EmptyLine
 
@@ -286,9 +327,15 @@ fnInline = do
     _ <- spaces
     _ <- string "=>"
     _ <- spaces
-    inner <- many1 $ satisfy $ \c -> c /= ',' && c /= ')'
+    -- code <- choice
+    --     [ Right <$> parseIexpr
+    --     , Left <$> f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
+    --     ]
+    codeStr <- f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
+    let
+      code' = either (const $ Left codeStr) Right $ runParser codeStr parseIexpr
     _ <- spaces
-    pure $ FnInline { args : fromCharArray args, code : f1ts inner }
+    pure $ FnInline { args : fromCharArray args, code : code' }
 
 
 emptyLine :: Parser String Expr
@@ -348,7 +395,13 @@ fixback :: Script -> Script
 fixback = traverseExprs fixExpr
   where
     fixExpr (FnInline { args, code }) =
-      FnInline { args, code : foldr (uncurry String.replaceAll) code $ swapPR <$> replacements }
+      FnInline
+        { args
+        , code :
+          case code of
+            Left unparsed -> Left $ foldr (uncurry String.replaceAll) unparsed $ swapPR <$> replacements
+            Right parsed -> code
+        }
     fixExpr cexpr@(Chain Top { subj, args, startOp, tail }) =
       if startOp == "setBins" && isJust subj
       then
@@ -390,7 +443,7 @@ instance Show Expr where
           ) <$> tail
         ) <> " ]"
     FnInline { args, code } ->
-      "Fn [ " <> args <> " ] [ " <> String.trim code <> " ]"
+      "Fn [ " <> args <> " ] [ " <> either String.trim show code <> " ]"
     Comment str ->
       "Comment [" <> str <> " ]"
     EmptyLine ->
@@ -411,12 +464,17 @@ instance ToCode PS Script where
     (String.joinWith "\n    " $ Array.concat $ String.lines <$> toCode pureScript <$> exprs)
 
 
+instance ToCode PS IExpr where
+  toCode :: Proxy PS -> IExpr -> String
+  toCode = const show -- FIXME
+
+
 instance ToCode PS Expr where
   toCode :: Proxy PS -> Expr -> String
   toCode _ = case _ of
     Token str -> str
     Num num -> "n " <> show num <> ""
-    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> String.trim code <> " -}"
+    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> either String.trim (toCode pureScript) code <> " -}"
     Chain l { subj, startOp, args, tail } ->
       let
         indent =
@@ -472,12 +530,17 @@ instance ToCode JS Script where
   toCode _ (Script _ exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
 
 
+instance ToCode JS IExpr where
+  toCode :: Proxy JS -> IExpr -> String
+  toCode = const show -- FIXME
+
+
 instance ToCode JS Expr where
   toCode :: Proxy JS -> Expr -> String
   toCode _ = case _ of
     Token str -> str
     Num num -> show num
-    FnInline { args, code } -> "(" <> args <> ")=>" <> String.trim code
+    FnInline { args, code } -> "(" <> args <> ")=>" <> either String.trim (toCode javaScript) code
     Chain l { subj, startOp, args, tail } ->
       let
         tailIndent =
