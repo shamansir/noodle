@@ -38,6 +38,7 @@ type Options =
     , sourceList :: String
     , outputFormat :: String
     , targetPath :: String
+    , customString :: String
     }
 
 
@@ -59,13 +60,16 @@ run opts = do
         , "\n----------------\n"
         , "Source file: " <> if not $ String.null opts.sourceList then "<list>" else opts.sourceFile
         , "Source list: " <> if String.null opts.sourceList then "<none>" else opts.sourceList
-        , "Output format: " <> opts.outputFormat
-        , "Target path: " <> opts.targetPath
+        , "Output format: " <> if String.null opts.outputFormat then "<none>" else opts.outputFormat
+        , "Target path: " <> if String.null opts.targetPath then "<none>" else opts.targetPath
+        , "Custom string: " <> if String.null opts.customString then "<none>" else opts.customString
         ]
     if not $ String.null opts.sourceList then do
       listContents <- readTextFile UTF8 opts.sourceList
       let fileNames = Array.filter (not <<< String.startsWith "#") $ String.lines listContents
       traverse_ parseAndWrite fileNames
+    else if not $ String.null opts.customString then
+      logResult opts.customString (const "???") $ runParser (Parser.prepare opts.customString) $ Parser.script "CustomString"
     else do
       parseAndWrite opts.sourceFile
     where
@@ -85,6 +89,8 @@ run opts = do
                  _-> filePath
           parseResult =
             runParser (Parser.prepare fileContents) $ Parser.script $ moduleNameFromPath filePath
+        logResult fileContents targetPath parseResult
+      logResult fileContents targetPath parseResult =
         case Parser.fixback <$> parseResult of
           Right script ->
             case String.toLower opts.outputFormat of
@@ -152,11 +158,20 @@ options = ado
     , OA.showDefault
     ]
 
+  customString <- OA.strOption $ fold
+    [ OA.long "from"
+    , OA.short 'f'
+    , OA.value ""
+    , OA.help "Custom string to parse instead of file"
+    , OA.showDefault
+    ]
+
   in
     { sourceFile
     , sourceList
     , outputFormat
     , targetPath
+    , customString
     }
 
 

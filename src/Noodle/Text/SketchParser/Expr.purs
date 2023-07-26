@@ -40,6 +40,7 @@ derive instance Eq Level
 data Expr
     = Token String
     | Num Number
+    | Assign String Expr
     | Chain
         Level
         { subj :: Maybe String
@@ -54,6 +55,19 @@ data Expr
 
 
 derive instance Eq Expr
+
+
+assignment :: Parser String Expr
+assignment = do
+    _ <- spaces
+    t <- token
+    _ <- spaces
+    _ <- char '='
+    _ <- spaces
+    iexpr <- expr Top
+    _ <- spaces
+    pure $ Assign (f1ts t) iexpr
+
 
 
 comment :: Parser String Expr
@@ -138,13 +152,12 @@ fnInline = do
         [ Right <$> inlineExprParser
         , Left <$> f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
         ]
-    {- codeStr <- f1ts <$> (many1 $ satisfy $ \c -> c /= ',' && c /= ')')
-    let
-      code' = either (const $ Left codeStr) Right $ runParser codeStr inlineExprParser
-    -}
+    -- let
+    --     code' = either ?wh ?wh code
+    --   code' = either (const $ Left codeStr) Right $ runParser codeStr inlineExprParser
     _ <- spaces
     -- pure $ FnInline { args : fromCharArray args, code : code' }
-    pure $ FnInline { args : fromCharArray args, code : code }
+    pure $ FnInline { args : fromCharArray args, code }
 
 
 emptyLine :: Parser String Expr
@@ -176,6 +189,7 @@ expr level =
   try comment
   <|> try fnInline
   <|> try numberx
+  <|> try (defer \_ -> assignment)
   <|> try (defer \_ -> chain level)
   <|> try inlineExpr
   <|> try tokenExpr
@@ -186,6 +200,7 @@ instance Show Expr where
   show = case _ of
     Token str -> "Token [" <> str <> "]"
     Num num -> "Num [" <> show num <> "]"
+    Assign name expr -> "Assign " <>  show name <> " [" <> show expr <> "]"
     Chain _ { subj, startOp, args, tail } ->
       "Chain "
         <> case subj of
@@ -215,6 +230,7 @@ instance ToCode PS Expr where
     Num num -> "n " <> show num <> ""
     FnInline fn -> formatInlineFn fn
     Inline iexpr -> toCode pureScript iexpr
+    Assign name expr -> "let " <> name <> " = " <> toCode pureScript expr
     Chain l { subj, startOp, args, tail } ->
       let
         indent =
@@ -274,6 +290,7 @@ instance ToCode JS Expr where
     Token str -> str
     Num num -> show num
     FnInline fn -> formatInlineFn fn
+    Assign name expr -> name <> " = " <> toCode pureScript expr
     Inline iexpr -> toCode javaScript iexpr
     Chain l { subj, startOp, args, tail } ->
       let

@@ -55,7 +55,8 @@ replacements = -- this helps to fix bracket parsing in `FnInline` without specif
 
 
 prepare :: String -> String
-prepare str = foldr (uncurry String.replaceAll) str replacements
+-- prepare str = foldr (uncurry String.replaceAll) str replacements
+prepare = identity
 
 
 fixback :: Script -> Script
