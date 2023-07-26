@@ -14,7 +14,7 @@ import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.String.Pattern
 import Data.Tuple (curry, uncurry)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 
 import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
@@ -292,7 +292,7 @@ instance ToCode PS Expr where
         Nothing -> ""
       )
       <>
-      ( if Array.length args == 1 && l == Top then
+      ( if Array.length args == 1 && l == Top && not (isJust subj) then
         String.joinWith "" (wrapIfNeeded <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
           startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)

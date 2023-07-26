@@ -2,15 +2,17 @@ module Noodle.Text.ParseSketch where
 
 import Prelude
 
-import Type.Proxy (Proxy(..))
+import Type.Proxy (Proxy)
 
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Array as Array
 import Data.Traversable (traverse_)
 import Data.Foldable (fold)
-import Data.String as String
-import Data.String.Utils as String
-import Data.String.CodeUnits as String
+import Data.String (null, toLower) as String
+import Data.String.Utils (endsWith, lines, startsWith, charAt) as String
+import Data.String.Extra (pascalCase) as String
+import Data.String.CodeUnits  (dropRight) as String
 
 import Effect (Effect)
 import Effect.Console as Console
@@ -19,7 +21,7 @@ import Parsing (runParser)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
-import Node.Path (basename, extname)
+import Node.Path (FilePath, basenameWithoutExt)
 
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, pureScript, toCode, javaScript)
 import Noodle.Text.SketchParser as Parser
@@ -76,7 +78,7 @@ run opts = do
           targetPath =
             if String.endsWith ".js" filePath then String.dropRight 3 filePath <> ".purs" else filePath
           parseResult =
-            runParser (Parser.prepare fileContents) $ Parser.script "MyModule"
+            runParser (Parser.prepare fileContents) $ Parser.script $ moduleNameFromPath filePath
         case Parser.fixback <$> parseResult of
           Right script ->
             case String.toLower opts.outputFormat of
@@ -146,3 +148,22 @@ options = ado
     , outputFormat
     , targetPath
     }
+
+
+moduleNameFromPath :: FilePath -> String
+moduleNameFromPath =
+  ensureStartsWithLetter <<< String.pascalCase <<< flip basenameWithoutExt "js"
+  where
+    ensureStartsWithLetter str =
+      case String.charAt 0 str of
+        Just "0" -> addM str
+        Just "1" -> addM str
+        Just "2" -> addM str
+        Just "3" -> addM str
+        Just "5" -> addM str
+        Just "6" -> addM str
+        Just "7" -> addM str
+        Just "8" -> addM str
+        Just "9" -> addM str
+        _ -> str
+    addM = (<>) "M"
