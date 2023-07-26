@@ -12,7 +12,7 @@ import Data.Foldable (fold)
 import Data.String (null, toLower) as String
 import Data.String.Utils (endsWith, lines, startsWith, charAt) as String
 import Data.String.Extra (pascalCase) as String
-import Data.String.CodeUnits  (dropRight) as String
+import Data.String.CodeUnits (dropRight) as String
 
 import Effect (Effect)
 import Effect.Console as Console
@@ -21,7 +21,7 @@ import Parsing (runParser)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
-import Node.Path (FilePath, basenameWithoutExt)
+import Node.Path (FilePath, extname, basenameWithoutExt)
 
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, pureScript, toCode, javaScript)
 import Noodle.Text.SketchParser as Parser
@@ -75,18 +75,28 @@ run opts = do
       parseAndWrite filePath = do
         fileContents <- readTextFile UTF8 filePath
         let
-          targetPath =
-            if String.endsWith ".js" filePath then String.dropRight 3 filePath <> ".purs" else filePath
+          targetPath format =
+            let currentExt = extname filePath
+            in case format of
+                 "purs" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".purs" else filePath <> ".purs"
+                 "js" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".gen.js" else filePath
+                 "ndf" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".ndf" else filePath <> ".ndf"
+                 "expr" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".expr" else filePath <> ".expr"
+                 _-> filePath
           parseResult =
             runParser (Parser.prepare fileContents) $ Parser.script $ moduleNameFromPath filePath
         case Parser.fixback <$> parseResult of
           Right script ->
             case String.toLower opts.outputFormat of
-              "purs" -> writeFile pureScript script targetPath
-              "js" -> writeFile javaScript script targetPath
+              "purs" -> writeFile pureScript script $ targetPath "purs"
+              "js" -> writeFile javaScript script $ targetPath "js"
               -- TODO: NDF
               _ ->
                 do
+                    Console.log $ targetPath "purs"
+                    Console.log $ targetPath "js"
+                    Console.log $ targetPath "ndf"
+                    Console.log $ targetPath "expr"
                     Console.log "ORIGINAL: ======\n"
                     Console.log fileContents
                     Console.log "EXPR: ======\n"

@@ -14,7 +14,8 @@ import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.String.Pattern
 import Data.Tuple (curry, uncurry)
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), isJust, fromMaybe)
+import Data.Int as Int
 
 import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
@@ -120,14 +121,9 @@ comment = do
 numberx :: Parser String Expr
 numberx = do
     _ <- spaces
-    num <- number
+    n <- number
     _ <- spaces
-    pure $ Num num
-  {- do
-    idigits <- many digit
-    _ <- optional $ char '.'
-    fldigits <- many1 digit
-    pure $ Num (fromFoldable idigits) (fromFoldable fldigits) -}
+    pure $ Num n
 
 
 beforeArgs :: Parser String Unit
@@ -254,6 +250,25 @@ fixback = traverseExprs fixExpr
   where
     fixExpr (FnInline { args, code }) =
       FnInline { args, code : foldr (uncurry String.replaceAll) code $ swapPR <$> replacements }
+    fixExpr cexpr@(Chain Top { subj, args, startOp, tail }) =
+      if startOp == "setBins" && isJust subj
+      then
+        let
+          nextArgs =
+            Array.modifyAt 0
+              (\texpr -> case texpr of
+                  Num n -> Token $ show $ Int.floor n
+                  _ -> texpr
+              )
+              args
+            # fromMaybe args
+        in
+          Chain
+            Top
+            { subj, startOp, tail
+            , args : nextArgs
+            }
+      else cexpr
     fixExpr otherExpr = otherExpr
     swapPR (Pattern pattern /\ Replacement replacement) =
       Pattern replacement /\ Replacement pattern
@@ -276,7 +291,7 @@ instance Show Expr where
           ) <$> tail
         ) <> " ]"
     FnInline { args, code } ->
-      "Fn [ " <> args <> " ] [ " <> code <> " ]"
+      "Fn [ " <> args <> " ] [ " <> String.trim code <> " ]"
     Comment str ->
       "Comment [" <> str <> " ]"
     EmptyLine ->
@@ -316,7 +331,7 @@ instance ToCode PS Expr where
         Nothing -> ""
       )
       <>
-      ( if Array.length args == 1 && l == Top && not (isJust subj) && not (isNumber 0 args) then
+      ( if Array.length args == 1 && l == Top && not (isJust subj) && not (isNumber 0 args) && (Array.length tail == 0) then
         String.joinWith "" (wrapIfNeeded <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
           startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)
@@ -363,7 +378,7 @@ instance ToCode JS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> show num
-    FnInline { args, code } -> "(" <> args <> ")=>" <> code
+    FnInline { args, code } -> "(" <> args <> ")=>" <> String.trim code
     Chain l { subj, startOp, args, tail } ->
       let
         tailIndent =
