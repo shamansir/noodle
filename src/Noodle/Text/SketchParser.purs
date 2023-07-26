@@ -21,6 +21,7 @@ import Parsing (Parser)
 import Parsing.String (char, string, anyChar, anyTill, satisfy)
 import Parsing.String.Basic (alphaNum, digit, space, number, intDecimal)
 import Parsing.Combinators (optional, option, optionMaybe, between, try, many1Till, sepBy, sepEndBy, sepEndBy1, many1, manyTill_)
+import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
@@ -37,6 +38,104 @@ import Data.String.NonEmpty.Internal as StringX
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+
+
+data IExpr
+  = INum Number
+  | Pi
+  | Time
+  | Div IExpr IExpr
+  | Mul IExpr IExpr
+  | Sub IExpr IExpr
+  | Add IExpr IExpr
+  | Fft Int
+  | Math String (Maybe IExpr)
+  | Brackets IExpr
+  | MouseX
+  | MouseY
+  | Width
+  | Height
+
+
+numberIExpr :: Parser String IExpr
+numberIExpr = do
+  _ <- spaces
+  n <- number
+  _ <- spaces
+  pure $ INum n
+
+
+piIExpr :: Parser String IExpr
+piIExpr = do
+  _ <- spaces
+  _ <- string "Math.pi"
+  _ <- spaces
+  pure $ Pi
+
+
+fftIExpr :: Parser String IExpr
+fftIExpr = do
+  _ <- spaces
+  _ <- string "a.fft["
+  _ <- spaces
+  i <- intDecimal
+  _ <- spaces
+  _ <- string "]"
+  _ <- spaces
+  pure $ Fft i
+
+
+mathIExpr :: Parser String IExpr
+mathIExpr = do
+  _ <- spaces
+  _ <- string "Math."
+  method <- many1 tokenChar
+  _ <- spaces
+  _ <- string "("
+  _ <- spaces
+  mbIExpr <- optionMaybe inlineExprParser
+  _ <- spaces
+  _ <- string ")"
+  _ <- spaces
+  pure $ Math (f1ts method) mbIExpr
+
+
+timeIExpr :: Parser String IExpr
+timeIExpr = do
+  _ <- spaces
+  _ <- string "time"
+  _ <- spaces
+  pure Time
+
+
+bracketsIExpr :: Parser String IExpr
+bracketsIExpr = do
+  _ <- spaces
+  _ <- string "("
+  _ <- spaces
+  iexpr <- inlineExprParser
+  _ <- spaces
+  _ <- string ")"
+  _ <- spaces
+  pure $ Brackets iexpr
+
+parseIexpr :: Parser String IExpr
+parseIexpr =
+  try numberIExpr
+  <|> try piIExpr
+  <|> try timeIExpr
+  <|> try fftIExpr
+  <|> try (defer \_ -> mathIExpr)
+  <|> try (defer \_ -> bracketsIExpr)
+
+
+inlineExprParser :: Parser String IExpr
+inlineExprParser =
+  buildExprParser [ [ Infix (string "/" $> Div) AssocRight ]
+                  , [ Infix (string "*" $> Mul) AssocRight ]
+                  , [ Infix (string "-" $> Sub) AssocRight ]
+                  , [ Infix (string "+" $> Add) AssocRight ]
+                  ] $ defer (\_ -> parseIexpr)
 
 
 data Level
