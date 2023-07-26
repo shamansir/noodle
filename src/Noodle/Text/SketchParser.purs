@@ -92,18 +92,36 @@ eol :: Parser String Unit
 eol = char '\n' *> pure unit
 
 
+spaces :: Parser String (Array Char)
+spaces = many space
+
+
+breaksAndSpaces :: Parser String (Array Char)
+breaksAndSpaces = many spaceOrEol
+
+
+token :: Parser String (NonEmptyList Char)
+token = many1 tokenChar
+
+
+maybeToken :: Parser String (Array Char)
+maybeToken = many tokenChar
+
+
 comment :: Parser String Expr
 comment = do
-    _ <- many space
+    _ <- spaces
     _ <- string "//"
-    _ <- many space
+    _ <- spaces
     commentText <- many1Till anyChar eol
     pure $ Comment $ f1ts commentText
 
 
 numberx :: Parser String Expr
 numberx = do
+    _ <- spaces
     num <- number
+    _ <- spaces
     pure $ Num num
   {- do
     idigits <- many digit
@@ -114,44 +132,44 @@ numberx = do
 
 beforeArgs :: Parser String Unit
 beforeArgs = do
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   _ <- char '('
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   pure unit
 
 
 afterArgs :: Parser String Unit
 afterArgs = do
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   _ <- char ')'
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   pure unit
 
 
 separator :: Parser String Unit
 separator = do
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   _ <- char ','
-  _ <- many spaceOrEol
+  _ <- breaksAndSpaces
   pure unit
 
 
 chain :: Level -> Parser String Expr
 chain level = do
-    _ <- many spaceOrEol
+    _ <- breaksAndSpaces
     mbSubj <- optionMaybe $ try $ do
-        subj <- many1 tokenChar
-        _ <- many space
+        subj <- token
+        _ <- spaces
         _ <- char '.'
         pure subj
-    startOp <- many1 tokenChar
+    startOp <- token
     args <- between beforeArgs afterArgs $ sepBy (expr Arg) separator
     tail <- option [] $ many $ do
-        _ <- many spaceOrEol
+        _ <- breaksAndSpaces
         _ <- char '.'
-        op <- many1 tokenChar
+        op <- token
         innerExprs <- between beforeArgs afterArgs $ sepBy (expr Tail) separator
-        _ <- many spaceOrEol
+        _ <- breaksAndSpaces
         pure $ { op : f1ts op, args : fromFoldable innerExprs }
     _ <- optional $ try $ char ';'
     pure $ Chain
@@ -166,35 +184,58 @@ chain level = do
 fnInline :: Parser String Expr
 fnInline = do
     _ <- char '('
-    args <- many tokenChar
+    _ <- spaces
+    args <- maybeToken
+    _ <- spaces
     _ <- char ')'
-    _ <- many space
+    _ <- spaces
     _ <- string "=>"
+    _ <- spaces
     inner <- many1 $ satisfy $ \c -> c /= ',' && c /= ')'
+    _ <- spaces
     pure $ FnInline { args : fromCharArray args, code : f1ts inner }
 
 
 emptyLine :: Parser String Expr
 emptyLine = do
-    _ <- many space
+    _ <- spaces
     eol
     _ <- optional eol
     pure $ EmptyLine
 
 
-token :: Parser String Expr
-token = do
-  token <- many1 tokenChar
-  pure $ Token $ f1ts token
+tokenExpr :: Parser String Expr
+tokenExpr = do
+  _ <- spaces
+  t <- token
+  _ <- spaces
+  pure $ Token $ f1ts t
 
 
+-- FIXME: `osc( 60, 0.1, 0 )` fails
+--         but `osc( 60, 0.1, 0)` doesn't fail
+
+
+-- FIXME:
+{-
+modulate(
+  src(s0) , 2
+)
+
+fails and:
+
+modulate(
+  src(s0) , 2)
+
+doesn't fail
+-}
 expr :: Level -> Parser String Expr
 expr level =
   try comment
   <|> try fnInline
   <|> try numberx
   <|> try (defer \_ -> chain level)
-  <|> try token
+  <|> try tokenExpr
   <|> try emptyLine
 
 
@@ -261,7 +302,7 @@ instance Show Expr where
 
 instance Show Script where
   show :: Script -> String
-  show (Script moduleName exprs) =
+  show (Script _ exprs) =
     String.joinWith "\n" $ show <$> exprs
 
 
