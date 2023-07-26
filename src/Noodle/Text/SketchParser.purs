@@ -212,23 +212,6 @@ tokenExpr = do
   pure $ Token $ f1ts t
 
 
--- FIXME: `osc( 60, 0.1, 0 )` fails
---         but `osc( 60, 0.1, 0)` doesn't fail
-
-
--- FIXME:
-{-
-modulate(
-  src(s0) , 2
-)
-
-fails and:
-
-modulate(
-  src(s0) , 2)
-
-doesn't fail
--}
 expr :: Level -> Parser String Expr
 expr level =
   try comment
@@ -319,7 +302,7 @@ instance ToCode PS Expr where
   toCode _ = case _ of
     Token str -> str
     Num num -> "n " <> show num <> ""
-    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> code <> " -}"
+    FnInline { args, code } -> "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> String.trim code <> " -}"
     Chain l { subj, startOp, args, tail } ->
       let
         indent =
@@ -333,7 +316,7 @@ instance ToCode PS Expr where
         Nothing -> ""
       )
       <>
-      ( if Array.length args == 1 && l == Top && not (isJust subj) then
+      ( if Array.length args == 1 && l == Top && not (isJust subj) && not (isNumber 0 args) then
         String.joinWith "" (wrapIfNeeded <$> args) <> " # " <> startOp
       else if Array.length args /= 0 then
           startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)
@@ -362,6 +345,10 @@ instance ToCode PS Expr where
             else
               "(" <> toCode pureScript arg <> ")"
           _ -> toCode pureScript arg
+      isNumber n args =
+        case Array.index args n of
+          Just (Num _) -> true
+          _ -> false
       subOpInChain { op, args } = Chain Tail { subj : Nothing, startOp : op, args, tail : [] }
       friendlyArgs args = if String.null args then "_"  else args
 

@@ -1,6 +1,6 @@
-# ./test/hydra-examples/examples-website/mahalia_3.js
+./test/hydra-examples/examples-website/mahalia_3.js
 ./test/hydra-examples/examples/01-osc.js
-# ./test/hydra-examples/examples/02-base-layers.js
+./test/hydra-examples/examples/02-base-layers.js
 # ./test/hydra-examples/examples/03-shape-scale.js
 # ./test/hydra-examples/examples/04-blending-webcam.js
 # ./test/hydra-examples/examples/05-video-screen.js
