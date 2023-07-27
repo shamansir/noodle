@@ -5,6 +5,7 @@ import Prelude (show) as Core
 
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
+import Toolkit.Hydra2.Lang.Fn (toFn)
 
 import Data.Array ((:))
 import Data.String as String
@@ -31,14 +32,6 @@ class ToCode (target :: Target) a where
 
 class ToTaggedCode (target :: Target) a where
     toTaggedCode :: Proxy target -> a -> T.Tag
-
-
-class ToFn arg a where
-    toFn :: a -> String /\ Array arg
-
-
--- fn :: String -> Array (String /\ Value) -> String
--- fn name vals = name <> "(" <> (String.joinWith "," $ toCode pureScript <$> Tuple.snd <$> vals) <> ")"
 
 
 pureScript :: _ PS
@@ -81,84 +74,6 @@ fneJs :: String -> String
 fneJs name = name <> "()"
 
 
-{- TOFN GENERIC -}
-
-
-instance ToFn Value ColorOp where
-    toFn :: ColorOp -> String /\ Array Value
-    toFn = case _ of
-        R { scale, offset } -> "r" /\ [ scale, offset ]
-        G { scale, offset } -> "g" /\ [ scale, offset ]
-        B { scale, offset } -> "b" /\ [ scale, offset ]
-        A { scale, offset } -> "a" /\ [ scale, offset ]
-        Posterize { bins, gamma } -> "a" /\ [ bins, gamma ]
-        Shift { r, g, b, a } -> "shift" /\ [ r, g, b, a ]
-        Invert amount -> "invert" /\ [ amount ]
-        Contrast amount -> "contrast" /\ [ amount ]
-        Brightness amount -> "brightness" /\ [ amount ]
-        Luma { treshold, tolerance } -> "luma" /\ [ treshold, tolerance ]
-        Tresh { treshold, tolerance } -> "tresh" /\ [ treshold, tolerance ]
-        Color { r, g, b, a } -> "color" /\ [ r, g, b, a ]
-        Saturate amount -> "saturate" /\ [ amount ]
-        Hue amount -> "hue" /\ [ amount ]
-        Colorama amount -> "colorama" /\ [ amount ]
-
-
-instance ToFn Value Modulate where
-    toFn :: Modulate -> String /\ Array Value
-    toFn = case _ of
-        Modulate amount -> "modulate" /\ [ amount ]
-        ModHue amount -> "modHue" /\ [ amount ]
-        ModKaleid { nSides } -> "modKaleid" /\ [ nSides ]
-        ModPixelate { multiple, offset } -> "modPixelate" /\ [ multiple, offset ]
-        ModRepeat { offsetX, offsetY, repeatX, repeatY } -> "modRepeat" /\ [ offsetX, offsetY, repeatX, repeatY ]
-        ModRepeatX { offset, reps } -> "modRepeatX" /\ [ offset, reps ]
-        ModRepeatY { offset, reps } -> "modRepeatY" /\ [ offset, reps ]
-        ModRotate { multiple, offset } -> "modRotate" /\ [ multiple, offset ]
-        ModScale { multiple, offset } -> "modScale" /\ [ multiple, offset ]
-        ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ scrollX, scrollY, speedX, speedY ]
-        ModScrollX { scrollX, speed } -> "modScrollX" /\ [ scrollX, speed ]
-        ModScrollY { scrollY, speed } -> "modScrollY" /\ [ scrollY, speed ]
-
-
-instance ToFn Value Blend where
-    toFn :: Blend -> String /\ Array Value
-    toFn = case _ of
-        Blend amount -> "blend" /\ [ amount ]
-        Add amount -> "add" /\ [ amount ]
-        Sub amount -> "sub" /\ [ amount ]
-        Mult amount -> "mult" /\ [ amount ]
-        Diff -> "diff" /\ []
-        Layer _ -> "layer" /\ []
-        Mask -> "mask" /\ []
-
-
-instance ToFn Value Geometry where
-    toFn :: Geometry -> String /\ Array Value
-    toFn = case _ of
-        GKaleid { nSides } -> "kaleid" /\ [ nSides ]
-        GPixelate { pixelX, pixelY } -> "pixelate" /\ [ pixelX, pixelY ]
-        GRepeat { offsetX, offsetY, repeatX, repeatY } -> "repeat" /\ [ offsetX, offsetY, repeatX, repeatY ]
-        GRepeatX { offset, reps } -> "repeatX" /\ [ offset, reps ]
-        GRepeatY { offset, reps } -> "repeatY" /\ [ offset, reps ]
-        GRotate { angle, speed } -> "rotate" /\ [ angle, speed ]
-        GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ amount, xMult, yMult, offsetX, offsetY ]
-        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ scrollX, scrollY, speedX, speedY ]
-        GScrollX { scrollX, speed } -> "scrollX" /\ [ scrollX, speed ]
-        GScrollY { scrollY, speed } -> "scrollY" /\ [ scrollY, speed ]
-
-
-instance ToFn Value Ease where
-    toFn :: Ease -> String /\ Array Value
-    toFn = case _ of
-        Linear -> "linear" /\ []
-        Fast v -> "fast" /\ [ v ]
-        Smooth v -> "smooth" /\ [ v ]
-        Fit { low, high } -> "fit" /\ [ low, high ]
-        Offset v -> "offset" /\ [ v ]
-        InOutCubic -> "inOutCubic" /\ []
-
-
 {- PURESCRIPT -}
 
 
@@ -185,6 +100,7 @@ instance ToCode PS Source where
         Dynamic -> "{- dyn -}"
         Video -> "{- video -}"
         S0 -> "s0"
+        -- FIXME: use PossiblyToFn
         Gradient { speed } -> fnPs "gradient" [ speed ]
         Camera -> "{- camera -}" -- 🎥
         Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
@@ -234,7 +150,6 @@ instance ToCode PS From where
         Output out -> toCode pureScript out
 
 
-
 instance ToCode PS Output where
     toCode :: Proxy PS -> Output -> String
     toCode _ = case _ of
@@ -268,7 +183,6 @@ instance ToCode PS AudioBin where
         H4 -> "H4"
 
 
-
 instance ToCode PS Audio where
     toCode :: Proxy PS -> Audio -> String
     toCode _ = case _ of
@@ -277,13 +191,13 @@ instance ToCode PS Audio where
         File -> "file"
 
 
-
 instance ToCode PS Texture where
     toCode :: Proxy PS -> Texture -> String
     toCode _ = case _ of
         Empty -> "{- empty -}"
         From S0 -> "(src "  <> toCode pureScript S0 <> ")"
         From src -> toCode pureScript src
+        -- FIXME: use PossiblyToFn
         BlendOf { what, with } blend ->
             toCode pureScript with <> "\n\t# " <>
             case (toFn blend :: String /\ Array Value) of
@@ -302,13 +216,11 @@ instance ToCode PS Texture where
                 name /\ args -> fnPs name args
 
 
-
 instance ToCode PS OnAudio where
     toCode :: Proxy PS -> OnAudio -> String
     toCode _ = case _ of
         Show audio -> toCode pureScript audio <> " # " <> fnePs "show"
         SetBins audio n -> toCode pureScript audio <> " # " <> fnsPs "setBins" [ Core.show n ]
-
 
 
 {- JAVASCRIPT -}
