@@ -1,4 +1,4 @@
-module Noodle.Text.ParseSketch where
+module Toolkit.Hydra2.Lang.ParseSketchApp where
 
 import Prelude
 
@@ -24,7 +24,7 @@ import Node.FS.Sync (readTextFile, writeTextFile)
 import Node.Path (FilePath, extname, basenameWithoutExt)
 
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, pureScript, toCode, javaScript)
-import Noodle.Text.SketchParser as Parser
+import Toolkit.Hydra2.Lang.SketchParser as Parser
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))
@@ -69,13 +69,13 @@ run opts = do
       let fileNames = Array.filter (not <<< String.startsWith "#") $ String.lines listContents
       traverse_ parseAndWrite fileNames
     else if not $ String.null opts.customString then
-      logResult opts.customString (const "???") $ runParser (Parser.prepare opts.customString) $ Parser.script "CustomString"
+      logResult opts.customString (const "???") $ runParser (Parser.prepare opts.customString) $ Parser.sketch "CustomString"
     else do
       parseAndWrite opts.sourceFile
     where
-      writeFile :: forall target. ToCode target Parser.Script => Proxy target -> Parser.Script -> String -> Effect Unit
-      writeFile format script targetPath =
-        writeTextFile UTF8 targetPath $ toCode format script
+      writeFile :: forall target. ToCode target Parser.Sketch => Proxy target -> Parser.Sketch -> String -> Effect Unit
+      writeFile format sketch targetPath =
+        writeTextFile UTF8 targetPath $ toCode format sketch
       parseAndWrite filePath = do
         fileContents <- readTextFile UTF8 filePath
         let
@@ -88,14 +88,14 @@ run opts = do
                  "expr" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".expr" else filePath <> ".expr"
                  _-> filePath
           parseResult =
-            runParser (Parser.prepare fileContents) $ Parser.script $ moduleNameFromPath filePath
+            runParser (Parser.prepare fileContents) $ Parser.sketch $ moduleNameFromPath filePath
         logResult fileContents targetPath parseResult
       logResult fileContents targetPath parseResult =
         case Parser.fixback <$> parseResult of
-          Right script ->
+          Right sketch ->
             case String.toLower opts.outputFormat of
-              "purs" -> writeFile pureScript script $ targetPath "purs"
-              "js" -> writeFile javaScript script $ targetPath "js"
+              "purs" -> writeFile pureScript sketch $ targetPath "purs"
+              "js" -> writeFile javaScript sketch $ targetPath "js"
               -- TODO: NDF
               _ ->
                 do
@@ -106,11 +106,11 @@ run opts = do
                     Console.log "ORIGINAL: ======\n"
                     Console.log fileContents
                     Console.log "EXPR: ======\n"
-                    Console.log $ show script
+                    Console.log $ show sketch
                     Console.log "PURS ======\n"
-                    Console.log $ toCode pureScript script
+                    Console.log $ toCode pureScript sketch
                     Console.log "JS ======\n"
-                    Console.log $ toCode javaScript script
+                    Console.log $ toCode javaScript sketch
           Left error -> do
               Console.log "Parse failed."
               Console.log $ show error

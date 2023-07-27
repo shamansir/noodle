@@ -1,4 +1,4 @@
-module Noodle.Text.SketchParser.Utils where
+module Toolkit.Hydra2.Lang.SketchParser.Utils where
 
 import Prelude
 

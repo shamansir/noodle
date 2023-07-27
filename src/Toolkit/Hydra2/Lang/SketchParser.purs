@@ -1,4 +1,4 @@
-module Noodle.Text.SketchParser where
+module Toolkit.Hydra2.Lang.SketchParser where
 
 import Prelude
 
@@ -22,24 +22,24 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 
-import Noodle.Text.SketchParser.Expr (Expr(..), Level(..), expr)
+import Toolkit.Hydra2.Lang.SketchParser.Expr (Expr(..), Level(..), expr)
 
 
 type ModuleName = String
 
 
-data Script = Script ModuleName (Array Expr)
+data Sketch = Sketch ModuleName (Array Expr)
 
 
-script :: ModuleName -> Parser String Script
-script mn = do
+sketch :: ModuleName -> Parser String Sketch
+sketch mn = do
   lines <- many1 $ expr Top
-  pure $ Script mn $ fromFoldable lines
+  pure $ Sketch mn $ fromFoldable lines
 
 
-traverseExprs :: (Expr -> Expr) -> Script -> Script
-traverseExprs f (Script moduleName exprs) =
-  Script moduleName $ deeper <$> exprs
+traverseExprs :: (Expr -> Expr) -> Sketch -> Sketch
+traverseExprs f (Sketch moduleName exprs) =
+  Sketch moduleName $ deeper <$> exprs
   where
     deeper :: Expr -> Expr
     deeper (Chain l { subj, startOp, args, tail }) =
@@ -59,7 +59,7 @@ prepare :: String -> String
 prepare = identity
 
 
-fixback :: Script -> Script
+fixback :: Sketch -> Sketch
 fixback = traverseExprs fixExpr
   where
     fixExpr (FnInline { args, code }) =
@@ -94,23 +94,23 @@ fixback = traverseExprs fixExpr
       Pattern replacement /\ Replacement pattern
 
 
-instance Show Script where
-  show :: Script -> String
-  show (Script _ exprs) =
+instance Show Sketch where
+  show :: Sketch -> String
+  show (Sketch _ exprs) =
     String.joinWith "\n" $ show <$> exprs
 
 
-instance ToCode PS Script where
-  toCode :: Proxy PS -> Script -> String
-  toCode _ (Script moduleName exprs) =
+instance ToCode PS Sketch where
+  toCode :: Proxy PS -> Sketch -> String
+  toCode _ (Sketch moduleName exprs) =
     (String.joinWith "\n" $ pursHeader moduleName) <> "\n\n" <>
     (String.joinWith "\n" pursPrefix) <> "\n    " <>
     (String.joinWith "\n    " $ Array.concat $ String.lines <$> toCode pureScript <$> exprs)
 
 
-instance ToCode JS Script where
-  toCode :: Proxy JS -> Script -> String
-  toCode _ (Script _ exprs) = String.joinWith "\n" $ toCode javaScript <$> exprs
+instance ToCode JS Sketch where
+  toCode :: Proxy JS -> Sketch -> String
+  toCode _ (Sketch _ exprs) = String.joinWith "\n" $ toCode pureScript <$> exprs
 
 
 pursHeader ∷ String → Array String

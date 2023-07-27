@@ -1,4 +1,4 @@
-module Noodle.Text.SketchParser.IExpr where
+module Toolkit.Hydra2.Lang.SketchParser.IExpr where
 
 import Prelude
 
@@ -19,7 +19,7 @@ import Control.Lazy (defer)
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 
-import Noodle.Text.SketchParser.Utils
+import Toolkit.Hydra2.Lang.SketchParser.Utils (betweenSpaces, f1ts, spaces, tokenChar)
 
 
 data IExpr

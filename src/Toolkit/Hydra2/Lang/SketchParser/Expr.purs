@@ -1,4 +1,4 @@
-module Noodle.Text.SketchParser.Expr where
+module Toolkit.Hydra2.Lang.SketchParser.Expr where
 
 import Prelude
 
@@ -24,8 +24,8 @@ import Data.String as String
 
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
-import Noodle.Text.SketchParser.Utils
-import Noodle.Text.SketchParser.IExpr (IExpr, inlineExprParser)
+import Toolkit.Hydra2.Lang.SketchParser.Utils
+import Toolkit.Hydra2.Lang.SketchParser.IExpr (IExpr, inlineExprParser)
 
 
 data Level
