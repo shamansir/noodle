@@ -103,7 +103,7 @@ instance Show Sketch where
 instance ToCode PS Sketch where
   toCode :: Proxy PS -> Sketch -> String
   toCode _ (Sketch moduleName exprs) =
-    (String.joinWith "\n" $ pursHeader moduleName) <> "\n\n" <>
+    (String.joinWith "\n" $ pursHeader moduleName) <> "\n\n\n" <>
     (String.joinWith "\n" pursPrefix) <> "\n    " <>
     (String.joinWith "\n    " $ Array.concat $ String.lines <$> toCode pureScript <$> exprs)
 
@@ -117,7 +117,7 @@ pursHeader ∷ String → Array String
 pursHeader moduleName =
   [ "module " <> moduleName <> " where"
   , ""
-  , "import Prelude (Unit, discard, (#), ($))"
+  , "import Prelude hiding (show)"
   , "import Prelude (show) as Core"
   , ""
   , "import Effect (Effect)"

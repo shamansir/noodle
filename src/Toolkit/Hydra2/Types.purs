@@ -129,6 +129,8 @@ data Output
     | Output0
     | Output1
     | Output2
+    | Output3
+    | Output4
     -- | ...
 
 
@@ -438,6 +440,8 @@ instance Show Output where
         Output0 -> "Output 0"
         Output1 -> "Output 1"
         Output2 -> "Output 2"
+        Output3 -> "Output 3"
+        Output4 -> "Output 4"
 
 
 instance Encode Value where
@@ -562,3 +566,5 @@ instance Encode Output where
         Output0 -> "OUT 0"
         Output1 -> "OUT 1"
         Output2 -> "OUT 2"
+        Output3 -> "OUT 3"
+        Output4 -> "OUT 4"

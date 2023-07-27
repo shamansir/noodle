@@ -161,7 +161,7 @@ instance ToCode PS IExpr where
     Mul a b -> "(" <> toCode pureScript a <> " * " <> toCode pureScript b <> ")"
     Add a b -> "(" <> toCode pureScript a <> " + " <> toCode pureScript b <> ")"
     Sub a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
-    Fft n -> "(a # fft " <> show n <> ")"
+    Fft n -> "(a # fft h" <> show n <> ")"
     Brackets expr -> "(" <> show expr <> ")"
     MouseX -> "mouseX"
     MouseY -> "mouseY"

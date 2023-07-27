@@ -29,6 +29,22 @@ o0 ∷ Output
 o0 = Output0
 
 
+o1 ∷ Output
+o1 = Output1
+
+
+o2 ∷ Output
+o2 = Output2
+
+
+o3 ∷ Output
+o3 = Output3
+
+
+o4 ∷ Output
+o4 = Output4
+
+
 initCam ∷ Source → Program Unit
 initCam = q <<< One <<< InitCam
 
@@ -53,9 +69,36 @@ setBins :: Int -> Audio -> Program Unit
 setBins bins = q <<< One <<< WithAudio <<< flip SetBins bins
 
 
+{- Source -}
+
+gradient ∷ Value → Texture
+gradient speed =
+    From $ Gradient { speed }
+
+
+noise :: Value -> Value -> Texture
+noise scale offset =
+    From $ Noise { scale, offset }
+
+
 osc ∷ Value → Value → Value → Texture
 osc frequency sync offset =
     From $ Osc { frequency, sync, offset }
+
+
+shape :: Value -> Value -> Value -> Texture
+shape sides radius smoothing =
+    From $ Shape { sides, radius, smoothing }
+
+
+solid :: Value -> Value -> Value -> Value -> Texture
+solid r g b a =
+    From $ Solid { r, g, b, a }
+
+
+voronoi :: Value -> Value -> Value -> Texture
+voronoi scale speed blending =
+    From $ Voronoi { scale, speed, blending }
 
 
 modulate :: Texture -> Value -> Texture -> Texture
@@ -86,6 +129,11 @@ scale amount =
 
 fn :: (Context -> Value) -> Value
 fn = Dep
+
+
+outs :: Texture -> Program Unit
+outs =
+    q <<< End Screen
 
 
 out :: Output -> Texture -> Program Unit

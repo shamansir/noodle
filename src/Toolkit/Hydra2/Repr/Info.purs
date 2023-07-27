@@ -169,6 +169,8 @@ instance ShortInfo H.Output where
         H.Output0 -> "⎑0" -- OUT0
         H.Output1 -> "⎑1" -- OUT1
         H.Output2 -> "⎑2" -- OUT2
+        H.Output3 -> "⎑3" -- OUT3
+        H.Output4 -> "⎑4" -- OUT4
 
 
 

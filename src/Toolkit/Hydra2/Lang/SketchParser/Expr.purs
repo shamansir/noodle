@@ -235,9 +235,9 @@ instance ToCode PS Expr where
       let
         indent =
           case l of
-            Top -> ""
-            Arg -> "    "
-            Tail -> "    "
+            Top -> "    "
+            Arg -> "        "
+            Tail -> "        "
       in
       (case subj of
         Just s -> s <> " # "
@@ -249,7 +249,7 @@ instance ToCode PS Expr where
       else if Array.length args /= 0 then
           startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)
       else
-          startOp
+          if startOp == "out" then "outs" else startOp
       )
       <>
       ( if Array.length tail > 0 then

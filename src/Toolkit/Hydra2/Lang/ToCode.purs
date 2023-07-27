@@ -242,6 +242,8 @@ instance ToCode PS Output where
         Output0 -> "o0"
         Output1 -> "o1"
         Output2 -> "o2"
+        Output3 -> "o3"
+        Output4 -> "o4"
 
 
 instance ToCode PS Values where
@@ -387,6 +389,8 @@ instance ToCode JS Output where
         Output0 -> "o0"
         Output1 -> "o1"
         Output2 -> "o2"
+        Output3 -> "o3"
+        Output4 -> "o4"
 
 
 instance ToCode JS Ease where

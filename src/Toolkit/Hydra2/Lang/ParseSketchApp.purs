@@ -82,7 +82,7 @@ run opts = do
           targetPath format =
             let currentExt = extname filePath
             in case format of
-                 "purs" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".purs" else filePath <> ".purs"
+                 "purs" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".gen.purs" else filePath <> ".purs"
                  "js" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".gen.js" else filePath
                  "ndf" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".ndf" else filePath <> ".ndf"
                  "expr" -> if currentExt == ".js" then String.dropRight 3 filePath <> ".expr" else filePath <> ".expr"
