@@ -5,7 +5,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 
 import Parsing (Parser)
 import Parsing.String (string)
@@ -153,9 +153,39 @@ instance Show IExpr where
 
 instance ToCode PS IExpr where
   toCode :: Proxy PS -> IExpr -> String
-  toCode = const show -- FIXME
+  toCode _ = case _ of
+    INum n -> if n >= 0.0 then show n else "(" <> show n <> ")"
+    Pi -> "pi"
+    Time -> "time"
+    Div a b -> "(" <> toCode pureScript a <> " / " <> toCode pureScript b <> ")"
+    Mul a b -> "(" <> toCode pureScript a <> " * " <> toCode pureScript b <> ")"
+    Add a b -> "(" <> toCode pureScript a <> " + " <> toCode pureScript b <> ")"
+    Sub a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
+    Fft n -> "(a # fft " <> show n <> ")"
+    Brackets expr -> "(" <> show expr <> ")"
+    MouseX -> "mouseX"
+    MouseY -> "mouseY"
+    Width -> "width"
+    Height -> "height"
+    Math method (Just expr) -> "(" <> method <> " $ " <> toCode pureScript expr <> ")"
+    Math method Nothing -> method
 
 
 instance ToCode JS IExpr where
   toCode :: Proxy JS -> IExpr -> String
-  toCode = const show -- FIXME
+  toCode _ = case _ of
+    INum n -> show n
+    Pi -> "Math.pi"
+    Time -> "time"
+    Div a b -> toCode javaScript a <> "/" <> toCode javaScript b
+    Mul a b -> toCode javaScript a <> "*" <> toCode javaScript b
+    Add a b -> toCode javaScript a <> "+" <> toCode javaScript b
+    Sub a b -> toCode javaScript a <> "-" <> toCode javaScript b
+    Fft n -> "a.fft[" <> show n <> "]"
+    Brackets expr -> "(" <> show expr <> ")"
+    MouseX -> "mouse.x"
+    MouseY -> "mouse.y"
+    Width -> "width"
+    Height -> "height"
+    Math method (Just expr) -> "Math." <> method <> "(" <> toCode javaScript expr <> ")"
+    Math method Nothing -> "Math." <> method <> "()"

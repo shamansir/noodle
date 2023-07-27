@@ -264,7 +264,9 @@ instance ToCode PS Expr where
     EmptyLine -> "\n\n"
     where
       formatInlineFn { args, code } =
-        "fn $ \\_ -> {- " <> friendlyArgs args <> " -> " <> either String.trim (toCode pureScript) code <> " -}"
+        case code of
+          Right iexpr -> "fn $ \\" <> friendlyArgs args <> " -> " <> toCode pureScript iexpr
+          Left str -> "fn $ \\_ -> pure unit {- " <> friendlyArgs args <> " -> " <> String.trim str <> " -}"
       wrapIfNeeded arg =
         case arg of
           Num _ -> "(" <> toCode pureScript arg <> ")"
