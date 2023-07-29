@@ -8,8 +8,10 @@ import Type.Proxy (Proxy)
 -- import TryPureScript (h1, h3, p, text, render, code)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Array as Array
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), isJust, fromMaybe)
 import Data.Either (Either(..), either)
+import Data.Foldable (foldr)
+import Data.Tuple.Nested ((/\))
 
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, satisfy)
@@ -22,7 +24,9 @@ import Control.Lazy (defer)
 import Data.Array (many, fromFoldable)
 import Data.String as String
 
+import Toolkit.Hydra2.Types (Value(..))
 import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+import Toolkit.Hydra2.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..))
 
 import Toolkit.Hydra2.Lang.SketchParser.Utils
 import Toolkit.Hydra2.Lang.SketchParser.IExpr (IExpr, inlineExprParser)
@@ -245,9 +249,9 @@ instance ToCode PS Expr where
       )
       <>
       ( if Array.length args == 1 && l == Top && not (isJust subj) && not (isNumber 0 args) && (Array.length tail == 0) then
-        String.joinWith "" (wrapIfNeeded <$> args) <> " # " <> startOp
+        String.joinWith "" (wrapIfNeeded <$> fillLackingArgs startOp args) <> " # " <> startOp
       else if Array.length args /= 0 then
-          startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> args)
+          startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> fillLackingArgs startOp args)
       else
           if startOp == "out" then "outs" else startOp
       )
@@ -284,6 +288,24 @@ instance ToCode PS Expr where
           _ -> false
       subOpInChain { op, args } = Chain Tail { subj : Nothing, startOp : op, args, tail : [] }
       friendlyArgs args = if String.null args then "_"  else args
+      -- FIXME: we may alter the function name from the API instead
+      valueToExpr (Number n) = Num n
+      valueToExpr _ = Token "fail"  -- all the default values for Hydra arguments are numerals, so we're kinda safe here
+      fillLackingArgs startOp args =
+        case possiblyToFn (KnownFn startOp) of
+          Just (_ /\ defArgs) ->
+            if Array.length args < Array.length defArgs then
+              Array.range (Array.length args) (Array.length defArgs - 1)
+                # foldr
+                    (\idx prevArgs ->
+                      case Array.index defArgs idx of
+                        Just (Argument _ defValue) -> prevArgs # Array.insertAt idx (valueToExpr defValue) # fromMaybe prevArgs
+                        Nothing -> prevArgs
+                    )
+                  args
+            else
+              args
+          Nothing -> args
 
 
 instance ToCode JS Expr where

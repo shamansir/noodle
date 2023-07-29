@@ -288,12 +288,6 @@ fromKnownFn = case _ of
 
     -- "setScale" -> Audio
 
-    -- "fast" -> Array
-    -- "smooth" -> Array
-    -- "ease" -> Array
-    -- "offset" -> Array
-    -- "fit" -> Array
-
     -- "out" -> Out
 
     "linear" -> Just $ "linear" /\ []
