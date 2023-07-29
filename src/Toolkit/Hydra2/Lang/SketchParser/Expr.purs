@@ -45,6 +45,7 @@ data Expr
     = Token String
     | Num Number
     | Assign String Expr
+    | Arr (Array Expr) (Array { op :: String, args :: Array Expr })
     | Chain
         Level
         { subj :: Maybe String
@@ -107,12 +108,44 @@ afterArgs = do
   pure unit
 
 
-separator :: Parser String Unit
-separator = do
+beforeArray :: Parser String Unit
+beforeArray = do
+  _ <- breaksAndSpaces
+  _ <- char '['
+  _ <- breaksAndSpaces
+  pure unit
+
+
+afterArray :: Parser String Unit
+afterArray = do
+  _ <- breaksAndSpaces
+  _ <- char ']'
+  _ <- breaksAndSpaces
+  pure unit
+
+
+commaSeparator :: Parser String Unit
+commaSeparator = do
   _ <- breaksAndSpaces
   _ <- char ','
   _ <- breaksAndSpaces
   pure unit
+
+
+array :: Parser String Expr
+array = do
+    elements <- between beforeArray afterArray $ sepBy (defer $ \_ -> expr Top) commaSeparator
+    tail <- option [] $ many $ do
+        _ <- breaksAndSpaces
+        _ <- char '.'
+        op <- token
+        innerExprs <- between beforeArgs afterArgs $ sepBy (expr Tail) commaSeparator
+        _ <- breaksAndSpaces
+        pure $ { op : f1ts op, args : fromFoldable innerExprs }
+    _ <- optional $ try $ char ';'
+    pure $ Arr
+        (fromFoldable elements)
+        (fromFoldable tail)
 
 
 chain :: Level -> Parser String Expr
@@ -124,12 +157,12 @@ chain level = do
         _ <- char '.'
         pure subj
     startOp <- token
-    args <- between beforeArgs afterArgs $ sepBy (expr Arg) separator
+    args <- between beforeArgs afterArgs $ sepBy (expr Arg) commaSeparator
     tail <- option [] $ many $ do
         _ <- breaksAndSpaces
         _ <- char '.'
         op <- token
-        innerExprs <- between beforeArgs afterArgs $ sepBy (expr Tail) separator
+        innerExprs <- between beforeArgs afterArgs $ sepBy (expr Tail) commaSeparator
         _ <- breaksAndSpaces
         pure $ { op : f1ts op, args : fromFoldable innerExprs }
     _ <- optional $ try $ char ';'
@@ -194,6 +227,7 @@ expr level =
   <|> try fnInline
   <|> try numberx
   <|> try (defer \_ -> assignment)
+  <|> try (defer \_ -> array)
   <|> try (defer \_ -> chain level)
   <|> try inlineExpr
   <|> try tokenExpr
@@ -204,6 +238,14 @@ instance Show Expr where
   show = case _ of
     Token str -> "Token [" <> str <> "]"
     Num num -> "Num [" <> show num <> "]"
+    Arr exprs tail ->
+      "Array "
+        <> " [ " <> String.joinWith " , " (show <$> exprs) <> " ] [ " <>
+        (String.joinWith " , " $
+          (\{ op, args } ->
+            "Next " <> op <> " [ " <> String.joinWith " , " (show <$> args) <> " ] "
+          ) <$> tail
+        ) <> " ]"
     Assign name expr -> "Assign " <>  show name <> " [" <> show expr <> "]"
     Chain _ { subj, startOp, args, tail } ->
       "Chain "
@@ -235,6 +277,17 @@ instance ToCode PS Expr where
     FnInline fn -> formatInlineFn fn
     Inline iexpr -> toCode pureScript iexpr
     Assign name expr -> "let " <> name <> " = " <> toCode pureScript expr
+    Arr exprs tail ->
+      let indent = "                      "
+      in
+      "[ " <>
+      String.joinWith " , " ((\expr -> toCode pureScript expr) <$> exprs) <> "\n"
+      <> " ]" <>
+      ( if Array.length tail > 0 then
+          "\n" <> String.joinWith "\n" ((\op -> indent <> "# " <> (toCode pureScript $ subOpInChain op)) <$> tail) <> "\n"
+        else
+          ""
+      )
     Chain l { subj, startOp, args, tail } ->
       let
         indent =
@@ -316,6 +369,18 @@ instance ToCode JS Expr where
     FnInline fn -> formatInlineFn fn
     Assign name expr -> name <> " = " <> toCode pureScript expr
     Inline iexpr -> toCode javaScript iexpr
+    Arr exprs tail ->
+      let
+        indent = "        "
+      in
+      "[ " <>
+      (String.joinWith " , " ((\expr -> toCode pureScript expr) <$> exprs))
+      <> " ]" <>
+      ( if Array.length tail > 0 then
+          "\n" <> String.joinWith "\n" ((\op -> indent <> "." <> (toCode javaScript $ subOpInChain op)) <$> tail)
+        else
+          ""
+      )
     Chain l { subj, startOp, args, tail } ->
       let
         tailIndent =
