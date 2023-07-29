@@ -45,18 +45,6 @@ o4 ∷ Output
 o4 = Output4
 
 
-initCam ∷ Source → Program Unit
-initCam = q <<< One <<< InitCam
-
-
-initCam' ∷ Source → Value -> Program Unit
-initCam' s = q <<< One <<< InitCamIdx s
-
-
-src :: Source -> Texture
-src = From
-
-
 a :: Audio
 a = Mic
 
@@ -71,14 +59,15 @@ setBins bins = q <<< One <<< WithAudio <<< flip SetBins bins
 
 {- Source -}
 
-gradient ∷ Value → Texture
-gradient speed =
-    From $ Gradient { speed }
-
 
 noise :: Value -> Value -> Texture
 noise scale offset =
     From $ Noise { scale, offset }
+
+
+voronoi :: Value -> Value -> Value -> Texture
+voronoi scale speed blending =
+    From $ Voronoi { scale, speed, blending }
 
 
 osc ∷ Value → Value → Value → Texture
@@ -91,19 +80,113 @@ shape sides radius smoothing =
     From $ Shape { sides, radius, smoothing }
 
 
+gradient ∷ Value → Texture
+gradient speed =
+    From $ Gradient { speed }
+
+
+src :: Source -> Texture
+src = From
+
+
 solid :: Value -> Value -> Value -> Value -> Texture
 solid r g b a =
     From $ Solid { r, g, b, a }
 
 
-voronoi :: Value -> Value -> Value -> Texture
-voronoi scale speed blending =
-    From $ Voronoi { scale, speed, blending }
+{- Geometry -}
 
 
-modulate :: Texture -> Value -> Texture -> Texture
-modulate what value with =
-    ModulateWith { what, with } $ Modulate value
+rotate ∷ Value → Value → Texture -> Texture
+rotate angle speed =
+    flip Geometry $ GRotate
+        { angle
+        , speed
+        }
+
+
+scale ∷ Value → Value -> Value -> Value -> Value -> Texture → Texture
+scale amount xMult yMult offsetX offsetY =
+    flip Geometry $ GScale
+        { amount
+        , xMult
+        , yMult
+        , offsetX
+        , offsetY
+        }
+
+
+pixelate ∷ Value → Value → Texture -> Texture
+pixelate pixelX pixelY =
+    flip Geometry $ GPixelate
+        { pixelX
+        , pixelY
+        }
+
+
+repeat ∷ Value → Value -> Value -> Value -> Texture → Texture
+repeat repeatX repeatY offsetX offsetY =
+    flip Geometry $ GRepeat
+        { repeatX
+        , repeatY
+        , offsetX
+        , offsetY
+        }
+
+
+repeatX ∷ Value → Value -> Texture → Texture
+repeatX reps offset =
+    flip Geometry $ GRepeatX
+        { reps
+        , offset
+        }
+
+
+repeatY ∷ Value → Value -> Texture → Texture
+repeatY reps offset =
+    flip Geometry $ GRepeatY
+        { reps
+        , offset
+        }
+
+
+kaleid ∷ Value → Texture -> Texture
+kaleid nSides =
+    flip Geometry $ GKaleid
+        { nSides
+        }
+
+
+scroll ∷ Value → Value -> Value -> Value -> Texture → Texture
+scroll scrollX scrollY speedX speedY =
+    flip Geometry $ GScroll
+        { scrollX
+        , scrollY
+        , speedX
+        , speedY
+        }
+
+
+scrollX ∷ Value → Value -> Texture → Texture
+scrollX scrollX speed =
+    flip Geometry $ GScrollX
+        { scrollX
+        , speed
+        }
+
+
+scrollY ∷ Value → Value -> Texture → Texture
+scrollY scrollY speed =
+    flip Geometry $ GScrollY
+        { scrollY
+        , speed
+        }
+
+
+{- Color -}
+
+
+-- posterize, shift, invert, contrast, brightness, luma, tresh, color, saturate, hue, colorama, sum, r, g, b, a
 
 
 saturate :: Value -> Texture -> Texture
@@ -111,21 +194,120 @@ saturate v =
     flip WithColor $ Saturate v
 
 
-pixelate ∷ Value → Value → Texture -> Texture
-pixelate pixelX pixelY =
-    flip Geometry $ GPixelate { pixelX, pixelY }
+{- Blend -}
 
 
-scale ∷ Value → Texture → Texture
-scale amount =
-    flip Geometry $ GScale
-        { amount
-        , offsetX : Number 0.0
-        , offsetY : Number 0.0
-        , xMult : Number 1.0
-        , yMult : Number 1.0
+-- add, sub, layer, blend, mult, diff, mask
+
+
+{- Modulate -}
+
+
+modulate :: Texture -> Value -> Texture -> Texture
+modulate what value with =
+    ModulateWith { what, with } $ Modulate value
+
+
+modulateRepeat :: Texture -> Value -> Value -> Value -> Value -> Texture -> Texture
+modulateRepeat what repeatX repeatY offsetX offsetY with =
+    ModulateWith { what, with } $ ModRepeat
+        { repeatX
+        , repeatY
+        , offsetX
+        , offsetY
         }
 
+
+modulateRepeatX :: Texture -> Value -> Value -> Texture -> Texture
+modulateRepeatX what reps offset with =
+    ModulateWith { what, with } $ ModRepeatX
+        { reps
+        , offset
+        }
+
+
+modulateRepeatY :: Texture -> Value -> Value -> Texture -> Texture
+modulateRepeatY what reps offset with =
+    ModulateWith { what, with } $ ModRepeatY
+        { reps
+        , offset
+        }
+
+
+modulateScroll :: Texture -> Value -> Value -> Value -> Value -> Texture -> Texture
+modulateScroll what scrollX scrollY speedX speedY with =
+    ModulateWith { what, with } $ ModScroll
+        { scrollX
+        , scrollY
+        , speedX
+        , speedY
+        }
+
+
+modulateScrollX :: Texture -> Value -> Value -> Texture -> Texture
+modulateScrollX what scrollX speed with =
+    ModulateWith { what, with } $ ModScrollX
+        { scrollX
+        , speed
+        }
+
+
+modulateScrollY :: Texture -> Value -> Value -> Texture -> Texture
+modulateScrollY what scrollY speed with =
+    ModulateWith { what, with } $ ModScrollY
+        { scrollY
+        , speed
+        }
+
+
+modulateKaleid :: Texture -> Value -> Texture -> Texture
+modulateKaleid what nSides with =
+    ModulateWith { what, with } $ ModKaleid
+        { nSides
+        }
+
+
+modulatePixelate :: Texture -> Value -> Value -> Texture -> Texture
+modulatePixelate what multiple offset with =
+    ModulateWith { what, with } $ ModPixelate
+        { multiple
+        , offset
+        }
+
+
+modulateScale :: Texture -> Value -> Value -> Texture -> Texture
+modulateScale what multiple offset with =
+    ModulateWith { what, with } $ ModScale
+        { multiple
+        , offset
+        }
+
+
+modulateRotate :: Texture -> Value -> Value -> Texture -> Texture
+modulateRotate what multiple offset with =
+    ModulateWith { what, with } $ ModRotate
+        { multiple
+        , offset
+        }
+
+
+modulateHue :: Texture -> Value -> Texture -> Texture
+modulateHue what value with =
+    ModulateWith { what, with } $ ModHue value
+
+
+{- External Sources -}
+
+
+initCam ∷ Source → Program Unit
+initCam = q <<< One <<< InitCam
+
+
+initCam' ∷ Source → Value -> Program Unit
+initCam' s = q <<< One <<< InitCamIdx s
+
+
+{- Other -}
 
 fn :: (Context -> Value) -> Value
 fn = Dep

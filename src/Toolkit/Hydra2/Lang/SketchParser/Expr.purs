@@ -2,7 +2,7 @@ module Toolkit.Hydra2.Lang.SketchParser.Expr where
 
 import Prelude
 
-
+import Debug as Debug
 import Type.Proxy (Proxy)
 
 -- import TryPureScript (h1, h3, p, text, render, code)
@@ -302,9 +302,9 @@ instance ToCode PS Expr where
       )
       <>
       ( if Array.length args == 1 && l == Top && not (isJust subj) && not (isNumber 0 args) && (Array.length tail == 0) then
-        String.joinWith "" (wrapIfNeeded <$> fillLackingArgs startOp args) <> " # " <> startOp
+        String.joinWith "" (wrapIfNeeded <$> fillLackingArgs startOp args) <> " # " <> Debug.spy "for" startOp
       else if Array.length args /= 0 then
-          startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> fillLackingArgs startOp args)
+          Debug.spy "for" startOp <> " " <> String.joinWith " " (wrapIfNeeded <$> fillLackingArgs startOp args)
       else
           if startOp == "out" then "outs" else startOp
       )
@@ -347,7 +347,7 @@ instance ToCode PS Expr where
       fillLackingArgs startOp args =
         case possiblyToFn (KnownFn startOp) of
           Just (_ /\ defArgs) ->
-            if Array.length args < Array.length defArgs then
+            if (Debug.spy "actual" $ Array.length args) < (Debug.spy "expected" $ Array.length defArgs) then
               Array.range (Array.length args) (Array.length defArgs - 1)
                 # foldr
                     (\idx prevArgs ->

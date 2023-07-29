@@ -101,9 +101,9 @@ data Modulate
     | ModHue Value -- amount
     | ModKaleid { nSides :: Value }
     | ModPixelate { multiple :: Value, offset :: Value }
-    | ModRepeat { offsetX :: Value, offsetY :: Value, repeatX :: Value, repeatY :: Value }
-    | ModRepeatX { offset :: Value, reps :: Value } -- TODO: join with `ModRepeat`
-    | ModRepeatY { offset :: Value, reps :: Value } -- TODO: join with `ModRepeat`
+    | ModRepeat { repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
+    | ModRepeatX { reps :: Value, offset :: Value } -- TODO: join with `ModRepeat`
+    | ModRepeatY { reps :: Value, offset :: Value } -- TODO: join with `ModRepeat`
     | ModRotate { multiple :: Value, offset :: Value }
     | ModScale { multiple :: Value, offset :: Value }
     | ModScroll { scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value }
@@ -114,9 +114,9 @@ data Modulate
 data Geometry
     = GKaleid { nSides :: Value }
     | GPixelate { pixelX :: Value, pixelY :: Value }
-    | GRepeat { offsetX :: Value, offsetY :: Value, repeatX :: Value, repeatY :: Value }
-    | GRepeatX { offset :: Value, reps :: Value } -- TODO: join with `Repeat`
-    | GRepeatY { offset :: Value, reps :: Value } -- TODO: join with `Repeat`
+    | GRepeat { repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
+    | GRepeatX { reps :: Value, offset :: Value } -- TODO: join with `Repeat`
+    | GRepeatY { reps :: Value, offset :: Value } -- TODO: join with `Repeat`
     | GRotate { angle :: Value, speed :: Value }
     | GScale { amount :: Value, xMult :: Value, yMult :: Value, offsetX :: Value, offsetY :: Value }
     | GScroll { scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value }
