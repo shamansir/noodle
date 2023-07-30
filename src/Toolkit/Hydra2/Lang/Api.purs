@@ -1,12 +1,10 @@
 module Toolkit.Hydra2.Lang.Api where
 
-import Prelude (Unit, flip, unit, ($), (<<<))
-
-
 import Toolkit.Hydra2.Types
-import Toolkit.Hydra2.Types (Value(..)) as T
 
+import Prelude (Unit, add, flip, unit, ($), (<<<))
 import Toolkit.Hydra2.Lang (Command(..), Program(..), Single(..))
+import Toolkit.Hydra2.Types (Value(..)) as T
 
 
 unknown ∷ Program Unit -- private
@@ -186,7 +184,19 @@ scrollY scrollY speed =
 {- Color -}
 
 
--- posterize, shift, invert, contrast, brightness, luma, tresh, color, saturate, hue, colorama, sum, r, g, b, a
+posterize :: Value -> Value -> Texture -> Texture
+posterize bins gamma =
+    flip WithColor $ Posterize { bins, gamma }
+
+
+shift :: Value -> Value -> Value -> Value -> Texture -> Texture
+shift r g b a =
+    flip WithColor $ Shift { r, g, b, a }
+
+
+invert :: Value -> Texture -> Texture
+invert v =
+    flip WithColor $ Invert v
 
 
 saturate :: Value -> Texture -> Texture
@@ -194,10 +204,97 @@ saturate v =
     flip WithColor $ Saturate v
 
 
+contrast :: Value -> Texture -> Texture
+contrast v =
+    flip WithColor $ Contrast v
+
+
+brightness :: Value -> Texture -> Texture
+brightness v =
+    flip WithColor $ Brightness v
+
+
+luma :: Value -> Value -> Texture -> Texture
+luma treshold tolerance =
+    flip WithColor $ Luma { treshold, tolerance }
+
+
+tresh :: Value -> Value -> Texture -> Texture
+tresh treshold tolerance =
+    flip WithColor $ Tresh { treshold, tolerance }
+
+
+color :: Value -> Value -> Value -> Value -> Texture -> Texture
+color r g b a =
+    flip WithColor $ Color { r, g, b, a }
+
+
+hue :: Value -> Texture -> Texture
+hue v =
+    flip WithColor $ Hue v
+
+
+colorama :: Value -> Texture -> Texture
+colorama v =
+    flip WithColor $ Colorama v
+
+
+r :: Value -> Value -> Texture -> Texture
+r scale offset =
+    flip WithColor $ R { scale, offset }
+
+
+g :: Value -> Value -> Texture -> Texture
+g scale offset =
+    flip WithColor $ G { scale, offset }
+
+
+b :: Value -> Value -> Texture -> Texture
+b scale offset =
+    flip WithColor $ B { scale, offset }
+
+
+alpha :: Value -> Value -> Texture -> Texture
+alpha scale offset =
+    flip WithColor $ A { scale, offset }
+
+
 {- Blend -}
 
 
--- add, sub, layer, blend, mult, diff, mask
+blend :: Texture -> Value -> Texture -> Texture
+blend what v with =
+    BlendOf { what, with } $ Blend v
+
+
+add :: Texture -> Value -> Texture -> Texture
+add what v with =
+    BlendOf { what, with } $ Add v
+
+
+sub :: Texture -> Value -> Texture -> Texture
+sub what v with =
+    BlendOf { what, with } $ Sub v
+
+
+mult :: Texture -> Value -> Texture -> Texture
+mult what v with =
+    BlendOf { what, with } $ Mult v
+
+
+layer :: Texture -> Value -> Texture -> Texture
+layer what v with =
+    BlendOf { what, with } $ Layer v
+
+
+diff :: Texture -> Texture -> Texture
+diff what with =
+    BlendOf { what, with } $ Diff
+
+
+mask :: Texture -> Texture -> Texture
+mask what with =
+    BlendOf { what, with } $ Mask
 
 
 {- Modulate -}
