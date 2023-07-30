@@ -212,7 +212,7 @@ instance R.FromRepr TextRepr H.TODO where
 
 instance R.FromRepr TextRepr H.Context where
     fromRepr :: R.Repr TextRepr -> Maybe H.Context
-    fromRepr (R.Repr (TextRepr "Context")) = Just $ H.Context { time : 0.0 }  -- FIXME
+    fromRepr (R.Repr (TextRepr "Context")) = Just $ H.Context { time : 0.0, mouseX : 0.0, mouseY : 0.0 }  -- FIXME
     fromRepr _ = Nothing
 
 

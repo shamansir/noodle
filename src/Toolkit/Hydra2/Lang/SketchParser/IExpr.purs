@@ -156,17 +156,17 @@ instance ToCode PS IExpr where
   toCode _ = case _ of
     INum n -> if n >= 0.0 then show n else "(" <> show n <> ")"
     Pi -> "pi"
-    Time -> "time"
+    Time -> "ctx.time"
     Div a b -> "(" <> toCode pureScript a <> " / " <> toCode pureScript b <> ")"
     Mul a b -> "(" <> toCode pureScript a <> " * " <> toCode pureScript b <> ")"
     Add a b -> "(" <> toCode pureScript a <> " + " <> toCode pureScript b <> ")"
     Sub a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
     Fft n -> "(a # fft h" <> show n <> ")"
     Brackets expr -> "(" <> show expr <> ")"
-    MouseX -> "mouseX"
-    MouseY -> "mouseY"
-    Width -> "width"
-    Height -> "height"
+    MouseX -> "ctx.mouseX"
+    MouseY -> "ctx.mouseY"
+    Width -> "ctx.width"
+    Height -> "ctx.height"
     Math method (Just expr) -> "(" <> method <> " $ " <> toCode pureScript expr <> ")"
     Math method Nothing -> method
 

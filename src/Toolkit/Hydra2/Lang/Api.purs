@@ -55,6 +55,22 @@ setBins :: Int -> Audio -> Program Unit
 setBins bins = q <<< One <<< WithAudio <<< flip SetBins bins
 
 
+setSmooth :: Audio -> Program Unit
+setSmooth = q <<< One <<< WithAudio <<< SetSmooth
+
+
+setCutoff :: Number -> Audio -> Program Unit
+setCutoff n = q <<< One <<< WithAudio <<< flip SetCutoff n
+
+
+setScale :: Number -> Audio -> Program Unit
+setScale n = q <<< One <<< WithAudio <<< flip SetScale n
+
+
+hide :: Audio -> Program Unit
+hide = q <<< One <<< WithAudio <<< Hide
+
+
 {- Source -}
 
 
@@ -402,6 +418,14 @@ initCam = q <<< One <<< InitCam
 
 initCam' ∷ Source → Value -> Program Unit
 initCam' s = q <<< One <<< InitCamIdx s
+
+
+initScreen ∷ Source → Program Unit
+initScreen = q <<< One <<< InitScreen
+
+
+clear ∷ Source → Program Unit
+clear = q <<< One <<< Clear
 
 
 {- Other -}

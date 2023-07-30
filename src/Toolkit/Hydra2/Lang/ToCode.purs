@@ -220,7 +220,11 @@ instance ToCode PS OnAudio where
     toCode :: Proxy PS -> OnAudio -> String
     toCode _ = case _ of
         Show audio -> toCode pureScript audio <> " # " <> fnePs "show"
+        Hide audio -> toCode pureScript audio <> " # " <> fnePs "hide"
         SetBins audio n -> toCode pureScript audio <> " # " <> fnsPs "setBins" [ Core.show n ]
+        SetCutoff audio n -> toCode pureScript audio <> " # " <> fnsPs "setCutoff" [ Core.show n ]
+        SetScale audio n -> toCode pureScript audio <> " # " <> fnsPs "setScale" [ Core.show n ]
+        SetSmooth audio -> toCode pureScript audio <> " # " <> fnePs "setSmooth"
 
 
 {- JAVASCRIPT -}
@@ -363,7 +367,11 @@ instance ToCode JS OnAudio where
     toCode :: Proxy JS -> OnAudio -> String
     toCode _ = case _ of
         Show audio -> toCode javaScript audio <> "." <> fneJs "show"
+        Hide audio -> toCode javaScript audio <> "." <> fneJs "hide"
         SetBins audio n -> toCode javaScript audio <> "." <> fnsJs "setBins" [ Core.show n ]
+        SetCutoff audio n -> toCode javaScript audio <> "." <> fnsJs "setCutoff" [ Core.show n ]
+        SetScale audio n -> toCode javaScript audio <> "." <> fnsJs "setScale" [ Core.show n ]
+        SetSmooth audio -> toCode javaScript audio <> "." <> fneJs "setSmooth"
 
 
 instance ToCode lang WrapRepr where

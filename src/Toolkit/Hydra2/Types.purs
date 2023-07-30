@@ -20,6 +20,8 @@ data TODO = TODO
 newtype Context =
     Context
         { time :: Number
+        , mouseX :: Number
+        , mouseY :: Number
         -- , ...
         }
 
@@ -192,6 +194,10 @@ newtype Url = Url String
 data OnAudio
     = Show Audio
     | SetBins Audio Int
+    | SetCutoff Audio Number
+    | SetScale Audio Number
+    | SetSmooth Audio
+    | Hide Audio
 
 
 noUrl :: Url

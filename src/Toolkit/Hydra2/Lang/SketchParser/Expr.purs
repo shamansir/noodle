@@ -322,7 +322,7 @@ instance ToCode PS Expr where
     where
       formatInlineFn { args, code } =
         case code of
-          Right iexpr -> "fn $ \\" <> friendlyArgs args <> " -> " <> toCode pureScript iexpr
+          Right iexpr -> "fn $ \\(Context ctx) -> n $ " <> toCode pureScript iexpr
           Left str -> "fn $ \\_ -> pure unit {- " <> friendlyArgs args <> " -> " <> String.trim str <> " -}"
       wrapIfNeeded arg =
         case arg of
@@ -331,7 +331,7 @@ instance ToCode PS Expr where
           Inline _ -> "(" <> toCode pureScript arg <> ")"
           Chain _ c ->
             if Array.length c.tail > 0 then
-               "(\n" <> "    " <> toCode pureScript arg <> ")"
+               "(\n" <> "    " <> toCode pureScript arg <> "    )"
             else
               "(" <> toCode pureScript arg <> ")"
           _ -> toCode pureScript arg
@@ -340,7 +340,7 @@ instance ToCode PS Expr where
           Just (Num _) -> true
           _ -> false
       subOpInChain { op, args } = Chain Tail { subj : Nothing, startOp : op, args, tail : [] }
-      friendlyArgs args = if String.null args then "_"  else args
+      friendlyArgs args = if String.null args then "_" else args
       -- FIXME: we may alter the function name from the API instead
       valueToExpr (Number n) = Num n
       valueToExpr _ = Token "fail"  -- all the default values for Hydra arguments are numerals, so we're kinda safe here
@@ -388,7 +388,7 @@ instance ToCode JS Expr where
           case l of
             Top -> ""
             Arg -> "    "
-            Tail -> "    "
+            Tail -> "        "
         firstIndent =
           case l of
             Top -> ""

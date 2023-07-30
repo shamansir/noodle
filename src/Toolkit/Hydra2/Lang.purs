@@ -37,9 +37,11 @@ data Single
     | Bpm H.Value
     | Hush
     | Init H.SourceOptions
+    -- TODO : join under `WithSource`
     | InitCam H.Source
     | InitCamIdx H.Source H.Value
     | InitScreen H.Source
+    | Clear H.Source
     | SetResolution H.Value H.Value
     | Render H.From
 
@@ -118,6 +120,7 @@ instance ToCode PS Command where
         One (InitScreen src) -> toCode pureScript src <> " # initScreen"
         One (InitCam src) -> toCode pureScript src <> " # initCam"
         One (InitCamIdx src index) -> toCode pureScript src <> " # initCamIdx " <> toCode pureScript index
+        One (Clear src) -> toCode pureScript src <> " # clear"
         One (SetResolution width height) -> "{ width : " <> toCode pureScript width <> ", height : " <> toCode pureScript height <> " # setResolution"
         Continue texture -> "." <> toCode pureScript texture
         To _ -> "to()"
@@ -137,6 +140,7 @@ else instance ToCode JS Command where
         One (InitScreen src) -> "initScreen( " <> toCode javaScript src <> " )"
         One (InitCam src) -> "initCam( " <> toCode javaScript src <> " )"
         One (InitCamIdx src index) -> "initCam( " <> toCode javaScript src <> " , " <> toCode javaScript index <> " )"
+        One (Clear so) -> toCode javaScript so <> ".clear()"
         One (SetResolution width height) -> "setResolution( " <> toCode javaScript width <> " , " <> toCode javaScript height <> " )"
         Continue texture -> "." <> toCode javaScript texture
         To _ -> "to()"
