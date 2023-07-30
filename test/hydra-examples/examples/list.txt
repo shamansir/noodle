@@ -1,0 +1,9 @@
+./test/hydra-examples/examples/01-osc.js
+./test/hydra-examples/examples/02-base-layers.js
+./test/hydra-examples/examples/03-shape-scale.js
+./test/hydra-examples/examples/04-blending-webcam.js
+./test/hydra-examples/examples/05-video-screen.js
+./test/hydra-examples/examples/06-audio-cheatsheet.js
+./test/hydra-examples/examples/06-audio-example.js
+./test/hydra-examples/examples/07-use-image.js
+./test/hydra-examples/examples/08-keypress.js

@@ -24,7 +24,7 @@ data Hydra
     | Contrast Texture Value
     | Brightness Texture Value
     | Luma Texture Value Value
-    | Tresh Texture Value Value
+    | Thresh Texture Value Value
     | Color Texture Value Value Value Value
     | Saturate Texture Value
     | Hue Texture Value
@@ -114,7 +114,7 @@ data Hydra
     | Contrast Texture Value
     | Brightness Texture Value
     | Luma Texture Value Value
-    | Tresh Texture Value Value
+    | Thresh Texture Value Value
     | Color Texture Value Value Value Value
     | Saturate Texture Value
     | Hue Texture Value
@@ -225,7 +225,7 @@ import Toolkit.HydraGen.Family.Color.FInvert as FInvert
 import Toolkit.HydraGen.Family.Color.FContrast as FContrast
 import Toolkit.HydraGen.Family.Color.FBrightness as FBrightness
 import Toolkit.HydraGen.Family.Color.FLuma as FLuma
-import Toolkit.HydraGen.Family.Color.FTresh as FTresh
+import Toolkit.HydraGen.Family.Color.FThresh as FThresh
 import Toolkit.HydraGen.Family.Color.FColor as FColor
 import Toolkit.HydraGen.Family.Color.FSaturate as FSaturate
 import Toolkit.HydraGen.Family.Color.FHue as FHue
@@ -319,7 +319,7 @@ type Families (m :: Type -> Type) =
         , contrast :: FContrast.Family m -- {-> color <-}
         , brightness :: FBrightness.Family m -- {-> color <-}
         , luma :: FLuma.Family m -- {-> color <-}
-        , tresh :: FTresh.Family m -- {-> color <-}
+        , thresh :: FThresh.Family m -- {-> color <-}
         , color :: FColor.Family m -- {-> color <-}
         , saturate :: FSaturate.Family m -- {-> color <-}
         , hue :: FHue.Family m -- {-> color <-}
@@ -408,7 +408,7 @@ families =
         , contrast : (FContrast.family :: FContrast.Family m )
         , brightness : (FBrightness.family :: FBrightness.Family m )
         , luma : (FLuma.family :: FLuma.Family m )
-        , tresh : (FTresh.family :: FTresh.Family m )
+        , thresh : (FThresh.family :: FThresh.Family m )
         , color : (FColor.family :: FColor.Family m )
         , saturate : (FSaturate.family :: FSaturate.Family m )
         , hue : (FHue.family :: FHue.Family m )
@@ -513,7 +513,7 @@ type Instances m =
         , contrast :: Array ( FContrast.Node m )
         , brightness :: Array ( FBrightness.Node m )
         , luma :: Array ( FLuma.Node m )
-        , tresh :: Array ( FTresh.Node m )
+        , thresh :: Array ( FThresh.Node m )
         , color :: Array ( FColor.Node m )
         , saturate :: Array ( FSaturate.Node m )
         , hue :: Array ( FHue.Node m )
@@ -602,7 +602,7 @@ noInstances =
         , contrast : ([] :: Array ( FContrast.Node m ))
         , brightness : ([] :: Array ( FBrightness.Node m ))
         , luma : ([] :: Array ( FLuma.Node m ))
-        , tresh : ([] :: Array ( FTresh.Node m ))
+        , thresh : ([] :: Array ( FThresh.Node m ))
         , color : ([] :: Array ( FColor.Node m ))
         , saturate : ([] :: Array ( FSaturate.Node m ))
         , hue : ([] :: Array ( FHue.Node m ))
@@ -690,7 +690,7 @@ familySym :: Record
         , contrast :: Node.Family "contrast"
         , brightness :: Node.Family "brightness"
         , luma :: Node.Family "luma"
-        , tresh :: Node.Family "tresh"
+        , thresh :: Node.Family "thresh"
         , color :: Node.Family "color"
         , saturate :: Node.Family "saturate"
         , hue :: Node.Family "hue"
@@ -778,7 +778,7 @@ familySym =
         , contrast : FContrast.id
         , brightness : FBrightness.id
         , luma : FLuma.id
-        , tresh : FTresh.id
+        , thresh : FThresh.id
         , color : FColor.id
         , saturate : FSaturate.id
         , hue : FHue.id
@@ -897,7 +897,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "contrast" -> Just $ fn familySym.contrast families.contrast toolkit
         "brightness" -> Just $ fn familySym.brightness families.brightness toolkit
         "luma" -> Just $ fn familySym.luma families.luma toolkit
-        "tresh" -> Just $ fn familySym.tresh families.tresh toolkit
+        "thresh" -> Just $ fn familySym.thresh families.thresh toolkit
         "color" -> Just $ fn familySym.color families.color toolkit
         "saturate" -> Just $ fn familySym.saturate families.saturate toolkit
         "hue" -> Just $ fn familySym.hue families.hue toolkit
@@ -1470,7 +1470,7 @@ brightness = -- {-> color <-}
 
 type FLuma m =
     Family.Def State
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
         ( out :: Texture )
         m
 
@@ -1478,34 +1478,34 @@ luma :: forall m. FLuma m
 luma = -- {-> color <-}
     Family.def
         defaultState
-        { what : Empty, treshold : Number 0.5, tolerance : Number 0.1 }
+        { what : Empty, threshold : Number 0.5, tolerance : Number 0.1 }
         { out : Empty }
         $ Fn.make "luma" $ do
             what <- P.receive _in_what
-            treshold <- P.receive _in_treshold
+            threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            -- Luma what treshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Luma { treshold, tolerance }
+            -- Luma what threshold tolerance
+            P.send _out_out $ H.WithColor what $ H.Luma { threshold, tolerance }
 
 
-type FTresh m =
+type FThresh m =
     Family.Def State
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
         ( out :: Texture )
         m
 
-tresh :: forall m. FTresh m
-tresh = -- {-> color <-}
+thresh :: forall m. FThresh m
+thresh = -- {-> color <-}
     Family.def
         defaultState
-        { what : Empty, treshold : Number 0.5, tolerance : Number 0.1 }
+        { what : Empty, threshold : Number 0.5, tolerance : Number 0.1 }
         { out : Empty }
-        $ Fn.make "tresh" $ do
+        $ Fn.make "thresh" $ do
             what <- P.receive _in_what
-            treshold <- P.receive _in_treshold
+            threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            -- Tresh what treshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Tresh { treshold, tolerance }
+            -- Thresh what threshold tolerance
+            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
 
 
 type FColor m =
@@ -2657,7 +2657,7 @@ type HydraToolkit (m :: Type -> Type)
         , contrast : -- {-> color <-}
         , brightness : -- {-> color <-}
         , luma : -- {-> color <-}
-        , tresh : -- {-> color <-}
+        , thresh : -- {-> color <-}
         , color : -- {-> color <-}
         , saturate : -- {-> color <-}
         , hue : -- {-> color <-}
@@ -2747,7 +2747,7 @@ toolkit =
         , contrast : -- {-> color <-}
         , brightness : -- {-> color <-}
         , luma : -- {-> color <-}
-        , tresh : -- {-> color <-}
+        , thresh : -- {-> color <-}
         , color : -- {-> color <-}
         , saturate : -- {-> color <-}
         , hue : -- {-> color <-}
@@ -2961,13 +2961,13 @@ type FBrightnessNode m =
 
 type FLumaNode m =
     N.Node "luma" State
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
         ( out :: Texture )
         m
 
-type FTreshNode m =
-    N.Node "tresh" State
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+type FThreshNode m =
+    N.Node "thresh" State
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
         ( out :: Texture )
         m
 
@@ -3349,7 +3349,7 @@ type Instances m =
         , contrast :: Array ( FContrastNode m )
         , brightness :: Array ( FBrightnessNode m )
         , luma :: Array ( FLumaNode m )
-        , tresh :: Array ( FTreshNode m )
+        , thresh :: Array ( FThreshNode m )
         , color :: Array ( FColorNode m )
         , saturate :: Array ( FSaturateNode m )
         , hue :: Array ( FHueNode m )
@@ -3437,7 +3437,7 @@ familySym :: Record
         , contrast :: Node.Family "contrast"
         , brightness :: Node.Family "brightness"
         , luma :: Node.Family "luma"
-        , tresh :: Node.Family "tresh"
+        , thresh :: Node.Family "thresh"
         , color :: Node.Family "color"
         , saturate :: Node.Family "saturate"
         , hue :: Node.Family "hue"
@@ -3525,7 +3525,7 @@ familySym =
         , contrast : (Node.Family :: _ "contrast")
         , brightness : (Node.Family :: _ "brightness")
         , luma : (Node.Family :: _ "luma")
-        , tresh : (Node.Family :: _ "tresh")
+        , thresh : (Node.Family :: _ "thresh")
         , color : (Node.Family :: _ "color")
         , saturate : (Node.Family :: _ "saturate")
         , hue : (Node.Family :: _ "hue")
@@ -3644,7 +3644,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "contrast" -> Just $ fn familySym.contrast families.contrast toolkit
         "brightness" -> Just $ fn familySym.brightness families.brightness toolkit
         "luma" -> Just $ fn familySym.luma families.luma toolkit
-        "tresh" -> Just $ fn familySym.tresh families.tresh toolkit
+        "thresh" -> Just $ fn familySym.thresh families.thresh toolkit
         "color" -> Just $ fn familySym.color families.color toolkit
         "saturate" -> Just $ fn familySym.saturate families.saturate toolkit
         "hue" -> Just $ fn familySym.hue families.hue toolkit
@@ -5675,14 +5675,14 @@ defaultState = unit
 
 
 _in_what = Fn.Input :: _ "what"
-_in_treshold = Fn.Input :: _ "treshold"
+_in_threshold = Fn.Input :: _ "threshold"
 _in_tolerance = Fn.Input :: _ "tolerance"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Inputs =
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
 
 type Outputs =
         ( out :: Texture )
@@ -5690,7 +5690,7 @@ type Outputs =
 
 defaultInputs :: Record Inputs
 defaultInputs =
-        { what : Empty, treshold : Number 0.5, tolerance : Number 0.1 }
+        { what : Empty, threshold : Number 0.5, tolerance : Number 0.1 }
 
 defaultOutputs :: Record Outputs
 defaultOutputs =
@@ -5712,10 +5712,10 @@ family = -- {-> color <-}
         defaultOutputs
         $ Fn.make "luma" $ do
             what <- P.receive _in_what
-            treshold <- P.receive _in_treshold
+            threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            -- Luma what treshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Luma { treshold, tolerance }
+            -- Luma what threshold tolerance
+            P.send _out_out $ H.WithColor what $ H.Luma { threshold, tolerance }
 
 
 type Node m =
@@ -5726,7 +5726,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Color.FTresh (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.Color.FThresh (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -5741,11 +5741,11 @@ import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 
 
-id = Node.Family :: _ "tresh"
+id = Node.Family :: _ "thresh"
 
 
 name :: String
-name = "tresh"
+name = "thresh"
 
 
 type State = Unit
@@ -5756,14 +5756,14 @@ defaultState = unit
 
 
 _in_what = Fn.Input :: _ "what"
-_in_treshold = Fn.Input :: _ "treshold"
+_in_threshold = Fn.Input :: _ "threshold"
 _in_tolerance = Fn.Input :: _ "tolerance"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Inputs =
-        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( what :: Texture, threshold :: Value, tolerance :: Value )
 
 type Outputs =
         ( out :: Texture )
@@ -5771,7 +5771,7 @@ type Outputs =
 
 defaultInputs :: Record Inputs
 defaultInputs =
-        { what : Empty, treshold : Number 0.5, tolerance : Number 0.1 }
+        { what : Empty, threshold : Number 0.5, tolerance : Number 0.1 }
 
 defaultOutputs :: Record Outputs
 defaultOutputs =
@@ -5791,16 +5791,16 @@ family = -- {-> color <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make "tresh" $ do
+        $ Fn.make "thresh" $ do
             what <- P.receive _in_what
-            treshold <- P.receive _in_treshold
+            threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            -- Tresh what treshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Tresh { treshold, tolerance }
+            -- Thresh what threshold tolerance
+            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
 
 
 type Node m =
-    N.Node "tresh" State
+    N.Node "thresh" State
         Inputs
         Outputs
         m

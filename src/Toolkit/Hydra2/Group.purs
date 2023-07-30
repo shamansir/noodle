@@ -67,7 +67,7 @@ toGroupR family = case Id.reflectFamilyR family of
     "contrast" -> Color
     "brightness" -> Color
     "luma" -> Color
-    "tresh" -> Color
+    "thresh" -> Color
     "color" -> Color
     "saturate" -> Color
     "hue" -> Color

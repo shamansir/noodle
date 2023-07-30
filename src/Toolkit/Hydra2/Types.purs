@@ -90,8 +90,8 @@ data ColorOp
     | Invert Value -- amount
     | Contrast Value -- amount
     | Brightness Value -- amount
-    | Luma { treshold :: Value, tolerance :: Value }
-    | Tresh { treshold :: Value, tolerance :: Value }
+    | Luma { threshold :: Value, tolerance :: Value }
+    | Thresh { threshold :: Value, tolerance :: Value }
     | Color { r :: Value, g :: Value, b :: Value, a :: Value }
     | Saturate Value -- amount
     | Hue Value -- amount

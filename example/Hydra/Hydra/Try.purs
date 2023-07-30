@@ -215,7 +215,7 @@ thresh =
     tryTV2M
         ( H.defaultTexture /\ Num 0.5 /\ Num 0.04 )
         (\what threshold tolerance ->
-            Tex $ H.addModifier what $ H.color $ Tresh { threshold, tolerance }
+            Tex $ H.addModifier what $ H.color $ Thresh { threshold, tolerance }
         )
 
 

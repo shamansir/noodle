@@ -93,7 +93,7 @@ data Color
     | Contrast { amount :: Value }
     | Brightness { amount :: Value }
     | Luma { threshold :: Value, tolerance :: Value }
-    | Tresh { threshold :: Value, tolerance :: Value }
+    | Thresh { threshold :: Value, tolerance :: Value }
     | Color { r :: Value, g :: Value, b :: Value, a :: Value }
     | Saturate { amount :: Value }
     | Hue { amount :: Value }
@@ -412,7 +412,7 @@ instance ToFn Color Value where
     toFn (Contrast vs)   = fn "contrast" [ "amount" /\ vs.amount ]
     toFn (Brightness vs) = fn "brightness" [ "amount" /\ vs.amount ]
     toFn (Luma vs)       = fn "luma" [ "threshold" /\ vs.threshold, "tolerance" /\ vs.tolerance ]
-    toFn (Tresh vs)      = fn "thresh" [ "threshold" /\ vs.threshold, "tolerance" /\ vs.tolerance ]
+    toFn (Thresh vs)      = fn "thresh" [ "threshold" /\ vs.threshold, "tolerance" /\ vs.tolerance ]
     toFn (Color vs)      = fn "color" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
     toFn (Saturate vs)   = fn "saturate" [ "amount" /\ vs.amount ]
     toFn (Hue vs)        = fn "hue" [ "amount" /\ vs.amount ]

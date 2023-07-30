@@ -23,8 +23,8 @@ color : shift :: <what:Texture {Empty} -> r:Value {Number 0.5} -> g:Value {Numbe
 color : invert :: <what:Texture {Empty} -> amount:Value {Number 1.0}> => Texture {Empty} /-| H.WithColor what $ H.Invert amount |-/
 color : contrast :: <what:Texture {Empty} -> amount:Value {Number 1.6}> => Texture {Empty} /-| H.WithColor what $ H.Contrast amount |-/
 color : brightness :: <what:Texture {Empty} -> amount:Value {Number 0.4}> => Texture {Empty} /-| H.WithColor what $ H.Brightness amount |-/
-color : luma :: <what:Texture {Empty} -> treshold:Value {Number 0.5} -> tolerance:Value {Number 0.1}> => Texture {Empty} /-| H.WithColor what $ H.Luma { treshold, tolerance } |-/
-color : tresh :: <what:Texture {Empty} -> treshold:Value {Number 0.5} -> tolerance:Value {Number 0.1}> => Texture {Empty} /-| H.WithColor what $ H.Tresh { treshold, tolerance } |-/
+color : luma :: <what:Texture {Empty} -> threshold:Value {Number 0.5} -> tolerance:Value {Number 0.1}> => Texture {Empty} /-| H.WithColor what $ H.Luma { threshold, tolerance } |-/
+color : thresh :: <what:Texture {Empty} -> threshold:Value {Number 0.5} -> tolerance:Value {Number 0.1}> => Texture {Empty} /-| H.WithColor what $ H.Thresh { threshold, tolerance } |-/
 color : color :: <what:Texture {Empty} -> r:Value {Number 1.0} -> g:Value {Number 1.0} -> b:Value {Number 1.0} -> a:Value {Number 1.0}> => Texture {Empty} /-| H.WithColor what $ H.Color { r, g, b, a } |-/
 color : saturate :: <what:Texture {Empty} -> amount:Value {Number 2.0}> => Texture {Empty} /-| H.WithColor what $ H.Saturate amount |-/
 color : hue :: <what:Texture {Empty} -> hue:Value {Number 0.4}> => Texture {Empty} /-| H.WithColor what $ H.Hue hue |-/

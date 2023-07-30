@@ -22,8 +22,8 @@ color : shift :: <what:Texture -> r:Value {0.5} -> g:Value -> b:Value -> a:Value
 color : invert :: <what:Texture -> amount:Value {1}> => Texture
 color : contrast :: <what:Texture -> amount:Value {1.6}> => Texture
 color : brightness :: <what:Texture -> amount:Value {0.4}> => Texture
-color : luma :: <what:Texture -> treshold:Value {0.5} -> tolerance:Value {0.1}> => Texture
-color : tresh :: <what:Texture -> treshold:Value {0.5} -> tolerance:Value {0.1}> => Texture
+color : luma :: <what:Texture -> threshold:Value {0.5} -> tolerance:Value {0.1}> => Texture
+color : thresh :: <what:Texture -> threshold:Value {0.5} -> tolerance:Value {0.1}> => Texture
 color : color :: <what:Texture -> r:Value {1} -> g:Value {1} -> b:Value {1} -> a:Value {1}> => Texture
 color : saturate :: <what:Texture -> amount:Value {2}> => Texture
 color : hue :: <what:Texture -> hue:Value {0.4}> => Texture

@@ -231,13 +231,13 @@ brightness v =
 
 
 luma :: Value -> Value -> Texture -> Texture
-luma treshold tolerance =
-    flip WithColor $ Luma { treshold, tolerance }
+luma threshold tolerance =
+    flip WithColor $ Luma { threshold, tolerance }
 
 
-tresh :: Value -> Value -> Texture -> Texture
-tresh treshold tolerance =
-    flip WithColor $ Tresh { treshold, tolerance }
+thresh :: Value -> Value -> Texture -> Texture
+thresh threshold tolerance =
+    flip WithColor $ Thresh { threshold, tolerance }
 
 
 color :: Value -> Value -> Value -> Value -> Texture -> Texture

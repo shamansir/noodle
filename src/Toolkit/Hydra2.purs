@@ -61,7 +61,7 @@ import Toolkit.Hydra2.Family.Color.FInvert as FInvert
 import Toolkit.Hydra2.Family.Color.FContrast as FContrast
 import Toolkit.Hydra2.Family.Color.FBrightness as FBrightness
 import Toolkit.Hydra2.Family.Color.FLuma as FLuma
-import Toolkit.Hydra2.Family.Color.FTresh as FTresh
+import Toolkit.Hydra2.Family.Color.FThresh as FThresh
 import Toolkit.Hydra2.Family.Color.FColor as FColor
 import Toolkit.Hydra2.Family.Color.FSaturate as FSaturate
 import Toolkit.Hydra2.Family.Color.FHue as FHue
@@ -155,7 +155,7 @@ type Families (m :: Type -> Type) =
         , contrast :: FContrast.Family m  -- {-> color <-}
         , brightness :: FBrightness.Family m  -- {-> color <-}
         , luma :: FLuma.Family m  -- {-> color <-}
-        , tresh :: FTresh.Family m  -- {-> color <-}
+        , thresh :: FThresh.Family m  -- {-> color <-}
         , color :: FColor.Family m  -- {-> color <-}
         , saturate :: FSaturate.Family m  -- {-> color <-}
         , hue :: FHue.Family m  -- {-> color <-}
@@ -244,7 +244,7 @@ families =
         , contrast : (FContrast.family :: FContrast.Family m)
         , brightness : (FBrightness.family :: FBrightness.Family m)
         , luma : (FLuma.family :: FLuma.Family m)
-        , tresh : (FTresh.family :: FTresh.Family m)
+        , thresh : (FThresh.family :: FThresh.Family m)
         , color : (FColor.family :: FColor.Family m)
         , saturate : (FSaturate.family :: FSaturate.Family m)
         , hue : (FHue.family :: FHue.Family m)
@@ -344,7 +344,7 @@ type FamiliesOrder =
         ::: "contrast"
         ::: "brightness"
         ::: "luma"
-        ::: "tresh"
+        ::: "thresh"
         ::: "color"
         ::: "saturate"
         ::: "hue"
@@ -467,7 +467,7 @@ type Instances m =
         , contrast :: Array ( FContrast.Node m )
         , brightness :: Array ( FBrightness.Node m )
         , luma :: Array ( FLuma.Node m )
-        , tresh :: Array ( FTresh.Node m )
+        , thresh :: Array ( FThresh.Node m )
         , color :: Array ( FColor.Node m )
         , saturate :: Array ( FSaturate.Node m )
         , hue :: Array ( FHue.Node m )
@@ -556,7 +556,7 @@ noInstances =
         , contrast : ([] :: Array ( FContrast.Node m ))
         , brightness : ([] :: Array ( FBrightness.Node m ))
         , luma : ([] :: Array ( FLuma.Node m ))
-        , tresh : ([] :: Array ( FTresh.Node m ))
+        , thresh : ([] :: Array ( FThresh.Node m ))
         , color : ([] :: Array ( FColor.Node m ))
         , saturate : ([] :: Array ( FSaturate.Node m ))
         , hue : ([] :: Array ( FHue.Node m ))
@@ -645,7 +645,7 @@ familySym :: Record
         , contrast :: Node.Family "contrast"
         , brightness :: Node.Family "brightness"
         , luma :: Node.Family "luma"
-        , tresh :: Node.Family "tresh"
+        , thresh :: Node.Family "thresh"
         , color :: Node.Family "color"
         , saturate :: Node.Family "saturate"
         , hue :: Node.Family "hue"
@@ -735,7 +735,7 @@ familySym =
         , contrast : FContrast.id
         , brightness : FBrightness.id
         , luma : FLuma.id
-        , tresh : FTresh.id
+        , thresh : FThresh.id
         , color : FColor.id
         , saturate : FSaturate.id
         , hue : FHue.id
@@ -837,7 +837,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "contrast" -> Just $ fn familySym.contrast families.contrast toolkit
         "brightness" -> Just $ fn familySym.brightness families.brightness toolkit
         "luma" -> Just $ fn familySym.luma families.luma toolkit
-        "tresh" -> Just $ fn familySym.tresh families.tresh toolkit
+        "thresh" -> Just $ fn familySym.thresh families.thresh toolkit
         "color" -> Just $ fn familySym.color families.color toolkit
         "saturate" -> Just $ fn familySym.saturate families.saturate toolkit
         "hue" -> Just $ fn familySym.hue families.hue toolkit

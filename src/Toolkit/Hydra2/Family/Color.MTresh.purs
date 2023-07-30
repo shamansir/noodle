@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Color.FTresh where
+module Toolkit.Hydra2.Family.Color.FThresh where
 
 
 import Toolkit.Hydra2.Types as H
@@ -15,11 +15,11 @@ import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "tresh"
+id = Node.Family :: _ "thresh"
 
 
 name :: String
-name = "tresh"
+name = "thresh"
 
 
 type State = Unit
@@ -30,18 +30,18 @@ defaultState = unit
 
 
 _in_what      = Fn.Input  0 :: _ "what"
-_in_treshold  = Fn.Input  1 :: _ "treshold"
+_in_threshold  = Fn.Input  1 :: _ "threshold"
 _in_tolerance = Fn.Input  2 :: _ "tolerance"
 
 _out_out      = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( what :: H.Texture, treshold :: H.Value, tolerance :: H.Value )
+type Inputs = ( what :: H.Texture, threshold :: H.Value, tolerance :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
 inputsOrder :: _
-inputsOrder = s3 _in_what _in_treshold _in_tolerance
+inputsOrder = s3 _in_what _in_threshold _in_tolerance
 
 
 outputsOrder :: _
@@ -49,7 +49,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { what : H.Empty, treshold : H.Number 0.5, tolerance : H.Number 0.1 }
+defaultInputs = { what : H.Empty, threshold : H.Number 0.5, tolerance : H.Number 0.1 }
 
 
 defaultOutputs :: Record Outputs
@@ -73,13 +73,13 @@ family = -- {-> color <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             what <- P.receive _in_what
-            treshold <- P.receive _in_treshold
+            threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            P.send _out_out $ H.WithColor what $ H.Tresh { treshold, tolerance }
+            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
 
 
 type Node (m :: Type -> Type) =
-    N.Node "tresh" State
+    N.Node "thresh" State
         Inputs
         Outputs
         m

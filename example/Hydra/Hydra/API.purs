@@ -331,7 +331,7 @@ shift0 = shift1 $ n 0.5 --r
 
 
 thresh  :: V2Modifier
-thresh  threshold tolerance = modify $ H.color $ H.Tresh { threshold, tolerance }
+thresh  threshold tolerance = modify $ H.color $ H.Thresh { threshold, tolerance }
 thresh1 :: V1Modifier
 thresh1 threshold = thresh threshold $ n 0.04 -- tolerance
 thresh0 :: V0Modifier
