@@ -12,6 +12,7 @@ import Effect.Console (log) as Console
 
 
 import Type.Proxy (Proxy(..))
+import Data.SProxy (reflect')
 
 import Control.Monad.State (get, modify_) as State
 
@@ -45,7 +46,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.Palette as Palette
-import Cli.State (State, OutletIndex(..), InletIndex(..))
+import Cli.State (State, OutletIndex(..), InletIndex(..), logNdfCommandM)
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
@@ -155,6 +156,7 @@ handlers stateRef patch (Network tk _) =
                                 (InletIndex inletIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
+                    logNdfCommandM $ Cmd.Connect (reflect' onode) outletIdx (reflect' inode) inletIdx
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
@@ -171,6 +173,7 @@ handlers stateRef patch (Network tk _) =
                                 (InletIndex inletIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
+                    logNdfCommandM $ Cmd.Connect (reflect' onode) outletIdx (reflect' inode) inletIdx
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
