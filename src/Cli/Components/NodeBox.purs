@@ -320,7 +320,7 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
             case Map.lookup output outputs of
                 Just wrapRepr -> do
                     flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
-                    liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh
+                    liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
                 Nothing -> pure unit
         _ -> pure unit
 

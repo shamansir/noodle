@@ -197,7 +197,7 @@ component =
         , Core.on Button.Press
             \_ _ -> do
                 state <- State.get
-                stateRef <- BlessedOp.getStateRef
+                stateRef <- BlessedOp.getStateRef -- FIXME: use `Blessed.impairN` for handlers
                 let network = unwrapN state.network
                 let mbCurrentPatchId = Tuple.snd <$> state.currentPatch
                 let mbCurrentPatch = mbCurrentPatchId >>= \id -> Network.patch id network

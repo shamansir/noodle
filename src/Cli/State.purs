@@ -20,6 +20,8 @@ import Control.Monad.State.Class (class MonadState, modify_)
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey (RawNodeKey)
 
+import Web.Socket.Server (WebSocketServer, WebSocketConnection) as WSS
+
 import Noodle.Id as Id
 import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
@@ -44,6 +46,7 @@ import Toolkit.Hydra2.Lang (Program, Command) as Lang
 type State =
     { network :: Network Effect
     , currentPatch :: Maybe (Int /\ Patch.Id)
+    , wsServer :: Maybe (WSS.WebSocketServer /\ Array WSS.WebSocketConnection)
     , lastShiftX :: Int
     , lastShiftY :: Int
     , lastClickedOutlet :: Maybe OutletInfo
@@ -56,9 +59,6 @@ type State =
     , commandLog :: NdfFile
     , program :: Map Id.NodeIdR Lang.Command
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
-    -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
-    -- , network :: TestM Effect
-    -- , network :: Network (BlessedOpM State Effect)
     }
 
 
@@ -66,6 +66,7 @@ initial :: State
 initial =
     { network : initialNetwork
     , currentPatch : Just (0 /\ patchIdFromIndex 0)
+    , wsServer : Nothing
     , lastShiftX : 0
     , lastShiftY : 0
     , lastKeys :
