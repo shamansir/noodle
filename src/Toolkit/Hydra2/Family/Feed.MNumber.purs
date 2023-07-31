@@ -12,6 +12,7 @@ import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 import Data.SOrder (SOrder, type (:::), T, s1, s3)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -29,17 +30,15 @@ defaultState :: State
 defaultState = 0.0
 
 
-_in_in     = Fn.Input  0 :: _ "in" -- TODO: make hidden
-
 _out_out   = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( in :: H.Value )
+type Inputs = ( )
 type Outputs = ( out :: H.Value )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_in
+inputsOrder = SOrder.empty
 
 
 outputsOrder :: _
@@ -47,7 +46,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { in : H.Number 0.0 }
+defaultInputs = { }
 
 
 defaultOutputs :: Record Outputs
@@ -69,9 +68,9 @@ family = -- {-> number <-}
         defaultOutputs
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
-            $ do
-            numberValue <- P.receive _in_in
-            P.send _out_out numberValue
+            $ pure unit
+            -- numberValue <- P.receive _in_in
+            -- P.send _out_out numberValue
 
 
 type Node (m :: Type -> Type) =
