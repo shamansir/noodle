@@ -13,8 +13,6 @@ import Effect.Exception (Error)
 import Node.HTTP (Request)
 import Web.Socket.Server as WSS
 
-import Unsafe.Coerce (unsafeCoerce)
-
 
 {-
 handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> Effect Unit
@@ -46,7 +44,10 @@ start ::
   -> Effect WSS.WebSocketServer
 start def = do
   wss <- WSS.createWebSocketServerWithPort (WSS.Port 9999) {} def.handleStart
-  WSS.onConnection wss def.handleConnection
+  WSS.onConnection wss $ \ws req -> do
+    WSS.onMessage ws $ def.handleMessage ws
+    WSS.onError ws def.handleError
+    def.handleConnection ws req
   WSS.onServerError wss def.handleError
   pure wss
 

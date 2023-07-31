@@ -35,6 +35,7 @@ commandLogButton = nk :: Button <^> "toggle-command-log"
 commandLogBox = nk :: Box <^> "command-log"
 hydraCodeButton = nk :: Button <^> "toggle-hydra-code"
 hydraCodeBox = nk :: Box <^> "hydra-code"
+wsStatusButton = nk :: Button <^> "ws-status"
 
 
 {- For links -}

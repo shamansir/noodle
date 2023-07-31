@@ -87,6 +87,14 @@ addPatch =
         ]
 
 
+menuButton :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+menuButton =
+    Box.style
+        [ Style.fg Palette.fg'
+        , Style.bg Palette.networkBg'
+        ]
+
+
 nodeBox :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
 nodeBox =
     Box.style

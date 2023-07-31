@@ -11,9 +11,11 @@ import Effect.Ref as Ref
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
 import Data.Array ((:))
+import Data.Array as Array
 
 import Control.Monad.State.Class (class MonadState, modify_)
 
@@ -186,3 +188,20 @@ logNdfCommandM = modify_ <<< logNdfCommand
 
 logNdfCommandByRef :: forall m. MonadEffect m => NdfFile.Command -> Ref State -> m Unit
 logNdfCommandByRef cmd = liftEffect <<< Ref.modify_ (logNdfCommand cmd)
+
+
+informWsInitialized :: WSS.WebSocketServer -> State -> State
+informWsInitialized wss state = state { wsServer = Just $ wss /\ [] }
+
+
+informWsListening :: State -> State
+informWsListening state = state
+
+
+registerWsClient :: WSS.WebSocketConnection -> State -> State
+registerWsClient ws state = state { wsServer = addClient <$> state.wsServer }
+    where addClient (srv /\ connections) = srv /\ ws : connections
+
+
+connectionsCount :: State -> Maybe Int
+connectionsCount = _.wsServer >>> map (Tuple.snd >>> Array.length)

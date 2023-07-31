@@ -196,7 +196,7 @@ component =
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Button.mouse true
-        , Style.addPatch
+        , Style.menuButton
         , Core.on Button.Press
             \_ _ -> do
                 state <- State.get

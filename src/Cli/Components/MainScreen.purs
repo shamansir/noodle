@@ -37,6 +37,7 @@ import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
+import Cli.Components.WsStatusButton as WsStatusButton
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
@@ -66,6 +67,7 @@ component =
         , LoadFileButton.component
         , CommandLogButton.component
         , HydraCodeButton.component
+        , WsStatusButton.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
         , CommandLogBox.component
