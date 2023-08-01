@@ -4,11 +4,16 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.Maybe (Maybe(..))
+
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
+
+import Web.Socket.WebSocket
 
 
 main :: Effect Unit
@@ -17,7 +22,9 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 
-data Action = Increment | Decrement
+data Action
+  = Initialize
+  | Receive String
 
 
 component :: forall q i o m. H.Component q i o m
@@ -25,21 +32,26 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval $ H.defaultEval
+      { handleAction = handleAction
+      , initialize = Just Initialize
+      }
     }
   where
   initialState _ = 0
 
   render state =
     HH.div_
-      [ HH.button [ HE.onClick \_ -> Decrement ] [ HH.text "-" ]
-      , HH.div_ [ HH.text $ show state ]
-      , HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ]
+      [ HH.span [] [ HH.text "foo" ]
+      , HH.canvas
+        [ HP.id "hydra-canvas"
+        ]
       ]
 
+
   handleAction = case _ of
-    Increment -> H.modify_ \state -> state + 1
-    Decrement -> H.modify_ \state -> state - 1
+    Initialize -> pure unit
+    Receive _ -> pure unit
 
 
 {-
