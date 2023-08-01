@@ -3,8 +3,15 @@ module Web.RenderClient where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
+import Foreign as F
+import Control.Monad.Except.Trans as T
 
 import Data.Maybe (Maybe(..))
+import Data.Either (either)
+import Data.String as String
+import Data.Array as Array
 
 import Halogen as H
 import Halogen.Aff as HA
@@ -12,8 +19,13 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
+import Halogen.Query.Event (eventListener)
+import Web.Event.EventTarget as ET
 
-import Web.Socket.WebSocket
+import Web.Socket.WebSocket as WS
+import Web.Socket.Event.EventTypes as WS
+import Web.Socket.Event.MessageEvent as WSMsg
+
 
 
 main :: Effect Unit
@@ -22,12 +34,19 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 
+type State = Unit
+
+
+initialState :: forall i. i -> State
+initialState = const unit
+
+
 data Action
   = Initialize
-  | Receive String
+  | OnWsMessage H.SubscriptionId WSMsg.MessageEvent
 
 
-component :: forall q i o m. H.Component q i o m
+component :: forall q i o m. MonadEffect m => H.Component q i o m
 component =
   H.mkComponent
     { initialState
@@ -37,11 +56,11 @@ component =
       , initialize = Just Initialize
       }
     }
-  where
-  initialState _ = 0
 
-  render state =
-    HH.div_
+
+render :: forall cs m. State -> H.ComponentHTML Action cs m
+render state =
+   HH.div_
       [ HH.span [] [ HH.text "foo" ]
       , HH.canvas
         [ HP.id "hydra-canvas"
@@ -49,26 +68,37 @@ component =
       ]
 
 
-  handleAction = case _ of
-    Initialize -> pure unit
-    Receive _ -> pure unit
-
-
-{-
-render :: forall cs m. State -> H.ComponentHTML Action cs m
-render state =
-  HH.div_
-    [ HH.p_
-        [ HH.text $ "You clicked " <> show state.count <> " times" ]
-    , HH.button
-        [ HE.onClick \_ -> Increment ]
-        [ HH.text "Click me" ]
-    ]
-
-handleAction :: forall cs o m. Action → H.HalogenM State Action cs o m Unit
+handleAction :: forall cs o m. MonadEffect m => Action -> H.HalogenM State Action cs o m Unit
 handleAction = case _ of
-  Increment -> H.modify_ \st -> st { count = st.count + 1 }
--}
+  Initialize -> do
+      ws <- liftEffect $ WS.create "ws://localhost:9999" []
+      liftEffect $ Console.log "connected"
+      let wset = WS.toEventTarget ws
+      H.subscribe' \sid ->
+        eventListener
+          WS.onMessage
+          wset
+          (map (OnWsMessage sid) <<< WSMsg.fromEvent)
+      {-
+      closeListener <- liftEffect $ ET.eventListener $ const $ Console.log "close"
+      messageListener <- liftEffect $ ET.eventListener $ \evt ->
+          case WSMsg.fromEvent evt of
+            Just msgevt -> do
+              let messageData = WSMsg.data_ msgevt
+              str <- T.runExceptT $ F.readString messageData
+              Console.log $ either (Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", ") identity str
+              pure unit
+            Nothing ->
+              pure unit
+      liftEffect $ ET.addEventListener WS.onClose closeListener true wset
+      liftEffect $ ET.addEventListener WS.onMessage messageListener true wset
+      -}
+      pure unit
+  OnWsMessage _ msgevt -> do
+      let messageData = WSMsg.data_ msgevt
+      str <- T.runExceptT $ F.readString messageData
+      liftEffect $ Console.log $ either (Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", ") identity str
+      pure unit
 
 
 
