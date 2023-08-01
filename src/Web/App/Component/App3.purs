@@ -60,7 +60,7 @@ render
     :: forall gstate nodes instances rln rli rla
      . State gstate nodes instances
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
-render state = HH.div [] []
+render state = HH.div [] [ HH.text "App 3" ]
 
 
 

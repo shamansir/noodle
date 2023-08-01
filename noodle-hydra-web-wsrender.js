@@ -1,13 +1,13 @@
 //require('./example/Hydra/init-hydra');
 
 // require('./src/App/Style/Quartz/Quartz.css');
-require('./src/App/WebApp.css');
-require('./example/Hydra/Hydra.css');
-require('./src/App/Style/Hydra/Hydra.css');
+// require('./src/App/WebApp.css');
+// require('./example/Hydra/Hydra.css');
+// require('./src/App/Style/Hydra/Hydra.css');
 
 
 // var Main = require('./output/Hydra.Main');
-var WebMain = require('./output/WebMain');
+var WebMain = require('./output/Web.RenderClient');
 
 function main () {
     /*
