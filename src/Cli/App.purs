@@ -61,5 +61,6 @@ run = Blessed.runAnd State.initial MainScreen.component $ do
             state <- State.get
             WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
+            liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
         handleError :: Error -> BlessedOp State Effect
         handleError _ = pure unit

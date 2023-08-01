@@ -43,7 +43,10 @@ initialState = const unit
 
 data Action
   = Initialize
+  | OnWsOpen H.SubscriptionId
   | OnWsMessage H.SubscriptionId WSMsg.MessageEvent
+  | OnWsClose H.SubscriptionId
+  | OnWsError H.SubscriptionId
 
 
 component :: forall q i o m. MonadEffect m => H.Component q i o m
@@ -75,10 +78,13 @@ handleAction = case _ of
       liftEffect $ Console.log "connected"
       let wset = WS.toEventTarget ws
       H.subscribe' \sid ->
-        eventListener
-          WS.onMessage
-          wset
-          (map (OnWsMessage sid) <<< WSMsg.fromEvent)
+        eventListener WS.onMessage wset (map (OnWsMessage sid) <<< WSMsg.fromEvent)
+      H.subscribe' \sid ->
+        eventListener WS.onOpen wset (Just <<< const (OnWsOpen sid))
+      H.subscribe' \sid ->
+        eventListener WS.onClose wset (Just <<< const (OnWsClose sid))
+      H.subscribe' \sid ->
+        eventListener WS.onError wset (Just <<< const (OnWsError sid))
       {-
       closeListener <- liftEffect $ ET.eventListener $ const $ Console.log "close"
       messageListener <- liftEffect $ ET.eventListener $ \evt ->
@@ -98,6 +104,15 @@ handleAction = case _ of
       let messageData = WSMsg.data_ msgevt
       str <- T.runExceptT $ F.readString messageData
       liftEffect $ Console.log $ either (Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", ") identity str
+      pure unit
+  OnWsOpen _ -> do
+      liftEffect $ Console.log "open"
+      pure unit
+  OnWsClose _ -> do
+      liftEffect $ Console.log "close"
+      pure unit
+  OnWsError _ -> do
+      liftEffect $ Console.log "error"
       pure unit
 
 
