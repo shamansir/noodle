@@ -2,6 +2,8 @@ module Cli.Components.NodeBox where
 
 import Prelude
 
+import Cli.WsServer as WSS
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -335,7 +337,12 @@ updateCodeFor
     -> m Unit
 updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
     flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
-    liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh
+    liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
+    state <- liftEffect $ Ref.read stateRef
+    case state.wsServer of
+        Just serverState ->
+            liftEffect $ flip WSS.broadcastProgram serverState $ Lang.formProgram state.program
+        Nothing -> pure unit
 
 
 renderUpdate

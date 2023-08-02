@@ -45,6 +45,11 @@ import Toolkit.Hydra2.Lang (empty) as Program
 import Toolkit.Hydra2.Lang (Program, Command) as Lang
 
 
+import Signal (Signal)
+import Signal as Signal
+import Signal.Channel (Channel)
+
+
 type State =
     { network :: Network Effect
     , currentPatch :: Maybe (Int /\ Patch.Id)

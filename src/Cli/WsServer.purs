@@ -3,6 +3,9 @@ module Cli.WsServer where
 
 import Prelude
 
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (for_)
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
@@ -12,6 +15,9 @@ import Effect.Class (class MonadEffect)
 import Effect.Exception (Error)
 import Node.HTTP (Request)
 import Web.Socket.Server as WSS
+
+import Toolkit.Hydra2.Lang (formProgram, Program) as Lang
+import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
 
 
 {-
@@ -34,6 +40,8 @@ handleConnection ws req = do
   WSS.sendMessage ws $ WSS.WebSocketMessage "Hello, world!"
 -}
 
+type State = WSS.WebSocketServer /\ Array WSS.WebSocketConnection
+
 
 start ::
   { handleStart :: Unit -> Effect Unit
@@ -50,6 +58,15 @@ start def = do
     def.handleConnection ws req
   WSS.onServerError wss def.handleError
   pure wss
+
+
+broadcastProgram
+  :: Lang.Program Unit -> State -> Effect Unit
+broadcastProgram program (_ /\ connections) = do
+  let programString = Lang.toCode Lang.javaScript program
+  for_ connections $ \ws -> WSS.sendMessage ws $ WSS.WebSocketMessage programString
+    -- WSS.sendMessage conn $ WSS.WebSocketMessage programString
+  -- WSS.sendMessage conn $ WSS.WebSocketMessage programString
 
 
 {-

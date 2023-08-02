@@ -189,6 +189,11 @@ lift' :: forall state m. m ~> BlessedOpM state m
 lift' m = BlessedOpM $ Free.liftF $ Lift m
 
 
+impair :: forall state m x. MonadEffect m => MonadRec m => BlessedOpM state m x -> BlessedOpM state m (m x)
+impair op =
+    getStateRef <#> \stateRef -> runM' stateRef op
+
+
 impair1 :: forall state m a x. MonadEffect m => MonadRec m => (a -> BlessedOpM state m x) -> BlessedOpM state m (a -> m x)
 impair1 fn =
     getStateRef <#> \stateRef a -> runM' stateRef $ fn a

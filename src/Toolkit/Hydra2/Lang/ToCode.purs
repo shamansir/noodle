@@ -239,11 +239,11 @@ instance ToCode JS Value where
         VArray vals ease -> toCode javaScript vals <> "\n\t." <> toCode javaScript ease
         Dep _ -> "/* dep-fn */"
         Time -> "time"
-        MouseX -> "mouseX"
-        MouseY -> "mouseY"
+        MouseX -> "mouse.x"
+        MouseY -> "mouse.y"
         Width -> "width"
         Height -> "height"
-        Pi -> "pi"
+        Pi -> "Math.PI"
         Audio audio bin -> toCode javaScript audio <> ".fft[" <> toCode javaScript bin <> "]"
 
 
