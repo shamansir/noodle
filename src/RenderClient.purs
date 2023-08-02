@@ -7,6 +7,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console (log) as Console
 import Foreign as F
 import Control.Monad.Except.Trans as T
+import Control.Monad.State as State
 
 import Data.Maybe (Maybe(..))
 import Data.Either (either)
@@ -26,6 +27,7 @@ import Web.Socket.WebSocket as WS
 import Web.Socket.Event.EventTypes as WS
 import Web.Socket.Event.MessageEvent as WSMsg
 
+import Toolkit.Hydra2.Engine as Hydra
 
 
 main :: Effect Unit
@@ -34,11 +36,14 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 
-type State = Unit
+data State
+  = Connecting
+  | Ready
+  | Error String
 
 
 initialState :: forall i. i -> State
-initialState = const unit
+initialState = const Connecting
 
 
 data Action
@@ -47,6 +52,9 @@ data Action
   | OnWsMessage H.SubscriptionId WSMsg.MessageEvent
   | OnWsClose H.SubscriptionId
   | OnWsError H.SubscriptionId
+  | ParsingError String
+  | Prepare
+  | Render String
 
 
 component :: forall q i o m. MonadEffect m => H.Component q i o m
@@ -62,14 +70,16 @@ component =
 
 
 render :: forall cs m. State -> H.ComponentHTML Action cs m
-render state =
-   HH.div_
-      [ HH.span [] [ HH.text "foo" ]
-      , HH.canvas
-        [ HP.id "hydra-canvas"
-        ]
-      ]
-
+render =
+  case _ of
+    Connecting -> HH.span [] [ HH.text "Connecting" ]
+    Ready -> HH.div_
+          [ HH.span [] [ HH.text "Ready" ]
+          , HH.canvas
+            [ HP.id "hydra-canvas"
+            ]
+          ]
+    Error error -> HH.span [] [ HH.text $ "Error: " <> error ]
 
 handleAction :: forall cs o m. MonadEffect m => Action -> H.HalogenM State Action cs o m Unit
 handleAction = case _ of
@@ -103,7 +113,8 @@ handleAction = case _ of
   OnWsMessage _ msgevt -> do
       let messageData = WSMsg.data_ msgevt
       str <- T.runExceptT $ F.readString messageData
-      liftEffect $ Console.log $ either (Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", ") identity str
+      liftEffect $ Console.log $ either errorsToString identity str
+      _ <- str # either (errorsToString >>> ParsingError >>> handleAction) (messageToAction >>> handleAction)
       pure unit
   OnWsOpen _ -> do
       liftEffect $ Console.log "open"
@@ -112,8 +123,31 @@ handleAction = case _ of
       liftEffect $ Console.log "close"
       pure unit
   OnWsError _ -> do
+      State.put $ Error "WebSocket error"
       liftEffect $ Console.log "error"
       pure unit
+  ParsingError error -> do
+      State.put $ Error error
+      liftEffect $ Console.log $ "error: " <> error
+      pure unit
+  Prepare -> do
+      liftEffect $ Console.log "prepare"
+      State.put Ready
+      liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
+      pure unit
+  Render what -> do
+      liftEffect $ Console.log $ "render" <> what
+      liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
+      pure unit
+  where
+      errorsToString =
+        Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", "
+      messageToAction str = case str of
+        "ACK" -> Prepare
+        _ -> Render str
+
+
+
 
 
 
