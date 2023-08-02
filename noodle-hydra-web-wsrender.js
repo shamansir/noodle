@@ -6,6 +6,7 @@
 // require('./src/App/Style/Hydra/Hydra.css');
 
 
+require('./src/RenderClient.css');
 // var Main = require('./output/Hydra.Main');
 var WebMain = require('./output/Web.RenderClient');
 

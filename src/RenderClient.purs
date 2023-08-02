@@ -79,16 +79,16 @@ component =
 render :: forall cs m. State -> H.ComponentHTML Action cs m
 render =
   case _ of
-    Connecting -> HH.span [] [ HH.text "Connecting" ]
+    Connecting -> HH.span [ HP.id "status" ] [ HH.text "Connecting" ]
     Ready { w, h } -> HH.div_
-          [ HH.span [] [ HH.text "Ready" ]
-          , HH.canvas
+          [ HH.canvas
             [ HP.id "hydra-canvas"
             , HP.width w
             , HP.height h
             ]
+          , HH.span [ HP.id "status" ] [ HH.text "Ready" ]
           ]
-    Error error -> HH.span [] [ HH.text $ "Error: " <> error ]
+    Error error -> HH.span [ HP.id "status" ] [ HH.text $ "Error: " <> error ]
 
 handleAction :: forall cs o m. MonadEffect m => Action -> H.HalogenM State Action cs o m Unit
 handleAction = case _ of
