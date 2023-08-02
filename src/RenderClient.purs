@@ -13,6 +13,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (either)
 import Data.String as String
 import Data.Array as Array
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Halogen as H
 import Halogen.Aff as HA
@@ -21,7 +22,12 @@ import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
 import Halogen.Query.Event (eventListener)
+
+import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget as ET
+import Web.HTML (window)
+import Web.HTML.Window as Window
+import Web.Emitters  as Emitters
 
 import Web.Socket.WebSocket as WS
 import Web.Socket.Event.EventTypes as WS
@@ -38,7 +44,7 @@ main = HA.runHalogenAff do
 
 data State
   = Connecting
-  | Ready
+  | Ready { w :: Int, h :: Int }
   | Error String
 
 
@@ -55,6 +61,7 @@ data Action
   | ParsingError String
   | Prepare
   | Render String
+  | WindowResize H.SubscriptionId { w :: Int, h :: Int }
 
 
 component :: forall q i o m. MonadEffect m => H.Component q i o m
@@ -73,10 +80,12 @@ render :: forall cs m. State -> H.ComponentHTML Action cs m
 render =
   case _ of
     Connecting -> HH.span [] [ HH.text "Connecting" ]
-    Ready -> HH.div_
+    Ready { w, h } -> HH.div_
           [ HH.span [] [ HH.text "Ready" ]
           , HH.canvas
             [ HP.id "hydra-canvas"
+            , HP.width w
+            , HP.height h
             ]
           ]
     Error error -> HH.span [] [ HH.text $ "Error: " <> error ]
@@ -86,7 +95,8 @@ handleAction = case _ of
   Initialize -> do
       ws <- liftEffect $ WS.create "ws://localhost:9999" []
       liftEffect $ Console.log "connected"
-      let wset = WS.toEventTarget ws
+      let
+        wset = WS.toEventTarget ws
       H.subscribe' \sid ->
         eventListener WS.onMessage wset (map (OnWsMessage sid) <<< WSMsg.fromEvent)
       H.subscribe' \sid ->
@@ -95,21 +105,23 @@ handleAction = case _ of
         eventListener WS.onClose wset (Just <<< const (OnWsClose sid))
       H.subscribe' \sid ->
         eventListener WS.onError wset (Just <<< const (OnWsError sid))
-      {-
-      closeListener <- liftEffect $ ET.eventListener $ const $ Console.log "close"
-      messageListener <- liftEffect $ ET.eventListener $ \evt ->
-          case WSMsg.fromEvent evt of
-            Just msgevt -> do
-              let messageData = WSMsg.data_ msgevt
-              str <- T.runExceptT $ F.readString messageData
-              Console.log $ either (Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", ") identity str
-              pure unit
-            Nothing ->
-              pure unit
-      liftEffect $ ET.addEventListener WS.onClose closeListener true wset
-      liftEffect $ ET.addEventListener WS.onMessage messageListener true wset
-      -}
-      pure unit
+  Prepare -> do
+      liftEffect $ Console.log "prepare"
+      innerWidth <- H.liftEffect $ Window.innerWidth =<< window
+      innerHeight <- H.liftEffect $ Window.innerHeight =<< window
+      -- H.modify_ _ { windowSize = innerWidth /\ innerHeight }
+      windowResize <- H.liftEffect Emitters.windowDimensions
+      H.subscribe' $ \sid -> WindowResize sid <$> windowResize
+      State.put $ Ready { w : innerWidth, h : innerHeight }
+      liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
+  WindowResize _ newSize -> do
+      liftEffect $ Console.log $ show newSize
+      State.modify_ $ \s -> case s of
+        Ready _ -> Ready newSize
+        _ -> s
+  Render what -> do
+      liftEffect $ Console.log $ "render" <> what
+      liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
   OnWsMessage _ msgevt -> do
       let messageData = WSMsg.data_ msgevt
       str <- T.runExceptT $ F.readString messageData
@@ -118,27 +130,14 @@ handleAction = case _ of
       pure unit
   OnWsOpen _ -> do
       liftEffect $ Console.log "open"
-      pure unit
   OnWsClose _ -> do
       liftEffect $ Console.log "close"
-      pure unit
   OnWsError _ -> do
       State.put $ Error "WebSocket error"
       liftEffect $ Console.log "error"
-      pure unit
   ParsingError error -> do
       State.put $ Error error
       liftEffect $ Console.log $ "error: " <> error
-      pure unit
-  Prepare -> do
-      liftEffect $ Console.log "prepare"
-      State.put Ready
-      liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
-      pure unit
-  Render what -> do
-      liftEffect $ Console.log $ "render" <> what
-      liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
-      pure unit
   where
       errorsToString =
         Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", "
