@@ -66,6 +66,8 @@ type State =
     , commandLog :: NdfFile
     , program :: Map Id.NodeIdR Lang.Command
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
+    , commandBoxOn :: Boolean
+    , hydraCodeOn :: Boolean
     }
 
 
@@ -93,6 +95,8 @@ initial =
     , program : Map.empty
     , innerStates : Map.empty
     -- , nodes : Hydra.noInstances
+    , commandBoxOn : false
+    , hydraCodeOn : false
     }
 
 
@@ -210,3 +214,13 @@ registerWsClient ws state = state { wsServer = addClient <$> state.wsServer }
 
 connectionsCount :: State -> Maybe Int
 connectionsCount = _.wsServer >>> map (Tuple.snd >>> Array.length)
+
+
+toggleCommandBox :: State -> State
+toggleCommandBox s =
+    s { commandBoxOn = not s.commandBoxOn }
+
+
+toggleHydraCode :: State -> State
+toggleHydraCode s =
+    s { hydraCodeOn = not s.hydraCodeOn }

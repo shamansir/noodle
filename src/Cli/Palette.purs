@@ -35,6 +35,9 @@ coord = Pico.green :: Item -- FIXME: use `mark`
 value = Pico.brown :: Item -- FIXME: use `mark`
 toolkit = Pico.orange :: Item -- FIXME: use `mark`
 version = Pico.darkPeach :: Item -- FIXME: use `mark`
+positive = Pico.lightYellow :: Item
+neutral = Pico.lightGrey :: Item
+negative = Pico.darkRed :: Item
 
 
 networkBg' = repr networkBg :: String

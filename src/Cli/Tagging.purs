@@ -3,6 +3,7 @@ module Cli.Tagging where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.Symbol (class IsSymbol)
 import Data.Mark (mark)
 import Data.SProxy (reflect)
@@ -170,3 +171,14 @@ inputId = T.fgc (C.crepr Palette.inputId) <<< T.s
 
 outputId :: String -> Tag
 outputId = T.fgc (C.crepr Palette.outputId) <<< T.s
+
+
+buttonToggle ::String -> Boolean -> Tag
+buttonToggle repr true = T.fgc (C.crepr Palette.positive) $ T.s repr
+buttonToggle repr false = T.fgc (C.crepr Palette.neutral) $ T.s repr
+
+
+buttonConnection :: Either String Int -> Tag
+buttonConnection (Left s) = T.fgc (C.crepr Palette.negative) $ T.s s
+buttonConnection (Right 0) = T.fgc (C.crepr Palette.neutral) $ T.s "0"
+buttonConnection (Right n) = T.fgc (C.crepr Palette.positive) $ T.s $ show n
