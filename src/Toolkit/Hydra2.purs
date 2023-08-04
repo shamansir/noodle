@@ -98,7 +98,7 @@ import Toolkit.Hydra2.Family.Synth.FSpeed as FSpeed
 import Toolkit.Hydra2.Family.Synth.FBpm as FBpm
 import Toolkit.Hydra2.Family.Synth.FWidth as FWidth
 import Toolkit.Hydra2.Family.Synth.FHeight as FHeight
-import Toolkit.Hydra2.Family.Synth.FPi as FPi
+import Toolkit.Hydra2.Family.Feed.FPi as FPi
 import Toolkit.Hydra2.Family.Synth.FTime as FTime
 import Toolkit.Hydra2.Family.Synth.FMouse as FMouse
 import Toolkit.Hydra2.Family.ExternalSources.FInitCam as FInitCam

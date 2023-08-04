@@ -265,18 +265,18 @@ fromKnownFn = case _ of
     -- "initStream" -> ExternalSources
     -- "initScreen" -> ExternalSources
 
-    -- "render" -> SynthSettings
-    -- "update" -> SynthSettings
-    -- "setResolution" -> SynthSettings
-    -- "hush" -> SynthSettings
-    -- "setFunction" -> SynthSettings
-    -- "speed" -> SynthSettings
-    -- "bpm" -> SynthSettings
-    -- "width" -> SynthSettings
-    -- "height" -> SynthSettings
-    -- "time" -> SynthSettings
-    -- "mouse" -> SynthSettings
-    -- "pi" -> SynthSettings
+    -- "render" -> Synth
+    -- "update" -> Synth
+    -- "setResolution" -> Synth
+    -- "hush" -> Synth
+    -- "setFunction" -> Synth
+    -- "speed" -> Synth
+    -- "bpm" -> Synth
+    -- "width" -> Synth
+    -- "height" -> Synth
+    -- "time" -> Synth
+    -- "mouse" -> Synth
+    -- "pi" -> Synth
 
     -- "fft" -> Audio
     -- "setSmooth" -> Audio

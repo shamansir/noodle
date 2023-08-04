@@ -31,7 +31,7 @@ data Value
     | Required -- a.k.a. Undefined
     | Number Number
     | VArray Values Ease
-    | Dep (Context -> Value)
+    | Dep Fn
     -- | ...
     | Time
     | MouseX
@@ -44,6 +44,12 @@ data Value
 
 
 newtype Values = Values (Array Value)
+
+
+type Fn = (Context -> Value) -- TODO: newtype, include IExpr or String etc..
+
+
+type Shader = String
 
 
 data Texture
@@ -210,6 +216,14 @@ defaultGlslFn = GlslFn unit
 
 defaultUpdateFn :: UpdateFn
 defaultUpdateFn = UpdateFn $ const $ pure unit
+
+
+defaultFn :: Fn
+defaultFn = const None
+
+
+defaultShader :: Shader
+defaultShader = ""
 
 
 noValues :: Values

@@ -1,7 +1,7 @@
-module Toolkit.Hydra2.Family.Synth.FPi where
-
+module Toolkit.Hydra2.Family.Feed.FInfo where
 
 import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -10,71 +10,69 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
-
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T, s1)
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "pi"
+id = Node.Family :: _ "info"
 
 
 name :: String
-name = "pi"
+name = "info"
 
 
-type State = Unit
+type State = H.Fn
 
 
 defaultState :: State
-defaultState = unit
+defaultState = H.defaultFn
 
 
-_out_out = Fn.Output 0 :: _ "out"
+_in_in   = Fn.Input 0 :: _ "in"
 
 
-type Inputs = ( )
-type Outputs = ( out :: H.Value )
+type Inputs = ( in :: WrapRepr )
+type Outputs = ( )
 
 
 inputsOrder :: _
-inputsOrder = SOrder.empty
+inputsOrder = s1 _in_in
 
 
 outputsOrder :: _
-outputsOrder = s1 _out_out
+outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { }
+defaultInputs = { in : Unit unit }
 
 
 defaultOutputs :: Record Outputs
-defaultOutputs = { out : H.Pi }
+defaultOutputs = { }
 
 
-type Family (m :: Type -> Type) = -- {-> synth <-}
+type Family (m :: Type -> Type) = -- {-> info <-}
     Family.Def State
         Inputs
         Outputs
         m
 
+
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> synth <-}
+family = -- {-> info <-}
     Family.def
         defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
-            $ do
-            -- Pi
-            P.send _out_out $ H.Pi
+            $ pure unit
 
 
 type Node (m :: Type -> Type) =
-    N.Node "pi" State
+    N.Node "info" State
         Inputs
         Outputs
         m

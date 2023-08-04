@@ -26,7 +26,7 @@ data Group
     | Modulate
     | Out
     | Source
-    | SynthSettings
+    | Synth
     | Unknown
 
 
@@ -40,6 +40,7 @@ toGroup = toGroupR <<< Id.familyR
 toGroupR :: Id.FamilyR -> Group
 toGroupR family = case Id.reflectFamilyR family of
     "number" -> Feed
+    "pi" -> Feed
 
     "noise" -> Source
     "voronoi" -> Source
@@ -105,18 +106,17 @@ toGroupR family = case Id.reflectFamilyR family of
     "initStream" -> ExternalSources
     "initScreen" -> ExternalSources
 
-    "render" -> SynthSettings
-    "update" -> SynthSettings
-    "setResolution" -> SynthSettings
-    "hush" -> SynthSettings
-    "setFunction" -> SynthSettings
-    "speed" -> SynthSettings
-    "bpm" -> SynthSettings
-    "width" -> SynthSettings
-    "height" -> SynthSettings
-    "time" -> SynthSettings
-    "mouse" -> SynthSettings
-    "pi" -> SynthSettings
+    "render" -> Synth
+    "update" -> Synth
+    "setResolution" -> Synth
+    "hush" -> Synth
+    "setFunction" -> Synth
+    "speed" -> Synth
+    "bpm" -> Synth
+    "width" -> Synth
+    "height" -> Synth
+    "time" -> Synth
+    "mouse" -> Synth
 
     "fft" -> Audio
     "setSmooth" -> Audio
@@ -151,7 +151,7 @@ instance Mark Group where
         Modulate -> Color.rgb 102 255 230
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102
-        SynthSettings -> Color.rgb 128 102 255
+        Synth -> Color.rgb 128 102 255
         Unknown -> Color.rgb 139 199 101
 
 
