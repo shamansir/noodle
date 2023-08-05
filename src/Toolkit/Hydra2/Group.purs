@@ -27,6 +27,7 @@ data Group
     | Out
     | Source
     | Synth
+    | Display
     | Unknown
 
 
@@ -148,6 +149,7 @@ instance Mark Group where
         ExternalSources -> Color.rgb 102 179 255
         Geometry -> Color.rgb 255 230 102
         Feed -> Color.rgb 255 255 255
+        Display -> Color.rgb 255 255 255
         Modulate -> Color.rgb 102 255 230
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102

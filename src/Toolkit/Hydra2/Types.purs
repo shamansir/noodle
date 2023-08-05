@@ -13,6 +13,8 @@ import Data.Mark (class Mark)
 import Data.String as String
 import Data.FromToFile (class Encode, encode, class Decode, decode)
 
+import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
+
 
 data TODO = TODO
 
@@ -45,10 +47,27 @@ data Value
     | Audio Audio AudioBin
 
 
+-- derive instance Eq Value
+-- derive instance Eq Values
+-- derive instance Eq Ease
+derive instance Eq Audio
+derive instance Eq AudioBin
+-- derive instance Eq Texture
+-- derive instance Eq Source
+-- derive instance Eq Blend
+-- derive instance Eq ColorOp
+-- derive instance Eq Modulate
+-- derive instance Eq Geometry
+-- derive instance Eq Ease
+derive instance Eq Output
+derive instance Eq From
+
+
 newtype Values = Values (Array Value)
 
 
-type Fn = (Context -> Value) -- TODO: newtype, include IExpr or String etc..
+type Fn = (Context -> Value) -- TODO: newtype, include IExpr or String etc.., so that Eq would be appliable to `Value` and the expression decoded afterwards
+        -- may be introduce VExpr or something?
 
 
 type Shader = String
@@ -236,7 +255,8 @@ defaultSource :: Source
 defaultSource = Source All
 
 
-
+instance IsNodeState Values where
+    default = noValues
 
 
 {- MARK -}

@@ -7,8 +7,9 @@ import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 import Data.Mark (class Mark, mark)
 import Data.String as String
 import Data.String.Read (read)
-import Data.FromToFile (class Encode, encode)
+import Data.FromToFile (class Encode, encode, class Decode, decode)
 import Data.String.CodePoints as String
+import Data.String.Read (class Read)
 import Data.Number as Number
 
 import Noodle.Node2.MapsFolds.Repr as NMF
@@ -386,6 +387,14 @@ instance Encode WrapRepr where
         Audio a -> "A " <> encode a
         AudioBin ab -> "AB " <> encode ab
         Output o -> "OUT " <> encode o
+
+
+instance Read WrapRepr where
+    read = const Nothing
+
+
+maybeEq :: WrapRepr -> WrapRepr -> Maybe Boolean
+maybeEq a b = Just false
 
 
 instance R.ReadRepr WrapRepr where

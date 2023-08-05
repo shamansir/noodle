@@ -36,6 +36,11 @@ import Noodle.Node2.MapsFolds.Repr as NMF
 
 import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
+import Toolkit.Hydra2.Family.Feed.FPi as FPi
+import Toolkit.Hydra2.Family.Feed.FNumber as FNumber
+import Toolkit.Hydra2.Family.Feed.FArray as FArray
+import Toolkit.Hydra2.Family.Feed.FFn as FFn
+import Toolkit.Hydra2.Family.Display.FInfo as FInfo
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
 import Toolkit.Hydra2.Family.Source.FOsc as FOsc
@@ -54,7 +59,6 @@ import Toolkit.Hydra2.Family.Geometry.FKaleid as FKaleid
 import Toolkit.Hydra2.Family.Geometry.FScroll as FScroll
 import Toolkit.Hydra2.Family.Geometry.FScrollX as FScrollX
 import Toolkit.Hydra2.Family.Geometry.FScrollY as FScrollY
-import Toolkit.Hydra2.Family.Feed.FNumber as FNumber
 import Toolkit.Hydra2.Family.Color.FPosterize as FPosterize
 import Toolkit.Hydra2.Family.Color.FShift as FShift
 import Toolkit.Hydra2.Family.Color.FInvert as FInvert
@@ -98,7 +102,6 @@ import Toolkit.Hydra2.Family.Synth.FSpeed as FSpeed
 import Toolkit.Hydra2.Family.Synth.FBpm as FBpm
 import Toolkit.Hydra2.Family.Synth.FWidth as FWidth
 import Toolkit.Hydra2.Family.Synth.FHeight as FHeight
-import Toolkit.Hydra2.Family.Feed.FPi as FPi
 import Toolkit.Hydra2.Family.Synth.FTime as FTime
 import Toolkit.Hydra2.Family.Synth.FMouse as FMouse
 import Toolkit.Hydra2.Family.ExternalSources.FInitCam as FInitCam
@@ -131,6 +134,10 @@ defaultState = unit
 
 type Families (m :: Type -> Type) =
         ( number :: FNumber.Family m  -- {-> feed <-}
+        , pi :: FPi.Family m  -- {-> feed <-}
+        , array :: FArray.Family m  -- {-> feed <-}
+        , fn :: FFn.Family m  -- {-> feed <-}
+        , info :: FInfo.Family m -- {-> display <-}
         , noise :: FNoise.Family m  -- {-> source <-}
         , voronoi :: FVoronoi.Family m  -- {-> source <-}
         , osc :: FOsc.Family m -- {-> source <-}
@@ -192,7 +199,6 @@ type Families (m :: Type -> Type) =
         , bpm :: FBpm.Family m  -- {-> synth <-}
         , width :: FWidth.Family m  -- {-> synth <-}
         , height :: FHeight.Family m  -- {-> synth <-}
-        , pi :: FPi.Family m  -- {-> synth <-}
         , time :: FTime.Family m  -- {-> synth <-}
         , mouse :: FMouse.Family m  -- {-> synth <-}
         , initCam :: FInitCam.Family m  -- {-> extsource <-}
@@ -220,6 +226,10 @@ type Families (m :: Type -> Type) =
 families :: forall (m :: Type -> Type). MonadEffect m => Record (Families m)
 families =
         { number : (FNumber.family :: FNumber.Family m)
+        , pi : (FPi.family :: FPi.Family m)
+        , array : (FArray.family :: FArray.Family m)
+        , fn : (FFn.family :: FFn.Family m)
+        , info : (FInfo.family :: FInfo.Family m)
         , noise : (FNoise.family :: FNoise.Family m)
         , voronoi : (FVoronoi.family :: FVoronoi.Family m)
         , osc : (FOsc.family :: FOsc.Family m)
@@ -281,7 +291,6 @@ families =
         , bpm : (FBpm.family :: FBpm.Family m)
         , width : (FWidth.family :: FWidth.Family m)
         , height : (FHeight.family :: FHeight.Family m)
-        , pi : (FPi.family :: FPi.Family m)
         , time : (FTime.family :: FTime.Family m)
         , mouse : (FMouse.family :: FMouse.Family m)
         , initCam : (FInitCam.family :: FInitCam.Family m)
@@ -311,6 +320,13 @@ type FamiliesOrder =
         --  Feed
 
             "number"
+        ::: "pi"
+        ::: "array"
+        ::: "fn"
+
+        -- Display
+
+        ::: "info"
 
         --  Source
 
@@ -443,6 +459,10 @@ toolkit =
 type Instances :: (Type -> Type) -> Row Type
 type Instances m =
         ( number :: Array ( FNumber.Node m )
+        , pi :: Array ( FPi.Node m )
+        , array :: Array ( FArray.Node m )
+        , fn :: Array ( FFn.Node m )
+        , info :: Array ( FInfo.Node m )
         , noise :: Array ( FNoise.Node m )
         , voronoi :: Array ( FVoronoi.Node m )
         , osc :: Array ( FOsc.Node m )
@@ -504,7 +524,6 @@ type Instances m =
         , bpm :: Array ( FBpm.Node m )
         , width :: Array ( FWidth.Node m )
         , height :: Array ( FHeight.Node m )
-        , pi :: Array ( FPi.Node m )
         , time :: Array ( FTime.Node m )
         , mouse :: Array ( FMouse.Node m )
         , initCam :: Array ( FInitCam.Node m )
@@ -532,6 +551,10 @@ type Instances m =
 noInstances :: forall (m :: Type -> Type). Record (Instances m)
 noInstances =
         { number : ([] :: Array ( FNumber.Node m ))
+        , pi : ([] :: Array ( FPi.Node m ))
+        , array : ([] :: Array ( FArray.Node m ))
+        , fn : ([] :: Array ( FFn.Node m ))
+        , info : ([] :: Array ( FInfo.Node m ))
         , noise : ([] :: Array ( FNoise.Node m ))
         , voronoi : ([] :: Array ( FVoronoi.Node m ))
         , osc : ([] :: Array ( FOsc.Node m ))
@@ -593,7 +616,6 @@ noInstances =
         , bpm : ([] :: Array ( FBpm.Node m ))
         , width : ([] :: Array ( FWidth.Node m ))
         , height : ([] :: Array ( FHeight.Node m ))
-        , pi : ([] :: Array ( FPi.Node m ))
         , time : ([] :: Array ( FTime.Node m ))
         , mouse : ([] :: Array ( FMouse.Node m ))
         , initCam : ([] :: Array ( FInitCam.Node m ))
@@ -620,6 +642,10 @@ noInstances =
 
 familySym :: Record
         ( number :: Node.Family "number"
+        , pi :: Node.Family "pi"
+        , array :: Node.Family "array"
+        , fn :: Node.Family "fn"
+        , info :: Node.Family "info"
         , noise :: Node.Family "noise"
         , voronoi :: Node.Family "voronoi"
         , osc :: Node.Family "osc"
@@ -682,7 +708,6 @@ familySym :: Record
         , bpm :: Node.Family "bpm"
         , width :: Node.Family "width"
         , height :: Node.Family "height"
-        , pi :: Node.Family "pi"
         , time :: Node.Family "time"
         , mouse :: Node.Family "mouse"
         , initCam :: Node.Family "initCam"
@@ -710,6 +735,10 @@ familySym :: Record
 
 familySym =
         { number : FNumber.id
+        , pi : FPi.id
+        , array : FArray.id
+        , fn : FFn.id
+        , info : FInfo.id
         , noise : FNoise.id
         , voronoi : FVoronoi.id
         , osc : FOsc.id
@@ -772,7 +801,6 @@ familySym =
         , bpm : FBpm.id
         , width : FWidth.id
         , height : FHeight.id
-        , pi : FPi.id
         , time : FTime.id
         , mouse : FMouse.id
         , initCam : FInitCam.id
@@ -812,6 +840,10 @@ familySym =
 withFamily :: forall m. Toolkit.WithFamilyFn Hydra.Cli m State (Families m) (Instances m) WrapRepr
 withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "number" -> Just $ fn familySym.number families.number toolkit
+        "pi" -> Just $ fn familySym.pi families.pi toolkit
+        "array" -> Just $ fn familySym.array families.array toolkit
+        "fn" -> Just $ fn familySym.fn families.fn toolkit
+        "info" -> Just $ fn familySym.info families.info toolkit
         "noise" -> Just $ fn familySym.noise families.noise toolkit
         "voronoi" -> Just $ fn familySym.voronoi families.voronoi toolkit
         "osc" -> Just $ fn familySym.osc families.osc toolkit
@@ -874,7 +906,6 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "bpm" -> Just $ fn familySym.bpm families.bpm toolkit
         "width" -> Just $ fn familySym.width families.width toolkit
         "height" -> Just $ fn familySym.height families.height toolkit
-        "pi" -> Just $ fn familySym.pi families.pi toolkit
         "time" -> Just $ fn familySym.time families.time toolkit
         "mouse" -> Just $ fn familySym.mouse families.mouse toolkit
         "initCam" -> Just $ fn familySym.initCam families.initCam toolkit

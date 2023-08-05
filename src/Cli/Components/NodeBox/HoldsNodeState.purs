@@ -3,6 +3,7 @@ module Cli.Components.NodeBox.HoldsNodeState where
 import Prelude
 
 
+-- move somewhere to Noodle / Toolkit?
 class IsNodeState a where
     default :: a
 

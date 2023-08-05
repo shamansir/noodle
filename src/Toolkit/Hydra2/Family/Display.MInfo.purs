@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Feed.FInfo where
+module Toolkit.Hydra2.Family.Display.FInfo where
 
 import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
