@@ -262,7 +262,7 @@ import Toolkit.HydraGen.Family.Synth.FSpeed as FSpeed
 import Toolkit.HydraGen.Family.Synth.FBpm as FBpm
 import Toolkit.HydraGen.Family.Synth.FWidth as FWidth
 import Toolkit.HydraGen.Family.Synth.FHeight as FHeight
-import Toolkit.HydraGen.Family.Synth.FPi as FPi
+import Toolkit.HydraGen.Family.Feed.FPi as FPi
 import Toolkit.HydraGen.Family.Synth.FTime as FTime
 import Toolkit.HydraGen.Family.Synth.FMouse as FMouse
 import Toolkit.HydraGen.Family.ExternalSources.FInitCam as FInitCam
@@ -8698,7 +8698,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Synth.FPi (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.Feed.FPi (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
