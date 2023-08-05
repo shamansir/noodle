@@ -22,6 +22,8 @@ newtype Context =
         { time :: Number
         , mouseX :: Number
         , mouseY :: Number
+        -- , audio :: Audio
+        -- , fft :: Array Number
         -- , ...
         }
 

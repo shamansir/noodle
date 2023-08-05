@@ -22,6 +22,7 @@ import Test.Generating (spec) as Generating
 import Test.NdfParsing (spec) as NdfParsing
 import Test.SOrder (spec) as SOrder
 import Test.NodeKey (spec) as NodeKey
+import Test.WrapReprParsing (spec) as WrapReprParsing
 
 
 main :: Effect Unit
@@ -54,3 +55,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     SOrder.spec
   describe "NodeKey"
     NodeKey.spec
+  describeOnly "Hydra Serialization"
+    WrapReprParsing.spec

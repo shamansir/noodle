@@ -12,6 +12,12 @@ export const init = function(canvasId) {
 export const evaluate = function(hydraCode) {
     return function() {
         console.log(hydraCode);
-        Function('"use strict";return (function(){' + hydraCode + '})')()();
+        try {
+            Function('"use strict";return (function(){' + hydraCode + '})')()();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            console.log('finally');
+        }
     }
 };
