@@ -23,11 +23,11 @@ name :: String
 name = "out"
 
 
-type State = Unit
+type State = H.Output
 
 
 defaultState :: State
-defaultState = unit
+defaultState = H.Output0
 
 
 _in_what   = Fn.Input  0 :: _ "what"

@@ -33,13 +33,13 @@ import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core as Core
 
-import Blessed.UI.Base.Node.Method as Node
+import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Boxes.Box.Property as Element
 
-import Noodle.Node2 as Node
+import Noodle.Node2 (sendOut) as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
@@ -47,8 +47,8 @@ import Cli.Style as Style
 -- import Noodle.Node2 (Node)
 
 import Toolkit.Hydra2.Types as T
-import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Toolkit.Hydra2.Family.Feed.FNumber (State, _out_out) as FNumber
+-- import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
+import Toolkit.Hydra2.Family.Feed.FNumber (Node, State, _out_out) as FNumber
 -- import Toolkit.Hydra2 (State) as Hydra
 
 type TextBoxKey = TextBox <^> "number-tex-box"
@@ -62,11 +62,11 @@ type TextBoxKey = TextBox <^> "number-tex-box"
 
 
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
-render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> Node m -> BlessedOp FNumber.State m -- FIXME: why it doesn't work with `sendOut` ??
+render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m -- FIXME: why it doesn't work with `sendOut` ??
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
 render nodeBoxKey node = do
     let
-        (rootTextBoxKey :: TextBoxKey) = NK.first -- FIXME
+        (rootTextBoxKey :: TextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
         textBoxKey = NK.append nodeBoxKey rootTextBoxKey
         innerText =
             B.textBox textBoxKey

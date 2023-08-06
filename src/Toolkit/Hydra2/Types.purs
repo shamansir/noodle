@@ -99,6 +99,12 @@ data Texture
     | Geometry Texture Geometry
 
 
+-- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
+--       The combination of `Texture` with modifications is rather Layer (there's `layer` function as well, what is `src` then?) with something
+--       See also: src/Toolkit/Hydra2/glsl-functions.js
+--       Maybe `From` is rather this `Layer`?
+
+
 data Source
     = S0
     | Dynamic
@@ -171,12 +177,12 @@ data Geometry
 
 
 data Output
-    = Screen
+    = Screen -- not needed, default is Output0 anyway
     | Output0
     | Output1
     | Output2
     | Output3
-    | Output4
+    | Output4 -- name them `OutputN` ?
     -- | ...
 
 
@@ -288,6 +294,10 @@ instance IsNodeState Values where
 
 instance IsNodeState Fn where
     default = NoAction
+
+
+instance IsNodeState Output where
+    default = Screen
 
 
 {- MARK -}
@@ -444,10 +454,47 @@ instance Show Texture where
     show = case _ of
         Empty -> "Empty"
         From src -> "From " <> show src
-        BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with {- TODO: <> " :: " <> show blend -}
-        WithColor texture op -> "With Color " <> {- TODO : show op <> " " <> -} show texture
-        ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with {- TODO: <> " " <> show mod -}
-        Geometry texture gmt -> "Geometry " <> show texture {- TODO: <> " " <> show gmt -}
+        BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with <> " :: " <> show blend
+        WithColor texture op -> "With Color " <> show op <> " " <> show texture
+        ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with <> " " <> show mod
+        Geometry texture gmt -> "Geometry " <> show texture <> " " <> show gmt
+
+
+instance Show Blend where
+    show :: Blend -> String
+    show = case _ of
+        Blend v -> "<Blend " <> show v <> ">"
+        _ -> "/* FIXME */"
+
+
+instance Show ColorOp where
+    show :: ColorOp -> String
+    show = case _ of
+        R v -> "<R " <> show v <> ">"
+        G v -> "<G " <> show v <> ">"
+        B v -> "<B " <> show v <> ">"
+        A v -> "<A " <> show v <> ">"
+        _ -> "/* FIXME */"
+
+
+instance Show Modulate where
+    show :: Modulate -> String -- FIXME: use ToFn instance to generate these
+    show = case _ of
+        Modulate v -> "<Modulate " <> show v <> ">"
+        ModHue v -> "<ModulateHue " <> show v <> ">"
+        ModKaleid { nSides } -> "<ModulateKaleid " <> show nSides <> ">"
+        ModPixelate { multiple, offset } -> "<ModulateKaleid " <> show multiple <> " " <> show offset <> ">"
+        ModRepeat { offsetX, offsetY, repeatX, repeatY } -> "<ModulateRepeat " <> show offsetX <> " " <> show offsetY <> " " <> show repeatX <> " " <> show repeatY <> ">"
+        ModRepeatX { offset, reps } -> "<ModulateRepeatX " <> show offset <> " " <> show reps <> ">"
+        ModRepeatY { offset, reps } -> "<ModulateRepeatY " <> show offset <> " " <> show reps <> ">"
+        _ -> "/* FIXME */"
+
+
+instance Show Geometry where
+    show :: Geometry -> String
+    show = case _ of
+        GKaleid { nSides } -> "<GKaleid " <> show nSides <> ">"
+        _ -> "/* FIXME */"
 
 
 instance Show From where
