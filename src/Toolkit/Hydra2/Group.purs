@@ -42,6 +42,10 @@ toGroupR :: Id.FamilyR -> Group
 toGroupR family = case Id.reflectFamilyR family of
     "number" -> Feed
     "pi" -> Feed
+    "array" -> Feed
+    "fn" -> Feed
+
+    "info" -> Display
 
     "noise" -> Source
     "voronoi" -> Source
@@ -149,12 +153,12 @@ instance Mark Group where
         ExternalSources -> Color.rgb 102 179 255
         Geometry -> Color.rgb 255 230 102
         Feed -> Color.rgb 255 255 255
-        Display -> Color.rgb 255 255 255
+        Display -> Color.rgb 255 255 205
         Modulate -> Color.rgb 102 255 230
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102
         Synth -> Color.rgb 128 102 255
-        Unknown -> Color.rgb 139 199 101
+        Unknown -> Color.rgb 109 199 101
 
 
     -- [ hsl 10.0 1.0 0.7 "source"

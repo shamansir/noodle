@@ -31,9 +31,10 @@ data WrapRepr
     | SourceOptions H.SourceOptions
     | Values H.Values
     | Ease H.Ease
-    | Audio H.Audio
+    | Audio H.AudioSource
     | AudioBin H.AudioBin
     | Output H.Output
+    | Fn H.Fn
 
 
 -- instance NMF.HasRepr a WrapRepr where
@@ -111,8 +112,8 @@ instance NMF.HasRepr H.Ease WrapRepr where
     toRepr _ = Ease
 
 
-instance NMF.HasRepr H.Audio WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> H.Audio -> WrapRepr
+instance NMF.HasRepr H.AudioSource WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.AudioSource -> WrapRepr
     toRepr _ = Audio
 
 
@@ -124,6 +125,16 @@ instance NMF.HasRepr H.AudioBin WrapRepr where
 instance NMF.HasRepr H.Output WrapRepr where
     toRepr :: forall f i o. InNode f i o -> H.Output -> WrapRepr
     toRepr _ = Output
+
+
+instance NMF.HasRepr H.Fn WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.Fn -> WrapRepr
+    toRepr _ = Fn
+
+
+instance NMF.HasRepr WrapRepr WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
+    toRepr _ = identity
 
 
 {- R.ToRepr -}
@@ -194,8 +205,8 @@ instance R.ToRepr H.Ease WrapRepr where
     toRepr = R.exists <<< Ease
 
 
-instance R.ToRepr H.Audio WrapRepr where
-    toRepr :: H.Audio -> Maybe (R.Repr WrapRepr)
+instance R.ToRepr H.AudioSource WrapRepr where
+    toRepr :: H.AudioSource -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< Audio
 
 
@@ -207,6 +218,16 @@ instance R.ToRepr H.AudioBin WrapRepr where
 instance R.ToRepr H.Output WrapRepr where
     toRepr :: H.Output -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< Output
+
+
+instance R.ToRepr H.Fn WrapRepr where
+    toRepr :: H.Fn -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< Fn
+
+
+instance R.ToRepr WrapRepr WrapRepr where
+    toRepr :: WrapRepr -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists
 
 
 {- R.FromRepr -}
@@ -284,8 +305,8 @@ instance R.FromRepr WrapRepr H.Ease where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr H.Audio where
-    fromRepr :: R.Repr WrapRepr -> Maybe H.Audio
+instance R.FromRepr WrapRepr H.AudioSource where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.AudioSource
     fromRepr (R.Repr (Audio audio)) = Just audio
     fromRepr _ = Nothing
 
@@ -300,6 +321,17 @@ instance R.FromRepr WrapRepr H.Output where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Output
     fromRepr (R.Repr (Output output)) = Just output
     fromRepr _ = Nothing
+
+
+instance R.FromRepr WrapRepr H.Fn where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.Fn
+    fromRepr (R.Repr (Fn fn)) = Just fn
+    fromRepr _ = Nothing
+
+
+instance R.FromRepr WrapRepr WrapRepr where
+    fromRepr :: R.Repr WrapRepr -> Maybe WrapRepr
+    fromRepr (R.Repr w) = Just w
 
 
 instance Mark WrapRepr where
@@ -320,6 +352,7 @@ instance Mark WrapRepr where
         Audio a -> mark a
         AudioBin ab -> mark ab
         Output o -> mark o
+        Fn fn -> mark fn
 
 
 instance Show WrapRepr where
@@ -340,6 +373,7 @@ instance Show WrapRepr where
         Audio a -> show a
         AudioBin ab -> show ab
         Output o -> show o
+        Fn fn -> show fn
 
     {-
     mark = case _ of
@@ -377,7 +411,7 @@ instance Encode WrapRepr where
         From from -> "FR " <> encode from
         TODO todo -> "TODO"
         Context ctx -> "CTX " <> encode ctx
-        UpdateFn fn -> "FN " <> encode fn
+        UpdateFn fn -> "UFN " <> encode fn
         Source src -> "SRC " <> encode src
         Url url -> "URL " <> encode url
         GlslFn fn -> "GLSL " <> encode fn
@@ -387,6 +421,7 @@ instance Encode WrapRepr where
         Audio a -> "A " <> encode a
         AudioBin ab -> "AB " <> encode ab
         Output o -> "OUT " <> encode o
+        Fn fn -> "FN " <> encode fn
 
 
 instance Read WrapRepr where

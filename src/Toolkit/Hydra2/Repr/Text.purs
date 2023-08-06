@@ -85,8 +85,8 @@ instance NMF.HasRepr H.Ease TextRepr where
     toRepr _ a = TextRepr "Ease"
 
 
-instance NMF.HasRepr H.Audio TextRepr where
-    toRepr :: forall f i o. InNode f i o -> H.Audio -> TextRepr
+instance NMF.HasRepr H.AudioSource TextRepr where
+    toRepr :: forall f i o. InNode f i o -> H.AudioSource -> TextRepr
     toRepr _ a = TextRepr "Audio"
 
 
@@ -168,8 +168,8 @@ instance R.ToRepr H.Ease TextRepr where
     toRepr = R.exists <<< const (TextRepr "Ease")
 
 
-instance R.ToRepr H.Audio TextRepr where
-    toRepr :: H.Audio -> Maybe (R.Repr TextRepr)
+instance R.ToRepr H.AudioSource TextRepr where
+    toRepr :: H.AudioSource -> Maybe (R.Repr TextRepr)
     toRepr = R.exists <<< const (TextRepr "Audio")
 
 
@@ -212,7 +212,7 @@ instance R.FromRepr TextRepr H.TODO where
 
 instance R.FromRepr TextRepr H.Context where
     fromRepr :: R.Repr TextRepr -> Maybe H.Context
-    fromRepr (R.Repr (TextRepr "Context")) = Just $ H.Context { time : 0.0, mouseX : 0.0, mouseY : 0.0 }  -- FIXME
+    fromRepr (R.Repr (TextRepr "Context")) = Just $ H.initialContext  -- FIXME
     fromRepr _ = Nothing
 
 
@@ -258,15 +258,15 @@ instance R.FromRepr TextRepr H.Ease where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr TextRepr H.Audio where
-    fromRepr :: R.Repr TextRepr -> Maybe H.Audio
+instance R.FromRepr TextRepr H.AudioSource where
+    fromRepr :: R.Repr TextRepr -> Maybe H.AudioSource
     fromRepr (R.Repr (TextRepr "Audio")) = Just H.Silence -- FIXME
     fromRepr _ = Nothing
 
 
 instance R.FromRepr TextRepr H.AudioBin where
     fromRepr :: R.Repr TextRepr -> Maybe H.AudioBin
-    fromRepr (R.Repr (TextRepr "AudioBin")) = Just H.H0 -- FIXME
+    fromRepr (R.Repr (TextRepr "AudioBin")) = Just $ H.AudioBin 0 -- FIXME
     fromRepr _ = Nothing
 
 

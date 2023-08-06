@@ -24,7 +24,7 @@ import Data.List as List
 import Noodle.Id as Id
 import Noodle.Node2.MapsFolds.Flatten as R
 
-import Toolkit.Hydra2.Types (From(..), Output, Source, Texture, Audio, OnAudio, Value, SourceOptions) as H
+import Toolkit.Hydra2.Types (From(..), Output, Source, Texture, AudioSource, OnAudio, Value, SourceOptions) as H
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode

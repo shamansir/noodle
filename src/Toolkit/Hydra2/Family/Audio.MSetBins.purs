@@ -5,13 +5,15 @@ import Toolkit.Hydra2.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)
+
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T, s2)
+
+import Data.SOrder (SOrder, type (:::), T, s1)
 import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
@@ -30,16 +32,15 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio   = Fn.Input 0 :: _ "audio"
-_in_numBins = Fn.Input 1 :: _ "numBins"
+_in_numBins = Fn.Input 0 :: _ "numBins"
 
 
-type Inputs = ( audio :: H.Audio, numBins :: H.Value )
+type Inputs = ( numBins :: H.Value )
 type Outputs = ( )
 
 
 inputsOrder :: _
-inputsOrder = s2 _in_audio _in_numBins
+inputsOrder = s1 _in_numBins
 
 
 outputsOrder :: _
@@ -47,7 +48,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { audio : H.Silence, numBins : H.Number 4.0 }
+defaultInputs = { numBins : H.Number 4.0 }
 
 
 defaultOutputs :: Record Outputs
@@ -70,7 +71,6 @@ family = -- {-> audio <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            audio <- P.receive _in_audio
             numBins <- P.receive _in_numBins
             -- TODO
             pure unit

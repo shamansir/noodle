@@ -2,7 +2,8 @@ module Toolkit.Hydra2.Lang.Api where
 
 import Toolkit.Hydra2.Types
 
-import Prelude (Unit, add, flip, unit, ($), (<<<))
+import Prelude
+
 import Toolkit.Hydra2.Lang (Command(..), Program(..), Single(..))
 import Toolkit.Hydra2.Types (Value(..)) as T
 
@@ -20,7 +21,7 @@ s0 = S0
 
 
 h0 :: AudioBin
-h0 = H0
+h0 = AudioBin 0
 
 
 o0 ∷ Output
@@ -43,31 +44,31 @@ o4 ∷ Output
 o4 = Output4
 
 
-a :: Audio
+a :: AudioSource
 a = Mic
 
 
-show :: Audio -> Program Unit
+show :: AudioSource -> Program Unit
 show = q <<< One <<< WithAudio <<< Show
 
 
-setBins :: Int -> Audio -> Program Unit
+setBins :: Int -> AudioSource -> Program Unit
 setBins bins = q <<< One <<< WithAudio <<< flip SetBins bins
 
 
-setSmooth :: Audio -> Program Unit
-setSmooth = q <<< One <<< WithAudio <<< SetSmooth
+setSmooth :: Number -> AudioSource -> Program Unit
+setSmooth n = q <<< One <<< WithAudio <<< flip SetSmooth n
 
 
-setCutoff :: Number -> Audio -> Program Unit
+setCutoff :: Number -> AudioSource -> Program Unit
 setCutoff n = q <<< One <<< WithAudio <<< flip SetCutoff n
 
 
-setScale :: Number -> Audio -> Program Unit
+setScale :: Number -> AudioSource -> Program Unit
 setScale n = q <<< One <<< WithAudio <<< flip SetScale n
 
 
-hide :: Audio -> Program Unit
+hide :: AudioSource -> Program Unit
 hide = q <<< One <<< WithAudio <<< Hide
 
 
@@ -431,7 +432,7 @@ clear = q <<< One <<< Clear
 {- Other -}
 
 fn :: (Context -> Value) -> Value
-fn = Dep
+fn f = Dep $ Fn (\ctx -> pure $ f ctx)
 
 
 outs :: Texture -> Program Unit
@@ -444,8 +445,8 @@ out output =
     q <<< End output
 
 
-fft :: AudioBin -> Audio -> Value
-fft = flip Audio
+fft :: AudioBin -> AudioSource -> Value
+fft = const <<< Fft
 
 
 render :: Output -> Program Unit

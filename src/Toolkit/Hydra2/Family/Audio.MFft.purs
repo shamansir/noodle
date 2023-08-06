@@ -29,18 +29,17 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio = Fn.Input  0 :: _ "audio"
-_in_h     = Fn.Input  1 :: _ "h"
+_in_bin   = Fn.Input  0 :: _ "bin"
 
 _out_out  = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( audio :: H.Audio, h :: H.AudioBin )
+type Inputs = ( bin :: H.AudioBin )
 type Outputs = ( out :: H.Value )
 
 
 inputsOrder :: _
-inputsOrder = s2 _in_audio _in_h
+inputsOrder = s1 _in_bin
 
 
 outputsOrder :: _
@@ -48,7 +47,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { audio : H.Silence, h : H.H0 }
+defaultInputs = { bin : H.AudioBin 0 }
 
 
 defaultOutputs :: Record Outputs
@@ -71,10 +70,9 @@ family = -- {-> audio <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            audio <- P.receive _in_audio
-            h <- P.receive _in_h
+            bin <- P.receive _in_bin
             -- Fft a h
-            P.send _out_out $ H.Audio audio h
+            P.send _out_out $ H.Fft bin
 
 
 type Node (m :: Type -> Type) =

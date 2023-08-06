@@ -81,7 +81,7 @@ instance ToCode PS Value where
     toCode :: Proxy PS -> Value -> String
     toCode _ = case _ of
         None -> "{- none -}"
-        Required -> "{- required -}"
+        Undefined -> "{- ?? -}"
         Number n -> "(n " <> Core.show n <> ")"
         VArray vals ease -> toCode pureScript vals <> "\n\t# " <> toCode pureScript ease
         Dep _ -> "{- dep-fn -}"
@@ -91,7 +91,8 @@ instance ToCode PS Value where
         Width -> "width"
         Height -> "height"
         Pi -> "pi"
-        Audio audio bin -> toCode pureScript audio <> " # fft " <> toCode pureScript bin
+        Fft bin -> "a # fft " <> toCode pureScript bin
+        -- Audio audio bin -> toCode pureScript audio <> " # fft " <> toCode pureScript bin
 
 
 instance ToCode PS Source where
@@ -175,16 +176,11 @@ instance ToCode PS Ease where
 
 instance ToCode PS AudioBin where
     toCode :: Proxy PS -> AudioBin -> String
-    toCode _ = case _ of
-        H0 -> "H0"
-        H1 -> "H1"
-        H2 -> "H2"
-        H3 -> "H3"
-        H4 -> "H4"
+    toCode _ (AudioBin n) = "H" <> Core.show n
 
 
-instance ToCode PS Audio where
-    toCode :: Proxy PS -> Audio -> String
+instance ToCode PS AudioSource where
+    toCode :: Proxy PS -> AudioSource -> String
     toCode _ = case _ of
         Silence -> "s"
         Mic -> "a"
@@ -224,7 +220,7 @@ instance ToCode PS OnAudio where
         SetBins audio n -> toCode pureScript audio <> " # " <> fnsPs "setBins" [ Core.show n ]
         SetCutoff audio n -> toCode pureScript audio <> " # " <> fnsPs "setCutoff" [ Core.show n ]
         SetScale audio n -> toCode pureScript audio <> " # " <> fnsPs "setScale" [ Core.show n ]
-        SetSmooth audio -> toCode pureScript audio <> " # " <> fnePs "setSmooth"
+        SetSmooth audio n -> toCode pureScript audio <> " # " <> fnsPs "setSmooth" [ Core.show n ]
 
 
 {- JAVASCRIPT -}
@@ -234,7 +230,7 @@ instance ToCode JS Value where
     toCode :: Proxy JS -> Value -> String
     toCode _ = case _ of
         None -> "/* none */"
-        Required -> "/* required */"
+        Undefined -> "/* ?? */"
         Number n -> Core.show n
         VArray vals ease -> toCode javaScript vals <> "\n\t." <> toCode javaScript ease
         Dep _ -> "/* dep-fn */"
@@ -244,7 +240,8 @@ instance ToCode JS Value where
         Width -> "width"
         Height -> "height"
         Pi -> "Math.PI"
-        Audio audio bin -> toCode javaScript audio <> ".fft[" <> toCode javaScript bin <> "]"
+        Fft bin -> "a.fft[" <> toCode javaScript bin <> "]"
+        -- Audio audio bin -> toCode javaScript audio <> ".fft[" <> toCode javaScript bin <> "]"
 
 
 instance ToCode JS Source where
@@ -318,16 +315,11 @@ instance ToCode JS Ease where
 
 instance ToCode JS AudioBin where
     toCode :: Proxy JS -> AudioBin -> String
-    toCode _ = case _ of
-        H0 -> "0"
-        H1 -> "1"
-        H2 -> "2"
-        H3 -> "3"
-        H4 -> "4"
+    toCode _ (AudioBin n) = Core.show n
 
 
-instance ToCode JS Audio where
-    toCode :: Proxy JS -> Audio -> String
+instance ToCode JS AudioSource where
+    toCode :: Proxy JS -> AudioSource -> String
     toCode _ = case _ of
         Silence -> "s"
         Mic -> "a"
@@ -371,7 +363,7 @@ instance ToCode JS OnAudio where
         SetBins audio n -> toCode javaScript audio <> "." <> fnsJs "setBins" [ Core.show n ]
         SetCutoff audio n -> toCode javaScript audio <> "." <> fnsJs "setCutoff" [ Core.show n ]
         SetScale audio n -> toCode javaScript audio <> "." <> fnsJs "setScale" [ Core.show n ]
-        SetSmooth audio -> toCode javaScript audio <> "." <> fneJs "setSmooth"
+        SetSmooth audio n -> toCode javaScript audio <> "." <> fnsJs "setSmooth" [ Core.show n ]
 
 
 instance ToCode lang WrapRepr where

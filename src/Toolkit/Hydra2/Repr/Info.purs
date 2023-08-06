@@ -46,7 +46,7 @@ instance ShortInfo H.Value where
     short :: H.Value -> String
     short = case _ of
         H.None -> "-"
-        H.Required -> "REQ"
+        H.Undefined -> "?"
         H.Number n -> show n
         H.Dep _ -> "→#"
         H.VArray vs ease -> short vs <> short ease
@@ -56,7 +56,7 @@ instance ShortInfo H.Value where
         H.Width -> "↔" -- <->
         H.Height -> "↕" --
         H.Pi -> "π"
-        H.Audio audio bin -> short audio <> short bin
+        H.Fft bin -> "🔈" <> short bin
 
 
 instance ShortInfo Unit where
@@ -144,8 +144,8 @@ instance ShortInfo H.Ease where
         H.InOutCubic -> "⊰"
 
 
-instance ShortInfo H.Audio where
-    short :: H.Audio -> String
+instance ShortInfo H.AudioSource where
+    short :: H.AudioSource -> String
     short = case _ of
         H.Silence -> "⏹" -- 🔇
         H.Mic -> "" -- TODO
@@ -154,12 +154,7 @@ instance ShortInfo H.Audio where
 
 instance ShortInfo H.AudioBin where
     short :: H.AudioBin -> String
-    short = case _ of
-        H.H0 -> "H0" -- 🔈 🔉
-        H.H1 -> "H1"
-        H.H2 -> "H2"
-        H.H3 -> "H3"
-        H.H4 -> "H4"
+    short (H.AudioBin n) = "H" <> show n -- 🔈 🔉
 
 
 instance ShortInfo H.Output where
@@ -172,6 +167,14 @@ instance ShortInfo H.Output where
         H.Output3 -> "⎑3" -- OUT3
         H.Output4 -> "⎑4" -- OUT4
 
+
+instance ShortInfo H.Fn where
+    short :: H.Fn -> String
+    short = case _ of
+        H.VExpr vexpr -> "EXP"
+        H.Fn code -> "PS"
+        H.Unparsed str -> "STR"
+        H.NoAction -> "--"
 
 
 instance FullInfo H.Value where
@@ -239,8 +242,8 @@ instance FullInfo H.Ease where
     full = show
 
 
-instance FullInfo H.Audio where
-    full :: H.Audio -> String
+instance FullInfo H.AudioSource where
+    full :: H.AudioSource -> String
     full = show
 
 
@@ -251,6 +254,11 @@ instance FullInfo H.AudioBin where
 
 instance FullInfo H.Output where
     full :: H.Output -> String
+    full = show
+
+
+instance FullInfo H.Fn where
+    full :: H.Fn -> String
     full = show
 
 
@@ -284,6 +292,7 @@ instance FullInfo W.WrapRepr where
         W.Audio audio -> full audio
         W.AudioBin bin -> full bin
         W.Output out -> full out
+        W.Fn fn -> full fn
 
 
 instance ShortInfo W.WrapRepr where
@@ -305,3 +314,4 @@ instance ShortInfo W.WrapRepr where
         W.Audio audio -> short audio
         W.AudioBin bin -> short bin
         W.Output out -> short out
+        W.Fn fn -> short fn

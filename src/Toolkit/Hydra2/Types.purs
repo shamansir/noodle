@@ -3,6 +3,7 @@ module Toolkit.Hydra2.Types where
 import Prelude
 
 import Effect (Effect)
+import Data.Map (Map)
 
 import Color (Color)
 import Color (rgb, black) as Color
@@ -15,6 +16,8 @@ import Data.FromToFile (class Encode, encode, class Decode, decode)
 
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
+import Data.Maybe (Maybe(..))
+
 
 data TODO = TODO
 
@@ -25,32 +28,33 @@ newtype Context =
         , mouseX :: Number
         , mouseY :: Number
         -- , audio :: Audio
-        -- , fft :: Array Number
-        -- , ...
+        , fft :: (AudioBin -> Number)
+        , bins :: Int
+        , width :: Int
+        , height :: Int
         }
 
 
 data Value
     = None
-    | Required -- a.k.a. Undefined
+    | Undefined
     | Number Number
     | VArray Values Ease
     | Dep Fn
-    -- | ...
     | Time
     | MouseX
     | MouseY
     | Width
     | Height
     | Pi
-    -- | ...
-    | Audio Audio AudioBin
+    | Fft AudioBin -- add AudioSource back ?
+    -- TODO: Glsl
 
 
 -- derive instance Eq Value
 -- derive instance Eq Values
 -- derive instance Eq Ease
-derive instance Eq Audio
+derive instance Eq AudioSource
 derive instance Eq AudioBin
 -- derive instance Eq Texture
 -- derive instance Eq Source
@@ -66,8 +70,21 @@ derive instance Eq From
 newtype Values = Values (Array Value)
 
 
-type Fn = (Context -> Value) -- TODO: newtype, include IExpr or String etc.., so that Eq would be appliable to `Value` and the expression decoded afterwards
-        -- may be introduce VExpr or something?
+data ValueExpr
+    = V Value
+    | DivE ValueExpr ValueExpr
+    | MulE ValueExpr ValueExpr
+    | SubE ValueExpr ValueExpr
+    | AddE ValueExpr ValueExpr
+    | Math String (Maybe ValueExpr)
+    | Brackets ValueExpr
+
+
+data Fn
+    = VExpr ValueExpr
+    | Fn (Context -> Effect Value)
+    | Unparsed String
+    | NoAction
 
 
 type Shader = String
@@ -179,19 +196,15 @@ data From
     | Output Output
 
 
-data Audio
+data AudioSource
     = Silence
     | Mic
     | File
     -- | ...
 
-data AudioBin
-    = H0
-    | H1
-    | H2
-    | H3
-    | H4
-    -- ..
+
+newtype AudioBin = AudioBin Int
+
 
 newtype UpdateFn = UpdateFn (Context -> Effect Unit)
 
@@ -219,12 +232,12 @@ newtype Url = Url String
 
 
 data OnAudio
-    = Show Audio
-    | SetBins Audio Int
-    | SetCutoff Audio Number
-    | SetScale Audio Number
-    | SetSmooth Audio
-    | Hide Audio
+    = Show AudioSource
+    | SetBins AudioSource Int
+    | SetCutoff AudioSource Number
+    | SetScale AudioSource Number
+    | SetSmooth AudioSource Number
+    | Hide AudioSource
 
 
 noUrl :: Url
@@ -240,7 +253,7 @@ defaultUpdateFn = UpdateFn $ const $ pure unit
 
 
 defaultFn :: Fn
-defaultFn = const None
+defaultFn = NoAction
 
 
 defaultShader :: Shader
@@ -255,8 +268,26 @@ defaultSource :: Source
 defaultSource = Source All
 
 
+initialContext :: Context
+initialContext =
+    Context
+        { time : 0.0
+        , mouseX : 0.0
+        , mouseY : 0.0
+        , fft : const 0.0
+        , bins : 4
+        , height : 0
+        , width : 0
+        }
+
+
+
 instance IsNodeState Values where
     default = noValues
+
+
+instance IsNodeState Fn where
+    default = NoAction
 
 
 {- MARK -}
@@ -323,8 +354,8 @@ instance Mark Ease where
     mark = const $ Color.rgb 240 128 128
 
 
-instance Mark Audio where
-    mark :: Audio -> Color
+instance Mark AudioSource where
+    mark :: AudioSource -> Color
     mark = const $ Color.rgb 173 255 47
 
 
@@ -336,6 +367,11 @@ instance Mark AudioBin where
 instance Mark Output where
     mark :: Output -> Color
     mark = const $ Color.rgb 250 250 205
+
+
+instance Mark Fn where
+    mark :: Fn -> Color
+    mark = const $ Color.rgb 150 180 205
 
 
 
@@ -360,21 +396,47 @@ instance Mark Output where
     -}
 
 
+instance Show ValueExpr where
+    show :: ValueExpr -> String
+    show = case _ of
+        V value -> show value
+        AddE v1 v2 -> show v1 <> " + " <> show v2
+        SubE v1 v2 -> show v1 <> " - " <> show v2
+        MulE v1 v2 -> show v1 <> " * " <> show v2
+        DivE v1 v2 -> show v1 <> " / " <> show v2
+        Math meth maybeExpr ->
+            "Math." <> show meth <>
+                (case maybeExpr of
+                    Just expr -> "(" <> show expr <> ")"
+                    Nothing -> ""
+                )
+        Brackets expr -> "( " <> show expr <> " )"
+
+
+instance Show Fn where
+    show :: Fn -> String
+    show = case _ of
+        VExpr vexpr -> show vexpr
+        Fn code -> "[Code]"
+        Unparsed str -> "{{ " <> str <> " }}"
+        NoAction -> "--"
+
+
 instance Show Value where
     show :: Value -> String
     show = case _ of
         None -> "<None>"
-        Required -> "<Required>"
+        Undefined -> "<Undefined>"
         Number n -> "<" <> show n <> ">"
         VArray vals ease -> "<" <> show vals <> " at " <> show ease <> ">"
-        Dep _ -> "<Dep>"
+        Dep fn -> "<Dep " <> show fn <> ">"
         Time -> "<Time>"
         MouseX -> "<Mouse X>"
         MouseY -> "<Mouse Y>"
         Width -> "<Width>"
         Height -> "<Height>"
         Pi -> "<Pi>"
-        Audio audio bin -> "<" <> show audio <> " @ " <> show bin <> ">"
+        Fft bin -> "<@ " <> show bin <> ">"
 
 
 instance Show Texture where
@@ -457,8 +519,8 @@ instance Show Ease where
         InOutCubic -> "InOutCubic"
 
 
-instance Show Audio where
-    show :: Audio -> String
+instance Show AudioSource where
+    show :: AudioSource -> String
     show = case _ of
         Silence -> "Silence"
         Mic -> "Microphone"
@@ -467,12 +529,7 @@ instance Show Audio where
 
 instance Show AudioBin where
     show :: AudioBin -> String
-    show = case _ of
-        H0 -> "Bin 0"
-        H1 -> "Bin 1"
-        H2 -> "Bin 2"
-        H3 -> "Bin 3"
-        H4 -> "Bin 4"
+    show (AudioBin n) = "@" <> show n
 
 
 instance Show Output where
@@ -490,17 +547,17 @@ instance Encode Value where
     encode :: Value -> String
     encode = case _ of
         None -> "X"
-        Required -> "R"
+        Undefined -> "W"
         Number n -> "N " <> encode n
         VArray vals ease -> "VA " <> encode vals <> " $$ " <> encode ease <> ""
-        Dep _ -> "D" -- TODO
+        Dep fn -> "D " <> encode fn
         Time -> "T"
         MouseX -> "MX"
         MouseY -> "MY"
         Width -> "W"
         Height -> "H"
         Pi -> "PI"
-        Audio audio bin -> "A " <> encode audio <> " " <> encode bin
+        Fft bin -> "A " <> encode bin
 
 
 instance Encode Texture where
@@ -583,8 +640,8 @@ instance Encode Ease where
         InOutCubic -> "IOC"
 
 
-instance Encode Audio where
-    encode :: Audio -> String
+instance Encode AudioSource where
+    encode :: AudioSource -> String
     encode = case _ of
         Silence -> "SIL"
         Mic -> "MIC"
@@ -593,12 +650,7 @@ instance Encode Audio where
 
 instance Encode AudioBin where
     encode :: AudioBin -> String
-    encode = case _ of
-        H0 -> "H 0"
-        H1 -> "H 1"
-        H2 -> "H 2"
-        H3 -> "H 3"
-        H4 -> "H 4"
+    encode (AudioBin n) = "@" <> show n
 
 
 instance Encode Output where
@@ -610,3 +662,29 @@ instance Encode Output where
         Output2 -> "OUT 2"
         Output3 -> "OUT 3"
         Output4 -> "OUT 4"
+
+
+instance Encode ValueExpr where
+    encode :: ValueExpr -> String
+    encode = case _ of
+        V value -> show value
+        AddE v1 v2 -> show v1 <> " + " <> show v2
+        SubE v1 v2 -> show v1 <> " - " <> show v2
+        MulE v1 v2 -> show v1 <> " * " <> show v2
+        DivE v1 v2 -> show v1 <> " / " <> show v2
+        Math meth maybeExpr ->
+            "Math." <> show meth <>
+                (case maybeExpr of
+                    Just expr -> "(" <> show expr <> ")"
+                    Nothing -> ""
+                )
+        Brackets expr -> "( " <> show expr <> " )"
+
+
+instance Encode Fn where
+    encode :: Fn -> String
+    encode = case _ of
+        VExpr vexpr -> encode vexpr
+        Fn _ -> "[[CODE]]"
+        Unparsed str -> "<<<< " <> str <> " >>>>"
+        NoAction -> "/----/"

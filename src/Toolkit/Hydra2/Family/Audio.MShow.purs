@@ -12,6 +12,7 @@ import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 import Data.SOrder (SOrder, type (:::), T, s1, s2)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -29,17 +30,15 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio = Fn.Input  0 :: _ "audio"
-
 _out_out  = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( audio :: H.Audio, todo :: H.TODO )
+type Inputs = ( todo :: H.TODO )
 type Outputs = ( out :: H.TODO )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_audio
+inputsOrder = SOrder.empty
 
 
 outputsOrder :: _
@@ -47,7 +46,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { audio : H.Silence, todo : H.TODO }
+defaultInputs = { todo : H.TODO }
 
 
 defaultOutputs :: Record Outputs
@@ -70,7 +69,6 @@ family = -- {-> audio <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            audio <- P.receive _in_audio
             --
             -- Hide a ?input
             -- P.send _out_out ?out_out
