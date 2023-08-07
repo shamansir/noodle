@@ -294,6 +294,10 @@ findFnCode :: String -> Maybe Fn
 findFnCode = Just <<< Unparsed -- FIXME
 
 
+findValues :: String -> Maybe Values
+findValues = const $ Just $ Values [] -- FIXME
+
+
 instance IsNodeState Values where
     default = noValues
 
