@@ -29,7 +29,7 @@ data Cli (f :: Symbol) = Cli
 instance (Applicative m, MonadEffect m) => HasBody (Cli "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
     run :: Proxy (Cli "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
     run _ = FNumber.render
-else instance HasBody (Cli "out") "out" FOut.State FOut.Inputs FOut.Outputs m where
+else instance (MonadRec m, MonadEffect m) => HasBody (Cli "out") "out" FOut.State FOut.Inputs FOut.Outputs m where
     run :: Proxy (Cli "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
     run _ = FOut.render
 else instance (MonadRec m, MonadEffect m) => HasBody (Cli "info") "info" FInfo.State FInfo.Inputs FInfo.Outputs m where
@@ -43,7 +43,7 @@ else instance HasBody (Cli f) f state is os m where
 instance (Applicative m, MonadEffect m) => HasBody' (Cli "number") (FNumber.Node m) FNumber.State m where
    run' :: Proxy (Cli "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
    run' _ = FNumber.render
-else instance HasBody' (Cli "out") (FOut.Node m) FOut.State m where
+else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "out") (FOut.Node m) FOut.State m where
    run' :: Proxy (Cli "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
    run' _ = FOut.render
 else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "info") (FInfo.Node m) FInfo.State m  where

@@ -307,6 +307,9 @@ subscribeInput :: forall f state is os m din. (Record is -> din) -> Node f state
 subscribeInput fn node = fn <$> subscribeInputs node
 
 
+-- ToDO: with HasInput / HasOuput
+
+
 subscribeInputs :: forall f state is os m. Node f state is os m -> Signal (Record is)
 subscribeInputs (Node _ tracker _ _) = Tuple.snd <$> tracker.inputs
 

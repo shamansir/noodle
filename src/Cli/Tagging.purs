@@ -187,3 +187,7 @@ buttonConnection (Right n) = T.fgc (C.crepr Palette.positive) $ T.s $ show n
 infoNode :: Hydra.WrapRepr -> Tag
 infoNode repr =
     T.fgcs (mark repr) $ Info.full repr
+
+
+selected :: String -> Tag
+selected = T.fgc (C.crepr Palette.positive) <<< T.s
