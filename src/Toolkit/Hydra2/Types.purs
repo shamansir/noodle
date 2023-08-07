@@ -290,6 +290,9 @@ initialContext =
         }
 
 
+findFnCode :: String -> Maybe Fn
+findFnCode = Just <<< Unparsed -- FIXME
+
 
 instance IsNodeState Values where
     default = noValues

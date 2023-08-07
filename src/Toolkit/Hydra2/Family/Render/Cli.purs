@@ -19,6 +19,8 @@ import Toolkit.Hydra2.Family.Out.FOut (Inputs, Outputs, State, Node) as FOut
 import Toolkit.Hydra2.Family.Render.Cli.Out.FOut (render) as FOut
 import Toolkit.Hydra2.Family.Display.FInfo (Inputs, Outputs, State, Node) as FInfo
 import Toolkit.Hydra2.Family.Render.Cli.Display.FInfo (render) as FInfo
+import Toolkit.Hydra2.Family.Feed.FFn (Inputs, Outputs, State, Node) as FFn
+import Toolkit.Hydra2.Family.Render.Cli.Feed.FFn (render) as FFn
 
 import Noodle.Node2 (Node)
 
@@ -35,6 +37,9 @@ else instance (MonadRec m, MonadEffect m) => HasBody (Cli "out") "out" FOut.Stat
 else instance (MonadRec m, MonadEffect m) => HasBody (Cli "info") "info" FInfo.State FInfo.Inputs FInfo.Outputs m where
     run :: Proxy (Cli "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
     run _ = FInfo.render
+else instance (Applicative m, MonadEffect m) => HasBody (Cli "fn") "fn" FFn.State FFn.Inputs FFn.Outputs m where
+    run :: Proxy (Cli "fn") -> NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m
+    run _ = FFn.render
 else instance HasBody (Cli f) f state is os m where
     run :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run _ _ _ = pure unit
@@ -49,6 +54,9 @@ else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "out") (FOut.Node m) 
 else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "info") (FInfo.Node m) FInfo.State m  where
    run' :: Proxy (Cli "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
    run' _ = FInfo.render
+else instance (Applicative m, MonadEffect m) => HasBody' (Cli "fn") (FFn.Node m) FFn.State m where
+   run' :: Proxy (Cli "fn") -> NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m
+   run' _ = FFn.render
 else instance HasBody' (Cli f) (Node f state is os m) state m where
    run' :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
    run' _ _ _ = pure unit
