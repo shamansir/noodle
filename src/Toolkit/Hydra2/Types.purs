@@ -215,6 +215,9 @@ newtype AudioBin = AudioBin Int
 newtype UpdateFn = UpdateFn (Context -> Effect Unit)
 
 
+newtype TextureFn = TextureFn (Context -> Effect Texture) -- TODO: add as the Value option
+
+
 data Canvas = Canvas
 
 

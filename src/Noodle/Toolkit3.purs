@@ -32,6 +32,7 @@ import Data.Record.Pairs (class Pairs, class Converts)
 
 
 import Effect.Class (class MonadEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 
 -- import Prim.Row (class Cons, class Lacks, class Nub)
 import Prim.RowList (RowList, class RowToList)
@@ -260,6 +261,7 @@ ensureDataInterchangeIn _ = unit
 type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families instances repr
     =  forall t a
      . Applicative t
+    => MonadRec m
     => MonadEffect m
     => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
@@ -277,6 +279,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
 type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families instances repr
     = forall t a
      . Applicative t
+    => MonadRec m
     => MonadEffect m
     => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
                  fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB

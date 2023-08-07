@@ -4,6 +4,8 @@ import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Control.Monad.State as State
+
 import Type.Proxy (Proxy)
 import Cli.Components.NodeBox.HasBody (class HasBody)
 
@@ -59,6 +61,7 @@ render nodeBoxKey node = do
         (rootOutputButtonKey :: OutputButtonKey) = NK.first -- FIXME, find the next one from state or as passed to the node
         firstOutputButtonKey = NK.append nodeBoxKey rootOutputButtonKey
         outputButton index output buttonKey =
+            -- TODO: select if current
             B.button buttonKey
                 [ Box.top $ Offset.px 1
                 , Box.left $ Offset.px $ index * 2 --  index * 3
@@ -70,7 +73,7 @@ render nodeBoxKey node = do
                 , Core.on Button.Press
                     \_ _ -> do
                         Node.sendIn node FOut._in_target output
-                        -- FIXME: set node state?
+                        State.put output
                 ]
                 [  ]
         outputButton0 = outputButton 0 H.Output0 firstOutputButtonKey

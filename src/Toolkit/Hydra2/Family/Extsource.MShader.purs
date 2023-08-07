@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Feed.MShader where
+module Toolkit.Hydra2.Family.Extsource.MShader where
 
 import Toolkit.Hydra2.Types as H
 

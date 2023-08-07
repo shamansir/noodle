@@ -182,3 +182,8 @@ buttonConnection :: Either String Int -> Tag
 buttonConnection (Left s) = T.fgc (C.crepr Palette.negative) $ T.s s
 buttonConnection (Right 0) = T.fgc (C.crepr Palette.neutral) $ T.s "0"
 buttonConnection (Right n) = T.fgc (C.crepr Palette.positive) $ T.s $ show n
+
+
+infoNode :: Hydra.WrapRepr -> Tag
+infoNode repr =
+    T.fgcs (mark repr) $ Info.full repr
