@@ -38,7 +38,7 @@ import Blessed.UI.Base.Element.Event as Element
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
-import Blessed.UI.Boxes.Box.Property as Element
+import Blessed.UI.Forms.TextArea.Property as TextArea
 
 import Noodle.Node2 (sendOut) as Node
 
@@ -80,7 +80,7 @@ render nodeBoxKey node = do
                 , TextArea.inputOnFocus true
                 , Core.on TextArea.Submit
                     \_ _ -> do
-                        content <- Element.content ~< textBoxKey
+                        content <- TextArea.value ~< textBoxKey
                         let mbValues = T.findValues content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbValues of
