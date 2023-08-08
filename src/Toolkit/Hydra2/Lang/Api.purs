@@ -16,31 +16,31 @@ q :: Command -> Program Unit -- private
 q cmd = Program cmd unit
 
 
-s0 ∷ Source
-s0 = S0
+s0 ∷ SourceN
+s0 = Source0
 
 
 h0 :: AudioBin
 h0 = AudioBin 0
 
 
-o0 ∷ Output
+o0 ∷ OutputN
 o0 = Output0
 
 
-o1 ∷ Output
+o1 ∷ OutputN
 o1 = Output1
 
 
-o2 ∷ Output
+o2 ∷ OutputN
 o2 = Output2
 
 
-o3 ∷ Output
+o3 ∷ OutputN
 o3 = Output3
 
 
-o4 ∷ Output
+o4 ∷ OutputN
 o4 = Output4
 
 
@@ -77,36 +77,36 @@ hide = q <<< One <<< WithAudio <<< Hide
 
 noise :: Value -> Value -> Texture
 noise scale offset =
-    From $ Noise { scale, offset }
+    Start $ Noise { scale, offset }
 
 
 voronoi :: Value -> Value -> Value -> Texture
 voronoi scale speed blending =
-    From $ Voronoi { scale, speed, blending }
+    Start $ Voronoi { scale, speed, blending }
 
 
 osc ∷ Value → Value → Value → Texture
 osc frequency sync offset =
-    From $ Osc { frequency, sync, offset }
+    Start $ Osc { frequency, sync, offset }
 
 
 shape :: Value -> Value -> Value -> Texture
 shape sides radius smoothing =
-    From $ Shape { sides, radius, smoothing }
+    Start $ Shape { sides, radius, smoothing }
 
 
 gradient ∷ Value → Texture
 gradient speed =
-    From $ Gradient { speed }
-
-
-src :: Source -> Texture
-src = From
+    Start $ Gradient { speed }
 
 
 solid :: Value -> Value -> Value -> Value -> Texture
 solid r g b a =
-    From $ Solid { r, g, b, a }
+    Start $ Solid { r, g, b, a }
+
+
+src :: SourceN -> Texture
+src sn = Start $ External sn $ Camera 0 -- FIXME
 
 
 {- Geometry -}
@@ -204,77 +204,77 @@ scrollY scrollY speed =
 
 posterize :: Value -> Value -> Texture -> Texture
 posterize bins gamma =
-    flip WithColor $ Posterize { bins, gamma }
+    flip Filter $ Posterize { bins, gamma }
 
 
 shift :: Value -> Value -> Value -> Value -> Texture -> Texture
 shift r g b a =
-    flip WithColor $ Shift { r, g, b, a }
+    flip Filter $ Shift { r, g, b, a }
 
 
 invert :: Value -> Texture -> Texture
 invert v =
-    flip WithColor $ Invert v
+    flip Filter $ Invert v
 
 
 saturate :: Value -> Texture -> Texture
 saturate v =
-    flip WithColor $ Saturate v
+    flip Filter $ Saturate v
 
 
 contrast :: Value -> Texture -> Texture
 contrast v =
-    flip WithColor $ Contrast v
+    flip Filter $ Contrast v
 
 
 brightness :: Value -> Texture -> Texture
 brightness v =
-    flip WithColor $ Brightness v
+    flip Filter $ Brightness v
 
 
 luma :: Value -> Value -> Texture -> Texture
 luma threshold tolerance =
-    flip WithColor $ Luma { threshold, tolerance }
+    flip Filter $ Luma { threshold, tolerance }
 
 
 thresh :: Value -> Value -> Texture -> Texture
 thresh threshold tolerance =
-    flip WithColor $ Thresh { threshold, tolerance }
+    flip Filter $ Thresh { threshold, tolerance }
 
 
 color :: Value -> Value -> Value -> Value -> Texture -> Texture
 color r g b a =
-    flip WithColor $ Color { r, g, b, a }
+    flip Filter $ Color { r, g, b, a }
 
 
 hue :: Value -> Texture -> Texture
 hue v =
-    flip WithColor $ Hue v
+    flip Filter $ Hue v
 
 
 colorama :: Value -> Texture -> Texture
 colorama v =
-    flip WithColor $ Colorama v
+    flip Filter $ Colorama v
 
 
 r :: Value -> Value -> Texture -> Texture
 r scale offset =
-    flip WithColor $ R { scale, offset }
+    flip Filter $ R { scale, offset }
 
 
 g :: Value -> Value -> Texture -> Texture
 g scale offset =
-    flip WithColor $ G { scale, offset }
+    flip Filter $ G { scale, offset }
 
 
 b :: Value -> Value -> Texture -> Texture
 b scale offset =
-    flip WithColor $ B { scale, offset }
+    flip Filter $ B { scale, offset }
 
 
 alpha :: Value -> Value -> Texture -> Texture
 alpha scale offset =
-    flip WithColor $ A { scale, offset }
+    flip Filter $ A { scale, offset }
 
 
 {- Blend -}
@@ -438,10 +438,10 @@ fn f = Dep $ Fn (\ctx -> pure $ f ctx)
 
 outs :: Texture -> Program Unit
 outs =
-    q <<< End Screen
+    q <<< End Output0
 
 
-out :: Output -> Texture -> Program Unit
+out :: OutputN -> Texture -> Program Unit
 out output =
     q <<< End output
 
@@ -450,12 +450,12 @@ fft :: AudioBin -> AudioSource -> Value
 fft = const <<< Fft
 
 
-render :: Output -> Program Unit
+render :: OutputN -> Program Unit
 render = q <<< One <<< Render <<< Output
 
 
 renderAll :: Program Unit
-renderAll = q $ One $ Render All
+renderAll = q $ One $ Render Four
 
 
 n :: Number -> Value
