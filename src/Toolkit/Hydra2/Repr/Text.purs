@@ -35,9 +35,19 @@ instance NMF.HasRepr H.Texture TextRepr where
     toRepr _ a = TextRepr "Texture"
 
 
-instance NMF.HasRepr H.From TextRepr where
-    toRepr :: forall f i o. InNode f i o -> H.From -> TextRepr
-    toRepr _ a = TextRepr "From"
+instance NMF.HasRepr H.OutputN TextRepr where
+    toRepr :: forall f i o. InNode f i o -> H.OutputN -> TextRepr
+    toRepr _ a = TextRepr "OutputN"
+
+
+instance NMF.HasRepr H.SourceN TextRepr where
+    toRepr :: forall f i o. InNode f i o -> H.SourceN -> TextRepr
+    toRepr _ a = TextRepr "SourceN"
+
+
+instance NMF.HasRepr H.ExtSource TextRepr where
+    toRepr :: forall f i o. InNode f i o -> H.ExtSource -> TextRepr
+    toRepr _ a = TextRepr "ExtSource"
 
 
 instance NMF.HasRepr H.TODO TextRepr where
@@ -95,11 +105,6 @@ instance NMF.HasRepr H.AudioBin TextRepr where
     toRepr _ a = TextRepr "AudioBin"
 
 
-instance NMF.HasRepr H.Output TextRepr where
-    toRepr :: forall f i o. InNode f i o -> H.Output -> TextRepr
-    toRepr _ a = TextRepr "Output"
-
-
 {- R.ToRepr -}
 
 
@@ -118,9 +123,19 @@ instance R.ToRepr H.Texture TextRepr where
     toRepr = R.exists <<< const (TextRepr "Texture")
 
 
-instance R.ToRepr H.From TextRepr where
-    toRepr :: H.From -> Maybe (R.Repr TextRepr)
-    toRepr = R.exists <<< const (TextRepr "From")
+instance R.ToRepr H.OutputN TextRepr where
+    toRepr :: H.OutputN -> Maybe (R.Repr TextRepr)
+    toRepr = R.exists <<< const (TextRepr "OutputN")
+
+
+instance R.ToRepr H.SourceN TextRepr where
+    toRepr :: H.SourceN -> Maybe (R.Repr TextRepr)
+    toRepr = R.exists <<< const (TextRepr "SourceN")
+
+
+instance R.ToRepr H.ExtSource TextRepr where
+    toRepr :: H.ExtSource -> Maybe (R.Repr TextRepr)
+    toRepr = R.exists <<< const (TextRepr "ExtSource")
 
 
 instance R.ToRepr H.TODO TextRepr where
@@ -178,11 +193,6 @@ instance R.ToRepr H.AudioBin TextRepr where
     toRepr = R.exists <<< const (TextRepr "AudioBin")
 
 
-instance R.ToRepr H.Output TextRepr where
-    toRepr :: H.Output -> Maybe (R.Repr TextRepr)
-    toRepr = R.exists <<< const (TextRepr "Output")
-
-
 {- R.FromRepr -}
 
 
@@ -198,9 +208,21 @@ instance R.FromRepr TextRepr H.Texture where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr TextRepr H.From where
-    fromRepr :: R.Repr TextRepr -> Maybe H.From
-    fromRepr (R.Repr (TextRepr "From")) = Just H.All -- FIXME
+instance R.FromRepr TextRepr H.OutputN where
+    fromRepr :: R.Repr TextRepr -> Maybe H.OutputN
+    fromRepr (R.Repr (TextRepr "OutputN")) = Just H.Output0 -- FIXME
+    fromRepr _ = Nothing
+
+
+instance R.FromRepr TextRepr H.SourceN where
+    fromRepr :: R.Repr TextRepr -> Maybe H.SourceN
+    fromRepr (R.Repr (TextRepr "SourceN")) = Just H.Source0 -- FIXME
+    fromRepr _ = Nothing
+
+
+instance R.FromRepr TextRepr H.ExtSource where
+    fromRepr :: R.Repr TextRepr -> Maybe H.ExtSource
+    fromRepr (R.Repr (TextRepr "ExtSource")) = Just H.Unclear -- FIXME
     fromRepr _ = Nothing
 
 
@@ -219,12 +241,6 @@ instance R.FromRepr TextRepr H.Context where
 instance R.FromRepr TextRepr H.UpdateFn where
     fromRepr :: R.Repr TextRepr -> Maybe H.UpdateFn
     fromRepr (R.Repr (TextRepr "UpdateFn")) = Just H.defaultUpdateFn -- FIXME
-    fromRepr _ = Nothing
-
-
-instance R.FromRepr TextRepr H.Source where
-    fromRepr :: R.Repr TextRepr -> Maybe H.Source
-    fromRepr (R.Repr (TextRepr "Source")) = Just H.Dynamic -- FIXME
     fromRepr _ = Nothing
 
 
@@ -267,10 +283,4 @@ instance R.FromRepr TextRepr H.AudioSource where
 instance R.FromRepr TextRepr H.AudioBin where
     fromRepr :: R.Repr TextRepr -> Maybe H.AudioBin
     fromRepr (R.Repr (TextRepr "AudioBin")) = Just $ H.AudioBin 0 -- FIXME
-    fromRepr _ = Nothing
-
-
-instance R.FromRepr TextRepr H.Output where
-    fromRepr :: R.Repr TextRepr -> Maybe H.Output
-    fromRepr (R.Repr (TextRepr "Output")) = Just H.Screen
     fromRepr _ = Nothing

@@ -12,11 +12,20 @@ import Cli.Palette.Set.X11 as X11
 import Data.Maybe (fromMaybe)
 import Data.Mark (class Mark)
 import Data.String as String
+import Data.String.Extra as String
 import Data.FromToFile (class Encode, encode, class Decode, decode)
+import Data.Array (length) as Array
+
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.Tuple (snd) as Tuple
+import Data.Maybe (Maybe(..))
+import Data.Array ((:))
 
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
 import Data.Maybe (Maybe(..))
+import Toolkit.Hydra2.Lang.Fn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q)
+import Toolkit.Hydra2.Lang.Fn as Fn
 
 
 data TODO = TODO
@@ -63,15 +72,14 @@ derive instance Eq AudioBin
 -- derive instance Eq Modulate
 -- derive instance Eq Geometry
 -- derive instance Eq Ease
-derive instance Eq Output
-derive instance Eq From
+derive instance Eq OutputN
 
 
 newtype Values = Values (Array Value)
 
 
 data ValueExpr
-    = V Value
+    = Val Value
     | DivE ValueExpr ValueExpr
     | MulE ValueExpr ValueExpr
     | SubE ValueExpr ValueExpr
@@ -92,9 +100,9 @@ type Shader = String
 
 data Texture
     = Empty
-    | From Source
+    | Start Source -- start the chain
     | BlendOf { what :: Texture, with :: Texture } Blend
-    | WithColor Texture ColorOp
+    | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
 
@@ -106,18 +114,33 @@ data Texture
 
 
 data Source
-    = S0
-    | Dynamic
-    | Video
-    | Camera
-    | Gradient { speed :: Value }
+    = Gradient { speed :: Value }
     | Noise { scale :: Value, offset :: Value }
     | Osc { frequency :: Value, sync :: Value, offset :: Value }
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
-    | Source From -- Output?
     | Voronoi { scale :: Value, speed :: Value, blending :: Value }
+    | Load OutputN
+    | External SourceN ExtSource
     -- | ..
+
+
+data ExtSource
+    = Sketch String
+    | Video
+    | Camera Int
+    | Shader Shader
+    | Unclear
+
+
+data RenderTarget
+    = Four
+    | Output OutputN
+
+
+data SourceN
+    = Source0
+    -- | Source1
 
 
 data Blend
@@ -176,9 +199,8 @@ data Geometry
     | GScrollY { scrollY :: Value, speed :: Value } -- TODO: join with `Scroll`
 
 
-data Output
-    = Screen -- not needed, default is Output0 anyway
-    | Output0
+data OutputN
+    = Output0
     | Output1
     | Output2
     | Output3
@@ -194,12 +216,6 @@ data Ease
     | Offset Value -- amount
     | InOutCubic
     -- | ...
-
-
-data From
-    = All
-    -- | ...
-    | Output Output
 
 
 data AudioSource
@@ -273,8 +289,8 @@ noValues :: Values
 noValues = Values []
 
 
-defaultSource :: Source
-defaultSource = Source All
+defaultSourceN :: SourceN
+defaultSourceN = Source0
 
 
 initialContext :: Context
@@ -306,8 +322,8 @@ instance IsNodeState Fn where
     default = NoAction
 
 
-instance IsNodeState Output where
-    default = Screen
+instance IsNodeState OutputN where
+    default = Output0
 
 
 {- MARK -}
@@ -324,8 +340,13 @@ instance Mark Texture where
     -- mark = const $ Color.rgb 148 0 211
 
 
-instance Mark From where
-    mark :: From -> Color
+instance Mark ExtSource where
+    mark :: ExtSource -> Color
+    mark = const $ Color.rgb 205 16 118
+
+
+instance Mark SourceN where
+    mark :: SourceN -> Color
     mark = const $ Color.rgb 205 16 118
 
 
@@ -384,14 +405,21 @@ instance Mark AudioBin where
     mark = const $ Color.rgb 238 230 133
 
 
-instance Mark Output where
-    mark :: Output -> Color
+instance Mark OutputN where
+    mark :: OutputN -> Color
     mark = const $ Color.rgb 250 250 205
 
 
 instance Mark Fn where
     mark :: Fn -> Color
     mark = const $ Color.rgb 150 180 205
+
+
+instance Mark RenderTarget where
+    mark :: RenderTarget -> Color
+    mark = case _ of
+        Output _ -> Color.rgb 250 250 205
+        Four -> Color.rgb 250 0 0
 
 
 
@@ -415,11 +443,32 @@ instance Mark Fn where
         Output _ -> X11.blue
     -}
 
+showUsingFn :: forall a. ToFn Value a => a -> String
+showUsingFn a =
+    case (toFn a :: String /\ Array (Fn.Argument Value)) of
+        name /\ args ->
+            if Array.length args > 0 then
+                "<" <> String.pascalCase name <> ">"
+            else
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+
+
+{-
+showUsingFn :: forall v a. Show v => ToFn v a => a -> String
+showUsingFn a =
+    case (toFn a :: String /\ Array (Argument v)) of
+        name /\ args ->
+            if Array.length args > 0 then
+                "<" <> String.pascalCase name <> ">"
+            else
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+-}
+
 
 instance Show ValueExpr where
     show :: ValueExpr -> String
     show = case _ of
-        V value -> show value
+        Val value -> show value
         AddE v1 v2 -> show v1 <> " + " <> show v2
         SubE v1 v2 -> show v1 <> " - " <> show v2
         MulE v1 v2 -> show v1 <> " * " <> show v2
@@ -463,55 +512,31 @@ instance Show Texture where
     show :: Texture -> String
     show = case _ of
         Empty -> "Empty"
-        From src -> "From " <> show src
+        Start src -> "Start " <> show src
         BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with <> " :: " <> show blend
-        WithColor texture op -> "With Color " <> show op <> " " <> show texture
+        Filter texture op -> "Filter " <> show op <> " " <> show texture
         ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with <> " " <> show mod
         Geometry texture gmt -> "Geometry " <> show texture <> " " <> show gmt
 
 
 instance Show Blend where
     show :: Blend -> String
-    show = case _ of
-        Blend v -> "<Blend " <> show v <> ">"
-        _ -> "/* FIXME */"
+    show = showUsingFn
 
 
 instance Show ColorOp where
     show :: ColorOp -> String
-    show = case _ of
-        R v -> "<R " <> show v <> ">"
-        G v -> "<G " <> show v <> ">"
-        B v -> "<B " <> show v <> ">"
-        A v -> "<A " <> show v <> ">"
-        _ -> "/* FIXME */"
+    show = showUsingFn
 
 
 instance Show Modulate where
-    show :: Modulate -> String -- FIXME: use ToFn instance to generate these
-    show = case _ of
-        Modulate v -> "<Modulate " <> show v <> ">"
-        ModHue v -> "<ModulateHue " <> show v <> ">"
-        ModKaleid { nSides } -> "<ModulateKaleid " <> show nSides <> ">"
-        ModPixelate { multiple, offset } -> "<ModulateKaleid " <> show multiple <> " " <> show offset <> ">"
-        ModRepeat { offsetX, offsetY, repeatX, repeatY } -> "<ModulateRepeat " <> show offsetX <> " " <> show offsetY <> " " <> show repeatX <> " " <> show repeatY <> ">"
-        ModRepeatX { offset, reps } -> "<ModulateRepeatX " <> show offset <> " " <> show reps <> ">"
-        ModRepeatY { offset, reps } -> "<ModulateRepeatY " <> show offset <> " " <> show reps <> ">"
-        _ -> "/* FIXME */"
+    show :: Modulate -> String
+    show = showUsingFn
 
 
 instance Show Geometry where
     show :: Geometry -> String
-    show = case _ of
-        GKaleid { nSides } -> "<GKaleid " <> show nSides <> ">"
-        _ -> "/* FIXME */"
-
-
-instance Show From where
-    show :: From -> String
-    show = case _ of
-        All -> "From all"
-        Output out -> "From output " <> show out
+    show = showUsingFn
 
 
 instance Show TODO where
@@ -532,17 +557,14 @@ instance Show UpdateFn where
 instance Show Source where
     show :: Source -> String
     show = case _ of
-        S0 -> "S0"
-        Dynamic -> "Dynamic"
-        Video -> "Video"
         Gradient { speed } -> "Gradient " <> show speed
-        Camera -> "Camera" -- 🎥
         Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
         Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset
         Shape { sides, radius, smoothing } -> "Shape " <> show sides <> " " <> show radius <> " " <> show smoothing
         Solid { r, g, b, a } -> "Solid " <> show r <> " " <> show g <> " " <> show b <> " " <> show a
-        Source from -> show from
         Voronoi { scale, speed, blending } -> "Voronoi " <> show scale <> " " <> show speed <> " " <> show blending
+        Load outputN -> "Load " <> show outputN
+        External sourceN ext -> "External " <> show sourceN <> " " <> show ext
 
 
 instance Show Url where
@@ -589,15 +611,58 @@ instance Show AudioBin where
     show (AudioBin n) = "@" <> show n
 
 
-instance Show Output where
-    show :: Output -> String
+instance Show SourceN where
+    show :: SourceN -> String
     show = case _ of
-        Screen -> "Screen"
+        Source0 -> "Source 0"
+
+
+instance Show ExtSource where
+    show :: ExtSource -> String
+    show = case _ of
+        Camera n -> "Camera " <> show n -- 🎥
+        Sketch name -> "Sketch " <> name
+        Video -> "Video"
+        Shader _ -> "Shader {}"
+        Unclear -> "Unclear"
+
+
+instance Show OutputN where
+    show :: OutputN -> String
+    show = case _ of
         Output0 -> "Output 0"
         Output1 -> "Output 1"
         Output2 -> "Output 2"
         Output3 -> "Output 3"
         Output4 -> "Output 4"
+
+
+instance Show RenderTarget where
+    show :: RenderTarget -> String
+    show Four = "Four"
+    show (Output oN) = show oN
+
+
+encodeUsingFn :: forall a. ToFn Value a => a -> String
+encodeUsingFn a =
+    case (toFn a :: String /\ Array (Fn.Argument Value)) of
+        name /\ args ->
+            if Array.length args > 0 then
+                String.toUpper name
+            else
+                String.toUpper name <> " " <> String.joinWith " " (encode <$> Fn.argValue <$> args)
+
+
+{-
+encodeUsingFn :: forall v a. Encode v => ToFn v a => a -> String
+encodeUsingFn a =
+    case toFn a of
+        name /\ args ->
+            if Array.length args > 0 then
+                String.toUpper name
+            else
+                String.toUpper name <> " " <> String.joinWith " " (encode <$> args)
+-}
 
 
 instance Encode Value where
@@ -621,18 +686,31 @@ instance Encode Texture where
     encode :: Texture -> String
     encode = case _ of
         Empty -> "EMP"
-        From src -> "F " <> encode src
-        BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with {- TODO: <> " " <> encode blend -}
-        WithColor texture op -> "C " <> {- TODO : encode op <> " " <> -} encode texture
-        ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with {- TODO: <> " " <> encode mod -}
-        Geometry texture gmt -> "G " <> encode texture {- TODO: <> " " <> encode gmt -}
+        Start src -> "S " <> encode src
+        BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with <> " " <> encode blend
+        Filter texture op -> "F " <> encode op <> " " <> encode texture
+        ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with <> " " <> encode mod
+        Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
 
 
-instance Encode From where
-    encode :: From -> String
-    encode = case _ of
-        All -> "ALL"
-        Output out -> "OUT " <> encode out
+instance Encode Blend where
+    encode :: Blend -> String
+    encode = encodeUsingFn
+
+
+instance Encode ColorOp where
+    encode :: ColorOp -> String
+    encode = encodeUsingFn
+
+
+instance Encode Modulate where
+    encode :: Modulate -> String
+    encode = encodeUsingFn
+
+
+instance Encode Geometry where
+    encode :: Geometry -> String
+    encode = encodeUsingFn
 
 
 instance Encode TODO where
@@ -650,20 +728,33 @@ instance Encode UpdateFn where
     encode = const "UF" -- TODO
 
 
+instance Encode ExtSource where
+    encode :: ExtSource -> String
+    encode = case _ of
+        Camera n -> "C" <> show n
+        Sketch name -> "SK" <> show name
+        Video -> "V"
+        Shader str -> "SH```" <>  str <> "```"
+        Unclear -> "U"
+
+
 instance Encode Source where
     encode :: Source -> String
     encode = case _ of
-        S0 -> "S0"
-        Dynamic -> "D"
-        Video -> "V"
+        Load outputN -> "O " <> encode outputN
+        External sourceN def -> "X " <> encode sourceN <> " " <> encode def
         Gradient { speed } -> "G " <> encode speed
-        Camera -> "C"
         Noise { scale, offset } -> "N " <> encode scale <> " " <> encode offset
         Osc { frequency, sync, offset } -> "OSC " <> encode frequency <> " " <> encode sync <> " " <> encode offset
         Shape { sides, radius, smoothing } -> "SHP " <> encode sides <> " " <> encode radius <> " " <> encode smoothing
         Solid { r, g, b, a } -> "S " <> encode r <> " " <> encode g <> " " <> encode b <> " " <> encode a
-        Source from -> "SRC " <> encode from
         Voronoi { scale, speed, blending } -> "V " <> encode scale <> " " <> encode speed <> " " <> encode blending
+
+
+instance Encode RenderTarget where
+    encode :: RenderTarget -> String
+    encode Four = "ALL"
+    encode (Output on) = show on
 
 
 instance Encode Url where
@@ -678,7 +769,7 @@ instance Encode GlslFn where
 
 instance Encode SourceOptions where
     encode :: SourceOptions -> String
-    encode (SourceOptions { src }) = "SO" {- TODO : <> encode src -}
+    encode (SourceOptions { src }) = "SO " -- TODO: <> encode src
 
 
 instance Encode Values where
@@ -710,21 +801,26 @@ instance Encode AudioBin where
     encode (AudioBin n) = "@" <> show n
 
 
-instance Encode Output where
-    encode :: Output -> String
+instance Encode OutputN where
+    encode :: OutputN -> String
     encode = case _ of
-        Screen -> "SCR"
-        Output0 -> "OUT 0"
-        Output1 -> "OUT 1"
-        Output2 -> "OUT 2"
-        Output3 -> "OUT 3"
-        Output4 -> "OUT 4"
+        Output0 -> "O0"
+        Output1 -> "O1"
+        Output2 -> "O2"
+        Output3 -> "O3"
+        Output4 -> "O4"
+
+
+instance Encode SourceN where
+    encode :: SourceN -> String
+    encode = case _ of
+        Source0 -> "S0"
 
 
 instance Encode ValueExpr where
     encode :: ValueExpr -> String
     encode = case _ of
-        V value -> show value
+        Val value -> show value
         AddE v1 v2 -> show v1 <> " + " <> show v2
         SubE v1 v2 -> show v1 <> " - " <> show v2
         MulE v1 v2 -> show v1 <> " * " <> show v2
@@ -745,3 +841,231 @@ instance Encode Fn where
         Fn _ -> "[[CODE]]"
         Unparsed str -> "<<<< " <> str <> " >>>>"
         NoAction -> "/----/"
+
+
+
+data TOrV
+    = T Texture
+    | V Value
+
+
+instance ToFn Value ColorOp where
+    toFn :: ColorOp -> String /\ Array (Fn.Argument Value)
+    toFn = case _ of
+        R { scale, offset } -> "r" /\ [ q "scale" scale, q "offset" offset ]
+        G { scale, offset } -> "g" /\ [ q "scale" scale, q "offset" offset ]
+        B { scale, offset } -> "b" /\ [ q "scale" scale, q "offset" offset ]
+        A { scale, offset } -> "a" /\ [ q "scale" scale, q "offset" offset ]
+        Posterize { bins, gamma } -> "posterize" /\ [ q "bins" bins, q "gamma" gamma ]
+        Shift { r, g, b, a } -> "shift" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
+        Invert amount -> "invert" /\ [ q "amount" amount ]
+        Contrast amount -> "contrast" /\ [ q "amount" amount ]
+        Brightness amount -> "brightness" /\ [ q "amount" amount ]
+        Luma { threshold, tolerance } -> "luma" /\ [ q "threshold" threshold, q "tolerance" tolerance ]
+        Thresh { threshold, tolerance } -> "thresh" /\ [ q "threshold" threshold, q "tolerance" tolerance ]
+        Color { r, g, b, a } -> "color" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
+        Saturate amount -> "saturate" /\ [ q "amount" amount ]
+        Hue amount -> "hue" /\ [ q "amount" amount ]
+        Colorama amount -> "colorama" /\ [ q "amount" amount ]
+
+
+instance ToFn Value Modulate where
+    toFn :: Modulate -> String /\ Array (Fn.Argument Value)
+    toFn = case _ of
+        Modulate amount -> "modulate" /\ [ q "amount" amount ]
+        ModHue amount -> "modHue" /\ [ q "amount" amount ]
+        ModKaleid { nSides } -> "modKaleid" /\ [ q "nSides" nSides ]
+        ModPixelate { multiple, offset } -> "modPixelate" /\ [ q "multiple" multiple, q "offset" offset ]
+        ModRepeat { repeatX, repeatY, offsetX, offsetY } -> "modRepeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ]
+        ModRepeatX { reps, offset } -> "modRepeatX" /\ [ q "reps" reps, q "offset" offset ]
+        ModRepeatY { reps, offset } -> "modRepeatY" /\ [ q "reps" reps, q "offset" offset ]
+        ModRotate { multiple, offset } -> "modRotate" /\ [ q "multiple" multiple, q "offset" offset ]
+        ModScale { multiple, offset } -> "modScale" /\ [ q "multiple" multiple, q "offset" offset ]
+        ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ]
+        ModScrollX { scrollX, speed } -> "modScrollX" /\ [ q "scrollX" scrollX, q "speed" speed ]
+        ModScrollY { scrollY, speed } -> "modScrollY" /\ [ q "scrollY" scrollY, q "speed" speed ]
+
+
+instance ToFn Value Blend where
+    toFn :: Blend -> String /\ Array (Fn.Argument Value)
+    toFn = case _ of
+        Blend amount -> "blend" /\ [ q "amount" amount ]
+        Add amount -> "add" /\ [ q "amount" amount ]
+        Sub amount -> "sub" /\ [ q "amount" amount ]
+        Mult amount -> "mult" /\ [ q "amount" amount ]
+        Diff -> "diff" /\ []
+        Layer _ -> "layer" /\ []
+        Mask -> "mask" /\ []
+
+
+instance ToFn Value Geometry where
+    toFn :: Geometry -> String /\ Array (Fn.Argument Value)
+    toFn = case _ of
+        GKaleid { nSides } -> "kaleid" /\ [ q "nSides" nSides ]
+        GPixelate { pixelX, pixelY } -> "pixelate" /\ [ q "pixelX" pixelX, q "pixelY" pixelY ]
+        GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ]
+        GRepeatX { reps, offset } -> "repeatX" /\ [ q "reps" reps, q "offset" offset ]
+        GRepeatY { reps, offset } -> "repeatY" /\ [ q "reps" reps, q "offset" offset ]
+        GRotate { angle, speed } -> "rotate" /\ [ q "angle" angle, q "speed" speed ]
+        GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ q "amount" amount, q "xMult" xMult, q "yMult" yMult, q "offsetX" offsetX, q "offsetY" offsetY ]
+        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ]
+        GScrollX { scrollX, speed } -> "scrollX" /\ [ q "scrollX" scrollX, q "speed" speed ]
+        GScrollY { scrollY, speed } -> "scrollY" /\ [ q "scrollY" scrollY, q "speed" speed ]
+
+
+instance ToFn Value Ease where
+    toFn :: Ease -> String /\ Array (Fn.Argument Value)
+    toFn = case _ of
+        Linear -> "linear" /\ []
+        Fast v -> "fast" /\ [ q "v" v ]
+        Smooth v -> "smooth" /\ [ q "v" v ]
+        Fit { low, high } -> "fit" /\ [ q "low" low, q "high" high ]
+        Offset v -> "offset" /\ [ q "v" v ]
+        InOutCubic -> "inOutCubic" /\ []
+
+
+instance PossiblyToFn Value Source where
+    possiblyToFn :: Source -> Maybe (String /\ Array (Fn.Argument Value))
+    possiblyToFn = case _ of
+        Load outputN -> Nothing -- TODO: could be converted to `src()`
+        External sourceN ext -> Nothing -- TODO: could be converted to `src()` ?
+        Gradient { speed } -> Just $ "gradient" /\ [ q "speed" speed ]
+        Noise { scale, offset } -> Just $ "noise" /\ [ q "scale" scale, q "offset" offset ]
+        Osc { frequency, sync, offset } -> Just $ "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ]
+        Shape { sides, radius, smoothing } -> Just $ "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ]
+        Solid { r, g, b, a } -> Just $ "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
+        Voronoi { scale, speed, blending } -> Just $ "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ]
+
+
+instance PossiblyToFn TOrV Texture where
+    possiblyToFn :: Texture -> Maybe (String /\ Array (Fn.Argument TOrV))
+    possiblyToFn = case _ of
+        Empty -> Nothing
+        Start src ->
+            case (possiblyToFn src :: Maybe (String /\ Array (Fn.Argument Value))) of
+                Just (name /\ args) -> Just $ name /\ (map V <$> args)
+                Nothing -> Nothing
+        BlendOf { what, with } blend ->
+            case (toFn blend :: String /\ Array (Fn.Argument Value)) of
+                name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
+        Filter texture cop ->
+            case (toFn cop :: String /\ Array ((Fn.Argument Value))) of
+                name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
+        ModulateWith { what, with } mod ->
+            case (toFn mod :: String /\ Array ((Fn.Argument Value))) of
+                name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
+        Geometry texture gmt ->
+            case (toFn gmt :: String /\ Array ((Fn.Argument Value))) of
+                name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
+
+
+instance PossiblyToFn Value Fn.KnownFn where
+    possiblyToFn :: Fn.KnownFn -> Maybe (String /\ Array (Fn.Argument Value))
+    possiblyToFn = Fn.nameOf >>> fromKnownFn
+
+
+
+-- TODO: probably duplicates something
+-- TODO: private
+fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value))
+fromKnownFn = case _ of
+    -- "number" -> Feed
+
+    "noise" -> Just $ "noise" /\ [ q "scale" $ Number 10.0, q "offset" $ Number 0.1 ]
+    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ Number 5.0, q "speed" $ Number 0.3, q "blending" $ Number 0.3 ]
+    "osc" -> Just $ "osc" /\ [ q "frequency" $ Number 60.0, q "sync" $ Number 0.1, q "offset" $ Number 0.0 ]
+    "shape" -> Just $ "shape" /\ [ q "sides" $ Number 3.0, q "radius" $ Number 0.3, q "smoothing" $ Number 0.01 ]
+    "gradient" -> Just $ "gradient" /\ [ q "speed" $ Number 0.0 ]
+    -- "src" -> Source
+    "solid" -> Just $ "solid" /\ [ q "r" $ Number 0.0, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 1.0 ]
+    -- "prev" -> Source
+
+    "rotate" -> Just $ "rotate" /\ [ q "angle" $ Number 10.0, q "speed" $ Number 0.0 ]
+    "scale" -> Just $ "scale" /\ [ q "amount" $ Number 1.5, q "xMult" $ Number 1.0, q "yMult" $ Number 1.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ]
+    "pixelate" -> Just $ "pixelate" /\ [ q "pixelX" $ Number 20.0, q "pixelY" $ Number 20.0 ]
+    "repeat" -> Just $ "repeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.0, q "offsetY" $ Number 0.0 ]
+    "repeatX" -> Just $ "repeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ]
+    "repeatY" -> Just $ "repeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ]
+    "kaleid" -> Just $ "kaleid" /\ [ q "nSides" $ Number 4.0 ]
+    "scroll" -> Just $ "scroll" /\ [ q "scrollX" $ Number 0.5, q "scrollY" $ Number 0.5, q "speedX" $ Number 0.0, q "speedY" $ Number 0.0 ]
+    "scrollX" -> Just $ "scrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ]
+    "scrollY" -> Just $ "scrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ]
+
+    "posterize" -> Just $ "posterize" /\ [ q "bins" $ Number 3.0, q "gamma" $ Number 6.0 ]
+    "shift" -> Just $ "shift" /\ [ q "r" $ Number 0.5, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 0.5 ]
+    "invert" -> Just $ "invert" /\ [ q "amount" $ Number 1.0 ]
+    "contrast" -> Just $ "contrast" /\ [ q "amount" $ Number 1.6 ]
+    "brightness" -> Just $ "brightness" /\ [ q "amount" $ Number 0.4 ]
+    "luma" -> Just $ "luma" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.1 ]
+    "thresh" -> Just $ "thresh" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.04 ]
+    "color" -> Just $ "color" /\ [ q "r" $ Number 1.0, q "g" $ Number 1.0, q "b" $ Number 1.0, q "a" $ Number 1.0 ]
+    "saturate" -> Just $ "saturate" /\ [ q "amount" $ Number 2.0 ]
+    "hue" -> Just $ "hue" /\ [ q "amount" $ Number 0.4 ]
+    "colorama" -> Just $ "colorama" /\ [ q "amount" $ Number 0.005 ]
+    -- "sum" -> Color
+    "r" -> Just $ "r" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
+    "g" -> Just $ "g" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
+    "b" -> Just $ "b" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
+    "a" -> Just $ "a" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
+
+     -- FIXME : first arg is texture for everything below
+    "add" -> Just $ "add" /\ [ q "amount" $ Number 1.0 ]
+    "sub" -> Just $ "sub" /\ [ q "amount" $ Number 1.0 ]
+    "layer" -> Just $ "layer" /\ []
+    "blend" -> Just $ "blend" /\ [ q "amount" $ Number 0.5 ]
+    "mult" -> Just $ "mult" /\ [ q "amount" $ Number 1.0 ]
+    "diff" -> Just $ "diff" /\ []
+    "mask" -> Just $ "mask" /\ []
+
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "nSides" $ Number 4.0 ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ]
+    "modulate" -> Just $ "modulate" /\ [ q "amount" $ Number 0.1 ]
+    "modulateScale" -> Just $ "modScale" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 1.0 ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "multiple" $ Number 10.0, q "offset" $ Number 3.0 ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 0.0 ]
+    "modulateHue" -> Just $ "modHue" /\ [ q "amount" $ Number 1.0 ]
+
+    -- "initCam" -> ExternalSources
+    -- "initImage" -> ExternalSources
+    -- "initVideo" -> ExternalSources
+    -- "init" -> ExternalSources
+    -- "initStream" -> ExternalSources
+    -- "initScreen" -> ExternalSources
+
+    -- "render" -> Synth
+    -- "update" -> Synth
+    -- "setResolution" -> Synth
+    -- "hush" -> Synth
+    -- "setFunction" -> Synth
+    -- "speed" -> Synth
+    -- "bpm" -> Synth
+    -- "width" -> Synth
+    -- "height" -> Synth
+    -- "time" -> Synth
+    -- "mouse" -> Synth
+    -- "pi" -> Synth
+
+    -- "fft" -> Audio
+    -- "setSmooth" -> Audio
+    -- "setCutoff" -> Audio
+    -- "setBins" -> Audio
+    -- "setScale" -> Audio
+    -- "hide" -> Audio
+    -- "show" -> Audio
+
+    -- "setScale" -> Audio
+
+    -- "out" -> Out
+
+    "linear" -> Just $ "linear" /\ []
+    "fast" -> Just $ "fast" /\ [ q "v" $ Number 1.0 ]
+    "smooth" -> Just $ "smooth" /\ [ q "v" $ Number 1.0 ]
+    "fit" -> Just $ "fit" /\ [ q "low" $ Number 0.0, q "high" $ Number 1.0 ]
+    "offset" -> Just $ "offset" /\ [ q "v" $ Number 0.5 ]
+    -- "inOutCubic" -> Just $ "inOutCubic" /\ []
+
+    _ -> Nothing

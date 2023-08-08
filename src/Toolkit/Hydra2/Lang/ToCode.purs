@@ -98,17 +98,14 @@ instance ToCode PS Value where
 instance ToCode PS Source where
     toCode :: Proxy PS -> Source -> String
     toCode _ = case _ of
-        Dynamic -> "{- dyn -}"
-        Video -> "{- video -}"
-        S0 -> "s0"
+        Load outputN -> toCode pureScript outputN
+        External sourceN _ -> toCode pureScript sourceN
         -- FIXME: use PossiblyToFn
         Gradient { speed } -> fnPs "gradient" [ speed ]
-        Camera -> "{- camera -}" -- 🎥
         Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
         Osc { frequency, sync, offset } -> fnPs "osc" [ frequency, sync, offset ]
         Shape { sides, radius, smoothing } -> fnPs "shape" [ sides, radius, smoothing ]
         Solid { r, g, b, a } -> fnPs "solid" [ r, g, b, a ]
-        Source from -> toCode pureScript from <> "()"
         Voronoi { scale, speed, blending } -> fnPs "voronoi" [ scale, speed, blending ]
 
 
@@ -144,17 +141,15 @@ instance ToCode PS Geometry where
             name /\ args -> fnPs name args
 
 
-instance ToCode PS From where
-    toCode :: Proxy PS -> From -> String
+instance ToCode PS SourceN where
+    toCode :: Proxy PS -> SourceN -> String
     toCode _ = case _ of
-        All -> "{- all -}"
-        Output out -> toCode pureScript out
+        Source0 -> "s0"
 
 
-instance ToCode PS Output where
-    toCode :: Proxy PS -> Output -> String
+instance ToCode PS OutputN where
+    toCode :: Proxy PS -> OutputN -> String
     toCode _ = case _ of
-        Screen -> "{- screen -}"
         Output0 -> "o0"
         Output1 -> "o1"
         Output2 -> "o2"
@@ -191,14 +186,15 @@ instance ToCode PS Texture where
     toCode :: Proxy PS -> Texture -> String
     toCode _ = case _ of
         Empty -> "{- empty -}"
-        From S0 -> "(src "  <> toCode pureScript S0 <> ")"
-        From src -> toCode pureScript src
+        Start (Load outputN) -> "(src "  <> toCode pureScript outputN <> ")"
+        Start (External srcN _) -> "(src "  <> toCode pureScript srcN <> ")"
+        Start src -> toCode pureScript src
         -- FIXME: use PossiblyToFn
         BlendOf { what, with } blend ->
             toCode pureScript with <> "\n\t# " <>
             case (toFnX blend :: String /\ Array Value) of
                 name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
-        WithColor texture cop ->
+        Filter texture cop ->
             toCode pureScript texture <> "\n\t# " <>
             case (toFnX cop :: String /\ Array Value) of
                 name /\ args -> fnPs name args
@@ -247,16 +243,13 @@ instance ToCode JS Value where
 instance ToCode JS Source where
     toCode :: Proxy JS -> Source -> String
     toCode _ = case _ of
-        Dynamic -> "/* dyn */"
-        Video -> "/* video */"
-        S0 -> "s0"
+        Load outputN -> toCode javaScript outputN
+        External sourceN _ -> toCode javaScript sourceN
         Gradient { speed } -> fnJs "gradient" [ speed ]
-        Camera -> "/* camera */" -- 🎥
         Noise { scale, offset } -> fnJs "noise" [ scale, offset ]
         Osc { frequency, sync, offset } -> fnJs "osc" [ frequency, sync, offset ]
         Shape { sides, radius, smoothing } -> fnJs "shape" [ sides, radius, smoothing ]
         Solid { r, g, b, a } -> fnJs "solid" [ r, g, b, a ]
-        Source from -> toCode javaScript from <> "()"
         Voronoi { scale, speed, blending } -> fnJs "voronoi" [ scale, speed, blending ]
 
 
@@ -288,17 +281,15 @@ instance ToCode JS Geometry where
             name /\ args -> fnJs name args
 
 
-instance ToCode JS From where
-    toCode :: Proxy JS -> From -> String
+instance ToCode JS SourceN where
+    toCode :: Proxy JS -> SourceN -> String
     toCode _ = case _ of
-        All -> "/* all */"
-        Output out -> toCode javaScript out
+        Source0 -> "s0"
 
 
-instance ToCode JS Output where
-    toCode :: Proxy JS -> Output -> String
+instance ToCode JS OutputN where
+    toCode :: Proxy JS -> OutputN -> String
     toCode _ = case _ of
-        Screen -> "/* screen */"
         Output0 -> "o0"
         Output1 -> "o1"
         Output2 -> "o2"
@@ -335,13 +326,14 @@ instance ToCode JS Texture where
     toCode :: Proxy JS -> Texture -> String
     toCode _ = case _ of
         Empty -> "/* empty */"
-        From S0 -> "src("  <> toCode javaScript S0 <> ")"
-        From src -> toCode javaScript src
+        Start (External sn _) -> "src("  <> toCode javaScript sn <> ")"
+        Start (Load out) -> "src("  <> toCode javaScript out <> ")"
+        Start src -> toCode javaScript src
         BlendOf { what, with } blend ->
             toCode javaScript with <> "\n\t." <>
             case (toFnX blend :: String /\ Array Value) of
                 name /\ args -> fnsJs name $ toCode javaScript what : (toCode javaScript <$> args)
-        WithColor texture cop ->
+        Filter texture cop ->
             toCode javaScript texture <> "\n\t." <>
             case (toFnX cop :: String /\ Array Value) of
                 name /\ args -> fnJs name args

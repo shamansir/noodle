@@ -21,7 +21,6 @@ data WrapRepr
     = Value H.Value
     | Unit Unit
     | Texture H.Texture
-    | From H.From
     | TODO H.TODO
     | Context H.Context
     | UpdateFn H.UpdateFn
@@ -33,7 +32,10 @@ data WrapRepr
     | Ease H.Ease
     | Audio H.AudioSource
     | AudioBin H.AudioBin
-    | Output H.Output
+    | OutputN H.OutputN
+    | SourceN H.SourceN
+    | ExtSource H.ExtSource
+    | Target H.RenderTarget
     | Fn H.Fn
 
 
@@ -60,11 +62,6 @@ instance NMF.HasRepr Unit WrapRepr where
 instance NMF.HasRepr H.Texture WrapRepr where
     toRepr :: forall f i o. InNode f i o -> H.Texture -> WrapRepr
     toRepr _ = Texture
-
-
-instance NMF.HasRepr H.From WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> H.From -> WrapRepr
-    toRepr _ = From
 
 
 instance NMF.HasRepr H.TODO WrapRepr where
@@ -122,9 +119,24 @@ instance NMF.HasRepr H.AudioBin WrapRepr where
     toRepr _ = AudioBin
 
 
-instance NMF.HasRepr H.Output WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> H.Output -> WrapRepr
-    toRepr _ = Output
+instance NMF.HasRepr H.OutputN WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.OutputN -> WrapRepr
+    toRepr _ = OutputN
+
+
+instance NMF.HasRepr H.SourceN WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.SourceN -> WrapRepr
+    toRepr _ = SourceN
+
+
+instance NMF.HasRepr H.ExtSource WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.ExtSource -> WrapRepr
+    toRepr _ = ExtSource
+
+
+instance NMF.HasRepr H.RenderTarget WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.RenderTarget -> WrapRepr
+    toRepr _ = Target
 
 
 instance NMF.HasRepr H.Fn WrapRepr where
@@ -155,9 +167,9 @@ instance R.ToRepr H.Texture WrapRepr where
     toRepr = R.exists <<< Texture
 
 
-instance R.ToRepr H.From WrapRepr where
-    toRepr :: H.From -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< From
+instance R.ToRepr H.SourceN WrapRepr where
+    toRepr :: H.SourceN -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< SourceN
 
 
 instance R.ToRepr H.TODO WrapRepr where
@@ -215,9 +227,19 @@ instance R.ToRepr H.AudioBin WrapRepr where
     toRepr = R.exists <<< AudioBin
 
 
-instance R.ToRepr H.Output WrapRepr where
-    toRepr :: H.Output -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Output
+instance R.ToRepr H.OutputN WrapRepr where
+    toRepr :: H.OutputN -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< OutputN
+
+
+instance R.ToRepr H.ExtSource WrapRepr where
+    toRepr :: H.ExtSource -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< ExtSource
+
+
+instance R.ToRepr H.RenderTarget WrapRepr where
+    toRepr :: H.RenderTarget -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< Target
 
 
 instance R.ToRepr H.Fn WrapRepr where
@@ -245,9 +267,15 @@ instance R.FromRepr WrapRepr H.Texture where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr H.From where
-    fromRepr :: R.Repr WrapRepr -> Maybe H.From
-    fromRepr (R.Repr (From from)) = Just from
+instance R.FromRepr WrapRepr H.OutputN where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.OutputN
+    fromRepr (R.Repr (OutputN outN)) = Just outN
+    fromRepr _ = Nothing
+
+
+instance R.FromRepr WrapRepr H.SourceN where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.SourceN
+    fromRepr (R.Repr (SourceN srcN)) = Just srcN
     fromRepr _ = Nothing
 
 
@@ -317,9 +345,15 @@ instance R.FromRepr WrapRepr H.AudioBin where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr H.Output where
-    fromRepr :: R.Repr WrapRepr -> Maybe H.Output
-    fromRepr (R.Repr (Output output)) = Just output
+instance R.FromRepr WrapRepr H.ExtSource where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.ExtSource
+    fromRepr (R.Repr (ExtSource ext)) = Just ext
+    fromRepr _ = Nothing
+
+
+instance R.FromRepr WrapRepr H.RenderTarget where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.RenderTarget
+    fromRepr (R.Repr (Target trg)) = Just trg
     fromRepr _ = Nothing
 
 
@@ -339,7 +373,8 @@ instance Mark WrapRepr where
         Value v -> mark v
         Unit unit -> mark unit
         Texture t -> mark t
-        From from -> mark from
+        OutputN outN -> mark outN
+        SourceN srcN -> mark srcN
         TODO todo -> mark todo
         Context ctx -> mark ctx
         UpdateFn fn -> mark fn
@@ -351,7 +386,8 @@ instance Mark WrapRepr where
         Ease e -> mark e
         Audio a -> mark a
         AudioBin ab -> mark ab
-        Output o -> mark o
+        ExtSource ext -> mark ext
+        Target trg -> mark trg
         Fn fn -> mark fn
 
 
@@ -360,7 +396,8 @@ instance Show WrapRepr where
         Value v -> show v
         Unit unit -> show unit
         Texture t -> show t
-        From from -> show from
+        OutputN outN -> show outN
+        SourceN srcN -> show srcN
         TODO todo -> show todo
         Context ctx -> show ctx
         UpdateFn fn -> show fn
@@ -372,7 +409,8 @@ instance Show WrapRepr where
         Ease e -> show e
         Audio a -> show a
         AudioBin ab -> show ab
-        Output o -> show o
+        ExtSource ext -> show ext
+        Target trg -> show trg
         Fn fn -> show fn
 
     {-
@@ -408,7 +446,8 @@ instance Encode WrapRepr where
         Value v -> "V " <> encode v
         Unit unit -> "U"
         Texture t -> "T " <> encode t
-        From from -> "FR " <> encode from
+        OutputN outN -> "ON " <> encode outN
+        SourceN srcN -> "SN " <> encode srcN
         TODO todo -> "TODO"
         Context ctx -> "CTX " <> encode ctx
         UpdateFn fn -> "UFN " <> encode fn
@@ -420,7 +459,8 @@ instance Encode WrapRepr where
         Ease e -> "E " <> encode e
         Audio a -> "A " <> encode a
         AudioBin ab -> "AB " <> encode ab
-        Output o -> "OUT " <> encode o
+        ExtSource ext -> "EXT " <> encode ext
+        Target trg -> "TRG " <> encode trg
         Fn fn -> "FN " <> encode fn
 
 

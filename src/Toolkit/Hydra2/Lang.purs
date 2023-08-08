@@ -24,7 +24,7 @@ import Data.List as List
 import Noodle.Id as Id
 import Noodle.Node2.MapsFolds.Flatten as R
 
-import Toolkit.Hydra2.Types (From(..), Output, Source, Texture, AudioSource, OnAudio, Value, SourceOptions) as H
+import Toolkit.Hydra2.Types (OutputN, SourceN, ExtSource, Source, Texture, AudioSource, OnAudio, Value, SourceOptions, RenderTarget(..)) as H
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
@@ -43,17 +43,16 @@ data Single
     | InitScreen H.Source
     | Clear H.Source
     | SetResolution H.Value H.Value
-    | Render H.From
+    | Render H.RenderTarget
 
 
 data Command
     = Unknown
-    | End H.Output H.Texture
+    | End H.OutputN H.Texture
     | Pair Command Command -- parent -> child ?
     -- | Batch (Array Command)
     | One Single
     | Continue H.Texture
-    | To H.From -- FIXME: is it used?
 
 
 data Program a = -- same as Writer?
@@ -112,7 +111,8 @@ instance ToCode PS Command where
         End output texture -> toCode pureScript texture <> "\n\t# " <> ToCode.fnPs "out" [ output ]
         Pair cmdA cmdB -> toCode pureScript cmdA <> "\n" <> toCode pureScript cmdB
         One (WithAudio onaudio) -> toCode pureScript onaudio
-        One (Render out) -> toCode pureScript out <> " # render"
+        One (Render H.Four) -> "renderAll"
+        One (Render (H.Output outN)) -> toCode pureScript outN <> " # render"
         One (Speed val) -> toCode pureScript val <> " # speed"
         One (Bpm val) -> toCode pureScript val <> " # bpm"
         One Hush -> "hush"
@@ -123,7 +123,6 @@ instance ToCode PS Command where
         One (Clear src) -> toCode pureScript src <> " # clear"
         One (SetResolution width height) -> "{ width : " <> toCode pureScript width <> ", height : " <> toCode pureScript height <> " # setResolution"
         Continue texture -> "." <> toCode pureScript texture
-        To _ -> "to()"
 else instance ToCode JS Command where
     toCode _ = case _ of
         Unknown -> "/* unknown */"
@@ -131,8 +130,8 @@ else instance ToCode JS Command where
         Pair cmdA cmdB -> toCode javaScript cmdA <> "\n" <> toCode javaScript cmdB
         One (WithAudio onaudio) -> toCode javaScript onaudio
         -- One (InitCam src index) -> toCode javaScript src <> ".initCam( " <> toCode javaScript index <> " )"
-        One (Render H.All) -> "render()"
-        One (Render out) -> toCode javaScript out <> ".render()"
+        One (Render H.Four) -> "render()"
+        One (Render (H.Output outN)) -> toCode javaScript outN <> ".render()"
         One (Speed val) -> "speed = " <> toCode javaScript val
         One (Bpm val) -> "bpm = " <> toCode javaScript val
         One Hush -> "hush()"
@@ -143,7 +142,6 @@ else instance ToCode JS Command where
         One (Clear so) -> toCode javaScript so <> ".clear()"
         One (SetResolution width height) -> "setResolution( " <> toCode javaScript width <> " , " <> toCode javaScript height <> " )"
         Continue texture -> "." <> toCode javaScript texture
-        To _ -> "to()"
 
 
 instance ToCode PS (Program a) where
@@ -200,13 +198,13 @@ updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
 
         "out" ->
             fn2 "what" "target" $ case _ of
-                Just (Texture texture /\ Output target) ->
+                Just (Texture texture /\ OutputN target) ->
                     End target texture
                 _ -> Unknown
 
         "render" ->
             fn1 "from" $ case _ of
-                Just (From target) ->
+                Just (Target target) ->
                     One $ Render target
                 _ -> Unknown
 

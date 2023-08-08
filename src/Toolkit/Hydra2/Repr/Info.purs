@@ -68,18 +68,11 @@ instance ShortInfo H.Texture where
     short :: H.Texture -> String
     short = case _ of
         H.Empty -> "∅"
-        H.From from -> short from --"&" <> short from
+        H.Start from -> short from --"&" <> short from
         H.BlendOf { what, with } blend -> "BND" -- TODO: <> short blend
-        H.WithColor texture op -> "CLR" -- TODO: expand op
+        H.Filter texture op -> "FLT" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
         H.Geometry texture gmt -> "GMT" -- TODO: expand gmt
-
-
-instance ShortInfo H.From where
-    short :: H.From -> String
-    short = case _ of
-        H.All -> "∀"
-        H.Output out -> short out
 
 
 instance ShortInfo H.TODO where
@@ -97,20 +90,27 @@ instance ShortInfo H.UpdateFn where
     short = const "↦"
 
 
+instance ShortInfo H.ExtSource where
+    short :: H.ExtSource -> String
+    short = case _ of
+        H.Sketch _ -> "SKT"
+        H.Video -> "VID"
+        H.Camera _ -> "CAM" -- 🎥
+        H.Shader _ -> "SHD"
+        H.Unclear -> "???"
+
+
 instance ShortInfo H.Source where
     short :: H.Source -> String
     short = case _ of
-        H.Dynamic -> "DYN"
-        H.Video -> "VID"
-        H.S0 -> "S0"
         H.Gradient _ -> "GRD"
-        H.Camera -> "CAM" -- 🎥
         H.Noise _ -> "NZE"
         H.Osc _ -> "OSC"
         H.Shape _ -> "SHP"
         H.Solid _ -> "SLD"
-        H.Source from -> short from
         H.Voronoi _ -> "VRN"
+        H.Load from -> short from
+        H.External src _ -> short src
 
 
 instance ShortInfo H.Url where
@@ -157,15 +157,27 @@ instance ShortInfo H.AudioBin where
     short (H.AudioBin n) = "H" <> show n -- 🔈 🔉
 
 
-instance ShortInfo H.Output where
-    short :: H.Output -> String
+instance ShortInfo H.OutputN where
+    short :: H.OutputN -> String
     short = case _ of
-        H.Screen -> "SCR"
         H.Output0 -> "⎑0" -- OUT0
         H.Output1 -> "⎑1" -- OUT1
         H.Output2 -> "⎑2" -- OUT2
         H.Output3 -> "⎑3" -- OUT3
         H.Output4 -> "⎑4" -- OUT4
+
+
+instance ShortInfo H.SourceN where
+    short :: H.SourceN -> String
+    short = case _ of
+        H.Source0 -> "S0"
+
+
+instance ShortInfo H.RenderTarget where
+    short :: H.RenderTarget -> String
+    short = case _ of
+        H.Four -> "∀"
+        H.Output oN -> short oN
 
 
 instance ShortInfo H.Fn where
@@ -189,11 +201,6 @@ instance FullInfo Unit where
 
 instance FullInfo H.Texture where
     full :: H.Texture -> String
-    full = show
-
-
-instance FullInfo H.From where
-    full :: H.From -> String
     full = show
 
 
@@ -252,13 +259,28 @@ instance FullInfo H.AudioBin where
     full = show
 
 
-instance FullInfo H.Output where
-    full :: H.Output -> String
+instance FullInfo H.OutputN where
+    full :: H.OutputN -> String
+    full = show
+
+
+instance FullInfo H.SourceN where
+    full :: H.SourceN -> String
+    full = show
+
+
+instance FullInfo H.ExtSource where
+    full :: H.ExtSource -> String
     full = show
 
 
 instance FullInfo H.Fn where
     full :: H.Fn -> String
+    full = show
+
+
+instance FullInfo H.RenderTarget where
+    full :: H.RenderTarget -> String
     full = show
 
 
@@ -279,7 +301,8 @@ instance FullInfo W.WrapRepr where
         W.Value v -> full v
         W.Unit u -> full u
         W.Texture tex -> full tex
-        W.From f -> full f
+        W.OutputN on -> full on
+        W.SourceN sn -> full sn
         W.TODO todo -> full todo
         W.Context ctx -> full ctx
         W.UpdateFn fn -> full fn
@@ -291,8 +314,9 @@ instance FullInfo W.WrapRepr where
         W.Ease ease -> full ease
         W.Audio audio -> full audio
         W.AudioBin bin -> full bin
-        W.Output out -> full out
+        W.ExtSource ext -> full ext
         W.Fn fn -> full fn
+        W.Target trg -> full trg
 
 
 instance ShortInfo W.WrapRepr where
@@ -301,7 +325,8 @@ instance ShortInfo W.WrapRepr where
         W.Value v -> short v
         W.Unit u -> short u
         W.Texture tex -> short tex
-        W.From f -> short f
+        W.OutputN on -> short on
+        W.SourceN sn -> short sn
         W.TODO todo -> short todo
         W.Context ctx -> short ctx
         W.UpdateFn fn -> short fn
@@ -313,5 +338,6 @@ instance ShortInfo W.WrapRepr where
         W.Ease ease -> short ease
         W.Audio audio -> short audio
         W.AudioBin bin -> short bin
-        W.Output out -> short out
+        W.ExtSource ext -> short ext
         W.Fn fn -> short fn
+        W.Target trg -> short trg
