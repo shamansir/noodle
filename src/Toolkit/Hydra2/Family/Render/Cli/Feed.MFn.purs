@@ -56,12 +56,6 @@ type TextBoxKey = TextBox <^> "fn-text-box"
 
 
 
-
--- instance HasBody "number" State Inputs Outputs m where
---     run :: NodeBoxKey -> Node m -> Maybe (BlessedOp State m)
---     run _ _ = Nothing
-
-
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
 render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m -- FIXME: why it doesn't work with `sendOut` ??
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect

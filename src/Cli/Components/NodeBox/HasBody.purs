@@ -13,6 +13,7 @@ import Noodle.Node2 (Node)
 -- TODO: we have the conflict between m for `Node` and `BlessedOp` in the result,
 --       we can not afford `MonadEffect` for `BlessedOp` due to problems in compiling handlers (see `HandlerFn` in `Blessed` which is bound to `Effect` for this reason)
 
+class HasBody :: forall k. k -> Symbol -> Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
 class HasBody x f state is os m {- repr -} | x -> f, f -> state is os where
 --     {-
 --     component :: x -> Blessed state m
@@ -21,12 +22,19 @@ class HasBody x f state is os m {- repr -} | x -> f, f -> state is os where
     run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
 
 
+class HasBody' :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
 class HasBody' x y {- repr -} state m | x -> y state where
 --     {-
 --     component :: x -> Blessed state m
 --     init :: x -> Blessed state m -> BlessedOp state m
 --     -}
     run' :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} BlessedOp state m
+
+
+class HasCustomSize :: forall k. k -> Type -> Constraint
+class HasCustomSize x y | x -> y where
+    size :: Proxy x -> NodeBoxKey -> y -> Maybe { width :: Int, height :: Int }
+
 
 
 -- type RenderBody f state is os m = NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m

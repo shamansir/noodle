@@ -8,7 +8,6 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State as State
 
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody)
 
 import Cli.Keys (NodeBoxKey)
 

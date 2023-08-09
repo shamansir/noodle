@@ -57,9 +57,6 @@ type TextBoxKey = TextBox <^> "number-text-box"
 
 
 
--- instance HasBody "number" State Inputs Outputs m where
---     run :: NodeBoxKey -> Node m -> Maybe (BlessedOp State m)
---     run _ _ = Nothing
 
 
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m

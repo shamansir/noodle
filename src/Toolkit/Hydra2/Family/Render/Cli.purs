@@ -6,8 +6,10 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Control.Monad.Rec.Class (class MonadRec)
 
+import Data.Maybe (Maybe(..))
+
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize)
 
 import Cli.Keys (NodeBoxKey)
 
@@ -51,20 +53,25 @@ else instance HasBody (Cli f) f state is os m where
 
 
 instance (Applicative m, MonadEffect m) => HasBody' (Cli "number") (FNumber.Node m) FNumber.State m where
-   run' :: Proxy (Cli "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
-   run' _ = FNumber.render
+    run' :: Proxy (Cli "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
+    run' _ = FNumber.render
 else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "out") (FOut.Node m) FOut.State m where
-   run' :: Proxy (Cli "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
-   run' _ = FOut.render
+    run' :: Proxy (Cli "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
+    run' _ = FOut.render
 else instance (MonadRec m, MonadEffect m) => HasBody' (Cli "info") (FInfo.Node m) FInfo.State m  where
-   run' :: Proxy (Cli "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
-   run' _ = FInfo.render
+    run' :: Proxy (Cli "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
+    run' _ = FInfo.render
 else instance (Applicative m, MonadEffect m) => HasBody' (Cli "fn") (FFn.Node m) FFn.State m where
-   run' :: Proxy (Cli "fn") -> NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m
-   run' _ = FFn.render
+    run' :: Proxy (Cli "fn") -> NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m
+    run' _ = FFn.render
 else instance (Applicative m, MonadEffect m) => HasBody' (Cli "array") (FArray.Node m) FArray.State m where
-   run' :: Proxy (Cli "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
-   run' _ = FArray.render
+    run' :: Proxy (Cli "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
+    run' _ = FArray.render
 else instance HasBody' (Cli f) (Node f state is os m) state m where
-   run' :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
-   run' _ _ _ = pure unit
+    run' :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
+    run' _ _ _ = pure unit
+
+
+instance HasCustomSize (Cli f) (Node f state is os m) where
+    size :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
+    size _ _ _ = Nothing

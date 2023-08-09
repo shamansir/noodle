@@ -135,7 +135,7 @@ fromNode
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody (Hydra.Cli f) f state is os Effect
+    => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -260,7 +260,7 @@ fromNode curPatchId curPatch family node = do
 
     -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
     -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
-    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run' (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
 
     -- nextNodeBox >~ Node.append inputText
 
@@ -296,7 +296,7 @@ fromFamily
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody (Hydra.Cli f) f state is os Effect
+    => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)

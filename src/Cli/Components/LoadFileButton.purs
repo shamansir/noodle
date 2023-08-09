@@ -51,7 +51,7 @@ import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.Link as Link
-import Cli.Components.NodeBox.HasBody (class HasBody, run)
+import Cli.Components.NodeBox.HasBody (class HasBody', run')
 import Cli.Style as Style
 
 import Noodle.Id as Id
@@ -97,7 +97,7 @@ addNodeBox
     => FromToReprRow osrl os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody (Hydra.Cli f) f state is os Effect
+    => HasBody' (Hydra.Cli f) (Node f state is os Effect) state Effect
     => IsNodeState state
     => Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)

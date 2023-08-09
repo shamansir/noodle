@@ -50,7 +50,7 @@ import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 
 
-import Cli.Components.NodeBox.HasBody (class HasBody) -- FIXME: should not be located in the Cli module but instead some general Ui module
+import Cli.Components.NodeBox.HasBody (class HasBody') -- FIXME: should not be located in the Cli module but instead some general Ui module
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState) -- FIXME: should not be located in the Cli module but instead some general Noodle module
 
 
@@ -401,7 +401,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
             => FromToReprRow osrl os repr
             => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
             => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-            => HasBody (x f) f state is os m
+            => HasBody' (x f) (Node f state is os m) state m
             => IsNodeState state
             => Patch gstate instances
             -> Node f state is os m
@@ -450,7 +450,7 @@ holdNodeMRepr
     => FromToReprRow osrl os repr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    => HasBody (x f) f state is os m
+    => HasBody' (x f) (Node f state is os m) state m
     => IsNodeState state
     => Patch gstate instances
     -> Node f state is os m
@@ -579,7 +579,7 @@ withNodeMRepr
         => FromToReprRow osrl os repr
         => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-        => HasBody (x f) f state is os m
+        => HasBody' (x f) (Node f state is os m) state m
         => IsNodeState state
         => Patch gstate instances
         -> Node f state is os m
@@ -626,8 +626,8 @@ withNode2MRepr
         => Node.NodeBoundKeys Node.O osrlA Id.Output fA stateA isA osA m (Node.HoldsOutputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.I isrlB Id.Input fB stateB isB osB m (Node.HoldsInputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.O osrlB Id.Output fB stateB isB osB m (Node.HoldsOutputInNodeMRepr m repr)
-        => HasBody (x fA) fA stateA isA osA m
-        => HasBody (x fB) fB stateB isB osB m
+        => HasBody' (x fA) (Node fA stateA isA osA m) stateA m
+        => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
         => IsNodeState stateA
         => IsNodeState stateB
         => Node fA stateA isA osA m
