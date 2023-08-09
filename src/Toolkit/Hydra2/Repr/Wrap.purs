@@ -37,6 +37,7 @@ data WrapRepr
     | ExtSource H.ExtSource
     | Target H.RenderTarget
     | Fn H.Fn
+    | CBS H.CanBeSource
 
 
 -- instance NMF.HasRepr a WrapRepr where
@@ -144,6 +145,11 @@ instance NMF.HasRepr H.Fn WrapRepr where
     toRepr _ = Fn
 
 
+instance NMF.HasRepr H.CanBeSource WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.CanBeSource -> WrapRepr
+    toRepr _ = CBS
+
+
 instance NMF.HasRepr WrapRepr WrapRepr where
     toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
     toRepr _ = identity
@@ -245,6 +251,11 @@ instance R.ToRepr H.RenderTarget WrapRepr where
 instance R.ToRepr H.Fn WrapRepr where
     toRepr :: H.Fn -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< Fn
+
+
+instance R.ToRepr H.CanBeSource WrapRepr where
+    toRepr :: H.CanBeSource -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< CBS
 
 
 instance R.ToRepr WrapRepr WrapRepr where
@@ -363,6 +374,12 @@ instance R.FromRepr WrapRepr H.Fn where
     fromRepr _ = Nothing
 
 
+instance R.FromRepr WrapRepr H.CanBeSource where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.CanBeSource
+    fromRepr (R.Repr (CBS cbs)) = Just cbs
+    fromRepr _ = Nothing
+
+
 instance R.FromRepr WrapRepr WrapRepr where
     fromRepr :: R.Repr WrapRepr -> Maybe WrapRepr
     fromRepr (R.Repr w) = Just w
@@ -389,6 +406,7 @@ instance Mark WrapRepr where
         ExtSource ext -> mark ext
         Target trg -> mark trg
         Fn fn -> mark fn
+        CBS cbs -> mark cbs
 
 
 instance Show WrapRepr where
@@ -412,6 +430,7 @@ instance Show WrapRepr where
         ExtSource ext -> show ext
         Target trg -> show trg
         Fn fn -> show fn
+        CBS cbs -> show cbs
 
     {-
     mark = case _ of
@@ -462,6 +481,7 @@ instance Encode WrapRepr where
         ExtSource ext -> "EXT " <> encode ext
         Target trg -> "TRG " <> encode trg
         Fn fn -> "FN " <> encode fn
+        CBS cbs -> "CBS " <> encode cbs
 
 
 instance Read WrapRepr where

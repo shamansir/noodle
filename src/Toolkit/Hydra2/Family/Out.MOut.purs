@@ -23,7 +23,7 @@ name :: String
 name = "out"
 
 
-type State = H.Output
+type State = H.OutputN
 
 
 defaultState :: State
@@ -33,7 +33,7 @@ defaultState = H.Output0
 _in_what   = Fn.Input  0 :: _ "what"
 _in_target = Fn.Input  1 :: _ "target"
 
-type Inputs = ( what :: H.Texture, target :: H.Output )
+type Inputs = ( what :: H.Texture, target :: H.OutputN )
 type Outputs = ( )
 
 
@@ -46,7 +46,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { what : H.Empty, target : H.Screen }
+defaultInputs = { what : H.Empty, target : H.Output0 }
 
 
 defaultOutputs :: Record Outputs

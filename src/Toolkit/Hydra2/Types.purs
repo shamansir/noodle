@@ -24,6 +24,7 @@ import Data.Array ((:))
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Toolkit.Hydra2.Lang.Fn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q)
 import Toolkit.Hydra2.Lang.Fn as Fn
 
@@ -136,6 +137,10 @@ data ExtSource
 data RenderTarget
     = Four
     | Output OutputN
+
+
+newtype CanBeSource =
+    CanBeSource (Either SourceN OutputN)
 
 
 data SourceN
@@ -293,6 +298,10 @@ defaultSourceN :: SourceN
 defaultSourceN = Source0
 
 
+defaultCanBeSource :: CanBeSource
+defaultCanBeSource = CanBeSource $ Right Output0
+
+
 initialContext :: Context
 initialContext =
     Context
@@ -324,6 +333,10 @@ instance IsNodeState Fn where
 
 instance IsNodeState OutputN where
     default = Output0
+
+
+instance IsNodeState CanBeSource where
+    default = defaultCanBeSource
 
 
 {- MARK -}
@@ -420,6 +433,13 @@ instance Mark RenderTarget where
     mark = case _ of
         Output _ -> Color.rgb 250 250 205
         Four -> Color.rgb 250 0 0
+
+
+instance Mark CanBeSource where
+    mark :: CanBeSource -> Color
+    mark (CanBeSource cbs) = case cbs of
+        Left _ -> Color.rgb 0 250 0
+        Right _ -> Color.rgb 250 250 205
 
 
 
@@ -627,6 +647,13 @@ instance Show ExtSource where
         Unclear -> "Unclear"
 
 
+instance Show CanBeSource where
+    show :: CanBeSource -> String
+    show (CanBeSource cbs) = case cbs of
+        Left sourceN -> show sourceN
+        Right outputN -> show outputN
+
+
 instance Show OutputN where
     show :: OutputN -> String
     show = case _ of
@@ -765,6 +792,14 @@ instance Encode Url where
 instance Encode GlslFn where
     encode :: GlslFn -> String
     encode = const "GLSL" -- TODO
+
+
+instance Encode CanBeSource where
+    encode :: CanBeSource -> String
+    encode (CanBeSource cbs) =
+        case cbs of
+            Left sourceN -> "L " <> encode sourceN
+            Right outputN -> "R " <> encode outputN
 
 
 instance Encode SourceOptions where

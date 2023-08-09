@@ -9,6 +9,7 @@ import Data.Mark (class Mark)
 import Data.Array as Array
 import Data.String as String
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 
 
@@ -189,6 +190,13 @@ instance ShortInfo H.Fn where
         H.NoAction -> "--"
 
 
+instance ShortInfo H.CanBeSource where
+    short :: H.CanBeSource -> String
+    short (H.CanBeSource cbs) = case cbs of
+        Left sourceN -> short sourceN
+        Right outputN -> short outputN
+
+
 instance FullInfo H.Value where
     full :: H.Value -> String
     full = show
@@ -284,6 +292,11 @@ instance FullInfo H.RenderTarget where
     full = show
 
 
+instance FullInfo H.CanBeSource where
+    full :: H.CanBeSource -> String
+    full = show
+
+
 
 instance (ShortInfo a, FullInfo a) => NMF.HasRepr a InfoRepr where
     toRepr :: forall f i o. InNode f i o -> a -> InfoRepr
@@ -317,6 +330,7 @@ instance FullInfo W.WrapRepr where
         W.ExtSource ext -> full ext
         W.Fn fn -> full fn
         W.Target trg -> full trg
+        W.CBS cbs -> full cbs
 
 
 instance ShortInfo W.WrapRepr where
@@ -341,3 +355,4 @@ instance ShortInfo W.WrapRepr where
         W.ExtSource ext -> short ext
         W.Fn fn -> short fn
         W.Target trg -> short trg
+        W.CBS cbs -> short cbs

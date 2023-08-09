@@ -1007,7 +1007,7 @@ noise = -- {-> source <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- Noise scale offset
-            P.send _out_out $ H.From $ H.Noise { scale, offset }
+            P.send _out_out $ H.Start $ H.Noise { scale, offset }
 
 
 type FVoronoi m =
@@ -1027,7 +1027,7 @@ voronoi = -- {-> source <-}
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
             -- Voronoi scale speed blending
-            P.send _out_out $ H.From $ H.Voronoi { scale, speed, blending }
+            P.send _out_out $ H.Start $ H.Voronoi { scale, speed, blending }
 
 
 type FOsc m =
@@ -1047,7 +1047,7 @@ osc = -- {-> source <-}
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
             -- Osc frequency sync offset
-            P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }
+            P.send _out_out $ H.Start $ H.Osc { frequency, sync, offset }
 
 
 type FShape m =
@@ -1067,7 +1067,7 @@ shape = -- {-> source <-}
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
             -- Shape sides radius smoothing
-            P.send _out_out $ H.From $ H.Shape { sides, radius, smoothing }
+            P.send _out_out $ H.Start $ H.Shape { sides, radius, smoothing }
 
 
 type FGradient m =
@@ -1085,7 +1085,7 @@ gradient = -- {-> source <-}
         $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
             -- Gradient speed
-            P.send _out_out $ H.From $ H.Gradient { speed }
+            P.send _out_out $ H.Start $ H.Gradient { speed }
 
 
 type FSrctex m =
@@ -1103,7 +1103,7 @@ srctex = -- {-> source <-}
         $ Fn.make "srctex" $ do
             tex <- P.receive _in_tex
             -- Srctex tex
-            P.send _out_out $ H.From $ H.Source src
+            P.send _out_out $ H.Start $ H.Source src
 
 
 type FSolid m =
@@ -1124,7 +1124,7 @@ solid = -- {-> source <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Solid r g b a
-            P.send _out_out $ H.From $ H.Solid { r, g, b, a }
+            P.send _out_out $ H.Start $ H.Solid { r, g, b, a }
 
 
 type FSrc m =
@@ -1142,7 +1142,7 @@ src = -- {-> source <-}
         $ Fn.make "src" $ do
             src <- P.receive _in_src
             -- Src src
-            P.send _out_out $ H.From $ H.Source src
+            P.send _out_out $ H.Start $ H.Source src
 
 
 type FPrev m =
@@ -1386,7 +1386,7 @@ posterize = -- {-> color <-}
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
             -- Posterize what bins gamma
-            P.send _out_out $ H.WithColor what $ H.Posterize { bins, gamma }
+            P.send _out_out $ H.Filter what $ H.Posterize { bins, gamma }
 
 
 type FShift m =
@@ -1408,7 +1408,7 @@ shift = -- {-> color <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Shift what r g b a
-            P.send _out_out $ H.WithColor what $ H.Shift { r, g, b, a }
+            P.send _out_out $ H.Filter what $ H.Shift { r, g, b, a }
 
 
 type FInvert m =
@@ -1427,7 +1427,7 @@ invert = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Invert what amount
-            P.send _out_out $ H.WithColor what $ H.Invert amount
+            P.send _out_out $ H.Filter what $ H.Invert amount
 
 
 type FContrast m =
@@ -1446,7 +1446,7 @@ contrast = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Contrast what amount
-            P.send _out_out $ H.WithColor what $ H.Contrast amount
+            P.send _out_out $ H.Filter what $ H.Contrast amount
 
 
 type FBrightness m =
@@ -1465,7 +1465,7 @@ brightness = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Brightness what amount
-            P.send _out_out $ H.WithColor what $ H.Brightness amount
+            P.send _out_out $ H.Filter what $ H.Brightness amount
 
 
 type FLuma m =
@@ -1485,7 +1485,7 @@ luma = -- {-> color <-}
             threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
             -- Luma what threshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Luma { threshold, tolerance }
+            P.send _out_out $ H.Filter what $ H.Luma { threshold, tolerance }
 
 
 type FThresh m =
@@ -1505,7 +1505,7 @@ thresh = -- {-> color <-}
             threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
             -- Thresh what threshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
+            P.send _out_out $ H.Filter what $ H.Thresh { threshold, tolerance }
 
 
 type FColor m =
@@ -1527,7 +1527,7 @@ color = -- {-> color <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Color what r g b a
-            P.send _out_out $ H.WithColor what $ H.Color { r, g, b, a }
+            P.send _out_out $ H.Filter what $ H.Color { r, g, b, a }
 
 
 type FSaturate m =
@@ -1546,7 +1546,7 @@ saturate = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Saturate what amount
-            P.send _out_out $ H.WithColor what $ H.Saturate amount
+            P.send _out_out $ H.Filter what $ H.Saturate amount
 
 
 type FHue m =
@@ -1565,7 +1565,7 @@ hue = -- {-> color <-}
             what <- P.receive _in_what
             hue <- P.receive _in_hue
             -- Hue what hue
-            P.send _out_out $ H.WithColor what $ H.Hue hue
+            P.send _out_out $ H.Filter what $ H.Hue hue
 
 
 type FColorama m =
@@ -1584,7 +1584,7 @@ colorama = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Colorama what amount
-            P.send _out_out $ H.WithColor what $ H.Colorama amount
+            P.send _out_out $ H.Filter what $ H.Colorama amount
 
 
 type FSum m =
@@ -1623,7 +1623,7 @@ r = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- R what scale offset
-            P.send _out_out $ H.WithColor what $ H.R { scale, offset }
+            P.send _out_out $ H.Filter what $ H.R { scale, offset }
 
 
 type FG m =
@@ -1643,7 +1643,7 @@ g = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- G what scale offset
-            P.send _out_out $ H.WithColor what $ H.G { scale, offset }
+            P.send _out_out $ H.Filter what $ H.G { scale, offset }
 
 
 type FB m =
@@ -1663,7 +1663,7 @@ b = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- B what scale offset
-            P.send _out_out $ H.WithColor what $ H.B { scale, offset }
+            P.send _out_out $ H.Filter what $ H.B { scale, offset }
 
 
 type FA m =
@@ -1683,7 +1683,7 @@ a = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- A what scale offset
-            P.send _out_out $ H.WithColor what $ H.A { scale, offset }
+            P.send _out_out $ H.Filter what $ H.A { scale, offset }
 
 
 type FAdd m =
@@ -3775,7 +3775,7 @@ family = -- {-> source <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- Noise scale offset
-            P.send _out_out $ H.From $ H.Noise { scale, offset }
+            P.send _out_out $ H.Start $ H.Noise { scale, offset }
 
 
 type Node m =
@@ -3856,7 +3856,7 @@ family = -- {-> source <-}
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
             -- Voronoi scale speed blending
-            P.send _out_out $ H.From $ H.Voronoi { scale, speed, blending }
+            P.send _out_out $ H.Start $ H.Voronoi { scale, speed, blending }
 
 
 type Node m =
@@ -3937,7 +3937,7 @@ family = -- {-> source <-}
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
             -- Osc frequency sync offset
-            P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }
+            P.send _out_out $ H.Start $ H.Osc { frequency, sync, offset }
 
 
 type Node m =
@@ -4018,7 +4018,7 @@ family = -- {-> source <-}
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
             -- Shape sides radius smoothing
-            P.send _out_out $ H.From $ H.Shape { sides, radius, smoothing }
+            P.send _out_out $ H.Start $ H.Shape { sides, radius, smoothing }
 
 
 type Node m =
@@ -4095,7 +4095,7 @@ family = -- {-> source <-}
         $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
             -- Gradient speed
-            P.send _out_out $ H.From $ H.Gradient { speed }
+            P.send _out_out $ H.Start $ H.Gradient { speed }
 
 
 type Node m =
@@ -4172,7 +4172,7 @@ family = -- {-> source <-}
         $ Fn.make "srctex" $ do
             tex <- P.receive _in_tex
             -- Srctex tex
-            P.send _out_out $ H.From $ H.Source src
+            P.send _out_out $ H.Start $ H.Source src
 
 
 type Node m =
@@ -4255,7 +4255,7 @@ family = -- {-> source <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Solid r g b a
-            P.send _out_out $ H.From $ H.Solid { r, g, b, a }
+            P.send _out_out $ H.Start $ H.Solid { r, g, b, a }
 
 
 type Node m =
@@ -4332,7 +4332,7 @@ family = -- {-> source <-}
         $ Fn.make "src" $ do
             src <- P.receive _in_src
             -- Src src
-            P.send _out_out $ H.From $ H.Source src
+            P.send _out_out $ H.Start $ H.Source src
 
 
 type Node m =
@@ -5312,7 +5312,7 @@ family = -- {-> color <-}
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
             -- Posterize what bins gamma
-            P.send _out_out $ H.WithColor what $ H.Posterize { bins, gamma }
+            P.send _out_out $ H.Filter what $ H.Posterize { bins, gamma }
 
 
 type Node m =
@@ -5397,7 +5397,7 @@ family = -- {-> color <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Shift what r g b a
-            P.send _out_out $ H.WithColor what $ H.Shift { r, g, b, a }
+            P.send _out_out $ H.Filter what $ H.Shift { r, g, b, a }
 
 
 type Node m =
@@ -5476,7 +5476,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Invert what amount
-            P.send _out_out $ H.WithColor what $ H.Invert amount
+            P.send _out_out $ H.Filter what $ H.Invert amount
 
 
 type Node m =
@@ -5555,7 +5555,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Contrast what amount
-            P.send _out_out $ H.WithColor what $ H.Contrast amount
+            P.send _out_out $ H.Filter what $ H.Contrast amount
 
 
 type Node m =
@@ -5634,7 +5634,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Brightness what amount
-            P.send _out_out $ H.WithColor what $ H.Brightness amount
+            P.send _out_out $ H.Filter what $ H.Brightness amount
 
 
 type Node m =
@@ -5715,7 +5715,7 @@ family = -- {-> color <-}
             threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
             -- Luma what threshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Luma { threshold, tolerance }
+            P.send _out_out $ H.Filter what $ H.Luma { threshold, tolerance }
 
 
 type Node m =
@@ -5796,7 +5796,7 @@ family = -- {-> color <-}
             threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
             -- Thresh what threshold tolerance
-            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
+            P.send _out_out $ H.Filter what $ H.Thresh { threshold, tolerance }
 
 
 type Node m =
@@ -5881,7 +5881,7 @@ family = -- {-> color <-}
             b <- P.receive _in_b
             a <- P.receive _in_a
             -- Color what r g b a
-            P.send _out_out $ H.WithColor what $ H.Color { r, g, b, a }
+            P.send _out_out $ H.Filter what $ H.Color { r, g, b, a }
 
 
 type Node m =
@@ -5960,7 +5960,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Saturate what amount
-            P.send _out_out $ H.WithColor what $ H.Saturate amount
+            P.send _out_out $ H.Filter what $ H.Saturate amount
 
 
 type Node m =
@@ -6039,7 +6039,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             hue <- P.receive _in_hue
             -- Hue what hue
-            P.send _out_out $ H.WithColor what $ H.Hue hue
+            P.send _out_out $ H.Filter what $ H.Hue hue
 
 
 type Node m =
@@ -6118,7 +6118,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Colorama what amount
-            P.send _out_out $ H.WithColor what $ H.Colorama amount
+            P.send _out_out $ H.Filter what $ H.Colorama amount
 
 
 type Node m =
@@ -6278,7 +6278,7 @@ family = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- R what scale offset
-            P.send _out_out $ H.WithColor what $ H.R { scale, offset }
+            P.send _out_out $ H.Filter what $ H.R { scale, offset }
 
 
 type Node m =
@@ -6359,7 +6359,7 @@ family = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- G what scale offset
-            P.send _out_out $ H.WithColor what $ H.G { scale, offset }
+            P.send _out_out $ H.Filter what $ H.G { scale, offset }
 
 
 type Node m =
@@ -6440,7 +6440,7 @@ family = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- B what scale offset
-            P.send _out_out $ H.WithColor what $ H.B { scale, offset }
+            P.send _out_out $ H.Filter what $ H.B { scale, offset }
 
 
 type Node m =
@@ -6521,7 +6521,7 @@ family = -- {-> color <-}
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- A what scale offset
-            P.send _out_out $ H.WithColor what $ H.A { scale, offset }
+            P.send _out_out $ H.Filter what $ H.A { scale, offset }
 
 
 type Node m =

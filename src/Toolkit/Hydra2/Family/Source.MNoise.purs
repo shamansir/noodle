@@ -73,7 +73,7 @@ family = -- {-> source <-}
             $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
-            P.send _out_out $ H.From $ H.Noise { scale, offset }
+            P.send _out_out $ H.Start $ H.Noise { scale, offset }
 
 
 type Node (m :: Type -> Type) =

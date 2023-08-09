@@ -30,15 +30,15 @@ defaultState :: State
 defaultState = unit
 
 
-_in_from = Fn.Input 0 :: _ "from"
+_in_what = Fn.Input 0 :: _ "what"
 
 
-type Inputs = ( from :: H.From )
+type Inputs = ( what :: H.RenderTarget )
 type Outputs = ( )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_from
+inputsOrder = s1 _in_what
 
 
 outputsOrder :: _
@@ -46,7 +46,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { from : H.All }
+defaultInputs = { what : H.Four }
 
 
 defaultOutputs :: Record Outputs
@@ -69,7 +69,7 @@ family = -- {-> synth <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            from <- P.receive _in_from
+            what <- P.receive _in_what
             -- TODO
             pure unit
 

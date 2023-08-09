@@ -79,7 +79,7 @@ family = -- {-> color <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            P.send _out_out $ H.WithColor what $ H.Color { r, g, b, a }
+            P.send _out_out $ H.Filter what $ H.Color { r, g, b, a }
 
 
 type Node (m :: Type -> Type) =

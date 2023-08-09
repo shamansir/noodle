@@ -73,7 +73,7 @@ family = -- {-> color <-}
             $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
-            P.send _out_out $ H.WithColor what $ H.Saturate amount
+            P.send _out_out $ H.Filter what $ H.Saturate amount
 
 
 type Node (m :: Type -> Type) =

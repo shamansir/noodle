@@ -71,7 +71,7 @@ family = -- {-> source <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             speed <- P.receive _in_speed
-            P.send _out_out $ H.From $ H.Gradient { speed }
+            P.send _out_out $ H.Start $ H.Gradient { speed }
 
 
 type Node (m :: Type -> Type) =

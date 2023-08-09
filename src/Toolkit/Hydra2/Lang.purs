@@ -203,7 +203,7 @@ updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
                 _ -> Unknown
 
         "render" ->
-            fn1 "from" $ case _ of
+            fn1 "what" $ case _ of
                 Just (Target target) ->
                     One $ Render target
                 _ -> Unknown
@@ -291,7 +291,7 @@ formProgram = Map.values >>> List.foldl append empty
 
 {-
 instance Core.Show Texture where
-    show (WithColor _ c) = "color <- " <> Core.show c
+    show (Filter _ c) = "color <- " <> Core.show c
     show (ModulateWith ca _ cb) = "mod <- " <> Core.show ca <> " <- " <> Core.show cb
     show (Geometry _ c) = "geom <- " <> Core.show c
     show (BlendOf ca _ cb) = "blend <- " <> Core.show ca <> " <- " <> Core.show cb
@@ -309,7 +309,7 @@ instance Core.Show Command where
     show (One (WithAudio str)) = "with audio"
     show (One (InitCam str)) = "init cam"
     show (One (Render _)) = "render"
-    show (Continue (WithColor _)) = "cont with color"
+    show (Continue (Filter _)) = "cont with color"
     show (Continue (WithModulate _)) = "cont with mod"
     show (Continue (WithGeometry _)) = "cont with geom"
     show (Continue (WithSource _)) = "cont with src"

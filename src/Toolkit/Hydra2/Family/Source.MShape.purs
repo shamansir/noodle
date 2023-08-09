@@ -75,7 +75,7 @@ family = -- {-> source <-}
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
-            P.send _out_out $ H.From $ H.Shape { sides, radius, smoothing }
+            P.send _out_out $ H.Start $ H.Shape { sides, radius, smoothing }
 
 
 type Node (m :: Type -> Type) =

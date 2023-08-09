@@ -33,7 +33,7 @@ defaultState = unit
 _in_src = Fn.Input 0 :: _ "src"
 
 
-type Inputs = ( src :: H.Source )
+type Inputs = ( src :: H.SourceN )
 type Outputs = ( )
 
 
@@ -46,7 +46,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { src : H.defaultSource }
+defaultInputs = { src : H.defaultSourceN }
 
 
 defaultOutputs :: Record Outputs

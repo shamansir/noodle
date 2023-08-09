@@ -75,7 +75,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
-            P.send _out_out $ H.WithColor what $ H.Posterize { bins, gamma }
+            P.send _out_out $ H.Filter what $ H.Posterize { bins, gamma }
 
 
 type Node (m :: Type -> Type) =

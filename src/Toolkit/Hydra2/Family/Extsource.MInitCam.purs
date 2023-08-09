@@ -34,7 +34,7 @@ _in_src   = Fn.Input 0 :: _ "src"
 _in_index = Fn.Input 1 :: _ "index"
 
 
-type Inputs = ( src :: H.Source, index :: H.Value )
+type Inputs = ( src :: H.SourceN, index :: H.Value )
 type Outputs = ( )
 
 
@@ -47,7 +47,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { src : H.defaultSource, index : H.Number 0.0 }
+defaultInputs = { src : H.defaultSourceN, index : H.Number 0.0 }
 
 
 defaultOutputs :: Record Outputs

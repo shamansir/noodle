@@ -75,7 +75,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
-            P.send _out_out $ H.WithColor what $ H.R { scale, offset }
+            P.send _out_out $ H.Filter what $ H.R { scale, offset }
 
 
 type Node (m :: Type -> Type) =

@@ -73,7 +73,7 @@ family = -- {-> color <-}
             $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
-            P.send _out_out $ H.WithColor what $ H.Hue hue
+            P.send _out_out $ H.Filter what $ H.Hue hue
 
 
 type Node (m :: Type -> Type) =

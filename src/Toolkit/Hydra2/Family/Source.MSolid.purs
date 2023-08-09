@@ -77,7 +77,7 @@ family = -- {-> source <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            P.send _out_out $ H.From $ H.Solid { r, g, b, a }
+            P.send _out_out $ H.Start $ H.Solid { r, g, b, a }
 
 
 type Node (m :: Type -> Type) =

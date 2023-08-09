@@ -75,7 +75,7 @@ family = -- {-> source <-}
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
-            P.send _out_out $ H.From $ H.Voronoi { scale, speed, blending }
+            P.send _out_out $ H.Start $ H.Voronoi { scale, speed, blending }
 
 
 type Node (m :: Type -> Type) =

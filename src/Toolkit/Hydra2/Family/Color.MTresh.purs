@@ -75,7 +75,7 @@ family = -- {-> color <-}
             what <- P.receive _in_what
             threshold <- P.receive _in_threshold
             tolerance <- P.receive _in_tolerance
-            P.send _out_out $ H.WithColor what $ H.Thresh { threshold, tolerance }
+            P.send _out_out $ H.Filter what $ H.Thresh { threshold, tolerance }
 
 
 type Node (m :: Type -> Type) =

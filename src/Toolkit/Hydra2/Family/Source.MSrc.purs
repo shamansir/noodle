@@ -12,6 +12,7 @@ import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 import Data.SOrder (SOrder, type (:::), T, s1)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -22,24 +23,22 @@ name :: String
 name = "src"
 
 
-type State = Unit
+type State = H.CanBeSource
 
 
 defaultState :: State
-defaultState = unit
+defaultState = H.defaultCanBeSource
 
-
-_in_src  = Fn.Input  0 :: _ "src"
 
 _out_out = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( src :: H.From )
+type Inputs = ( )
 type Outputs = ( out :: H.Texture )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_src
+inputsOrder = SOrder.empty
 
 
 outputsOrder :: _
@@ -47,7 +46,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { src : H.All }
+defaultInputs = { }
 
 
 defaultOutputs :: Record Outputs
@@ -70,8 +69,8 @@ family = -- {-> source <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            src <- P.receive _in_src
-            P.send _out_out $ H.From $ H.Source src
+            -- src <- P.receive _in_src
+            P.send _out_out $ H.Start $ H.Load H.Output0 -- FIXME
 
 
 type Node (m :: Type -> Type) =
