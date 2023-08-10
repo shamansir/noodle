@@ -136,8 +136,10 @@ type LinkLineParams =
 type NodePositions =
     { fromNodeLeft :: Int
     , fromNodeTop :: Int
+    -- , fromNodeHeight :: Int
     , toNodeLeft :: Int
     , toNodeTop :: Int
+    -- , toNodeHeight :: Int
     }
 
 

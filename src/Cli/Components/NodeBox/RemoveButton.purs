@@ -17,6 +17,7 @@ import Blessed as B
 
 import Blessed ((>~))
 import Blessed.Core.Dimension as Dimension
+import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
@@ -55,16 +56,17 @@ component
     :: forall f instances' state is os
      . IsSymbol f
     => Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
-    => Id.Family f
+    => Offset
+    -> Id.Family f
     -> Node f state is os Effect
     -> NodeBoxKey
     -> InfoBoxKey
     -> RemoveButtonKey
     -> Core.Blessed State
-component family node nodeBoxKey infoBoxKey buttonKey =
+component topOffset family node nodeBoxKey infoBoxKey buttonKey =
     B.button buttonKey
         [ Box.content $ T.render $ T.removeButtonOut
-        , Box.top $ Offset.px $ 3
+        , Box.top topOffset
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.width $ Dimension.px 1

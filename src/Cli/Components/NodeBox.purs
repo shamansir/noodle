@@ -97,7 +97,7 @@ import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Components.NodeBox.InfoBox as InfoBox
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, size)
 import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
 import Cli.Components.CommandLogBox as CommandLogBox
@@ -136,6 +136,7 @@ fromNode
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.Cli f) (Noodle.Node f state is os Effect)
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -154,6 +155,8 @@ fromNode curPatchId curPatch family node = do
     let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
     let nextRemoveButton = NodeKey.next state.lastKeys.removeButton
+
+    let mbBodySize = size (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
 
     let topN = state.lastShiftX + 2
     let leftN = 16 + state.lastShiftY + 2
@@ -186,21 +189,34 @@ fromNode curPatchId curPatch family node = do
 
     let
         boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
+        outletsTopOffset =
+            Offset.px $
+                case mbBodySize of
+                    Just { height } -> height - 1
+                    Nothing -> 2
+        removeButtonOffset =
+            Offset.px $
+                case mbBodySize of
+                    Just { height } -> height
+                    Nothing -> 3
         inletsKeys /\ inletsBoxN =
             InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInputSignal updates') isWithReprs
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates') osWithReprs
+            OutletsBox.component outletsTopOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates') osWithReprs
         infoBoxN =
             InfoBox.component nextInfoBox $ boxWidth - 2
         removeButtonN =
-            RemoveButton.component family node nextNodeBox nextInfoBox nextRemoveButton
+            RemoveButton.component removeButtonOffset family node nextNodeBox nextInfoBox nextRemoveButton
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
                 , Box.top top
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
-                , Box.height $ Dimension.px 5
+                , Box.height $ Dimension.px
+                    $ case mbBodySize of
+                        Just { width, height } -> height + 2
+                        Nothing -> 5
                 , Box.label $ T.render $ T.nodeLabel family
                 , Box.tags true
                 , Style.nodeBoxBorder
@@ -297,6 +313,7 @@ fromFamily
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.Cli f) (Noodle.Node f state is os Effect)
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)

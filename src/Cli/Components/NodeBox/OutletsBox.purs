@@ -27,6 +27,7 @@ import Blessed as B
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
+import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
@@ -72,19 +73,20 @@ component
     -- => FromToReprRow rlo os Hydra.WrapRepr
     -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    :: Patch.HoldsNode Effect
+    :: Offset
+    -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> InfoBoxKey
     -> OutletsBoxKey
     -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component nodeHolder nextNodeBox nextInfoBox nextOutletsBox oReprSignal os =
+component topOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox oReprSignal os =
     outputsKeysMap /\
     B.box nextOutletsBox
         [ Box.width $ width $ Array.length os
         , Box.height $ Dimension.px 1
-        , Box.top $ Offset.px 2
+        , Box.top topOffset
         , Box.left $ Offset.px 0
         -- , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler nodeHolder nextNodeBox idx)) os
         -- , List.mouse true

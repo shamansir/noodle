@@ -64,7 +64,7 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 
 import Unsafe.Coerce (unsafeCoerce)
-import Cli.Components.NodeBox.HasBody (class HasBody')
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
 
 
@@ -266,6 +266,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
     => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
         => HasBody' (x f) (Node f state is os m) state m
+        => HasCustomSize (x f) (Node f state is os m)
         => IsNodeState state
         => Family f
         -> Family.Def state is os m
@@ -287,6 +288,8 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
         => Has.HasReprableNodesOf families instances repr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
         => HasBody' (x fA) (Node fA stateA isA osA m) stateA m
         => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
+        => HasCustomSize (x fA) (Node fA stateA isA osA m)
+        => HasCustomSize (x fB) (Node fB stateB isB osB m)
         => IsNodeState stateA
         => IsNodeState stateB
     --    => Pairs rloA rliB

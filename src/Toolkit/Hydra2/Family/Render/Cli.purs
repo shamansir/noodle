@@ -72,6 +72,9 @@ else instance HasBody' (Cli f) (Node f state is os m) state m where
     run' _ _ _ = pure unit
 
 
-instance HasCustomSize (Cli f) (Node f state is os m) where
+instance HasCustomSize (Cli "fn") (FFn.Node m) where
+    size :: Proxy (Cli "fn") -> NodeBoxKey -> FFn.Node m -> Maybe { width :: Int, height :: Int }
+    size _ _ _ = Just { width : 15, height : 10 }
+else instance HasCustomSize (Cli f) (Node f state is os m) where
     size :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Nothing

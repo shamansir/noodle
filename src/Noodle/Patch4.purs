@@ -50,7 +50,7 @@ import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 
 
-import Cli.Components.NodeBox.HasBody (class HasBody') -- FIXME: should not be located in the Cli module but instead some general Ui module
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState) -- FIXME: should not be located in the Cli module but instead some general Noodle module
 
 
@@ -402,6 +402,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
             => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
             => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
             => HasBody' (x f) (Node f state is os m) state m
+            => HasCustomSize (x f) (Node f state is os m)
             => IsNodeState state
             => Patch gstate instances
             -> Node f state is os m
@@ -451,6 +452,7 @@ holdNodeMRepr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
     => HasBody' (x f) (Node f state is os m) state m
+    => HasCustomSize (x f) (Node f state is os m)
     => IsNodeState state
     => Patch gstate instances
     -> Node f state is os m
@@ -580,6 +582,7 @@ withNodeMRepr
         => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
         => HasBody' (x f) (Node f state is os m) state m
+        => HasCustomSize (x f) (Node f state is os m)
         => IsNodeState state
         => Patch gstate instances
         -> Node f state is os m
@@ -628,6 +631,8 @@ withNode2MRepr
         => Node.NodeBoundKeys Node.O osrlB Id.Output fB stateB isB osB m (Node.HoldsOutputInNodeMRepr m repr)
         => HasBody' (x fA) (Node fA stateA isA osA m) stateA m
         => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
+        => HasCustomSize (x fA) (Node fA stateA isA osA m)
+        => HasCustomSize (x fB) (Node fB stateB isB osB m)
         => IsNodeState stateA
         => IsNodeState stateB
         => Node fA stateA isA osA m

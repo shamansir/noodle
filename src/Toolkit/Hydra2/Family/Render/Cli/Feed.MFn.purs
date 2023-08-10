@@ -68,7 +68,7 @@ render nodeBoxKey node = do
                 [ Box.top $ Offset.px 1
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.percents 85.0
-                , Box.height $ Dimension.px 1
+                , Box.height $ Dimension.px 8
                 , Style.inputBox
                 , TextArea.mouse true
                 , TextArea.inputOnFocus true
