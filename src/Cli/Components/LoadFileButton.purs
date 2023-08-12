@@ -73,7 +73,7 @@ import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (Cli, CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile
@@ -97,8 +97,8 @@ addNodeBox
     => FromToReprRow osrl os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.Cli f) (Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.Cli f) (Node f state is os Effect)
+    => HasBody' (Hydra.CliF f) (Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.CliF f) (Node f state is os Effect)
     => IsNodeState state
     => Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
@@ -112,7 +112,7 @@ handlers
     :: Ref State
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
-    -> File.Handlers Hydra.Cli Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
+    -> File.Handlers Hydra.CliF Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
 handlers stateRef patch (Network tk _) =
     { onNodeCreated : \(x /\ y) pHoldsNode -> do
         -- _ <- BlessedOp.runM state (
@@ -133,7 +133,7 @@ handlers stateRef patch (Network tk _) =
         pure unit
     , onNodeCreated3 : \(x /\ y) pHoldsNode -> do
         _ <- Patch.withNodeMRepr
-            (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.Cli Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
+            (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.CliF Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
             (\patch node ->
                 BlessedOp.runM' stateRef (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
             )

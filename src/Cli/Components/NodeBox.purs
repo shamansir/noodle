@@ -109,7 +109,7 @@ import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (Cli, CliF) as Hydra
 import Toolkit.Hydra2.Lang as Lang
 import Toolkit.Hydra2.Lang.ToCode as Lang
 
@@ -135,8 +135,8 @@ fromNode
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.Cli f) (Noodle.Node f state is os Effect)
+    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -156,7 +156,7 @@ fromNode curPatchId curPatch family node = do
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
     let nextRemoveButton = NodeKey.next state.lastKeys.removeButton
 
-    let mbBodySize = size (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+    let mbBodySize = size (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
 
     let topN = state.lastShiftX + 2
     let leftN = 16 + state.lastShiftY + 2
@@ -276,7 +276,7 @@ fromNode curPatchId curPatch family node = do
 
     -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
     -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
-    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run' (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run' (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
 
     -- nextNodeBox >~ Node.append inputText
 
@@ -312,8 +312,8 @@ fromFamily
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.Cli f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.Cli f) (Noodle.Node f state is os Effect)
+    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
     => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)

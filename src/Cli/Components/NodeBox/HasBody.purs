@@ -36,9 +36,8 @@ class HasCustomSize x y | x -> y where
     size :: Proxy x -> NodeBoxKey -> y -> Maybe { width :: Int, height :: Int }
 
 
--- TODO
 class HasEditor :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
-class HasEditor x y {- repr -} state m | x -> y state where
+class HasEditor x y {- repr -} state m where
     editor :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} Maybe (BlessedOp state m)
 
 

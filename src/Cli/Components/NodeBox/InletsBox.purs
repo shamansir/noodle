@@ -36,6 +36,8 @@ import Noodle.Family.Def as Family
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
+import Cli.Components.NodeBox.HasBody (class HasEditor)
 
 
 width :: Int -> Dimension
@@ -58,7 +60,8 @@ component
     -- => FromToReprRow rlo os Hydra.WrapRepr
     -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-     . Patch.Id
+     . HasEditor Hydra.Cli Hydra.WrapRepr Hydra.WrapRepr Effect
+    => Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> InfoBoxKey
