@@ -109,7 +109,7 @@ import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (Cli, CliF) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
 import Toolkit.Hydra2.Lang as Lang
 import Toolkit.Hydra2.Lang.ToCode as Lang
 

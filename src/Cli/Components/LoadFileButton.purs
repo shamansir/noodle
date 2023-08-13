@@ -73,7 +73,7 @@ import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (Cli, CliF) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile

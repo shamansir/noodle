@@ -29,12 +29,13 @@ import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 
 import Noodle.Node2 (Node)
+import Noodle.Id as Id
 
 
 data CliF (f :: Symbol) = CliF
 
 
-data Cli = Cli
+data CliD din = CliD
 
 
 instance (Applicative m, MonadEffect m) => HasBody (CliF "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
@@ -85,6 +86,6 @@ else instance HasCustomSize (CliF f) (Node f state is os m) where
     size _ _ _ = Nothing
 
 
-instance HasEditor Cli WrapRepr WrapRepr Effect where
-    editor :: Proxy Cli -> NodeBoxKey -> WrapRepr -> {- Signal repr -> -} Maybe (BlessedOp WrapRepr Effect)
-    editor _ _ _ = Nothing
+instance HasEditor (CliD din) (Id.Input i) (Node f nstate is os Effect) din Effect where
+    editor :: Proxy (CliD din) -> NodeBoxKey -> Id.Input i -> Node f nstate is os Effect -> Maybe (BlessedOp din Effect)
+    editor _ _ _ _ = Nothing

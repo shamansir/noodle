@@ -34,7 +34,7 @@ import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Node2.MapsFolds.Repr as NMF
 
-import Toolkit.Hydra2.Family.Render.Cli (Cli, CliF) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Family.Feed.FPi as FPi
 import Toolkit.Hydra2.Family.Feed.FNumber as FNumber

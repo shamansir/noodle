@@ -65,7 +65,7 @@ import Noodle.Text.NdfFile.Command (commandsToNdf)
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
-import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD) as Hydra
 
 import Cli.Components.NodeBox.HasBody (class HasEditor)
 
@@ -90,7 +90,7 @@ component
     => ToRepr din Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr din
     -- => HasEditor (Hydra.Cli f) din din Effect
-    => HasEditor Hydra.Cli Hydra.WrapRepr Hydra.WrapRepr Effect
+    => HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
     => InletButtonKey
     -> InfoBoxKey
     -> Patch.Id
@@ -148,6 +148,7 @@ onPress
     => Id.HasInput i din is' is
     => ToRepr din Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr din
+    => HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
     => Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
