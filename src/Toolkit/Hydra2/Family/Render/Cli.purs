@@ -9,10 +9,11 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Data.Maybe (Maybe(..))
 
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, class HasEditor)
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
 
 import Cli.Keys (NodeBoxKey)
 
+import Blessed.Internal.Core (Blessed)
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, State, Node) as FNumber
@@ -26,7 +27,11 @@ import Toolkit.Hydra2.Family.Render.Cli.Feed.FFn (render) as FFn
 import Toolkit.Hydra2.Family.Feed.FArray (Inputs, Outputs, State, Node) as FArray
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
 
+import Toolkit.Hydra2.Family.Render.Cli.Editor.Number as ENumber
+
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
+import Toolkit.Hydra2.Types as H
 
 import Noodle.Node2 (Node)
 import Noodle.Id as Id
@@ -86,6 +91,28 @@ else instance HasCustomSize (CliF f) (Node f state is os m) where
     size _ _ _ = Nothing
 
 
-instance HasEditor (CliD din) (Id.Input i) (Node f nstate is os Effect) din Effect where
-    editor :: Proxy (CliD din) -> NodeBoxKey -> Id.Input i -> Node f nstate is os Effect -> Maybe (BlessedOp din Effect)
-    editor _ _ _ _ = Nothing
+{-
+instance Id.HasInput i Number is' is => HasEditor (CliD Number) is' (Id.Input i) (Node f nstate is os m) Number m where
+    editor :: Proxy is' -> Proxy (CliD Number) -> NodeBoxKey -> Id.Input i -> Node f nstate is os m -> Maybe (BlessedOp Number m)
+    editor _ _ key input node = Just $ ENumber.editor key node input
+else instance HasEditor (CliD din) is' (Id.Input i) (Node f nstate is os m) din m where
+    editor :: Proxy is' -> Proxy (CliD din) -> NodeBoxKey -> Id.Input i -> Node f nstate is os m -> Maybe (BlessedOp din m)
+    editor _ _ _ _ _ = Nothing
+
+
+instance Id.HasInput i Number is' is => HasEditor' (CliD Number) (Node f nstate is os m) i is' is Number m where
+    editor' :: Proxy (CliD Number) -> Proxy is -> Proxy is' -> NodeBoxKey -> Id.Input i -> Node f nstate is os m -> Maybe (BlessedOp Number m)
+    editor' _ _ _ key input node = Just $ ENumber.editor key node input
+else instance Id.HasInput i din is' is => HasEditor' (CliD din) (Node f nstate is os m) i is' is din m where
+    editor' :: Proxy (CliD din) -> Proxy is -> Proxy is' -> NodeBoxKey -> Id.Input i -> Node f nstate is os m  -> Maybe (BlessedOp din m)
+    editor' _ _ _ _ _ _ = Nothing
+-}
+
+
+createEditorFor :: forall state m. MonadEffect m => WrapRepr -> NodeBoxKey -> (WrapRepr -> Effect Unit) -> Maybe (BlessedOp state m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
+createEditorFor (H.Value (H.Number n)) key fn = Just $ ENumber.editor key n $ fn
+createEditorFor _ _ _ = Nothing
+
+
+callEditorFor :: forall m. WrapRepr -> Maybe (BlessedOp WrapRepr m) -- (BlessedOp WrapRepr m)
+callEditorFor repr = Nothing

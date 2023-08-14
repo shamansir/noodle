@@ -2,7 +2,7 @@ module Cli.Components.PatchBox where
 
 import Prelude
 
-
+import Data.Maybe (Maybe(..))
 import Blessed as B
 
 import Blessed.Internal.Core as Core
@@ -14,6 +14,7 @@ import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
+import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Cli.Keys as Key
 import Cli.State (State)
@@ -22,6 +23,7 @@ import Cli.Style (patchBox, patchBoxBorder) as Style
 
 import Noodle.Id as Id
 
+import Toolkit.Hydra2.Repr.Wrap as H
 
 component :: Array Id.FamilyR -> Core.Blessed State
 component families =

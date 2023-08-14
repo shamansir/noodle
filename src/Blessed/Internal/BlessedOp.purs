@@ -318,6 +318,9 @@ imapState toStateB toStateA = case _ of
     PerformOnProcess cmd a -> PerformOnProcess cmd $ pure a
 
 
+-- TODO: To/FromRepr + imapState
+
+
 -- imapStateM :: forall stateA stateB m a. MonadEffect m => (stateA -> stateB) -> (stateB -> stateA) -> BlessedOpM stateA m a -> BlessedOpM stateB m (m a)
 -- imapStateM atob btoa (BlessedOpM free) = BlessedOpM $ Free.liftF $ imapState atob btoa $ ?wh free
 

@@ -8,6 +8,7 @@ import Cli.Keys (NodeBoxKey)
 import Signal (Signal)
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Noodle.Node2 (Node)
+import Noodle.Id (Input, class HasInput)
 
 
 -- TODO: we have the conflict between m for `Node` and `BlessedOp` in the result,
@@ -36,9 +37,19 @@ class HasCustomSize x y | x -> y where
     size :: Proxy x -> NodeBoxKey -> y -> Maybe { width :: Int, height :: Int }
 
 
-class HasEditor :: forall k. k -> Type -> Type -> Type -> (Type -> Type) -> Constraint
-class HasEditor x y z state m | x -> y state where
-    editor :: Proxy x -> NodeBoxKey -> y -> z -> Maybe (BlessedOp state m)
+{-
+-- class HasEditor :: forall k. k -> Type -> Type -> Type -> (Type -> Type) -> Constraint
+class HasEditor x is y z state m | x -> state, z -> y state is where
+    editor :: Proxy is -> Proxy x -> NodeBoxKey -> y -> z -> Maybe (BlessedOp state m)
+
+
+class HasInput i din is' is <= HasEditor' x y i is' is din m | x -> y, y -> is m, is -> is' where
+    editor' :: Proxy x -> Proxy is -> Proxy is' -> NodeBoxKey -> Input i -> y -> Maybe (BlessedOp din m)
+
+
+class HasEditor'' x i din f state is' is os m | x -> f, f -> state is, is -> is' where
+    editor'' :: Proxy din -> Proxy is -> Proxy x -> NodeBoxKey -> Input i -> Node f state is os m -> Maybe (BlessedOp din m)
+-}
 
 
 

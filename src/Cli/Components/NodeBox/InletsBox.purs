@@ -37,7 +37,7 @@ import Noodle.Family.Def as Family
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (CliD) as Hydra
-import Cli.Components.NodeBox.HasBody (class HasEditor)
+-- import Cli.Components.NodeBox.HasBody (class HasEditor)
 
 
 width :: Int -> Dimension
@@ -111,6 +111,6 @@ component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family iRepr
         mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
             Node.withInputInNodeMRepr hiinr
-                (\pdin node input ->
+                (\pdin node input -> do
                     InletButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
                 )

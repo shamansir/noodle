@@ -63,11 +63,13 @@ import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
+import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
-import Toolkit.Hydra2.Family.Render.Cli (CliD) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor) as Hydra
 
-import Cli.Components.NodeBox.HasBody (class HasEditor)
+
+--import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
 
 
 
@@ -87,19 +89,20 @@ component
     :: forall f nstate i din is is' os
      . IsSymbol f
     => Id.HasInput i din is' is
-    => ToRepr din Hydra.WrapRepr
-    => FromRepr Hydra.WrapRepr din
+    => ToRepr din H.WrapRepr
+    => FromRepr H.WrapRepr din
     -- => HasEditor (Hydra.Cli f) din din Effect
-    => HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
+    -- => HasEditor (Hydra.CliD din) is' (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
+    -- => HasEditor' (Hydra.CliD din) (Noodle.Node f nstate is os Effect) i is' is din Effect
     => InletButtonKey
     -> InfoBoxKey
     -> Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> Int
-    -> Maybe Hydra.WrapRepr
-    -> Signal (Maybe Hydra.WrapRepr)
-    -> Proxy din -- Hydra.WrapRepr?
+    -> Maybe H.WrapRepr
+    -> Signal (Maybe H.WrapRepr)
+    -> Proxy din -- H.WrapRepr?
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
     -> Core.Blessed State
@@ -124,7 +127,7 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         []
 
 
-onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
@@ -146,9 +149,10 @@ onPress
     :: forall f nstate i din is is' os
      . IsSymbol f
     => Id.HasInput i din is' is
-    => ToRepr din Hydra.WrapRepr
-    => FromRepr Hydra.WrapRepr din
-    => HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
+    => ToRepr din H.WrapRepr
+    => FromRepr H.WrapRepr din
+    -- => HasEditor (Hydra.CliD din) is' (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
+    -- => HasEditor' (Hydra.CliD din) (Noodle.Node f nstate is os Effect) i is' is din Effect
     => Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
@@ -180,9 +184,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
                     nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
-                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
+                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
                         (\_ onode outputId -> do
-                            link <- Node.connectByRepr (Proxy :: _ Hydra.WrapRepr) outputId inputId onode inode
+                            link <- Node.connectByRepr (Proxy :: _ H.WrapRepr) outputId inputId onode inode
                             let nextPatch' = Patch.registerLink link curPatch
                             pure $ nextPatch' /\ Patch.holdLink link
                         )
@@ -200,7 +204,11 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
 
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
-            Nothing -> pure unit
+            Nothing -> do
+                let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) nextNodeBox (const $ pure unit)
+                case mbEditor of
+                    Just editor -> editor
+                    Nothing -> pure unit
         State.modify_
             (_ { lastClickedOutlet = Nothing })
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox

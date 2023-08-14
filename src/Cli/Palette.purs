@@ -38,6 +38,7 @@ version = Pico.darkPeach :: Item -- FIXME: use `mark`
 positive = Pico.lightYellow :: Item
 neutral = Pico.lightGrey :: Item
 negative = Pico.darkRed :: Item
+nodeHlBg = Pico.mauve :: Item
 
 
 networkBg' = repr networkBg :: String
@@ -57,6 +58,7 @@ focusedBorder' = repr focusedBorder :: String
 fg' = repr fg :: String
 secondaryFg' = repr secondaryFg :: String
 patchBg' = repr patchBg :: String
+nodeHlBg' = repr nodeHlBg :: String
 
 
 asArray :: Array Item
