@@ -15,6 +15,7 @@ type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
 type RemoveButtonKey = Button <^> "remove-button"
 -- type TextBoxKey = TextBox <^> "text-box"
+type NumValueEditorKey = TextBox <^> "num-value-editor"
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -36,6 +37,7 @@ commandLogBox = nk :: Box <^> "command-log"
 hydraCodeButton = nk :: Button <^> "toggle-hydra-code"
 hydraCodeBox = nk :: Box <^> "hydra-code"
 wsStatusButton = nk :: Button <^> "ws-status"
+numValueEditor = nk :: NumValueEditorKey
 
 
 {- For links -}

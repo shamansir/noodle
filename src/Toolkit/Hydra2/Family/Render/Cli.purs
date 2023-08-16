@@ -7,6 +7,7 @@ import Effect.Class (class MonadEffect)
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Proxy (Proxy)
 import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
@@ -15,6 +16,7 @@ import Cli.Keys (NodeBoxKey)
 
 import Blessed.Internal.Core (Blessed)
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.NodeKey (RawNodeKey, NodeKey, type (<^>))
 
 import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, State, Node) as FNumber
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FNumber (render) as FNumber
@@ -35,6 +37,8 @@ import Toolkit.Hydra2.Types as H
 
 import Noodle.Node2 (Node)
 import Noodle.Id as Id
+
+import Toolkit.Hydra2.Family.Render.Editor (EditorId, HasEditors)
 
 
 data CliF (f :: Symbol) = CliF
@@ -109,9 +113,13 @@ else instance Id.HasInput i din is' is => HasEditor' (CliD din) (Node f nstate i
 -}
 
 
-createEditorFor :: forall state m. MonadEffect m => WrapRepr -> NodeBoxKey -> (WrapRepr -> Effect Unit) -> Maybe (BlessedOp state m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
-createEditorFor (H.Value (H.Number n)) key fn = Just $ ENumber.editor key n $ fn
-createEditorFor _ _ _ = Nothing
+editors =
+    []
+
+
+createEditorFor :: forall state m r. MonadEffect m => WrapRepr -> (WrapRepr -> Effect Unit) -> Maybe (RawNodeKey /\ BlessedOp (HasEditors r) m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
+createEditorFor (H.Value (H.Number n)) fn = Just $ ENumber.editor n $ fn
+createEditorFor _ _ = Nothing
 
 
 callEditorFor :: forall m. WrapRepr -> Maybe (BlessedOp WrapRepr m) -- (BlessedOp WrapRepr m)

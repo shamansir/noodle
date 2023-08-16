@@ -39,9 +39,10 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Base.Element.Method (show) as Element
 
 import Cli.Keys as Key
-import Cli.Keys (NodeBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
+import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
 import Cli.State (State, LinkState, OutletIndex(..), InletIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Style (inletsOutlets) as Style
@@ -205,12 +206,13 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
             Nothing -> do
-                let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) nextNodeBox (const $ pure unit)
+                {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
                 case mbEditor of
                     Just editor -> do
                         editor
                         -- Key.mainScreen >~ Screen.render
-                    Nothing -> pure unit
+                    Nothing -> pure unit -}
+                Key.numValueEditor >~ Element.show
         State.modify_
             (_ { lastClickedOutlet = Nothing })
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox

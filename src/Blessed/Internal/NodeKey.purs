@@ -183,3 +183,6 @@ instance Ord RawNodeKey where
 instance Show RawNodeKey where
     show (RawNodeKey nk) =
         K.toString nk.subject <> ":" <> nk.id
+
+
+newtype HoldsNodeKey = HoldsNodeKey (forall r. (forall subj id. K.IsSubject subj => IsSymbol id => NodeKey subj id -> r) -> r)

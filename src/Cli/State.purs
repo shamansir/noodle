@@ -20,7 +20,7 @@ import Data.Array as Array
 import Control.Monad.State.Class (class MonadState, modify_)
 
 import Blessed.Internal.Core as Core
-import Blessed.Internal.NodeKey (RawNodeKey)
+import Blessed.Internal.NodeKey (RawNodeKey, HoldsNodeKey)
 
 import Web.Socket.Server (WebSocketServer, WebSocketConnection) as WSS
 
@@ -43,7 +43,7 @@ import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Lang (empty) as Program
 import Toolkit.Hydra2.Lang (Program, Command) as Lang
-
+import Toolkit.Hydra2.Family.Render.Editor (EditorId)
 
 import Signal (Signal)
 import Signal as Signal
@@ -68,6 +68,7 @@ type State =
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , commandBoxOn :: Boolean
     , hydraCodeOn :: Boolean
+    , editors :: Map EditorId (Maybe (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr))
     }
 
 
@@ -97,6 +98,7 @@ initial =
     -- , nodes : Hydra.noInstances
     , commandBoxOn : false
     , hydraCodeOn : false
+    , editors : Map.empty
     }
 
 

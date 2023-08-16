@@ -3,6 +3,7 @@ module Cli.Components.PatchBox where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
 import Blessed as B
 
 import Blessed.Internal.Core as Core
@@ -23,11 +24,14 @@ import Cli.Style (patchBox, patchBoxBorder) as Style
 
 import Noodle.Id as Id
 
+import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Wrap as H
+import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor) as Hydra
+
 
 component :: Array Id.FamilyR -> Core.Blessed State
 component families =
-    B.box Key.patchBox
+    B.boxAnd Key.patchBox
 
         [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
         , Box.left $ Offset.center
@@ -41,3 +45,11 @@ component families =
 
         [ Library.component families
         ]
+
+        $ \_ -> do
+            let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) $ const $ pure unit
+            case mbEditor of
+                Just (_ /\ editor) -> do
+                    editor
+                Nothing -> pure unit
+                    -- Key.patchBox ~> Node.append editor

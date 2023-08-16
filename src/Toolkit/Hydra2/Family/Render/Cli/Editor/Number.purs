@@ -7,12 +7,18 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Data.Repr (wrap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 
+import Control.Monad.State (State)
+import Control.Monad.State as State
+
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Map as Map
 
 import Signal (Signal)
 
@@ -39,7 +45,7 @@ import Blessed.Internal.Core as Core
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
 -- import Blessed.UI.Base.Element.Option (index) as Element
-import Blessed.UI.Base.Element.Method (focus, setFront) as Element
+import Blessed.UI.Base.Element.Method (focus, setFront, hide) as Element
 -- import Blessed.UI.Boxes.Box.Method (focus) as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
@@ -60,27 +66,36 @@ import Toolkit.Hydra2.Types as H
 
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
 import Noodle.Node2 (Node) as Noodle
-import Noodle.Node2 (sendIn) as Node
+import Noodle.Node2 as Node
 import Noodle.Id as Id
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Cli.Keys (patchBox) as Key
 
-type NETextBoxKey = TextBox <^> "number-editor"
+-- import Cli.State (State)
+import Cli.Keys (PatchBoxKey)
+import Cli.Keys (patchBox, numValueEditor, NumValueEditorKey) as Key
+
+import Toolkit.Hydra2.Family.Render.Editor (EditorId(..), HasEditors)
+
+import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+
+
+nveKey :: Key.NumValueEditorKey
+nveKey = Key.numValueEditor
 
 
 
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
 -- editor :: forall f m i din is' is state os
 --      . MonadEffect m => NodeBoxKey -> Number -> (Number -> Effect Unit) -> BlessedOp Number m
-editor :: forall f m i din is' is state os
-     . MonadEffect m => NodeBoxKey -> Number -> (H.WrapRepr -> Effect Unit) -> BlessedOp state m
+editor :: forall state m r. MonadEffect m => Number -> (H.WrapRepr -> Effect Unit) -> NK.RawNodeKey /\ BlessedOp (HasEditors r) m
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
-editor nodeBoxKey curValue sendValue = do
+editor curValue sendValue =
+    NK.rawify nveKey /\ do
     let
-        (rootTextBoxKey :: NETextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
-        neTextBoxKey = NK.append nodeBoxKey rootTextBoxKey
+        --(rootTextBoxKey :: NETextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
+        -- neTextBoxKey = NK.append patchBoxKey rootTextBoxKey
         innerText =
-            B.textBox neTextBoxKey
+            B.textBox nveKey
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.percents 85.0
@@ -91,20 +106,34 @@ editor nodeBoxKey curValue sendValue = do
                 , TextArea.inputOnFocus true
                 , Core.on TextArea.Submit
                     \_ _ -> do
-                        content <- TextArea.value ~< neTextBoxKey
+                        content <- TextArea.value ~< nveKey
                         let mbNumber = Number.fromString content
+                        state <- State.get
                         -- liftEffect $ Console.log content
-                        Blessed.lift $ case mbNumber of
-                            Just number -> sendValue $ H.Value $ H.Number number --Node.sendIn input node 20.0-- $ T.Number number
+                        Blessed.lift $ case (/\) <$> mbNumber <*> (Map.lookup (EditorId "number") state.editors >>= identity) of
+                            Just (number /\ holdsInput) -> do
+                                --_ <- Node.withInputInNodeMRepr holdsInput (sendToInput $ H.Value $ H.Number number)
+                                            -- Node.sendIn node input $ H.Value $ H.Number number
+                                sendValue $ H.Value $ H.Number number --Node.sendIn input node 20.0-- $ T.Number number
                                 -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             Nothing -> pure unit
+                        nveKey >~ Element.hide
                 ]
                 [  ]
     --nodeBoxKey >~ Node.append innerText
     Key.patchBox >~ Node.append innerText
-    neTextBoxKey >~ Element.setFront
+    nveKey >~ Element.setFront
+    nveKey >~ Element.hide
     -- neTextBoxKey >~ Element.focus
     -- pure textBoxKey
+    where
+        sendToInput :: ∀ f state i din is is' os. IsSymbol f ⇒ Id.HasInput i din is' is ⇒ ReadWriteRepr H.WrapRepr ⇒ ToRepr din H.WrapRepr ⇒ FromRepr H.WrapRepr din ⇒ H.WrapRepr -> Proxy din → Noodle.Node f state is os Effect → Id.Input i -> Effect Unit
+        sendToInput nrepr _ node input =
+            case fromRepr $ wrap nrepr of
+                Just din ->
+                    Node.sendIn node input din
+                Nothing -> pure unit
+
 
 
 
