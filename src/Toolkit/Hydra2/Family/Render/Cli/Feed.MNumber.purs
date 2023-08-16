@@ -56,9 +56,6 @@ type TextBoxKey = TextBox <^> "number-text-box"
 
 
 
-
-
-
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
 render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m -- FIXME: why it doesn't work with `sendOut` ??
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect

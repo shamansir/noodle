@@ -207,7 +207,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
             Nothing -> do
                 let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) nextNodeBox (const $ pure unit)
                 case mbEditor of
-                    Just editor -> editor
+                    Just editor -> do
+                        editor
+                        -- Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
         State.modify_
             (_ { lastClickedOutlet = Nothing })

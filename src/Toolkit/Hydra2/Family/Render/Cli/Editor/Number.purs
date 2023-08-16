@@ -38,7 +38,9 @@ import Blessed.Internal.Core as Core
 
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method (focus) as Box
+-- import Blessed.UI.Base.Element.Option (index) as Element
+import Blessed.UI.Base.Element.Method (focus, setFront) as Element
+-- import Blessed.UI.Boxes.Box.Method (focus) as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Forms.TextArea.Method as TextArea
@@ -61,8 +63,9 @@ import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 (sendIn) as Node
 import Noodle.Id as Id
 import Data.Symbol (class IsSymbol, reflectSymbol)
+import Cli.Keys (patchBox) as Key
 
-type TextBoxKey = TextBox <^> "number-editor"
+type NETextBoxKey = TextBox <^> "number-editor"
 
 
 
@@ -74,20 +77,21 @@ editor :: forall f m i din is' is state os
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
 editor nodeBoxKey curValue sendValue = do
     let
-        (rootTextBoxKey :: TextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
-        textBoxKey = NK.append nodeBoxKey rootTextBoxKey
+        (rootTextBoxKey :: NETextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
+        neTextBoxKey = NK.append nodeBoxKey rootTextBoxKey
         innerText =
-            B.textBox textBoxKey
-                [ Box.top $ Offset.px $ -2
+            B.textBox neTextBoxKey
+                [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.percents 85.0
                 , Box.height $ Dimension.px 1
+                -- , Box.index 1
                 , Style.chInputBox
                 , TextArea.mouse true
                 , TextArea.inputOnFocus true
                 , Core.on TextArea.Submit
                     \_ _ -> do
-                        content <- TextArea.value ~< textBoxKey
+                        content <- TextArea.value ~< neTextBoxKey
                         let mbNumber = Number.fromString content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbNumber of
@@ -96,8 +100,10 @@ editor nodeBoxKey curValue sendValue = do
                             Nothing -> pure unit
                 ]
                 [  ]
-    textBoxKey >~ Box.focus
-    nodeBoxKey >~ Node.append innerText
+    --nodeBoxKey >~ Node.append innerText
+    Key.patchBox >~ Node.append innerText
+    neTextBoxKey >~ Element.setFront
+    -- neTextBoxKey >~ Element.focus
     -- pure textBoxKey
 
 
