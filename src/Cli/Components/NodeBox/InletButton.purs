@@ -2,9 +2,10 @@ module Cli.Components.NodeBox.InletButton where
 
 import Prelude
 
-
+import Debug as Debug
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console as Console
 
 import Control.Monad.State (get, modify_) as State
 
@@ -72,7 +73,7 @@ import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
 import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
-import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor, editorIdOf) as Hydra
 import Toolkit.Hydra2.Family.Render.Editor (EditorId(..))
 
 
@@ -125,7 +126,7 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press
-            $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
+            $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
             $ onMouseOver (Node.family inode) nextInfoBox idx inputId maybeRepr reprSignal
         , Core.on Element.MouseOut
@@ -167,10 +168,11 @@ onPress
     -> Proxy din
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
+    -> Maybe EditorId
     -> _
     -> _
     -> BlessedOp State Effect
-onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
+onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
     {-Id.reflect inputId /\ [] /\ \_ _ -> -} do
         let altIdx = Id.index inputId
         -- liftEffect $ Console.log $ "press" <> show idx
@@ -178,7 +180,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
         let inodeKey = nextNodeBox
         let inodeId = Node.id inode
         state <- State.get
-        -- liftEffect $ Console.log $ "handler " <> iname
+        -- liftEffect $ Console.log $ "handler " <> show idx
         case state.lastClickedOutlet of
             Just lco ->
                 if inodeKey /= lco.nodeKey then do
@@ -211,35 +213,40 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
 
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
-            Nothing -> do
-                let editor = Key.numValueEditor
-                inodeBounds <- Bounds.collect inodeKey
-                State.modify_
-                    (\s -> s
-                        { editors =
-                            Map.insert
-                                (EditorId "number")
-                                (Just $ \wr ->
-                                    case fromRepr $ wrap wr of
-                                        Just val ->  Node.sendIn inode inputId val
-                                        Nothing -> pure unit
-                                )
-                                s.editors
-                        }
-                    )
-                {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
-                case mbEditor of
-                    Just editor -> do
-                        editor
-                        -- Key.mainScreen >~ Screen.render
-                    Nothing -> pure unit -}
-                -- TODO: Multiple operations operator
-                editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
-                editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
-                editor >~ TextArea.setValue ""
-                editor >~ Element.setFront
-                editor >~ Element.show
-                --Key.numValueEditor >~ Element.focus
+            Nothing ->
+                case mbEditorId of
+                    Just editorId -> do
+                        -- FIXME: press handler triggers twice
+                        let editor = Key.numValueEditor
+                        inodeBounds <- Bounds.collect inodeKey
+                        State.modify_
+                            (\s -> s
+                                { editors =
+                                    Map.insert
+                                        editorId
+                                        (Just $ \wr ->
+                                            case fromRepr $ wrap wr of
+                                                Just val -> Node.sendIn inode inputId val
+                                                Nothing -> pure unit
+                                        )
+                                        s.editors
+                                }
+                            )
+                        {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
+                        case mbEditor of
+                            Just editor -> do
+                                editor
+                                -- Key.mainScreen >~ Screen.render
+                            Nothing -> pure unit -}
+                        -- TODO: Multiple operations operator
+                        editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
+                        editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
+                        editor >~ TextArea.setValue ""
+                        editor >~ Element.setFront
+                        editor >~ Element.show
+                        --Key.numValueEditor >~ Element.focus
+                    Nothing ->
+                        pure unit
         State.modify_
             (_ { lastClickedOutlet = Nothing })
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox

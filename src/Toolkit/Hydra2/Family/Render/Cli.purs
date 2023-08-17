@@ -38,7 +38,7 @@ import Toolkit.Hydra2.Types as H
 import Noodle.Node2 (Node)
 import Noodle.Id as Id
 
-import Toolkit.Hydra2.Family.Render.Editor (EditorId, HasEditors)
+import Toolkit.Hydra2.Family.Render.Editor (EditorId(..), HasEditors)
 
 
 data CliF (f :: Symbol) = CliF
@@ -117,10 +117,11 @@ editors =
     []
 
 
-createEditorFor :: forall state m r. MonadEffect m => WrapRepr -> (WrapRepr -> Effect Unit) -> Maybe (RawNodeKey /\ BlessedOp (HasEditors r) m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
+createEditorFor :: forall m r. MonadEffect m => WrapRepr -> (WrapRepr -> Effect Unit) -> Maybe (RawNodeKey /\ BlessedOp (HasEditors r) m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
 createEditorFor (H.Value (H.Number n)) fn = Just $ ENumber.editor n $ fn
 createEditorFor _ _ = Nothing
 
 
-callEditorFor :: forall m. WrapRepr -> Maybe (BlessedOp WrapRepr m) -- (BlessedOp WrapRepr m)
-callEditorFor repr = Nothing
+editorIdOf :: WrapRepr -> Maybe EditorId -- (BlessedOp WrapRepr m)
+editorIdOf (H.Value (H.Number _)) = Just $ EditorId "number"
+editorIdOf _ = Nothing

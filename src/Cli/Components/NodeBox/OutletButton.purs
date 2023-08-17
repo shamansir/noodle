@@ -95,7 +95,7 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeR
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press
-            \_ _ -> onPress nodeHolder nextNodeBox idx pdout onode outputId
+            \_ _ -> onPress buttonKey nodeHolder nextNodeBox idx pdout onode outputId
         , Core.on Element.MouseOver
             $ onMouseOver (Node.family onode) nextInfoBox idx outputId maybeRepr reprSignal
         , Core.on Element.MouseOut
@@ -110,7 +110,8 @@ onPress
     => Id.HasOutput o dout os' os
     => ToRepr dout Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr dout
-    => Patch.HoldsNode Effect
+    => OutletButtonKey
+    -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> Int
     -> Proxy dout
@@ -118,9 +119,12 @@ onPress
     -> Id.Output o
     -> BlessedOp State Effect
     -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
-onPress nodeHolder nextNodeBox index pdout node output =
+onPress buttonKey nodeHolder nextNodeBox index pdout node output =
     {- Id.reflect output /\ [] /\ \_ _ -> -} do
         -- liftEffect $ Console.log $ "press" <> show index
+        -- TODO: highlight value
+        -- currentContent <- Box.getContent buttonKey
+        -- buttonKey >~ Box.setContent "x"
         State.modify_
             (_
                 { lastClickedOutlet =
