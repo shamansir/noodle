@@ -28,6 +28,9 @@ import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Wrap as H
 import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor) as Hydra
 
+import Cli.Components.InputIndicator as InputIndicator
+import Cli.Components.OutputIndicator as OutputIndicator
+
 
 component :: Array Id.FamilyR -> Core.Blessed State
 component families =
@@ -44,6 +47,8 @@ component families =
         ]
 
         [ Library.component families
+        , InputIndicator.component
+        , OutputIndicator.component
         ]
 
         $ \_ -> do

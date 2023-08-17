@@ -184,6 +184,18 @@ buttonConnection (Right 0) = T.fgc (C.crepr Palette.neutral) $ T.s "0"
 buttonConnection (Right n) = T.fgc (C.crepr Palette.positive) $ T.s $ show n
 
 
+outputHover :: Tag
+outputHover = T.fgc (C.crepr Palette.neutral) $ T.s "V"
+
+
+outputSelect :: Tag
+outputSelect = T.fgc (C.crepr Palette.positive) $ T.s "V"
+
+
+inputHover :: Tag
+inputHover = T.fgc (C.crepr Palette.neutral) $ T.s "^"
+
+
 infoNode :: Hydra.WrapRepr -> Tag
 infoNode repr =
     T.fgcs (mark repr) $ Info.full repr

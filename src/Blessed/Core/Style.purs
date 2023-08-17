@@ -34,6 +34,7 @@ type StyleRow (r :: Row Type) =
     , scrollbar :: Array (BorderOption ())
     , hover :: Array (EndStyleOption ())
     , focus :: Array (EndStyleOption ())
+    , transparent :: Boolean
     )
 type Style =
     Record (StyleRow ())
@@ -46,6 +47,7 @@ type Evaluated =
     , scrollbar :: Record Border.Evaluated
     , hover :: Record EndStyle.Evaluated
     , focus :: Record EndStyle.Evaluated
+    , transparent :: Boolean
     )
 
 
@@ -75,6 +77,7 @@ default =
     , focus : []
     , fg : "none"
     , bg : "none"
+    , transparent : false
     }
 
 {- TODO
@@ -131,3 +134,7 @@ hover = styleOption ( Proxy :: Proxy "hover" )
 
 focus ∷ forall r. Array (EndStyleOption ()) -> StyleOption ( focus :: Array (EndStyleOption ()) | r )
 focus = styleOption ( Proxy :: Proxy "focus" )
+
+
+transparent ∷ forall r. Boolean -> StyleOption ( transparent :: Boolean | r )
+transparent = styleOption ( Proxy :: Proxy "transparent" )

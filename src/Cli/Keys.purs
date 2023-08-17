@@ -38,6 +38,8 @@ hydraCodeButton = nk :: Button <^> "toggle-hydra-code"
 hydraCodeBox = nk :: Box <^> "hydra-code"
 wsStatusButton = nk :: Button <^> "ws-status"
 numValueEditor = nk :: NumValueEditorKey
+inputIndicator = nk :: Button <^> "input-led"
+outputIndicator = nk :: Button <^> "output-led"
 
 
 {- For links -}

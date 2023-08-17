@@ -1,10 +1,9 @@
-module Cli.Components.WsStatusButton where
+module Cli.Components.InputIndicator where
 
 import Prelude
 
-import Effect (Effect)
 
-import Data.Either (Either(..))
+import Effect (Effect)
 
 import Blessed as B
 import Blessed ((>~))
@@ -26,35 +25,38 @@ import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style as Style
 
-import Cli.Tagging (buttonConnection) as T
+import Cli.Tagging (inputHover) as T
+
 
 
 data Status
-    = Off
-    | Waiting
-    | Connected Int
+    = Hover
+    | Off
+    -- TODO: Editor
 
 
 contentFor :: Status -> String
-contentFor Off = T.render $ T.buttonConnection $ Left "-"
-contentFor Waiting = T.render $ T.buttonConnection $ Right 0
-contentFor (Connected n) = T.render $ T.buttonConnection $ Right n
+contentFor Off = ""
+contentFor Hover = T.render $ T.inputHover
 
 
 component ∷ Core.Blessed State
 component =
-    B.button Key.wsStatusButton
+    B.button Key.inputIndicator
         [ Box.content $ contentFor Off
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 9
+        , Box.left $ Offset.px 0
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Box.tags true
-        , Style.menuButton
+        , Style.indicator
         ]
         []
 
 
+-- TODO: move to the corresponding input on hover
+
+
 updateStatus :: Status -> BlessedOp State Effect
 updateStatus status =
-    Key.wsStatusButton >~ Box.setContent $ contentFor status
+    Key.inputIndicator >~ Box.setContent $ contentFor status

@@ -95,6 +95,15 @@ menuButton =
         ]
 
 
+indicator :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+indicator =
+    Box.style
+        [ Style.fg Palette.fg'
+        , Style.bg Palette.patchBg'
+        -- , Style.transparent true
+        ]
+
+
 nodeBox :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
 nodeBox =
     Box.style
