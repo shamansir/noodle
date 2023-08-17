@@ -34,6 +34,8 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.NodeKey (type (<^>))
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.UI.Boxes.Box.Option (content, height, left, style, top, width) as Box
+import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
+import Blessed.UI.Base.Element.Method (setFront) as Element
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
@@ -41,12 +43,13 @@ import Blessed.UI.Forms.TextArea.Method (setValue) as TextArea
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method as Box
-import Blessed.UI.Base.Element.Method (show) as Element
+import Blessed.UI.Base.Element.Method (show, focus) as Element
 
 import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
 import Cli.State (State, LinkState, OutletIndex(..), InletIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
+import Cli.Bounds (collect) as Bounds
 import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
 import Cli.Palette.Set.X11 as X11
@@ -209,6 +212,8 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
             Nothing -> do
+                let editor = Key.numValueEditor
+                inodeBounds <- Bounds.collect inodeKey
                 State.modify_
                     (\s -> s
                         { editors =
@@ -228,8 +233,13 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                         editor
                         -- Key.mainScreen >~ Screen.render
                     Nothing -> pure unit -}
-                Key.numValueEditor >~ TextArea.setValue ""
-                Key.numValueEditor >~ Element.show
+                -- TODO: Multiple operations operator
+                editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
+                editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
+                editor >~ TextArea.setValue ""
+                editor >~ Element.setFront
+                editor >~ Element.show
+                --Key.numValueEditor >~ Element.focus
         State.modify_
             (_ { lastClickedOutlet = Nothing })
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox

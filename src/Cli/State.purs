@@ -127,7 +127,7 @@ newtype LinkState =
 derive instance Newtype LinkState _
 
 
-type LinkLineParams =
+type LinkLineBounds =
     { top :: Int
     , left :: Int
     , width :: Int
@@ -135,20 +135,24 @@ type LinkLineParams =
     }
 
 
-type NodePositions =
-    { fromNodeLeft :: Int
-    , fromNodeTop :: Int
-    -- , fromNodeHeight :: Int
-    , toNodeLeft :: Int
-    , toNodeTop :: Int
-    -- , toNodeHeight :: Int
+type NodeBounds =
+    { top :: Int
+    , left :: Int
+    , width :: Int
+    , height :: Int
+    }
+
+
+type FromToBounds =
+    { from :: NodeBounds
+    , to :: NodeBounds
     }
 
 
 type LinkCalc =
-    { a :: LinkLineParams
-    , b :: LinkLineParams
-    , c :: LinkLineParams
+    { a :: LinkLineBounds
+    , b :: LinkLineBounds
+    , c :: LinkLineBounds
     }
 
 

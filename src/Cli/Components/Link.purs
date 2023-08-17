@@ -32,17 +32,18 @@ import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.Emitter (class Fires) as E
 
 import Blessed.UI.Base.Node.Method as Node
-import Blessed.UI.Base.Element.Property (left, top) as Element
+import Blessed.UI.Base.Element.Property (left, top, width, height) as Element
 import Blessed.UI.Base.Element.PropertySet (setHeight, setLeft, setTop, setWidth) as Element
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 
 
-import Cli.State (State, LinkState(..), OutletIndex(..), InletIndex(..), NodePositions, LinkCalc)
+import Cli.State (State, LinkState(..), OutletIndex(..), InletIndex(..), FromToBounds, LinkCalc)
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
 import Cli.Style as Style
+import Cli.Bounds (collect) as Bounds
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -52,16 +53,15 @@ type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJ
 
 create :: Maybe LinkState -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect LinkState
 create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
-    fromNodeLeft <- Element.left ~< fromNode
-    fromNodeTop <- Element.top ~< fromNode
-    toNodeLeft <- Element.left ~< toNode
-    toNodeTop <- Element.top ~< toNode
+    from <- Bounds.collect fromNode
+    to <- Bounds.collect toNode
+
     let
 
         keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
         keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
         keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
-        calc = calculate { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
+        calc = calculate { from, to } (OutletIndex outletIdx) (InletIndex intletIdx)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
         -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
@@ -102,13 +102,13 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
     pure linkState
 
 
-calculate :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
+calculate :: FromToBounds -> OutletIndex -> InletIndex -> LinkCalc
 calculate np (OutletIndex outletIdx) (InletIndex intletIdx) =
     let
-        xo = np.fromNodeLeft + (outletIdx * 6)
-        yo = np.fromNodeTop + 4
-        xi = np.toNodeLeft + (intletIdx * 6)
-        yi = np.toNodeTop
+        xo = np.from.left + (outletIdx * 6)
+        yo = np.from.top + 4
+        xi = np.to.left + (intletIdx * 6)
+        yi = np.to.top
         my = floor $ abs (toNumber yi - toNumber yo) / 2.0
         acalc =
             if yo <= yi then -- outlet above inlet
@@ -161,14 +161,12 @@ on evt handler (LinkState link) = do
 
 update :: LinkState -> BlessedOp State Effect
 update (LinkState link) = do
-    fromNodeLeft <- Element.left ~< link.fromNode
-    fromNodeTop <- Element.top ~< link.fromNode
-    toNodeLeft <- Element.left ~< link.toNode
-    toNodeTop <- Element.top ~< link.toNode
+    from <- Bounds.collect link.fromNode
+    to <- Bounds.collect link.toNode
 
     let calc =
             calculate
-            { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop }
+            { from, to }
             (OutletIndex link.outletIndex)
             (InletIndex link.inletIndex)
 

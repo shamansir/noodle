@@ -98,7 +98,7 @@ editor curValue _ =
             B.textBox nveKey
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
-                , Box.width $ Dimension.percents 85.0
+                , Box.width $ Dimension.px 10
                 , Box.height $ Dimension.px 1
                 -- , Box.index 1
                 , Style.chInputBox
@@ -126,13 +126,6 @@ editor curValue _ =
     nveKey >~ Element.hide
     -- neTextBoxKey >~ Element.focus
     -- pure textBoxKey
-    where
-        sendToInput :: ∀ f state i din is is' os. IsSymbol f ⇒ Id.HasInput i din is' is ⇒ ReadWriteRepr H.WrapRepr ⇒ ToRepr din H.WrapRepr ⇒ FromRepr H.WrapRepr din ⇒ H.WrapRepr -> Proxy din → Noodle.Node f state is os Effect → Id.Input i -> Effect Unit
-        sendToInput nrepr _ node input =
-            case fromRepr $ wrap nrepr of
-                Just din ->
-                    Node.sendIn node input din
-                Nothing -> pure unit
 
 
 
