@@ -89,7 +89,7 @@ nveKey = Key.numValueEditor
 --      . MonadEffect m => NodeBoxKey -> Number -> (Number -> Effect Unit) -> BlessedOp Number m
 editor :: forall state m r. MonadEffect m => Number -> (H.WrapRepr -> Effect Unit) -> NK.RawNodeKey /\ BlessedOp (HasEditors r) m
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
-editor curValue sendValue =
+editor curValue _ =
     NK.rawify nveKey /\ do
     let
         --(rootTextBoxKey :: NETextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
@@ -111,8 +111,8 @@ editor curValue sendValue =
                         state <- State.get
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case (/\) <$> mbNumber <*> (Map.lookup (EditorId "number") state.editors >>= identity) of
-                            Just (number /\ holdsInput) -> do
-                                --_ <- Node.withInputInNodeMRepr holdsInput (sendToInput $ H.Value $ H.Number number)
+                            Just (number /\ sendValue) -> do
+                                -- _ <- Node.withInputInNodeMRepr holdsInput (sendToInput $ H.Value $ H.Number number)
                                             -- Node.sendIn node input $ H.Value $ H.Number number
                                 sendValue $ H.Value $ H.Number number --Node.sendIn input node 20.0-- $ T.Number number
                                 -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number

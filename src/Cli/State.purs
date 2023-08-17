@@ -43,7 +43,7 @@ import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Lang (empty) as Program
 import Toolkit.Hydra2.Lang (Program, Command) as Lang
-import Toolkit.Hydra2.Family.Render.Editor (EditorId)
+import Toolkit.Hydra2.Family.Render.Editor (Editors)
 
 import Signal (Signal)
 import Signal as Signal
@@ -68,7 +68,7 @@ type State =
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , commandBoxOn :: Boolean
     , hydraCodeOn :: Boolean
-    , editors :: Map EditorId (Maybe (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr))
+    , editors :: Editors
     }
 
 

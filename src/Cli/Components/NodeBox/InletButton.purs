@@ -10,10 +10,11 @@ import Control.Monad.State (get, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
-import Data.Repr (class FromRepr, class ToRepr)
+import Data.Repr (class FromRepr, class ToRepr, toRepr, fromRepr, wrap)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.SProxy (reflect, reflect')
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Map as Map
 
 import Type.Proxy (Proxy(..))
 import Signal (Signal)
@@ -36,6 +37,7 @@ import Blessed.UI.Boxes.Box.Option (content, height, left, style, top, width) as
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
+import Blessed.UI.Forms.TextArea.Method (setValue) as TextArea
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method as Box
@@ -68,6 +70,7 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
 import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
 import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor) as Hydra
+import Toolkit.Hydra2.Family.Render.Editor (EditorId(..))
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -206,12 +209,26 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
             Nothing -> do
+                State.modify_
+                    (\s -> s
+                        { editors =
+                            Map.insert
+                                (EditorId "number")
+                                (Just $ \wr ->
+                                    case fromRepr $ wrap wr of
+                                        Just val ->  Node.sendIn inode inputId val
+                                        Nothing -> pure unit
+                                )
+                                s.editors
+                        }
+                    )
                 {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
                 case mbEditor of
                     Just editor -> do
                         editor
                         -- Key.mainScreen >~ Screen.render
                     Nothing -> pure unit -}
+                Key.numValueEditor >~ TextArea.setValue ""
                 Key.numValueEditor >~ Element.show
         State.modify_
             (_ { lastClickedOutlet = Nothing })

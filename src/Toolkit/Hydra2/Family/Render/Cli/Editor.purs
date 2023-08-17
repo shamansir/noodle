@@ -19,7 +19,7 @@ derive instance Eq EditorId
 derive instance Ord EditorId
 
 
-type Editors = Map EditorId (Maybe (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr))
+type Editors = Map EditorId (Maybe (Hydra.WrapRepr -> Effect Unit))
 
 
 type HasEditors r = { editors :: Editors | r }
