@@ -55,6 +55,9 @@ import Cli.Style (inputsOutputs) as Style
 import Cli.Components.Link as Link
 import Cli.Components.OutputIndicator as OI
 import Cli.Components.InputIndicator as II
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
+import Cli.Components.FullInfoBox as FI
 import Cli.Tagging as T
 
 import Noodle.Network2 as Network
@@ -140,8 +143,9 @@ onMouseOver family nodeBox infoBox idx inputId _ reprSignal _ _ = do
     let inputPos = Bounds.inputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
-    infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
-    statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
+    infoBox >~ IB.inputInfo inputId
+    SL.inputStatus family idx inputId maybeRepr
+    FI.inputStatus family idx inputId maybeRepr
     case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> do
@@ -154,8 +158,9 @@ onMouseOver family nodeBox infoBox idx inputId _ reprSignal _ _ = do
 onMouseOut :: InfoBoxKey -> Int ->  _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
     state <- State.get
-    infoBox >~ Box.setContent ""
-    statusLine >~ Box.setContent ""
+    infoBox >~ IB.clear
+    SL.clear
+    FI.clear
     case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> II.hide

@@ -102,6 +102,9 @@ import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
+import Cli.Components.FullInfoBox as FI
 
 import Noodle.Text.NdfFile.Command as Cmd
 
@@ -399,12 +402,14 @@ onMouseOver :: forall f. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp State 
 onMouseOver family _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
-    Key.statusLine >~ Box.setContent $ T.render $ T.nodeMouseOver family
+    SL.familyStatus family
+    FI.familyStatus family
     Key.mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
 
 onMouseOut :: _ -> _ -> BlessedOp State Effect
 onMouseOut _ _ = do
-    Key.statusLine >~ Box.setContent ""
+    SL.clear
+    FI.clear
     Key.mainScreen >~ Screen.render

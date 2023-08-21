@@ -41,6 +41,9 @@ import Cli.Tagging as T
 import Cli.State (State)
 import Cli.State.NwWraper (unwrapN, withNetwork) as State
 import Cli.Components.Link as Link
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
+import Cli.Components.FullInfoBox as FI
 
 import Noodle.Id as Id
 import Noodle.Network2 as Network
@@ -96,15 +99,17 @@ component topOffset family node nodeBoxKey infoBoxKey buttonKey =
         , Core.on Element.MouseOver
             \_ _ -> do
                 buttonKey >~ Box.setContent $ T.render $ T.removeButtonOver
-                infoBoxKey >~ Box.setContent $ T.render $ T.removeInfoBox
-                Key.statusLine >~ Box.setContent $ T.render $ T.removeStatusLine family
+                infoBoxKey >~ IB.removeInfo
+                SL.removeStatus family
+                FI.removeStatus family
                 Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         , Core.on Element.MouseOut
             \_ _ -> do
                 buttonKey >~ Box.setContent $ T.render $ T.removeButtonOut
                 -- Info box : delete this node
-                infoBoxKey >~ Box.setContent ""
-                Key.statusLine >~ Box.setContent ""
+                infoBoxKey >~ IB.clear
+                SL.clear
+                FI.clear
                 Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         ]
         []

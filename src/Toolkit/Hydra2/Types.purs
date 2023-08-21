@@ -533,10 +533,16 @@ instance Show Texture where
     show = case _ of
         Empty -> "?"
         Start src -> "• " <> show src
+        BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~  ░ " <> show blend
+        Filter texture op -> show texture <> " >~ ƒ " <> show op
+        ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
+        Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
+        {-
         BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ " <> show blend
         Filter texture op -> show texture <> " >~ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ " <> show mod
         Geometry texture gmt -> show texture <> " >~ " <> show gmt
+        -}
         {-
         BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ Blend " <> show blend
         Filter texture op -> show texture <> " >~ Filter " <> show op

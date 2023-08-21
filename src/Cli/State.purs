@@ -68,6 +68,7 @@ type State =
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , commandBoxOn :: Boolean
     , hydraCodeOn :: Boolean
+    , fullInfoOn :: Boolean
     , editors :: Editors
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
     }
@@ -99,6 +100,7 @@ initial =
     -- , nodes : Hydra.noInstances
     , commandBoxOn : false
     , hydraCodeOn : false
+    , fullInfoOn : false
     , editors : Map.empty
     , linkWasMadeHack : false
     }
@@ -234,3 +236,8 @@ toggleCommandBox s =
 toggleHydraCode :: State -> State
 toggleHydraCode s =
     s { hydraCodeOn = not s.hydraCodeOn }
+
+
+toggleFullInfo :: State -> State
+toggleFullInfo s =
+    s { fullInfoOn = not s.fullInfoOn }

@@ -46,6 +46,9 @@ import Cli.Palette as Palette
 import Cli.Tagging as T
 import Cli.Bounds (collect, outputPos) as Bounds
 import Cli.Components.OutputIndicator as OI
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
+import Cli.Components.FullInfoBox as FI
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -152,8 +155,9 @@ onMouseOver family nodeBox infoBox idx outputId _ reprSignal _ _ = do
     let outputPos = Bounds.outputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
-    infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
-    statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
+    infoBox >~ IB.outputInfo outputId
+    SL.outputStatus family idx outputId maybeRepr
+    FI.outputStatus family idx outputId maybeRepr
     case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> do
@@ -166,8 +170,9 @@ onMouseOver family nodeBox infoBox idx outputId _ reprSignal _ _ = do
 onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
     state <- State.get
-    infoBox >~ Box.setContent ""
-    statusLine >~ Box.setContent ""
+    infoBox >~ IB.clear
+    SL.clear
+    FI.clear
     case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> OI.hide

@@ -46,7 +46,7 @@ component =
     B.button Key.wsStatusButton
         [ Box.content $ contentFor Off
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 9
+        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 11
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Box.tags true

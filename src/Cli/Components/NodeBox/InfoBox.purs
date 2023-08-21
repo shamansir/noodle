@@ -2,17 +2,26 @@ module Cli.Components.NodeBox.InfoBox where
 
 import Prelude
 
+import Data.Symbol (class IsSymbol)
+
 import Blessed as B
+import Blessed ((>~))
 
 import Blessed.Internal.Core (Blessed) as Core
+import Blessed.Internal.BlessedOp (BlessedOp) as C
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-
+import Blessed.Tagger (render) as T
 
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
 import Cli.Keys (InfoBoxKey)
 import Cli.Style as Style
+import Cli.Tagging as T
+
+import Noodle.Id (Input, Output) as Id
+
 
 component:: forall state. InfoBoxKey -> Int → Core.Blessed state
 component nextInfoBox boxWidth =
@@ -27,3 +36,29 @@ component nextInfoBox boxWidth =
         , Style.infoBox
         ]
         [ ]
+
+
+
+{- familyStatus :: forall state f m. IsSymbol f => InfoBox -> Id.Family f -> C.BlessedOp state m
+familyStatus family =
+    Key.statusLine >~ Box.setContent $ T.render $ T.nodeMouseOver family -}
+
+
+inputInfo :: forall state i m. IsSymbol i => Id.Input i -> InfoBoxKey -> C.BlessedOp state m
+inputInfo inputId infoBox =
+    infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
+
+
+outputInfo :: forall state o m. IsSymbol o => Id.Output o -> InfoBoxKey -> C.BlessedOp state m
+outputInfo outputId infoBox =
+    infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
+
+
+removeInfo :: forall state m. InfoBoxKey -> C.BlessedOp state m
+removeInfo infoBox =
+    infoBox >~ Box.setContent $ T.render $ T.removeInfoBox
+
+
+clear :: forall state m. InfoBoxKey -> C.BlessedOp state m
+clear infoBox =
+    infoBox >~ Box.setContent ""

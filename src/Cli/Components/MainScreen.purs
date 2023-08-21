@@ -33,10 +33,12 @@ import Cli.Components.AddPatchButton as AddPatchButton
 import Cli.Components.LoadFileButton as LoadFileButton
 import Cli.Components.CommandLogButton as CommandLogButton
 import Cli.Components.HydraCodeButton as HydraCodeButton
+import Cli.Components.FullInfoButton as FullInfoButton
 import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
+import Cli.Components.FullInfoBox as FullInfoBox
 import Cli.Components.WsStatusButton as WsStatusButton
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
@@ -44,7 +46,6 @@ import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
 families :: Array Id.FamilyR
 families = List.toUnfoldable $ Toolkit.nodeFamilies (Hydra.toolkit :: Hydra.Toolkit Effect)
-
 
 
 -- TODO: take toolkit here
@@ -67,11 +68,13 @@ component =
         , LoadFileButton.component
         , CommandLogButton.component
         , HydraCodeButton.component
+        , FullInfoButton.component
         , WsStatusButton.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
         , CommandLogBox.component
         , HydraCodeBox.component
+        , FullInfoBox.component
         ]
 
         $ \_ -> do
