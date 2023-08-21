@@ -69,6 +69,7 @@ type State =
     , commandBoxOn :: Boolean
     , hydraCodeOn :: Boolean
     , editors :: Editors
+    , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
     }
 
 
@@ -99,6 +100,7 @@ initial =
     , commandBoxOn : false
     , hydraCodeOn : false
     , editors : Map.empty
+    , linkWasMadeHack : false
     }
 
 

@@ -219,43 +219,50 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                     -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
                     -- END
 
-                    State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
+                    State.modify_  $ \s -> s
+                        { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network
+                        , linkWasMadeHack = true
+                        }
 
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
 
                     OI.hide
                 else pure unit
-            Nothing ->
+            Nothing -> do
                 case mbEditorId of
-                    Just editorId -> do
+                    Just editorId ->
                         -- FIXME: press handler triggers twice
-                        let editor = Key.numValueEditor
-                        inodeBounds <- Bounds.collect inodeKey
-                        State.modify_
-                            (\s -> s
-                                { editors =
-                                    Map.insert
-                                        editorId
-                                        (Just $ \wr ->
-                                            case fromRepr $ wrap wr of
-                                                Just val -> Node.sendIn inode inputId val
-                                                Nothing -> pure unit
-                                        )
-                                        s.editors
-                                }
-                            )
-                        {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
-                        case mbEditor of
-                            Just editor -> do
-                                editor
-                                -- Key.mainScreen >~ Screen.render
-                            Nothing -> pure unit -}
-                        -- TODO: Multiple operations operator
-                        editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
-                        editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
-                        editor >~ TextArea.setValue ""
-                        editor >~ Element.setFront
-                        editor >~ Element.show
+                        if not state.linkWasMadeHack then do
+                            let editor = Key.numValueEditor
+                            inodeBounds <- Bounds.collect inodeKey
+                            State.modify_
+                                (\s -> s
+                                    { editors =
+                                        Map.insert
+                                            editorId
+                                            (Just $ \wr ->
+                                                case fromRepr $ wrap wr of
+                                                    Just val -> Node.sendIn inode inputId val
+                                                    Nothing -> pure unit
+                                            )
+                                            s.editors
+                                    }
+                                )
+                            {- let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) Key.patchBox (const $ pure unit)
+                            case mbEditor of
+                                Just editor -> do
+                                    editor
+                                    -- Key.mainScreen >~ Screen.render
+                                Nothing -> pure unit -}
+                            -- TODO: Multiple operations operator
+                            editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
+                            editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
+                            editor >~ TextArea.setValue ""
+                            editor >~ Element.setFront
+                            editor >~ Element.show
+                            State.modify_  (_ { linkWasMadeHack = false })
+                        else
+                            State.modify_  (_ { linkWasMadeHack = false })
                         --Key.numValueEditor >~ Element.focus
                     Nothing ->
                         pure unit
