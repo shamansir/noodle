@@ -197,6 +197,8 @@ instance ShortInfo H.CanBeSource where
         Right outputN -> short outputN
 
 
+-- TODO: use color tags
+
 instance FullInfo H.Value where
     full :: H.Value -> String
     full = show

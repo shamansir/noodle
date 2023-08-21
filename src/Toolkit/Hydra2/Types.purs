@@ -468,21 +468,21 @@ showUsingFn a =
     case (toFn a :: String /\ Array (Fn.Argument Value)) of
         name /\ args ->
             if Array.length args > 0 then
-                "<" <> String.pascalCase name <> ">"
-            else
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else
+                "<" <> String.pascalCase name <> ">"
 
 
-{-
-showUsingFn :: forall v a. Show v => ToFn v a => a -> String
-showUsingFn a =
-    case (toFn a :: String /\ Array (Argument v)) of
-        name /\ args ->
+showUsingPossiblyFn :: forall a. PossiblyToFn Value a => (a -> String) -> a -> String
+showUsingPossiblyFn fallback a =
+    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument Value))) of
+        Just (name /\ args) ->
             if Array.length args > 0 then
-                "<" <> String.pascalCase name <> ">"
-            else
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
--}
+            else
+                 "<" <> String.pascalCase name <> ">"
+        Nothing ->
+            fallback a
 
 
 instance Show ValueExpr where
@@ -516,7 +516,7 @@ instance Show Value where
     show = case _ of
         None -> "<None>"
         Undefined -> "<Undefined>"
-        Number n -> "<" <> show n <> ">"
+        Number n -> "#" <> show n
         VArray vals ease -> "<" <> show vals <> " at " <> show ease <> ">"
         Dep fn -> "<Dep " <> show fn <> ">"
         Time -> "<Time>"
@@ -531,12 +531,18 @@ instance Show Value where
 instance Show Texture where
     show :: Texture -> String
     show = case _ of
-        Empty -> "Empty"
-        Start src -> "Start " <> show src
-        BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with <> " :: " <> show blend
-        Filter texture op -> "Filter " <> show op <> " " <> show texture
-        ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with <> " " <> show mod
-        Geometry texture gmt -> "Geometry " <> show texture <> " " <> show gmt
+        Empty -> "?"
+        Start src -> "• " <> show src
+        BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ " <> show blend
+        Filter texture op -> show texture <> " >~ " <> show op
+        ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ " <> show mod
+        Geometry texture gmt -> show texture <> " >~ " <> show gmt
+        {-
+        BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ Blend " <> show blend
+        Filter texture op -> show texture <> " >~ Filter " <> show op
+        ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ Modulate " <> show mod
+        Geometry texture gmt -> show texture <> " >~ Geom " <> show gmt
+        -}
 
 
 instance Show Blend where
@@ -576,7 +582,7 @@ instance Show UpdateFn where
 
 instance Show Source where
     show :: Source -> String
-    show = case _ of
+    show = showUsingPossiblyFn $ \s -> case s of
         Gradient { speed } -> "Gradient " <> show speed
         Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
         Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset

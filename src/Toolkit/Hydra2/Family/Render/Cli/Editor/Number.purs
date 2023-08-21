@@ -46,6 +46,7 @@ import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
 -- import Blessed.UI.Base.Element.Option (index) as Element
 import Blessed.UI.Base.Element.Method (focus, setFront, hide) as Element
+import Blessed.UI.Base.Screen.Method (render) as Screen
 -- import Blessed.UI.Boxes.Box.Method (focus) as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
@@ -72,7 +73,7 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 
 -- import Cli.State (State)
 import Cli.Keys (PatchBoxKey)
-import Cli.Keys (patchBox, numValueEditor, NumValueEditorKey) as Key
+import Cli.Keys (mainScreen, patchBox, numValueEditor, NumValueEditorKey) as Key
 
 import Toolkit.Hydra2.Family.Render.Editor (EditorId(..), HasEditors)
 
@@ -111,13 +112,14 @@ editor curValue _ =
                         state <- State.get
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case (/\) <$> mbNumber <*> (Map.lookup (EditorId "number") state.editors >>= identity) of
-                            Just (number /\ sendValue) -> do
+                            Just (number /\ sendValue) ->
                                 -- _ <- Node.withInputInNodeMRepr holdsInput (sendToInput $ H.Value $ H.Number number)
                                             -- Node.sendIn node input $ H.Value $ H.Number number
                                 sendValue $ H.Value $ H.Number number --Node.sendIn input node 20.0-- $ T.Number number
                                 -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             Nothing -> pure unit
                         nveKey >~ Element.hide
+                        Key.mainScreen >~ Screen.render
                 ]
                 [  ]
     --nodeBoxKey >~ Node.append innerText
