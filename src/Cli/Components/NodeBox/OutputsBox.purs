@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.OutletsBox where
+module Cli.Components.NodeBox.OutputsBox where
 
 import Prelude
 
@@ -40,11 +40,11 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey)
-import Cli.Keys (outletButton) as Key
+import Cli.Keys (NodeBoxKey, OutputsBoxKey, OutputButtonKey, InfoBoxKey)
+import Cli.Keys (outputButton) as Key
 import Cli.Style as Style
 import Cli.State (State)
-import Cli.Components.NodeBox.OutletButton as OutletButton
+import Cli.Components.NodeBox.OutputButton as OutputButton
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -59,10 +59,10 @@ width = Dimension.px <<< widthN
 
 
 widthN :: Int -> Int
-widthN count = (OutletButton.widthN + 1) * count
+widthN count = (OutputButton.widthN + 1) * count
 
 
-type KeysMap = Map Id.OutputR OutletButtonKey
+type KeysMap = Map Id.OutputR OutputButtonKey
 
 
 component
@@ -77,33 +77,33 @@ component
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> InfoBoxKey
-    -> OutletsBoxKey
+    -> OutputsBoxKey
     -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component topOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox oReprSignal os =
+component topOffset nodeHolder nextNodeBox nextInfoBox nextOutputsBox oReprSignal os =
     outputsKeysMap /\
-    B.box nextOutletsBox
+    B.box nextOutputsBox
         [ Box.width $ width $ Array.length os
         , Box.height $ Dimension.px 1
         , Box.top topOffset
         , Box.left $ Offset.px 0
-        -- , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler nodeHolder nextNodeBox idx)) os
+        -- , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outputHandler nodeHolder nextNodeBox idx)) os
         -- , List.mouse true
         -- , List.keys true
-        , Style.inletsOutlets
+        , Style.inputsOutputs
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "outlet"
-                outletSelected <- List.selected ~< nextOutletsBox
-                liftEffect $ Console.log $ show outletSelected
+                liftEffect $ Console.log "output"
+                outputSelected <- List.selected ~< nextOutputsBox
+                liftEffect $ Console.log $ show outputSelected
         -}
         ]
         outputsButtons
     where
         extractOutput :: Id.OutputR -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
         extractOutput outputR = map ((#) outputR)
-        keysArray :: Array OutletButtonKey
+        keysArray :: Array OutputButtonKey
         keysArray = NK.nestChain nextNodeBox $ Array.length os
         outputsKeysMap =
             Map.fromFoldable $ toKeyPair <$> Array.zip keysArray os
@@ -116,21 +116,21 @@ component topOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox oReprSigna
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
             Node.withOutputInNodeMRepr hoinr
                 (\pdout node output ->
-                    OutletButton.component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr (extractOutput (Id.outputR output) oReprSignal) pdout node output
+                    OutputButton.component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutputsBox idx maybeRepr (extractOutput (Id.outputR output) oReprSignal) pdout node output
                 )
 
 
 {-}
-        -- $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutletButton.component nodeHolder nextNodeBox nextOutletsBox idx)) os
+        -- $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutputButton.component nodeHolder nextNodeBox nextOutputsBox idx)) os
         $ mapWithIndex mapF
         $ fillKeys os )
     where
         fillKeys =
-            Tuple.snd <<< foldr foldF (Key.outletButton /\ [])
+            Tuple.snd <<< foldr foldF (Key.outputButton /\ [])
         foldF hoinr (prevKey /\ pairs) =
             let nextKey = Key.next prevKey
             in nextKey /\ ((nextKey /\ hoinr) : pairs)
         mapF idx (nextKey /\ (maybeRepr /\ hoinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withOutputInNodeMRepr hoinr (OutletButton.component nextKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr)
+            Node.withOutputInNodeMRepr hoinr (OutputButton.component nextKey nodeHolder nextNodeBox nextOutputsBox idx maybeRepr)
 -}

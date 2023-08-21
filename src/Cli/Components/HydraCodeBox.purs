@@ -24,7 +24,7 @@ import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Cli.Keys (hydraCodeBox) as Key
 import Cli.Style as Style
 import Cli.State (State)
-import Cli.Components.NodeBox.InletButton as InletButton
+import Cli.Components.NodeBox.InputButton as InputButton
 
 import Toolkit.Hydra2.Lang (formProgram) as Lang
 import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
@@ -35,7 +35,7 @@ width = Dimension.px <<< widthN
 
 
 widthN :: Int -> Int
-widthN count = (InletButton.widthN + 1) * count
+widthN count = (InputButton.widthN + 1) * count
 
 
 component
@@ -52,10 +52,10 @@ component =
         -- , List.items is
 
 
-        -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inletHandler curPatchId curPatch nextNodeBox idx)) is
+        -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inputHandler curPatchId curPatch nextNodeBox idx)) is
 
 
-        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
+        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inputHandler $ is
         -- , List.mouse true
         -- , List.keys true
         -- , ListBar.autoCommandKeys true
@@ -63,9 +63,9 @@ component =
         , Style.patchBoxBorder
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "inlet"
-                inletSelected <- List.selected ~< nextInletsBox
-                liftEffect $ Console.log $ show inletSelected
+                liftEffect $ Console.log "input"
+                inputSelected <- List.selected ~< nextInputsBox
+                liftEffect $ Console.log $ show inputSelected
         -}
         ]
         [ ]

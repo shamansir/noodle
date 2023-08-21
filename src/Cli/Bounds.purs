@@ -30,3 +30,15 @@ collect node = do
     width <- Element.width ~< node
     height <- Element.height ~< node
     pure { top, left, width, height }
+
+
+-- TODO: move ::
+
+
+outputPos :: NodeBounds -> { x :: Int, y :: Int }
+outputPos _ = { x : 0, y : 0 }
+
+
+
+inputPos :: NodeBounds -> { x :: Int, y :: Int }
+inputPos _ = { x : 0, y : 0 }

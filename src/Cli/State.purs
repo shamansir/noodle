@@ -29,9 +29,9 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 import Noodle.Network2 (init, addPatch) as Network
 
-import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey, RemoveButtonKey, PatchBoxKey)
+import Cli.Keys (InputsBoxKey, NodeBoxKey, OutputsBoxKey, InfoBoxKey, RemoveButtonKey, PatchBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
-import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox) as Key
+import Cli.Keys (nodeBox, inputsBox, outputsBox, infoBox, removeButton, patchBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
@@ -56,7 +56,7 @@ type State =
     , wsServer :: Maybe (WSS.WebSocketServer /\ Array WSS.WebSocketConnection)
     , lastShiftX :: Int
     , lastShiftY :: Int
-    , lastClickedOutlet :: Maybe OutletInfo
+    , lastClickedOutput :: Maybe OutputInfo
     , lastLink :: Maybe LinkState
     , linksFrom :: Map RawNodeKey (Map Int LinkState)
     , linksTo :: Map RawNodeKey (Map Int LinkState)
@@ -81,12 +81,12 @@ initial =
     , lastShiftY : 0
     , lastKeys :
         { nodeBox : Key.nodeBox
-        , inletsBox : Key.inletsBox
-        , outletsBox : Key.outletsBox
+        , inputsBox : Key.inputsBox
+        , outputsBox : Key.outputsBox
         , infoBox : Key.infoBox
         , removeButton : Key.removeButton
         }
-    , lastClickedOutlet : Nothing
+    , lastClickedOutput : Nothing
     , lastLink : Nothing
     , linksFrom : Map.empty
     , linksTo : Map.empty
@@ -115,8 +115,8 @@ newtype LinkState =
     , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
     , fromNode :: NodeBoxKey
     , toNode :: NodeBoxKey
-    , outletIndex :: Int
-    , inletIndex :: Int
+    , outputIndex :: Int
+    , inputIndex :: Int
     , keys ::
         { a :: Key.LineA
         , b :: Key.LineB
@@ -156,15 +156,15 @@ type LinkCalc =
     }
 
 
-newtype OutletIndex = OutletIndex Int
-newtype InletIndex = InletIndex Int
+newtype OutputIndex = OutputIndex Int
+newtype InputIndex = InputIndex Int
 
 
 patchIdFromIndex :: Int -> String
 patchIdFromIndex = (+) 1 >>> show >>> (<>) "Patch "
 
 
-type OutletInfo =
+type OutputInfo =
     { nodeKey :: NodeBoxKey
     , index :: Int
     , subj :: String
@@ -175,9 +175,9 @@ type OutletInfo =
 
 
 type LastKeys =
-    { inletsBox :: InletsBoxKey
+    { inputsBox :: InputsBoxKey
     , nodeBox :: NodeBoxKey
-    , outletsBox :: OutletsBoxKey
+    , outputsBox :: OutputsBoxKey
     , infoBox :: InfoBoxKey
     , removeButton :: RemoveButtonKey
     }

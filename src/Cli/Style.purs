@@ -155,8 +155,8 @@ nodeBoxBorder =
         ]
 
 
-inletsOutlets :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
-inletsOutlets =
+inputsOutputs :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+inputsOutputs =
     Box.style
         [ Style.fg Palette.itemSelected'
         , Style.bg Palette.nodeBg'
@@ -193,8 +193,8 @@ commandLogBorder =
         ]
 
 
-{- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
-inletsOutlets =
+{- inputsOutputs :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
+inputsOutputs =
     List.style
         [ LStyle.bg Palette.libraryBg'
         , LStyle.item

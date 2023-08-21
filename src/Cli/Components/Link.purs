@@ -38,7 +38,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 
 
-import Cli.State (State, LinkState(..), OutletIndex(..), InletIndex(..), FromToBounds, LinkCalc)
+import Cli.State (State, LinkState(..), OutputIndex(..), InputIndex(..), FromToBounds, LinkCalc)
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
@@ -51,8 +51,8 @@ import Cli.Bounds (collect) as Bounds
 type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJson → BlessedOp State Effect
 
 
-create :: Maybe LinkState -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect LinkState
-create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
+create :: Maybe LinkState -> NodeBoxKey -> OutputIndex -> NodeBoxKey -> InputIndex -> BlessedOpGet State Effect LinkState
+create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex intletIdx) = do
     from <- Bounds.collect fromNode
     to <- Bounds.collect toNode
 
@@ -61,7 +61,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
         keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
         keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
         keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
-        calc = calculate { from, to } (OutletIndex outletIdx) (InletIndex intletIdx)
+        calc = calculate { from, to } (OutputIndex outputIdx) (InputIndex intletIdx)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
         -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
@@ -93,8 +93,8 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                 { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
                 , fromNode
                 , toNode
-                , outletIndex : outletIdx
-                , inletIndex : intletIdx
+                , outputIndex : outputIdx
+                , inputIndex : intletIdx
                 , blessed : { a : linkA [], b : linkB [], c : linkC [] }
                 , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
                 }
@@ -102,32 +102,32 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
     pure linkState
 
 
-calculate :: FromToBounds -> OutletIndex -> InletIndex -> LinkCalc
-calculate np (OutletIndex outletIdx) (InletIndex intletIdx) =
+calculate :: FromToBounds -> OutputIndex -> InputIndex -> LinkCalc
+calculate np (OutputIndex outputIdx) (InputIndex intletIdx) =
     let
-        xo = np.from.left + (outletIdx * 6)
+        xo = np.from.left + (outputIdx * 6)
         yo = np.from.top + 4
         xi = np.to.left + (intletIdx * 6)
         yi = np.to.top
         my = floor $ abs (toNumber yi - toNumber yo) / 2.0
         acalc =
-            if yo <= yi then -- outlet above inlet
+            if yo <= yi then -- output above input
                 { left : xo, top : yo, width : 1, height : my }
             else
                 { left : xi, top : yi, width : 1, height : my }
         bcalc =
-            if yo <= yi then -- outlet above inlet
-                if xo <= xi then -- outlet on the left from inlet
+            if yo <= yi then -- output above input
+                if xo <= xi then -- output on the left from input
                     { left : xo, top : yo + my, width : xi - xo, height : 1 }
                 else
                     { left : xi, top : yo + my, width : xo - xi, height : 1 }
             else
-                if xi <= xo then -- inlet on the left from outlet
+                if xi <= xo then -- input on the left from output
                     { left : xi, top : yi + my, width : xo - xi, height : 1 }
                 else
                     { left : xo, top : yi + my, width : xi - xo, height : 1 }
         ccalc =
-            if yo <= yi then -- outlet above inlet
+            if yo <= yi then -- output above input
                 { left : xi, top : yo + my, width : 1, height : my }
             else
                 { left : xo, top : yi + my, width : 1, height : my }
@@ -167,8 +167,8 @@ update (LinkState link) = do
     let calc =
             calculate
             { from, to }
-            (OutletIndex link.outletIndex)
-            (InletIndex link.inletIndex)
+            (OutputIndex link.outputIndex)
+            (InputIndex link.inputIndex)
 
     link.keys.a >~ Element.setLeft $ Offset.px calc.a.left
     link.keys.a >~ Element.setTop $ Offset.px calc.a.top

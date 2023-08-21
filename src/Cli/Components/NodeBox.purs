@@ -91,10 +91,10 @@ import Cli.State (State, logNdfCommandM, logNdfCommandByRef, logLangCommandByRef
 import Cli.Style as Style
 import Cli.Tagging as T
 import Cli.Components.Link as Link
-import Cli.Components.NodeBox.InletsBox as InletsBox
-import Cli.Components.NodeBox.OutletsBox as OutletsBox
-import Cli.Components.NodeBox.InletButton as InletButton
-import Cli.Components.NodeBox.OutletButton as OutletButton
+import Cli.Components.NodeBox.InputsBox as InputsBox
+import Cli.Components.NodeBox.OutputsBox as OutputsBox
+import Cli.Components.NodeBox.InputButton as InputButton
+import Cli.Components.NodeBox.OutputButton as OutputButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Components.NodeBox.InfoBox as InfoBox
 import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, size)
@@ -121,7 +121,7 @@ width familyName isCount osCount =
 
 widthN :: String -> Int -> Int -> Int
 widthN familyName isCount osCount =
-    (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
+    (max (String.length familyName) $ max (InputsBox.widthN isCount) (OutputsBox.widthN osCount)) + 4
 
 
 -- widthN :: String -> Int -> Int -> Dimension
@@ -151,8 +151,8 @@ fromNode curPatchId curPatch family node = do
     let (updates :: Signal (ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
     let (updates' :: Signal (R.NodeLineMap Hydra.WrapRepr)) = map Tuple.snd updates
     let nextNodeBox = NodeKey.next state.lastKeys.nodeBox
-    let nextInletsBox = NodeKey.next state.lastKeys.inletsBox
-    let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
+    let nextInputsBox = NodeKey.next state.lastKeys.inputsBox
+    let nextOutputsBox = NodeKey.next state.lastKeys.outputsBox
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
     let nextRemoveButton = NodeKey.next state.lastKeys.removeButton
 
@@ -177,7 +177,7 @@ fromNode curPatchId curPatch family node = do
     let isWithReprs = (\hiinr -> Node.withInputInNodeMRepr hiinr (\_ _ inputId -> Map.lookup (Id.inputR inputId) inputsReps) /\ hiinr) <$> is
     let osWithReprs = (\hoinr -> Node.withOutputInNodeMRepr hoinr (\_ _ outputId -> Map.lookup (Id.outputR outputId) outputReprs) /\ hoinr) <$> os
 
-    -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
+    -- TODO: probably use Repr to create input bars and output bars, this way using Input' / Output' instances, we will probably be able to connect things
     --       or not Repr but some fold over inputs / outputs shape
     --       but the question remains: when we have some selected input for the receiving node in the handler, wherefrom do we get the node id of the output?
     --       we have the family encoded as symbol and hash of the is the thing that changes in real-time
@@ -189,7 +189,7 @@ fromNode curPatchId curPatch family node = do
 
     let
         boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
-        outletsTopOffset =
+        outputsTopOffset =
             Offset.px $
                 case mbBodySize of
                     Just { height } -> height - 1
@@ -199,10 +199,10 @@ fromNode curPatchId curPatch family node = do
                 case mbBodySize of
                     Just { height } -> height
                     Nothing -> 3
-        inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInputSignal updates') isWithReprs
-        outletsKeys /\ outletsBoxN =
-            OutletsBox.component outletsTopOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates') osWithReprs
+        inputsKeys /\ inputsBoxN =
+            InputsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInputsBox family (toInputSignal updates') isWithReprs
+        outputsKeys /\ outputsBoxN =
+            OutputsBox.component outputsTopOffset nodeHolder nextNodeBox nextInfoBox nextOutputsBox (toOutputSignal updates') osWithReprs
         infoBoxN =
             InfoBox.component nextInfoBox $ boxWidth - 2
         removeButtonN =
@@ -243,7 +243,7 @@ fromNode curPatchId curPatch family node = do
                 [ ]
                 -}
         renderNodeUpdate :: forall a. ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
-        renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
+        renderNodeUpdate = renderUpdate nextNodeBox inputsKeys outputsKeys
 
     (stateRef :: Ref State) <- Blessed.getStateRef
 
@@ -258,9 +258,9 @@ fromNode curPatchId curPatch family node = do
 
     Key.patchBox >~ Node.append nextNodeBoxN
 
-    nextNodeBox >~ Node.append inletsBoxN
+    nextNodeBox >~ Node.append inputsBoxN
     nextNodeBox >~ Node.append infoBoxN
-    nextNodeBox >~ Node.append outletsBoxN
+    nextNodeBox >~ Node.append outputsBoxN
     nextNodeBox >~ Node.append removeButtonN
 
     mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
@@ -283,8 +283,8 @@ fromNode curPatchId curPatch family node = do
     let
         lastKeys =
             { nodeBox : nextNodeBox
-            , inletsBox : nextInletsBox
-            , outletsBox : nextOutletsBox
+            , inputsBox : nextInputsBox
+            , outputsBox : nextOutputsBox
             , infoBox : nextInfoBox
             , removeButton : nextRemoveButton
             }
@@ -299,7 +299,7 @@ fromNode curPatchId curPatch family node = do
 
     Key.mainScreen >~ Screen.render
 
-    pure { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
+    pure { nextNodeBoxN, inputsBoxN, outputsBoxN, nextNodeBox }
 
 
 
@@ -365,8 +365,8 @@ updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
 renderUpdate
     :: forall a
      . NodeBoxKey
-    -> InletsBox.KeysMap
-    -> OutletsBox.KeysMap
+    -> InputsBox.KeysMap
+    -> OutputsBox.KeysMap
     -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
     -> BlessedOp a Effect
 renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do

@@ -73,7 +73,7 @@ component topOffset family node nodeBoxKey infoBoxKey buttonKey =
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
-        , Style.inletsOutlets
+        , Style.inputsOutputs
         , Core.on Button.Press
             \_ _ -> do
                 state <- State.get

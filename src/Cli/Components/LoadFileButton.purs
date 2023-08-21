@@ -46,7 +46,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.Palette as Palette
-import Cli.State (State, OutletIndex(..), InletIndex(..), logNdfCommandM)
+import Cli.State (State, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
@@ -144,7 +144,7 @@ handlers stateRef patch (Network tk _) =
                 (addNodeBox (tk :: Hydra.Toolkit Effect))
             ) -}
         pure unit
-    , onConnect : \(onode /\ inode) (outletIdx /\ inletIdx) link ->
+    , onConnect : \(onode /\ inode) (outputIdx /\ inputIdx) link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
             case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
@@ -152,16 +152,16 @@ handlers stateRef patch (Network tk _) =
                     linkCmp <- Link.create
                                 state.lastLink
                                 onodeKey
-                                (OutletIndex outletIdx)
+                                (OutputIndex outputIdx)
                                 inodeKey
-                                (InletIndex inletIdx)
+                                (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outletIdx (reflect' inode) inletIdx
+                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
-    , onConnect2 : \(onode /\ inode) (outletIdx /\ inletIdx) (outletId /\ inletId) link ->
+    , onConnect2 : \(onode /\ inode) (outputIdx /\ inputIdx) (outputId /\ inputId) link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
             case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
@@ -169,12 +169,12 @@ handlers stateRef patch (Network tk _) =
                     linkCmp <- Link.create
                                 state.lastLink
                                 onodeKey
-                                (OutletIndex outletIdx)
+                                (OutputIndex outputIdx)
                                 inodeKey
-                                (InletIndex inletIdx)
+                                (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outletIdx (reflect' inode) inletIdx
+                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit

@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.InletsBox where
+module Cli.Components.NodeBox.InputsBox where
 
 import Prelude
 
@@ -23,10 +23,10 @@ import Blessed.Internal.NodeKey (nestChain) as NK
 
 import Blessed.UI.Boxes.Box.Option as Box
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey, InfoBoxKey)
+import Cli.Keys (NodeBoxKey, InputsBoxKey, InputButtonKey, InfoBoxKey)
 import Cli.Style as Style
 import Cli.State (State)
-import Cli.Components.NodeBox.InletButton as InletButton
+import Cli.Components.NodeBox.InputButton as InputButton
 
 import Noodle.Id as Id
 import Noodle.Node2 as Node
@@ -45,10 +45,10 @@ width = Dimension.px <<< widthN
 
 
 widthN :: Int -> Int
-widthN count = (InletButton.widthN + 1) * count
+widthN count = (InputButton.widthN + 1) * count
 
 
-type KeysMap = Map Id.InputR InletButtonKey -- TODO: store in State?
+type KeysMap = Map Id.InputR InputButtonKey -- TODO: store in State?
 
 
 component
@@ -65,14 +65,14 @@ component
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> InfoBoxKey
-    -> InletsBoxKey
+    -> InputsBoxKey
     -> Id.Family f
     -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family iReprSignal is =
+component curPatchId curPatch nextNodeBox nextInfoBox nextInputsBox family iReprSignal is =
     inputsKeysMap /\
-    B.box nextInletsBox
+    B.box nextInputsBox
         [ Box.width $ width $ Array.length is
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 0
@@ -80,26 +80,26 @@ component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family iRepr
         -- , List.items is
 
 
-        -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inletHandler curPatchId curPatch nextNodeBox idx)) is
+        -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inputHandler curPatchId curPatch nextNodeBox idx)) is
 
 
-        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
+        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inputHandler $ is
         -- , List.mouse true
         -- , List.keys true
         -- , ListBar.autoCommandKeys true
-        , Style.inletsOutlets
+        , Style.inputsOutputs
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "inlet"
-                inletSelected <- List.selected ~< nextInletsBox
-                liftEffect $ Console.log $ show inletSelected
+                liftEffect $ Console.log "input"
+                inputSelected <- List.selected ~< nextInputsBox
+                liftEffect $ Console.log $ show inputSelected
         -}
         ]
         inputsButtons
     where
         extractInput :: Id.InputR -> Signal (Id.InputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
         extractInput inputR = map ((#) inputR)
-        keysArray :: Array InletButtonKey
+        keysArray :: Array InputButtonKey
         keysArray = NK.nestChain nextNodeBox $ Array.length is
         inputsKeysMap =
             Map.fromFoldable $ toKeyPair <$> Array.zip keysArray is
@@ -112,5 +112,5 @@ component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family iRepr
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
             Node.withInputInNodeMRepr hiinr
                 (\pdin node input -> do
-                    InletButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
+                    InputButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
                 )

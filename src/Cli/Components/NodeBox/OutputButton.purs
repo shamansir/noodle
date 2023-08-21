@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.OutletButton where
+module Cli.Components.NodeBox.OutputButton where
 
 import Prelude
 
@@ -36,7 +36,7 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen, statusLine, outputIndicator)
+import Cli.Keys (NodeBoxKey, OutputsBoxKey, OutputButtonKey, InfoBoxKey, mainScreen, statusLine, outputIndicator)
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Palette.Set.X11 as X11
@@ -72,11 +72,11 @@ component
     => Id.HasOutput o dout os' os
     => ToRepr dout Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr dout
-    => OutletButtonKey
+    => OutputButtonKey
     -> InfoBoxKey
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
-    -> OutletsBoxKey
+    -> OutputsBoxKey
     -> Int
     -> Maybe Hydra.WrapRepr
     -> Signal (Maybe Hydra.WrapRepr)
@@ -84,7 +84,7 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr reprSignal pdout onode outputId =
+component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutputsBox idx maybeRepr reprSignal pdout onode outputId =
     B.button buttonKey
         [ Box.content $ T.render $ T.output idx outputId maybeRepr
         , Box.top $ Offset.px 0
@@ -94,7 +94,7 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeR
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
-        , Style.inletsOutlets
+        , Style.inputsOutputs
         , Core.on Button.Press
             \_ _ -> onPress buttonKey nodeHolder nextNodeBox idx pdout onode outputId
         , Core.on Element.MouseOver
@@ -111,7 +111,7 @@ onPress
     => Id.HasOutput o dout os' os
     => ToRepr dout Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr dout
-    => OutletButtonKey
+    => OutputButtonKey
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> Int
@@ -119,7 +119,7 @@ onPress
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> BlessedOp State Effect
-    -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+    -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outputs-bar" State
 onPress buttonKey nodeHolder nextNodeBox index pdout node output =
     {- Id.reflect output /\ [] /\ \_ _ -> -} do
         -- liftEffect $ Console.log $ "press" <> show index
@@ -129,7 +129,7 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
         OI.updateStatus OI.WaitConnection
         State.modify_
             (_
-                { lastClickedOutlet =
+                { lastClickedOutput =
                     Just
                         { index, subj : reflect output, nodeKey : nextNodeBox
                         , nodeId : Id.holdNodeId (Node.id node), node : nodeHolder
@@ -146,7 +146,7 @@ onMouseOver family infoBox idx outputId _ reprSignal _ _ = do
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
     infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
     statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
-    case state.lastClickedOutlet of
+    case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
@@ -158,7 +158,7 @@ onMouseOut infoBox idx _ _ = do
     state <- State.get
     infoBox >~ Box.setContent ""
     statusLine >~ Box.setContent ""
-    case state.lastClickedOutlet of
+    case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> OI.hide
     mainScreen >~ Screen.render

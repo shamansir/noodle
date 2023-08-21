@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.InletButton where
+module Cli.Components.NodeBox.InputButton where
 
 import Prelude
 
@@ -47,11 +47,11 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Base.Element.Method (show, focus) as Element
 
 import Cli.Keys as Key
-import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
-import Cli.State (State, LinkState, OutletIndex(..), InletIndex(..), logNdfCommandM)
+import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InputButtonKey, mainScreen, statusLine)
+import Cli.State (State, LinkState, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Bounds (collect) as Bounds
-import Cli.Style (inletsOutlets) as Style
+import Cli.Style (inputsOutputs) as Style
 import Cli.Components.Link as Link
 import Cli.Components.OutputIndicator as OI
 import Cli.Components.InputIndicator as II
@@ -100,7 +100,7 @@ component
     -- => HasEditor (Hydra.Cli f) din din Effect
     -- => HasEditor (Hydra.CliD din) is' (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
     -- => HasEditor' (Hydra.CliD din) (Noodle.Node f nstate is os Effect) i is' is din Effect
-    => InletButtonKey
+    => InputButtonKey
     -> InfoBoxKey
     -> Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
@@ -122,7 +122,7 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
-        , Style.inletsOutlets
+        , Style.inputsOutputs
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
@@ -140,7 +140,7 @@ onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
     infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
     statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
-    case state.lastClickedOutlet of
+    case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> II.updateStatus II.Hover
     mainScreen >~ Screen.render
@@ -152,7 +152,7 @@ onMouseOut infoBox idx _ _ = do
     state <- State.get
     infoBox >~ Box.setContent ""
     statusLine >~ Box.setContent ""
-    case state.lastClickedOutlet of
+    case state.lastClickedOutput of
         Just _ -> pure unit
         Nothing -> II.hide
     mainScreen >~ Screen.render
@@ -187,15 +187,15 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
         let inodeId = Node.id inode
         state <- State.get
         -- liftEffect $ Console.log $ "handler " <> show idx
-        case state.lastClickedOutlet of
+        case state.lastClickedOutput of
             Just lco ->
                 if inodeKey /= lco.nodeKey then do
                     linkCmp <- Link.create
                                 state.lastLink
                                 lco.nodeKey
-                                (OutletIndex lco.index)
+                                (OutputIndex lco.index)
                                 inodeKey
-                                (InletIndex idx)
+                                (InputIndex idx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
                     nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
@@ -256,9 +256,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                     Nothing ->
                         pure unit
         State.modify_
-            (_ { lastClickedOutlet = Nothing })
+            (_ { lastClickedOutput = Nothing })
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
-    -- onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
+    -- onInputSelect nodeId input nextNodeBox idx (Id.reflect input)
 
 
 -- TODO: move to Link module?

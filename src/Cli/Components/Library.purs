@@ -82,8 +82,8 @@ component families =
                 -- let top = Offset.px $ state.lastShiftX + 2
                 -- let left = Offset.px $ 16 + state.lastShiftY + 2
                 -- let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-                -- let nextInletsBox = NodeKey.next state.lastInletsBoxKey
-                -- let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
+                -- let nextInputsBox = NodeKey.next state.lastInputsBoxKey
+                -- let nextOutputsBox = NodeKey.next state.lastOutputsBoxKey
 
                 {- -}
                 selected <- List.selected ~< Key.library
@@ -138,62 +138,62 @@ component families =
                             [ ]
 
                 let
-                    inletHandler idx iname =
-                        iname /\ [] /\ onInletSelect nextNodeBox idx iname
-                    inletsBoxN =
-                        B.listbar nextInletsBox
+                    inputHandler idx iname =
+                        iname /\ [] /\ onInputSelect nextNodeBox idx iname
+                    inputsBoxN =
+                        B.listbar nextInputsBox
                             [ Box.width $ Dimension.percents 90.0
                             , Box.height $ Dimension.px 1
                             , Box.top $ Offset.px 0
                             , Box.left $ Offset.px 0
                             -- , List.items is
-                            , ListBar.commands $ mapWithIndex inletHandler is
+                            , ListBar.commands $ mapWithIndex inputHandler is
                             , List.mouse true
                             , List.keys true
                             , ListBar.autoCommandKeys true
-                            , inletsOutletsStyle
+                            , inputsOutputsStyle
                             -- , Core.on ListBar.Select
                             --     \_ _ -> do
-                            --         liftEffect $ Console.log "inlet"
-                            --         inletSelected <- List.selected ~< nextInletsBox
-                            --         liftEffect $ Console.log $ show inletSelected
+                            --         liftEffect $ Console.log "input"
+                            --         inputSelected <- List.selected ~< nextInputsBox
+                            --         liftEffect $ Console.log $ show inputSelected
                             ]
                             [ ]
 
 
                 let
-                    outletHandler idx oname =
-                        oname /\ [] /\ onOutletSelect nextNodeBox idx oname
-                    outletsBoxN =
-                        B.listbar nextOutletsBox
+                    outputHandler idx oname =
+                        oname /\ [] /\ onOutputSelect nextNodeBox idx oname
+                    outputsBoxN =
+                        B.listbar nextOutputsBox
                             [ Box.width $ Dimension.percents 90.0
                             , Box.height $ Dimension.px 1
                             , Box.top $ Offset.px 2
                             , Box.left $ Offset.px 0
                             -- , List.items os
-                            , ListBar.commands $  mapWithIndex outletHandler os
+                            , ListBar.commands $  mapWithIndex outputHandler os
                             , List.mouse true
                             , List.keys true
-                            , inletsOutletsStyle
+                            , inputsOutputsStyle
                             -- , Core.on ListBar.Select
                             --     \_ _ -> do
-                            --         liftEffect $ Console.log "outlet"
-                            --         outletSelected <- List.selected ~< nextOutletsBox
-                            --         liftEffect $ Console.log $ show outletSelected
+                            --         liftEffect $ Console.log "output"
+                            --         outputSelected <- List.selected ~< nextOutputsBox
+                            --         liftEffect $ Console.log $ show outputSelected
                             ]
                             [
                             ]
 
                 patchBox >~ Node.append nextNodeBoxN
-                nextNodeBox >~ Node.append inletsBoxN
-                nextNodeBox >~ Node.append outletsBoxN
+                nextNodeBox >~ Node.append inputsBoxN
+                nextNodeBox >~ Node.append outputsBoxN
 
                 State.modify_ (_
                     { lastShiftX = state.lastShiftX + 1
                     , lastShiftY = state.lastShiftY + 1
                     , lastNodeBoxKey = nextNodeBox
-                    , lastInletsBoxKey = nextInletsBox
-                    , lastOutletsBoxKey = nextOutletsBox
+                    , lastInputsBoxKey = nextInputsBox
+                    , lastOutputsBoxKey = nextOutputsBox
                     } )
 
                 mainScreen >~ Screen.render
