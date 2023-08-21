@@ -16,9 +16,10 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option (content, height, left, top, width, tags) as Box
+import Blessed.UI.Base.Element.PropertySet (setLeft, setTop) as Element
 
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
-import Blessed.UI.Base.Element.Method (hide, show) as Element
+import Blessed.UI.Base.Element.Method (hide, show, setFront) as Element
 
 import Blessed.Tagger (render) as T
 
@@ -60,9 +61,15 @@ component =
 -- TODO: move to the corresponding output on hover
 -- TODO: fix the indicator when output is selected for the link creation (and hide when the output is reset)
 
+move :: forall state. { x :: Int, y :: Int } -> BlessedOp state Effect
+move { x, y } = do
+    Key.outputIndicator >~ Element.setLeft $ Offset.px x
+    Key.outputIndicator >~ Element.setTop $ Offset.px y
+
 
 updateStatus :: forall state. Status -> BlessedOp state Effect
 updateStatus status = do
+    Key.outputIndicator >~ Element.setFront
     Key.outputIndicator >~ Box.setContent $ contentFor status
     Key.outputIndicator >~ Element.show
 

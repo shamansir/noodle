@@ -35,10 +35,16 @@ collect node = do
 -- TODO: move ::
 
 
-outputPos :: NodeBounds -> { x :: Int, y :: Int }
-outputPos _ = { x : 0, y : 0 }
+outputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+outputPos n outputIdx =
+    { x : n.left + (outputIdx * 4)
+    , y : n.top + 4
+    }
 
 
 
-inputPos :: NodeBounds -> { x :: Int, y :: Int }
-inputPos _ = { x : 0, y : 0 }
+inputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+inputPos n inputIdx =
+    { x : n.left + (inputIdx * 4)
+    , y : n.top
+    }

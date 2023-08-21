@@ -25,12 +25,13 @@ import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
+import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Tagger as T
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
-import Blessed.Internal.Core as Core
+
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -43,6 +44,7 @@ import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
 import Cli.Palette as Palette
 import Cli.Tagging as T
+import Cli.Bounds (collect, outputPos) as Bounds
 import Cli.Components.OutputIndicator as OI
 
 import Noodle.Id as Id
@@ -98,7 +100,7 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutputsBox idx maybeR
         , Core.on Button.Press
             \_ _ -> onPress buttonKey nodeHolder nextNodeBox idx pdout onode outputId
         , Core.on Element.MouseOver
-            $ onMouseOver (Node.family onode) nextInfoBox idx outputId maybeRepr reprSignal
+            $ onMouseOver (Node.family onode) nextNodeBox nextInfoBox idx outputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
@@ -126,29 +128,37 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
         -- TODO: highlight value
         -- currentContent <- Box.getContent buttonKey
         -- buttonKey >~ Box.setContent "x"
-        OI.updateStatus OI.WaitConnection
-        State.modify_
-            (_
-                { lastClickedOutput =
-                    Just
-                        { index, subj : reflect output, nodeKey : nextNodeBox
-                        , nodeId : Id.holdNodeId (Node.id node), node : nodeHolder
-                        , outputId : Node.holdOutputInNodeMRepr pdout node output }
-                        }
-            )
+    nodeBounds <- Bounds.collect nextNodeBox
+    let outputPos = Bounds.outputPos nodeBounds index
+    OI.move { x : outputPos.x, y : outputPos.y - 1 }
+    OI.updateStatus OI.WaitConnection
+    mainScreen >~ Screen.render
+    State.modify_
+        (_
+            { lastClickedOutput =
+                Just
+                    { index, subj : reflect output, nodeKey : nextNodeBox
+                    , nodeId : Id.holdNodeId (Node.id node), node : nodeHolder
+                    , outputId : Node.holdOutputInNodeMRepr pdout node output }
+                    }
+        )
 
 
 
-onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
-onMouseOver family infoBox idx outputId _ reprSignal _ _ = do
+onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver family nodeBox infoBox idx outputId _ reprSignal _ _ = do
     state <- State.get
+    nodeBounds <- Bounds.collect nodeBox
+    let outputPos = Bounds.outputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
     infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
     statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
     case state.lastClickedOutput of
         Just _ -> pure unit
-        Nothing -> OI.updateStatus OI.Hover
+        Nothing -> do
+            OI.move { x : outputPos.x, y : outputPos.y - 1 }
+            OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

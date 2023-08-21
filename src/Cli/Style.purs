@@ -99,7 +99,8 @@ indicator :: forall subj id state e r. Extends Element subj => Respresents Box s
 indicator =
     Box.style
         [ Style.fg Palette.fg'
-        , Style.bg Palette.patchBg'
+        , Style.bg Palette.nodeBg'
+        -- , Style.bg Palette.patchBg'
         -- , Style.transparent true
         ]
 

@@ -43,7 +43,7 @@ import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
 import Cli.Style as Style
-import Cli.Bounds (collect) as Bounds
+import Cli.Bounds (collect, outputPos, inputPos) as Bounds
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -52,7 +52,7 @@ type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJ
 
 
 create :: Maybe LinkState -> NodeBoxKey -> OutputIndex -> NodeBoxKey -> InputIndex -> BlessedOpGet State Effect LinkState
-create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex intletIdx) = do
+create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
     from <- Bounds.collect fromNode
     to <- Bounds.collect toNode
 
@@ -61,7 +61,7 @@ create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex intletIdx) 
         keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
         keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
         keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
-        calc = calculate { from, to } (OutputIndex outputIdx) (InputIndex intletIdx)
+        calc = calculate { from, to } (OutputIndex outputIdx) (InputIndex inputIdx)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
         -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
@@ -94,7 +94,7 @@ create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex intletIdx) 
                 , fromNode
                 , toNode
                 , outputIndex : outputIdx
-                , inputIndex : intletIdx
+                , inputIndex : inputIdx
                 , blessed : { a : linkA [], b : linkB [], c : linkC [] }
                 , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
                 }
@@ -103,34 +103,32 @@ create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex intletIdx) 
 
 
 calculate :: FromToBounds -> OutputIndex -> InputIndex -> LinkCalc
-calculate np (OutputIndex outputIdx) (InputIndex intletIdx) =
+calculate np (OutputIndex outputIdx) (InputIndex inputIdx) =
     let
-        xo = np.from.left + (outputIdx * 6)
-        yo = np.from.top + 4
-        xi = np.to.left + (intletIdx * 6)
-        yi = np.to.top
-        my = floor $ abs (toNumber yi - toNumber yo) / 2.0
+        o = Bounds.outputPos np.from outputIdx
+        i = Bounds.inputPos np.to inputIdx
+        my = floor $ abs (toNumber i.y - toNumber o.y) / 2.0
         acalc =
-            if yo <= yi then -- output above input
-                { left : xo, top : yo, width : 1, height : my }
+            if o.y <= i.y then -- output above input
+                { left : o.x, top : o.y, width : 1, height : my }
             else
-                { left : xi, top : yi, width : 1, height : my }
+                { left : i.x, top : i.y, width : 1, height : my }
         bcalc =
-            if yo <= yi then -- output above input
-                if xo <= xi then -- output on the left from input
-                    { left : xo, top : yo + my, width : xi - xo, height : 1 }
+            if o.y <= i.y then -- output above input
+                if o.x <= i.x then -- output on the left from input
+                    { left : o.x, top : o.y + my, width : i.x - o.x, height : 1 }
                 else
-                    { left : xi, top : yo + my, width : xo - xi, height : 1 }
+                    { left : i.x, top : o.y + my, width : o.x - i.x, height : 1 }
             else
-                if xi <= xo then -- input on the left from output
-                    { left : xi, top : yi + my, width : xo - xi, height : 1 }
+                if i.x <= o.x then -- input on the left from output
+                    { left : i.x, top : i.y + my, width : o.x - i.x, height : 1 }
                 else
-                    { left : xo, top : yi + my, width : xi - xo, height : 1 }
+                    { left : o.x, top : i.y + my, width : i.x - o.x, height : 1 }
         ccalc =
-            if yo <= yi then -- output above input
-                { left : xi, top : yo + my, width : 1, height : my }
+            if o.y <= i.y then -- output above input
+                { left : i.x, top : o.y + my, width : 1, height : my }
             else
-                { left : xo, top : yi + my, width : 1, height : my }
+                { left : o.x, top : i.y + my, width : 1, height : my }
     in
     { a : acalc
     , b : bcalc

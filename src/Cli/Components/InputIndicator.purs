@@ -17,7 +17,8 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option (content, height, left, top, width, tags) as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
-import Blessed.UI.Base.Element.Method (hide, show) as Element
+import Blessed.UI.Base.Element.PropertySet (setLeft, setTop) as Element
+import Blessed.UI.Base.Element.Method (hide, show, setFront) as Element
 
 import Blessed.Tagger (render) as T
 
@@ -59,9 +60,15 @@ component =
 
 -- TODO: move to the corresponding input on hover
 
+move :: forall state. { x :: Int, y :: Int } -> BlessedOp state Effect
+move { x, y } = do
+    Key.inputIndicator >~ Element.setLeft $ Offset.px x
+    Key.inputIndicator >~ Element.setTop $ Offset.px y
+
 
 updateStatus :: Status -> BlessedOp State Effect
 updateStatus status = do
+    Key.inputIndicator >~ Element.setFront
     Key.inputIndicator >~ Box.setContent $ contentFor status
     Key.inputIndicator >~ Element.show
 

@@ -50,7 +50,7 @@ import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InputButtonKey, mainScreen, statusLine)
 import Cli.State (State, LinkState, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
-import Cli.Bounds (collect) as Bounds
+import Cli.Bounds (collect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
 import Cli.Components.Link as Link
 import Cli.Components.OutputIndicator as OI
@@ -126,23 +126,27 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver (Node.family inode) nextInfoBox idx inputId maybeRepr reprSignal
+            $ onMouseOver (Node.family inode) nextNodeBox nextInfoBox idx inputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
-onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
+onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver family nodeBox infoBox idx inputId _ reprSignal _ _ = do
     state <- State.get
+    nodeBounds <- Bounds.collect nodeBox
+    let inputPos = Bounds.inputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
     infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
     statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
     case state.lastClickedOutput of
         Just _ -> pure unit
-        Nothing -> II.updateStatus II.Hover
+        Nothing -> do
+            II.move { x : inputPos.x, y : inputPos.y - 1 }
+            II.updateStatus II.Hover
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
