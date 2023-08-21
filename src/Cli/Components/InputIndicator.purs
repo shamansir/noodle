@@ -16,8 +16,8 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option (content, height, left, top, width, tags) as Box
-
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
+import Blessed.UI.Base.Element.Method (hide, show) as Element
 
 import Blessed.Tagger (render) as T
 
@@ -42,7 +42,7 @@ contentFor Hover = T.render $ T.inputHover
 
 component ∷ Core.Blessed State
 component =
-    B.button Key.inputIndicator
+    B.buttonAnd Key.inputIndicator
         [ Box.content $ contentFor Off
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
@@ -52,11 +52,20 @@ component =
         , Style.indicator
         ]
         []
+        \_ -> do
+            Key.inputIndicator >~ Element.hide
+
 
 
 -- TODO: move to the corresponding input on hover
 
 
 updateStatus :: Status -> BlessedOp State Effect
-updateStatus status =
+updateStatus status = do
     Key.inputIndicator >~ Box.setContent $ contentFor status
+    Key.inputIndicator >~ Element.show
+
+
+hide :: forall state. BlessedOp state Effect
+hide =
+    Key.inputIndicator >~ Element.hide

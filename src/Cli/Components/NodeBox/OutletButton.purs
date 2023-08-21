@@ -36,13 +36,14 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen, statusLine)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen, statusLine, outputIndicator)
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
 import Cli.Palette as Palette
 import Cli.Tagging as T
+import Cli.Components.OutputIndicator as OI
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -125,6 +126,7 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
         -- TODO: highlight value
         -- currentContent <- Box.getContent buttonKey
         -- buttonKey >~ Box.setContent "x"
+        OI.updateStatus OI.WaitConnection
         State.modify_
             (_
                 { lastClickedOutlet =
@@ -139,17 +141,25 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
 
 onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family infoBox idx outputId _ reprSignal _ _ = do
+    state <- State.get
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
     infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
     statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
+    case state.lastClickedOutlet of
+        Just _ -> pure unit
+        Nothing -> OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
 
 onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
+    state <- State.get
     infoBox >~ Box.setContent ""
     statusLine >~ Box.setContent ""
+    case state.lastClickedOutlet of
+        Just _ -> pure unit
+        Nothing -> OI.hide
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "out" <> show idx

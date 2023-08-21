@@ -53,9 +53,8 @@ import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Bounds (collect) as Bounds
 import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
-import Cli.Palette.Set.X11 as X11
-import Cli.Palette.Item (crepr) as C
-import Cli.Palette as Palette
+import Cli.Components.OutputIndicator as OI
+import Cli.Components.InputIndicator as II
 import Cli.Tagging as T
 
 import Noodle.Network2 as Network
@@ -70,11 +69,10 @@ import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
-import Toolkit.Hydra2.Types as H
-import Toolkit.Hydra2.Repr.Info (short, full) as Info
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as H
 import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor, editorIdOf) as Hydra
-import Toolkit.Hydra2.Family.Render.Editor (EditorId(..))
+import Toolkit.Hydra2.Family.Render.Editor (EditorId)
+
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -137,18 +135,26 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
 
 onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
+    state <- State.get
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
     infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
     statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
+    case state.lastClickedOutlet of
+        Just _ -> pure unit
+        Nothing -> II.updateStatus II.Hover
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
 
 onMouseOut :: InfoBoxKey -> Int ->  _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
+    state <- State.get
     infoBox >~ Box.setContent ""
     statusLine >~ Box.setContent ""
+    case state.lastClickedOutlet of
+        Just _ -> pure unit
+        Nothing -> II.hide
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "out" <> show idx
 
@@ -212,6 +218,8 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 
                     linkCmp # Link.on Element.Click (onLinkClick holdsLink)
+
+                    OI.hide
                 else pure unit
             Nothing ->
                 case mbEditorId of
