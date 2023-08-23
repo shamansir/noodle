@@ -143,6 +143,10 @@ newtype CanBeSource =
     CanBeSource (Either SourceN OutputN)
 
 
+newtype ShaderFnArg =
+    ShaderFnArg (Maybe TOrV)
+
+
 data SourceN
     = Source0
     -- | Source1
@@ -288,6 +292,10 @@ defaultFn = NoAction
 
 defaultShader :: Shader
 defaultShader = ""
+
+
+defaultShaderFnArg :: ShaderFnArg
+defaultShaderFnArg = ShaderFnArg Nothing
 
 
 noValues :: Values

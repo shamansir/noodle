@@ -1,0 +1,53 @@
+_noise::util =>
+_rgbToHsv::util =>
+_hsvToRgb::util =>
+
+noise::src => scale::float<10> -> offset::float<0.1>
+voronoi::src => scale::float<5> -> speed::float<0.3> -> blending::float<0.3>
+osc::src => frequency::float<60> -> sync::float<0.1> -> offset::float<0>
+shape::src => sides::float<3> -> radius::float<0.3> -> smoothing::float<0.01>
+gradient::src => speed::float<0>
+src::src => tex::texture<>
+solid::src => r::float<0> -> g::float<0> -> b::float<0> -> a::float<1>
+luminance::util =>
+
+rotate::coord => angle::float<10> -> speed::float<0>
+scale::coord => amount::float<1.5> -> xMult::float<1> -> yMult::float<1> -> offsetX::float<0.5> -> offsetY::float<0.5>
+pixelate::coord => pixelX::float<20> -> pixelY::float<20>
+posterize::color => bins::float<3> -> gamma::float<0.6>
+shift::color => r::float<0.5> -> g::float<0> -> b::float<0> -> a::float<0>
+repeat::coord => repeatX::float<3> -> repeatY::float<3> -> offsetX::float<0> -> offsetY::float<0>
+repeatX::coord => reps::float<3> -> offset::float<0>
+repeatY::coord => reps::float<3> -> offset::float<0>
+kaleid::coord => nSides::float<4>
+scrollX::coord => scrollX::float<0.5> -> speed::float<0>
+scrollY::coord => scrollY::float<0.5> -> speed::float<0>
+
+add::combine => texture::vec4<> -> amount::float<0.5>
+layer::combine => texture::vec4<>
+blend::combine => texture::vec4<> -> amount::float<0.5>
+mult::combine => texture::vec4<> -> amount::float<1>
+diff::combine => texture::vec4<>
+mask::combine => texture::vec4<>
+
+modulateRepeat::combineCoord => texture::vec4<> -> repeatX::float<3> -> repeatY::float<3> -> offsetX::float<0.5> -> offsetY::float<0.5>
+modulateRepeatX::combineCoord => texture::vec4<> -> reps::float<3> -> offset::float<0.5>
+modulateRepeatY::combineCoord => texture::vec4<> -> reps::float<3> -> offset::float<0.5>
+modulateKaleid::combineCoord => texture::vec4<> -> nSides::float<4>
+modulateScrollX::combineCoord => texture::vec4<> -> scrollX::float<0.5> -> speed::float<0>
+modulateScrollY::combineCoord => texture::vec4<> -> scrollY::float<0.5> -> speed::float<0>
+modulate::combineCoord => texture::vec4<> -> amount::float<0.1>
+modulateScale::combineCoord => texture::vec4<> -> multiple::float<1> -> offset::float<1>
+modulatePixelate::combineCoord => texture::vec4<> -> multiple::float<10> -> offset::float<3>
+modulateRotate::combineCoord => texture::vec4<> -> multiple::float<1> -> offset::float<0>
+modulateHue::combineCoord => texture::vec4<> -> amount::float<1>
+
+invert::color => amount::float<1>
+contrast::color => amount::float<1.6>
+brightness::color => amount::float<0.4>
+luma::color => threshold::float<0.5> -> tolerance::float<0.1>
+thresh::color => threshold::float<0.5> -> tolerance::float<0.04>
+color::color => r::float<1> -> g::float<1> -> b::float<1> -> a::float<1>
+saturate::color => amount::float<2>
+hue::color => hue::float<0.4>
+colorama::color => amount::float<0.005>
