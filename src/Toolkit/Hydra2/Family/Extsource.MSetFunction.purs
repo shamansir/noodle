@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Extsource.MShader where
+module Toolkit.Hydra2.Family.Extsource.MSetFunction where
 
 import Toolkit.Hydra2.Types as H
 
@@ -52,7 +52,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.defaultShader }
 
 
-type Family (m :: Type -> Type) = -- {-> shader <-}
+type Family (m :: Type -> Type) = -- {-> setFunction <-}
     Family.Def State
         Inputs
         Outputs

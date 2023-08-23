@@ -96,9 +96,6 @@ data Fn
     | NoAction
 
 
-type Shader = String
-
-
 data Texture
     = Empty
     | Start Source -- start the chain
@@ -106,6 +103,7 @@ data Texture
     | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
+    | CallFn ShaderFnRef
 
 
 -- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
@@ -130,7 +128,7 @@ data ExtSource
     = Sketch String
     | Video
     | Camera Int
-    | Shader Shader
+    -- TODO | Stream String
     | Unclear
 
 
@@ -141,10 +139,6 @@ data RenderTarget
 
 newtype CanBeSource =
     CanBeSource (Either SourceN OutputN)
-
-
-newtype ShaderFnArg =
-    ShaderFnArg (Maybe TOrV)
 
 
 data SourceN
@@ -243,6 +237,29 @@ newtype UpdateFn = UpdateFn (Context -> Effect Unit)
 newtype TextureFn = TextureFn (Context -> Effect Texture) -- TODO: add as the Value option
 
 
+data ShaderFnKind
+    = FnSrc
+    | FnCoord
+    | FnCombineCoord
+    | FnCombine
+    | FnColor
+
+
+data ShaderFnArgKind
+    = ArgFloat -- means the same as Value?
+    | ArgVec4 -- means the same as Texture?
+
+
+type ShaderFnArg =
+    { name :: String, default :: Maybe TOrV, kind :: ShaderFnArgKind }
+
+
+data ShaderFn = ShaderFn { name :: String, kind :: ShaderFnKind, args :: Array ShaderFnArg }
+
+
+newtype ShaderFnRef = ShaderFnRef { name :: String, args :: Array (Maybe TOrV) }
+
+
 data Canvas = Canvas
 
 
@@ -257,9 +274,6 @@ defaultSourceOptions :: SourceOptions
 defaultSourceOptions =
     SourceOptions
         { src : Canvas }
-
-
-newtype GlslFn = GlslFn Unit
 
 
 newtype Url = Url String
@@ -278,10 +292,6 @@ noUrl :: Url
 noUrl = Url ""
 
 
-defaultGlslFn :: GlslFn
-defaultGlslFn = GlslFn unit
-
-
 defaultUpdateFn :: UpdateFn
 defaultUpdateFn = UpdateFn $ const $ pure unit
 
@@ -290,12 +300,12 @@ defaultFn :: Fn
 defaultFn = NoAction
 
 
-defaultShader :: Shader
-defaultShader = ""
+defaultShaderFn :: ShaderFn
+defaultShaderFn = ShaderFn { name : "_", kind : FnSrc, args : [] }
 
 
 defaultShaderFnArg :: ShaderFnArg
-defaultShaderFnArg = ShaderFnArg Nothing
+defaultShaderFnArg = { name : "?", default : Nothing, kind : ArgFloat }
 
 
 noValues :: Values
@@ -396,8 +406,8 @@ instance Mark Url where
     mark = const $ Color.rgb 150 205 205
 
 
-instance Mark GlslFn where
-    mark :: GlslFn -> Color
+instance Mark ShaderFn where
+    mark :: ShaderFn -> Color
     mark = const $ Color.rgb 139 137 137
 
 
@@ -545,6 +555,9 @@ instance Show Texture where
         Filter texture op -> show texture <> " >~ ƒ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
+        CallFn (ShaderFnRef { name, args }) -> "{" <> name <> "}" <> "(" <> show (Array.length args) <> ")" -- use ToFn
+
+
         {-
         BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ " <> show blend
         Filter texture op -> show texture <> " >~ " <> show op
@@ -612,9 +625,14 @@ instance Show Url where
     show (Url url) = "Url: " <> show url
 
 
-instance Show GlslFn where
-    show :: GlslFn -> String
-    show = const "GLSL Fn"
+instance Show ShaderFn where
+    show :: ShaderFn -> String
+    show (ShaderFn { name }) = "Define Function <" <> name <> ">"
+
+
+instance Show ShaderFnRef where
+    show :: ShaderFnRef -> String
+    show (ShaderFnRef { name }) = "Call Function <" <> name <> ">"
 
 
 instance Show SourceOptions where
@@ -663,7 +681,6 @@ instance Show ExtSource where
         Camera n -> "Camera " <> show n -- 🎥
         Sketch name -> "Sketch " <> name
         Video -> "Video"
-        Shader _ -> "Shader {}"
         Unclear -> "Unclear"
 
 
@@ -781,7 +798,6 @@ instance Encode ExtSource where
         Camera n -> "C" <> show n
         Sketch name -> "SK" <> show name
         Video -> "V"
-        Shader str -> "SH```" <>  str <> "```"
         Unclear -> "U"
 
 
@@ -809,8 +825,8 @@ instance Encode Url where
     encode (Url url) = encode url
 
 
-instance Encode GlslFn where
-    encode :: GlslFn -> String
+instance Encode ShaderFn where
+    encode :: ShaderFn -> String
     encode = const "GLSL" -- TODO
 
 
