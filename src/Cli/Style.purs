@@ -194,6 +194,18 @@ commandLogBorder =
         ]
 
 
+glslFnList :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
+glslFnList =
+    List.style
+        [ LStyle.bg Palette.nodeBg'
+        , LStyle.item [ ES.fg Palette.nodeFg' ]
+        , LStyle.selected
+            [ ES.bg Palette.nodeBg'
+            , ES.fg Palette.librarySelection'
+            ]
+        ]
+
+
 {- inputsOutputs :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
 inputsOutputs =
     List.style

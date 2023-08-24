@@ -7,7 +7,7 @@ import Data.Either (Either(..))
 import Data.Symbol (class IsSymbol)
 import Data.Mark (mark)
 import Data.SProxy (reflect)
-
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id as Id
 
@@ -26,7 +26,8 @@ import Cli.Palette.Set.Pico8 as Pico
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
 import Toolkit.Hydra2.Group (toGroup, toGroupR) as Hydra
-
+import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Fn as H
 
 
 input :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Tag
@@ -120,6 +121,15 @@ libraryItem :: Id.FamilyR -> Tag
 libraryItem familyR =
     let color = mark $ Hydra.toGroupR familyR
     in T.fgc color $ T.s $ Id.reflectFamilyR familyR
+
+
+glslFnItem :: H.GlslFn -> Tag
+glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
+    T.fgc (C.crepr Pico.blue) $ T.s $ H.name glslFn
+    {-
+    let color = mark $ Hydra.toGroupR familyR
+    in T.fgc color $ T.s $ Id.reflectFamilyR familyR
+    -}
 
 
 paletteItem :: Palette.Item -> Tag

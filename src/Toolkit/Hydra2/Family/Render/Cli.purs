@@ -28,6 +28,8 @@ import Toolkit.Hydra2.Family.Feed.FCallback (Inputs, Outputs, State, Node) as FC
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FCallback (render) as FCallback
 import Toolkit.Hydra2.Family.Feed.FArray (Inputs, Outputs, State, Node) as FArray
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
+import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Inputs, Outputs, State, Node) as FCallGlslFunction
+import Toolkit.Hydra2.Family.Render.Cli.Node.Feed.CallGlslFunction (render) as FCallGlslFunction
 
 import Toolkit.Hydra2.Family.Render.Cli.Editor.Number as ENumber
 
@@ -62,6 +64,9 @@ else instance (Applicative m, MonadEffect m) => HasBody (CliF "callback") "callb
 else instance (Applicative m, MonadEffect m) => HasBody (CliF "array") "array" FArray.State FArray.Inputs FArray.Outputs m where
     run :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run _ = FArray.render
+else instance (Applicative m, MonadEffect m) => HasBody (CliF "callGlslFn") "callGlslFn" FCallGlslFunction.State FCallGlslFunction.Inputs FCallGlslFunction.Outputs m where
+    run :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
+    run _ = FCallGlslFunction.render
 else instance HasBody (CliF f) f state is os m where
     run :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run _ _ _ = pure unit
@@ -82,6 +87,9 @@ else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callback") (FCal
 else instance (Applicative m, MonadEffect m) => HasBody' (CliF "array") (FArray.Node m) FArray.State m where
     run' :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run' _ = FArray.render
+else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callGlslFn") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
+    run' :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
+    run' _ = FCallGlslFunction.render
 else instance HasBody' (CliF f) (Node f state is os m) state m where
     run' :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run' _ _ _ = pure unit
@@ -90,6 +98,9 @@ else instance HasBody' (CliF f) (Node f state is os m) state m where
 instance HasCustomSize (CliF "callback") (FCallback.Node m) where
     size :: Proxy (CliF "callback") -> NodeBoxKey -> FCallback.Node m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Just { width : 30, height : 3 }
+else instance HasCustomSize (CliF "callGlslFn") (FCallGlslFunction.Node m) where
+    size :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
+    size _ _ _ = Just { width : 30, height : 7 }
 else instance HasCustomSize (CliF f) (Node f state is os m) where
     size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Nothing
