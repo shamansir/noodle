@@ -191,7 +191,10 @@ fromNode curPatchId curPatch family node = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
-        boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
+        boxWidth =
+            case mbBodySize of
+                Just { width } -> width - 1
+                Nothing -> widthN (reflect family) (Array.length is) (Array.length os)
         outputsTopOffset =
             Offset.px $
                 case mbBodySize of

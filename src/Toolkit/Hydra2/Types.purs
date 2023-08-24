@@ -103,7 +103,7 @@ data Texture
     | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
-    | CallShaderFn ShaderFnRef
+    | CallGlslFn GlslFnRef
 
 
 -- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
@@ -237,7 +237,7 @@ newtype UpdateFn = UpdateFn (Context -> Effect Unit)
 newtype TextureFn = TextureFn (Context -> Effect Texture) -- TODO: add as the Value option
 
 
-data ShaderFnKind
+data GlslFnKind
     = FnSrc
     | FnCoord
     | FnCombineCoord
@@ -245,13 +245,13 @@ data ShaderFnKind
     | FnColor
 
 
-type ShaderFnArg = TOrV
+type GlslFnArg = TOrV
 
 
-newtype ShaderFn = ShaderFn (ShaderFnKind /\ Fn.Fn ShaderFnArg) -- holds default value in every argument
+newtype GlslFn = GlslFn (GlslFnKind /\ String /\ Fn.Fn GlslFnArg) -- holds default value in every argument
 
 
-newtype ShaderFnRef = ShaderFnRef (Fn.Fn ShaderFnArg) -- should the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Fn.Fn GlslFnArg) -- should the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -298,12 +298,12 @@ defaultTOrV :: TOrV
 defaultTOrV = T Empty
 
 
-defaultShaderFn :: ShaderFn
-defaultShaderFn = ShaderFn $ FnSrc /\ Fn.empty ""
+defaultGlslFn :: GlslFn
+defaultGlslFn = GlslFn $ FnSrc /\ "" /\ Fn.empty ""
 
 
-defaultShaderFnArg :: ShaderFnArg
-defaultShaderFnArg = defaultTOrV
+defaultGlslFnArg :: GlslFnArg
+defaultGlslFnArg = defaultTOrV
 
 
 noValues :: Values
@@ -404,8 +404,8 @@ instance Mark Url where
     mark = const $ Color.rgb 150 205 205
 
 
-instance Mark ShaderFn where
-    mark :: ShaderFn -> Color
+instance Mark GlslFn where
+    mark :: GlslFn -> Color
     mark = const $ Color.rgb 139 137 137
 
 
@@ -553,8 +553,8 @@ instance Show Texture where
         Filter texture op -> show texture <> " >~ ƒ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
-        CallShaderFn shaderFn ->
-            case (toFn shaderFn :: String /\ Array (Fn.Argument TOrV)) of
+        CallGlslFn glslFn ->
+            case (toFn glslFn :: String /\ Array (Fn.Argument TOrV)) of
                 name /\ args -> "{" <> name <> "}" <> "(" <> show (Array.length args) <> ")" -- use ToFn
 
 
@@ -625,14 +625,14 @@ instance Show Url where
     show (Url url) = "Url: " <> show url
 
 
-instance Show ShaderFn where
-    show :: ShaderFn -> String
-    show (ShaderFn (_ /\ fn)) = "Define Function <" <> Fn.name fn <> ">"
+instance Show GlslFn where
+    show :: GlslFn -> String
+    show (GlslFn (_ /\ _ /\ fn)) = "Define Function <" <> Fn.name fn <> ">"
 
 
-instance Show ShaderFnRef where
-    show :: ShaderFnRef -> String
-    show (ShaderFnRef fn) = "Call Function <" <> Fn.name fn <> ">"
+instance Show GlslFnRef where
+    show :: GlslFnRef -> String
+    show (GlslFnRef fn) = "Call Function <" <> Fn.name fn <> ">"
 
 
 instance Show SourceOptions where
@@ -755,7 +755,7 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> " " <> encode texture
         ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with <> " " <> encode mod
         Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
-        CallShaderFn fn -> "FN" -- FIXME: implement
+        CallGlslFn fn -> "FN" -- FIXME: implement
 
 
 instance Encode Blend where
@@ -826,8 +826,8 @@ instance Encode Url where
     encode (Url url) = encode url
 
 
-instance Encode ShaderFn where
-    encode :: ShaderFn -> String
+instance Encode GlslFn where
+    encode :: GlslFn -> String
     encode = const "GLSL" -- TODO
 
 
@@ -996,14 +996,14 @@ instance ToFn Value Ease where
         InOutCubic -> "inOutCubic" /\ []
 
 
-instance ToFn TOrV ShaderFn where
-    toFn :: ShaderFn -> String /\ Array (Fn.Argument TOrV)
-    toFn (ShaderFn (name /\ fn)) = toFn fn
+instance ToFn TOrV GlslFn where
+    toFn :: GlslFn -> String /\ Array (Fn.Argument TOrV)
+    toFn (GlslFn (name /\ _ /\ fn)) = toFn fn
 
 
-instance ToFn TOrV ShaderFnRef where
-    toFn :: ShaderFnRef -> String /\ Array (Fn.Argument TOrV)
-    toFn (ShaderFnRef fn) = toFn fn
+instance ToFn TOrV GlslFnRef where
+    toFn :: GlslFnRef -> String /\ Array (Fn.Argument TOrV)
+    toFn (GlslFnRef fn) = toFn fn
 
 
 instance PossiblyToFn Value Source where
@@ -1039,7 +1039,7 @@ instance PossiblyToFn TOrV Texture where
         Geometry texture gmt ->
             case (toFn gmt :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
-        CallShaderFn fnRef ->
+        CallGlslFn fnRef ->
             case (toFn fnRef :: String /\ Array (Fn.Argument TOrV)) of
                 name /\ args -> Just $ name /\ args
 

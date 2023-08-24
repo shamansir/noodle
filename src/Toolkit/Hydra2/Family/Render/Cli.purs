@@ -89,7 +89,7 @@ else instance HasBody' (CliF f) (Node f state is os m) state m where
 
 instance HasCustomSize (CliF "callback") (FCallback.Node m) where
     size :: Proxy (CliF "callback") -> NodeBoxKey -> FCallback.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Just { width : 15, height : 10 }
+    size _ _ _ = Just { width : 30, height : 3 }
 else instance HasCustomSize (CliF f) (Node f state is os m) where
     size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Nothing

@@ -213,7 +213,7 @@ instance ToCode PS Texture where
             toCode pureScript texture <> "\n\t# " <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnPs name args
-        CallShaderFn fnRef ->
+        CallGlslFn fnRef ->
             case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnPs name args
 
@@ -362,7 +362,7 @@ instance ToCode JS Texture where
             toCode javaScript texture <> "\n\t." <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnJs name args
-        CallShaderFn fnRef ->
+        CallGlslFn fnRef ->
             case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnJs name args
 

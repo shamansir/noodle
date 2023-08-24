@@ -74,7 +74,7 @@ instance ShortInfo H.Texture where
         H.Filter texture op -> "FLT" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
         H.Geometry texture gmt -> "GMT" -- TODO: expand gmt
-        H.CallShaderFn shaderFn -> "GLS" -- TODO: expand fn
+        H.CallGlslFn glsl -> "GLS" -- TODO: expand fn
 
 
 instance ShortInfo H.TODO where
@@ -119,8 +119,8 @@ instance ShortInfo H.Url where
     short = const "🔗"
 
 
-instance ShortInfo H.ShaderFn where
-    short :: H.ShaderFn -> String
+instance ShortInfo H.GlslFn where
+    short :: H.GlslFn -> String
     short = const "↬"
 
 
@@ -239,8 +239,8 @@ instance FullInfo H.Url where
     full = show
 
 
-instance FullInfo H.ShaderFn where
-    full :: H.ShaderFn -> String
+instance FullInfo H.GlslFn where
+    full :: H.GlslFn -> String
     full = show
 
 

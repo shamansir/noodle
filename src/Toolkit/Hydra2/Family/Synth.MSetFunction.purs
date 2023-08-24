@@ -34,7 +34,7 @@ _out_fn = Fn.Output 0 :: _ "fn"
 
 
 type Inputs = ( )
-type Outputs = ( fn :: H.ShaderFn )
+type Outputs = ( fn :: H.GlslFn )
 
 
 inputsOrder :: _
@@ -50,7 +50,7 @@ defaultInputs = { }
 
 
 defaultOutputs :: Record Outputs
-defaultOutputs = { fn : H.defaultShaderFn }
+defaultOutputs = { fn : H.defaultGlslFn }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}

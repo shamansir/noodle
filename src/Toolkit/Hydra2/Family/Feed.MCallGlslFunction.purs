@@ -39,8 +39,8 @@ _p5_in   = Fn.Input 0 :: _ "arg5"
 _out_out   = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( p1 :: H.ShaderFnArg, p2 :: H.ShaderFnArg, p3 :: H.ShaderFnArg, p4 :: H.ShaderFnArg, p5 :: H.ShaderFnArg )
-type Outputs = ( out :: H.ShaderFn )
+type Inputs = ( p1 :: H.GlslFnArg, p2 :: H.GlslFnArg, p3 :: H.GlslFnArg, p4 :: H.GlslFnArg, p5 :: H.GlslFnArg )
+type Outputs = ( out :: H.Texture )
 
 
 inputsOrder :: _
@@ -53,16 +53,16 @@ outputsOrder = s1 _out_out
 
 defaultInputs :: Record Inputs
 defaultInputs =
-    { p1 : H.defaultShaderFnArg
-    , p2 : H.defaultShaderFnArg
-    , p3 : H.defaultShaderFnArg
-    , p4 : H.defaultShaderFnArg
-    , p5 : H.defaultShaderFnArg
+    { p1 : H.defaultGlslFnArg
+    , p2 : H.defaultGlslFnArg
+    , p3 : H.defaultGlslFnArg
+    , p4 : H.defaultGlslFnArg
+    , p5 : H.defaultGlslFnArg
     }
 
 
 defaultOutputs :: Record Outputs
-defaultOutputs = { out : H.defaultShaderFn }
+defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> callGlslFn <-}

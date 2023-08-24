@@ -325,7 +325,8 @@ type FamiliesOrder =
             "number"
         ::: "pi"
         ::: "array"
-        ::: "fn"
+        ::: "callback"
+        ::: "callGlslFn"
 
         -- Display
 

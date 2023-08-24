@@ -27,7 +27,7 @@ data WrapRepr
     | UpdateFn H.UpdateFn
     | Source H.Source
     | Url H.Url
-    | GlslFn H.ShaderFn
+    | GlslFn H.GlslFn
     | SourceOptions H.SourceOptions
     | Values H.Values
     | Ease H.Ease
@@ -91,8 +91,8 @@ instance NMF.HasRepr H.Url WrapRepr where
     toRepr _ = Url
 
 
-instance NMF.HasRepr H.ShaderFn WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> H.ShaderFn -> WrapRepr
+instance NMF.HasRepr H.GlslFn WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.GlslFn -> WrapRepr
     toRepr _ = GlslFn
 
 
@@ -209,8 +209,8 @@ instance R.ToRepr H.Url WrapRepr where
     toRepr = R.exists <<< Url
 
 
-instance R.ToRepr H.ShaderFn WrapRepr where
-    toRepr :: H.ShaderFn -> Maybe (R.Repr WrapRepr)
+instance R.ToRepr H.GlslFn WrapRepr where
+    toRepr :: H.GlslFn -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< GlslFn
 
 
@@ -331,8 +331,8 @@ instance R.FromRepr WrapRepr H.Url where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr H.ShaderFn where
-    fromRepr :: R.Repr WrapRepr -> Maybe H.ShaderFn
+instance R.FromRepr WrapRepr H.GlslFn where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.GlslFn
     fromRepr (R.Repr (GlslFn glslfn)) = Just glslfn
     fromRepr _ = Nothing
 
@@ -393,6 +393,8 @@ instance R.FromRepr WrapRepr H.CanBeSource where
 
 instance R.FromRepr WrapRepr H.TOrV where
     fromRepr :: R.Repr WrapRepr -> Maybe H.TOrV
+    fromRepr (R.Repr (Value v)) = Just $ H.V v
+    fromRepr (R.Repr (Texture tex)) = Just $ H.T tex
     fromRepr (R.Repr (TOrV torv)) = Just torv
     fromRepr _ = Nothing
 

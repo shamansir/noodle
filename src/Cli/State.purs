@@ -44,6 +44,8 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Lang (empty) as Program
 import Toolkit.Hydra2.Lang (Program, Command) as Lang
 import Toolkit.Hydra2.Family.Render.Editor (Editors)
+import Toolkit.Hydra2.Types as T
+import Toolkit.Hydra2.Lang.Glsl as Glsl
 
 import Signal (Signal)
 import Signal as Signal
@@ -70,6 +72,7 @@ type State =
     , hydraCodeOn :: Boolean
     , fullInfoOn :: Boolean
     , editors :: Editors
+    , knownGlslFunctions :: Array T.GlslFn
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
     }
 
@@ -102,6 +105,7 @@ initial =
     , hydraCodeOn : false
     , fullInfoOn : false
     , editors : Map.empty
+    , knownGlslFunctions : Glsl.knownFns
     , linkWasMadeHack : false
     }
 
