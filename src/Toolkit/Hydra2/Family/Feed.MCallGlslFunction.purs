@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = H.defaultFn
 
 
-_p1_in   = Fn.Input 0 :: _ "arg1"
-_p2_in   = Fn.Input 0 :: _ "arg2"
-_p3_in   = Fn.Input 0 :: _ "arg3"
-_p4_in   = Fn.Input 0 :: _ "arg4"
-_p5_in   = Fn.Input 0 :: _ "arg5"
+_p1_in   = Fn.Input 0 :: _ "p1"
+_p2_in   = Fn.Input 1 :: _ "p2"
+_p3_in   = Fn.Input 2 :: _ "p3"
+_p4_in   = Fn.Input 3 :: _ "p4"
+_p5_in   = Fn.Input 4 :: _ "p5"
 
 
 _out_out   = Fn.Output 0 :: _ "out"

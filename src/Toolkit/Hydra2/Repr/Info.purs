@@ -197,6 +197,12 @@ instance ShortInfo H.CanBeSource where
         Right outputN -> short outputN
 
 
+instance ShortInfo H.TOrV where
+    short :: H.TOrV -> String
+    short (H.T tex) = short tex
+    short (H.V val) = short val
+
+
 -- TODO: use color tags
 
 instance FullInfo H.Value where
@@ -298,6 +304,11 @@ instance FullInfo H.CanBeSource where
     full :: H.CanBeSource -> String
     full = show
 
+
+instance FullInfo H.TOrV where
+    full :: H.TOrV -> String
+    full (H.T tex) = full tex
+    full (H.V val) = full val
 
 
 instance (ShortInfo a, FullInfo a) => NMF.HasRepr a InfoRepr where

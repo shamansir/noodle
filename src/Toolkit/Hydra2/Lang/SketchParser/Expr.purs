@@ -2,7 +2,6 @@ module Toolkit.Hydra2.Lang.SketchParser.Expr where
 
 import Prelude
 
-import Debug as Debug
 import Type.Proxy (Proxy)
 
 -- import TryPureScript (h1, h3, p, text, render, code)

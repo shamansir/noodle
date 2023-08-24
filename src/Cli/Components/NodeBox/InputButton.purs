@@ -2,7 +2,6 @@ module Cli.Components.NodeBox.InputButton where
 
 import Prelude
 
-import Debug as Debug
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console as Console
