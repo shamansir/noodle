@@ -45,6 +45,10 @@ instance Functor Argument where
     map f (Argument name v) = Argument name $ f v
 
 
+empty :: forall arg. String -> Fn arg
+empty n = Fn $ n /\ []
+
+
 arg :: forall x. ArgumentName -> x -> Argument x
 arg = Argument
 
@@ -61,15 +65,17 @@ argName :: forall x. Argument x -> ArgumentName
 argName (Argument name _) = name
 
 
+name :: forall x. Fn x -> String
+name (Fn (name /\ _)) = name
+
 
 toFnX :: forall a arg. ToFn arg a => a -> String /\ Array arg
 toFnX a = map argValue <$> (toFn a :: String /\ Array (Argument arg))
 
 
--- instance (ToFn x a) => ToFn x a where
---     toFn :: a -> String /\ Array x
---     toFn a = map val <$> (toFn a :: String /\ Array (Arg x))
-
+instance ToFn arg (Fn arg) where
+    toFn :: Fn arg -> String /\ Array (Argument arg)
+    toFn (Fn fn) = fn
 
 
 newtype KnownFn = KnownFn String

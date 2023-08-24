@@ -182,6 +182,13 @@ instance ToCode PS AudioSource where
         File -> "file"
 
 
+instance ToCode PS TOrV where
+    toCode :: Proxy PS -> TOrV -> String
+    toCode _ = case _ of
+        T tex -> toCode pureScript tex
+        V v -> toCode pureScript v
+
+
 instance ToCode PS Texture where
     toCode :: Proxy PS -> Texture -> String
     toCode _ = case _ of
@@ -205,6 +212,9 @@ instance ToCode PS Texture where
         Geometry texture gmt ->
             toCode pureScript texture <> "\n\t# " <>
             case (toFnX gmt :: String /\ Array Value) of
+                name /\ args -> fnPs name args
+        CallShaderFn fnRef ->
+            case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnPs name args
 
 
@@ -322,6 +332,13 @@ instance ToCode JS Values where
     toCode _ (Values array) = "[" <> String.joinWith "," (toCode javaScript <$> array) <> "]" -- FIXME: use `ease`
 
 
+instance ToCode JS TOrV where
+    toCode :: Proxy JS -> TOrV -> String
+    toCode _ = case _ of
+        T tex -> toCode javaScript tex
+        V v -> toCode javaScript v
+
+
 instance ToCode JS Texture where
     toCode :: Proxy JS -> Texture -> String
     toCode _ = case _ of
@@ -344,6 +361,9 @@ instance ToCode JS Texture where
         Geometry texture gmt ->
             toCode javaScript texture <> "\n\t." <>
             case (toFnX gmt :: String /\ Array Value) of
+                name /\ args -> fnJs name args
+        CallShaderFn fnRef ->
+            case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnJs name args
 
 

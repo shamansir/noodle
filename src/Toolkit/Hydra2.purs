@@ -39,7 +39,8 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Family.Feed.FPi as FPi
 import Toolkit.Hydra2.Family.Feed.FNumber as FNumber
 import Toolkit.Hydra2.Family.Feed.FArray as FArray
-import Toolkit.Hydra2.Family.Feed.FFn as FFn
+import Toolkit.Hydra2.Family.Feed.FCallback as FCallback
+import Toolkit.Hydra2.Family.Feed.FCallGlslFunction as FCallGlslFunction
 import Toolkit.Hydra2.Family.Display.FInfo as FInfo
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
@@ -136,7 +137,8 @@ type Families (m :: Type -> Type) =
         ( number :: FNumber.Family m  -- {-> feed <-}
         , pi :: FPi.Family m  -- {-> feed <-}
         , array :: FArray.Family m  -- {-> feed <-}
-        , fn :: FFn.Family m  -- {-> feed <-}
+        , callback :: FCallback.Family m  -- {-> feed <-}
+        , callGlslFn :: FCallGlslFunction.Family m  -- {-> feed <-}
         , info :: FInfo.Family m -- {-> display <-}
         , noise :: FNoise.Family m  -- {-> source <-}
         , voronoi :: FVoronoi.Family m  -- {-> source <-}
@@ -194,7 +196,7 @@ type Families (m :: Type -> Type) =
         , update :: FUpdate.Family m  -- {-> synth <-}
         , setResolution :: FSetResolution.Family m  -- {-> synth <-}
         , hush :: FHush.Family m  -- {-> synth <-}
-        , setFunction :: FSetFunction.Family m  -- {-> synth <-}
+        , setGlslFn :: FSetFunction.Family m  -- {-> synth <-}
         , speed :: FSpeed.Family m  -- {-> synth <-}
         , bpm :: FBpm.Family m  -- {-> synth <-}
         , width :: FWidth.Family m  -- {-> synth <-}
@@ -228,7 +230,8 @@ families =
         { number : (FNumber.family :: FNumber.Family m)
         , pi : (FPi.family :: FPi.Family m)
         , array : (FArray.family :: FArray.Family m)
-        , fn : (FFn.family :: FFn.Family m)
+        , callback : (FCallback.family :: FCallback.Family m)
+        , callGlslFn : (FCallGlslFunction.family :: FCallGlslFunction.Family m)
         , info : (FInfo.family :: FInfo.Family m)
         , noise : (FNoise.family :: FNoise.Family m)
         , voronoi : (FVoronoi.family :: FVoronoi.Family m)
@@ -286,7 +289,7 @@ families =
         , update : (FUpdate.family :: FUpdate.Family m)
         , setResolution : (FSetResolution.family :: FSetResolution.Family m)
         , hush : (FHush.family :: FHush.Family m)
-        , setFunction : (FSetFunction.family :: FSetFunction.Family m)
+        , setGlslFn : (FSetFunction.family :: FSetFunction.Family m)
         , speed : (FSpeed.family :: FSpeed.Family m)
         , bpm : (FBpm.family :: FBpm.Family m)
         , width : (FWidth.family :: FWidth.Family m)
@@ -410,7 +413,7 @@ type FamiliesOrder =
         ::: "update"
         ::: "setResolution"
         ::: "hush"
-        ::: "setFunction"
+        ::: "setGlslFn"
         ::: "speed"
         ::: "bpm"
         ::: "width"
@@ -460,7 +463,8 @@ type Instances m =
         ( number :: Array ( FNumber.Node m )
         , pi :: Array ( FPi.Node m )
         , array :: Array ( FArray.Node m )
-        , fn :: Array ( FFn.Node m )
+        , callback :: Array ( FCallback.Node m )
+        , callGlslFn :: Array ( FCallGlslFunction.Node m )
         , info :: Array ( FInfo.Node m )
         , noise :: Array ( FNoise.Node m )
         , voronoi :: Array ( FVoronoi.Node m )
@@ -518,7 +522,7 @@ type Instances m =
         , update :: Array ( FUpdate.Node m )
         , setResolution :: Array ( FSetResolution.Node m )
         , hush :: Array ( FHush.Node m )
-        , setFunction :: Array ( FSetFunction.Node m )
+        , setGlslFn :: Array ( FSetFunction.Node m )
         , speed :: Array ( FSpeed.Node m )
         , bpm :: Array ( FBpm.Node m )
         , width :: Array ( FWidth.Node m )
@@ -552,7 +556,8 @@ noInstances =
         { number : ([] :: Array ( FNumber.Node m ))
         , pi : ([] :: Array ( FPi.Node m ))
         , array : ([] :: Array ( FArray.Node m ))
-        , fn : ([] :: Array ( FFn.Node m ))
+        , callback : ([] :: Array ( FCallback.Node m ))
+        , callGlslFn : ([] :: Array ( FCallGlslFunction.Node m ))
         , info : ([] :: Array ( FInfo.Node m ))
         , noise : ([] :: Array ( FNoise.Node m ))
         , voronoi : ([] :: Array ( FVoronoi.Node m ))
@@ -610,7 +615,7 @@ noInstances =
         , update : ([] :: Array ( FUpdate.Node m ))
         , setResolution : ([] :: Array ( FSetResolution.Node m ))
         , hush : ([] :: Array ( FHush.Node m ))
-        , setFunction : ([] :: Array ( FSetFunction.Node m ))
+        , setGlslFn : ([] :: Array ( FSetFunction.Node m ))
         , speed : ([] :: Array ( FSpeed.Node m ))
         , bpm : ([] :: Array ( FBpm.Node m ))
         , width : ([] :: Array ( FWidth.Node m ))
@@ -643,7 +648,8 @@ familySym :: Record
         ( number :: Node.Family "number"
         , pi :: Node.Family "pi"
         , array :: Node.Family "array"
-        , fn :: Node.Family "fn"
+        , callback :: Node.Family "callback"
+        , callGlslFn :: Node.Family "callGlslFn"
         , info :: Node.Family "info"
         , noise :: Node.Family "noise"
         , voronoi :: Node.Family "voronoi"
@@ -702,7 +708,7 @@ familySym :: Record
         , update :: Node.Family "update"
         , setResolution :: Node.Family "setResolution"
         , hush :: Node.Family "hush"
-        , setFunction :: Node.Family "setFunction"
+        , setGlslFn :: Node.Family "setGlslFn"
         , speed :: Node.Family "speed"
         , bpm :: Node.Family "bpm"
         , width :: Node.Family "width"
@@ -736,7 +742,8 @@ familySym =
         { number : FNumber.id
         , pi : FPi.id
         , array : FArray.id
-        , fn : FFn.id
+        , callback : FCallback.id
+        , callGlslFn : FCallGlslFunction.id
         , info : FInfo.id
         , noise : FNoise.id
         , voronoi : FVoronoi.id
@@ -795,7 +802,7 @@ familySym =
         , update : FUpdate.id
         , setResolution : FSetResolution.id
         , hush : FHush.id
-        , setFunction : FSetFunction.id
+        , setGlslFn : FSetFunction.id
         , speed : FSpeed.id
         , bpm : FBpm.id
         , width : FWidth.id
@@ -841,7 +848,8 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "number" -> Just $ fn familySym.number families.number toolkit
         "pi" -> Just $ fn familySym.pi families.pi toolkit
         "array" -> Just $ fn familySym.array families.array toolkit
-        "fn" -> Just $ fn familySym.fn families.fn toolkit
+        "callback" -> Just $ fn familySym.callback families.callback toolkit
+        "callGlslFn" -> Just $ fn familySym.callGlslFn families.callGlslFn toolkit
         "info" -> Just $ fn familySym.info families.info toolkit
         "noise" -> Just $ fn familySym.noise families.noise toolkit
         "voronoi" -> Just $ fn familySym.voronoi families.voronoi toolkit
@@ -900,7 +908,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "update" -> Just $ fn familySym.update families.update toolkit
         "setResolution" -> Just $ fn familySym.setResolution families.setResolution toolkit
         "hush" -> Just $ fn familySym.hush families.hush toolkit
-        "setFunction" -> Just $ fn familySym.setFunction families.setFunction toolkit
+        "setGlslFn" -> Just $ fn familySym.setGlslFn families.setGlslFn toolkit
         "speed" -> Just $ fn familySym.speed families.speed toolkit
         "bpm" -> Just $ fn familySym.bpm families.bpm toolkit
         "width" -> Just $ fn familySym.width families.width toolkit

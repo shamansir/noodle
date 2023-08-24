@@ -74,6 +74,7 @@ instance ShortInfo H.Texture where
         H.Filter texture op -> "FLT" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
         H.Geometry texture gmt -> "GMT" -- TODO: expand gmt
+        H.CallShaderFn shaderFn -> "GLS" -- TODO: expand fn
 
 
 instance ShortInfo H.TODO where
@@ -97,7 +98,6 @@ instance ShortInfo H.ExtSource where
         H.Sketch _ -> "SKT"
         H.Video -> "VID"
         H.Camera _ -> "CAM" -- 🎥
-        H.Shader _ -> "SHD"
         H.Unclear -> "???"
 
 
@@ -119,8 +119,8 @@ instance ShortInfo H.Url where
     short = const "🔗"
 
 
-instance ShortInfo H.GlslFn where
-    short :: H.GlslFn -> String
+instance ShortInfo H.ShaderFn where
+    short :: H.ShaderFn -> String
     short = const "↬"
 
 
@@ -239,8 +239,8 @@ instance FullInfo H.Url where
     full = show
 
 
-instance FullInfo H.GlslFn where
-    full :: H.GlslFn -> String
+instance FullInfo H.ShaderFn where
+    full :: H.ShaderFn -> String
     full = show
 
 
@@ -316,6 +316,8 @@ instance FullInfo W.WrapRepr where
         W.Value v -> full v
         W.Unit u -> full u
         W.Texture tex -> full tex
+        W.TOrV (H.T t) -> full t
+        W.TOrV (H.V v) -> full v
         W.OutputN on -> full on
         W.SourceN sn -> full sn
         W.TODO todo -> full todo
@@ -341,6 +343,8 @@ instance ShortInfo W.WrapRepr where
         W.Value v -> short v
         W.Unit u -> short u
         W.Texture tex -> short tex
+        W.TOrV (H.T t) -> short t
+        W.TOrV (H.V v) -> short v
         W.OutputN on -> short on
         W.SourceN sn -> short sn
         W.TODO todo -> short todo

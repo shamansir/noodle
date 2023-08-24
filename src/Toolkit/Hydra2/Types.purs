@@ -103,7 +103,7 @@ data Texture
     | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
-    | CallFn ShaderFnRef
+    | CallShaderFn ShaderFnRef
 
 
 -- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
@@ -245,19 +245,13 @@ data ShaderFnKind
     | FnColor
 
 
-data ShaderFnArgKind
-    = ArgFloat -- means the same as Value?
-    | ArgVec4 -- means the same as Texture?
+type ShaderFnArg = TOrV
 
 
-type ShaderFnArg =
-    { name :: String, default :: Maybe TOrV, kind :: ShaderFnArgKind }
+newtype ShaderFn = ShaderFn (ShaderFnKind /\ Fn.Fn ShaderFnArg) -- holds default value in every argument
 
 
-data ShaderFn = ShaderFn { name :: String, kind :: ShaderFnKind, args :: Array ShaderFnArg }
-
-
-newtype ShaderFnRef = ShaderFnRef { name :: String, args :: Array (Maybe TOrV) }
+newtype ShaderFnRef = ShaderFnRef (Fn.Fn ShaderFnArg) -- should the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -300,12 +294,16 @@ defaultFn :: Fn
 defaultFn = NoAction
 
 
+defaultTOrV :: TOrV
+defaultTOrV = T Empty
+
+
 defaultShaderFn :: ShaderFn
-defaultShaderFn = ShaderFn { name : "_", kind : FnSrc, args : [] }
+defaultShaderFn = ShaderFn $ FnSrc /\ Fn.empty ""
 
 
 defaultShaderFnArg :: ShaderFnArg
-defaultShaderFnArg = { name : "?", default : Nothing, kind : ArgFloat }
+defaultShaderFnArg = defaultTOrV
 
 
 noValues :: Values
@@ -555,7 +553,9 @@ instance Show Texture where
         Filter texture op -> show texture <> " >~ ƒ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
-        CallFn (ShaderFnRef { name, args }) -> "{" <> name <> "}" <> "(" <> show (Array.length args) <> ")" -- use ToFn
+        CallShaderFn shaderFn ->
+            case (toFn shaderFn :: String /\ Array (Fn.Argument TOrV)) of
+                name /\ args -> "{" <> name <> "}" <> "(" <> show (Array.length args) <> ")" -- use ToFn
 
 
         {-
@@ -627,12 +627,12 @@ instance Show Url where
 
 instance Show ShaderFn where
     show :: ShaderFn -> String
-    show (ShaderFn { name }) = "Define Function <" <> name <> ">"
+    show (ShaderFn (_ /\ fn)) = "Define Function <" <> Fn.name fn <> ">"
 
 
 instance Show ShaderFnRef where
     show :: ShaderFnRef -> String
-    show (ShaderFnRef { name }) = "Call Function <" <> name <> ">"
+    show (ShaderFnRef fn) = "Call Function <" <> Fn.name fn <> ">"
 
 
 instance Show SourceOptions where
@@ -755,6 +755,7 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> " " <> encode texture
         ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with <> " " <> encode mod
         Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
+        CallShaderFn fn -> "FN" -- FIXME: implement
 
 
 instance Encode Blend where
@@ -995,6 +996,16 @@ instance ToFn Value Ease where
         InOutCubic -> "inOutCubic" /\ []
 
 
+instance ToFn TOrV ShaderFn where
+    toFn :: ShaderFn -> String /\ Array (Fn.Argument TOrV)
+    toFn (ShaderFn (name /\ fn)) = toFn fn
+
+
+instance ToFn TOrV ShaderFnRef where
+    toFn :: ShaderFnRef -> String /\ Array (Fn.Argument TOrV)
+    toFn (ShaderFnRef fn) = toFn fn
+
+
 instance PossiblyToFn Value Source where
     possiblyToFn :: Source -> Maybe (String /\ Array (Fn.Argument Value))
     possiblyToFn = case _ of
@@ -1020,14 +1031,17 @@ instance PossiblyToFn TOrV Texture where
             case (toFn blend :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
         Filter texture cop ->
-            case (toFn cop :: String /\ Array ((Fn.Argument Value))) of
+            case (toFn cop :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
         ModulateWith { what, with } mod ->
-            case (toFn mod :: String /\ Array ((Fn.Argument Value))) of
+            case (toFn mod :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
         Geometry texture gmt ->
-            case (toFn gmt :: String /\ Array ((Fn.Argument Value))) of
+            case (toFn gmt :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
+        CallShaderFn fnRef ->
+            case (toFn fnRef :: String /\ Array (Fn.Argument TOrV)) of
+                name /\ args -> Just $ name /\ args
 
 
 instance PossiblyToFn Value Fn.KnownFn where

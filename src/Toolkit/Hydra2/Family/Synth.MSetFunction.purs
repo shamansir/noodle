@@ -16,7 +16,7 @@ import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "setFunction"
+id = Node.Family :: _ "setGlslFn"
 
 
 name :: String
@@ -30,27 +30,27 @@ defaultState :: State
 defaultState = unit
 
 
-_in_fn = Fn.Input 0 :: _ "fn"
+_out_fn = Fn.Output 0 :: _ "fn"
 
 
-type Inputs = ( fn :: H.GlslFn )
-type Outputs = ( )
+type Inputs = ( )
+type Outputs = ( fn :: H.ShaderFn )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_fn
+inputsOrder = SOrder.empty
 
 
 outputsOrder :: _
-outputsOrder = SOrder.empty
+outputsOrder = s1 _out_fn
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { fn : H.defaultGlslFn }
+defaultInputs = { }
 
 
 defaultOutputs :: Record Outputs
-defaultOutputs = { }
+defaultOutputs = { fn : H.defaultShaderFn }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
@@ -69,13 +69,13 @@ family = -- {-> synth <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            fn <- P.receive _in_fn
+            -- fn <- P.receive _in_fn
             -- TODO
             pure unit
 
 
 type Node (m :: Type -> Type) =
-    N.Node "setFunction" State
+    N.Node "setGlslFn" State
         Inputs
         Outputs
         m

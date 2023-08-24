@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Render.Cli.Feed.FFn where
+module Toolkit.Hydra2.Family.Render.Cli.Feed.FCallback where
 
 import Prelude
 
@@ -49,7 +49,7 @@ import Cli.Style as Style
 
 import Toolkit.Hydra2.Types as T
 -- import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Toolkit.Hydra2.Family.Feed.FFn (Node, State, _out_out) as FFn
+import Toolkit.Hydra2.Family.Feed.FCallback (Node, State, _out_out) as FCallback
 -- import Toolkit.Hydra2 (State) as Hydra
 
 type TextBoxKey = TextBox <^> "fn-text-box"
@@ -57,7 +57,7 @@ type TextBoxKey = TextBox <^> "fn-text-box"
 
 
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
-render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FFn.Node m -> BlessedOp FFn.State m -- FIXME: why it doesn't work with `sendOut` ??
+render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FCallback.Node m -> BlessedOp FCallback.State m -- FIXME: why it doesn't work with `sendOut` ??
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
 render nodeBoxKey node = do
     let
@@ -78,7 +78,7 @@ render nodeBoxKey node = do
                         let mbFn = T.findFnCode content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbFn of
-                            Just fn -> Node.sendOut node FFn._out_out fn
+                            Just fn -> Node.sendOut node FCallback._out_out fn
                             Nothing -> pure unit
                         pure unit
                 , Core.on Element.KeyPress

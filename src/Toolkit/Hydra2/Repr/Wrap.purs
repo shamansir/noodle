@@ -21,12 +21,13 @@ data WrapRepr
     = Value H.Value
     | Unit Unit
     | Texture H.Texture
+    | TOrV H.TOrV
     | TODO H.TODO
     | Context H.Context
     | UpdateFn H.UpdateFn
     | Source H.Source
     | Url H.Url
-    | GlslFn H.GlslFn
+    | GlslFn H.ShaderFn
     | SourceOptions H.SourceOptions
     | Values H.Values
     | Ease H.Ease
@@ -90,8 +91,8 @@ instance NMF.HasRepr H.Url WrapRepr where
     toRepr _ = Url
 
 
-instance NMF.HasRepr H.GlslFn WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> H.GlslFn -> WrapRepr
+instance NMF.HasRepr H.ShaderFn WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.ShaderFn -> WrapRepr
     toRepr _ = GlslFn
 
 
@@ -150,6 +151,11 @@ instance NMF.HasRepr H.CanBeSource WrapRepr where
     toRepr _ = CBS
 
 
+instance NMF.HasRepr H.TOrV WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> H.TOrV -> WrapRepr
+    toRepr _ = TOrV
+
+
 instance NMF.HasRepr WrapRepr WrapRepr where
     toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
     toRepr _ = identity
@@ -203,8 +209,8 @@ instance R.ToRepr H.Url WrapRepr where
     toRepr = R.exists <<< Url
 
 
-instance R.ToRepr H.GlslFn WrapRepr where
-    toRepr :: H.GlslFn -> Maybe (R.Repr WrapRepr)
+instance R.ToRepr H.ShaderFn WrapRepr where
+    toRepr :: H.ShaderFn -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< GlslFn
 
 
@@ -256,6 +262,11 @@ instance R.ToRepr H.Fn WrapRepr where
 instance R.ToRepr H.CanBeSource WrapRepr where
     toRepr :: H.CanBeSource -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< CBS
+
+
+instance R.ToRepr H.TOrV WrapRepr where
+    toRepr :: H.TOrV -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< TOrV
 
 
 instance R.ToRepr WrapRepr WrapRepr where
@@ -320,8 +331,8 @@ instance R.FromRepr WrapRepr H.Url where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr H.GlslFn where
-    fromRepr :: R.Repr WrapRepr -> Maybe H.GlslFn
+instance R.FromRepr WrapRepr H.ShaderFn where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.ShaderFn
     fromRepr (R.Repr (GlslFn glslfn)) = Just glslfn
     fromRepr _ = Nothing
 
@@ -380,6 +391,12 @@ instance R.FromRepr WrapRepr H.CanBeSource where
     fromRepr _ = Nothing
 
 
+instance R.FromRepr WrapRepr H.TOrV where
+    fromRepr :: R.Repr WrapRepr -> Maybe H.TOrV
+    fromRepr (R.Repr (TOrV torv)) = Just torv
+    fromRepr _ = Nothing
+
+
 instance R.FromRepr WrapRepr WrapRepr where
     fromRepr :: R.Repr WrapRepr -> Maybe WrapRepr
     fromRepr (R.Repr w) = Just w
@@ -390,6 +407,8 @@ instance Mark WrapRepr where
         Value v -> mark v
         Unit unit -> mark unit
         Texture t -> mark t
+        TOrV (H.T t) -> mark t
+        TOrV (H.V v) -> mark v
         OutputN outN -> mark outN
         SourceN srcN -> mark srcN
         TODO todo -> mark todo
@@ -414,6 +433,8 @@ instance Show WrapRepr where
         Value v -> show v
         Unit unit -> show unit
         Texture t -> show t
+        TOrV (H.T t) -> show t
+        TOrV (H.V v) -> show v
         OutputN outN -> show outN
         SourceN srcN -> show srcN
         TODO todo -> show todo
@@ -465,6 +486,8 @@ instance Encode WrapRepr where
         Value v -> "V " <> encode v
         Unit unit -> "U"
         Texture t -> "T " <> encode t
+        TOrV (H.T t) -> "TT " <> encode t
+        TOrV (H.V v) -> "VV" <> encode v
         OutputN outN -> "ON " <> encode outN
         SourceN srcN -> "SN " <> encode srcN
         TODO todo -> "TODO"

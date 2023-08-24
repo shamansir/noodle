@@ -75,8 +75,8 @@ instance NMF.HasRepr H.Url TextRepr where
     toRepr _ a = TextRepr "Url"
 
 
-instance NMF.HasRepr H.GlslFn TextRepr where
-    toRepr :: forall f i o. InNode f i o -> H.GlslFn -> TextRepr
+instance NMF.HasRepr H.ShaderFn TextRepr where
+    toRepr :: forall f i o. InNode f i o -> H.ShaderFn -> TextRepr
     toRepr _ a = TextRepr "GlslFn"
 
 
@@ -163,8 +163,8 @@ instance R.ToRepr H.Url TextRepr where
     toRepr = R.exists <<< const (TextRepr "Url")
 
 
-instance R.ToRepr H.GlslFn TextRepr where
-    toRepr :: H.GlslFn -> Maybe (R.Repr TextRepr)
+instance R.ToRepr H.ShaderFn TextRepr where
+    toRepr :: H.ShaderFn -> Maybe (R.Repr TextRepr)
     toRepr = R.exists <<< const (TextRepr "GlslFn")
 
 
@@ -250,9 +250,9 @@ instance R.FromRepr TextRepr H.Url where
     fromRepr _ = Nothing
 
 
-instance R.FromRepr TextRepr H.GlslFn where
-    fromRepr :: R.Repr TextRepr -> Maybe H.GlslFn
-    fromRepr (R.Repr (TextRepr "GlslFn")) = Just H.defaultGlslFn -- FIXME
+instance R.FromRepr TextRepr H.ShaderFn where
+    fromRepr :: R.Repr TextRepr -> Maybe H.ShaderFn
+    fromRepr (R.Repr (TextRepr "GlslFn")) = Just H.defaultShaderFn -- FIXME
     fromRepr _ = Nothing
 
 
