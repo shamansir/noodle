@@ -4,6 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Data.Int (toNumber)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
@@ -50,7 +51,7 @@ import Toolkit.Hydra2.Lang.Glsl as Glsl
 import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Lang.Fn as Fn
 
-import Noodle.Node2 (sendOut, sendOutM, atI, atIM) as Node
+import Noodle.Node2 (sendOut, sendOutM, atI, atIM, sendInM) as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
@@ -61,7 +62,7 @@ import Blessed.Tagger (fgc, s, render) as T
 
 import Toolkit.Hydra2.Types as T
 -- import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Node, State, _out_out, _p1_in, _p2_in, _p3_in, _p4_in, _p5_in) as FCallGlslFunction
+import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Node, State, _out_out, _idx_in, _p1_in, _p2_in, _p3_in, _p4_in, _p5_in) as FCallGlslFunction
 -- import Toolkit.Hydra2 (State) as Hydra
 
 type ListKey = List <^> "call-fn-list"
@@ -89,6 +90,8 @@ render nodeBoxKey node = do
                 , Core.on List.Select
                     \_ _ -> do
                             selected <- List.selected ~< listKey
+                            Node.sendInM node FCallGlslFunction._idx_in $ H.Number $ toNumber selected
+                            {-
                             let mbSelectedFn = Glsl.knownFns !! selected
                             Blessed.lift $ case mbSelectedFn of
                                 Just (H.GlslFn (_ /\ _ /\ fn)) -> do
@@ -108,6 +111,7 @@ render nodeBoxKey node = do
                                     pure unit
                                 Nothing -> pure unit
                             pure unit
+                            -}
 
                         {-
 

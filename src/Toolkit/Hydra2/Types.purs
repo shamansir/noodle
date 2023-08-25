@@ -305,6 +305,10 @@ defaultGlslFn :: GlslFn
 defaultGlslFn = GlslFn $ FnSrc /\ GlslFnCode "" /\ Fn.empty ""
 
 
+defaultGlslFnRef :: GlslFnRef
+defaultGlslFnRef = GlslFnRef $ Fn.empty ""
+
+
 defaultGlslFnArg :: GlslFnArg
 defaultGlslFnArg = defaultTOrV
 
