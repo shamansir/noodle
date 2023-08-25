@@ -126,8 +126,8 @@ modulateSR =
        )
 
 
-gradient :: H.GlslFn
-gradient =
+gradientCAI :: H.GlslFn
+gradientCAI =
      H.GlslFn
      $ H.FnSrc
      /\ H.GlslFnCode
@@ -254,7 +254,7 @@ return vec4(buf[0].x , buf[0].y , buf[0].z, 1);
     return cppn_fn(_st, intensity * 0.1 * sin(0.3 * iTime * speed), intensity * 0.1 * sin(0.69 * iTime * speed), intensity * 0.1 * sin(0.44 * iTime * speed));
 //}
      """
-    /\ (Fn.Fn $ "gradient" /\
+    /\ (Fn.Fn $ "gradientCAI" /\
             [ Fn.Argument "speed" $ H.V $ H.Number 1.0
             , Fn.Argument "intensity" $ H.V $ H.Number 1.0
             ]
@@ -268,5 +268,5 @@ knownFns =
     , sphereDisplacement
     , sphereDisplacement2
     , modulateSR
-    , gradient
+    , gradientCAI
     ]
