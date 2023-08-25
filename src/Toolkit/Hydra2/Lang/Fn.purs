@@ -4,7 +4,7 @@ module Toolkit.Hydra2.Lang.Fn where
 import Prelude
 
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (snd, uncurry) as Tuple
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 
@@ -49,8 +49,46 @@ empty :: forall arg. String -> Fn arg
 empty n = Fn $ n /\ []
 
 
+fnOf :: forall arg. String -> Array (String /\ arg) -> Fn arg
+fnOf n args =
+    Fn $ n /\ (Tuple.uncurry Argument <$> args)
+
+
+singleton :: forall arg. String -> (String /\ arg) -> Fn arg
+singleton = fn1
+
+
+fn1 :: forall arg. String -> (String /\ arg) -> Fn arg
+fn1 n a1 =
+    fnOf n [ a1 ]
+
+
+fn2 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn2 n a1 a2 =
+    fnOf n [ a1, a2 ]
+
+
+fn3 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn3 n a1 a2 a3 =
+    fnOf n [ a1, a2, a3 ]
+
+
+fn4 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn4 n a1 a2 a3 a4 =
+    fnOf n [ a1, a2, a3, a4 ]
+
+
+fn5 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn5 n a1 a2 a3 a4 a5 =
+    fnOf n [ a1, a2, a3, a4, a5 ]
+
+
 arg :: forall x. ArgumentName -> x -> Argument x
 arg = Argument
+
+
+args :: forall x. Fn x -> Array (String /\ x)
+args (Fn (_ /\ as)) = dearg <$> as
 
 
 q :: forall x. ArgumentName -> x -> Argument x
@@ -63,6 +101,10 @@ argValue (Argument _ x) = x
 
 argName :: forall x. Argument x -> ArgumentName
 argName (Argument name _) = name
+
+
+dearg :: forall x. Argument x -> ArgumentName /\ x
+dearg (Argument name x) = name /\ x
 
 
 name :: forall x. Fn x -> String

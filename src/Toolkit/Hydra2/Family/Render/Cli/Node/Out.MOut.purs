@@ -44,7 +44,7 @@ import Blessed.Core.Coord as C
 import Blessed.Core.Coord ((<->))
 import Blessed.Tagger as T
 
-import Noodle.Node2 (sendIn, subscribeInput) as Node
+import Noodle.Node2 (sendInM, subscribeInput) as Node
 
 import Toolkit.Hydra2.Types as H
 
@@ -81,7 +81,7 @@ render nodeBoxKey node = do
                 , Button.mouse true
                 , Core.on Button.Press
                     \_ _ -> do
-                        Node.sendIn node FOut._in_target output
+                        Node.sendInM node FOut._in_target output
                         State.put output
                 ]
                 [  ]

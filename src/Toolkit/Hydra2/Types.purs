@@ -248,7 +248,10 @@ data GlslFnKind
 type GlslFnArg = TOrV
 
 
-newtype GlslFn = GlslFn (GlslFnKind /\ String /\ Fn.Fn GlslFnArg) -- holds default value in every argument
+newtype GlslFnCode = GlslFnCode String
+
+
+newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Fn.Fn GlslFnArg) -- holds default value in every argument
 
 
 newtype GlslFnRef = GlslFnRef (Fn.Fn GlslFnArg) -- should the name of the function from the registry
@@ -299,7 +302,7 @@ defaultTOrV = T Empty
 
 
 defaultGlslFn :: GlslFn
-defaultGlslFn = GlslFn $ FnSrc /\ "" /\ Fn.empty ""
+defaultGlslFn = GlslFn $ FnSrc /\ GlslFnCode "" /\ Fn.empty ""
 
 
 defaultGlslFnArg :: GlslFnArg
@@ -555,7 +558,7 @@ instance Show Texture where
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
         CallGlslFn glslFn ->
             case (toFn glslFn :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> "{" <> name <> "}" <> "(" <> show (Array.length args) <> ")" -- use ToFn
+                name /\ args -> "{" <> name <> "}" <> " (" <> show (Array.length args) <> ")" -- use ToFn
 
 
         {-

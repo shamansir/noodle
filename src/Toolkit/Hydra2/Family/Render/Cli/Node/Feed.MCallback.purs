@@ -40,7 +40,7 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Forms.TextArea.Property as TextArea
 
-import Noodle.Node2 (sendOut) as Node
+import Noodle.Node2 (sendOutM) as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
@@ -78,7 +78,7 @@ render nodeBoxKey node = do
                         let mbFn = T.findFnCode content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbFn of
-                            Just fn -> Node.sendOut node FCallback._out_out fn
+                            Just fn -> Node.sendOutM node FCallback._out_out fn
                             Nothing -> pure unit
                         pure unit
                 , Core.on Element.KeyPress

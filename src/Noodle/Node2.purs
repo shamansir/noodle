@@ -241,8 +241,16 @@ inputs :: forall f state is os m. MonadEffect m => Node f state is os m -> m (Re
 inputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
 
 
+inputsM :: forall f state is os m m'. MonadEffect m => Node f state is os m' -> m (Record is)
+inputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
+
+
 outputs :: forall f state is os m. MonadEffect m => Node f state is os m -> m (Record os)
 outputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
+
+
+outputsM :: forall f state is os m m'. MonadEffect m => Node f state is os m' -> m (Record os)
+outputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
 
 
 inputsRow :: forall f state is os m. MonadEffect m => Node f state is os m -> Proxy is
@@ -257,12 +265,20 @@ atInput :: forall f i state is' is os m din. MonadEffect m => HasInput i din is'
 atInput i node = inputs node <#> Record.get (proxify i)
 
 
+atInputM :: forall f i state is' is os m m' din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os m' -> m din
+atInputM i node = inputsM node <#> Record.get (proxify i)
+
+
 atInput' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Input' i -> Node f state is os m -> m din
 atInput' i node = inputs node <#> Record.get (proxify i)
 
 
 atOutput :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m -> m dout
 atOutput o node = outputs node <#> Record.get (proxify o)
+
+
+atOutputM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m' -> m dout
+atOutputM o node = outputsM node <#> Record.get (proxify o)
 
 
 atOutput' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> Node f state is os m -> m dout
@@ -273,12 +289,20 @@ atI :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is 
 atI = flip atInput
 
 
+atIM :: forall f i state is' is os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> m din
+atIM = flip atInputM
+
+
 atI' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input' i -> m din
 atI' = flip atInput'
 
 
 atO :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> m dout
 atO = flip atOutput
+
+
+atOM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> m dout
+atOM = flip atOutputM
 
 
 atO' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output' o -> m dout
@@ -338,9 +362,13 @@ subscribeChanges :: forall f state is os m. Node f state is os m -> Signal (Chan
 subscribeChanges (Node _ tracker _ _) = tracker.all
 
 
--- private?
-sendOut :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> dout -> m Unit
+sendOut :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> m Unit
 sendOut node o = liftEffect <<< sendOutE node o
+
+
+-- private?
+sendOutM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> dout -> m Unit
+sendOutM node o = liftEffect <<< sendOutE node o
 
 
 -- private?
@@ -367,8 +395,13 @@ sendOutE' (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendIn :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> din -> m Unit
+sendIn :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> din -> m Unit
 sendIn node i = liftEffect <<< sendInE node i
+
+
+-- private?
+sendInM :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> din -> m Unit
+sendInM node i = liftEffect <<< sendInE node i
 
 
 -- private?

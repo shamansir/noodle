@@ -8,6 +8,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 import Type.Proxy (Proxy)
 import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
@@ -36,6 +37,7 @@ import Toolkit.Hydra2.Family.Render.Cli.Editor.Number as ENumber
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as H
 import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Glsl as Glsl
 
 import Noodle.Node2 (Node)
 import Noodle.Id as Id
@@ -100,7 +102,7 @@ instance HasCustomSize (CliF "callback") (FCallback.Node m) where
     size _ _ _ = Just { width : 30, height : 3 }
 else instance HasCustomSize (CliF "callGlslFn") (FCallGlslFunction.Node m) where
     size :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Just { width : 30, height : 7 }
+    size _ _ _ = Just { width : 30, height : Array.length Glsl.knownFns + 2 }
 else instance HasCustomSize (CliF f) (Node f state is os m) where
     size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Nothing

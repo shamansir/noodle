@@ -40,7 +40,7 @@ import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Forms.TextArea.Method as TextArea
 import Blessed.UI.Forms.TextArea.Property as TextArea
 
-import Noodle.Node2 (sendOut) as Node
+import Noodle.Node2 (sendOutM) as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
@@ -78,7 +78,7 @@ render nodeBoxKey node = do
                         let mbNumber = Number.fromString content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbNumber of
-                            Just number -> Node.sendOut node FNumber._out_out $ T.Number number
+                            Just number -> Node.sendOutM node FNumber._out_out $ T.Number number
                                 -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             Nothing -> pure unit
                         pure unit

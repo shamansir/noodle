@@ -60,7 +60,7 @@ import Toolkit.Hydra2.Family.Display.FInfo (Node, State, _in_in) as FInfo
 type TextBoxKey = TextBox <^> "info-text-box"
 
 
-render :: forall m. MonadRec m => MonadEffect m => NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m -- FIXME: why it doesn't work with `sendOut` ??
+render :: forall m. MonadRec m => MonadEffect m => NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
 render nodeBoxKey node = do
     let
         (rootTextBoxKey :: TextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node

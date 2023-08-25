@@ -40,7 +40,7 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Forms.TextArea.Property as TextArea
 
-import Noodle.Node2 (sendOut) as Node
+import Noodle.Node2 (sendOutM) as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
@@ -57,7 +57,7 @@ type TextBoxKey = TextBox <^> "array-text-box"
 
 
 -- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
-render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m -- FIXME: why it doesn't work with `sendOut` ??
+render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
 -- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
 render nodeBoxKey node = do
     let
@@ -78,12 +78,12 @@ render nodeBoxKey node = do
                         let mbValues = T.findValues content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbValues of
-                            Just values -> Node.sendOut node FArray._out_out values
+                            Just values -> Node.sendOutM node FArray._out_out values
                             Nothing -> pure unit
                         pure unit
-                , Core.on Element.KeyPress
-                    \_ _ -> do
-                        pure unit
+                -- , Core.on Element.KeyPress
+                --     \_ _ -> do
+                --         pure unit
                 ]
                 [  ]
     nodeBoxKey >~ Node.append innerText
