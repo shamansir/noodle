@@ -32,6 +32,7 @@ import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.Emitter (class Fires) as E
 
 import Blessed.UI.Base.Node.Method as Node
+import Blessed.UI.Base.Element.Method (setBack) as Element
 import Blessed.UI.Base.Element.Property (left, top, width, height) as Element
 import Blessed.UI.Base.Element.PropertySet (setHeight, setLeft, setTop, setWidth) as Element
 import Blessed.UI.Boxes.Box.Option as Box
@@ -138,6 +139,9 @@ calculate np (OutputIndex outputIdx) (InputIndex inputIdx) =
 
 append :: LinkState -> PatchBoxKey -> BlessedOp State Effect
 append (LinkState link) pnk = do
+    link.keys.a >~ Element.setBack
+    link.keys.b >~ Element.setBack
+    link.keys.c >~ Element.setBack
     pnk >~ Node.append link.blessed.a
     pnk >~ Node.append link.blessed.b
     pnk >~ Node.append link.blessed.c

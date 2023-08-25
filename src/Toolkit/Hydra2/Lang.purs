@@ -19,16 +19,20 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Map.Extra as Map
 import Data.List as List
-
+import Data.Array ((:))
+import Data.Foldable (foldr)
+import Data.String as String
 
 import Noodle.Id as Id
 import Noodle.Node2.MapsFolds.Flatten as R
 
-import Toolkit.Hydra2.Types (OutputN, SourceN, ExtSource, Source, Texture, AudioSource, OnAudio, Value, SourceOptions, RenderTarget(..)) as H
+import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Fn as Fn
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
+import Toolkit.Hydra2.Lang.Glsl as Glsl
 
 
 data Single
@@ -72,6 +76,19 @@ append (Program Unknown _) Unknown = Program Unknown unit
 append (Program Unknown _) cmd = Program cmd unit
 append (Program cmd _) Unknown = Program cmd unit
 append (Program cmdA _) cmdB = Program (Pair cmdA cmdB) unit
+
+
+unfold :: forall a. Program a -> Array Command
+unfold (Program cmd _) =
+    unfoldCmd cmd
+    where
+        unfoldCmd = case _ of
+            Pair cmdA cmdB -> Pair cmdA cmdB : (unfoldCmd cmdA <> unfoldCmd cmdB)
+            otherCmd -> [ otherCmd ]
+
+
+fold :: forall a b. (Command -> b -> b) -> b -> Program a -> b
+fold f b = foldr f b <<< unfold
 
 
 -- instance Semigroup (Program Unit) where
@@ -126,7 +143,10 @@ instance ToCode PS Command where
 else instance ToCode JS Command where
     toCode _ = case _ of
         Unknown -> "/* unknown */"
-        End output texture -> toCode javaScript texture <> "\n\t." <> ToCode.fnJs "out" [ output ]
+        End output texture ->
+            case texture of
+                H.Empty -> ""
+                _ -> toCode javaScript texture <> "\n\t." <> ToCode.fnJs "out" [ output ]
         Pair cmdA cmdB -> toCode javaScript cmdA <> "\n" <> toCode javaScript cmdB
         One (WithAudio onaudio) -> toCode javaScript onaudio
         -- One (InitCam src index) -> toCode javaScript src <> ".initCam( " <> toCode javaScript index <> " )"
@@ -144,10 +164,24 @@ else instance ToCode JS Command where
         Continue texture -> "." <> toCode javaScript texture
 
 
+collectGlslUsage :: forall a. Program a -> Array H.GlslFn
+collectGlslUsage = fold checkForRefs []
+    where
+        checkForRefs (Continue (H.CallGlslFn fnRef)) = addIfJust $ fnRefToGlslFn fnRef
+        checkForRefs (End _ (H.CallGlslFn fnRef)) =addIfJust $ fnRefToGlslFn fnRef
+        checkForRefs _ = identity
+        fnRefToGlslFn (H.GlslFnRef fn) = Map.lookup (Fn.name fn) Glsl.knownFnsMap
+        addIfJust (Just glslFn) arr = glslFn : arr
+        addIfJust Nothing arr = arr
+
+
 instance ToCode PS (Program a) where
     toCode _ (Program cmd _) = toCode pureScript cmd
 else instance ToCode JS (Program a) where
-    toCode _ (Program cmd _) = toCode javaScript cmd
+    toCode _ prg@(Program cmd _) =
+        String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg)
+        <> "\n\n"
+        <> toCode javaScript cmd
 
 
 producesCode :: forall f. IsSymbol f => Id.Family f -> Boolean

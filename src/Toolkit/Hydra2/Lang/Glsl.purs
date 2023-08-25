@@ -2,6 +2,8 @@ module Toolkit.Hydra2.Lang.Glsl where
 
 import Prelude
 
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -270,3 +272,9 @@ knownFns =
     , modulateSR
     , gradientCAI
     ]
+
+
+knownFnsMap ∷ Map String H.GlslFn
+knownFnsMap =
+  Map.fromFoldable
+    $ (\glslFn@(H.GlslFn (_ /\ _ /\ fn)) -> Fn.name fn /\ glslFn) <$> knownFns

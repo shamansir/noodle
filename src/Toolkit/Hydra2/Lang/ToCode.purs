@@ -1,11 +1,11 @@
 module Toolkit.Hydra2.Lang.ToCode where
 
-import Prelude (($), (<$>), (<>))
+import Prelude (($), (<$>), (<>), show)
 import Prelude (show) as Core
 
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
-import Toolkit.Hydra2.Lang.Fn (toFnX)
+import Toolkit.Hydra2.Lang.Fn (toFnX, name, args, Argument(..))
 
 import Data.Array ((:))
 import Data.String as String
@@ -382,3 +382,27 @@ instance ToCode lang WrapRepr where
     toCode :: Proxy lang -> WrapRepr -> String
     toCode _ = case _ of
         _ -> "" -- FIXME: implement
+
+
+instance ToCode JS GlslFn where
+    toCode :: Proxy JS -> GlslFn -> String
+    toCode _ = case _ of
+        GlslFn (kind /\ GlslFnCode code /\ fn) ->
+            "setFunction({\n"
+                <> "name : \'" <> name fn <> "\',\n"
+                <> "type : \'" <> kindToString kind <> "\',\n"
+                <> "inputs : " <> String.joinWith "," (argToJsObj <$> args fn) <> ",\n"
+                <> "glsl : `" <> code
+                <> "`\n)};"
+        where
+            argToJsObj =
+                case _ of
+                    (name /\ T _) -> "{ type: 'sampler2D', default : NaN, name : \'" <> name <> "\' }"
+                    (name /\ V (Number n)) -> "{ type: 'float', default : " <> show n <> ", name : \'" <> name <> "\' }"
+                    (name /\ V val) -> "{ type: 'float', default : " <> toCode javaScript val <> ", name : \'" <> name <> "\' }"
+            kindToString = case _ of
+                FnSrc -> "src"
+                FnCoord -> "coord"
+                FnCombineCoord -> "combineCoord"
+                FnCombine -> "combine"
+                FnColor -> "color"

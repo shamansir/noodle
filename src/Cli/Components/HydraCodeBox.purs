@@ -48,6 +48,7 @@ component =
         , Box.left $ Offset.calc $ Coord.percents 60.0
         , Box.tags true
         , Box.content "."
+        , Box.scrollable true
         , Box.hidden true
         -- , List.items is
 
