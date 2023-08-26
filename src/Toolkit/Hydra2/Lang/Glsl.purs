@@ -14,8 +14,8 @@ import Toolkit.Hydra2.Lang.Fn as Fn
 -- examples are from: https://hydra-book.glitch.me/#/glsl
 
 
-choma :: H.GlslFn
-choma =
+chroma :: H.GlslFn
+chroma =
     H.GlslFn
     $ H.FnColor
     /\ H.GlslFnCode
@@ -26,7 +26,7 @@ choma =
    _c0 += vec4(dg - _c0.g);
    return vec4(_c0.rgb, 1.0 - k);
    """
-   /\ (Fn.Fn $ "color" /\
+   /\ (Fn.Fn $ "chroma" /\
             [ Fn.Argument "radius" $ H.V $ H.Number 4.0
             , Fn.Argument "rot" $ H.V $ H.Number 0.0
             ]
@@ -136,10 +136,23 @@ gradientCAI =
      """
 vec4 buf[8];
 
-vec4 sigmoid(vec4 x) {
-    return 1. / (1. + exp(-x));
-    }
-vec4 cppn_fn(vec2 coordinate, float in0, float in1, float in2) {
+// Normalized pixel coordinates (from -1 to 1)
+//    vec2 uv = fragCoord/iResolution.xy * 2. - 1.;
+//    uv.y *= -1.;
+
+#define buf0sig (1. / (1. + exp(-buf[0])))
+#define buf1sig (1. / (1. + exp(-buf[1])))
+#define buf2sig (1. / (1. + exp(-buf[2])))
+#define buf3sig (1. / (1. + exp(-buf[3])))
+#define buf4sig (1. / (1. + exp(-buf[4])))
+#define buf5sig (1. / (1. + exp(-buf[5])))
+#define buf6sig (1. / (1. + exp(-buf[6])))
+#define buf7sig (1. / (1. + exp(-buf[7])))
+
+vec2 coordinate = _st;
+float in0 = intensity * 0.1 * sin(0.3  * time * speed);
+float in1 = intensity * 0.1 * sin(0.69 * time * speed);
+float in2 = intensity * 0.1 * sin(0.44 * time * speed);
 
 //layer 1 *********************************************************************
 buf[6] = vec4(coordinate.x, coordinate.y, 0.5 + in0, 0.5 + in1);
@@ -156,8 +169,8 @@ buf[1] = mat4(vec4(3.6728961, 3.4556406, 1.2890948, -0.891091), vec4(-1.1152683,
 * buf[7]
 + vec4(0.8421427, -2.9303784, 0.8615611, -1.4667383);
 
-buf[0] = sigmoid(buf[0]);
-buf[1] = sigmoid(buf[1]);
+buf[0] = buf0sig;
+buf[1] = buf1sig;
 // layer 3 ********************************************************************
 buf[2] = mat4(vec4(-4.6698623, -1.0911214, 3.5526507, 6.221412), vec4(2.4494207, 1.6892289, -0.104415156, 1.4818819), vec4(2.4043498, 0.7167579, -2.9262938, 1.390429), vec4(-2.6370418, -0.9565374, 6.378253, -1.2293282))
 * buf[6]
@@ -169,8 +182,8 @@ buf[3] = mat4(vec4(-4.458836, -1.2162573, 6.062383, -2.6813662), vec4(-0.5508846
 + mat4(vec4(-14.606563, -2.0753143, -4.133394, 3.8478277), vec4(-0.4067336, 1.4517672, 0.799758, -0.49689233), vec4(0.0, 0.0, 0.0, 0.0), vec4(0.0, 0.0, 0.0, 0.0))
 * buf[7]
 + vec4(5.6508045, -1.5497028, -2.5208669, 0.6735321);
-buf[2] = sigmoid(buf[2]);
-buf[3] = sigmoid(buf[3]);
+buf[2] = buf2sig;
+buf[3] = buf3sig;
 
 // layer 4 *******************************************************************
 // implemented as a part of layers 2 and 3
@@ -193,8 +206,8 @@ buf[5] = mat4(vec4(0.26124564, 6.4376264, 11.645624, -2.8494694), vec4(-7.999337
 + mat4(vec4(-6.1965737, -7.745663, -7.318301, -1.0420072), vec4(8.857743, 17.735998, -4.3147907, 2.8744252), vec4(-1.0132635, 0.06596738, 4.7702694, 2.134518), vec4(-5.455057, 7.070823, -0.75690097, -3.3348205))
 * buf[3]
 + vec4(-1.4140449, -0.085510485, -7.5318046, -1.6154095);
-buf[4] = sigmoid(buf[4]);
-buf[5] = sigmoid(buf[5]);
+buf[4] = buf4sig;
+buf[5] = buf5sig;
 // layer 7 and 8 ********************************************************************
 buf[6] = mat4(vec4(-15.606012, 5.667645, 15.556916, 5.948859), vec4(-23.811289, -57.638504, 1.2856681, 12.969466), vec4(7.5690074, 0.24498177, -11.368519, -4.0175567), vec4(0.13595544, -12.263578, -36.79266, -0.3176781))
 * buf[0]
@@ -222,8 +235,8 @@ buf[7] = mat4(vec4(-12.8582325, -2.9760349, -2.3565636, 1.3976682), vec4(-24.342
 + mat4(vec4(8.126379, 14.71315, -6.240784, -9.104209), vec4(14.132395, 1.3763108, 4.0824256, -17.804401), vec4(1.3440549, -12.342699, 5.3685203, -2.5711007), vec4(-3.2289567, 41.25341, -24.157688, 51.192547))
 * buf[5]
 + vec4(-18.787123, -29.089497, 4.4133987, 40.31439);
-buf[6] = sigmoid(buf[6]);
-buf[7] = sigmoid(buf[7]);
+buf[6] = buf6sig;
+buf[7] = buf7sig;
 
 // layer 9 ********************************************************************
 buf[0] = mat4(vec4(-0.37223837, 0.21939822, -0.1415498, 0.0), vec4(-2.106104, 0.19532442, 0.22481734, 0.0), vec4(0.4536551, -0.25022385, 0.016776657, 0.0), vec4(0.07051695, -0.11261972, 0.038539752, 0.0))
@@ -243,18 +256,8 @@ buf[0] = mat4(vec4(-0.37223837, 0.21939822, -0.1415498, 0.0), vec4(-2.106104, 0.
 + mat4(vec4(1.2464583, -1.6644447, -2.5020704, 0.0), vec4(-4.505297, -0.79907095, 0.47479317, 0.0), vec4(-46.21531, -15.580507, -4.5369325, 0.0), vec4(1.4000291, 0.4096961, -0.04745275, 0.0))
 * buf[7]
 + vec4(-17.10207, -7.911692, -1.3436741, 0.0);
-buf[0] = sigmoid(buf[0]);
+buf[0] = buf0sig;
 return vec4(buf[0].x , buf[0].y , buf[0].z, 1);
-}
-
-// void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
-    // Normalized pixel coordinates (from -1 to 1)
-//    vec2 uv = fragCoord/iResolution.xy * 2. - 1.;
-//    uv.y *= -1.;
-
-    // Output to screen
-    return cppn_fn(_st, intensity * 0.1 * sin(0.3 * iTime * speed), intensity * 0.1 * sin(0.69 * iTime * speed), intensity * 0.1 * sin(0.44 * iTime * speed));
-//}
      """
     /\ (Fn.Fn $ "gradientCAI" /\
             [ Fn.Argument "speed" $ H.V $ H.Number 1.0
@@ -265,7 +268,7 @@ return vec4(buf[0].x , buf[0].y , buf[0].z, 1);
 
 knownFns :: Array H.GlslFn
 knownFns =
-    [ choma
+    [ chroma
     , sphere
     , sphereDisplacement
     , sphereDisplacement2

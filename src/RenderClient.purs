@@ -90,6 +90,7 @@ render =
           ]
     Error error -> HH.span [ HP.id "status" ] [ HH.text $ "Error: " <> error ]
 
+
 handleAction :: forall cs o m. MonadEffect m => Action -> H.HalogenM State Action cs o m Unit
 handleAction = case _ of
   Initialize -> do

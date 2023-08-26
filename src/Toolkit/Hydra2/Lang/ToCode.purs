@@ -346,7 +346,7 @@ instance ToCode JS TOrV where
 instance ToCode JS Texture where
     toCode :: Proxy JS -> Texture -> String
     toCode _ = case _ of
-        Empty -> "/* empty */"
+        Empty -> "NaN" -- "/* empty */"
         Start (External sn _) -> "src("  <> toCode javaScript sn <> ")"
         Start (Load out) -> "src("  <> toCode javaScript out <> ")"
         Start src -> toCode javaScript src
@@ -401,7 +401,7 @@ instance ToCode JS GlslFn where
                 <> "type : \'" <> kindToString kind <> "\',\n"
                 <> "inputs : [ " <> String.joinWith "," (argToJsObj <$> args fn) <> " ], \n"
                 <> "glsl : `" <> code
-                <> "`\n)};"
+                <> "`\n});"
         where
             argToJsObj =
                 case _ of
