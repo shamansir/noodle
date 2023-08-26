@@ -213,7 +213,11 @@ instance ToCode PS Texture where
             toCode pureScript texture <> "\n\t# " <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnPs name args
-        CallGlslFn fnRef ->
+        CallGlslFn tex fnRef ->
+            case tex of
+                Empty -> ""
+                _ -> toCode pureScript tex <> "\n\t#"
+            <>
             case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnPs name args
 
@@ -362,7 +366,11 @@ instance ToCode JS Texture where
             toCode javaScript texture <> "\n\t." <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnJs name args
-        CallGlslFn fnRef ->
+        CallGlslFn tex fnRef ->
+            case tex of
+                Empty -> ""
+                _ -> toCode javaScript tex <> "\n\t."
+            <>
             case (toFnX fnRef :: String /\ Array TOrV) of
                 name /\ args -> fnJs name args
 
@@ -391,7 +399,7 @@ instance ToCode JS GlslFn where
             "setFunction({\n"
                 <> "name : \'" <> name fn <> "\',\n"
                 <> "type : \'" <> kindToString kind <> "\',\n"
-                <> "inputs : " <> String.joinWith "," (argToJsObj <$> args fn) <> ",\n"
+                <> "inputs : [ " <> String.joinWith "," (argToJsObj <$> args fn) <> " ], \n"
                 <> "glsl : `" <> code
                 <> "`\n)};"
         where

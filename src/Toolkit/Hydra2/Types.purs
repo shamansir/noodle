@@ -103,7 +103,7 @@ data Texture
     | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
-    | CallGlslFn GlslFnRef
+    | CallGlslFn Texture GlslFnRef
 
 
 -- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
@@ -560,9 +560,9 @@ instance Show Texture where
         Filter texture op -> show texture <> " >~ ƒ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
-        CallGlslFn glslFn ->
+        CallGlslFn texture glslFn ->
             case (toFn glslFn :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> "{" <> name <> "}" <> " (" <> show (Array.length args) <> ")" -- use ToFn
+                name /\ args -> show texture <> " >~ / " <> "{" <> name <> "}" <> " (" <> show (Array.length args) <> ")" -- use ToFn
 
 
         {-
@@ -762,7 +762,7 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> " " <> encode texture
         ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with <> " " <> encode mod
         Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
-        CallGlslFn fn -> "FN" -- FIXME: implement
+        CallGlslFn texture fn -> "FN " <> encode texture <> " " -- FIXME: implement
 
 
 instance Encode Blend where
@@ -1046,9 +1046,9 @@ instance PossiblyToFn TOrV Texture where
         Geometry texture gmt ->
             case (toFn gmt :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
-        CallGlslFn fnRef ->
+        CallGlslFn texture fnRef ->
             case (toFn fnRef :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> Just $ name /\ args
+                name /\ args -> Just $ name /\ (args <> [ q "texture" $ T texture ])
 
 
 instance PossiblyToFn Value Fn.KnownFn where

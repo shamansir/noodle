@@ -165,11 +165,13 @@ else instance ToCode JS Command where
 
 
 collectGlslUsage :: forall a. Program a -> Array H.GlslFn
-collectGlslUsage = fold checkForRefs []
+collectGlslUsage = fold checkCmdForRefs []
     where
-        checkForRefs (Continue (H.CallGlslFn fnRef)) = addIfJust $ fnRefToGlslFn fnRef
-        checkForRefs (End _ (H.CallGlslFn fnRef)) =addIfJust $ fnRefToGlslFn fnRef
-        checkForRefs _ = identity
+        checkCmdForRefs (Continue tex) arr = checkTexForRefs tex <> arr
+        checkCmdForRefs (End _ tex) arr = checkTexForRefs tex <> arr
+        checkCmdForRefs _ arr = arr
+        checkTexForRefs (H.CallGlslFn tex fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs tex
+        checkTexForRefs _ = []
         fnRefToGlslFn (H.GlslFnRef fn) = Map.lookup (Fn.name fn) Glsl.knownFnsMap
         addIfJust (Just glslFn) arr = glslFn : arr
         addIfJust Nothing arr = arr

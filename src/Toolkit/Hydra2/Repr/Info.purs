@@ -74,7 +74,7 @@ instance ShortInfo H.Texture where
         H.Filter texture op -> "FLT" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
         H.Geometry texture gmt -> "GMT" -- TODO: expand gmt
-        H.CallGlslFn glsl -> "GLS" -- TODO: expand fn
+        H.CallGlslFn texture glsl -> "GLS" -- TODO: expand fn
 
 
 instance ShortInfo H.TODO where

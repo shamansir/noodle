@@ -10,7 +10,7 @@ import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Lang.Glsl as Glsl
 
 import Data.Tuple.Nested ((/\))
-import Data.SOrder (SOrder, type (:::), T, s1, s6)
+import Data.SOrder (SOrder, type (:::), T, s1, s7)
 import Data.SOrder (empty) as SOrder
 import Data.Array (zipWith) as Array
 import Data.Array ((!!))
@@ -46,23 +46,24 @@ defaultState :: State
 defaultState = H.defaultFn
 
 
-_idx_in   = Fn.Input 0 :: _ "idx"
-_p1_in   = Fn.Input 1 :: _ "p1"
-_p2_in   = Fn.Input 2 :: _ "p2"
-_p3_in   = Fn.Input 3 :: _ "p3"
-_p4_in   = Fn.Input 4 :: _ "p4"
-_p5_in   = Fn.Input 5 :: _ "p5"
+_tex_in  = Fn.Input 0 :: _ "tex"
+_idx_in  = Fn.Input 1 :: _ "idx"
+_p1_in   = Fn.Input 2 :: _ "p1"
+_p2_in   = Fn.Input 3 :: _ "p2"
+_p3_in   = Fn.Input 4 :: _ "p3"
+_p4_in   = Fn.Input 5 :: _ "p4"
+_p5_in   = Fn.Input 6 :: _ "p5"
 
 
 _out_out   = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( idx :: H.Value, p1 :: H.GlslFnArg, p2 :: H.GlslFnArg, p3 :: H.GlslFnArg, p4 :: H.GlslFnArg, p5 :: H.GlslFnArg )
+type Inputs = ( tex :: H.Texture, idx :: H.Value, p1 :: H.GlslFnArg, p2 :: H.GlslFnArg, p3 :: H.GlslFnArg, p4 :: H.GlslFnArg, p5 :: H.GlslFnArg )
 type Outputs = ( out :: H.Texture )
 
 
 inputsOrder :: _
-inputsOrder = s6 _idx_in _p1_in _p2_in _p3_in _p4_in _p5_in
+inputsOrder = s7 _tex_in _idx_in _p1_in _p2_in _p3_in _p4_in _p5_in
 
 
 outputsOrder :: _
@@ -72,6 +73,7 @@ outputsOrder = s1 _out_out
 defaultInputs :: Record Inputs
 defaultInputs =
     { idx : H.None
+    , tex : H.Empty
     , p1 : H.defaultGlslFnArg
     , p2 : H.defaultGlslFnArg
     , p3 : H.defaultGlslFnArg
@@ -100,11 +102,12 @@ family = -- {-> callGlslFn <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-                mbIndex <- P.receive _idx_in
-                case mbIndex of
+                vIndex <- P.receive _idx_in
+                case vIndex of
                     H.Number n -> do
                         fnRef <- collectFuncRef $ floor n
-                        P.send _out_out $ H.CallGlslFn fnRef
+                        tex <- P.receive _tex_in
+                        P.send _out_out $ H.CallGlslFn tex fnRef
                     _ -> pure unit
 
                 pure unit
