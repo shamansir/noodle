@@ -132,9 +132,13 @@ editors =
 
 createEditorFor :: forall m r. MonadEffect m => WrapRepr -> (WrapRepr -> Effect Unit) -> Maybe (RawNodeKey /\ BlessedOp (HasEditors r) m) -- (String /\ Blessed WrapRepr) -- (BlessedOp WrapRepr m)
 createEditorFor (H.Value (H.Number n)) fn = Just $ ENumber.editor n $ fn
+createEditorFor (H.TOrV (H.V (H.Number n))) fn = Just $ ENumber.editor n $ fn
+createEditorFor (H.TOrV _) fn = Just $ ENumber.editor 0.0 $ fn
 createEditorFor _ _ = Nothing
 
 
 editorIdOf :: WrapRepr -> Maybe EditorId -- (BlessedOp WrapRepr m)
 editorIdOf (H.Value (H.Number _)) = Just $ EditorId "number"
+editorIdOf (H.TOrV (H.V (H.Number _))) = Just $ EditorId "number"
+editorIdOf (H.TOrV _) = Just $ EditorId "number"
 editorIdOf _ = Nothing
