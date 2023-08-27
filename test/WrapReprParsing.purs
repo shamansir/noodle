@@ -12,7 +12,7 @@ import Test.Generating (parses)
 
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Repr.Wrap
-import Toolkit.Hydra2.Types (AudioBin(..)) as T
+import Toolkit.Hydra2.Types (AudioBin(..), Values(..)) as T
 
 
 import Data.FromToFile (encode, decode)
@@ -33,6 +33,9 @@ samples =
     , Value Height
     , Value Pi
     , Value $ Fft $ T.AudioBin 1
+    , Value $ VArray (T.Values []) Linear
+    , Value $ VArray (T.Values [ MouseX, Time, Pi, Number 4.5, None, Pi ]) Linear
+    , Value $ VArray (T.Values []) $ Fast $ Number 7.0
     ]
 
 spec :: Spec Unit

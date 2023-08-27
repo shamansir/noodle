@@ -7,8 +7,10 @@ import Prelude
 import Parsing.Extra (marker, foldMarkers, parseBy)
 
 import Control.Plus (empty)
+import Control.Lazy (defer)
 
 import Data.Foldable (foldr)
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (fromFoldable) as Array
 import Data.Maybe (Maybe(..))
@@ -16,7 +18,7 @@ import Data.Either (Either(..))
 
 import Parsing (Parser, runParser)
 import Parsing.String (string)
-import Parsing.Combinators (many1, sepBy1)
+import Parsing.Combinators (many1, sepBy1, between, sepBy)
 import Parsing.String.Basic (space, number, intDecimal)
 import Control.Alt ((<|>))
 
@@ -49,15 +51,16 @@ value :: Parser String T.Value
 value =
     foldMarkers
         [ marker $ "N" /\ T.Number /\ number
-        , marker $ "0" /\ const T.None /\ string "X"
-        , marker $ "U" /\ const T.Undefined /\ string "U"
-        , marker $ "T" /\ const T.Time /\ string "T"
-        , marker $ "X" /\ const T.MouseX /\ string "MX"
-        , marker $ "Y" /\ const T.MouseY /\ string "MY"
-        , marker $ "W" /\ const T.Width /\ string "W"
-        , marker $ "H" /\ const T.Height /\ string "H"
-        , marker $ "P" /\ const T.Pi /\ string "PI"
+        , marker $ "0" /\ const T.None /\ string "V"
+        , marker $ "U" /\ const T.Undefined /\ string "V"
+        , marker $ "T" /\ const T.Time /\ string "V"
+        , marker $ "MX" /\ const T.MouseX /\ string "V"
+        , marker $ "MY" /\ const T.MouseY /\ string "V"
+        , marker $ "W" /\ const T.Width /\ string "V"
+        , marker $ "H" /\ const T.Height /\ string "V"
+        , marker $ "PI" /\ const T.Pi /\ string "V"
         , marker $ "A" /\ T.Fft /\ (parser :: Parser String T.AudioBin)
+        , marker $ "VA" /\ uncurry T.VArray /\ ((/\) <$> (defer \_ -> values) <*> (defer \_ -> ease))
         ]
 
 
@@ -65,9 +68,23 @@ audioBin :: Parser String T.AudioBin
 audioBin = T.AudioBin <$> (string "@" *> intDecimal)
 
 
--- values :: Parser String T.Values
--- values =
+values :: Parser String T.Values
+values =
+    T.Values
+        <$> Array.fromFoldable
+        <$>
+        (between (string "%% ") (string " %%")
+            $ flip sepBy (string " <> ") $ defer $ \f -> value
+        )
 
+
+ease :: Parser String T.Ease
+ease = pure T.Linear
+    {- foldMarkers
+        [ marker $ "LIN" /\ const T.Linear /\ string "E"
+        , marker $ "FST" /\ T.Fast /\ defer \_ -> value
+        ]
+    -}
 
 instance HasParser WrapRepr where
     parser = wrap

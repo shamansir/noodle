@@ -739,17 +739,17 @@ encodeUsingFn a =
 instance Encode Value where
     encode :: Value -> String
     encode = case _ of
-        None -> "0 X"
-        Undefined -> "U U"
+        None -> "0 V"
+        Undefined -> "U V"
         Number n -> "N " <> encode n
         VArray vals ease -> "VA " <> encode vals <> " $$ " <> encode ease <> ""
         Dep fn -> "D " <> encode fn
-        Time -> "T T"
-        MouseX -> "X MX"
-        MouseY -> "Y MY"
-        Width -> "W W"
-        Height -> "H H"
-        Pi -> "P PI"
+        Time -> "T V"
+        MouseX -> "MX V"
+        MouseY -> "MY V"
+        Width -> "W V"
+        Height -> "H V"
+        Pi -> "PI V"
         Fft bin -> "A " <> encode bin
 
 
@@ -853,18 +853,18 @@ instance Encode SourceOptions where
 
 instance Encode Values where
     encode :: Values -> String
-    encode (Values array) = String.joinWith " <> " (encode <$> array) <> " %%"
+    encode (Values array) = "%% " <> String.joinWith " <> " (encode <$> array) <> " %%"
 
 
 instance Encode Ease where
     encode :: Ease -> String
     encode = case _ of
-        Linear -> "LIN"
+        Linear -> "LIN E"
         Fast v -> "FST " <> encode v
         Smooth v -> "SMT " <> encode v
         Fit { low, high } -> "FIT " <> encode low <> " < " <> encode high
         Offset v -> "OFF " <> encode v
-        InOutCubic -> "IOC"
+        InOutCubic -> "IOC E"
 
 
 instance Encode AudioSource where
