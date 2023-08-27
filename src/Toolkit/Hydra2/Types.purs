@@ -739,17 +739,17 @@ encodeUsingFn a =
 instance Encode Value where
     encode :: Value -> String
     encode = case _ of
-        None -> "X"
-        Undefined -> "W"
+        None -> "0 X"
+        Undefined -> "U U"
         Number n -> "N " <> encode n
         VArray vals ease -> "VA " <> encode vals <> " $$ " <> encode ease <> ""
         Dep fn -> "D " <> encode fn
-        Time -> "T"
-        MouseX -> "MX"
-        MouseY -> "MY"
-        Width -> "W"
-        Height -> "H"
-        Pi -> "PI"
+        Time -> "T T"
+        MouseX -> "X MX"
+        MouseY -> "Y MY"
+        Width -> "W W"
+        Height -> "H H"
+        Pi -> "P PI"
         Fft bin -> "A " <> encode bin
 
 

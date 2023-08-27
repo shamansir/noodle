@@ -12,6 +12,7 @@ import Test.Generating (parses)
 
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Repr.Wrap
+import Toolkit.Hydra2.Types (AudioBin(..)) as T
 
 
 import Data.FromToFile (encode, decode)
@@ -23,6 +24,15 @@ samples :: Array WrapRepr
 samples =
     [ Unit unit
     , Value $ Number 2.0
+    , Value None
+    , Value Undefined
+    , Value Time
+    , Value MouseX
+    , Value MouseY
+    , Value Width
+    , Value Height
+    , Value Pi
+    , Value $ Fft $ T.AudioBin 1
     ]
 
 spec :: Spec Unit
