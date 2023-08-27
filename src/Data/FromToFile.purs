@@ -23,8 +23,10 @@ instance Encode Int where
     encode = show
 
 
+{-
 instance Read a => Decode a where
     decode = read
+-}
 
 
 instance Encode String where

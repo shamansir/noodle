@@ -16,13 +16,14 @@ import Toolkit.Hydra2.Repr.Wrap
 
 import Data.FromToFile (encode, decode)
 
+import Toolkit.Hydra2.Repr.Wrap.Parser
+
 
 samples :: Array WrapRepr
 samples =
     [ Unit unit
     , Value $ Number 2.0
     ]
-
 
 spec :: Spec Unit
 spec = do
@@ -34,7 +35,7 @@ spec = do
             prev
             *>
             (it ("works for sample " <> show idx) $
-                case (decode $ encode sample :: Maybe WrapRepr) of
+                case (decodeImpl $ encode sample :: Maybe WrapRepr) of
                     Just decoded ->
                         {-case decoded `maybeEq` sample of
                             Just false -> fail $ encode sample <> " doesn't decode to " <> show sample

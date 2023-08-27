@@ -486,13 +486,13 @@ wrapParser =
 instance Encode WrapRepr where
     encode = case _ of
         Value v -> "V " <> encode v
-        Unit unit -> "U"
+        Unit _ -> "U U"
         Texture t -> "T " <> encode t
         TOrV (H.T t) -> "TT " <> encode t
         TOrV (H.V v) -> "VV" <> encode v
         OutputN outN -> "ON " <> encode outN
         SourceN srcN -> "SN " <> encode srcN
-        TODO todo -> "TODO"
+        TODO _ -> "TODO TODO"
         Context ctx -> "CTX " <> encode ctx
         UpdateFn fn -> "UFN " <> encode fn
         Source src -> "SRC " <> encode src
@@ -507,10 +507,6 @@ instance Encode WrapRepr where
         Target trg -> "TRG " <> encode trg
         Fn fn -> "FN " <> encode fn
         CBS cbs -> "CBS " <> encode cbs
-
-
-instance Read WrapRepr where
-    read = const Nothing
 
 
 maybeEq :: WrapRepr -> WrapRepr -> Maybe Boolean
