@@ -102,6 +102,19 @@ texture =
     foldMarkers
         [ marker $ "EMP" /\ const T.Empty /\ string "T"
         , marker $ "S" /\ T.Start /\ (parser :: Parser String T.Source)
+        , marker $ "F" /\ uncurry T.Filter /\ do
+            cop <- colorOp
+            _ <- string " "
+            tex <- defer \_ -> texture
+            pure $ tex /\ cop
+        , marker $ "M" /\ uncurry T.ModulateWith /\ do
+            what <- defer \_ -> texture
+            _ <- string T.texSep
+            with <- defer \_ -> texture
+            _ <- string T.texSep
+            mod <- modulate
+            _ <- string T.texsEnd
+            pure $ { what, with } /\ mod
         ]
 
 
@@ -152,6 +165,66 @@ ease = --pure T.Linear
         ]
     where
         fit (low /\ high) = T.Fit { low, high }
+
+
+blend :: Parser String T.Blend
+blend = pure T.Diff
+
+
+colorOp :: Parser String T.ColorOp
+colorOp =
+    foldMarkers
+        [ marker $ "R" /\ T.R /\ parseArgs2 \scale offset -> { scale, offset }
+        , marker $ "G" /\ T.G /\ parseArgs2 \scale offset -> { scale, offset }
+        , marker $ "B" /\ T.B /\ parseArgs2 \scale offset -> { scale, offset }
+        , marker $ "A" /\ T.A /\ parseArgs2 \scale offset -> { scale, offset }
+        , marker $ "POSTERIZE" /\ T.Posterize /\ parseArgs2 \bins gamma -> { bins, gamma }
+        , marker $ "SHIFT" /\ T.Shift /\ parseArgs4 \r g b a -> { r, g, b, a }
+        , marker $ "COLOR" /\ T.Color /\ parseArgs4 \r g b a -> { r, g, b, a }
+        , marker $ "LUMA" /\ T.Luma /\ parseArgs2 \threshold tolerance -> { threshold, tolerance }
+        , marker $ "TRESH" /\ T.Thresh /\ parseArgs2 \threshold tolerance -> { threshold, tolerance }
+        , marker $ "INVERT" /\ T.Invert /\ defer \_ -> value
+        , marker $ "CONTRAST" /\ T.Contrast /\ defer \_ -> value
+        , marker $ "BRIGHTNESS" /\ T.Brightness /\ defer \_ -> value
+        , marker $ "SATURATE" /\ T.Saturate /\ defer \_ -> value
+        , marker $ "HUE" /\ T.Brightness /\ defer \_ -> value
+        , marker $ "COLORAMA" /\ T.Saturate /\ defer \_ -> value
+        ]
+
+
+modulate :: Parser String T.Modulate
+modulate =
+    foldMarkers
+        [ marker $ "MODHUE" /\ T.ModHue /\ defer \_ -> value
+        , marker $ "MODULATE" /\ T.Modulate /\ defer \_ -> value
+        , marker $ "MODKALEID" /\ T.ModKaleid /\ parseArgs1 \nSides -> { nSides }
+        , marker $ "MODPIXELATE" /\ T.ModPixelate /\ parseArgs2 \multiple offset -> { multiple, offset }
+        , marker $ "MODREPEAT" /\ T.ModRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
+        , marker $ "MODREPEATX" /\ T.ModRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "MODREPEATY" /\ T.ModRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "MODROTATE" /\ T.ModRotate /\ parseArgs2 \multiple offset ->  { multiple, offset }
+        , marker $ "MODSCALE" /\ T.ModScale /\ parseArgs2 \multiple offset ->  { multiple, offset }
+        , marker $ "MODSCROLL" /\ T.ModScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        , marker $ "MODSCROLLX" /\ T.ModScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
+        , marker $ "MODSCROLLY" /\ T.ModScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
+        ]
+
+
+geometry :: Parser String T.Geometry
+geometry =
+    foldMarkers
+        [marker $ "GKALEID" /\ T.GKaleid /\ parseArgs1 \nSides -> { nSides }
+        , marker $ "GPIXELATE" /\ T.GPixelate /\ parseArgs2 \pixelX pixelY -> { pixelX, pixelY }
+        , marker $ "GREPEAT" /\ T.GRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
+        , marker $ "GREPEATX" /\ T.GRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "GREPEATY" /\ T.GRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "GROTATE" /\ T.GRotate /\ parseArgs2 \angle speed ->  { angle, speed }
+        , marker $ "GSCALE" /\ T.GScale /\ parseArgs5 \amount xMult yMult offsetX offsetY ->  { amount, xMult, yMult, offsetX, offsetY }
+        , marker $ "GSCROLL" /\ T.GScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        , marker $ "GSCROLLX" /\ T.GScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
+        , marker $ "GSCROLLY" /\ T.GScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
+        ]
+
 
 
 instance HasParser WrapRepr where
@@ -216,3 +289,8 @@ parseArgs3 f =
 parseArgs4 :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
 parseArgs4 f =
     parseArgsHelper 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3
+
+
+parseArgs5 :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
+parseArgs5 f =
+    parseArgsHelper 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3  <*> arr !! 4

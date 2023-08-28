@@ -1,6 +1,7 @@
 module Toolkit.Hydra2.Types where
 
 import Prelude
+import Debug as Debug
 
 import Effect (Effect)
 import Data.Map (Map)
@@ -722,14 +723,22 @@ argsEnd :: String
 argsEnd = ";"
 
 
+texSep :: String
+texSep = ":::"
+
+
+texsEnd :: String
+texsEnd = "<<<"
+
+
 encodeUsingFn :: forall a. ToFn Value a => a -> String
 encodeUsingFn a =
-    case (toFn a :: String /\ Array (Fn.Argument Value)) of
+    case toFn a :: String /\ Array (Fn.Argument Value) of
         name /\ args ->
             if Array.length args > 0 then
-                String.toUpper name
-            else
                 String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
+            else
+                String.toUpper name
 
 
 {-
@@ -768,7 +777,7 @@ instance Encode Texture where
         Start src -> "S " <> encode src
         BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with <> " " <> encode blend
         Filter texture op -> "F " <> encode op <> " " <> encode texture
-        ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with <> " " <> encode mod
+        ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
         Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
         CallGlslFn texture fn -> "FN " <> encode texture <> " " -- FIXME: implement
 

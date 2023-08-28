@@ -44,10 +44,32 @@ samples =
     , Texture $ Start $ Noise { scale : Number 1.5, offset : MouseX }
     , Texture $ Start $ Solid { r : Number 1.5, g : Pi, b : Width, a : Time }
     , Texture $ Start $ Voronoi { scale : Width, speed : Pi, blending : MouseX }
+    , Texture $ Start $ Osc { frequency : Number 60.0, offset : Pi, sync : Width }
     , Texture $ Start $ Load Output3
     , Texture $ Start $ External Source0 $ Camera 2
     , Texture $ Start $ External Source0 Video
     , Texture $ Start $ External Source0 $ Sketch "foobar"
+    , Texture $ Filter Empty $ Posterize { bins : Time, gamma : Height }
+    , Texture $ Filter (Start $ Load Output2) $ Shift { r : Number 1.5, g : Pi, b : Width, a : Time }
+    , Texture $ Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
+    , Texture
+        $ ModulateWith
+            { what : Empty
+            , with : Start $ Osc { frequency : Number 60.0, offset : Number 0.0, sync : Number 1.0 }
+            }
+        $ ModKaleid { nSides : Number 7.0 }
+    , Texture
+        $ ModulateWith
+            { what : Start $ Osc { frequency : Number 60.0, offset : Pi, sync : Number 1.0 }
+            , with : Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
+            }
+        $ ModScroll { scrollX : Number 2.0, speedX : Number 1.0, scrollY : Number 0.5, speedY : Pi }
+    , Texture
+        $ ModulateWith { what : Empty, with : Empty }
+        $ ModRepeatX { offset : Number 2.5, reps : Number 1.0 }
+    , Texture
+        $ ModulateWith { what : Empty, with : Empty }
+        $ ModScrollY { scrollY : Number 2.5, speed : Number 1.0 }
     ]
 
 spec :: Spec Unit
