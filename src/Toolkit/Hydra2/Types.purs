@@ -724,11 +724,11 @@ argsEnd = ";"
 
 
 texSep :: String
-texSep = ":::"
+texSep = " % "
 
 
 texsEnd :: String
-texsEnd = "<<<"
+texsEnd = " %"
 
 
 encodeUsingFn :: forall a. ToFn Value a => a -> String
@@ -738,7 +738,7 @@ encodeUsingFn a =
             if Array.length args > 0 then
                 String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
             else
-                String.toUpper name
+                String.toUpper name <> " " <> argsEnd
 
 
 {-
@@ -775,11 +775,11 @@ instance Encode Texture where
     encode = case _ of
         Empty -> "EMP T"
         Start src -> "S " <> encode src
-        BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with <> " " <> encode blend
-        Filter texture op -> "F " <> encode op <> " " <> encode texture
+        BlendOf { what, with } blend -> "B " <> encode what <> texSep <> encode with <> texSep <> encode blend <> texsEnd
+        Filter texture op -> "F " <> encode op <> texSep <> encode texture <> texsEnd
         ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
-        Geometry texture gmt -> "G " <> encode texture <> " " <> encode gmt
-        CallGlslFn texture fn -> "FN " <> encode texture <> " " -- FIXME: implement
+        Geometry texture gmt -> "G " <> encode texture <> texSep <> encode gmt <> texsEnd
+        CallGlslFn texture fn -> "FN " <> encode texture <> texSep -- FIXME: implement
 
 
 instance Encode Blend where
@@ -989,8 +989,8 @@ instance ToFn Value Blend where
         Add amount -> "add" /\ [ q "amount" amount ]
         Sub amount -> "sub" /\ [ q "amount" amount ]
         Mult amount -> "mult" /\ [ q "amount" amount ]
+        Layer amount -> "layer" /\ [ q "amount" amount ]
         Diff -> "diff" /\ []
-        Layer _ -> "layer" /\ []
         Mask -> "mask" /\ []
 
 

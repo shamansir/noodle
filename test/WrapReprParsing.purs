@@ -55,6 +55,12 @@ samples =
     , Texture
         $ ModulateWith
             { what : Empty
+            , with : Empty
+            }
+        $ ModKaleid { nSides : Number 7.0 }
+    , Texture
+        $ ModulateWith
+            { what : Empty
             , with : Start $ Osc { frequency : Number 60.0, offset : Number 0.0, sync : Number 1.0 }
             }
         $ ModKaleid { nSides : Number 7.0 }
@@ -66,10 +72,28 @@ samples =
         $ ModScroll { scrollX : Number 2.0, speedX : Number 1.0, scrollY : Number 0.5, speedY : Pi }
     , Texture
         $ ModulateWith { what : Empty, with : Empty }
+        $ ModRepeat { repeatX : Number 2.5, repeatY : Number 1.0, offsetX : Number 5.0, offsetY : Number 2.0 }
+    , Texture
+        $ ModulateWith { what : Empty, with : Empty }
         $ ModRepeatX { offset : Number 2.5, reps : Number 1.0 }
     , Texture
         $ ModulateWith { what : Empty, with : Empty }
         $ ModScrollY { scrollY : Number 2.5, speed : Number 1.0 }
+    , Texture
+        $ ModulateWith { what : Empty, with : Empty }
+        $ ModScroll { scrollY : Number 2.5, scrollX : Number 1.0, speedY : Number 5.0, speedX : Number 2.0 }
+    , Texture
+        $ BlendOf { what : Empty, with : Empty }
+        $ Diff
+    , Texture
+        $ BlendOf { what : Start $ Load Output3, with : Filter Empty $ Posterize { bins : Time, gamma : Height } }
+        $ Diff
+    , Texture
+        $ BlendOf { what : Empty, with : Empty }
+        $ Layer $ Number 2.0
+    , Texture
+        $ BlendOf { what : Empty, with : Empty }
+        $ Mult $ Number 0.5
     ]
 
 spec :: Spec Unit
