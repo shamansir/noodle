@@ -20,6 +20,7 @@ import Data.FromToFile (encode, decode)
 import Toolkit.Hydra2.Repr.Wrap.Parser
 
 
+-- TODO: use fuzzy generator
 samples :: Array WrapRepr
 samples =
     [ Unit unit
@@ -42,8 +43,11 @@ samples =
     , Texture $ Start $ Gradient { speed : Number 2.0 }
     , Texture $ Start $ Noise { scale : Number 1.5, offset : MouseX }
     , Texture $ Start $ Solid { r : Number 1.5, g : Pi, b : Width, a : Time }
+    , Texture $ Start $ Voronoi { scale : Width, speed : Pi, blending : MouseX }
     , Texture $ Start $ Load Output3
     , Texture $ Start $ External Source0 $ Camera 2
+    , Texture $ Start $ External Source0 Video
+    , Texture $ Start $ External Source0 $ Sketch "foobar"
     ]
 
 spec :: Spec Unit
@@ -55,7 +59,7 @@ spec = do
         (\idx prev sample -> do
             prev
             *>
-            (it ("works for sample " <> show idx) $
+            (it ("works for sample " <> show idx <> " : " <> show sample) $
                 case (decodeImpl $ encode sample :: Maybe WrapRepr) of
                     Just decoded ->
                         {-case decoded `maybeEq` sample of

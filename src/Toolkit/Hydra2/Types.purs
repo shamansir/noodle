@@ -714,6 +714,14 @@ instance Show RenderTarget where
     show (Output oN) = show oN
 
 
+argSep :: String
+argSep = ";"
+
+
+argsEnd :: String
+argsEnd = ";"
+
+
 encodeUsingFn :: forall a. ToFn Value a => a -> String
 encodeUsingFn a =
     case (toFn a :: String /\ Array (Fn.Argument Value)) of
@@ -721,7 +729,7 @@ encodeUsingFn a =
             if Array.length args > 0 then
                 String.toUpper name
             else
-                String.toUpper name <> " " <> String.joinWith " " (encode <$> Fn.argValue <$> args)
+                String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
 
 
 {-
@@ -756,7 +764,7 @@ instance Encode Value where
 instance Encode Texture where
     encode :: Texture -> String
     encode = case _ of
-        Empty -> "EMP"
+        Empty -> "EMP T"
         Start src -> "S " <> encode src
         BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with <> " " <> encode blend
         Filter texture op -> "F " <> encode op <> " " <> encode texture
@@ -803,23 +811,23 @@ instance Encode UpdateFn where
 instance Encode ExtSource where
     encode :: ExtSource -> String
     encode = case _ of
-        Camera n -> "C" <> show n
-        Sketch name -> "SK" <> show name
-        Video -> "V"
-        Unclear -> "U"
+        Camera n -> "C " <> show n
+        Sketch name -> "SK " <> name
+        Video -> "V X"
+        Unclear -> "U X"
 
 
 instance Encode Source where
     encode :: Source -> String
     encode = case _ of
         Load outputN -> "O " <> encode outputN
-        External sourceN def -> "X " <> encode sourceN <> " " <> encode def
-        Gradient { speed } -> "G " <> encode speed
-        Noise { scale, offset } -> "N " <> encode scale <> " " <> encode offset
-        Osc { frequency, sync, offset } -> "OSC " <> encode frequency <> " " <> encode sync <> " " <> encode offset
-        Shape { sides, radius, smoothing } -> "SHP " <> encode sides <> " " <> encode radius <> " " <> encode smoothing
-        Solid { r, g, b, a } -> "S " <> encode r <> " " <> encode g <> " " <> encode b <> " " <> encode a
-        Voronoi { scale, speed, blending } -> "V " <> encode scale <> " " <> encode speed <> " " <> encode blending
+        External sourceN def -> "X " <> encode sourceN <> argSep <> encode def <> argsEnd
+        Gradient { speed } -> "G " <> encode speed <> argsEnd
+        Noise { scale, offset } -> "N " <> encode scale <> argSep <> encode offset <> argsEnd
+        Osc { frequency, sync, offset } -> "OSC " <> encode frequency <> argSep <> encode sync <> argSep <> encode offset <> argsEnd
+        Shape { sides, radius, smoothing } -> "SHP " <> encode sides <> argSep <> encode radius <> argSep <> encode smoothing <> argsEnd
+        Solid { r, g, b, a } -> "S " <> encode r <> argSep <> encode g <> argSep <> encode b <> argSep <> encode a <> argsEnd
+        Voronoi { scale, speed, blending } -> "V " <> encode scale <> argSep <> encode speed <> argSep <> encode blending <> argsEnd
 
 
 instance Encode RenderTarget where
