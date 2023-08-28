@@ -124,6 +124,12 @@ texture =
             bl <- blend
             _ <- string T.texsEnd
             pure $ { what, with } /\ bl
+        , marker $ "G" /\ uncurry T.Geometry /\ do
+            tex <- defer \_ -> texture
+            _ <- string T.texSep
+            geo <- geometry
+            _ <- string T.texsEnd
+            pure $ tex /\ geo
         ]
 
 
@@ -231,16 +237,16 @@ modulate =
 geometry :: Parser String T.Geometry
 geometry =
     foldMarkers
-        [ marker $ "GKALEID" /\ T.GKaleid /\ parseArgs1 \nSides -> { nSides }
-        , marker $ "GPIXELATE" /\ T.GPixelate /\ parseArgs2 \pixelX pixelY -> { pixelX, pixelY }
-        , marker $ "GREPEATX" /\ T.GRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "GREPEATY" /\ T.GRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "GREPEAT" /\ T.GRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
-        , marker $ "GROTATE" /\ T.GRotate /\ parseArgs2 \angle speed ->  { angle, speed }
-        , marker $ "GSCALE" /\ T.GScale /\ parseArgs5 \amount xMult yMult offsetX offsetY ->  { amount, xMult, yMult, offsetX, offsetY }
-        , marker $ "GSCROLLX" /\ T.GScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
-        , marker $ "GSCROLLY" /\ T.GScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
-        , marker $ "GSCROLL" /\ T.GScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        [ marker $ "KALEID" /\ T.GKaleid /\ parseArgs1 \nSides -> { nSides }
+        , marker $ "PIXELATE" /\ T.GPixelate /\ parseArgs2 \pixelX pixelY -> { pixelX, pixelY }
+        , marker $ "REPEATX" /\ T.GRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "REPEATY" /\ T.GRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
+        , marker $ "REPEAT" /\ T.GRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
+        , marker $ "ROTATE" /\ T.GRotate /\ parseArgs2 \angle speed ->  { angle, speed }
+        , marker $ "SCALE" /\ T.GScale /\ parseArgs5 \amount xMult yMult offsetX offsetY ->  { amount, xMult, yMult, offsetX, offsetY }
+        , marker $ "SCROLLX" /\ T.GScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
+        , marker $ "SCROLLY" /\ T.GScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
+        , marker $ "SCROLL" /\ T.GScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
         ]
 
 

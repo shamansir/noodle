@@ -94,6 +94,18 @@ samples =
     , Texture
         $ BlendOf { what : Empty, with : Empty }
         $ Mult $ Number 0.5
+    , Texture
+        $ Geometry Empty
+        $ GKaleid { nSides : Number 7.0 }
+    , Texture
+        $ Geometry Empty
+        $ GRepeatX { reps : Pi, offset : Number 3.0 }
+    , Texture
+        $ Geometry (Start $ Load Output3)
+        $ GRepeatY { reps : Number 2.0, offset : Width }
+    , Texture
+        $ Geometry (Start $ Load Output1)
+        $ GRepeat { repeatX : Number 2.5, repeatY : Number 1.0, offsetX : Number 5.0, offsetY : Number 2.0 }
     ]
 
 spec :: Spec Unit
