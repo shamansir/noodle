@@ -60,7 +60,7 @@ value =
         , marker $ "H" /\ const T.Height /\ string "V"
         , marker $ "PI" /\ const T.Pi /\ string "V"
         , marker $ "A" /\ T.Fft /\ (parser :: Parser String T.AudioBin)
-        , marker $ "VA" /\ uncurry T.VArray /\ ((/\) <$> (defer \_ -> values) <*> (defer \_ -> ease))
+        , marker $ "VA" /\ uncurry T.VArray /\ ((/\) <$> (defer \_ -> values) <*> (string " $$ " *> defer \_ -> ease))
         ]
 
 
@@ -79,12 +79,23 @@ values =
 
 
 ease :: Parser String T.Ease
-ease = pure T.Linear
-    {- foldMarkers
+ease = --pure T.Linear
+    foldMarkers
         [ marker $ "LIN" /\ const T.Linear /\ string "E"
         , marker $ "FST" /\ T.Fast /\ defer \_ -> value
+        , marker $ "SMT" /\ T.Smooth /\ defer \_ -> value
+        , marker $ "OFF" /\ T.Offset /\ defer \_ -> value
+        , marker $ "IOC" /\ const T.InOutCubic /\ string "E"
+        , marker $ "FIT" /\ fit /\ do
+                                low <- value
+                                _ <- string " < "
+                                high <- value
+                                pure $ low /\ high
+
         ]
-    -}
+    where
+        fit (low /\ high) = T.Fit { low, high }
+
 
 instance HasParser WrapRepr where
     parser = wrap

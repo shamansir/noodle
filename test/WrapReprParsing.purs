@@ -36,6 +36,14 @@ samples =
     , Value $ VArray (T.Values []) Linear
     , Value $ VArray (T.Values [ MouseX, Time, Pi, Number 4.5, None, Pi ]) Linear
     , Value $ VArray (T.Values []) $ Fast $ Number 7.0
+    , Value $ VArray (T.Values []) $ Fit { low : Number 1.0, high : Number 2.5 }
+    -- , Value $ Dep $ VExpr $ Val $ Number 3.0
+    , Texture Empty
+    , Texture $ Start $ Gradient { speed : Number 2.0 }
+    , Texture $ Start $ Noise { scale : Number 1.5, offset : MouseX }
+    , Texture $ Start $ Solid { r : Number 1.5, g : Pi, b : Width, a : Time }
+    , Texture $ Start $ Load Output3
+    , Texture $ Start $ External Source0 $ Camera 2
     ]
 
 spec :: Spec Unit
