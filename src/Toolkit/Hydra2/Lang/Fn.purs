@@ -7,6 +7,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Tuple (snd, uncurry) as Tuple
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
+import Data.Array (length) as Array
 
 
 -- import Toolkit.Hydra2.Types
@@ -101,6 +102,10 @@ argValue (Argument _ x) = x
 
 argName :: forall x. Argument x -> ArgumentName
 argName (Argument name _) = name
+
+
+argsCount :: forall x. Fn x -> Int
+argsCount (Fn (_ /\ args)) = Array.length args
 
 
 dearg :: forall x. Argument x -> ArgumentName /\ x

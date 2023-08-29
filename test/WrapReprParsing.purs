@@ -2,6 +2,9 @@ module Test.WrapReprParsing where
 
 import Prelude
 
+import Effect.Console as Console
+import Effect.Class (liftEffect)
+
 import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -131,7 +134,6 @@ samples =
         nnn
         bbb282828///
         """
-    {- TODO
     , W.GlslFn
         $ T.GlslFn
         $ FnSrc
@@ -141,20 +143,17 @@ test
 multiline
 code
             """
-            /\ Lang.Fn ("aaa" /\ [])
-    -}
+            /\ Lang.Fn ("abc" /\ [])
     {- TODO
     , Texture
         $ CallGlslFn Empty
         $ GlslFnRef $ Lang.Fn ("aaa" /\ [])
     -}
-    {- TODO
     , W.GlslFn
         $ T.GlslFn
         $ FnSrc
             /\ GlslFnCode "foo\nbar\nbzz"
-            /\ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
-    -}
+            /\ Lang.Fn ("axz" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
     {- TODO
     , Texture
         $ CallGlslFn (Filter Empty $ Posterize { bins : Time, gamma : Height })
@@ -179,11 +178,13 @@ spec = do
             *>
             (it ("works for sample " <> show idx <> " : " <> show sample) $
                 case (decodeImpl $ encode sample :: Maybe WrapRepr) of
-                    Just decoded ->
+                    Just decoded -> do
                         {-case decoded `maybeEq` sample of
                             Just false -> fail $ encode sample <> " doesn't decode to " <> show sample
                             Just true -> pure unit
-                            Nothing -> -} (encode decoded) `shouldEqual` (encode sample)
+                            Nothing -> -}
+                            -- liftEffect $ Console.log $ encode sample
+                            (encode decoded) `shouldEqual` (encode sample)
                     Nothing -> fail $ encode sample <> " doesn't decode to " <> show sample
             )
         )

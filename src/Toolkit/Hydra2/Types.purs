@@ -1,33 +1,34 @@
 module Toolkit.Hydra2.Types where
 
 import Prelude
-import Debug as Debug
 
 import Effect (Effect)
-import Data.Map (Map)
 
 import Color (Color)
 import Color (rgb, black) as Color
-import Cli.Palette.Set.X11 as X11
 
-import Data.Maybe (fromMaybe)
+import Data.Array ((:))
+import Data.Array (length) as Array
+import Data.Either (Either(..))
+import Data.Map (Map)
 import Data.Mark (class Mark)
+import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..))
+import Data.Maybe (fromMaybe)
 import Data.String as String
 import Data.String.Extra as String
-import Data.FromToFile (class Encode, encode, class Decode, decode)
-import Data.Array (length) as Array
-
-import Data.Tuple.Nested (type (/\), (/\))
 import Data.Tuple (snd) as Tuple
-import Data.Maybe (Maybe(..))
-import Data.Array ((:))
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.FromToFile (class Encode, encode, class Decode, decode)
 
+import Type.Proxy (Proxy(..))
+
+import Cli.Palette.Set.X11 as X11
 import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
-import Toolkit.Hydra2.Lang.Fn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q)
-import Toolkit.Hydra2.Lang.Fn as Fn
+import Toolkit.Hydra2.Lang.Fn (Fn) as Lang
+import Toolkit.Hydra2.Lang.Fn (class PossiblyToFn, class ToFn, arg, possiblyToFn, q, toFn)
+import Toolkit.Hydra2.Lang.Fn (empty, Argument(..), name, argName, argValue, argsCount, nameOf, KnownFn) as Fn
 
 
 data TODO = TODO
@@ -252,10 +253,10 @@ type GlslFnArg = TOrV
 newtype GlslFnCode = GlslFnCode String
 
 
-newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Fn.Fn GlslFnArg) -- holds default value in every argument
+newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Lang.Fn GlslFnArg) -- holds default value in every argument
 
 
-newtype GlslFnRef = GlslFnRef (Fn.Fn GlslFnArg) -- should the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Lang.Fn GlslFnArg) -- should the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -487,9 +488,15 @@ instance Mark CanBeSource where
         Output _ -> X11.blue
     -}
 
-showUsingFn :: forall a. ToFn Value a => a -> String
-showUsingFn a =
-    case (toFn a :: String /\ Array (Fn.Argument Value)) of
+instance Show TOrV where
+    show = case _ of
+        T tex -> show tex
+        V val -> show val
+
+
+showUsingFn :: forall arg x. Show arg => ToFn arg x => Proxy arg -> x -> String
+showUsingFn _ a =
+    case (toFn a :: String /\ Array (Fn.Argument arg)) of
         name /\ args ->
             if Array.length args > 0 then
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
@@ -497,9 +504,17 @@ showUsingFn a =
                 "<" <> String.pascalCase name <> ">"
 
 
-showUsingPossiblyFn :: forall a. PossiblyToFn Value a => (a -> String) -> a -> String
-showUsingPossiblyFn fallback a =
-    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument Value))) of
+showUsingFnV :: forall x. ToFn Value x => x -> String
+showUsingFnV = showUsingFn (Proxy :: _ Value)
+
+
+showUsingFnTOrV :: forall x. ToFn TOrV x => x -> String
+showUsingFnTOrV = showUsingFn (Proxy :: _ TOrV)
+
+
+showUsingPossiblyFn :: forall arg x. Show arg => PossiblyToFn arg x => Proxy arg -> (x -> String) -> x -> String
+showUsingPossiblyFn _ fallback a =
+    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument arg))) of
         Just (name /\ args) ->
             if Array.length args > 0 then
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
@@ -507,6 +522,10 @@ showUsingPossiblyFn fallback a =
                  "<" <> String.pascalCase name <> ">"
         Nothing ->
             fallback a
+
+
+showUsingPossiblyFnV :: forall x. PossiblyToFn Value x => (x -> String) -> x -> String
+showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) fallback a
 
 
 instance Show ValueExpr where
@@ -582,22 +601,22 @@ instance Show Texture where
 
 instance Show Blend where
     show :: Blend -> String
-    show = showUsingFn
+    show = showUsingFnV
 
 
 instance Show ColorOp where
     show :: ColorOp -> String
-    show = showUsingFn
+    show = showUsingFnV
 
 
 instance Show Modulate where
     show :: Modulate -> String
-    show = showUsingFn
+    show = showUsingFnV
 
 
 instance Show Geometry where
     show :: Geometry -> String
-    show = showUsingFn
+    show = showUsingFnV
 
 
 instance Show TODO where
@@ -617,7 +636,7 @@ instance Show UpdateFn where
 
 instance Show Source where
     show :: Source -> String
-    show = showUsingPossiblyFn $ \s -> case s of
+    show = showUsingPossiblyFnV $ \s -> case s of
         Gradient { speed } -> "Gradient " <> show speed
         Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
         Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset
@@ -633,9 +652,19 @@ instance Show Url where
     show (Url url) = "Url: " <> show url
 
 
+instance Show GlslFnKind where
+    show :: GlslFnKind -> String
+    show = case _ of
+        FnSrc -> "Source"
+        FnCoord -> "Coord"
+        FnCombineCoord -> "CombineCoord"
+        FnCombine -> "Combine"
+        FnColor -> "Color"
+
+
 instance Show GlslFn where
     show :: GlslFn -> String
-    show (GlslFn (_ /\ _ /\ fn)) = "Define Function <" <> Fn.name fn <> ">"
+    show (GlslFn (kind /\ _ /\ fn)) = "Define Function {" <> show kind <> "} " <> show kind <> " " <> showUsingFnTOrV fn
 
 
 instance Show GlslFnRef where
@@ -753,6 +782,39 @@ encodeUsingFn a =
 -}
 
 
+unparsedFnStart :: String
+unparsedFnStart = "¤■"
+
+unparsedFnTerminals :: Array Char
+unparsedFnTerminals = [ '¤', '■' ]
+
+unparsedFnEnd :: String
+unparsedFnEnd = "■¤"
+
+
+vexprStart :: String
+vexprStart = "```"
+
+vexprTerminals :: Array Char
+vexprTerminals = [ '`' ]
+
+vexprEnd :: String
+vexprEnd = "```"
+
+
+glslMarker :: String
+glslMarker = "<GLSL>"
+
+glslStart :: String
+glslStart = "¤¤¤¤■"
+
+glslTerminals :: Array Char
+glslTerminals = [ '¤', '■' ]
+
+glslEnd :: String
+glslEnd = "■¤¤¤¤"
+
+
 instance Encode Value where
     encode :: Value -> String
     encode = case _ of
@@ -779,7 +841,7 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> texSep <> encode texture <> texsEnd
         ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
         Geometry texture gmt -> "G " <> encode texture <> texSep <> encode gmt <> texsEnd
-        CallGlslFn texture fn -> "FN " <> encode texture <> texSep -- FIXME: implement
+        CallGlslFn texture fn -> "FN " <> encode texture <> texSep -- <> encode fn <> texsEnd
 
 
 instance Encode Blend where
@@ -850,9 +912,34 @@ instance Encode Url where
     encode (Url url) = encode url
 
 
+instance Encode GlslFnKind where
+    encode :: GlslFnKind -> String
+    encode = case _ of
+        FnSrc -> "SRC"
+        FnCoord -> "CRD"
+        FnCombineCoord -> "CCR"
+        FnCombine -> "CMB"
+        FnColor -> "CLR"
+
+
+instance Encode TOrV where
+    encode :: TOrV -> String
+    encode = case _ of
+        T tex -> "TT " <> encode tex
+        V val -> "VV " <> encode val
+
+
 instance Encode GlslFn where
     encode :: GlslFn -> String
-    encode = const "GLSL" -- TODO
+    encode (GlslFn (kind /\ GlslFnCode code /\ fn))
+        = encode kind <> " "
+            <> glslStart <> encode code <> glslEnd
+            <> " " <> encodeFnWithArgNames fn
+
+
+{- instance Encode (Lang.Fn TOrV) where
+    encode :: Lang.Fn TOrV -> String
+    encode _ = "" -}
 
 
 instance Encode CanBeSource where
@@ -929,38 +1016,6 @@ instance Encode ValueExpr where
                 )
         Brackets expr -> "( " <> show expr <> " )"
 
-
-unparsedFnStart :: String
-unparsedFnStart = "¤■"
-
-unparsedFnTerminals :: Array Char
-unparsedFnTerminals = [ '¤', '■' ]
-
-unparsedFnEnd :: String
-unparsedFnEnd = "■¤"
-
-
-vexprStart :: String
-vexprStart = "```"
-
-vexprTerminals :: Array Char
-vexprTerminals = [ '`' ]
-
-vexprEnd :: String
-vexprEnd = "```"
-
-
-glslMarker :: String
-glslMarker = "<GLSL>"
-
-glslStart :: String
-glslStart = "```"
-
-glslTerminal :: Array Char
-glslTerminal = [ '`' ]
-
-glslEnd :: String
-glslEnd = "```"
 
 
 instance Encode Fn where
@@ -1104,6 +1159,19 @@ instance PossiblyToFn Value Fn.KnownFn where
     possiblyToFn :: Fn.KnownFn -> Maybe (String /\ Array (Fn.Argument Value))
     possiblyToFn = Fn.nameOf >>> fromKnownFn
 
+
+encodeFnWithArgNames :: forall arg. Encode arg => Lang.Fn arg -> String
+encodeFnWithArgNames fn =
+    case (toFn fn :: String /\ Array (Fn.Argument arg)) of
+        name /\ args ->
+            if Array.length args > 0 then
+                name <> " " <> show (Array.length args) <> " " <> String.joinWith argSep (encodeArg <$> args) <> argsEnd
+            else
+                name <> " " <> show (Array.length args) <> " " <> argsEnd
+    where
+        encodeArg arg =
+            Fn.argName arg <> "::" <> encode (Fn.argValue arg)
+    -- Fn.name fn
 
 
 -- TODO: probably duplicates something

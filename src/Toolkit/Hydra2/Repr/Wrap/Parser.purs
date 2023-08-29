@@ -27,6 +27,8 @@ import Control.Alt ((<|>))
 import Toolkit.Hydra2.Repr.Wrap
 import Toolkit.Hydra2.Types as T
 import Toolkit.Hydra2.Lang.SketchParser.Utils as U
+import Toolkit.Hydra2.Lang.Fn (Fn, fnOf) as Lang
+import Toolkit.Hydra2.Lang.Fn (empty) as Fn
 
 
 -- newtype HasParser = HasParser WrapRepr
@@ -50,6 +52,7 @@ wrap =
         , marker $ "T" /\ Texture /\ texture
         , marker $ "V" /\ Value /\ value
         , marker $ "FN" /\ Fn /\ fn
+        , marker $ "GLSL" /\ GlslFn /\ glsl
         ]
 
 
@@ -140,12 +143,12 @@ texture =
 source :: Parser String T.Source
 source =
     foldMarkers
-        [ marker $ "S" /\ T.Solid /\ parseArgs4 \r g b a -> { r, g, b, a }
-        , marker $ "G" /\ T.Gradient /\ parseArgs1 \speed -> { speed }
-        , marker $ "N" /\ T.Noise /\ parseArgs2 \scale offset -> { scale, offset }
-        , marker $ "OSC" /\ T.Osc /\ parseArgs3 \frequency sync offset -> { frequency, sync, offset }
-        , marker $ "SCP" /\ T.Shape /\ parseArgs3 \sides radius smoothing -> { sides, radius, smoothing }
-        , marker $ "V" /\ T.Voronoi /\ parseArgs3 \scale speed blending -> { scale, speed, blending }
+        [ marker $ "S" /\ T.Solid /\ parseArgs4V \r g b a -> { r, g, b, a }
+        , marker $ "G" /\ T.Gradient /\ parseArgs1V \speed -> { speed }
+        , marker $ "N" /\ T.Noise /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "OSC" /\ T.Osc /\ parseArgs3V \frequency sync offset -> { frequency, sync, offset }
+        , marker $ "SCP" /\ T.Shape /\ parseArgs3V \sides radius smoothing -> { sides, radius, smoothing }
+        , marker $ "V" /\ T.Voronoi /\ parseArgs3V \scale speed blending -> { scale, speed, blending }
         , marker $ "O" /\ T.Load /\ outputN
         , marker $ "X" /\ uncurry T.External /\ do
             src <- sourceN
@@ -189,11 +192,11 @@ ease = --pure T.Linear
 blend :: Parser String T.Blend
 blend =
     foldMarkers
-        [ marker $ "BLEND" /\ T.Blend /\ parseArgs1 identity
-        , marker $ "ADD" /\ T.Add /\ parseArgs1 identity
-        , marker $ "LAYER" /\ T.Layer /\ parseArgs1 identity
-        , marker $ "MULT" /\ T.Mult /\ parseArgs1 identity
-        , marker $ "SUB" /\ T.Sub /\ parseArgs1 identity
+        [ marker $ "BLEND" /\ T.Blend /\ parseArgs1V identity
+        , marker $ "ADD" /\ T.Add /\ parseArgs1V identity
+        , marker $ "LAYER" /\ T.Layer /\ parseArgs1V identity
+        , marker $ "MULT" /\ T.Mult /\ parseArgs1V identity
+        , marker $ "SUB" /\ T.Sub /\ parseArgs1V identity
         , marker $ "DIFF" /\ const T.Diff /\ noArgs unit
         , marker $ "MASK" /\ const T.Mask /\ noArgs unit
         ]
@@ -202,15 +205,15 @@ blend =
 colorOp :: Parser String T.ColorOp
 colorOp =
     foldMarkers
-        [ marker $ "R" /\ T.R /\ parseArgs2 \scale offset -> { scale, offset }
-        , marker $ "G" /\ T.G /\ parseArgs2 \scale offset -> { scale, offset }
-        , marker $ "B" /\ T.B /\ parseArgs2 \scale offset -> { scale, offset }
-        , marker $ "A" /\ T.A /\ parseArgs2 \scale offset -> { scale, offset }
-        , marker $ "POSTERIZE" /\ T.Posterize /\ parseArgs2 \bins gamma -> { bins, gamma }
-        , marker $ "SHIFT" /\ T.Shift /\ parseArgs4 \r g b a -> { r, g, b, a }
-        , marker $ "COLOR" /\ T.Color /\ parseArgs4 \r g b a -> { r, g, b, a }
-        , marker $ "LUMA" /\ T.Luma /\ parseArgs2 \threshold tolerance -> { threshold, tolerance }
-        , marker $ "TRESH" /\ T.Thresh /\ parseArgs2 \threshold tolerance -> { threshold, tolerance }
+        [ marker $ "R" /\ T.R /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "G" /\ T.G /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "B" /\ T.B /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "A" /\ T.A /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "POSTERIZE" /\ T.Posterize /\ parseArgs2V \bins gamma -> { bins, gamma }
+        , marker $ "SHIFT" /\ T.Shift /\ parseArgs4V \r g b a -> { r, g, b, a }
+        , marker $ "COLOR" /\ T.Color /\ parseArgs4V \r g b a -> { r, g, b, a }
+        , marker $ "LUMA" /\ T.Luma /\ parseArgs2V \threshold tolerance -> { threshold, tolerance }
+        , marker $ "TRESH" /\ T.Thresh /\ parseArgs2V \threshold tolerance -> { threshold, tolerance }
         , marker $ "INVERT" /\ T.Invert /\ defer \_ -> value
         , marker $ "CONTRAST" /\ T.Contrast /\ defer \_ -> value
         , marker $ "BRIGHTNESS" /\ T.Brightness /\ defer \_ -> value
@@ -225,39 +228,77 @@ modulate =
     foldMarkers
         [ marker $ "MODHUE" /\ T.ModHue /\ defer \_ -> value
         , marker $ "MODULATE" /\ T.Modulate /\ defer \_ -> value
-        , marker $ "MODKALEID" /\ T.ModKaleid /\ parseArgs1 \nSides -> { nSides }
-        , marker $ "MODPIXELATE" /\ T.ModPixelate /\ parseArgs2 \multiple offset -> { multiple, offset }
-        , marker $ "MODREPEATX" /\ T.ModRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "MODREPEATY" /\ T.ModRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "MODREPEAT" /\ T.ModRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
-        , marker $ "MODROTATE" /\ T.ModRotate /\ parseArgs2 \multiple offset ->  { multiple, offset }
-        , marker $ "MODSCALE" /\ T.ModScale /\ parseArgs2 \multiple offset ->  { multiple, offset }
-        , marker $ "MODSCROLLX" /\ T.ModScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
-        , marker $ "MODSCROLLY" /\ T.ModScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
-        , marker $ "MODSCROLL" /\ T.ModScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        , marker $ "MODKALEID" /\ T.ModKaleid /\ parseArgs1V \nSides -> { nSides }
+        , marker $ "MODPIXELATE" /\ T.ModPixelate /\ parseArgs2V \multiple offset -> { multiple, offset }
+        , marker $ "MODREPEATX" /\ T.ModRepeatX /\ parseArgs2V \reps offset -> { reps, offset }
+        , marker $ "MODREPEATY" /\ T.ModRepeatY /\ parseArgs2V \reps offset -> { reps, offset }
+        , marker $ "MODREPEAT" /\ T.ModRepeat /\ parseArgs4V \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
+        , marker $ "MODROTATE" /\ T.ModRotate /\ parseArgs2V \multiple offset ->  { multiple, offset }
+        , marker $ "MODSCALE" /\ T.ModScale /\ parseArgs2V \multiple offset ->  { multiple, offset }
+        , marker $ "MODSCROLLX" /\ T.ModScrollX /\ parseArgs2V \scrollX speed -> { scrollX, speed }
+        , marker $ "MODSCROLLY" /\ T.ModScrollY /\ parseArgs2V \scrollY speed -> { scrollY, speed }
+        , marker $ "MODSCROLL" /\ T.ModScroll /\ parseArgs4V \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
         ]
 
 
 geometry :: Parser String T.Geometry
 geometry =
     foldMarkers
-        [ marker $ "KALEID" /\ T.GKaleid /\ parseArgs1 \nSides -> { nSides }
-        , marker $ "PIXELATE" /\ T.GPixelate /\ parseArgs2 \pixelX pixelY -> { pixelX, pixelY }
-        , marker $ "REPEATX" /\ T.GRepeatX /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "REPEATY" /\ T.GRepeatY /\ parseArgs2 \reps offset -> { reps, offset }
-        , marker $ "REPEAT" /\ T.GRepeat /\ parseArgs4 \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
-        , marker $ "ROTATE" /\ T.GRotate /\ parseArgs2 \angle speed ->  { angle, speed }
-        , marker $ "SCALE" /\ T.GScale /\ parseArgs5 \amount xMult yMult offsetX offsetY ->  { amount, xMult, yMult, offsetX, offsetY }
-        , marker $ "SCROLLX" /\ T.GScrollX /\ parseArgs2 \scrollX speed -> { scrollX, speed }
-        , marker $ "SCROLLY" /\ T.GScrollY /\ parseArgs2 \scrollY speed -> { scrollY, speed }
-        , marker $ "SCROLL" /\ T.GScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        [ marker $ "KALEID" /\ T.GKaleid /\ parseArgs1V \nSides -> { nSides }
+        , marker $ "PIXELATE" /\ T.GPixelate /\ parseArgs2V \pixelX pixelY -> { pixelX, pixelY }
+        , marker $ "REPEATX" /\ T.GRepeatX /\ parseArgs2V \reps offset -> { reps, offset }
+        , marker $ "REPEATY" /\ T.GRepeatY /\ parseArgs2V \reps offset -> { reps, offset }
+        , marker $ "REPEAT" /\ T.GRepeat /\ parseArgs4V \repeatX repeatY offsetX offsetY -> { repeatX, repeatY, offsetX, offsetY }
+        , marker $ "ROTATE" /\ T.GRotate /\ parseArgs2V \angle speed ->  { angle, speed }
+        , marker $ "SCALE" /\ T.GScale /\ parseArgs5V \amount xMult yMult offsetX offsetY ->  { amount, xMult, yMult, offsetX, offsetY }
+        , marker $ "SCROLLX" /\ T.GScrollX /\ parseArgs2V \scrollX speed -> { scrollX, speed }
+        , marker $ "SCROLLY" /\ T.GScrollY /\ parseArgs2V \scrollY speed -> { scrollY, speed }
+        , marker $ "SCROLL" /\ T.GScroll /\ parseArgs4V \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
+        ]
+
+
+glslKind :: Parser String T.GlslFnKind
+glslKind =
+        string "SRC" $> T.FnSrc
+    <|> string "CRD" $> T.FnCoord
+    <|> string "CCR" $> T.FnCombineCoord
+    <|> string "CMB" $> T.FnCombine
+    <|> string "CLR" $> T.FnColor
+
+
+glsl :: Parser String T.GlslFn
+glsl = do
+    kind <- glslKind
+    _ <- space
+    code <- between (string T.glslStart) (string T.glslEnd) (many1 $ noneOf T.glslTerminals)
+    _ <- space
+    fd <- langFn tOrV
+    pure $ T.GlslFn $ kind /\ T.GlslFnCode (U.f1ts code) /\ fd
+
+
+langFn ::forall x. Parser String x -> Parser String (Lang.Fn x)
+langFn argParser = do
+    name <- many1 alphaNum
+    _ <- space
+    argsN <- intDecimal
+    _ <- space
+    args <- parseNamedArgsHelper argParser argsN (identity >>> Just)
+    pure $ Lang.fnOf (U.f1ts name) args
+
+
+tOrV :: Parser String T.TOrV
+tOrV =
+    foldMarkers
+        [ marker $ "TT" /\ T.T /\ texture
+        , marker $ "VV" /\ T.V /\ value
         ]
 
 
 fn :: Parser String T.Fn
 fn =
     T.NoAction <$ string "/----/"
-    <|> (U.f1ts >>> T.Unparsed) <$> between (string T.unparsedFnStart) (string T.unparsedFnEnd) (many1 $ noneOf T.unparsedFnTerminals)
+    <|> (U.f1ts >>> T.Unparsed)
+        <$> between (string T.unparsedFnStart) (string T.unparsedFnEnd) (many1 $ noneOf T.unparsedFnTerminals)
 
 
 instance HasParser WrapRepr where
@@ -291,17 +332,45 @@ decodeImpl s =
         Right result -> Just result
 
 
-parseArgs :: Int -> Parser String (Array T.Value)
-parseArgs n =
-    replicateA n (value <* string T.argSep)
+parseArgs :: forall arg. Parser String arg -> Int -> Parser String (Array arg)
+parseArgs argp n =
+    replicateA n (argp <* string T.argSep)
 
 
-parseArgsHelper :: forall x. Int → (Array T.Value → Maybe x) → Parser String x
-parseArgsHelper n f =
-    parseArgs n >>= \arr ->
+parseNamedArg :: forall arg. Parser String arg -> Parser String (String /\ arg)
+parseNamedArg parg = do
+    name <- many1 alphaNum
+    _ <- string "::"
+    v <- parg
+    pure $ U.f1ts name /\ v
+
+
+parseNamedArgs :: forall arg. Parser String arg -> Int -> Parser String (Array (String /\ arg))
+parseNamedArgs =
+    parseArgs <<< parseNamedArg
+
+
+parseArgsHelper :: forall arg x. Parser String arg -> Int -> (Array arg -> Maybe x) -> Parser String x
+parseArgsHelper parg n f =
+    parseArgs parg n >>= \arr ->
         case f arr of
             Just res -> pure res
             Nothing -> fail $ "Required " <> show n <> " arguments but got " <> show (Array.length arr)
+
+
+parseArgsHelperV :: forall x. Int -> (Array T.Value -> Maybe x) -> Parser String x
+parseArgsHelperV =
+    parseArgsHelper value
+
+
+parseNamedArgsHelper :: forall x arg. Parser String arg -> Int -> (Array (String /\ arg) -> Maybe x) -> Parser String x
+parseNamedArgsHelper =
+    parseArgsHelper <<< parseNamedArg
+
+
+parseNamedArgsHelperTOrV :: forall x. Int -> (Array (String /\ T.TOrV) -> Maybe x) -> Parser String x
+parseNamedArgsHelperTOrV =
+    parseNamedArgsHelper tOrV
 
 
 noArgs :: forall x. x -> Parser String x
@@ -310,26 +379,26 @@ noArgs x =
    --  parseArgsHelper 0 $ const $ Just x
 
 
-parseArgs1 :: forall x. (T.Value -> x) -> Parser String x
-parseArgs1 f =
-    parseArgsHelper 1 $ \arr -> f <$> arr !! 0
+parseArgs1V :: forall x. (T.Value -> x) -> Parser String x
+parseArgs1V f =
+    parseArgsHelperV 1 $ \arr -> f <$> arr !! 0
 
 
-parseArgs2 :: forall x. (T.Value -> T.Value -> x) -> Parser String x
-parseArgs2 f =
-    parseArgsHelper 2 $ \arr -> f <$> arr !! 0 <*> arr !! 1
+parseArgs2V :: forall x. (T.Value -> T.Value -> x) -> Parser String x
+parseArgs2V f =
+    parseArgsHelperV 2 $ \arr -> f <$> arr !! 0 <*> arr !! 1
 
 
-parseArgs3 :: forall x. (T.Value -> T.Value -> T.Value -> x) -> Parser String x
-parseArgs3 f =
-    parseArgsHelper 3 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2
+parseArgs3V :: forall x. (T.Value -> T.Value -> T.Value -> x) -> Parser String x
+parseArgs3V f =
+    parseArgsHelperV 3 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2
 
 
-parseArgs4 :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
-parseArgs4 f =
-    parseArgsHelper 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3
+parseArgs4V :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
+parseArgs4V f =
+    parseArgsHelperV 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3
 
 
-parseArgs5 :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
-parseArgs5 f =
-    parseArgsHelper 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3  <*> arr !! 4
+parseArgs5V :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
+parseArgs5V f =
+    parseArgsHelperV 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3  <*> arr !! 4
