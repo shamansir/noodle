@@ -190,5 +190,10 @@ spec = do
         (pure unit)
         samples
 
+    -- TODO:
+--   describe "All merged" $ do
+--         case runParser (encode <$> samples)
+
+
     {- it "parsing works" $
       parses sampleNdfText expectedNdf NdfFile.parser -}

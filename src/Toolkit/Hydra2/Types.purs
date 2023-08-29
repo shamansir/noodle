@@ -1216,7 +1216,7 @@ argSep :: String
 argSep = ";"
 
 argsEnd :: String
-argsEnd = ";"
+argsEnd = ";" -- FIXME: try different values here and run tests, seems parsing functions works only with this option and also doesn't consume all the output
 
 
 texSep :: String

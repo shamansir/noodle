@@ -339,8 +339,14 @@ logDataCommand
     => Ref State
     -> ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr
     -> m Unit
-logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
+logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ inputs /\ outputs) =
     case chFocus of
+        InputChange input ->
+            case Map.lookup input inputs of
+                Just wrapRepr -> do
+                    flip logNdfCommandByRef stateRef $ Cmd.Send_ (reflect' nodeId) (reflect' input) $ encode wrapRepr
+                    liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
+                Nothing -> pure unit
         OutputChange output ->
             case Map.lookup output outputs of
                 Just wrapRepr -> do
