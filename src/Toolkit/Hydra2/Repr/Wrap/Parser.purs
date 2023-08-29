@@ -19,8 +19,8 @@ import Data.Either (Either(..))
 
 import Parsing (Parser, runParser, fail)
 import Parsing.String (string)
-import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA)
-import Parsing.String.Basic (space, number, intDecimal, alphaNum)
+import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA, many1Till)
+import Parsing.String.Basic (space, number, intDecimal, alphaNum, takeWhile1, noneOf)
 import Control.Alt ((<|>))
 
 
@@ -45,8 +45,11 @@ wrap :: Parser String WrapRepr
 wrap =
     foldMarkers
         [ marker $ "U" /\ Unit /\ (string "U" <#> const unit)
-        , marker $ "V" /\ Value /\ (parser :: Parser String T.Value)
-        , marker $ "T" /\ Texture /\ (parser :: Parser String T.Texture)
+        , marker $ "TT" /\ TOrV <<< T.T /\ texture
+        , marker $ "VV" /\ TOrV <<< T.V /\ value
+        , marker $ "T" /\ Texture /\ texture
+        , marker $ "V" /\ Value /\ value
+        , marker $ "FN" /\ Fn /\ fn
         ]
 
 
@@ -62,8 +65,9 @@ value =
         , marker $ "W" /\ const T.Width /\ string "V"
         , marker $ "H" /\ const T.Height /\ string "V"
         , marker $ "PI" /\ const T.Pi /\ string "V"
-        , marker $ "A" /\ T.Fft /\ (parser :: Parser String T.AudioBin)
+        , marker $ "A" /\ T.Fft /\ audioBin
         , marker $ "VA" /\ uncurry T.VArray /\ ((/\) <$> (defer \_ -> values) <*> (string " $$ " *> defer \_ -> ease))
+        , marker $ "D" /\ T.Dep /\ fn
         ]
 
 
@@ -101,7 +105,7 @@ texture :: Parser String T.Texture
 texture =
     foldMarkers
         [ marker $ "EMP" /\ const T.Empty /\ string "T"
-        , marker $ "S" /\ T.Start /\ (parser :: Parser String T.Source)
+        , marker $ "S" /\ T.Start /\ source
         , marker $ "F" /\ uncurry T.Filter /\ do
             cop <- colorOp
             _ <- string T.texSep
@@ -142,7 +146,7 @@ source =
         , marker $ "OSC" /\ T.Osc /\ parseArgs3 \frequency sync offset -> { frequency, sync, offset }
         , marker $ "SCP" /\ T.Shape /\ parseArgs3 \sides radius smoothing -> { sides, radius, smoothing }
         , marker $ "V" /\ T.Voronoi /\ parseArgs3 \scale speed blending -> { scale, speed, blending }
-        , marker $ "O" /\ T.Load /\ (parser :: Parser String T.OutputN)
+        , marker $ "O" /\ T.Load /\ outputN
         , marker $ "X" /\ uncurry T.External /\ do
             src <- sourceN
             _ <- string T.argSep
@@ -249,6 +253,11 @@ geometry =
         , marker $ "SCROLL" /\ T.GScroll /\ parseArgs4 \scrollX scrollY speedX speedY -> { scrollX, scrollY, speedX, speedY }
         ]
 
+
+fn :: Parser String T.Fn
+fn =
+    T.NoAction <$ string "/----/"
+    <|> (U.f1ts >>> T.Unparsed) <$> between (string T.unparsedFnStart) (string T.unparsedFnEnd) (many1 $ noneOf T.unparsedFnTerminals)
 
 
 instance HasParser WrapRepr where

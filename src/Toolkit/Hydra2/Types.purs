@@ -930,14 +930,46 @@ instance Encode ValueExpr where
         Brackets expr -> "( " <> show expr <> " )"
 
 
+unparsedFnStart :: String
+unparsedFnStart = "¤■"
+
+unparsedFnTerminals :: Array Char
+unparsedFnTerminals = [ '¤', '■' ]
+
+unparsedFnEnd :: String
+unparsedFnEnd = "■¤"
+
+
+vexprStart :: String
+vexprStart = "```"
+
+vexprTerminals :: Array Char
+vexprTerminals = [ '`' ]
+
+vexprEnd :: String
+vexprEnd = "```"
+
+
+glslMarker :: String
+glslMarker = "<GLSL>"
+
+glslStart :: String
+glslStart = "```"
+
+glslTerminal :: Array Char
+glslTerminal = [ '`' ]
+
+glslEnd :: String
+glslEnd = "```"
+
+
 instance Encode Fn where
     encode :: Fn -> String
     encode = case _ of
         VExpr vexpr -> encode vexpr
         Fn _ -> "[[CODE]]"
-        Unparsed str -> "<<<< " <> str <> " >>>>"
+        Unparsed str -> unparsedFnStart <> str <> unparsedFnEnd -- "<<<< " <> str <> " >>>>"
         NoAction -> "/----/"
-
 
 
 data TOrV

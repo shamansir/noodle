@@ -4,6 +4,7 @@ import Prelude
 
 import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions
@@ -12,7 +13,9 @@ import Test.Generating (parses)
 
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Repr.Wrap
-import Toolkit.Hydra2.Types (AudioBin(..), Values(..)) as T
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as W
+import Toolkit.Hydra2.Types (AudioBin(..), Values(..), GlslFn(..)) as T
+import Toolkit.Hydra2.Lang.Fn as Lang
 
 
 import Data.FromToFile (encode, decode)
@@ -106,6 +109,63 @@ samples =
     , Texture
         $ Geometry (Start $ Load Output1)
         $ GRepeat { repeatX : Number 2.5, repeatY : Number 1.0, offsetX : Number 5.0, offsetY : Number 2.0 }
+    {- TODO
+    , Value
+        $ Dep
+        $ VExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
+    -}
+    , Value $ Dep NoAction
+    , Value
+        $ Dep
+        $ Unparsed "foobar"
+    {- TODO
+    , W.Fn
+        $ VExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
+    -}
+    , W.Fn NoAction
+    , W.Fn
+        $ Unparsed "foobar"
+    , W.Fn
+        $ Unparsed """
+        aaa
+        nnn
+        bbb282828///
+        """
+    {- TODO
+    , W.GlslFn
+        $ T.GlslFn
+        $ FnSrc
+            /\ GlslFnCode
+            """
+test
+multiline
+code
+            """
+            /\ Lang.Fn ("aaa" /\ [])
+    -}
+    {- TODO
+    , Texture
+        $ CallGlslFn Empty
+        $ GlslFnRef $ Lang.Fn ("aaa" /\ [])
+    -}
+    {- TODO
+    , W.GlslFn
+        $ T.GlslFn
+        $ FnSrc
+            /\ GlslFnCode "foo\nbar\nbzz"
+            /\ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
+    -}
+    {- TODO
+    , Texture
+        $ CallGlslFn (Filter Empty $ Posterize { bins : Time, gamma : Height })
+        $ GlslFnRef $ Lang.Fn
+            $ "bzz" /\
+                [ Lang.q "a1" $ T Empty
+                , Lang.q "a2"
+                    $ T $ BlendOf { what : Empty, with : Empty } $ Diff
+                , Lang.q "a3" $ V $ Number 2.0
+                ]
+    -}
     ]
 
 spec :: Spec Unit
