@@ -494,40 +494,6 @@ instance Show TOrV where
         V val -> show val
 
 
-showUsingFn :: forall arg x. Show arg => ToFn arg x => Proxy arg -> x -> String
-showUsingFn _ a =
-    case (toFn a :: String /\ Array (Fn.Argument arg)) of
-        name /\ args ->
-            if Array.length args > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
-            else
-                "<" <> String.pascalCase name <> ">"
-
-
-showUsingFnV :: forall x. ToFn Value x => x -> String
-showUsingFnV = showUsingFn (Proxy :: _ Value)
-
-
-showUsingFnTOrV :: forall x. ToFn TOrV x => x -> String
-showUsingFnTOrV = showUsingFn (Proxy :: _ TOrV)
-
-
-showUsingPossiblyFn :: forall arg x. Show arg => PossiblyToFn arg x => Proxy arg -> (x -> String) -> x -> String
-showUsingPossiblyFn _ fallback a =
-    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument arg))) of
-        Just (name /\ args) ->
-            if Array.length args > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
-            else
-                 "<" <> String.pascalCase name <> ">"
-        Nothing ->
-            fallback a
-
-
-showUsingPossiblyFnV :: forall x. PossiblyToFn Value x => (x -> String) -> x -> String
-showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) fallback a
-
-
 instance Show ValueExpr where
     show :: ValueExpr -> String
     show = case _ of
@@ -549,7 +515,7 @@ instance Show Fn where
     show :: Fn -> String
     show = case _ of
         VExpr vexpr -> show vexpr
-        Fn code -> "[Code]"
+        Fn _ -> "[Code]"
         Unparsed str -> "{{ " <> str <> " }}"
         NoAction -> "--"
 
@@ -580,9 +546,7 @@ instance Show Texture where
         Filter texture op -> show texture <> " >~ ƒ " <> show op
         ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ ¤ " <> show mod
         Geometry texture gmt -> show texture <> " >~ ■ " <> show gmt
-        CallGlslFn texture glslFn ->
-            case (toFn glslFn :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> show texture <> " >~ / " <> "{" <> name <> "}" <> " (" <> show (Array.length args) <> ")" -- use ToFn
+        CallGlslFn texture glslFn -> show texture <> " >~ $ " <> show glslFn
 
 
         {-
@@ -664,12 +628,12 @@ instance Show GlslFnKind where
 
 instance Show GlslFn where
     show :: GlslFn -> String
-    show (GlslFn (kind /\ _ /\ fn)) = "Define Function {" <> show kind <> "} " <> show kind <> " " <> showUsingFnTOrV fn
+    show (GlslFn (kind /\ _ /\ fn)) = "Define {" <> show kind <> "} " <> showUsingFnTOrV fn
 
 
 instance Show GlslFnRef where
     show :: GlslFnRef -> String
-    show (GlslFnRef fn) = "Call Function <" <> Fn.name fn <> ">"
+    show (GlslFnRef fn) = "Call " <> showUsingFnTOrV fn
 
 
 instance Show SourceOptions where
@@ -744,77 +708,6 @@ instance Show RenderTarget where
     show (Output oN) = show oN
 
 
-argSep :: String
-argSep = ";"
-
-
-argsEnd :: String
-argsEnd = ";"
-
-
-texSep :: String
-texSep = " % "
-
-
-texsEnd :: String
-texsEnd = " %"
-
-
-encodeUsingFn :: forall a. ToFn Value a => a -> String
-encodeUsingFn a =
-    case toFn a :: String /\ Array (Fn.Argument Value) of
-        name /\ args ->
-            if Array.length args > 0 then
-                String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
-            else
-                String.toUpper name <> " " <> argsEnd
-
-
-{-
-encodeUsingFn :: forall v a. Encode v => ToFn v a => a -> String
-encodeUsingFn a =
-    case toFn a of
-        name /\ args ->
-            if Array.length args > 0 then
-                String.toUpper name
-            else
-                String.toUpper name <> " " <> String.joinWith " " (encode <$> args)
--}
-
-
-unparsedFnStart :: String
-unparsedFnStart = "¤■"
-
-unparsedFnTerminals :: Array Char
-unparsedFnTerminals = [ '¤', '■' ]
-
-unparsedFnEnd :: String
-unparsedFnEnd = "■¤"
-
-
-vexprStart :: String
-vexprStart = "```"
-
-vexprTerminals :: Array Char
-vexprTerminals = [ '`' ]
-
-vexprEnd :: String
-vexprEnd = "```"
-
-
-glslMarker :: String
-glslMarker = "<GLSL>"
-
-glslStart :: String
-glslStart = "¤¤¤¤■"
-
-glslTerminals :: Array Char
-glslTerminals = [ '¤', '■' ]
-
-glslEnd :: String
-glslEnd = "■¤¤¤¤"
-
-
 instance Encode Value where
     encode :: Value -> String
     encode = case _ of
@@ -841,7 +734,7 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> texSep <> encode texture <> texsEnd
         ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
         Geometry texture gmt -> "G " <> encode texture <> texSep <> encode gmt <> texsEnd
-        CallGlslFn texture fn -> "FN " <> encode texture <> texSep -- <> encode fn <> texsEnd
+        CallGlslFn texture fn -> "CALL " <> encode texture <> texSep <> encode fn <> texsEnd
 
 
 instance Encode Blend where
@@ -937,6 +830,12 @@ instance Encode GlslFn where
             <> " " <> encodeFnWithArgNames fn
 
 
+instance Encode GlslFnRef where
+    encode :: GlslFnRef -> String
+    encode (GlslFnRef fn)
+        = encodeFnWithArgNames fn
+
+
 {- instance Encode (Lang.Fn TOrV) where
     encode :: Lang.Fn TOrV -> String
     encode _ = "" -}
@@ -1015,7 +914,6 @@ instance Encode ValueExpr where
                     Nothing -> ""
                 )
         Brackets expr -> "( " <> show expr <> " )"
-
 
 
 instance Encode Fn where
@@ -1278,3 +1176,94 @@ fromKnownFn = case _ of
     -- "inOutCubic" -> Just $ "inOutCubic" /\ []
 
     _ -> Nothing
+
+
+showUsingFn :: forall arg x. Show arg => ToFn arg x => Proxy arg -> x -> String
+showUsingFn _ a =
+    case (toFn a :: String /\ Array (Fn.Argument arg)) of
+        name /\ args ->
+            if Array.length args > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else
+                "<" <> String.pascalCase name <> ">"
+
+
+showUsingFnV :: forall x. ToFn Value x => x -> String
+showUsingFnV = showUsingFn (Proxy :: _ Value)
+
+
+showUsingFnTOrV :: forall x. ToFn TOrV x => x -> String
+showUsingFnTOrV = showUsingFn (Proxy :: _ TOrV)
+
+
+showUsingPossiblyFn :: forall arg x. Show arg => PossiblyToFn arg x => Proxy arg -> (x -> String) -> x -> String
+showUsingPossiblyFn _ fallback a =
+    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument arg))) of
+        Just (name /\ args) ->
+            if Array.length args > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else
+                 "<" <> String.pascalCase name <> ">"
+        Nothing ->
+            fallback a
+
+
+showUsingPossiblyFnV :: forall x. PossiblyToFn Value x => (x -> String) -> x -> String
+showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) fallback a
+
+
+argSep :: String
+argSep = ";"
+
+argsEnd :: String
+argsEnd = ";"
+
+
+texSep :: String
+texSep = " % "
+
+texsEnd :: String
+texsEnd = " %"
+
+
+unparsedFnStart :: String
+unparsedFnStart = "¤■"
+
+unparsedFnTerminals :: Array Char
+unparsedFnTerminals = [ '¤', '■' ]
+
+unparsedFnEnd :: String
+unparsedFnEnd = "■¤"
+
+
+vexprStart :: String
+vexprStart = "```"
+
+vexprTerminals :: Array Char
+vexprTerminals = [ '`' ]
+
+vexprEnd :: String
+vexprEnd = "```"
+
+
+glslMarker :: String
+glslMarker = "<GLSL>"
+
+glslStart :: String
+glslStart = "¤¤¤¤■"
+
+glslTerminals :: Array Char
+glslTerminals = [ '¤', '■' ]
+
+glslEnd :: String
+glslEnd = "■¤¤¤¤"
+
+
+encodeUsingFn :: forall a. ToFn Value a => a -> String
+encodeUsingFn a =
+    case toFn a :: String /\ Array (Fn.Argument Value) of
+        name /\ args ->
+            if Array.length args > 0 then
+                String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
+            else
+                String.toUpper name <> " " <> argsEnd

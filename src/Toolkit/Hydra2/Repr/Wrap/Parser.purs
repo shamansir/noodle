@@ -19,7 +19,7 @@ import Data.Either (Either(..))
 
 import Parsing (Parser, runParser, fail)
 import Parsing.String (string)
-import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA, many1Till)
+import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA, many1Till, optional)
 import Parsing.String.Basic (space, number, intDecimal, alphaNum, takeWhile1, noneOf)
 import Control.Alt ((<|>))
 
@@ -28,7 +28,7 @@ import Toolkit.Hydra2.Repr.Wrap
 import Toolkit.Hydra2.Types as T
 import Toolkit.Hydra2.Lang.SketchParser.Utils as U
 import Toolkit.Hydra2.Lang.Fn (Fn, fnOf) as Lang
-import Toolkit.Hydra2.Lang.Fn (empty) as Fn
+import Toolkit.Hydra2.Lang.Fn (empty, argsCount) as Fn
 
 
 -- newtype HasParser = HasParser WrapRepr
@@ -137,6 +137,16 @@ texture =
             geo <- geometry
             _ <- string T.texsEnd
             pure $ tex /\ geo
+        , marker $ "CALL" /\ uncurry T.CallGlslFn /\ do
+            tex <- defer \_ -> texture
+            _ <- string T.texSep
+            fn <- langFn tOrV
+            -- _ <- if Fn.argsCount fn > 0 then string T.texsEnd else
+            -- _ <- optional space
+            -- _ <- string T.argsEnd
+            -- _ <- string T.texsEnd
+            _ <- optional $ try $ string T.texsEnd
+            pure $ tex /\ T.GlslFnRef fn
         ]
 
 
@@ -283,13 +293,16 @@ langFn argParser = do
     argsN <- intDecimal
     _ <- space
     args <- parseNamedArgsHelper argParser argsN (identity >>> Just)
+    -- args <- if (argsN > 0) then
+    --             space *> parseNamedArgsHelper argParser argsN (identity >>> Just)
+    --         else pure []
     pure $ Lang.fnOf (U.f1ts name) args
 
 
 tOrV :: Parser String T.TOrV
 tOrV =
     foldMarkers
-        [ marker $ "TT" /\ T.T /\ texture
+        [ marker $ "TT" /\ T.T /\ defer \_ -> texture
         , marker $ "VV" /\ T.V /\ value
         ]
 

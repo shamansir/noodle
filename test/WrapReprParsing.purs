@@ -144,17 +144,17 @@ multiline
 code
             """
             /\ Lang.Fn ("abc" /\ [])
-    {- TODO
     , Texture
         $ CallGlslFn Empty
         $ GlslFnRef $ Lang.Fn ("aaa" /\ [])
-    -}
+    , Texture
+        $ CallGlslFn Empty
+        $ GlslFnRef $ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty ])
     , W.GlslFn
         $ T.GlslFn
         $ FnSrc
             /\ GlslFnCode "foo\nbar\nbzz"
             /\ Lang.Fn ("axz" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
-    {- TODO
     , Texture
         $ CallGlslFn (Filter Empty $ Posterize { bins : Time, gamma : Height })
         $ GlslFnRef $ Lang.Fn
@@ -164,7 +164,6 @@ code
                     $ T $ BlendOf { what : Empty, with : Empty } $ Diff
                 , Lang.q "a3" $ V $ Number 2.0
                 ]
-    -}
     ]
 
 spec :: Spec Unit
