@@ -20,6 +20,7 @@ import Data.Map as Map
 import Data.Map.Extra as Map
 import Data.List as List
 import Data.Array ((:))
+import Data.Array (length) as Array
 import Data.Foldable (foldr)
 import Data.String as String
 
@@ -165,14 +166,19 @@ else instance ToCode JS Command where
 
 
 collectGlslUsage :: forall a. Program a -> Array H.GlslFn
-collectGlslUsage = fold checkCmdForRefs []
+collectGlslUsage prg = fold checkCmdForRefs [] prg
     where
         checkCmdForRefs (Continue tex) arr = checkTexForRefs tex <> arr
         checkCmdForRefs (End _ tex) arr = checkTexForRefs tex <> arr
         checkCmdForRefs _ arr = arr
+        checkTexForRefs (H.BlendOf { with, what } _) = checkTexForRefs with <> checkTexForRefs what
+        checkTexForRefs (H.Filter tex _) = checkTexForRefs tex
+        checkTexForRefs (H.ModulateWith { with, what } _) = checkTexForRefs with <> checkTexForRefs what
+        checkTexForRefs (H.Geometry tex _) = checkTexForRefs tex
         checkTexForRefs (H.CallGlslFn tex fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs tex
         checkTexForRefs _ = []
         fnRefToGlslFn (H.GlslFnRef fn) = Map.lookup (Fn.name fn) Glsl.knownFnsMap
+        addIfJust :: _
         addIfJust (Just glslFn) arr = glslFn : arr
         addIfJust Nothing arr = arr
 
@@ -181,9 +187,11 @@ instance ToCode PS (Program a) where
     toCode _ (Program cmd _) = toCode pureScript cmd
 else instance ToCode JS (Program a) where
     toCode _ prg@(Program cmd _) =
-        String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg)
+        "/* GENERATED CODE */\n\n"
+        <> String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg)
         <> "\n\n"
         <> toCode javaScript cmd
+
 
 
 producesCode :: forall f. IsSymbol f => Id.Family f -> Boolean
