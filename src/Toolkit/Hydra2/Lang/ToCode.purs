@@ -351,17 +351,17 @@ instance ToCode JS Texture where
         Start (Load out) -> "src("  <> toCode javaScript out <> ")"
         Start src -> toCode javaScript src
         BlendOf { what, with } blend ->
-            toCode javaScript with <> "\n\t." <>
+            toCode javaScript what <> "\n\t." <>
             case (toFnX blend :: String /\ Array Value) of
-                name /\ args -> fnsJs name $ toCode javaScript what : (toCode javaScript <$> args)
+                name /\ args -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
         Filter texture cop ->
             toCode javaScript texture <> "\n\t." <>
             case (toFnX cop :: String /\ Array Value) of
                 name /\ args -> fnJs name args
         ModulateWith { what, with } mod ->
-            toCode javaScript with <> "\n\t." <>
+            toCode javaScript what <> "\n\t." <>
             case (toFnX mod :: String /\ Array Value) of
-                name /\ args -> fnsJs name $ toCode javaScript what : (toCode javaScript <$> args)
+                name /\ args -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
         Geometry texture gmt ->
             toCode javaScript texture <> "\n\t." <>
             case (toFnX gmt :: String /\ Array Value) of

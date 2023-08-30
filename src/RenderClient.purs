@@ -54,6 +54,7 @@ initialState = const Connecting
 
 data Action
   = Initialize
+  | Connect
   | OnWsOpen H.SubscriptionId
   | OnWsMessage H.SubscriptionId WSMsg.MessageEvent
   | OnWsClose H.SubscriptionId
@@ -80,20 +81,32 @@ render :: forall cs m. State -> H.ComponentHTML Action cs m
 render =
   case _ of
     Connecting -> HH.span [ HP.id "status" ] [ HH.text "Connecting" ]
-    Ready { w, h } -> HH.div_
+    Ready { w, h } ->
+      HH.div_
           [ HH.canvas
             [ HP.id "hydra-canvas"
             , HP.width w
             , HP.height h
             ]
-          , HH.span [ HP.id "status" ] [ HH.text "Ready" ]
+          , HH.span
+            [ HP.id "status", HP.class_ $ H.ClassName "ready" ]
+            [ HH.text "Ready" ]
           ]
-    Error error -> HH.span [ HP.id "status" ] [ HH.text $ "Error: " <> error ]
+    Error error ->
+      HH.div
+        []
+        [ HH.span [ HP.id "status" ] [ HH.text $ "Error: " <> error ]
+        , HH.button
+          [ HP.id "retry", HE.onClick $ const Connect ]
+          [ HH.text "Retry" ]
+        ]
 
 
 handleAction :: forall cs o m. MonadEffect m => Action -> H.HalogenM State Action cs o m Unit
 handleAction = case _ of
-  Initialize -> do
+  Initialize ->
+      handleAction Connect
+  Connect -> do
       ws <- liftEffect $ WS.create "ws://localhost:9999" []
       liftEffect $ Console.log "connected"
       let
