@@ -27,7 +27,7 @@ import Cli.State (State)
 import Cli.Components.NodeBox.InputButton as InputButton
 
 import Toolkit.Hydra2.Lang (formProgram) as Lang
-import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
+import Toolkit.Hydra2.Lang.ToCode (toCode, javaScriptToDisplay) as Lang
 
 
 width :: Int -> Dimension
@@ -76,4 +76,4 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Key.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ Lang.formProgram state.program
+    Key.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScriptToDisplay $ Lang.formProgram state.program

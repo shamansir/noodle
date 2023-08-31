@@ -22,6 +22,7 @@ data Target
 -- could they be split into different files?
 -- TODO: NDF format is not bound to Hydra, rather to Noodle Engine, move it to external module
 foreign import data JS :: Target
+foreign import data JS_DISPLAY :: Target -- TODO: replace with `ToTaggedCode JS` later
 foreign import data PS :: Target
 foreign import data NDF :: Target
 
@@ -40,6 +41,10 @@ pureScript = Proxy
 
 javaScript :: _ JS
 javaScript = Proxy
+
+
+javaScriptToDisplay :: _ JS_DISPLAY
+javaScriptToDisplay = Proxy
 
 
 ndf :: _ NDF
@@ -408,6 +413,33 @@ instance ToCode JS GlslFn where
                     (name /\ T _) -> "{ type: 'sampler2D', default : NaN, name : \'" <> name <> "\' }"
                     (name /\ V (Number n)) -> "{ type: 'float', default : " <> show n <> ", name : \'" <> name <> "\' }"
                     (name /\ V val) -> "{ type: 'float', default : " <> toCode javaScript val <> ", name : \'" <> name <> "\' }"
+            kindToString = case _ of
+                FnSrc -> "src"
+                FnCoord -> "coord"
+                FnCombineCoord -> "combineCoord"
+                FnCombine -> "combine"
+                FnColor -> "color"
+
+
+-- instance ToCode JS a => ToCode JS_DISPLAY a where
+--     toCode :: Proxy JS_DISPLAY -> a -> String
+--     toCode _ = toCode javaScript
+
+
+instance ToCode JS_DISPLAY GlslFn where
+    toCode :: Proxy JS_DISPLAY -> GlslFn -> String
+    toCode _ = case _ of
+        GlslFn (kind /\ GlslFnCode code /\ fn) ->
+            "setFunction({" <> name fn <> ", " <> kindToString kind <> "\',\n"
+                <> "[ " <> String.joinWith "," (argToJsObj <$> args fn) <> " ], \n"
+                <> "`" <> String.take 10 code <> "..."
+                <> "`});"
+        where
+            argToJsObj =
+                case _ of
+                    (name /\ T _) -> "{ sampler2D, \'" <> name <> "\' }"
+                    (name /\ V (Number n)) -> "{ float, " <> show n <> ", \'" <> name <> "\' }"
+                    (name /\ V val) -> "{ 'float', " <> toCode javaScript val <> ", \'" <> name <> "\' }"
             kindToString = case _ of
                 FnSrc -> "src"
                 FnCoord -> "coord"

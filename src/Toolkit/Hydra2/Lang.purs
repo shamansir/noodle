@@ -187,9 +187,20 @@ instance ToCode PS (Program a) where
     toCode _ (Program cmd _) = toCode pureScript cmd
 else instance ToCode JS (Program a) where
     toCode _ prg@(Program cmd _) =
-        "/* GENERATED CODE */\n\n"
-        <> String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg)
-        <> "\n\n"
+        let glslUsage = collectGlslUsage prg
+        in
+        "/* GENERATED CODE */\n\n" <>
+        if Array.length glslUsage > 0
+        then String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg) <> "\n\n"
+        else ""
+        <> toCode javaScript cmd
+else instance ToCode JS_DISPLAY (Program a) where
+    toCode _ prg@(Program cmd _) =
+        let glslUsage = collectGlslUsage prg
+        in
+        if Array.length glslUsage > 0
+        then String.joinWith "\n\n" (toCode javaScriptToDisplay <$> collectGlslUsage prg) <> "\n\n"
+        else ""
         <> toCode javaScript cmd
 
 
