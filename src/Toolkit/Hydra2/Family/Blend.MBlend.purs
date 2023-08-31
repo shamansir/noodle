@@ -4,7 +4,10 @@ module Toolkit.Hydra2.Family.Blend.FBlend where
 import Toolkit.Hydra2.Types as H
 
 
-import Prelude (Unit, unit, ($), bind, pure)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
+
+import Prelude (Unit, unit, ($), bind, pure, discard, show)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -63,7 +66,7 @@ type Family (m :: Type -> Type) = -- {-> blend <-}
         m
 
 
-family :: forall (m :: Type -> Type). Family m
+family :: forall (m :: Type -> Type). MonadEffect m => Family m
 family = -- {-> blend <-}
     Family.def
         defaultState

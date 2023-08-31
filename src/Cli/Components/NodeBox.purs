@@ -147,7 +147,9 @@ fromNode
     -> Noodle.Node f state is os Effect
     -> BlessedOpM State Effect _
 fromNode curPatchId curPatch family node = do
-    liftEffect $ Node.listenUpdatesAndRun node -- just Node.run ??
+    --liftEffect $ Node.run node -- just Node.run ??
+    liftEffect $ Node.runOnInputUpdates node
+    liftEffect $ Node.runOnStateUpdates node
 
     state <- State.get
 
@@ -260,7 +262,7 @@ fromNode curPatchId curPatch family node = do
     liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
     -- liftEffect $ Node.listenUpdatesAndRun node
-    -- liftEffect $ Node.run node
+    liftEffect $ Node.run node
 
     Key.patchBox >~ Node.append nextNodeBoxN
 

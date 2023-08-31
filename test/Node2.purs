@@ -170,7 +170,7 @@ spec = do
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
 
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
@@ -204,7 +204,7 @@ spec = do
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
 
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
@@ -213,7 +213,7 @@ spec = do
             Node.sendIn nodeA _aI 7
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
 
             atSumB' <- nodeB `Node.at_` _.sum
             atSumB' `shouldEqual` (7 + 3 + 2)
@@ -246,7 +246,7 @@ spec = do
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
 
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
@@ -258,7 +258,7 @@ spec = do
             Node.sendIn nodeA _aI 7
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
 
             atSumB' <- nodeB `Node.at_` _.sum
             atSumB' `shouldEqual` (4 + 3 + 2)

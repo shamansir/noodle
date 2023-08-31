@@ -495,16 +495,18 @@ connect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: dinB -> Effect Unit
+            sendToBIfFlagIsOn :: dinB -> m Unit
             sendToBIfFlagIsOn din = do
                 -- Monad.whenM
-                flagOn <- Ref.read flagRef
-                if flagOn then sendInE nodeB inputB din
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ sendInE nodeB inputB din
+                  run nodeB
                 else pure unit
         -- TODO: get current value at output and send it to input
-        liftEffect $ Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         (doutA :: doutA) <- atO nodeA outputA
-        liftEffect $ sendToBIfFlagIsOn $ convert doutA
+        sendToBIfFlagIsOn $ convert doutA
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
@@ -546,15 +548,18 @@ connect'
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: dinB -> Effect Unit
+            sendToBIfFlagIsOn :: dinB -> m Unit
             sendToBIfFlagIsOn din = do
                 -- Monad.whenM
-                flagOn <- Ref.read flagRef
-                if flagOn then sendInE' nodeB inputB din
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ sendInE' nodeB inputB din
+                  run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
+                            --        maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
                 else pure unit
-        liftEffect $ SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         (doutA :: doutA) <- atO' nodeA outputA
-        liftEffect $ sendToBIfFlagIsOn $ convert doutA
+        sendToBIfFlagIsOn $ convert doutA
         -- TODO: get current value at output and send it to input
         pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
 
@@ -601,18 +606,21 @@ connectByRepr
         let
             convert :: doutA -> Maybe dinB
             convert dout = (toRepr dout :: Maybe (Repr repr)) >>= fromRepr
-            sendToBWhenConditionsMet :: Maybe dinB -> Effect Unit
+            sendToBWhenConditionsMet :: Maybe dinB -> m Unit
             sendToBWhenConditionsMet (Just din) = do
                 -- Monad.whenM
-                flagOn <- Ref.read flagRef
-                if flagOn then sendInE nodeB inputB din
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ sendInE nodeB inputB din
+                  run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
+                            --        maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
                 else pure unit
             sendToBWhenConditionsMet Nothing =
                 pure unit
         -- TODO: get current value at output and send it to input
-        liftEffect $ Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
         (doutA :: doutA) <- atO nodeA outputA
-        liftEffect $ sendToBWhenConditionsMet $ convert doutA
+        sendToBWhenConditionsMet $ convert doutA
         -- run nodeB -- TODO: running also works
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 

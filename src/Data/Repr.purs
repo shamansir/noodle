@@ -53,6 +53,10 @@ class WriteRepr repr where
     writeRepr :: Repr repr -> String
 
 
+instance Show repr => Show (Repr repr) where
+    show (Repr r) = show r
+
+
 class (ReadRepr repr, WriteRepr repr) <= ReadWriteRepr repr
 
 
