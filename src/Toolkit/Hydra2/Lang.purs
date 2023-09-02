@@ -98,6 +98,11 @@ append (Program cmd _) Unknown = Program cmd unit
 append (Program cmdA _) cmdB = Program (Pair cmdA cmdB) unit
 
 
+instance Show a => Show (Program a) where
+  show :: Program a -> String
+  show (Program cmd a) = show a <> " <- " <> show cmd
+
+
 unfold :: forall a. Program a -> Array Command
 unfold (Program cmd _) =
     unfoldCmd cmd
@@ -210,17 +215,19 @@ else instance ToCode JS (Program a) where
         let glslUsage = collectGlslUsage prg
         in
         "/* GENERATED CODE */\n\n" <>
-        if Array.length glslUsage > 0
-        then String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg) <> "\n\n"
-        else ""
+        ( if Array.length glslUsage > 0
+            then String.joinWith "\n\n" (toCode javaScript <$> collectGlslUsage prg) <> "\n\n"
+            else ""
+        )
         <> toCode javaScript cmd
 else instance ToCode JS_DISPLAY (Program a) where
     toCode _ prg@(Program cmd _) =
         let glslUsage = collectGlslUsage prg
         in
-        if Array.length glslUsage > 0
-        then String.joinWith "\n\n" (toCode javaScriptToDisplay <$> collectGlslUsage prg) <> "\n\n"
-        else ""
+        ( if Array.length glslUsage > 0
+            then String.joinWith "\n\n" (toCode javaScriptToDisplay <$> collectGlslUsage prg) <> "\n\n"
+            else ""
+        )
         <> toCode javaScript cmd
 
 
