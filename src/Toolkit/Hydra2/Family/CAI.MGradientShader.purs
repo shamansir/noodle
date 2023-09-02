@@ -5,6 +5,7 @@ import Prelude
 
 import Data.SOrder (SOrder, type (:::), T, s1, s2)
 import Data.SOrder (empty) as SOrder
+import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 
 
@@ -16,6 +17,7 @@ import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 
 import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Fn as HFn
 
 
 id = Node.Family :: _ "caiGradientShader"
@@ -50,7 +52,7 @@ outputsOrder = s1 _out_shader
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { speed : H.Number 1.0, intensity : H.Number 0.0 }
+defaultInputs = { speed : H.Number 1.0, intensity : H.Number 1.0 }
 
 
 defaultOutputs :: Record Outputs
@@ -75,7 +77,12 @@ family = -- {-> caiProductGradient <-}
             $ do
             speed <- P.receive _in_speed
             intensity <- P.receive _in_intensity
-            P.send _out_shader $ H.Empty -- FIXME
+            P.send _out_shader
+                $ H.CallGlslFn H.Empty
+                $ H.GlslFnRef
+                $ HFn.fn2 "gradientCAI"
+                    ( "speed" /\ H.V speed )
+                    ( "intensity" /\ H.V intensity )
 
 
 type Node (m :: Type -> Type) =

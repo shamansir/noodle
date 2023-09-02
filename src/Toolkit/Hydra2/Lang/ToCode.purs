@@ -430,9 +430,9 @@ instance ToCode JS_DISPLAY GlslFn where
     toCode :: Proxy JS_DISPLAY -> GlslFn -> String
     toCode _ = case _ of
         GlslFn (kind /\ GlslFnCode code /\ fn) ->
-            "setFunction({" <> name fn <> ", " <> kindToString kind <> "\',\n"
+            "setFunction(\'" <> name fn <> "\', " <> kindToString kind <> ",\n"
                 <> "[ " <> String.joinWith "," (argToJsObj <$> args fn) <> " ], \n"
-                <> "`" <> String.take 10 code <> "..."
+                <> "`" <> String.take 40 code <> "..."
                 <> "`});"
         where
             argToJsObj =

@@ -3,6 +3,8 @@ module Toolkit.Hydra2.Lang where
 import Prelude
 import Prelude (class Show, show) as Core
 
+import Debug as Debug
+
 
 {-
 import Data.Functor (class Functor)
@@ -58,6 +60,23 @@ data Command
     -- | Batch (Array Command)
     | One Single
     | Continue H.Texture
+
+
+instance Show Single where
+    show :: Single -> String
+    show = case _ of
+        _ -> "TODO / FIXME"
+        -- WithAudio n -> "withAudio " <> show n
+
+
+instance Show Command where
+    show :: Command -> String
+    show = case _ of
+        Unknown -> "Unknown"
+        End output texture -> ". " <> show output <> " <> " <> show texture
+        Pair texA texB -> show texA <> " /\\ " <> show texB
+        One single -> show  "1 " <> show single
+        Continue tex -> "~ " <> show tex
 
 
 data Program a = -- same as Writer?
@@ -145,6 +164,7 @@ else instance ToCode JS Command where
     toCode _ = case _ of
         Unknown -> "/* unknown */"
         End output texture ->
+            -- case Debug.spy "tex" texture of
             case texture of
                 H.Empty -> ""
                 _ -> toCode javaScript texture <> "\n\t." <> ToCode.fnJs "out" [ output ]
@@ -222,6 +242,9 @@ producesCode family = case reflect family of
         "update" -> true
         "render" -> true
 
+        -- "callGlslFn" -> true
+        -- "caiGradientShader" -> true
+
         _ -> false
 
 
@@ -252,6 +275,7 @@ updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
     case reflect family of
 
         "out" ->
+            -- fn2 "what" "target" $ \v -> case Debug.spy "_" v of
             fn2 "what" "target" $ case _ of
                 Just (Texture texture /\ OutputN target) ->
                     End target texture

@@ -367,9 +367,12 @@ updateCodeFor
     -> ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr
     -> m Unit
 updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
+    -- liftEffect $ Console.log "update code"
+    -- liftEffect $ Console.log $ show $ Lang.updateToCommand family $ Tuple.snd update
     flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
     liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
     state <- liftEffect $ Ref.read stateRef
+    -- liftEffect $ Console.log $ show $ state.program
     case state.wsServer of
         Just serverState ->
             liftEffect $ flip WSS.broadcastProgram serverState $ Lang.formProgram state.program

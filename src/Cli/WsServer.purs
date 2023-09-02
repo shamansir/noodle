@@ -8,6 +8,7 @@ import Data.Traversable (for_)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+import Effect.Console as Console
 
 -- import Web.Socket.Server as WSS
 
@@ -16,7 +17,7 @@ import Effect.Exception (Error)
 import Node.HTTP (Request)
 import Web.Socket.Server as WSS
 
-import Toolkit.Hydra2.Lang (formProgram, Program) as Lang
+import Toolkit.Hydra2.Lang (Program) as Lang
 import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
 
 

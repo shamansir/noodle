@@ -26,11 +26,9 @@ chroma =
    _c0 += vec4(dg - _c0.g);
    return vec4(_c0.rgb, 1.0 - k);
    """
-   /\ (Fn.Fn $ "chroma" /\
-            [ Fn.Argument "radius" $ H.V $ H.Number 4.0
-            , Fn.Argument "rot" $ H.V $ H.Number 0.0
-            ]
-       )
+   /\ Fn.fn2 "chroma"
+            ( "radius" /\ (H.V $ H.Number 4.0) )
+            ( "rot" /\ (H.V $ H.Number 0.0) )
 
 
 sphere :: H.GlslFn
@@ -49,11 +47,9 @@ sphere =
   }
   return vec2(atan(rpos.z, rpos.x)+rot, atan(length(rpos.xz), rpos.y));
     """
-       /\ (Fn.Fn $ "sphere" /\
-            [ Fn.Argument "radius" $ H.V $ H.Number 4.0
-            , Fn.Argument "rot" $ H.V $ H.Number 0.0
-            ]
-       )
+       /\ Fn.fn2 "sphere"
+            ( "radius" /\ (H.V $ H.Number 4.0) )
+            ( "rot" /\ (H.V $ H.Number 0.0) )
 
 
 sphereDisplacement :: H.GlslFn
@@ -73,11 +69,9 @@ sphereDisplacement =
   }
   return vec2(atan(rpos.z, rpos.x)+rot, atan(length(rpos.xz), rpos.y));
   """
-       /\ (Fn.Fn $ "sphereDisplacement" /\
-            [ Fn.Argument "radius" $ H.V $ H.Number 4.0
-            , Fn.Argument "rot" $ H.V $ H.Number 0.0
-            ]
-       )
+       /\ Fn.fn2 "sphereDisplacement"
+            ( "radius" /\ (H.V $ H.Number 4.0) )
+            ( "rot" /\ (H.V $ H.Number 0.0) )
 
 
 sphereDisplacement2 :: H.GlslFn
@@ -99,11 +93,9 @@ sphereDisplacement2 =
     if(d > 0.5) return vec2(0.5,0.5);
     else return vec2(atan(rpos.z, rpos.x)+rot, atan(length(rpos.xz), rpos.y));
     """
-       /\ (Fn.Fn $ "sphereDisplacement2" /\
-            [ Fn.Argument "radius" $ H.V $ H.Number 4.0
-            , Fn.Argument "rot" $ H.V $ H.Number 0.0
-            ]
-       )
+       /\ Fn.fn2 "sphereDisplacement2"
+            ( "radius" /\ (H.V $ H.Number 4.0) )
+            ( "rot" /\ (H.V $ H.Number 0.0) )
 
 
 modulateSR :: H.GlslFn
@@ -119,13 +111,11 @@ modulateSR =
     xy+=vec2(0.5);
     return xy;
     """
-    /\ (Fn.Fn $ "modulateSR" /\
-            [ Fn.Argument "multiple" $ H.V $ H.Number 1.0
-            , Fn.Argument "offset" $ H.V $ H.Number 1.0
-            , Fn.Argument "rotateMultiple" $ H.V $ H.Number 1.0
-            , Fn.Argument "rotateOffset" $ H.V $ H.Number 1.0
-            ]
-       )
+    /\ Fn.fn4 "modulateSR"
+            ( "multiple" /\ (H.V $ H.Number 1.0) )
+            ( "offset" /\ (H.V $ H.Number 1.0) )
+            ( "rotateMultiple" /\ (H.V $ H.Number 1.0) )
+            ( "rotateOffset" /\ (H.V $ H.Number 1.0) )
 
 
 gradientCAI :: H.GlslFn
@@ -259,11 +249,9 @@ buf[0] = mat4(vec4(-0.37223837, 0.21939822, -0.1415498, 0.0), vec4(-2.106104, 0.
 buf[0] = buf0sig;
 return vec4(buf[0].x , buf[0].y , buf[0].z, 1);
      """
-    /\ (Fn.Fn $ "gradientCAI" /\
-            [ Fn.Argument "speed" $ H.V $ H.Number 1.0
-            , Fn.Argument "intensity" $ H.V $ H.Number 1.0
-            ]
-       )
+    /\ Fn.fn2 "gradientCAI"
+            ( "speed" /\ (H.V $ H.Number 1.0) )
+            ( "intensity" /\ (H.V $ H.Number 1.0) )
 
 
 knownFns :: Array H.GlslFn
