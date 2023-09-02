@@ -28,6 +28,7 @@ data Group
     | Source
     | Synth
     | Display
+    | CAI
     | Unknown
 
 
@@ -159,6 +160,7 @@ instance Mark Group where
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102
         Synth -> Color.rgb 128 102 255
+        CAI -> Color.rgb 235 80 182
         Unknown -> Color.rgb 109 199 101
 
 
