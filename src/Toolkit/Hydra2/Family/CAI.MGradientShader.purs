@@ -74,7 +74,7 @@ family = -- {-> caiProductGradient <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             speed <- P.receive _in_speed
-            product <- P.receive _in_intensity
+            intensity <- P.receive _in_intensity
             P.send _out_shader $ H.Empty -- FIXME
 
 

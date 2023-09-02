@@ -54,7 +54,7 @@ component families =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
-        , Box.width $ Dimension.px 14
+        , Box.width $ Dimension.px 20
         , Box.height $ Dimension.percents 65.0
         , Box.draggable true
         , Box.scrollable true

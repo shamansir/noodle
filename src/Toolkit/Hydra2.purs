@@ -124,6 +124,10 @@ import Toolkit.Hydra2.Family.Audio.FSetScale as FSetScale
 import Toolkit.Hydra2.Family.Audio.FHide as FHide
 import Toolkit.Hydra2.Family.Audio.FShow as FShow
 import Toolkit.Hydra2.Family.Out.FOut as FOut
+import Toolkit.Hydra2.Family.CAI.FGradientShader as FGradientShader
+import Toolkit.Hydra2.Family.CAI.FProductGradient as FProductGradient
+import Toolkit.Hydra2.Family.CAI.FProductPalette as FProductPalette
+import Toolkit.Hydra2.Family.CAI.FProductRecolor as FProductRecolor
 
 
 type State = Unit
@@ -221,6 +225,10 @@ type Families (m :: Type -> Type) =
         , setScale :: FSetScale.Family m  -- {-> audio <-}
         , hide :: FHide.Family m  -- {-> audio <-}
         , show :: FShow.Family m  -- {-> audio <-}
+        , caiGradientShader :: FGradientShader.Family m  -- {-> cai <-}
+        , caiProductGradient :: FProductGradient.Family m  -- {-> cai <-}
+        , caiProductPalette :: FProductPalette.Family m  -- {-> cai <-}
+        , caiProductRecolor :: FProductRecolor.Family m  -- {-> cai <-}
         , out :: FOut.Family m  -- {-> out <-}
         )
 
@@ -314,6 +322,10 @@ families =
         , setScale : (FSetScale.family :: FSetScale.Family m)
         , hide : (FHide.family :: FHide.Family m)
         , show : (FShow.family :: FShow.Family m)
+        , caiGradientShader : (FGradientShader.family :: FGradientShader.Family m)
+        , caiProductGradient : (FProductGradient.family :: FProductGradient.Family m)
+        , caiProductPalette : (FProductPalette.family :: FProductPalette.Family m)
+        , caiProductRecolor : (FProductRecolor.family :: FProductRecolor.Family m)
         , out : (FOut.family :: FOut.Family m)
         }
 
@@ -334,13 +346,13 @@ type FamiliesOrder =
 
         --  Source
 
-        ::: "noise"
-        ::: "voronoi"
+        ::: "solid"
         ::: "osc"
-        ::: "shape"
         ::: "gradient"
         ::: "src"
-        ::: "solid"
+        ::: "noise"
+        ::: "voronoi"
+        ::: "shape"
         ::: "prev"
 
         --  Geometry
@@ -408,19 +420,26 @@ type FamiliesOrder =
         ::: "initScreen"
         ::: "init"
 
+        -- CAI
+
+        ::: "caiGradientShader"
+        ::: "caiProductGradient"
+        ::: "caiProductPalette"
+        ::: "caiProductRecolor"
+
         --  Synth Settings
 
-        ::: "render"
-        ::: "update"
-        ::: "setResolution"
-        ::: "hush"
-        ::: "setGlslFn"
-        ::: "speed"
-        ::: "bpm"
         ::: "width"
         ::: "height"
         ::: "time"
         ::: "mouse"
+        ::: "speed"
+        ::: "bpm"
+        ::: "update"
+        ::: "setResolution"
+        ::: "hush"
+        ::: "setGlslFn"
+        ::: "render"
 
         --  Array
 
@@ -548,6 +567,10 @@ type Instances m =
         , setScale :: Array ( FSetScale.Node m )
         , hide :: Array ( FHide.Node m )
         , show :: Array ( FShow.Node m )
+        , caiGradientShader :: Array ( FGradientShader.Node m )
+        , caiProductGradient :: Array ( FProductGradient.Node m )
+        , caiProductPalette :: Array ( FProductPalette.Node m )
+        , caiProductRecolor :: Array ( FProductRecolor.Node m )
         , out :: Array ( FOut.Node m )
         )
 
@@ -641,6 +664,10 @@ noInstances =
         , setScale : ([] :: Array ( FSetScale.Node m ))
         , hide : ([] :: Array ( FHide.Node m ))
         , show : ([] :: Array ( FShow.Node m ))
+        , caiGradientShader : ([] :: Array ( FGradientShader.Node m ))
+        , caiProductGradient : ([] :: Array ( FProductGradient.Node m ))
+        , caiProductPalette : ([] :: Array ( FProductPalette.Node m ))
+        , caiProductRecolor : ([] :: Array ( FProductRecolor.Node m ))
         , out : ([] :: Array ( FOut.Node m ))
         }
 
@@ -734,6 +761,10 @@ familySym :: Record
         , setScale :: Node.Family "setScale"
         , hide :: Node.Family "hide"
         , show :: Node.Family "show"
+        , caiGradientShader :: Node.Family "caiGradientShader"
+        , caiProductGradient :: Node.Family "caiProductGradient"
+        , caiProductPalette :: Node.Family "caiProductPalette"
+        , caiProductRecolor :: Node.Family "caiProductRecolor"
         , out :: Node.Family "out"
         )
 
@@ -828,6 +859,10 @@ familySym =
         , setScale : FSetScale.id
         , hide : FHide.id
         , show : FShow.id
+        , caiGradientShader : FGradientShader.id
+        , caiProductGradient : FProductGradient.id
+        , caiProductPalette : FProductPalette.id
+        , caiProductRecolor : FProductRecolor.id
         , out : FOut.id
         }
 
@@ -934,6 +969,10 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "setScale" -> Just $ fn familySym.setScale families.setScale toolkit
         "hide" -> Just $ fn familySym.hide families.hide toolkit
         "show" -> Just $ fn familySym.show families.show toolkit
+        "caiGradientShader" -> Just $ fn familySym.caiGradientShader families.caiGradientShader toolkit
+        "caiProductGradient" -> Just $ fn familySym.caiProductGradient families.caiProductGradient toolkit
+        "caiProductPalette" -> Just $ fn familySym.caiProductPalette families.caiProductPalette toolkit
+        "caiProductRecolor" -> Just $ fn familySym.caiProductRecolor families.caiProductRecolor toolkit
         "out" -> Just $ fn familySym.out families.out toolkit
 
         _ -> Nothing
