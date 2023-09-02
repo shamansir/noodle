@@ -84,6 +84,21 @@ fn5 n a1 a2 a3 a4 a5 =
     fnOf n [ a1, a2, a3, a4, a5 ]
 
 
+fn6 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn6 n a1 a2 a3 a4 a5 a6 =
+    fnOf n [ a1, a2, a3, a4, a5, a6 ]
+
+
+fn7 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn7 n a1 a2 a3 a4 a5 a6 a7 =
+    fnOf n [ a1, a2, a3, a4, a5, a6, a7 ]
+
+
+fn8 :: forall arg. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg
+fn8 n a1 a2 a3 a4 a5 a6 a7 a8 =
+    fnOf n [ a1, a2, a3, a4, a5, a6, a7, a8 ]
+
+
 arg :: forall x. ArgumentName -> x -> Argument x
 arg = Argument
 

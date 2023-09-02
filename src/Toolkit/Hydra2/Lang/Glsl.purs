@@ -254,6 +254,108 @@ return vec4(buf[0].x , buf[0].y , buf[0].z, 1);
             ( "intensity" /\ (H.V $ H.Number 1.0) )
 
 
+gradient3 :: H.GlslFn
+gradient3 =
+    H.GlslFn
+    $ H.FnSrc
+    /\ H.GlslFnCode
+    """
+	vec2 gradient_start_pos = vec2(0.0, 0.0); // top-left
+    vec2 gradient_end_pos = vec2(1.0, 1.0); // bottom-right
+
+    float stops[3];
+    vec4 colors[3];
+    stops[0] = stop0;
+    stops[1] = stop1;
+    stops[2] = stop2;
+    colors[0] = color0;
+    colors[1] = color1;
+    colors[2] = color2;
+
+    vec4 fragColor;
+
+    float gradient_startpos_x = gradient_start_pos.x;
+    float gradient_endpos_x = gradient_end_pos.x;
+    float len = gradient_endpos_x - gradient_startpos_x;
+    float x_loc = uv.x;
+
+    	fragColor = mix(colors[0], colors[1], smoothstep(
+            gradient_startpos_x + stops[0] * len,
+            gradient_startpos_x + stops[1] * len,
+            x_loc
+        ));
+     for (int i = 1; i < 2; i++) {
+          fragColor = mix(fragColor, colors[i + 1], smoothstep(
+          gradient_startpos_x + stops[i] * len,
+          gradient_startpos_x + stops[i + 1] * len,
+          x_loc
+          ));
+     }
+
+     return fragColor;
+     """
+     /\ Fn.fn6 "gradient3"
+            ( "color0" /\ (H.T $ H.Empty) )
+            ( "color1" /\ (H.T $ H.Empty) )
+            ( "color2" /\ (H.T $ H.Empty) )
+            ( "stop0" /\ (H.V $ H.Number 0.0) )
+            ( "stop1" /\ (H.V $ H.Number 0.5) )
+            ( "stop2" /\ (H.V $ H.Number 1.0) )
+
+
+gradient4 :: H.GlslFn
+gradient4 =
+    H.GlslFn
+    $ H.FnSrc
+    /\ H.GlslFnCode
+    """
+    vec2 gradient_start_pos = vec2(0.0, 0.0); // top-left
+    vec2 gradient_end_pos = vec2(1.0, 1.0); // bottom-right
+
+    float stops[4];
+    vec4 colors[4];
+    stops[0] = stop0;
+    stops[1] = stop1;
+    stops[2] = stop2;
+    stops[3] = stop3;
+    colors[0] = color0;
+    colors[1] = color1;
+    colors[2] = color2;
+    colors[3] = color3;
+
+    vec4 fragColor;
+
+    float gradient_startpos_x = gradient_start_pos.x;
+    float gradient_endpos_x = gradient_end_pos.x;
+    float len = gradient_endpos_x - gradient_startpos_x;
+    float x_loc = uv.x;
+
+    	fragColor = mix(colors[0], colors[1], smoothstep(
+          gradient_startpos_x + stops[0] * len,
+          gradient_startpos_x + stops[1] * len,
+          x_loc
+     ));
+     for (int i = 1; i < 3; i++) {
+          fragColor = mix(fragColor, colors[i + 1], smoothstep(
+               gradient_startpos_x + stops[i] * len,
+               gradient_startpos_x + stops[i + 1] * len,
+               x_loc
+          ));
+     }
+
+     return fragColor;
+     """
+     /\ Fn.fn8 "gradient4"
+            ( "color0" /\ (H.T $ H.Empty) )
+            ( "color1" /\ (H.T $ H.Empty) )
+            ( "color2" /\ (H.T $ H.Empty) )
+            ( "color3" /\ (H.T $ H.Empty) )
+            ( "stop0" /\ (H.V $ H.Number 0.0) )
+            ( "stop1" /\ (H.V $ H.Number 0.33) )
+            ( "stop2" /\ (H.V $ H.Number 0.66) )
+            ( "stop3" /\ (H.V $ H.Number 1.0) )
+
+
 knownFns :: Array H.GlslFn
 knownFns =
     [ chroma
@@ -262,6 +364,8 @@ knownFns =
     , sphereDisplacement2
     , modulateSR
     , gradientCAI
+    , gradient3
+    , gradient4
     ]
 
 
