@@ -73,6 +73,7 @@ to generate this file without the comments in this block.
   , "record"
   , "refs"
   , "signal"
+  , "simple-json"
   , "sized-vectors"
   , "strings"
   , "strings-extra"

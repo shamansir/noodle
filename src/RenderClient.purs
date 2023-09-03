@@ -42,14 +42,27 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 
-data State
+data Connection
   = Connecting
-  | Ready { w :: Int, h :: Int }
+  | Ready
   | Error String
 
 
+type State =
+  { window :: { w :: Int, h :: Int }
+  , connection :: Connection
+  , error :: Maybe String
+  , currentScene :: Maybe Hydra.HydraCode
+  }
+
+
 initialState :: forall i. i -> State
-initialState = const Connecting
+initialState = const
+  { window : { w : 0, h : 0 }
+  , connection : Connecting
+  , error : Nothing
+  , currentScene : Nothing
+  }
 
 
 data Action
@@ -63,6 +76,7 @@ data Action
   | Prepare
   | Render String
   | WindowResize H.SubscriptionId { w :: Int, h :: Int }
+  | Save
 
 
 component :: forall q i o m. MonadEffect m => H.Component q i o m
@@ -78,15 +92,15 @@ component =
 
 
 render :: forall cs m. State -> H.ComponentHTML Action cs m
-render =
-  case _ of
+render state =
+  case state.connection of
     Connecting -> HH.span [ HP.id "status" ] [ HH.text "Connecting" ]
-    Ready { w, h } ->
+    Ready ->
       HH.div_
           [ HH.canvas
             [ HP.id "hydra-canvas"
-            , HP.width w
-            , HP.height h
+            , HP.width state.window.w
+            , HP.height state.window.h
             ]
           , HH.span
             [ HP.id "status", HP.class_ $ H.ClassName "ready" ]
@@ -126,13 +140,11 @@ handleAction = case _ of
       -- H.modify_ _ { windowSize = innerWidth /\ innerHeight }
       windowResize <- H.liftEffect Emitters.windowDimensions
       H.subscribe' $ \sid -> WindowResize sid <$> windowResize
-      State.put $ Ready { w : innerWidth, h : innerHeight }
+      State.modify_ (_ { window = { w : innerWidth, h : innerHeight } })
       liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
   WindowResize _ newSize -> do
       liftEffect $ Console.log $ show newSize
-      State.modify_ $ \s -> case s of
-        Ready _ -> Ready newSize
-        _ -> s
+      State.modify_ (_ { window = newSize })
   Render what -> do
       liftEffect $ Console.log $ "render" <> what
       liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
@@ -147,11 +159,14 @@ handleAction = case _ of
   OnWsClose _ -> do
       liftEffect $ Console.log "close"
   OnWsError _ -> do
-      State.put $ Error "WebSocket error"
+      State.modify_ (_ { error = Just "WebSocket error" })
       liftEffect $ Console.log "error"
   ParsingError error -> do
-      State.put $ Error error
+      State.modify_ (_ { error = Just "Parsing error" })
       liftEffect $ Console.log $ "error: " <> error
+  Save ->
+      pure unit
+      -- TODO
   where
       errorsToString =
         Array.fromFoldable >>> map F.renderForeignError >>> String.joinWith ", "
