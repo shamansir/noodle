@@ -410,7 +410,7 @@ instance ToCode JS GlslFn where
         where
             argToJsObj =
                 case _ of
-                    (name /\ T _) -> "{ type: 'sampler2D', default : NaN, name : \'" <> name <> "\' }"
+                    (name /\ T _) -> "{ type: 'vec4', default : NaN, name : \'" <> name <> "\' }"
                     (name /\ V (Number n)) -> "{ type: 'float', default : " <> show n <> ", name : \'" <> name <> "\' }"
                     (name /\ V val) -> "{ type: 'float', default : " <> toCode javaScript val <> ", name : \'" <> name <> "\' }"
             kindToString = case _ of
@@ -437,7 +437,7 @@ instance ToCode JS_DISPLAY GlslFn where
         where
             argToJsObj =
                 case _ of
-                    (name /\ T _) -> "{ sampler2D, \'" <> name <> "\' }"
+                    (name /\ T _) -> "{ vec4, \'" <> name <> "\' }"
                     (name /\ V (Number n)) -> "{ float, " <> show n <> ", \'" <> name <> "\' }"
                     (name /\ V val) -> "{ 'float', " <> toCode javaScript val <> ", \'" <> name <> "\' }"
             kindToString = case _ of

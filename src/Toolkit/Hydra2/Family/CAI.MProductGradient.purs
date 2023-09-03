@@ -1,20 +1,22 @@
 module Toolkit.Hydra2.Family.CAI.FProductGradient where
 
-import Prelude
-
-
-import Toolkit.Hydra2.Types as H
-
 
 import Prelude (Unit, unit, ($), bind, pure)
+
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
+import Data.Tuple.Nested ((/\), type (/\))
+import Type.Proxy (Proxy(..))
+
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T, s1, s3)
-import Type.Proxy (Proxy(..))
+
+
+import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Fn as HFn
 
 
 id = Node.Family :: _ "caiProductGradient"
@@ -74,7 +76,17 @@ family = -- {-> caiProductGradient <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             product <- P.receive _in_product
-            P.send _out_gradient $ H.Start $ H.Gradient { speed : H.Number 1.0 }
+            let
+                color0 = H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
+                color1 = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
+                color2 = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
+            P.send _out_gradient
+                $ H.CallGlslFn H.Empty
+                $ H.GlslFnRef
+                $ HFn.fn3 "gradient3"
+                    ( "color0" /\ H.T color0 )
+                    ( "color1" /\ H.T color1 )
+                    ( "color2" /\ H.T color2 )
 
 
 type Node (m :: Type -> Type) =
