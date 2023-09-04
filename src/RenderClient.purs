@@ -142,6 +142,7 @@ handleAction = case _ of
       H.subscribe' $ \sid -> WindowResize sid <$> windowResize
       State.modify_ (_ { window = { w : innerWidth, h : innerHeight } })
       liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
+      State.modify_ (_ { connection = Ready })
   WindowResize _ newSize -> do
       liftEffect $ Console.log $ show newSize
       State.modify_ (_ { window = newSize })
