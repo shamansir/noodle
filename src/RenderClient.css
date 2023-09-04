@@ -5,6 +5,7 @@ html, body {
     height : 100vh;
     min-height : 100vh;
     overflow: hidden;
+    font-family : 'JetBrains Sans', 'JetBrains Mono', sans-serif;
 }
 
 body {
@@ -30,7 +31,6 @@ canvas {
     margin: 5px;
     color: white;
     background-color : lightgray;
-    font-family : 'JetBrains Sans', sans-serif;
     border-radius: 5px;
 }
 
@@ -45,6 +45,20 @@ canvas {
     padding: 5px;
     margin: 5px;
     background-color : lightgray;
-    font-family : 'JetBrains Sans', sans-serif;
     border-radius: 5px;
+}
+
+#save {
+    position: absolute;
+    border-radius: 5px;
+    margin: 5px;
+    padding: 5px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: black;
+    text-decoration: none;
+    background-color : lightgray;
+    cursor: pointer;
+    z-index: 5;
 }

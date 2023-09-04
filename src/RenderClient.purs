@@ -14,6 +14,7 @@ import Data.Either (either)
 import Data.String as String
 import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.MediaType (MediaType(..))
 
 import Halogen as H
 import Halogen.Aff as HA
@@ -33,6 +34,9 @@ import Web.Socket.WebSocket as WS
 import Web.Socket.Event.EventTypes as WS
 import Web.Socket.Event.MessageEvent as WSMsg
 
+import Web.File.Url as Web
+import Web.File.Blob as Blob
+
 import Toolkit.Hydra2.Engine as Hydra
 
 
@@ -48,11 +52,14 @@ data Connection
   | Error String
 
 
+newtype BlobUrl = BlobUrl String
+
+
 type State =
   { window :: { w :: Int, h :: Int }
   , connection :: Connection
   , error :: Maybe String
-  , currentScene :: Maybe Hydra.HydraCode
+  , currentSceneBlob :: Maybe BlobUrl
   }
 
 
@@ -61,7 +68,7 @@ initialState = const
   { window : { w : 0, h : 0 }
   , connection : Connecting
   , error : Nothing
-  , currentScene : Nothing
+  , currentSceneBlob : Nothing
   }
 
 
@@ -105,6 +112,15 @@ render state =
           , HH.span
             [ HP.id "status", HP.class_ $ H.ClassName "ready" ]
             [ HH.text "Ready" ]
+          , case state.currentSceneBlob of
+                Just (BlobUrl blobUrl) ->
+                  HH.a
+                    [ HP.id "save"
+                    , HP.download "shader_scene.html"
+                    , HP.href blobUrl
+                    ]
+                    [ HH.text "Save" ]
+                Nothing -> HH.div_ []
           ]
     Error error ->
       HH.div
@@ -140,15 +156,18 @@ handleAction = case _ of
       -- H.modify_ _ { windowSize = innerWidth /\ innerHeight }
       windowResize <- H.liftEffect Emitters.windowDimensions
       H.subscribe' $ \sid -> WindowResize sid <$> windowResize
-      State.modify_ (_ { window = { w : innerWidth, h : innerHeight } })
+      State.modify_ $ _ { window = { w : innerWidth, h : innerHeight } }
       liftEffect $ Hydra.init $ Hydra.TargetCanvas "hydra-canvas"
-      State.modify_ (_ { connection = Ready })
+      State.modify_ $ _ { connection = Ready }
   WindowResize _ newSize -> do
       liftEffect $ Console.log $ show newSize
-      State.modify_ (_ { window = newSize })
+      State.modify_ $ _ { window = newSize }
   Render what -> do
       liftEffect $ Console.log $ "render" <> what
       liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
+      let blob = Blob.fromString "testBlob" $ MediaType "text/html"
+      objectUrl <- liftEffect $ Web.createObjectURL blob
+      State.modify_ $ _ { currentSceneBlob = Just $ BlobUrl objectUrl }
   OnWsMessage _ msgevt -> do
       let messageData = WSMsg.data_ msgevt
       str <- T.runExceptT $ F.readString messageData
@@ -160,10 +179,10 @@ handleAction = case _ of
   OnWsClose _ -> do
       liftEffect $ Console.log "close"
   OnWsError _ -> do
-      State.modify_ (_ { error = Just "WebSocket error" })
+      State.modify_ $ _ { error = Just "WebSocket error" }
       liftEffect $ Console.log "error"
   ParsingError error -> do
-      State.modify_ (_ { error = Just "Parsing error" })
+      State.modify_ $ _ { error = Just "Parsing error" }
       liftEffect $ Console.log $ "error: " <> error
   Save ->
       pure unit
