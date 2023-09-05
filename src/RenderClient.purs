@@ -38,6 +38,7 @@ import Web.File.Url as Web
 import Web.File.Blob as Blob
 
 import Toolkit.Hydra2.Engine as Hydra
+import Toolkit.Hydra2.Engine (HydraCode(..))
 
 
 main :: Effect Unit
@@ -119,7 +120,8 @@ render state =
                     , HP.download "shader_scene.html"
                     , HP.href blobUrl
                     ]
-                    [ HH.text "Save" ]
+                    [ HH.text "Save"
+                    ]
                 Nothing -> HH.div_ []
           ]
     Error error ->
@@ -164,8 +166,8 @@ handleAction = case _ of
       State.modify_ $ _ { window = newSize }
   Render what -> do
       liftEffect $ Console.log $ "render" <> what
-      liftEffect $ Hydra.evaluate $ Hydra.HydraCode what
-      let blob = Blob.fromString "testBlob" $ MediaType "text/html"
+      liftEffect $ Hydra.evaluate $ HydraCode what
+      let blob = Blob.fromString (buildHtmlWith $ HydraCode what) $ MediaType "text/html"
       objectUrl <- liftEffect $ Web.createObjectURL blob
       State.modify_ $ _ { currentSceneBlob = Just $ BlobUrl objectUrl }
   OnWsMessage _ msgevt -> do
@@ -196,6 +198,53 @@ handleAction = case _ of
 
 
 
+buildHtmlWith :: HydraCode -> String
+buildHtmlWith (HydraCode hydraCode) =
+  """
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1,shrink-to-fit=no"
+    />
+    <!-- import the latest version of hydra synth-->
+    <script src="https://unpkg.com/hydra-synth"></script>
+
+    <title>Produced with Noodle</title>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        body {
+            width: 100%;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+  </head>
+  <body>
+    <canvas id="hydra-canvas"></canvas>
+    <script>
+      var hydra = new Hydra({
+        canvas: document.getElementById("hydra-canvas"),
+        detectAudio: false
+      });
+    </script>
+    <script>
+""" <> hydraCode <> """
+    </script>
+  </body>
+</html>
+  """
 
 
 
