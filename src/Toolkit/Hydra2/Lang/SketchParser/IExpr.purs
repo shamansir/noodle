@@ -95,6 +95,23 @@ mathIExpr = do
   pure $ Math (f1ts method) mbIExpr
 
 
+
+widthIExpr :: Parser String IExpr
+widthIExpr = do
+  _ <- spaces
+  _ <- string "width"
+  _ <- spaces
+  pure Width
+
+
+heightIExpr :: Parser String IExpr
+heightIExpr = do
+  _ <- spaces
+  _ <- string "height"
+  _ <- spaces
+  pure Height
+
+
 timeIExpr :: Parser String IExpr
 timeIExpr = do
   _ <- spaces
@@ -114,11 +131,14 @@ bracketsIExpr = do
   _ <- spaces
   pure $ Brackets iexpr
 
+
 operand :: Parser String IExpr
 operand =
   try numberIExpr
   <|> try piIExpr
   <|> try timeIExpr
+  <|> try widthIExpr
+  <|> try heightIExpr
   <|> try fftIExpr
   <|> try mouseXIExpr
   <|> try mouseYIExpr
@@ -134,11 +154,12 @@ inlineExprParser =
                   , [ Infix (string "+" $> Add) AssocRight ]
                   ] $ defer (\_ -> operand)
 
+
 instance Show IExpr where
   show (INum n) = show n
   show Pi = "Pi"
   show Time = "Time"
-  show (Div a b) = show a <> "/" <> show b
+  show (Div a b) = "[" <> show a <> "/" <> show b <> "]"
   show (Mul a b) = show a <> "*" <> show b
   show (Add a b) = show a <> "+" <> show b
   show (Sub a b) = show a <> "-" <> show b

@@ -63,9 +63,10 @@ data Value
     -- TODO: Glsl
 
 
--- derive instance Eq Value
--- derive instance Eq Values
--- derive instance Eq Ease
+derive instance Eq Ease
+derive instance Eq Values
+derive instance Eq Value
+derive instance Eq ValueExpr
 derive instance Eq AudioSource
 derive instance Eq AudioBin
 -- derive instance Eq Texture
@@ -96,6 +97,15 @@ data Fn
     | Fn (Context -> Effect Value)
     | Unparsed String
     | NoAction
+
+
+instance Eq Fn where
+    eq :: Fn -> Fn -> Boolean
+    eq (VExpr vexprA) (VExpr vexprB) = vexprA == vexprB
+    eq (Fn _) (Fn _) = false -- could be fixed?
+    eq (Unparsed strA) (Unparsed strB) = strA == strB
+    eq NoAction NoAction = true
+    eq _ _ = false
 
 
 data Texture

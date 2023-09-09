@@ -22,6 +22,7 @@ import Test.Generating (spec) as Generating
 import Test.NdfParsing (spec) as NdfParsing
 import Test.SOrder (spec) as SOrder
 import Test.NodeKey (spec) as NodeKey
+import Test.IExprParsing (spec) as IExprParsing
 import Test.WrapReprParsing (spec) as WrapReprParsing
 
 
@@ -55,5 +56,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     SOrder.spec
   describe "NodeKey"
     NodeKey.spec
-  describeOnly "Hydra Serialization"
+  describeOnly "Expressions parsing"
+    IExprParsing.spec
+  describe "Hydra Serialization"
     WrapReprParsing.spec
