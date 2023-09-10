@@ -30,6 +30,7 @@ data IExpr
   | Mul IExpr IExpr
   | Sub IExpr IExpr
   | Add IExpr IExpr
+  | Mod IExpr IExpr
   | Fft Int
   | Math String (Maybe IExpr)
   | Brackets IExpr
@@ -152,6 +153,7 @@ inlineExprParser =
                   , [ Infix (string "*" $> Mul) AssocRight ]
                   , [ Infix (string "-" $> Sub) AssocRight ]
                   , [ Infix (string "+" $> Add) AssocRight ]
+                  , [ Infix (string "%" $> Mod) AssocRight ]
                   ] $ defer (\_ -> operand)
 
 
@@ -159,10 +161,11 @@ instance Show IExpr where
   show (INum n) = show n
   show Pi = "Pi"
   show Time = "Time"
-  show (Div a b) = "[" <> show a <> "/" <> show b <> "]"
+  show (Div a b) = show a <> "/" <> show b
   show (Mul a b) = show a <> "*" <> show b
   show (Add a b) = show a <> "+" <> show b
   show (Sub a b) = show a <> "-" <> show b
+  show (Mod a b) = show a <> "%" <> show b
   show (Fft n) = "a.fft[" <> show n <> "]"
   show (Math method expr) = "Math." <> method <> "(" <> show expr <> ")"
   show (Brackets expr) = "(" <> show expr <> ")"
@@ -182,6 +185,7 @@ instance ToCode PS IExpr where
     Mul a b -> "(" <> toCode pureScript a <> " * " <> toCode pureScript b <> ")"
     Add a b -> "(" <> toCode pureScript a <> " + " <> toCode pureScript b <> ")"
     Sub a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
+    Mod a b -> "(" <> toCode pureScript a <> " % " <> toCode pureScript b <> ")"
     Fft n -> "(a # fft h" <> show n <> ")"
     Brackets expr -> "(" <> show expr <> ")"
     MouseX -> "ctx.mouseX"
@@ -202,6 +206,7 @@ instance ToCode JS IExpr where
     Mul a b -> toCode javaScript a <> "*" <> toCode javaScript b
     Add a b -> toCode javaScript a <> "+" <> toCode javaScript b
     Sub a b -> toCode javaScript a <> "-" <> toCode javaScript b
+    Mod a b -> toCode pureScript a <> "%" <> toCode pureScript b
     Fft n -> "a.fft[" <> show n <> "]"
     Brackets expr -> "(" <> show expr <> ")"
     MouseX -> "mouse.x"
