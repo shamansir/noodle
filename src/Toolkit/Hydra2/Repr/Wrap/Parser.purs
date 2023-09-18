@@ -1,4 +1,6 @@
 module Toolkit.Hydra2.Repr.Wrap.Parser where
+-- TODO: may be move value parsers to Hydra.Lang, but these parsers here encode NDF file structure, they are different from SketchParser,
+-- but JsExpr parser could be separated since it is the same everywhere
 
 import Data.FromToFile
 
@@ -415,6 +417,7 @@ operand =
   <|> try fftJsExpr
   <|> try mouseXJsExpr
   <|> try mouseYJsExpr
+  -- FIXME: valuesJsExpr
   <|> try (defer \_ -> mathJsExpr)
   <|> try (defer \_ -> bracketsJsExpr)
 
@@ -530,3 +533,15 @@ parseArgs4V f =
 parseArgs5V :: forall x. (T.Value -> T.Value -> T.Value -> T.Value -> T.Value -> x) -> Parser String x
 parseArgs5V f =
     parseArgsHelperV 4 $ \arr -> f <$> arr !! 0 <*> arr !! 1 <*> arr !! 2 <*> arr !! 3  <*> arr !! 4
+
+
+
+findFnCode :: String -> Maybe T.Fn
+findFnCode str =
+    case runParser str inlineExprParser of
+        Left _ -> Just $ T.Unparsed str
+        Right jsExpr -> Just $ T.UserExpr jsExpr
+
+
+findValues :: String -> Maybe T.Values
+findValues = const $ Just $ T.Values [] -- FIXME

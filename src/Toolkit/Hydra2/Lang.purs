@@ -249,7 +249,7 @@ producesCode family = case reflect family of
         "update" -> true
         "render" -> true
 
-        -- "callGlslFn" -> true
+        -- "callFunction" -> true
         -- "caiGradientShader" -> true
 
         _ -> false

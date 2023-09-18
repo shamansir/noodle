@@ -45,7 +45,7 @@ toGroupR family = case Id.reflectFamilyR family of
     "pi" -> Feed
     "array" -> Feed
     "expression" -> Feed
-    "callGlslFn" -> Feed
+    "callFunction" -> Feed
 
     "info" -> Display
 
@@ -117,7 +117,7 @@ toGroupR family = case Id.reflectFamilyR family of
     "update" -> Synth
     "setResolution" -> Synth
     "hush" -> Synth
-    "setGlslFn" -> Synth
+    "setFunction" -> Synth
     "speed" -> Synth
     "bpm" -> Synth
     "width" -> Synth

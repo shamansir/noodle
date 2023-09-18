@@ -48,6 +48,7 @@ import Cli.Style as Style
 -- import Noodle.Node2 (Node)
 
 import Toolkit.Hydra2.Types as T
+import Toolkit.Hydra2.Repr.Wrap.Parser (findFnCode) as T
 -- import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
 import Toolkit.Hydra2.Family.Feed.FExpression (Node, State, _out_out) as FExpression
 -- import Toolkit.Hydra2 (State) as Hydra
@@ -68,7 +69,7 @@ render nodeBoxKey node = do
                 [ Box.top $ Offset.px 1
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.percents 85.0
-                , Box.height $ Dimension.px 8
+                , Box.height $ Dimension.px 3
                 , Style.inputBox
                 , TextArea.mouse true
                 , TextArea.inputOnFocus true

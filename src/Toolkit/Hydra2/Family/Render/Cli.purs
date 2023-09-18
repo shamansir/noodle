@@ -66,8 +66,8 @@ else instance (Applicative m, MonadEffect m) => HasBody (CliF "expression") "exp
 else instance (Applicative m, MonadEffect m) => HasBody (CliF "array") "array" FArray.State FArray.Inputs FArray.Outputs m where
     run :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run _ = FArray.render
-else instance (Applicative m, MonadEffect m) => HasBody (CliF "callGlslFn") "callGlslFn" FCallGlslFunction.State FCallGlslFunction.Inputs FCallGlslFunction.Outputs m where
-    run :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
+else instance (Applicative m, MonadEffect m) => HasBody (CliF "callFunction") "callFunction" FCallGlslFunction.State FCallGlslFunction.Inputs FCallGlslFunction.Outputs m where
+    run :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
     run _ = FCallGlslFunction.render
 else instance HasBody (CliF f) f state is os m where
     run :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
@@ -89,8 +89,8 @@ else instance (Applicative m, MonadEffect m) => HasBody' (CliF "expression") (FE
 else instance (Applicative m, MonadEffect m) => HasBody' (CliF "array") (FArray.Node m) FArray.State m where
     run' :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run' _ = FArray.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callGlslFn") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
-    run' :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
+else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callFunction") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
+    run' :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
     run' _ = FCallGlslFunction.render
 else instance HasBody' (CliF f) (Node f state is os m) state m where
     run' :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
@@ -99,9 +99,9 @@ else instance HasBody' (CliF f) (Node f state is os m) state m where
 
 instance HasCustomSize (CliF "expression") (FExpression.Node m) where
     size :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Just { width : 30, height : 3 }
-else instance HasCustomSize (CliF "callGlslFn") (FCallGlslFunction.Node m) where
-    size :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
+    size _ _ _ = Just { width : 35, height : 5 }
+else instance HasCustomSize (CliF "callFunction") (FCallGlslFunction.Node m) where
+    size :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Just { width : 30, height : Array.length Glsl.knownFns + 2 }
 else instance HasCustomSize (CliF f) (Node f state is os m) where
     size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }

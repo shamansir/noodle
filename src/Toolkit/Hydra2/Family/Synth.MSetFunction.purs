@@ -16,7 +16,7 @@ import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "setGlslFn"
+id = Node.Family :: _ "setFunction"
 
 
 name :: String
@@ -75,7 +75,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "setGlslFn" State
+    N.Node "setFunction" State
         Inputs
         Outputs
         m

@@ -351,14 +351,6 @@ initialContext =
         }
 
 
-findFnCode :: String -> Maybe Fn
-findFnCode = Just <<< Unparsed -- FIXME
-
-
-findValues :: String -> Maybe Values
-findValues = const $ Just $ Values [] -- FIXME
-
-
 instance IsNodeState Values where
     default = noValues
 
@@ -526,7 +518,7 @@ instance Show JsExpr where
 instance Show Fn where
     show :: Fn -> String
     show = case _ of
-        UserExpr jsexpr -> show jsexpr
+        UserExpr jsexpr -> ":: " <> show jsexpr <> " ::"
         Fn _ -> "[Code]"
         Unparsed str -> "{{ " <> str <> " }}"
         NoAction -> "--"

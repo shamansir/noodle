@@ -49,7 +49,10 @@ instance ShortInfo H.Value where
         H.None -> "-"
         H.Undefined -> "?"
         H.Number n -> show n
-        H.Dep _ -> "→#"
+        H.Dep (H.UserExpr _) -> "→{}"
+        H.Dep (H.Fn _) -> "→⨐"
+        H.Dep (H.Unparsed _) -> "→⍟"
+        H.Dep H.NoAction -> "→∅"
         H.VArray vs ease -> short vs <> short ease
         H.Time -> "⏲" -- ⏰
         H.MouseX -> "MX"

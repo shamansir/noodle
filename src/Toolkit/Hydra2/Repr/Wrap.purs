@@ -37,7 +37,7 @@ data WrapRepr
     | SourceN H.SourceN
     | ExtSource H.ExtSource
     | Target H.RenderTarget
-    | Fn H.Fn
+    | Fn H.Fn -- FIXME: review for excessive wraps, this one seems not to be needed, for example (we wrap Fn-s into values)
     | CBS H.CanBeSource
 
 
@@ -143,7 +143,7 @@ instance NMF.HasRepr H.RenderTarget WrapRepr where
 
 instance NMF.HasRepr H.Fn WrapRepr where
     toRepr :: forall f i o. InNode f i o -> H.Fn -> WrapRepr
-    toRepr _ = Fn
+    toRepr _ = H.Dep >>> Value
 
 
 instance NMF.HasRepr H.CanBeSource WrapRepr where
@@ -256,7 +256,7 @@ instance R.ToRepr H.RenderTarget WrapRepr where
 
 instance R.ToRepr H.Fn WrapRepr where
     toRepr :: H.Fn -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Fn
+    toRepr = R.exists <<< Value <<< H.Dep
 
 
 instance R.ToRepr H.CanBeSource WrapRepr where

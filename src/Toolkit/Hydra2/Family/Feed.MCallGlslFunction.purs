@@ -32,7 +32,7 @@ import Toolkit.Hydra2.Types as H
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "callGlslFn"
+id = Node.Family :: _ "callFunction"
 
 
 name :: String
@@ -86,7 +86,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family (m :: Type -> Type) = -- {-> callGlslFn <-}
+type Family (m :: Type -> Type) = -- {-> callFunction <-}
     Family.Def State
         Inputs
         Outputs
@@ -94,7 +94,7 @@ type Family (m :: Type -> Type) = -- {-> callGlslFn <-}
 
 
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> callGlslFn <-}
+family = -- {-> callFunction <-}
     Family.def
         defaultState
         defaultInputs
@@ -116,7 +116,7 @@ family = -- {-> callGlslFn <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "callGlslFn" State
+    N.Node "callFunction" State
         Inputs
         Outputs
         m

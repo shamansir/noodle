@@ -249,7 +249,10 @@ instance ToCode JS Value where
         Undefined -> "/* ?? */"
         Number n -> Core.show n
         VArray vals ease -> toCode javaScript vals <> "\n\t." <> toCode javaScript ease
-        Dep _ -> "/* dep-fn */"
+        Dep (UserExpr jsExpr) -> "() => " <> toCode javaScript jsExpr
+        Dep (Unparsed jsExprStr) -> "() => " <> jsExprStr
+        Dep (Fn _) -> "/* dep-fn */"
+        Dep NoAction -> "/* nothing */"
         Time -> "time"
         MouseX -> "mouse.x"
         MouseY -> "mouse.y"
@@ -478,7 +481,7 @@ instance ToCode JS JsExpr where
     Val (Number n) -> Core.show n
     Val Pi -> "Math.pi"
     Val Time -> "time"
-    Val (Fft n) -> "a.fft[" <> Core.show n <> "]"
+    Val (Fft (AudioBin n)) -> "a.fft[" <> Core.show n <> "]"
     Brackets expr -> "(" <> Core.show expr <> ")"
     Val MouseX -> "mouse.x"
     Val MouseY -> "mouse.y"

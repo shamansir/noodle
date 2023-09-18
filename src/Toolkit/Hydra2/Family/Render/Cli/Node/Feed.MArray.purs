@@ -51,6 +51,7 @@ import Toolkit.Hydra2.Types as T
 -- import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, Node)
 import Toolkit.Hydra2.Family.Feed.FArray (Node, State, _out_out) as FArray
 -- import Toolkit.Hydra2 (State) as Hydra
+import Toolkit.Hydra2.Repr.Wrap.Parser (findValues) as T
 
 type TextBoxKey = TextBox <^> "array-text-box"
 
