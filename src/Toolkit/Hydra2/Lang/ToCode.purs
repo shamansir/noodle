@@ -482,7 +482,7 @@ instance ToCode JS JsExpr where
     Val Pi -> "Math.pi"
     Val Time -> "time"
     Val (Fft (AudioBin n)) -> "a.fft[" <> Core.show n <> "]"
-    Brackets expr -> "(" <> Core.show expr <> ")"
+    Brackets expr -> "(" <> toCode javaScript expr <> ")"
     Val MouseX -> "mouse.x"
     Val MouseY -> "mouse.y"
     Val Width -> "width"
@@ -492,6 +492,6 @@ instance ToCode JS JsExpr where
     MulE a b -> toCode javaScript a <> "*" <> toCode javaScript b
     AddE a b -> toCode javaScript a <> "+" <> toCode javaScript b
     SubE a b -> toCode javaScript a <> "-" <> toCode javaScript b
-    ModE a b -> toCode pureScript a <> "%" <> toCode pureScript b
+    ModE a b -> toCode javaScript a <> "%" <> toCode javaScript b
     Math method (Just expr) -> "Math." <> method <> "(" <> toCode javaScript expr <> ")"
     Math method Nothing -> "Math." <> method <> "()"

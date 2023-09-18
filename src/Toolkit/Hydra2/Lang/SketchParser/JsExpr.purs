@@ -187,7 +187,7 @@ instance ToCode PS JsExpr where
     Sub a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
     Mod a b -> "(" <> toCode pureScript a <> " % " <> toCode pureScript b <> ")"
     Fft n -> "(a # fft h" <> show n <> ")"
-    Brackets expr -> "(" <> show expr <> ")"
+    Brackets expr -> "(" <> toCode javaScript expr <> ")"
     MouseX -> "ctx.mouseX"
     MouseY -> "ctx.mouseY"
     Width -> "ctx.width"
@@ -208,7 +208,7 @@ instance ToCode JS JsExpr where
     Sub a b -> toCode javaScript a <> "-" <> toCode javaScript b
     Mod a b -> toCode javaScript a <> "%" <> toCode javaScript b
     Fft n -> "a.fft[" <> show n <> "]"
-    Brackets expr -> "(" <> show expr <> ")"
+    Brackets expr -> "(" <> toCode javaScript expr <> ")"
     MouseX -> "mouse.x"
     MouseY -> "mouse.y"
     Width -> "width"
