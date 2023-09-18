@@ -206,7 +206,7 @@ instance ToCode JS JsExpr where
     Mul a b -> toCode javaScript a <> "*" <> toCode javaScript b
     Add a b -> toCode javaScript a <> "+" <> toCode javaScript b
     Sub a b -> toCode javaScript a <> "-" <> toCode javaScript b
-    Mod a b -> toCode pureScript a <> "%" <> toCode pureScript b
+    Mod a b -> toCode javaScript a <> "%" <> toCode javaScript b
     Fft n -> "a.fft[" <> show n <> "]"
     Brackets expr -> "(" <> show expr <> ")"
     MouseX -> "mouse.x"

@@ -236,7 +236,7 @@ buildHtmlWith (HydraCode hydraCode) =
     <script>
       var hydra = new Hydra({
         canvas: document.getElementById("hydra-canvas"),
-        detectAudio: false
+        detectAudio: true
       });
 
       hydra.setResolution(window.innerWidth, window.innerHeight);
