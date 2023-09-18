@@ -8,6 +8,7 @@ import Parsing.Extra (marker, foldMarkers, parseBy)
 
 import Control.Plus (empty)
 import Control.Lazy (defer)
+import Control.Alt ((<|>))
 
 import Data.Foldable (foldr)
 import Data.Tuple (uncurry)
@@ -19,9 +20,9 @@ import Data.Either (Either(..))
 
 import Parsing (Parser, runParser, fail)
 import Parsing.String (string)
-import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA, many1Till, optional)
+import Parsing.Combinators (try, many1, sepBy1, between, sepBy, replicateA, many1Till, optional, optionMaybe)
 import Parsing.String.Basic (space, number, intDecimal, alphaNum, takeWhile1, noneOf)
-import Control.Alt ((<|>))
+import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 
 import Toolkit.Hydra2.Repr.Wrap
@@ -312,6 +313,120 @@ fn =
     T.NoAction <$ string "/----/"
     <|> (U.f1ts >>> T.Unparsed)
         <$> between (string T.unparsedFnStart) (string T.unparsedFnEnd) (many1 $ noneOf T.unparsedFnTerminals)
+
+
+numberJsExpr :: Parser String T.JsExpr
+numberJsExpr = do
+  _ <- U.spaces
+  n <- number
+  _ <- U.spaces
+  pure $ T.Val $ T.Number n
+
+
+piJsExpr :: Parser String T.JsExpr
+piJsExpr = do
+  _ <- U.spaces
+  _ <- string "Math.PI"
+  _ <- U.spaces
+  pure $ T.Val T.Pi
+
+
+mouseXJsExpr :: Parser String T.JsExpr
+mouseXJsExpr = do
+  U.betweenSpaces $ string "mouse.x" *> pure (T.Val T.MouseX)
+
+
+mouseYJsExpr :: Parser String T.JsExpr
+mouseYJsExpr = do
+  U.betweenSpaces $ string "mouse.y" *> pure (T.Val T.MouseY)
+
+
+fftJsExpr :: Parser String T.JsExpr
+fftJsExpr = do
+  _ <- U.spaces
+  _ <- string "a.fft["
+  _ <- U.spaces
+  i <- intDecimal
+  _ <- U.spaces
+  _ <- string "]"
+  _ <- U.spaces
+  pure $ T.Val $ T.Fft $ T.AudioBin i
+
+
+mathJsExpr :: Parser String T.JsExpr
+mathJsExpr = do
+  _ <- U.spaces
+  _ <- string "Math."
+  method <- many1 U.tokenChar
+  _ <- U.spaces
+  _ <- string "("
+  _ <- U.spaces
+  mbJsExpr <- optionMaybe inlineExprParser
+  _ <- U.spaces
+  _ <- string ")"
+  _ <- U.spaces
+  pure $ T.Math (U.f1ts method) mbJsExpr
+
+
+
+widthJsExpr :: Parser String T.JsExpr
+widthJsExpr = do
+  _ <- U.spaces
+  _ <- string "width"
+  _ <- U.spaces
+  pure $ T.Val T.Width
+
+
+heightJsExpr :: Parser String T.JsExpr
+heightJsExpr = do
+  _ <- U.spaces
+  _ <- string "height"
+  _ <- U.spaces
+  pure $ T.Val T.Height
+
+
+timeJsExpr :: Parser String T.JsExpr
+timeJsExpr = do
+  _ <- U.spaces
+  _ <- string "time"
+  _ <- U.spaces
+  pure $ T.Val T.Time
+
+
+bracketsJsExpr :: Parser String T.JsExpr
+bracketsJsExpr = do
+  _ <- U.spaces
+  _ <- string "("
+  _ <- U.spaces
+  jsexpr <- inlineExprParser
+  _ <- U.spaces
+  _ <- string ")"
+  _ <- U.spaces
+  pure $ T.Brackets jsexpr
+
+
+operand :: Parser String T.JsExpr
+operand =
+  try numberJsExpr
+  <|> try piJsExpr
+  <|> try timeJsExpr
+  <|> try widthJsExpr
+  <|> try heightJsExpr
+  <|> try fftJsExpr
+  <|> try mouseXJsExpr
+  <|> try mouseYJsExpr
+  <|> try (defer \_ -> mathJsExpr)
+  <|> try (defer \_ -> bracketsJsExpr)
+
+
+inlineExprParser :: Parser String T.JsExpr
+inlineExprParser =
+  buildExprParser [ [ Infix (string "/" $> T.DivE) AssocRight ]
+                  , [ Infix (string "*" $> T.MulE) AssocRight ]
+                  , [ Infix (string "-" $> T.SubE) AssocRight ]
+                  , [ Infix (string "+" $> T.AddE) AssocRight ]
+                  , [ Infix (string "%" $> T.ModE) AssocRight ]
+                  ] $ defer (\_ -> operand)
 
 
 instance HasParser WrapRepr where

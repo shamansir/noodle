@@ -66,7 +66,7 @@ data Value
 derive instance Eq Ease
 derive instance Eq Values
 derive instance Eq Value
-derive instance Eq ValueExpr
+derive instance Eq JsExpr
 derive instance Eq AudioSource
 derive instance Eq AudioBin
 -- derive instance Eq Texture
@@ -82,18 +82,19 @@ derive instance Eq OutputN
 newtype Values = Values (Array Value)
 
 
-data ValueExpr
+data JsExpr
     = Val Value
-    | DivE ValueExpr ValueExpr
-    | MulE ValueExpr ValueExpr
-    | SubE ValueExpr ValueExpr
-    | AddE ValueExpr ValueExpr
-    | Math String (Maybe ValueExpr)
-    | Brackets ValueExpr
+    | DivE JsExpr JsExpr
+    | MulE JsExpr JsExpr
+    | SubE JsExpr JsExpr
+    | AddE JsExpr JsExpr
+    | ModE JsExpr JsExpr
+    | Math String (Maybe JsExpr)
+    | Brackets JsExpr
 
 
 data Fn
-    = VExpr ValueExpr
+    = UserExpr JsExpr
     | Fn (Context -> Effect Value)
     | Unparsed String
     | NoAction
@@ -101,7 +102,7 @@ data Fn
 
 instance Eq Fn where
     eq :: Fn -> Fn -> Boolean
-    eq (VExpr vexprA) (VExpr vexprB) = vexprA == vexprB
+    eq (UserExpr jsExprA) (UserExpr jsExprB) = jsExprA == jsExprB
     eq (Fn _) (Fn _) = false -- could be fixed?
     eq (Unparsed strA) (Unparsed strB) = strA == strB
     eq NoAction NoAction = true
@@ -504,14 +505,15 @@ instance Show TOrV where
         V val -> show val
 
 
-instance Show ValueExpr where
-    show :: ValueExpr -> String
+instance Show JsExpr where
+    show :: JsExpr -> String
     show = case _ of
         Val value -> show value
         AddE v1 v2 -> show v1 <> " + " <> show v2
         SubE v1 v2 -> show v1 <> " - " <> show v2
         MulE v1 v2 -> show v1 <> " * " <> show v2
         DivE v1 v2 -> show v1 <> " / " <> show v2
+        ModE v1 v2 -> show v1 <> " % " <> show v2
         Math meth maybeExpr ->
             "Math." <> show meth <>
                 (case maybeExpr of
@@ -524,7 +526,7 @@ instance Show ValueExpr where
 instance Show Fn where
     show :: Fn -> String
     show = case _ of
-        VExpr vexpr -> show vexpr
+        UserExpr jsexpr -> show jsexpr
         Fn _ -> "[Code]"
         Unparsed str -> "{{ " <> str <> " }}"
         NoAction -> "--"
@@ -909,14 +911,15 @@ instance Encode SourceN where
         Source0 -> "S0"
 
 
-instance Encode ValueExpr where
-    encode :: ValueExpr -> String
+instance Encode JsExpr where
+    encode :: JsExpr -> String
     encode = case _ of
-        Val value -> show value
-        AddE v1 v2 -> show v1 <> " + " <> show v2
-        SubE v1 v2 -> show v1 <> " - " <> show v2
-        MulE v1 v2 -> show v1 <> " * " <> show v2
-        DivE v1 v2 -> show v1 <> " / " <> show v2
+        Val value -> show value -- FIXME: for sure, not `encode`?
+        AddE v1 v2 -> show v1 <> " + " <> show v2 -- FIXME: for sure, not `encode`?
+        SubE v1 v2 -> show v1 <> " - " <> show v2 -- FIXME: for sure, not `encode`?
+        MulE v1 v2 -> show v1 <> " * " <> show v2 -- FIXME: for sure, not `encode`?
+        DivE v1 v2 -> show v1 <> " / " <> show v2 -- FIXME: for sure, not `encode`?
+        ModE v1 v2 -> show v1 <> " % " <> show v2 -- FIXME: for sure, not `encode`?
         Math meth maybeExpr ->
             "Math." <> show meth <>
                 (case maybeExpr of
@@ -929,7 +932,7 @@ instance Encode ValueExpr where
 instance Encode Fn where
     encode :: Fn -> String
     encode = case _ of
-        VExpr vexpr -> encode vexpr
+        UserExpr jsexpr -> encode jsexpr
         Fn _ -> "[[CODE]]"
         Unparsed str -> unparsedFnStart <> str <> unparsedFnEnd -- "<<<< " <> str <> " >>>>"
         NoAction -> "/----/"
@@ -1246,14 +1249,14 @@ unparsedFnEnd :: String
 unparsedFnEnd = "■¤"
 
 
-vexprStart :: String
-vexprStart = "```"
+jsexprStart :: String
+jsexprStart = "```"
 
-vexprTerminals :: Array Char
-vexprTerminals = [ '`' ]
+jsexprTerminals :: Array Char
+jsexprTerminals = [ '`' ]
 
-vexprEnd :: String
-vexprEnd = "```"
+jsexprEnd :: String
+jsexprEnd = "```"
 
 
 glslMarker :: String

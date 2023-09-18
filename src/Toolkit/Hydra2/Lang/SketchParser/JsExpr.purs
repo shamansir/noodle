@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Lang.SketchParser.IExpr where
+module Toolkit.Hydra2.Lang.SketchParser.JsExpr where
 
 import Prelude
 
@@ -22,55 +22,55 @@ import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode
 import Toolkit.Hydra2.Lang.SketchParser.Utils (betweenSpaces, f1ts, spaces, tokenChar)
 
 
-data IExpr
+data JsExpr
   = INum Number
   | Pi
   | Time
-  | Div IExpr IExpr
-  | Mul IExpr IExpr
-  | Sub IExpr IExpr
-  | Add IExpr IExpr
-  | Mod IExpr IExpr
+  | Div JsExpr JsExpr
+  | Mul JsExpr JsExpr
+  | Sub JsExpr JsExpr
+  | Add JsExpr JsExpr
+  | Mod JsExpr JsExpr
   | Fft Int
-  | Math String (Maybe IExpr)
-  | Brackets IExpr
+  | Math String (Maybe JsExpr)
+  | Brackets JsExpr
   | MouseX
   | MouseY
   | Width
   | Height
 
 
-derive instance Eq IExpr
+derive instance Eq JsExpr
 
 
-numberIExpr :: Parser String IExpr
-numberIExpr = do
+numberJsExpr :: Parser String JsExpr
+numberJsExpr = do
   _ <- spaces
   n <- number
   _ <- spaces
   pure $ INum n
 
 
-piIExpr :: Parser String IExpr
-piIExpr = do
+piJsExpr :: Parser String JsExpr
+piJsExpr = do
   _ <- spaces
   _ <- string "Math.PI"
   _ <- spaces
   pure $ Pi
 
 
-mouseXIExpr :: Parser String IExpr
-mouseXIExpr = do
+mouseXJsExpr :: Parser String JsExpr
+mouseXJsExpr = do
   betweenSpaces $ string "mouse.x" *> pure MouseX
 
 
-mouseYIExpr :: Parser String IExpr
-mouseYIExpr = do
+mouseYJsExpr :: Parser String JsExpr
+mouseYJsExpr = do
   betweenSpaces $ string "mouse.y" *> pure MouseY
 
 
-fftIExpr :: Parser String IExpr
-fftIExpr = do
+fftJsExpr :: Parser String JsExpr
+fftJsExpr = do
   _ <- spaces
   _ <- string "a.fft["
   _ <- spaces
@@ -81,73 +81,73 @@ fftIExpr = do
   pure $ Fft i
 
 
-mathIExpr :: Parser String IExpr
-mathIExpr = do
+mathJsExpr :: Parser String JsExpr
+mathJsExpr = do
   _ <- spaces
   _ <- string "Math."
   method <- many1 tokenChar
   _ <- spaces
   _ <- string "("
   _ <- spaces
-  mbIExpr <- optionMaybe inlineExprParser
+  mbJsExpr <- optionMaybe inlineExprParser
   _ <- spaces
   _ <- string ")"
   _ <- spaces
-  pure $ Math (f1ts method) mbIExpr
+  pure $ Math (f1ts method) mbJsExpr
 
 
 
-widthIExpr :: Parser String IExpr
-widthIExpr = do
+widthJsExpr :: Parser String JsExpr
+widthJsExpr = do
   _ <- spaces
   _ <- string "width"
   _ <- spaces
   pure Width
 
 
-heightIExpr :: Parser String IExpr
-heightIExpr = do
+heightJsExpr :: Parser String JsExpr
+heightJsExpr = do
   _ <- spaces
   _ <- string "height"
   _ <- spaces
   pure Height
 
 
-timeIExpr :: Parser String IExpr
-timeIExpr = do
+timeJsExpr :: Parser String JsExpr
+timeJsExpr = do
   _ <- spaces
   _ <- string "time"
   _ <- spaces
   pure Time
 
 
-bracketsIExpr :: Parser String IExpr
-bracketsIExpr = do
+bracketsJsExpr :: Parser String JsExpr
+bracketsJsExpr = do
   _ <- spaces
   _ <- string "("
   _ <- spaces
-  iexpr <- inlineExprParser
+  jsexpr <- inlineExprParser
   _ <- spaces
   _ <- string ")"
   _ <- spaces
-  pure $ Brackets iexpr
+  pure $ Brackets jsexpr
 
 
-operand :: Parser String IExpr
+operand :: Parser String JsExpr
 operand =
-  try numberIExpr
-  <|> try piIExpr
-  <|> try timeIExpr
-  <|> try widthIExpr
-  <|> try heightIExpr
-  <|> try fftIExpr
-  <|> try mouseXIExpr
-  <|> try mouseYIExpr
-  <|> try (defer \_ -> mathIExpr)
-  <|> try (defer \_ -> bracketsIExpr)
+  try numberJsExpr
+  <|> try piJsExpr
+  <|> try timeJsExpr
+  <|> try widthJsExpr
+  <|> try heightJsExpr
+  <|> try fftJsExpr
+  <|> try mouseXJsExpr
+  <|> try mouseYJsExpr
+  <|> try (defer \_ -> mathJsExpr)
+  <|> try (defer \_ -> bracketsJsExpr)
 
 
-inlineExprParser :: Parser String IExpr
+inlineExprParser :: Parser String JsExpr
 inlineExprParser =
   buildExprParser [ [ Infix (string "/" $> Div) AssocRight ]
                   , [ Infix (string "*" $> Mul) AssocRight ]
@@ -157,7 +157,7 @@ inlineExprParser =
                   ] $ defer (\_ -> operand)
 
 
-instance Show IExpr where
+instance Show JsExpr where
   show (INum n) = show n
   show Pi = "Pi"
   show Time = "Time"
@@ -175,8 +175,8 @@ instance Show IExpr where
   show Height = "height"
 
 
-instance ToCode PS IExpr where
-  toCode :: Proxy PS -> IExpr -> String
+instance ToCode PS JsExpr where
+  toCode :: Proxy PS -> JsExpr -> String
   toCode _ = case _ of
     INum n -> if n >= 0.0 then show n else "(" <> show n <> ")"
     Pi -> "pi"
@@ -196,8 +196,8 @@ instance ToCode PS IExpr where
     Math method Nothing -> method
 
 
-instance ToCode JS IExpr where
-  toCode :: Proxy JS -> IExpr -> String
+instance ToCode JS JsExpr where
+  toCode :: Proxy JS -> JsExpr -> String
   toCode _ = case _ of
     INum n -> show n
     Pi -> "Math.pi"

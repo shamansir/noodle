@@ -1,4 +1,4 @@
-module Test.IExprParsing where
+module Test.JsExprParsing where
 
 import Prelude
 
@@ -26,10 +26,10 @@ import Toolkit.Hydra2.Lang.Fn as Lang
 
 import Data.FromToFile (encode, decode)
 
-import Toolkit.Hydra2.Lang.SketchParser.IExpr (IExpr(..), inlineExprParser)
+import Toolkit.Hydra2.Lang.SketchParser.JsExpr (JsExpr(..), inlineExprParser)
 
 -- TODO: use fuzzy generator
-samples :: Array (String /\ IExpr)
+samples :: Array (String /\ JsExpr)
 samples =
     [ "2" /\ INum 2.0
     , "15.0" /\ INum 15.0

@@ -28,7 +28,7 @@ import Toolkit.Hydra2.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode
 import Toolkit.Hydra2.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..))
 
 import Toolkit.Hydra2.Lang.SketchParser.Utils
-import Toolkit.Hydra2.Lang.SketchParser.IExpr (IExpr, inlineExprParser)
+import Toolkit.Hydra2.Lang.SketchParser.JsExpr (JsExpr, inlineExprParser) -- FIXME: use JsExpr from Lang.Types
 
 
 data Level
@@ -52,8 +52,8 @@ data Expr
         , args :: Array Expr
         , tail :: Array { op :: String, args :: Array Expr }
         }
-    | FnInline { args :: String, code :: Either String IExpr }
-    | Inline IExpr
+    | FnInline { args :: String, code :: Either String JsExpr }
+    | Inline JsExpr
     | Comment String
     | EmptyLine
 
@@ -68,9 +68,9 @@ assignment = do
     _ <- spaces
     _ <- char '='
     _ <- spaces
-    iexpr <- expr Top
+    jsexpr <- expr Top
     _ <- spaces
-    pure $ Assign (f1ts t) iexpr
+    pure $ Assign (f1ts t) jsexpr
 
 
 
@@ -260,8 +260,8 @@ instance Show Expr where
         ) <> " ]"
     FnInline { args, code } ->
       "Fn [ " <> args <> " ] [ " <> either String.trim show code <> " ]"
-    Inline iexpr ->
-      "IExpr [ " <> show iexpr <> " ]"
+    Inline jsexpr ->
+      "JsExpr [ " <> show jsexpr <> " ]"
     Comment str ->
       "Comment [" <> str <> " ]"
     EmptyLine ->
@@ -274,7 +274,7 @@ instance ToCode PS Expr where
     Token str -> str
     Num num -> "n " <> show num <> ""
     FnInline fn -> formatInlineFn fn
-    Inline iexpr -> toCode pureScript iexpr
+    Inline jsexpr -> toCode pureScript jsexpr
     Assign name expr -> "let " <> name <> " = " <> toCode pureScript expr
     Arr exprs tail ->
       let indent = "                      "
@@ -321,7 +321,7 @@ instance ToCode PS Expr where
     where
       formatInlineFn { args, code } =
         case code of
-          Right iexpr -> "fn $ \\(Context ctx) -> n $ " <> toCode pureScript iexpr
+          Right jsexpr -> "fn $ \\(Context ctx) -> n $ " <> toCode pureScript jsexpr
           Left str -> "fn $ \\_ -> pure unit {- " <> friendlyArgs args <> " -> " <> String.trim str <> " -}"
       wrapIfNeeded arg =
         case arg of
@@ -368,7 +368,7 @@ instance ToCode JS Expr where
     Num num -> show num
     FnInline fn -> formatInlineFn fn
     Assign name expr -> name <> " = " <> toCode pureScript expr
-    Inline iexpr -> toCode javaScript iexpr
+    Inline jsexpr -> toCode javaScript jsexpr
     Arr exprs tail ->
       let
         indent = "        "

@@ -1,6 +1,6 @@
 module Toolkit.Hydra2.Lang.ToCode where
 
-import Prelude (($), (<$>), (<>), show)
+import Prelude hiding (show)
 import Prelude (show) as Core
 
 import Toolkit.Hydra2.Types
@@ -8,6 +8,7 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Lang.Fn (toFnX, name, args, Argument(..))
 
 import Data.Array ((:))
+import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
 import Type.Proxy (Proxy(..))
@@ -411,7 +412,7 @@ instance ToCode JS GlslFn where
             argToJsObj =
                 case _ of
                     (name /\ T _) -> "{ type: 'vec4', default : NaN, name : \'" <> name <> "\' }"
-                    (name /\ V (Number n)) -> "{ type: 'float', default : " <> show n <> ", name : \'" <> name <> "\' }"
+                    (name /\ V (Number n)) -> "{ type: 'float', default : " <> Core.show n <> ", name : \'" <> name <> "\' }"
                     (name /\ V val) -> "{ type: 'float', default : " <> toCode javaScript val <> ", name : \'" <> name <> "\' }"
             kindToString = case _ of
                 FnSrc -> "src"
@@ -438,7 +439,7 @@ instance ToCode JS_DISPLAY GlslFn where
             argToJsObj =
                 case _ of
                     (name /\ T _) -> "{ vec4, \'" <> name <> "\' }"
-                    (name /\ V (Number n)) -> "{ float, " <> show n <> ", \'" <> name <> "\' }"
+                    (name /\ V (Number n)) -> "{ float, " <> Core.show n <> ", \'" <> name <> "\' }"
                     (name /\ V val) -> "{ 'float', " <> toCode javaScript val <> ", \'" <> name <> "\' }"
             kindToString = case _ of
                 FnSrc -> "src"
@@ -446,3 +447,48 @@ instance ToCode JS_DISPLAY GlslFn where
                 FnCombineCoord -> "combineCoord"
                 FnCombine -> "combine"
                 FnColor -> "color"
+
+
+instance ToCode PS JsExpr where
+  toCode :: Proxy PS -> JsExpr -> String
+  toCode _ = case _ of
+    Val (Number n) -> if n >= 0.0 then Core.show n else "(" <> Core.show n <> ")"
+    Val Pi -> "pi"
+    Val Time -> "ctx.time"
+    (Val (Fft n)) -> "(a # fft h" <> Core.show n <> ")"
+    Brackets expr -> "(" <> toCode pureScript expr <> ")"
+    Val MouseX -> "ctx.mouseX"
+    Val MouseY -> "ctx.mouseY"
+    Val Width -> "ctx.width"
+    Val Height -> "ctx.height"
+    -- Val None -> "undefined"
+    Val val -> toCode pureScript val
+    DivE a b -> "(" <> toCode pureScript a <> " / " <> toCode pureScript b <> ")"
+    MulE a b -> "(" <> toCode pureScript a <> " * " <> toCode pureScript b <> ")"
+    AddE a b -> "(" <> toCode pureScript a <> " + " <> toCode pureScript b <> ")"
+    SubE a b -> "(" <> toCode pureScript a <> " - " <> toCode pureScript b <> ")"
+    ModE a b -> "(" <> toCode pureScript a <> " % " <> toCode pureScript b <> ")"
+    Math method (Just expr) -> "(" <> method <> " $ " <> toCode pureScript expr <> ")"
+    Math method Nothing -> method
+
+
+instance ToCode JS JsExpr where
+  toCode :: Proxy JS -> JsExpr -> String
+  toCode _ = case _ of
+    Val (Number n) -> Core.show n
+    Val Pi -> "Math.pi"
+    Val Time -> "time"
+    Val (Fft n) -> "a.fft[" <> Core.show n <> "]"
+    Brackets expr -> "(" <> Core.show expr <> ")"
+    Val MouseX -> "mouse.x"
+    Val MouseY -> "mouse.y"
+    Val Width -> "width"
+    Val Height -> "height"
+    Val val -> toCode javaScript val
+    DivE a b -> toCode javaScript a <> "/" <> toCode javaScript b
+    MulE a b -> toCode javaScript a <> "*" <> toCode javaScript b
+    AddE a b -> toCode javaScript a <> "+" <> toCode javaScript b
+    SubE a b -> toCode javaScript a <> "-" <> toCode javaScript b
+    ModE a b -> toCode pureScript a <> "%" <> toCode pureScript b
+    Math method (Just expr) -> "Math." <> method <> "(" <> toCode javaScript expr <> ")"
+    Math method Nothing -> "Math." <> method <> "()"

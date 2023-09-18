@@ -22,8 +22,9 @@ import Test.Generating (spec) as Generating
 import Test.NdfParsing (spec) as NdfParsing
 import Test.SOrder (spec) as SOrder
 import Test.NodeKey (spec) as NodeKey
-import Test.IExprParsing (spec) as IExprParsing
+import Test.JsExprParsing (spec) as JsExprParsing
 import Test.WrapReprParsing (spec) as WrapReprParsing
+import Test.JsExprParsing.Wrap (spec) as JsExprParsingWrap
 
 
 main :: Effect Unit
@@ -57,6 +58,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "NodeKey"
     NodeKey.spec
   describeOnly "Expressions parsing"
-    IExprParsing.spec
+    JsExprParsing.spec
+  describeOnly "Expressions parsing (Wrap)"
+    JsExprParsingWrap.spec
   describe "Hydra Serialization"
     WrapReprParsing.spec

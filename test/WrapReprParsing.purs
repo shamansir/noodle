@@ -44,7 +44,7 @@ samples =
     , Value $ VArray (T.Values [ MouseX, Time, Pi, Number 4.5, None, Pi ]) Linear
     , Value $ VArray (T.Values []) $ Fast $ Number 7.0
     , Value $ VArray (T.Values []) $ Fit { low : Number 1.0, high : Number 2.5 }
-    -- , Value $ Dep $ VExpr $ Val $ Number 3.0
+    -- , Value $ Dep $ JsExpr $ Val $ Number 3.0
     , Texture Empty
     , Texture $ Start $ Gradient { speed : Number 2.0 }
     , Texture $ Start $ Noise { scale : Number 1.5, offset : MouseX }
@@ -115,7 +115,7 @@ samples =
     {- TODO
     , Value
         $ Dep
-        $ VExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
+        $ JsExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
     -}
     , Value $ Dep NoAction
     , Value
@@ -123,7 +123,7 @@ samples =
         $ Unparsed "foobar"
     {- TODO
     , W.Fn
-        $ VExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
+        $ JsExpr $ AddE (Val $ Number 2.0) (Brackets $ SubE (Math "sin" $ Just $ Val Time) (Val $ Number 0.5))
     -}
     , W.Fn NoAction
     , W.Fn

@@ -184,7 +184,7 @@ instance ShortInfo H.RenderTarget where
 instance ShortInfo H.Fn where
     short :: H.Fn -> String
     short = case _ of
-        H.VExpr vexpr -> "EXP"
+        H.UserExpr jsexpr -> "EXP"
         H.Fn code -> "PS"
         H.Unparsed str -> "STR"
         H.NoAction -> "--"

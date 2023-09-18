@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1,shrink-to-fit=no"
+    />
+    <!-- import the latest version of hydra synth-->
+    <script src="https://unpkg.com/hydra-synth"></script>
+
+    <title>Produced with Noodle</title>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        body {
+            width: 100%;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+  </head>
+  <body>
+    <canvas id="hydra-canvas"></canvas>
+    <script>
+      var hydra = new Hydra({
+        canvas: document.getElementById("hydra-canvas"),
+        detectAudio: false
+      });
+    </script>
+    <script>
+        osc().rotate().out()
+    </script>
+  </body>
+</html>
