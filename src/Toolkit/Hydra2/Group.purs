@@ -44,7 +44,7 @@ toGroupR family = case Id.reflectFamilyR family of
     "number" -> Feed
     "pi" -> Feed
     "array" -> Feed
-    "callback" -> Feed
+    "expression" -> Feed
     "callGlslFn" -> Feed
 
     "info" -> Display

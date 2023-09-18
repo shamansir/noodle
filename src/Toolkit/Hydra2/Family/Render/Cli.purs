@@ -25,8 +25,8 @@ import Toolkit.Hydra2.Family.Out.FOut (Inputs, Outputs, State, Node) as FOut
 import Toolkit.Hydra2.Family.Render.Cli.Out.FOut (render) as FOut
 import Toolkit.Hydra2.Family.Display.FInfo (Inputs, Outputs, State, Node) as FInfo
 import Toolkit.Hydra2.Family.Render.Cli.Display.FInfo (render) as FInfo
-import Toolkit.Hydra2.Family.Feed.FCallback (Inputs, Outputs, State, Node) as FCallback
-import Toolkit.Hydra2.Family.Render.Cli.Feed.FCallback (render) as FCallback
+import Toolkit.Hydra2.Family.Feed.FExpression (Inputs, Outputs, State, Node) as FExpression
+import Toolkit.Hydra2.Family.Render.Cli.Feed.FExpression (render) as FExpression
 import Toolkit.Hydra2.Family.Feed.FArray (Inputs, Outputs, State, Node) as FArray
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
 import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Inputs, Outputs, State, Node) as FCallGlslFunction
@@ -60,9 +60,9 @@ else instance (MonadRec m, MonadEffect m) => HasBody (CliF "out") "out" FOut.Sta
 else instance (MonadRec m, MonadEffect m) => HasBody (CliF "info") "info" FInfo.State FInfo.Inputs FInfo.Outputs m where
     run :: Proxy (CliF "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
     run _ = FInfo.render
-else instance (Applicative m, MonadEffect m) => HasBody (CliF "callback") "callback" FCallback.State FCallback.Inputs FCallback.Outputs m where
-    run :: Proxy (CliF "callback") -> NodeBoxKey -> FCallback.Node m -> BlessedOp FCallback.State m
-    run _ = FCallback.render
+else instance (Applicative m, MonadEffect m) => HasBody (CliF "expression") "expression" FExpression.State FExpression.Inputs FExpression.Outputs m where
+    run :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> BlessedOp FExpression.State m
+    run _ = FExpression.render
 else instance (Applicative m, MonadEffect m) => HasBody (CliF "array") "array" FArray.State FArray.Inputs FArray.Outputs m where
     run :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run _ = FArray.render
@@ -83,9 +83,9 @@ else instance (MonadRec m, MonadEffect m) => HasBody' (CliF "out") (FOut.Node m)
 else instance (MonadRec m, MonadEffect m) => HasBody' (CliF "info") (FInfo.Node m) FInfo.State m  where
     run' :: Proxy (CliF "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
     run' _ = FInfo.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callback") (FCallback.Node m) FCallback.State m where
-    run' :: Proxy (CliF "callback") -> NodeBoxKey -> FCallback.Node m -> BlessedOp FCallback.State m
-    run' _ = FCallback.render
+else instance (Applicative m, MonadEffect m) => HasBody' (CliF "expression") (FExpression.Node m) FExpression.State m where
+    run' :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> BlessedOp FExpression.State m
+    run' _ = FExpression.render
 else instance (Applicative m, MonadEffect m) => HasBody' (CliF "array") (FArray.Node m) FArray.State m where
     run' :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
     run' _ = FArray.render
@@ -97,8 +97,8 @@ else instance HasBody' (CliF f) (Node f state is os m) state m where
     run' _ _ _ = pure unit
 
 
-instance HasCustomSize (CliF "callback") (FCallback.Node m) where
-    size :: Proxy (CliF "callback") -> NodeBoxKey -> FCallback.Node m -> Maybe { width :: Int, height :: Int }
+instance HasCustomSize (CliF "expression") (FExpression.Node m) where
+    size :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Just { width : 30, height : 3 }
 else instance HasCustomSize (CliF "callGlslFn") (FCallGlslFunction.Node m) where
     size :: Proxy (CliF "callGlslFn") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }

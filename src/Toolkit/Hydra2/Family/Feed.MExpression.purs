@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Feed.FCallback where
+module Toolkit.Hydra2.Family.Feed.FExpression where
 
 import Toolkit.Hydra2.Types as H
 
@@ -15,11 +15,11 @@ import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "callback"
+id = Node.Family :: _ "expression"
 
 
 name :: String
-name = "callback"
+name = "expression"
 
 
 type State = H.Fn
@@ -52,7 +52,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.defaultFn }
 
 
-type Family (m :: Type -> Type) = -- {-> callback <-}
+type Family (m :: Type -> Type) = -- {-> expression <-}
     Family.Def State
         Inputs
         Outputs
@@ -60,7 +60,7 @@ type Family (m :: Type -> Type) = -- {-> callback <-}
 
 
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> callback <-}
+family = -- {-> expression <-}
     Family.def
         defaultState
         defaultInputs
@@ -73,7 +73,7 @@ family = -- {-> callback <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "callback" State
+    N.Node "expression" State
         Inputs
         Outputs
         m

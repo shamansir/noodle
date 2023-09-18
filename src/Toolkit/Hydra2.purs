@@ -39,7 +39,7 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Family.Feed.FPi as FPi
 import Toolkit.Hydra2.Family.Feed.FNumber as FNumber
 import Toolkit.Hydra2.Family.Feed.FArray as FArray
-import Toolkit.Hydra2.Family.Feed.FCallback as FCallback
+import Toolkit.Hydra2.Family.Feed.FExpression as FExpression
 import Toolkit.Hydra2.Family.Feed.FCallGlslFunction as FCallGlslFunction
 import Toolkit.Hydra2.Family.Display.FInfo as FInfo
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
@@ -141,7 +141,7 @@ type Families (m :: Type -> Type) =
         ( number :: FNumber.Family m  -- {-> feed <-}
         , pi :: FPi.Family m  -- {-> feed <-}
         , array :: FArray.Family m  -- {-> feed <-}
-        , callback :: FCallback.Family m  -- {-> feed <-}
+        , expression :: FExpression.Family m  -- {-> feed <-}
         , callGlslFn :: FCallGlslFunction.Family m  -- {-> feed <-}
         , info :: FInfo.Family m -- {-> display <-}
         , noise :: FNoise.Family m  -- {-> source <-}
@@ -238,7 +238,7 @@ families =
         { number : (FNumber.family :: FNumber.Family m)
         , pi : (FPi.family :: FPi.Family m)
         , array : (FArray.family :: FArray.Family m)
-        , callback : (FCallback.family :: FCallback.Family m)
+        , expression : (FExpression.family :: FExpression.Family m)
         , callGlslFn : (FCallGlslFunction.family :: FCallGlslFunction.Family m)
         , info : (FInfo.family :: FInfo.Family m)
         , noise : (FNoise.family :: FNoise.Family m)
@@ -337,7 +337,7 @@ type FamiliesOrder =
             "number"
         ::: "pi"
         ::: "array"
-        ::: "callback"
+        ::: "expression"
         ::: "callGlslFn"
 
         -- Display
@@ -483,7 +483,7 @@ type Instances m =
         ( number :: Array ( FNumber.Node m )
         , pi :: Array ( FPi.Node m )
         , array :: Array ( FArray.Node m )
-        , callback :: Array ( FCallback.Node m )
+        , expression :: Array ( FExpression.Node m )
         , callGlslFn :: Array ( FCallGlslFunction.Node m )
         , info :: Array ( FInfo.Node m )
         , noise :: Array ( FNoise.Node m )
@@ -580,7 +580,7 @@ noInstances =
         { number : ([] :: Array ( FNumber.Node m ))
         , pi : ([] :: Array ( FPi.Node m ))
         , array : ([] :: Array ( FArray.Node m ))
-        , callback : ([] :: Array ( FCallback.Node m ))
+        , expression : ([] :: Array ( FExpression.Node m ))
         , callGlslFn : ([] :: Array ( FCallGlslFunction.Node m ))
         , info : ([] :: Array ( FInfo.Node m ))
         , noise : ([] :: Array ( FNoise.Node m ))
@@ -676,7 +676,7 @@ familySym :: Record
         ( number :: Node.Family "number"
         , pi :: Node.Family "pi"
         , array :: Node.Family "array"
-        , callback :: Node.Family "callback"
+        , expression :: Node.Family "expression"
         , callGlslFn :: Node.Family "callGlslFn"
         , info :: Node.Family "info"
         , noise :: Node.Family "noise"
@@ -774,7 +774,7 @@ familySym =
         { number : FNumber.id
         , pi : FPi.id
         , array : FArray.id
-        , callback : FCallback.id
+        , expression : FExpression.id
         , callGlslFn : FCallGlslFunction.id
         , info : FInfo.id
         , noise : FNoise.id
@@ -884,7 +884,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "number" -> Just $ fn familySym.number families.number toolkit
         "pi" -> Just $ fn familySym.pi families.pi toolkit
         "array" -> Just $ fn familySym.array families.array toolkit
-        "callback" -> Just $ fn familySym.callback families.callback toolkit
+        "expression" -> Just $ fn familySym.expression families.expression toolkit
         "callGlslFn" -> Just $ fn familySym.callGlslFn families.callGlslFn toolkit
         "info" -> Just $ fn familySym.info families.info toolkit
         "noise" -> Just $ fn familySym.noise families.noise toolkit

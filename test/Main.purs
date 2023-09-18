@@ -47,7 +47,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Toolkit3.spec
   describe "Protocol2"
     Protocol2.spec
-  describe "NDF Parsing"
+  describeOnly "NDF Parsing"
     NdfParsing.spec
   describe "Parsing & Generating Toolkits"
     Generating.spec
@@ -61,5 +61,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     JsExprParsing.spec
   describeOnly "Expressions parsing (Wrap)"
     JsExprParsingWrap.spec
-  describe "Hydra Serialization"
+  describeOnly "Hydra Serialization"
     WrapReprParsing.spec
