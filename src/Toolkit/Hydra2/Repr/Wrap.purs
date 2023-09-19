@@ -46,6 +46,9 @@ data WrapRepr
 --     toRepr _ a = WrapRepr
 
 
+-- FIXME: There's a Generic class that is [almost] the same as `toRepr` / `FromRepr`: https://purescript-simple-json.readthedocs.io/en/latest/generics-rep.html
+
+
 instance NMF.HasRepr Number WrapRepr where
     toRepr :: forall f i o. InNode f i o -> Number -> WrapRepr
     toRepr _ = H.Number >>> Value

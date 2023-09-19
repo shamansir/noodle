@@ -51,6 +51,8 @@ import Signal (Signal)
 import Signal as Signal
 import Signal.Channel (Channel)
 
+import CompArts.Product (Product)
+
 
 type State =
     { network :: Network Effect
@@ -74,6 +76,7 @@ type State =
     , editors :: Editors
     , knownGlslFunctions :: Array T.GlslFn
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
+    , products :: Maybe (Array Product)
     }
 
 
@@ -107,6 +110,7 @@ initial =
     , editors : Map.empty
     , knownGlslFunctions : Glsl.knownFns
     , linkWasMadeHack : false
+    , products : Nothing
     }
 
 

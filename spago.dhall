@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 { name = "noodle"
 , dependencies =
   [ "aff"
+  , "affjax-node"
   , "argonaut"
   , "argonaut-codecs"
   , "argonaut-core"
@@ -36,6 +37,7 @@ to generate this file without the comments in this block.
   , "exists"
   , "foldable-traversable"
   , "foreign"
+  , "foreign-object"
   , "free"
   , "functions"
   , "halogen"
