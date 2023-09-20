@@ -51,7 +51,7 @@ import Signal (Signal)
 import Signal as Signal
 import Signal.Channel (Channel)
 
-import CompArts.Product (Product)
+import CompArts.Product as CAI
 
 
 type State =
@@ -76,7 +76,7 @@ type State =
     , editors :: Editors
     , knownGlslFunctions :: Array T.GlslFn
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
-    , products :: Maybe (Array Product)
+    , products :: Maybe (Map String CAI.Product)
     }
 
 

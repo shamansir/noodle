@@ -24,7 +24,8 @@
     "bresenham": "^0.0.4",
     "drawille": "^2.0.2",
     "hydra-synth": "^1.3.9",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "events": "^3.3.0",

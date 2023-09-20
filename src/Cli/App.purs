@@ -3,11 +3,16 @@ module Cli.App where
 import Prelude
 
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, Maybe(..))
+import Data.Either (Either(..))
+import Data.Map as Map
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception (Error)
+import Effect.Aff (runAff_)
+import Effect.Console (log) as Console
+
 
 import Control.Monad.State (modify_, get) as State
 
@@ -30,6 +35,8 @@ import Blessed.UI.Base.Screen.Method as Screen
 
 import Web.Socket.Server as WSS
 
+import CompArts.Product as CAI
+
 
 
 run :: Effect Unit
@@ -46,8 +53,15 @@ run = Blessed.runAnd State.initial MainScreen.component $ do
             }
         State.modify_ $ State.informWsInitialized wss
         mainScreen >~ Screen.render
+        callback <- Blessed.impair1 storeProducts
+        liftEffect $ runAff_ callback CAI.requestProducts
         pure unit
     where
+        storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect
+        storeProducts (Right (Right productsMap)) =
+            State.modify_ (_ { products = Just productsMap })
+            -- Blessed.lift $ Console.log $ show $ Map.size productsMap
+        storeProducts _ = pure unit
         handleStart :: Unit -> BlessedOp State Effect
         handleStart _ =  do
             State.modify_ State.informWsListening
