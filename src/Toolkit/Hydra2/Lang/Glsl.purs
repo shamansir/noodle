@@ -356,6 +356,99 @@ gradient4 =
             ( "stop3" /\ (H.V $ H.Number 1.0) )
 
 
+gradient3CAI :: H.GlslFn
+gradient3CAI =
+    H.GlslFn
+    $ H.FnSrc
+    /\ H.GlslFnCode
+    """
+	  vec2 gradient_start_pos = vec2(0.0, 0.0); // top-left
+    vec2 gradient_end_pos = vec2(1.0, 1.0); // bottom-right
+
+	  int modeInt = 7; // could be 3, 5 or 7
+	  int lastStop = modeInt;
+
+    float stops[7];
+    vec4 colors[7];
+
+    vec3 primary_hsv = _rgbToHsv(primary.rgb);
+    vec3 secondary_hsv = _rgbToHsv(secondary.rgb);
+    vec3 ternary_hsv = _rgbToHsv(ternary.rgb);
+
+    if (modeInt == 7) {
+
+		  vec3 stop_first_rgb = _hsvToRgb(vec3(primary_hsv.x + 10.0, min(primary_hsv.y * 2.0, 1.0), primary_hsv.z * 0.3));
+      vec3 stop_second_rgb = _hsvToRgb(vec3(primary_hsv.x + 10.0, 1.0, primary_hsv.z * 0.5));
+      vec3 stop_middle_rgb = _hsvToRgb(vec3(secondary_hsv.x + abs(secondary_hsv.x  - ternary_hsv.x) / 2.0, ternary_hsv.y, ternary_hsv.z));
+      stop_middle_rgb =  mix(secondary.rgb, ternary.rgb, 0.7);
+      vec3 stop_last_rgb = _hsvToRgb(vec3(ternary_hsv.x - 10.0, ternary_hsv.y, ternary_hsv.z));
+
+      colors[0] = vec4(stop_first_rgb, primary.a);
+      colors[1] = vec4(stop_second_rgb, primary.a);
+      colors[2] = secondary;
+      colors[3] = vec4(stop_middle_rgb, secondary.a);
+      colors[4] = secondary;
+      colors[5] = ternary;
+      colors[6] = vec4(stop_last_rgb, ternary.a);
+
+    	stops[0] = 0.02;
+      stops[1] = 0.4;
+      stops[2] = 0.67;
+      stops[3] = 0.7;
+      stops[4] = 0.73;
+      stops[5] = 0.9;
+      stops[6] = 0.98;
+    }
+
+    vec4 fragColor;
+
+    float gradient_startpos_x = gradient_start_pos.x;
+    float gradient_endpos_x = gradient_end_pos.x;
+    float len = gradient_endpos_x - gradient_startpos_x;
+    //float x_loc = uv.x;
+    float x_loc = _st.x;
+
+    vec3 color_ = vec3(1.0, 1.0, 1.0);
+    vec3 stopA = _rgbToHsv(color_.rgb);
+
+    fragColor = mix(colors[0], colors[1], smoothstep(
+            gradient_startpos_x + stops[0] * len,
+            gradient_startpos_x + stops[1] * len,
+            x_loc
+        ));
+
+    for (int i = 1; i < 7; i++) {
+     	if (i < lastStop) {
+
+          fragColor = mix(fragColor, colors[i + 1], smoothstep(
+          gradient_startpos_x + stops[i] * len,
+          gradient_startpos_x + stops[i + 1] * len,
+          x_loc
+          ));
+        } else { break; }
+    }
+
+    return fragColor;
+    """
+    /\ Fn.fn3 "gradient3CAI"
+          ( "primary" /\ (H.T $ H.Empty) )
+          ( "secondary" /\ (H.T $ H.Empty) )
+          ( "ternary" /\ (H.T $ H.Empty) )
+
+
+recolorCAI :: H.GlslFn
+recolorCAI =
+    H.GlslFn
+    $ H.FnCombineCoord
+    /\ H.GlslFnCode
+      """
+      vec3 hsv = _rgbToHsv(vec3(_c0));
+      float value = hsv.z;
+      return fract(vec2(value, _st.y));
+      """
+    /\ Fn.empty "recolor"
+
+
 knownFns :: Array H.GlslFn
 knownFns =
     [ chroma
@@ -366,6 +459,8 @@ knownFns =
     , gradientCAI
     , gradient3
     , gradient4
+    , gradient3CAI
+    , recolorCAI
     ]
 
 
