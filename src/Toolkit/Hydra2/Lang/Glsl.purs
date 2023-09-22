@@ -356,8 +356,8 @@ gradient4 =
             ( "stop3" /\ (H.V $ H.Number 1.0) )
 
 
-gradient3CAI :: H.GlslFn
-gradient3CAI =
+smartGradientCAI :: H.GlslFn
+smartGradientCAI =
     H.GlslFn
     $ H.FnSrc
     /\ H.GlslFnCode
@@ -457,7 +457,7 @@ gradient3CAI =
 
     return fragColor;
     """
-    /\ Fn.fn3 "gradient3CAI"
+    /\ Fn.fn3 "smartGradientCAI"
           ( "primary" /\ (H.T $ H.Empty) )
           ( "secondary" /\ (H.T $ H.Empty) )
           ( "ternary" /\ (H.T $ H.Empty) )
@@ -626,12 +626,12 @@ knownFns =
     , sphereDisplacement
     , sphereDisplacement2
     , modulateSR
-    , gradientCAI
     , gradient3
     , gradient4
-    , gradient3CAI
-    , recolorCAI
+    , gradientCAI
     , watermelonCAI
+    , smartGradientCAI
+    , recolorCAI
     ]
 
 

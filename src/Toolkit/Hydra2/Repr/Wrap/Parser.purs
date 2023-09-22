@@ -141,15 +141,19 @@ texture =
             _ <- string T.texsEnd
             pure $ tex /\ geo
         , marker $ "CALL" /\ uncurry T.CallGlslFn /\ do
-            tex <- defer \_ -> texture
+            over <- defer \_ -> texture
             _ <- string T.texSep
+            mbWith <- optionMaybe $ try $ do
+                with <- defer \_ -> texture
+                _ <- string T.texSep
+                pure with
             fn <- langFn tOrV
             -- _ <- if Fn.argsCount fn > 0 then string T.texsEnd else
             -- _ <- optional space
             -- _ <- string T.argsEnd
             -- _ <- string T.texsEnd
             _ <- optional $ try $ string T.texsEnd
-            pure $ tex /\ T.GlslFnRef fn
+            pure $ { over, mbWith } /\ T.GlslFnRef fn
         ]
 
 

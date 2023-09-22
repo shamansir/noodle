@@ -20,6 +20,7 @@ import Data.String.Extra as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.FromToFile (class Encode, encode, class Decode, decode)
+import Data.Monoid (mempty)
 
 import Type.Proxy (Proxy(..))
 
@@ -116,7 +117,7 @@ data Texture
     | Filter Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
     | Geometry Texture Geometry
-    | CallGlslFn Texture GlslFnRef
+    | CallGlslFn { over :: Texture, mbWith :: Maybe Texture } GlslFnRef
 
 
 -- TODO: Rethink naming since in Hydra `Texture` is only Noise / Osc / Shape / Solid / Voronoi / Src
@@ -738,7 +739,14 @@ instance Encode Texture where
         Filter texture op -> "F " <> encode op <> texSep <> encode texture <> texsEnd
         ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
         Geometry texture gmt -> "G " <> encode texture <> texSep <> encode gmt <> texsEnd
-        CallGlslFn texture fn -> "CALL " <> encode texture <> texSep <> encode fn <> texsEnd
+        CallGlslFn { over, mbWith } fn ->
+            "CALL " <> encode over <> texSep
+                <> (
+                    case mbWith of
+                        Just with -> encode with <> texSep
+                        Nothing -> mempty
+                )
+                <> encode fn <> texsEnd
 
 
 instance Encode Blend where
@@ -1053,9 +1061,13 @@ instance PossiblyToFn TOrV Texture where
         Geometry texture gmt ->
             case (toFn gmt :: String /\ Array (Fn.Argument Value)) of
                 name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
-        CallGlslFn texture fnRef ->
+        CallGlslFn { over, mbWith } fnRef ->
             case (toFn fnRef :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> Just $ name /\ (args <> [ q "texture" $ T texture ])
+                name /\ args -> Just $ name /\ ((q "over" $ T over) : args <>
+                    case mbWith of
+                        Just with -> [ q "with" $ T with ]
+                        Nothing -> [ ]
+                    )
 
 
 instance PossiblyToFn Value Fn.KnownFn where

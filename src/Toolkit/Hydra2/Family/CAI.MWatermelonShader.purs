@@ -7,6 +7,7 @@ import Data.SOrder (SOrder, type (:::), T, s1, s2)
 import Data.SOrder (empty) as SOrder
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
+import Data.Maybe (Maybe(..))
 
 
 import Noodle.Fn2 as Fn
@@ -78,7 +79,7 @@ family = -- {-> caiWatermelonShader <-}
             speed <- P.receive _in_speed
             intensity <- P.receive _in_intensity
             P.send _out_shader
-                $ H.CallGlslFn H.Empty
+                $ H.CallGlslFn { over : H.Empty, mbWith : Nothing }
                 $ H.GlslFnRef
                 $ HFn.fn2 "watermelonCAI"
                     ( "speed" /\ H.V speed )

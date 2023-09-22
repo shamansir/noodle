@@ -5,6 +5,7 @@ import Prelude (Unit, unit, ($), bind, pure)
 
 import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
 
 import Noodle.Fn2 as Fn
@@ -33,26 +34,32 @@ defaultState :: State
 defaultState = unit
 
 
-_in_texture   = Fn.Input  0 :: _ "texture"
-_in_product   = Fn.Input  1 :: _ "product"
+_in_primary   = Fn.Input  0 :: _ "primary"
+_in_secondary = Fn.Input  1 :: _ "secondary"
+_in_ternary   = Fn.Input  2 :: _ "ternary"
 
 _out_gradient   = Fn.Output 0 :: _ "gradient"
 
 
-type Inputs = ( product :: H.Value )
+type Inputs = ( primary :: H.Texture, secondary :: H.Texture, ternary :: H.Texture )
 type Outputs = ( gradient :: H.Texture )
 
 
 inputsOrder :: _
-inputsOrder = s1 _in_product
+inputsOrder = s3 _in_primary _in_secondary _in_ternary
 
 
 outputsOrder :: _
 outputsOrder = s1 _out_gradient
 
 
+defaultPrimary = H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 } :: H.Texture
+defaultSecondary = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 } :: H.Texture
+defaultTernary = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 } :: H.Texture
+
+
 defaultInputs :: Record Inputs
-defaultInputs = { product : H.Number 0.0 }
+defaultInputs = { primary : defaultPrimary, secondary : defaultSecondary, ternary : defaultTernary }
 
 
 defaultOutputs :: Record Outputs
@@ -75,18 +82,16 @@ family = -- {-> caiSmartGradient <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            product <- P.receive _in_product
-            let
-                color0 = H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
-                color1 = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
-                color2 = H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
+            primary <- P.receive _in_primary
+            secondary <- P.receive _in_secondary
+            ternary <- P.receive _in_primary
             P.send _out_gradient
-                $ H.CallGlslFn H.Empty
+                $ H.CallGlslFn { over : H.Empty, mbWith : Nothing }
                 $ H.GlslFnRef
                 $ HFn.fn3 "gradient3CAI"
-                    ( "primary" /\ H.T color0 )
-                    ( "secondary" /\ H.T color1 )
-                    ( "ternary" /\ H.T color2 )
+                    ( "primary" /\ H.T primary )
+                    ( "secondary" /\ H.T secondary )
+                    ( "ternary" /\ H.T ternary )
 
 
 type Node (m :: Type -> Type) =

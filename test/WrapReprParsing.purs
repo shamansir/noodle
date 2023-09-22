@@ -145,10 +145,10 @@ code
             """
             /\ Lang.Fn ("abc" /\ [])
     , Texture
-        $ CallGlslFn Empty
+        $ CallGlslFn { over : Empty, mbWith : Nothing }
         $ GlslFnRef $ Lang.Fn ("aaa" /\ [])
     , Texture
-        $ CallGlslFn Empty
+        $ CallGlslFn { over : Empty, mbWith : Nothing }
         $ GlslFnRef $ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty ])
     , W.GlslFn
         $ T.GlslFn
@@ -156,7 +156,7 @@ code
             /\ GlslFnCode "foo\nbar\nbzz"
             /\ Lang.Fn ("axz" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
     , Texture
-        $ CallGlslFn (Filter Empty $ Posterize { bins : Time, gamma : Height })
+        $ CallGlslFn { over : Filter Empty $ Posterize { bins : Time, gamma : Height }, mbWith : Nothing }
         $ GlslFnRef $ Lang.Fn
             $ "bzz" /\
                 [ Lang.q "a1" $ T Empty
@@ -165,6 +165,7 @@ code
                 , Lang.q "a3" $ V $ Number 2.0
                 ]
     ]
+
 
 spec :: Spec Unit
 spec = do

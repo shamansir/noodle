@@ -107,7 +107,7 @@ family = -- {-> callFunction <-}
                     H.Number n -> do
                         fnRef <- collectFuncRef $ floor n
                         tex <- P.receive _tex_in
-                        P.send _out_out $ H.CallGlslFn tex fnRef
+                        P.send _out_out $ H.CallGlslFn { over : tex, mbWith : Nothing } fnRef
                     _ -> pure unit
 
                 pure unit

@@ -219,13 +219,15 @@ instance ToCode PS Texture where
             toCode pureScript texture <> "\n\t# " <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnPs name args
-        CallGlslFn tex fnRef ->
-            case tex of
+        CallGlslFn { over, mbWith } fnRef ->
+            case over of
                 Empty -> ""
-                _ -> toCode pureScript tex <> "\n\t#"
+                _ -> toCode pureScript over <> "\n\t#"
             <>
             case (toFnX fnRef :: String /\ Array TOrV) of
-                name /\ args -> fnPs name args
+                name /\ args -> fnsPs name $ case mbWith of
+                    Just with -> toCode pureScript with : (toCode pureScript <$> args)
+                    Nothing -> toCode pureScript <$> args
 
 
 instance ToCode PS OnAudio where
@@ -375,13 +377,15 @@ instance ToCode JS Texture where
             toCode javaScript texture <> "\n\t." <>
             case (toFnX gmt :: String /\ Array Value) of
                 name /\ args -> fnJs name args
-        CallGlslFn tex fnRef ->
-            case tex of
+        CallGlslFn { over, mbWith } fnRef ->
+            case over of
                 Empty -> ""
-                _ -> toCode javaScript tex <> "\n\t."
+                _ -> toCode javaScript over <> "\n\t."
             <>
             case (toFnX fnRef :: String /\ Array TOrV) of
-                name /\ args -> fnJs name args
+                name /\ args -> fnsJs name $ case mbWith of
+                    Just with -> toCode javaScript with : (toCode javaScript <$> args)
+                    Nothing -> toCode javaScript <$> args
 
 
 instance ToCode JS OnAudio where

@@ -200,7 +200,9 @@ collectGlslUsage prg = fold checkCmdForRefs [] prg
         checkTexForRefs (H.Filter tex _) = checkTexForRefs tex
         checkTexForRefs (H.ModulateWith { with, what } _) = checkTexForRefs with <> checkTexForRefs what
         checkTexForRefs (H.Geometry tex _) = checkTexForRefs tex
-        checkTexForRefs (H.CallGlslFn tex fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs tex
+        checkTexForRefs (H.CallGlslFn { over, mbWith } fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs over <> case mbWith of
+            Just with -> checkTexForRefs with
+            Nothing -> mempty
         checkTexForRefs _ = []
         fnRefToGlslFn (H.GlslFnRef fn) = Map.lookup (Fn.name fn) Glsl.knownFnsMap
         addIfJust :: _

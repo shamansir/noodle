@@ -2,19 +2,21 @@ module Toolkit.Hydra2.Family.CAI.FRecolor where
 
 import Prelude
 
+import Data.SOrder (SOrder, type (:::), T, s1, s2)
+import Data.Maybe (Maybe(..))
 
-import Toolkit.Hydra2.Types as H
+import Type.Proxy (Proxy(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
-
-import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T, s1, s2)
-import Type.Proxy (Proxy(..))
+
+import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Lang.Fn as HFn
 
 
 id = Node.Family :: _ "caiRecolor"
@@ -31,18 +33,18 @@ defaultState :: State
 defaultState = unit
 
 
-_in_texture   = Fn.Input  0 :: _ "texture"
-_in_product   = Fn.Input  1 :: _ "product"
+_in_what = Fn.Input  0 :: _ "what"
+_in_with = Fn.Input  1 :: _ "with"
 
-_out_out   = Fn.Output 0 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
-type Inputs = ( texture :: H.Texture, product :: H.Value )
+type Inputs = ( what :: H.Texture, with :: H.Texture )
 type Outputs = ( out :: H.Texture )
 
 
 inputsOrder :: _
-inputsOrder = s2 _in_texture _in_product
+inputsOrder = s2 _in_what _in_with
 
 
 outputsOrder :: _
@@ -50,7 +52,7 @@ outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { texture : H.Empty, product : H.Number 0.0 }
+defaultInputs = { what : H.Empty, with : H.Empty }
 
 
 defaultOutputs :: Record Outputs
@@ -73,9 +75,12 @@ family = -- {-> caiRecolor <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            texture <- P.receive _in_texture
-            product <- P.receive _in_product
-            P.send _out_out $ H.Empty -- FIXME
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            P.send _out_out
+                $ H.CallGlslFn { over : what, mbWith : Just with }
+                $ H.GlslFnRef
+                $ HFn.empty "recolorCAI"
 
 
 type Node (m :: Type -> Type) =

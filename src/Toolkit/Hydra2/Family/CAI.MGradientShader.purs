@@ -6,6 +6,7 @@ import Prelude
 import Data.SOrder (SOrder, type (:::), T, s1, s2)
 import Data.SOrder (empty) as SOrder
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
 
 
@@ -78,7 +79,7 @@ family = -- {-> caiGradientShader <-}
             speed <- P.receive _in_speed
             intensity <- P.receive _in_intensity
             P.send _out_shader
-                $ H.CallGlslFn H.Empty
+                $ H.CallGlslFn { over : H.Empty, mbWith : Nothing }
                 $ H.GlslFnRef
                 $ HFn.fn2 "gradientCAI"
                     ( "speed" /\ H.V speed )
