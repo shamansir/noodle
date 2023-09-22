@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.CAI.FProductRecolor where
+module Toolkit.Hydra2.Family.CAI.FRecolor where
 
 import Prelude
 
@@ -17,11 +17,11 @@ import Data.SOrder (SOrder, type (:::), T, s1, s2)
 import Type.Proxy (Proxy(..))
 
 
-id = Node.Family :: _ "caiProductRecolor"
+id = Node.Family :: _ "caiRecolor"
 
 
 name :: String
-name = "caiProductRecolor"
+name = "caiRecolor"
 
 
 type State = Unit
@@ -57,7 +57,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty  }
 
 
-type Family (m :: Type -> Type) = -- {-> caiProductRecolor <-}
+type Family (m :: Type -> Type) = -- {-> caiRecolor <-}
     Family.Def State
         Inputs
         Outputs
@@ -65,7 +65,7 @@ type Family (m :: Type -> Type) = -- {-> caiProductRecolor <-}
 
 
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> caiProductRecolor <-}
+family = -- {-> caiRecolor <-}
     Family.def
         defaultState
         defaultInputs
@@ -79,7 +79,7 @@ family = -- {-> caiProductRecolor <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "caiProductRecolor" State
+    N.Node "caiRecolor" State
         Inputs
         Outputs
         m

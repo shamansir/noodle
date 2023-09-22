@@ -125,9 +125,10 @@ import Toolkit.Hydra2.Family.Audio.FHide as FHide
 import Toolkit.Hydra2.Family.Audio.FShow as FShow
 import Toolkit.Hydra2.Family.Out.FOut as FOut
 import Toolkit.Hydra2.Family.CAI.FGradientShader as FGradientShader
-import Toolkit.Hydra2.Family.CAI.FProductGradient as FProductGradient
+import Toolkit.Hydra2.Family.CAI.FWatermelonShader as FWatermelonShader
+import Toolkit.Hydra2.Family.CAI.FSmartGradient as FSmartGradient
 import Toolkit.Hydra2.Family.CAI.FProductPalette as FProductPalette
-import Toolkit.Hydra2.Family.CAI.FProductRecolor as FProductRecolor
+import Toolkit.Hydra2.Family.CAI.FRecolor as FRecolor
 
 
 type State = Unit
@@ -226,9 +227,10 @@ type Families (m :: Type -> Type) =
         , hide :: FHide.Family m  -- {-> audio <-}
         , show :: FShow.Family m  -- {-> audio <-}
         , caiGradientShader :: FGradientShader.Family m  -- {-> cai <-}
-        , caiProductGradient :: FProductGradient.Family m  -- {-> cai <-}
+        , caiWatermelonShader :: FWatermelonShader.Family m  -- {-> cai <-}
+        , caiSmartGradient :: FSmartGradient.Family m  -- {-> cai <-}
         , caiProductPalette :: FProductPalette.Family m  -- {-> cai <-}
-        , caiProductRecolor :: FProductRecolor.Family m  -- {-> cai <-}
+        , caiRecolor :: FRecolor.Family m  -- {-> cai <-}
         , out :: FOut.Family m  -- {-> out <-}
         )
 
@@ -323,9 +325,10 @@ families =
         , hide : (FHide.family :: FHide.Family m)
         , show : (FShow.family :: FShow.Family m)
         , caiGradientShader : (FGradientShader.family :: FGradientShader.Family m)
-        , caiProductGradient : (FProductGradient.family :: FProductGradient.Family m)
+        , caiWatermelonShader : (FWatermelonShader.family :: FWatermelonShader.Family m)
+        , caiSmartGradient : (FSmartGradient.family :: FSmartGradient.Family m)
         , caiProductPalette : (FProductPalette.family :: FProductPalette.Family m)
-        , caiProductRecolor : (FProductRecolor.family :: FProductRecolor.Family m)
+        , caiRecolor : (FRecolor.family :: FRecolor.Family m)
         , out : (FOut.family :: FOut.Family m)
         }
 
@@ -423,9 +426,10 @@ type FamiliesOrder =
         -- CAI
 
         ::: "caiGradientShader"
-        ::: "caiProductGradient"
+        ::: "caiWatermelonShader"
+        ::: "caiSmartGradient"
         ::: "caiProductPalette"
-        ::: "caiProductRecolor"
+        ::: "caiRecolor"
 
         --  Synth Settings
 
@@ -568,9 +572,10 @@ type Instances m =
         , hide :: Array ( FHide.Node m )
         , show :: Array ( FShow.Node m )
         , caiGradientShader :: Array ( FGradientShader.Node m )
-        , caiProductGradient :: Array ( FProductGradient.Node m )
+        , caiWatermelonShader :: Array ( FWatermelonShader.Node m )
+        , caiSmartGradient :: Array ( FSmartGradient.Node m )
         , caiProductPalette :: Array ( FProductPalette.Node m )
-        , caiProductRecolor :: Array ( FProductRecolor.Node m )
+        , caiRecolor :: Array ( FRecolor.Node m )
         , out :: Array ( FOut.Node m )
         )
 
@@ -665,9 +670,10 @@ noInstances =
         , hide : ([] :: Array ( FHide.Node m ))
         , show : ([] :: Array ( FShow.Node m ))
         , caiGradientShader : ([] :: Array ( FGradientShader.Node m ))
-        , caiProductGradient : ([] :: Array ( FProductGradient.Node m ))
+        , caiWatermelonShader : ([] :: Array ( FWatermelonShader.Node m ))
+        , caiSmartGradient : ([] :: Array ( FSmartGradient.Node m ))
         , caiProductPalette : ([] :: Array ( FProductPalette.Node m ))
-        , caiProductRecolor : ([] :: Array ( FProductRecolor.Node m ))
+        , caiRecolor : ([] :: Array ( FRecolor.Node m ))
         , out : ([] :: Array ( FOut.Node m ))
         }
 
@@ -762,9 +768,10 @@ familySym :: Record
         , hide :: Node.Family "hide"
         , show :: Node.Family "show"
         , caiGradientShader :: Node.Family "caiGradientShader"
-        , caiProductGradient :: Node.Family "caiProductGradient"
+        , caiWatermelonShader :: Node.Family "caiWatermelonShader"
+        , caiSmartGradient :: Node.Family "caiSmartGradient"
         , caiProductPalette :: Node.Family "caiProductPalette"
-        , caiProductRecolor :: Node.Family "caiProductRecolor"
+        , caiRecolor :: Node.Family "caiRecolor"
         , out :: Node.Family "out"
         )
 
@@ -860,9 +867,10 @@ familySym =
         , hide : FHide.id
         , show : FShow.id
         , caiGradientShader : FGradientShader.id
-        , caiProductGradient : FProductGradient.id
+        , caiWatermelonShader : FWatermelonShader.id
+        , caiSmartGradient : FSmartGradient.id
         , caiProductPalette : FProductPalette.id
-        , caiProductRecolor : FProductRecolor.id
+        , caiRecolor : FRecolor.id
         , out : FOut.id
         }
 
@@ -970,9 +978,10 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "hide" -> Just $ fn familySym.hide families.hide toolkit
         "show" -> Just $ fn familySym.show families.show toolkit
         "caiGradientShader" -> Just $ fn familySym.caiGradientShader families.caiGradientShader toolkit
-        "caiProductGradient" -> Just $ fn familySym.caiProductGradient families.caiProductGradient toolkit
+        "caiWatermelonShader" -> Just $ fn familySym.caiWatermelonShader families.caiWatermelonShader toolkit
+        "caiSmartGradient" -> Just $ fn familySym.caiSmartGradient families.caiSmartGradient toolkit
         "caiProductPalette" -> Just $ fn familySym.caiProductPalette families.caiProductPalette toolkit
-        "caiProductRecolor" -> Just $ fn familySym.caiProductRecolor families.caiProductRecolor toolkit
+        "caiRecolor" -> Just $ fn familySym.caiRecolor families.caiRecolor toolkit
         "out" -> Just $ fn familySym.out families.out toolkit
 
         _ -> Nothing

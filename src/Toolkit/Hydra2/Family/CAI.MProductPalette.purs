@@ -77,9 +77,9 @@ family = -- {-> caiProductPalette <-}
             $ do
             texture <- P.receive _in_texture
             product <- P.receive _in_product
-            P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0}
-            P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0}
-            P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0}
+            P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0 }
+            P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0 }
+            P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0 }
 
 
 type Node (m :: Type -> Type) =

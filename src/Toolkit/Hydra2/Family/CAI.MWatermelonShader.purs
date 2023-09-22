@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.CAI.FGradientShader where
+module Toolkit.Hydra2.Family.CAI.FWatermelonShader where
 
 import Prelude
 
@@ -20,11 +20,11 @@ import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Lang.Fn as HFn
 
 
-id = Node.Family :: _ "caiGradientShader"
+id = Node.Family :: _ "caiWatermelonShader"
 
 
 name :: String
-name = "caiGradientShader"
+name = "caiWatermelonShader"
 
 
 type State = Unit
@@ -59,7 +59,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { shader : H.Empty }
 
 
-type Family (m :: Type -> Type) = -- {-> caiGradientShader <-}
+type Family (m :: Type -> Type) = -- {-> caiWatermelonShader <-}
     Family.Def State
         Inputs
         Outputs
@@ -67,7 +67,7 @@ type Family (m :: Type -> Type) = -- {-> caiGradientShader <-}
 
 
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> caiGradientShader <-}
+family = -- {-> caiWatermelonShader <-}
     Family.def
         defaultState
         defaultInputs
@@ -80,13 +80,13 @@ family = -- {-> caiGradientShader <-}
             P.send _out_shader
                 $ H.CallGlslFn H.Empty
                 $ H.GlslFnRef
-                $ HFn.fn2 "gradientCAI"
+                $ HFn.fn2 "watermelonCAI"
                     ( "speed" /\ H.V speed )
                     ( "intensity" /\ H.V intensity )
 
 
 type Node (m :: Type -> Type) =
-    N.Node "caiGradientShader" State
+    N.Node "caiWatermelonShader" State
         Inputs
         Outputs
         m

@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.CAI.FProductGradient where
+module Toolkit.Hydra2.Family.CAI.FSmartGradient where
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -19,11 +19,11 @@ import Toolkit.Hydra2.Types as H
 import Toolkit.Hydra2.Lang.Fn as HFn
 
 
-id = Node.Family :: _ "caiProductGradient"
+id = Node.Family :: _ "caiSmartGradient"
 
 
 name :: String
-name = "caiProductGradient"
+name = "caiSmartGradient"
 
 
 type State = Unit
@@ -59,7 +59,7 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { gradient : H.Empty }
 
 
-type Family (m :: Type -> Type) = -- {-> caiProductGradient <-}
+type Family (m :: Type -> Type) = -- {-> caiSmartGradient <-}
     Family.Def State
         Inputs
         Outputs
@@ -67,7 +67,7 @@ type Family (m :: Type -> Type) = -- {-> caiProductGradient <-}
 
 
 family :: forall (m :: Type -> Type). Family m
-family = -- {-> caiProductGradient <-}
+family = -- {-> caiSmartGradient <-}
     Family.def
         defaultState
         defaultInputs
@@ -83,14 +83,14 @@ family = -- {-> caiProductGradient <-}
             P.send _out_gradient
                 $ H.CallGlslFn H.Empty
                 $ H.GlslFnRef
-                $ HFn.fn3 "gradient3"
-                    ( "color0" /\ H.T color0 )
-                    ( "color1" /\ H.T color1 )
-                    ( "color2" /\ H.T color2 )
+                $ HFn.fn3 "gradient3CAI"
+                    ( "primary" /\ H.T color0 )
+                    ( "secondary" /\ H.T color1 )
+                    ( "ternary" /\ H.T color2 )
 
 
 type Node (m :: Type -> Type) =
-    N.Node "caiProductGradient" State
+    N.Node "caiSmartGradient" State
         Inputs
         Outputs
         m
