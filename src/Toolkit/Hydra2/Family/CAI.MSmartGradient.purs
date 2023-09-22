@@ -88,7 +88,7 @@ family = -- {-> caiSmartGradient <-}
             P.send _out_gradient
                 $ H.CallGlslFn { over : H.Empty, mbWith : Nothing }
                 $ H.GlslFnRef
-                $ HFn.fn3 "gradient3CAI"
+                $ HFn.fn3 "smartGradientCAI"
                     ( "primary" /\ H.T primary )
                     ( "secondary" /\ H.T secondary )
                     ( "ternary" /\ H.T ternary )
