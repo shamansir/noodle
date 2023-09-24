@@ -20,6 +20,8 @@ import Control.Applicative (class Applicative)
 import Type.Data.Symbol (class IsSymbol)
 import Type.RowList as RL
 
+import CompArts.Product as CAI
+
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
 import Noodle.Id (reflectFamilyR) as Id
 import Noodle.Family.Def as Family

@@ -12,6 +12,8 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 
+import CompArts.Product as CAI
+
 
 import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Node2.Path (InNode)
@@ -206,6 +208,11 @@ instance ShortInfo H.TOrV where
     short (H.V val) = short val
 
 
+instance ShortInfo CAI.Products where
+    short :: CAI.Products -> String
+    short ps = show (CAI.count ps) <> "P"
+
+
 -- TODO: use color tags
 
 instance FullInfo H.Value where
@@ -308,6 +315,11 @@ instance FullInfo H.CanBeSource where
     full = show
 
 
+instance FullInfo CAI.Products where
+    full :: CAI.Products -> String
+    full = show
+
+
 instance FullInfo H.TOrV where
     full :: H.TOrV -> String
     full (H.T tex) = full tex
@@ -348,6 +360,7 @@ instance FullInfo W.WrapRepr where
         W.ExtSource ext -> full ext
         W.Fn fn -> full fn
         W.Target trg -> full trg
+        W.Products products -> full products
         W.CBS cbs -> full cbs
 
 
@@ -375,4 +388,5 @@ instance ShortInfo W.WrapRepr where
         W.ExtSource ext -> short ext
         W.Fn fn -> short fn
         W.Target trg -> short trg
+        W.Products products -> short products
         W.CBS cbs -> short cbs

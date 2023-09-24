@@ -5,6 +5,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Aff (Aff, runAff_)
+
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as Map
@@ -12,11 +13,14 @@ import Data.Bifunctor (lmap)
 import Data.Lens (preview)
 import Data.Lens.Index (ix)
 import Data.Profunctor.Choice (fanin)
+import Data.Array as Array
 
 import Data.Argonaut (decodeJson, jsonParser, JsonDecodeError(..))
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Prisms (_Array, _Number, _Object)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+
+import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
 import Affjax.Node as AJ
 import Affjax.ResponseFormat (json)
@@ -52,6 +56,9 @@ type ProductsShape =
     }
 
 
+newtype Products = Products (Array Product)
+
+
 type ProductRequestError = Either AJ.Error JsonDecodeError
 
 
@@ -72,3 +79,19 @@ requestProducts =
                 Left jsonErr -> pure $ Left $ Right jsonErr
                 Right decoded ->
                     pure $ Right $ Map.fromFoldable $ (F.toUnfoldable decoded.all :: Array _)
+
+
+instance Show Products where
+    show ps = show (count ps) <> " Products"
+
+
+count :: Products -> Int
+count (Products array) = Array.length array
+
+
+none :: Products
+none = Products [] -- derive newtype instance Monoid
+
+
+instance IsNodeState Products where
+    default = none

@@ -1,20 +1,25 @@
 module Toolkit.Hydra2.Family.CAI.FProductPalette where
 
+
 import Prelude
 
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
+import Data.Maybe (Maybe(..))
 
-import Toolkit.Hydra2.Types as H
+import Control.Monad.State as State
 
-
-import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T, s1, s3)
+
 import Type.Proxy (Proxy(..))
+
+import Toolkit.Hydra2.Types as H
+
+import CompArts.Product as CAI
 
 
 id = Node.Family :: _ "caiProductPalette"
@@ -24,11 +29,11 @@ name :: String
 name = "caiProductPalette"
 
 
-type State = Unit
+type State = CAI.Products
 
 
 defaultState :: State
-defaultState = unit
+defaultState = CAI.none
 
 
 _in_product   = Fn.Input  1 :: _ "product"
@@ -75,9 +80,22 @@ family = -- {-> caiProductPalette <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             product <- P.receive _in_product
-            P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
-            P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
-            P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
+            {-
+            mbProducts <- State.get
+            case mbProducts of
+                Just products -> do
+                    P.send _out_primary H.Empty
+                    P.send _out_secondary H.Empty
+                    P.send _out_ternary H.Empty
+                Nothing -> do
+                    P.send _out_primary H.Empty
+                    P.send _out_secondary H.Empty
+                    P.send _out_ternary H.Empty
+                    -- P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
+                    -- P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
+                    -- P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
+            -}
+            pure unit
 
 
 type Node (m :: Type -> Type) =

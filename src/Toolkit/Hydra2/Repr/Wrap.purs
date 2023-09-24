@@ -17,6 +17,12 @@ import Noodle.Node2.Path (InNode)
 
 import Toolkit.Hydra2.Types as H
 
+import CompArts.Product as CAI
+
+
+ -- FIXME: review for excessive wraps. Or maybe separate node state wraps and inputs/outputs wraps
+ -- may be join classes IsNodeState/IsChannel with FromRepr/ToRepr and so on
+
 data WrapRepr
     = Value H.Value
     | Unit Unit
@@ -37,8 +43,9 @@ data WrapRepr
     | SourceN H.SourceN
     | ExtSource H.ExtSource
     | Target H.RenderTarget
-    | Fn H.Fn -- FIXME: review for excessive wraps, this one seems not to be needed, for example (we wrap Fn-s into values)
+    | Fn H.Fn -- for example this one seems not to be needed (we wrap Fn-s into values)
     | CBS H.CanBeSource
+    | Products CAI.Products -- state for `ProductPalette` node
 
 
 -- instance NMF.HasRepr a WrapRepr where
@@ -159,6 +166,11 @@ instance NMF.HasRepr H.TOrV WrapRepr where
     toRepr _ = TOrV
 
 
+instance NMF.HasRepr CAI.Products WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> CAI.Products -> WrapRepr
+    toRepr _ = Products
+
+
 instance NMF.HasRepr WrapRepr WrapRepr where
     toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
     toRepr _ = identity
@@ -270,6 +282,11 @@ instance R.ToRepr H.CanBeSource WrapRepr where
 instance R.ToRepr H.TOrV WrapRepr where
     toRepr :: H.TOrV -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< TOrV
+
+
+instance R.ToRepr CAI.Products WrapRepr where
+    toRepr :: CAI.Products -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< Products
 
 
 instance R.ToRepr WrapRepr WrapRepr where
@@ -394,6 +411,12 @@ instance R.FromRepr WrapRepr H.CanBeSource where
     fromRepr _ = Nothing
 
 
+instance R.FromRepr WrapRepr CAI.Products where
+    fromRepr :: R.Repr WrapRepr -> Maybe CAI.Products
+    fromRepr (R.Repr (Products products)) = Just products
+    fromRepr _ = Nothing
+
+
 instance R.FromRepr WrapRepr H.TOrV where
     fromRepr :: R.Repr WrapRepr -> Maybe H.TOrV
     fromRepr (R.Repr (Value v)) = Just $ H.V v
@@ -430,6 +453,7 @@ instance Mark WrapRepr where
         ExtSource ext -> mark ext
         Target trg -> mark trg
         Fn fn -> mark fn
+        Products products -> mark unit -- FIXME: doesn't require Mark instance for node state wraps?
         CBS cbs -> mark cbs
 
 
@@ -456,6 +480,7 @@ instance Show WrapRepr where
         ExtSource ext -> show ext
         Target trg -> show trg
         Fn fn -> show fn
+        Products products -> show products
         CBS cbs -> show cbs
 
     {-
@@ -509,6 +534,7 @@ instance Encode WrapRepr where
         ExtSource ext -> "EXT " <> encode ext
         Target trg -> "TRG " <> encode trg
         Fn fn -> "FN " <> encode fn
+        Products _ -> "PRD P"
         CBS cbs -> "CBS " <> encode cbs
 
 
@@ -523,6 +549,7 @@ instance R.ReadRepr WrapRepr where
             case Number.fromString $ String.drop 4 s of
                 Just n -> Just $ R.wrap $ Value $ H.Number n
                 Nothing -> Nothing
+            -- FIXME: parse other kinds of reprs!
         else Nothing
 
 
