@@ -1,7 +1,7 @@
 module Cli.State where
 
 import Prelude
-
+import Debug as Debug
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -123,7 +123,7 @@ initialNetwork =
 
 withCurrentPatch :: (Patch Hydra.State (Hydra.Instances Effect) -> Patch Hydra.State (Hydra.Instances Effect)) -> State -> State
 withCurrentPatch f state =
-    case state.currentPatch of
+    case Debug.spy "cp" state.currentPatch of
         Just (_ /\ id) ->
             state { network = state.network # unwrapN # Network.withPatch id f # wrapN }
         Nothing -> state

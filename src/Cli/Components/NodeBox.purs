@@ -1,6 +1,7 @@
 module Cli.Components.NodeBox where
 
 import Prelude
+import Debug as Debug
 
 import Cli.WsServer as WSS
 
@@ -82,7 +83,7 @@ import Noodle.Node2.MapsFolds.Repr
 import Noodle.Node2.MapsFolds.Flatten as R
 import Noodle.Node2.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
 import Noodle.Fn2.Protocol (ChangeFocus(..))
-import Noodle.Stateful (get, setM) as Stateful
+import Noodle.Stateful (get, getM, setM) as Stateful
 
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
@@ -251,13 +252,15 @@ fromNode curPatchId curPatch family node = do
                 ]
                 [ ]
                 -}
-        renderNodeUpdate :: forall a. ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
+        renderNodeUpdate :: forall a. ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         renderNodeUpdate = renderUpdate nextNodeBox inputsKeys outputsKeys
 
     (stateRef :: Ref State) <- Blessed.getStateRef
 
+    (nodeState :: state) <- liftEffect $ Stateful.getM node
+
     --renderNodeUpdate mapRepr
-    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
+    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
     liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
@@ -281,7 +284,7 @@ fromNode curPatchId curPatch family node = do
 
     renderNodeUpdate $ Everything /\ mapRepr2
 
-    (nodeStateRef :: Ref state) <- liftEffect $ Ref.new default
+    (nodeStateRef :: Ref state) <- liftEffect $ Ref.new nodeState
 
     -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
     -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
@@ -336,7 +339,7 @@ fromFamily curPatchId curPatch family _ tk = do
     node' <- liftEffect $ case mbState of
         Just state -> Stateful.setM state node
         Nothing -> pure node
-
+    -- TODO: update node in the patch?
     fromNode curPatchId curPatch family node'
 
 
@@ -382,12 +385,12 @@ updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
 
 
 renderUpdate
-    :: forall a
+    :: forall state
      . NodeBoxKey
     -> InputsBox.KeysMap
     -> OutputsBox.KeysMap
     -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
-    -> BlessedOp a Effect
+    -> BlessedOp state Effect
 renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
     -- liftEffect $ Console.log $ show outputReprs
     _ <- traverseWithIndex updateInput inputsReps

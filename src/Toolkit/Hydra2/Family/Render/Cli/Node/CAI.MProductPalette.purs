@@ -2,7 +2,7 @@ module Toolkit.Hydra2.Family.Render.Cli.Node.CAI.FProductPalette where
 
 import Prelude
 
-import Prelude
+import Debug as Debug
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
@@ -67,6 +67,7 @@ type ButtonKey = Button <^> "product-palette-text-box"
 render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
 render nodeBoxKey node = do
     products <- State.get
+    let _ = Debug.spy "p" products
     let
         (rootButtonKey :: ButtonKey) = NK.first -- FIXME, find the next one from state or as passed to the node
         buttonKey = NK.append nodeBoxKey rootButtonKey
