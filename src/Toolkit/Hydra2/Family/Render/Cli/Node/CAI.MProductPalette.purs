@@ -2,10 +2,15 @@ module Toolkit.Hydra2.Family.Render.Cli.Node.CAI.FProductPalette where
 
 import Prelude
 
-import Debug as Debug
+import Prim.Symbol (class Append) as S
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Data.Array (range, foldl, (:))
+import Data.Traversable (traverse)
+import Data.FunctorWithIndex (mapWithIndex)
+import Data.Tuple as Tuple
+import Data.Tuple.Nested (type (/\), (/\))
 
 import Control.Monad.State as State
 
@@ -21,7 +26,7 @@ import Blessed as B
 import Blessed ((>~), (~<))
 import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.BlessedSubj (Button)
-import Blessed.Internal.NodeKey (type (<^>))
+import Blessed.Internal.NodeKey (type (<^>), type (<<>>))
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (lift) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
@@ -63,23 +68,32 @@ import Toolkit.Hydra2.Family.CAI.FProductPalette (Node, State, _in_product) as F
 type ButtonKey = Button <^> "product-palette-text-box"
 
 
+type NestedButtonKey = Button <^> "node-box::product-palette-text-box" -- TODO: use NK.NKAppend
+
 
 render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
 render nodeBoxKey node = do
     products <- State.get
-    let _ = Debug.spy "p" products
     let
+        productsCount = CAI.count products
+        gridHeight = productsCount / 8
+        gridWidth = productsCount / gridHeight
         (rootButtonKey :: ButtonKey) = NK.first -- FIXME, find the next one from state or as passed to the node
         buttonKey = NK.append nodeBoxKey rootButtonKey
-        theButton =
-            B.button buttonKey
-                [ Box.top $ Offset.px 1
-                , Box.left $ Offset.px 0
-                , Box.width $ Dimension.percents 85.0
+        foldF :: Array (Int /\ NestedButtonKey /\ CAI.Product) /\ NestedButtonKey -> (Int /\ CAI.Product) -> Array (Int /\ NestedButtonKey /\ CAI.Product) /\ NestedButtonKey
+        foldF (arr /\ prevKey) (index /\ product) =
+            let nextKey = NK.next prevKey
+            in ((index /\ nextKey /\ product) : arr) /\ nextKey
+        createButton :: (Int /\ NestedButtonKey /\ CAI.Product) -> _
+        createButton (index /\ key /\ product) =
+            B.button key
+                [ Box.top $ Offset.px $ 1 + (index `div` gridHeight)
+                , Box.left $ Offset.px $ (index `mod` gridWidth) * 3
+                , Box.width $ Dimension.px 3
                 , Box.height $ Dimension.px 1
                 , Style.inputBox
                 , Button.mouse true
-                , Box.content $ show $ CAI.count products
+                , Box.content $ show index
                 {-
                 , Core.on TextArea.Submit
                     \_ _ -> do
@@ -94,9 +108,18 @@ render nodeBoxKey node = do
                  -}
                 ]
                 [  ]
-    nodeBoxKey >~ Node.append theButton
+    _ <- CAI.toArray products
+            # mapWithIndex ((/\))
+            # foldl foldF ([] /\ buttonKey)
+            # Tuple.fst # map createButton
+            # traverse \theButton -> nodeBoxKey >~ Node.append theButton
+    pure unit
+    -- nodeBoxKey >~ Node.append theButton
 
 
+
+size :: forall m. FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
+size _ = Just { width : 8 * 3 + 3, height : 11 } -- FIXME: we need Effect  to get the proper size from the State
 
 
 -- render :: forall m. RenderBody "number" State Inputs Outputs m

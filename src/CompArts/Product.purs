@@ -98,6 +98,10 @@ none :: Products
 none = Products [] -- derive newtype instance Monoid
 
 
+toArray :: Products -> Array Product
+toArray (Products arr) = arr
+
+
 instance IsNodeState Products Products where
     default = none
     fromGlobal = Just

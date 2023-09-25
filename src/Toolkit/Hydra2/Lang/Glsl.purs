@@ -365,8 +365,8 @@ smartGradientCAI =
 	  vec2 gradient_start_pos = vec2(0.0, 0.0); // top-left
     vec2 gradient_end_pos = vec2(1.0, 1.0); // bottom-right
 
-	  int modeInt = 7; // could be 3, 5 or 7
-    // int modeInt = int(mode);
+	  // int modeInt = 7; // could be 3, 5 or 7
+    int modeInt = int(mode);
 	  int lastStop = modeInt;
 
     float stops[7];
@@ -457,10 +457,11 @@ smartGradientCAI =
 
     return fragColor;
     """
-    /\ Fn.fn3 "smartGradientCAI"
+    /\ Fn.fn4 "smartGradientCAI"
           ( "primary" /\ (H.T $ H.Empty) )
           ( "secondary" /\ (H.T $ H.Empty) )
           ( "ternary" /\ (H.T $ H.Empty) )
+          ( "mode" /\ (H.V $ H.Number 3.0) )
 
 
 recolorCAI :: H.GlslFn

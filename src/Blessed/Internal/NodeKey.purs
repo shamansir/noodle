@@ -36,6 +36,11 @@ raw subject id = RawNodeKey { subject, id }
 
 infixl 6 make as <^>
 infixl 6 type NodeKey as <^>
+infixl 6 type NKAppend as <<>>
+
+
+type NKAppend subj symA symB = forall symC symD. S.Append symA "::" symC => S.Append symC symB symD => NodeKey subj symD
+-- type NKAppend' subj symA symB = forall symC symD. S.Append symA "::" symC => S.Append symC symB symD => NodeKey subj symD
 
 
 make :: forall subj sym. K.IsSubject subj => IsSymbol sym => Proxy subj -> Proxy sym -> NodeKey subj sym
@@ -77,7 +82,8 @@ getN :: forall subj sym.  NodeKey subj sym -> Maybe Int
 getN (NodeKey maybeN) = maybeN
 
 
-append :: forall subjA symA subjB symB symC symD. S.Append symA "::" symC => S.Append symC symB symD => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjB symD
+-- append :: forall subjA symA subjB symB symC symD. S.Append symA "::" symC => S.Append symC symB symD => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjB symD
+append :: forall subjA symA subjB symB. NodeKey subjA symA -> NodeKey subjB symB -> NKAppend subjB symA symB
 append (NodeKey (Just nA)) (NodeKey (Just nB)) = nk # setN (nA * 1000 + nB)
 append (NodeKey Nothing) (NodeKey (Just nB)) = nk # setN nB
 append (NodeKey (Just nA)) (NodeKey Nothing) = nk # setN (nA * 1000)

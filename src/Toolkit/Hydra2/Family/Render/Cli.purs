@@ -32,7 +32,7 @@ import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
 import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Inputs, Outputs, State, Node) as FCallGlslFunction
 import Toolkit.Hydra2.Family.Render.Cli.Node.Feed.CallGlslFunction (render) as FCallGlslFunction
 import Toolkit.Hydra2.Family.CAI.FProductPalette (Inputs, Outputs, State, Node) as FProductPalette
-import Toolkit.Hydra2.Family.Render.Cli.Node.CAI.FProductPalette (render) as FProductPalette
+import Toolkit.Hydra2.Family.Render.Cli.Node.CAI.FProductPalette (render, size) as FProductPalette
 
 import Toolkit.Hydra2.Family.Render.Cli.Editor.Number as ENumber
 
@@ -43,6 +43,7 @@ import Toolkit.Hydra2.Lang.Glsl as Glsl
 
 import Noodle.Node2 (Node)
 import Noodle.Id as Id
+
 
 import Toolkit.Hydra2.Family.Render.Editor (EditorId(..), HasEditors)
 
@@ -111,9 +112,13 @@ instance HasCustomSize (CliF "expression") (FExpression.Node m) where
 else instance HasCustomSize (CliF "callFunction") (FCallGlslFunction.Node m) where
     size :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Just { width : 30, height : Array.length Glsl.knownFns + 2 }
+else instance HasCustomSize (CliF "caiProductPalette") (FProductPalette.Node m) where
+    size :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
+    size _ _ node = FProductPalette.size node
 else instance HasCustomSize (CliF f) (Node f state is os m) where
     size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
     size _ _ _ = Nothing
+
 
 
 {-
