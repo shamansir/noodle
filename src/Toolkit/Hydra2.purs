@@ -133,11 +133,11 @@ import Toolkit.Hydra2.Family.CAI.FProductPalette as FProductPalette
 import Toolkit.Hydra2.Family.CAI.FRecolor as FRecolor
 
 
-type State = Unit
+type State = CAI.Products
 
 
 defaultState :: State
-defaultState = unit
+defaultState = CAI.none
 
 
 type Families (m :: Type -> Type) =

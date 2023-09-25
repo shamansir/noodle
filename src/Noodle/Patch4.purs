@@ -403,7 +403,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
             => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
             => HasBody' (x f) (Node f state is os m) state m
             => HasCustomSize (x f) (Node f state is os m)
-            => IsNodeState state
+            => IsNodeState gstate state
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -453,7 +453,7 @@ holdNodeMRepr
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
     => HasBody' (x f) (Node f state is os m) state m
     => HasCustomSize (x f) (Node f state is os m)
-    => IsNodeState state
+    => IsNodeState gstate state
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNodeMRepr x gstate instances m repr
@@ -583,7 +583,7 @@ withNodeMRepr
         => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
         => HasBody' (x f) (Node f state is os m) state m
         => HasCustomSize (x f) (Node f state is os m)
-        => IsNodeState state
+        => IsNodeState gstate state
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -633,8 +633,8 @@ withNode2MRepr
         => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
         => HasCustomSize (x fA) (Node fA stateA isA osA m)
         => HasCustomSize (x fB) (Node fB stateB isB osB m)
-        => IsNodeState stateA
-        => IsNodeState stateB
+        => IsNodeState gstateA stateA
+        => IsNodeState gstateB stateB
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA

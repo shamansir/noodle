@@ -117,7 +117,7 @@ initial =
 initialNetwork :: Network Effect
 initialNetwork =
     Network.init Hydra.toolkit
-    # Network.addPatch (patchIdFromIndex 0) (Patch.init (Hydra.toolkit :: Hydra.Toolkit Effect))
+    # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
     # wrapN
 
 

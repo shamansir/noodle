@@ -6,7 +6,7 @@ import Noodle.Network2 (Network) as Noodle
 
 import Toolkit.Hydra2 as Hydra
 
-type NoodleNetwork m = Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m)
+type NoodleNetwork m = Noodle.Network Hydra.State (Hydra.Families m) (Hydra.Instances m)
 
 
 newtype Network m =  -- compiler 0.14.5 fails without newtype

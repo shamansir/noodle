@@ -42,6 +42,8 @@ import Noodle.Patch4 as Patch
 
 import Toolkit.Hydra2 as Hydra
 
+import CompArts.Product as CAI
+
 
 component ∷ Core.Blessed State
 component =
@@ -55,7 +57,7 @@ component =
         , Style.addPatch
         , Core.on Button.Press
             \_ _ -> do
-                let nextPatch = Patch.init (Hydra.toolkit :: Hydra.Toolkit Effect)
+                let nextPatch = Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect)
                 state <- State.get
                 let
                     patchesCount = unwrapN state.network # Network.patchesCount

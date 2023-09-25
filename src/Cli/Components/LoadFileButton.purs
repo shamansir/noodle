@@ -99,7 +99,7 @@ addNodeBox
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody' (Hydra.CliF f) (Node f state is os Effect) state Effect
     => HasCustomSize (Hydra.CliF f) (Node f state is os Effect)
-    => IsNodeState state
+    => IsNodeState Hydra.State state
     => Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Node f state is os Effect

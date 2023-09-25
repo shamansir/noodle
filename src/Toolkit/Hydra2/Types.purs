@@ -352,20 +352,24 @@ initialContext =
         }
 
 
-instance IsNodeState Values where
+instance IsNodeState a Values where
     default = noValues
+    fromGlobal = const Nothing
 
 
-instance IsNodeState Fn where
+instance IsNodeState a Fn where
     default = NoAction
+    fromGlobal = const Nothing
 
 
-instance IsNodeState OutputN where
+instance IsNodeState a OutputN where
     default = Output0
+    fromGlobal = const Nothing
 
 
-instance IsNodeState CanBeSource where
+instance IsNodeState a CanBeSource where
     default = defaultCanBeSource
+    fromGlobal = const Nothing
 
 
 {- MARK -}

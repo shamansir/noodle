@@ -14,6 +14,7 @@ import Data.Lens (preview)
 import Data.Lens.Index (ix)
 import Data.Profunctor.Choice (fanin)
 import Data.Array as Array
+import Data.Maybe (Maybe(..))
 
 import Data.Argonaut (decodeJson, jsonParser, JsonDecodeError(..))
 import Data.Argonaut.Core (Json)
@@ -93,5 +94,6 @@ none :: Products
 none = Products [] -- derive newtype instance Monoid
 
 
-instance IsNodeState Products where
+instance IsNodeState Products Products where
     default = none
+    fromGlobal = Just

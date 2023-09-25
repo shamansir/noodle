@@ -140,7 +140,7 @@ fromNode
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
     => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState state
+    => IsNodeState Hydra.State state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -322,7 +322,7 @@ fromFamily
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
     => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState state
+    => IsNodeState Hydra.State state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f

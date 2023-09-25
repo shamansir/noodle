@@ -267,7 +267,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
         .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
         => HasBody' (x f) (Node f state is os m) state m
         => HasCustomSize (x f) (Node f state is os m)
-        => IsNodeState state
+        => IsNodeState gstate state
         => Family f
         -> Family.Def state is os m
         -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
@@ -290,8 +290,8 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
         => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
         => HasCustomSize (x fA) (Node fA stateA isA osA m)
         => HasCustomSize (x fB) (Node fB stateB isB osB m)
-        => IsNodeState stateA
-        => IsNodeState stateB
+        => IsNodeState gstate stateA
+        => IsNodeState gstate stateB
     --    => Pairs rloA rliB
         => Family fA
         -> Family fB
