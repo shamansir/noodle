@@ -70,6 +70,7 @@ import Noodle.Node2.MapsFolds.Repr
     ) as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
+import Noodle.Node2.HoldsNodeState (class IsNodeState)
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -81,7 +82,6 @@ import Noodle.Text.NdfFile.Apply as File
 import Noodle.Text.NdfFile.Command as Cmd
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
-import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
 
 addNodeBox

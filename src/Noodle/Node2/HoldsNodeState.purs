@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.HoldsNodeState where
+module Noodle.Node2.HoldsNodeState where
 
 import Prelude
 
@@ -6,7 +6,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 
 
--- move somewhere to Noodle / Toolkit?
+-- FIXME: move somewhere to Noodle / Toolkit?
 class IsNodeState gstate a | a -> gstate where
     default :: a
     fromGlobal :: gstate -> Maybe a -- from Repr?

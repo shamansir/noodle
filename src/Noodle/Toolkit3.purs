@@ -54,6 +54,7 @@ import Noodle.Toolkit3.Has as Has
 import Noodle.Node2.MapsFolds as NM
 import Noodle.Node2.MapsFolds as NF
 import Noodle.Node2.MapsFolds.Repr as NR
+import Noodle.Node2.HoldsNodeState (class IsNodeState)
 import Noodle.Toolkit3.MapsFolds as TM
 import Noodle.Toolkit3.MapsFolds as TF
 import Noodle.Toolkit3.MapsFolds.Repr as TR
@@ -64,8 +65,7 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 
 import Unsafe.Coerce (unsafeCoerce)
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize)
-import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: must be located somewhere in generic UI
 
 
 type Name = String

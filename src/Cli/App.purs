@@ -19,7 +19,7 @@ import Control.Monad.State (modify_, get) as State
 import Node.HTTP (Request)
 
 import Cli.State (State)
-import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized) as State
+import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
 import Cli.WsServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
 
@@ -34,6 +34,8 @@ import Blessed (run, runAnd) as Blessed
 import Blessed.UI.Base.Screen.Method as Screen
 
 import Web.Socket.Server as WSS
+
+import Noodle.Stateful (set) as Stateful
 
 import CompArts.Product as CAI
 
@@ -59,7 +61,8 @@ run = Blessed.runAnd State.initial MainScreen.component $ do
     where
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect
         storeProducts (Right (Right productsMap)) =
-            State.modify_ (_ { products = Just productsMap })
+            State.modify_ $ State.withCurrentPatch $ Stateful.set $ CAI.fromMap productsMap
+            -- State.modify_ (_ { products = Just productsMap })
             -- Blessed.lift $ Console.log $ show $ Map.size productsMap
         storeProducts _ = pure unit
         handleStart :: Unit -> BlessedOp State Effect

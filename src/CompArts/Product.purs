@@ -21,7 +21,7 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Prisms (_Array, _Number, _Object)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 
-import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
+import Noodle.Node2.HoldsNodeState (class IsNodeState)
 
 import Affjax.Node as AJ
 import Affjax.ResponseFormat (json)
@@ -80,6 +80,10 @@ requestProducts =
                 Left jsonErr -> pure $ Left $ Right jsonErr
                 Right decoded ->
                     pure $ Right $ Map.fromFoldable $ (F.toUnfoldable decoded.all :: Array _)
+
+
+fromMap :: ProductsMap -> Products
+fromMap = Map.values >>> Array.fromFoldable >>> Products
 
 
 instance Show Products where

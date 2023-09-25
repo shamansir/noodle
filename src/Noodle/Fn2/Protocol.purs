@@ -37,6 +37,7 @@ import Signal.Channel as Channel
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (InputR, OutputR)
+import Noodle.Stateful (class StatefulM)
 
 
 {-}
@@ -118,6 +119,15 @@ type Protocol state is os =
     -- , storeLastInput :: InputId -> m Unit -- could be `InputId`` since we use `Protocol` only internally
     -- , storeLastOutput :: OutputId -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
     }
+
+
+{-
+instance StatefulM (Protocol state is os) Effect state where
+    getM :: Protocol state is os -> Effect state
+    getM = _.getState unit
+    setM :: state -> Protocol state is os -> Effect (Protocol state is os)
+    setM state proto = do
+        proto.modifyState (const state) *> pure proto -}
 
 
 -- Functor etc., (only for Signal)

@@ -27,19 +27,21 @@ import Web.Socket.Server (WebSocketServer, WebSocketConnection) as WSS
 import Noodle.Id as Id
 import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
-import Noodle.Network2 (init, addPatch) as Network
+import Noodle.Patch4 (Patch)
+import Noodle.Network2 (init, addPatch, withPatch) as Network
+import Noodle.Node2.HoldsNodeState (HoldsNodeState)
+import Noodle.Stateful (set) as Stateful
 
 import Cli.Keys (InputsBoxKey, NodeBoxKey, OutputsBoxKey, InfoBoxKey, RemoveButtonKey, PatchBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
 import Cli.Keys (nodeBox, inputsBox, outputsBox, infoBox, removeButton, patchBox) as Key
-import Cli.State.NwWraper (Network, wrapN)
-import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
+import Cli.State.NwWraper (Network, wrapN, unwrapN)
 
 import Noodle.Text.NdfFile.Command (Command) as NdfFile
 import Noodle.Text.NdfFile (init, append) as NdfFile
 import Noodle.Text.NdfFile (NdfFile)
 
-import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
+import Toolkit.Hydra2 (toolkit, Toolkit, State, Instances) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Lang (empty) as Program
 import Toolkit.Hydra2.Lang (Program, Command) as Lang
@@ -76,7 +78,6 @@ type State =
     , editors :: Editors
     , knownGlslFunctions :: Array T.GlslFn
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
-    , products :: Maybe (Map String CAI.Product)
     }
 
 
@@ -110,7 +111,6 @@ initial =
     , editors : Map.empty
     , knownGlslFunctions : Glsl.knownFns
     , linkWasMadeHack : false
-    , products : Nothing
     }
 
 
@@ -119,6 +119,14 @@ initialNetwork =
     Network.init Hydra.toolkit
     # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
     # wrapN
+
+
+withCurrentPatch :: (Patch Hydra.State (Hydra.Instances Effect) -> Patch Hydra.State (Hydra.Instances Effect)) -> State -> State
+withCurrentPatch f state =
+    case state.currentPatch of
+        Just (_ /\ id) ->
+            state { network = state.network # unwrapN # Network.withPatch id f # wrapN }
+        Nothing -> state
 
 
 newtype LinkState =

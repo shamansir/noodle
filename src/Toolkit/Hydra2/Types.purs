@@ -25,7 +25,8 @@ import Data.Monoid (mempty)
 import Type.Proxy (Proxy(..))
 
 import Cli.Palette.Set.X11 as X11
-import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
+
+import Noodle.Node2.HoldsNodeState (class IsNodeState)
 
 import Toolkit.Hydra2.Lang.Fn (Fn) as Lang
 import Toolkit.Hydra2.Lang.Fn (class PossiblyToFn, class ToFn, arg, possiblyToFn, q, toFn)

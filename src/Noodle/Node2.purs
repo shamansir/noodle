@@ -51,6 +51,7 @@ import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (inputsShape, outputsShape, inputsShapeHeld, outputsShapeHeld, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
+import Noodle.Stateful (class StatefulM)
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -94,6 +95,13 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 instance IsSymbol f => Eq (Node f state is os m) where
     eq :: Node f state is os m -> Node f state is os m -> Boolean
     eq nodeA nodeB = reflect' (id nodeA) == reflect' (id nodeB)
+
+
+instance StatefulM (Node f state is os m) Effect state where
+  getM :: Node f state is os m -> Effect state
+  getM = getState
+  setM :: state -> Node f state is os m -> Effect (Node f state is os m)
+  setM s node = setState s node *> pure node
 
 
 make
@@ -775,6 +783,21 @@ findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex (Tuple
 findOutput :: forall i ii o oo state m d. (o -> Boolean) -> Fn i ii o oo state m d -> Maybe (o /\ oo)
 findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tuple.fst >>> pred) outputs
 -}
+
+
+getState :: forall f state is os m. Node f state is os m -> Effect state
+getState (Node _ _ protocol _) =
+  protocol.getState unit
+
+
+setState :: forall f state is os m. state -> Node f state is os m -> Effect Unit
+setState s =
+  modifyState $ const s
+
+
+modifyState :: forall f state is os m. (state -> state) -> Node f state is os m -> Effect Unit
+modifyState fn (Node _ _ protocol _) =
+  protocol.modifyState fn
 
 
 with :: forall f state is os m. MonadEffect m => MonadRec m => Node f state is os m -> ProcessM state is os m Unit -> m Unit

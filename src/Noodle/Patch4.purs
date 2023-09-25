@@ -48,10 +48,10 @@ import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as R
 import Noodle.Node2.MapsFolds.Repr (Repr) as R
 import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
-
+import Noodle.Node2.HoldsNodeState (class IsNodeState)
+import Noodle.Stateful (class Stateful)
 
 import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
-import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState) -- FIXME: should not be located in the Cli module but instead some general Noodle module
 
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
@@ -68,6 +68,13 @@ type Links =
 
 
 data Patch gstate (instances :: Row Type) = Patch gstate SOrder (Record instances) Links -- FIXME: may be families order is not relevant here
+
+
+instance Stateful (Patch gstate instances) gstate where
+    get :: Patch gstate instances -> gstate
+    get (Patch state _ _ _) = state
+    set :: gstate -> Patch gstate instances -> Patch gstate instances
+    set state (Patch _ order instances links) = Patch state order instances links
 
 
 init
