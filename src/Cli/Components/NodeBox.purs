@@ -80,8 +80,9 @@ import Noodle.Node2.MapsFolds.Repr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
 import Noodle.Node2.MapsFolds.Flatten as R
-import Noodle.Node2.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
+import Noodle.Node2.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
 import Noodle.Fn2.Protocol (ChangeFocus(..))
+import Noodle.Stateful (get, setM) as Stateful
 
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
@@ -331,8 +332,12 @@ fromFamily
     -> BlessedOpM State Effect _
 fromFamily curPatchId curPatch family _ tk = do
     (node :: Noodle.Node f state is os Effect) <- liftEffect $ Toolkit.spawn tk family
+    let (mbState :: Maybe state) = fromGlobal $ Stateful.get curPatch
+    node' <- liftEffect $ case mbState of
+        Just state -> Stateful.setM state node
+        Nothing -> pure node
 
-    fromNode curPatchId curPatch family node
+    fromNode curPatchId curPatch family node'
 
 
 logDataCommand

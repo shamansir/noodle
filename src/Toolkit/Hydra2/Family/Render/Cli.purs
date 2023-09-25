@@ -31,6 +31,8 @@ import Toolkit.Hydra2.Family.Feed.FArray (Inputs, Outputs, State, Node) as FArra
 import Toolkit.Hydra2.Family.Render.Cli.Feed.FArray (render) as FArray
 import Toolkit.Hydra2.Family.Feed.FCallGlslFunction (Inputs, Outputs, State, Node) as FCallGlslFunction
 import Toolkit.Hydra2.Family.Render.Cli.Node.Feed.CallGlslFunction (render) as FCallGlslFunction
+import Toolkit.Hydra2.Family.CAI.FProductPalette (Inputs, Outputs, State, Node) as FProductPalette
+import Toolkit.Hydra2.Family.Render.Cli.Node.CAI.FProductPalette (render) as FProductPalette
 
 import Toolkit.Hydra2.Family.Render.Cli.Editor.Number as ENumber
 
@@ -69,6 +71,9 @@ else instance (Applicative m, MonadEffect m) => HasBody (CliF "array") "array" F
 else instance (Applicative m, MonadEffect m) => HasBody (CliF "callFunction") "callFunction" FCallGlslFunction.State FCallGlslFunction.Inputs FCallGlslFunction.Outputs m where
     run :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
     run _ = FCallGlslFunction.render
+else instance (Applicative m, MonadEffect m) => HasBody (CliF "caiProductPalette") "caiProductPalette" FProductPalette.State FProductPalette.Inputs FProductPalette.Outputs m where
+    run :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
+    run _ = FProductPalette.render
 else instance HasBody (CliF f) f state is os m where
     run :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run _ _ _ = pure unit
@@ -92,6 +97,9 @@ else instance (Applicative m, MonadEffect m) => HasBody' (CliF "array") (FArray.
 else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callFunction") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
     run' :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
     run' _ = FCallGlslFunction.render
+else instance (Applicative m, MonadEffect m) => HasBody' (CliF "caiProductPalette") (FProductPalette.Node m) FProductPalette.State m where
+    run' :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
+    run' _ = FProductPalette.render
 else instance HasBody' (CliF f) (Node f state is os m) state m where
     run' :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run' _ _ _ = pure unit

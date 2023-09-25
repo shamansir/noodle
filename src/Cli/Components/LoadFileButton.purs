@@ -70,7 +70,8 @@ import Noodle.Node2.MapsFolds.Repr
     ) as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
-import Noodle.Node2.HoldsNodeState (class IsNodeState)
+import Noodle.Node2.HoldsNodeState (class IsNodeState, fromGlobal)
+import Noodle.Stateful (setM, get) as Stateful
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -104,8 +105,12 @@ addNodeBox
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Node f state is os Effect
     -> BlessedOpM State Effect _
-addNodeBox tk patch node =
-    NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node
+addNodeBox tk patch node = do
+    let (mbState :: Maybe state) = fromGlobal $ Stateful.get patch -- TODO: make a signal of global state changes and update node's state using subscription
+    node' <- liftEffect $ case mbState of
+        Just state -> Stateful.setM state node
+        Nothing -> pure node
+    NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node'
 
 
 handlers
