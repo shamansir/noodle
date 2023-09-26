@@ -15,7 +15,7 @@ let handlersFns;
 
 const BLESSED_ON = true;
 const LOG_ON = !BLESSED_ON;
-const LOG_TO_FILE_ON = true;
+const LOG_TO_FILE_ON = false;
 const LOG_FILE_PATH = './blessed_op_log.txt';
 const logFile = fs.createWriteStream(LOG_FILE_PATH, { flags: 'a' });
 

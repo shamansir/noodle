@@ -46,6 +46,7 @@ data WrapRepr
     | Fn H.Fn -- for example this one seems not to be needed (we wrap Fn-s into values)
     | CBS H.CanBeSource
     | Products CAI.Products -- state for `ProductPalette` node
+    | Product CAI.Product' -- input/output type for `ProductPalette` node
 
 
 -- instance NMF.HasRepr a WrapRepr where
@@ -171,6 +172,11 @@ instance NMF.HasRepr CAI.Products WrapRepr where
     toRepr _ = Products
 
 
+instance NMF.HasRepr CAI.Product' WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> CAI.Product' -> WrapRepr
+    toRepr _ = Product
+
+
 instance NMF.HasRepr WrapRepr WrapRepr where
     toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
     toRepr _ = identity
@@ -287,6 +293,11 @@ instance R.ToRepr H.TOrV WrapRepr where
 instance R.ToRepr CAI.Products WrapRepr where
     toRepr :: CAI.Products -> Maybe (R.Repr WrapRepr)
     toRepr = R.exists <<< Products
+
+
+instance R.ToRepr CAI.Product' WrapRepr where
+    toRepr :: CAI.Product' -> Maybe (R.Repr WrapRepr)
+    toRepr = R.exists <<< Product
 
 
 instance R.ToRepr WrapRepr WrapRepr where
@@ -417,6 +428,12 @@ instance R.FromRepr WrapRepr CAI.Products where
     fromRepr _ = Nothing
 
 
+instance R.FromRepr WrapRepr CAI.Product' where
+    fromRepr :: R.Repr WrapRepr -> Maybe CAI.Product'
+    fromRepr (R.Repr (Product product)) = Just product
+    fromRepr _ = Nothing
+
+
 instance R.FromRepr WrapRepr H.TOrV where
     fromRepr :: R.Repr WrapRepr -> Maybe H.TOrV
     fromRepr (R.Repr (Value v)) = Just $ H.V v
@@ -454,6 +471,7 @@ instance Mark WrapRepr where
         Target trg -> mark trg
         Fn fn -> mark fn
         Products products -> mark unit -- FIXME: doesn't require Mark instance for node state wraps?
+        Product product -> mark product
         CBS cbs -> mark cbs
 
 
@@ -481,6 +499,7 @@ instance Show WrapRepr where
         Target trg -> show trg
         Fn fn -> show fn
         Products products -> show products
+        Product product -> show product
         CBS cbs -> show cbs
 
     {-
@@ -534,7 +553,8 @@ instance Encode WrapRepr where
         ExtSource ext -> "EXT " <> encode ext
         Target trg -> "TRG " <> encode trg
         Fn fn -> "FN " <> encode fn
-        Products _ -> "PRD P"
+        Products _ -> "PRS P"
+        Product (CAI.Product' ix p) -> "PRD " <> show ix <> " " <> CAI.toUniqueId p
         CBS cbs -> "CBS " <> encode cbs
 
 

@@ -67,6 +67,7 @@ import Cli.Tagging as T
 import Blessed.Tagger as T
 
 import CompArts.Product as CAI
+import Noodle.Stateful (getM) as Stateful
 
 -- import Noodle.Node2 (Node)
 
@@ -84,6 +85,7 @@ type NestedButtonKey = Button <^> "node-box::product-palette-text-box" -- TODO: 
 render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
 render nodeBoxKey node = do
     products <- State.get
+    -- (products :: FProductPalette.State) <- liftEffect $ Stateful.getM node
     let
         productsP = CAI.onlyWithPalette products
         productsPCount = CAI.count products
@@ -98,12 +100,7 @@ render nodeBoxKey node = do
         createButton :: (Int /\ NestedButtonKey /\ CAI.Product) -> _
         createButton (index /\ key /\ product) =
             let
-                buttonLabel = case product.twoLetter of
-                    Just two -> take 2 $ two
-                    Nothing ->
-                        case product.shortKey of
-                            Just skey -> toUpper $ take 2 $ skey
-                            Nothing -> toUpper $ take 2 $ product.name
+                buttonLabel = CAI.toShortId product
             in B.button key
                 [ Box.top $ Offset.px $ 1 + (index `div` gridHeight)
                 , Box.left $ Offset.px $ (index `mod` gridWidth) * 3
@@ -115,7 +112,7 @@ render nodeBoxKey node = do
                 , Box.content buttonLabel
                 , Core.on Button.Press
                     \_ _ -> do
-                        Node.sendInM node FProductPalette._in_product $ T.Number $ toNumber index
+                        Node.sendInM node FProductPalette._in_product $ CAI.Product' index product
                 , Core.on Element.MouseOver
                     \_ _ -> do
                         key >~ Box.setContent $ T.render $ T.fgc (Color.rgb 50 50 50) $ T.s buttonLabel
@@ -127,18 +124,6 @@ render nodeBoxKey node = do
                         Key.statusLine >~ Box.setContent ""
                         Key.mainScreen >~ Screen.render
                 -- , Box.content $ show index
-                {-
-                , Core.on TextArea.Submit
-                    \_ _ -> do
-                        content <- TextArea.value ~< textBoxKey
-                        let mbNumber = Number.fromString content
-                        -- liftEffect $ Console.log content
-                        Blessed.lift $ case mbNumber of
-                            Just number -> Node.sendInM node FProductPalette._in_product $ T.Number number
-                                -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
-                            Nothing -> pure unit
-                        pure unit
-                 -}
                 ]
                 [  ]
     _ <- CAI.toArray productsP

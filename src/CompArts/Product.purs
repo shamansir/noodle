@@ -2,9 +2,13 @@ module CompArts.Product where
 
 
 import Prelude
+import Color (Color)
+import Color as Color
+import Control.Alt ((<|>))
 
 import Effect (Effect)
 import Effect.Aff (Aff, runAff_)
+import Data.Mark (class Mark)
 
 import Data.Either (Either(..))
 import Data.Map (Map)
@@ -14,7 +18,8 @@ import Data.Lens (preview)
 import Data.Lens.Index (ix)
 import Data.Profunctor.Choice (fanin)
 import Data.Array as Array
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String (toUpper, take)
 
 import Data.Argonaut (decodeJson, jsonParser, JsonDecodeError(..))
 import Data.Argonaut.Core (Json)
@@ -53,6 +58,33 @@ type Product =
     , shortKey :: Maybe String
     , palette :: Array { r :: Int, g :: Int, b :: Int, hex :: String }
     }
+
+
+data Product' = Product' Int Product
+
+
+defaultProduct :: Product
+defaultProduct =
+    { name : "Foo"
+    , twoLetter : Nothing
+    , key : Nothing
+    , shortKey : Nothing
+    , palette : []
+    }
+
+
+defaultProduct' :: Product'
+defaultProduct' = Product' (-1) defaultProduct
+
+
+instance Mark Product' where
+    mark :: Product' -> Color
+    mark _ = Color.white
+
+
+instance Show Product' where
+    show :: Product' -> String
+    show (Product' ix product) = "<" <> show ix <> ") " <> product.name
 
 
 type ProductsShape =
@@ -120,3 +152,20 @@ at (Products arr) index = Array.index arr index
 instance IsNodeState Products Products where
     default = none
     fromGlobal = Just
+
+
+toUniqueId :: Product -> String
+toUniqueId { key, name, shortKey } =
+    fromMaybe name $ key <|> shortKey
+
+toUniqueId' :: Product' -> String
+toUniqueId' (Product' ix p) = toUniqueId p
+
+
+toShortId :: Product -> String
+toShortId { key, name, twoLetter, shortKey } =
+    fromMaybe "??" $ (toUpper <<< take 2) <$> (twoLetter <|> shortKey <|> key <|> Just name)
+
+
+toShortId' :: Product' -> String
+toShortId' (Product' ix p) = toShortId p

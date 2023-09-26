@@ -213,6 +213,11 @@ instance ShortInfo CAI.Products where
     short ps = show (CAI.count ps) <> "P"
 
 
+instance ShortInfo CAI.Product' where
+    short :: CAI.Product' -> String
+    short = CAI.toShortId'
+
+
 -- TODO: use color tags
 
 instance FullInfo H.Value where
@@ -320,6 +325,11 @@ instance FullInfo CAI.Products where
     full = show
 
 
+instance FullInfo CAI.Product' where
+    full :: CAI.Product' -> String
+    full = show
+
+
 instance FullInfo H.TOrV where
     full :: H.TOrV -> String
     full (H.T tex) = full tex
@@ -361,6 +371,7 @@ instance FullInfo W.WrapRepr where
         W.Fn fn -> full fn
         W.Target trg -> full trg
         W.Products products -> full products
+        W.Product product -> full product
         W.CBS cbs -> full cbs
 
 
@@ -389,4 +400,5 @@ instance ShortInfo W.WrapRepr where
         W.Fn fn -> short fn
         W.Target trg -> short trg
         W.Products products -> short products
+        W.Product product -> short product
         W.CBS cbs -> short cbs

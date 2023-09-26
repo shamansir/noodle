@@ -4,6 +4,8 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Control.Monad.State as State
+import Effect.Console as Console
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)

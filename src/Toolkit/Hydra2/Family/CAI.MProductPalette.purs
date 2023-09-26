@@ -38,14 +38,14 @@ defaultState :: State
 defaultState = CAI.none
 
 
-_in_product   = Fn.Input  1 :: _ "product"
+_in_product    = Fn.Input  1 :: _ "product"
 
 _out_primary   = Fn.Output 0 :: _ "primary"
 _out_secondary = Fn.Output 1 :: _ "secondary"
 _out_ternary   = Fn.Output 2 :: _ "ternary"
 
 
-type Inputs = ( product :: H.Value )
+type Inputs = ( product :: CAI.Product' )
 type Outputs = ( primary :: H.Texture, secondary :: H.Texture, ternary :: H.Texture )
 
 
@@ -58,7 +58,7 @@ outputsOrder = s3 _out_primary _out_secondary _out_ternary
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { product : H.Number 0.0 }
+defaultInputs = { product : CAI.defaultProduct' }
 
 
 defaultOutputs :: Record Outputs
@@ -82,26 +82,20 @@ family = -- {-> caiProductPalette <-}
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             productV <- P.receive _in_product
-            products <- State.get
-            let
-                productsP = CAI.onlyWithPalette products
-            case toInt productV >>= CAI.at productsP <#> _.palette >>= loadPalette of
-                Just { primary, secondary, ternary } -> do
-                    P.send _out_primary $ toTexture primary
-                    P.send _out_secondary $ toTexture secondary
-                    P.send _out_ternary $ toTexture ternary
-                Nothing -> do
-                    P.send _out_primary H.Empty
-                    P.send _out_secondary H.Empty
-                    P.send _out_ternary H.Empty
-                    -- P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
-                    -- P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
-                    -- P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
+            case productV of
+                CAI.Product' (-1) _ -> pure unit
+                CAI.Product' _ product -> do
+                    case loadPalette product.palette of
+                        Just { primary, secondary, ternary } -> do
+                            P.send _out_primary $ toTexture primary
+                            P.send _out_secondary $ toTexture secondary
+                            P.send _out_ternary $ toTexture ternary
+                        Nothing -> do
+                            P.send _out_primary $ H.Start $ H.Load H.Output0
+                            P.send _out_secondary H.Empty
+                            P.send _out_ternary H.Empty
             pure unit
     where
-        toInt = case _ of
-            H.Number n -> Int.fromNumber n
-            _ -> Nothing
         toPalette primary secondary ternary =
             { primary, secondary, ternary }
         loadPalette arr =
