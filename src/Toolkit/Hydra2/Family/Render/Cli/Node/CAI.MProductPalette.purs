@@ -115,12 +115,12 @@ render nodeBoxKey node = do
                         Node.sendInM node FProductPalette._in_product $ CAI.Product' index product
                 , Core.on Element.MouseOver
                     \_ _ -> do
-                        key >~ Box.setContent $ T.render $ T.fgc (Color.rgb 50 50 50) $ T.s buttonLabel
+                        -- key >~ Box.setContent $ T.render $ T.fgc (Color.rgb 50 50 50) $ T.s buttonLabel
                         Key.statusLine >~ Box.setContent product.name
                         Key.mainScreen >~ Screen.render
                 , Core.on Element.MouseOut
                     \_ _ -> do
-                        key >~ Box.setContent buttonLabel
+                        -- key >~ Box.setContent buttonLabel
                         Key.statusLine >~ Box.setContent ""
                         Key.mainScreen >~ Screen.render
                 -- , Box.content $ show index

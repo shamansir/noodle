@@ -91,7 +91,7 @@ family = -- {-> caiProductPalette <-}
                             P.send _out_secondary $ toTexture secondary
                             P.send _out_ternary $ toTexture ternary
                         Nothing -> do
-                            P.send _out_primary $ H.Start $ H.Load H.Output0
+                            P.send _out_primary $ H.Empty
                             P.send _out_secondary H.Empty
                             P.send _out_ternary H.Empty
             pure unit
@@ -102,9 +102,9 @@ family = -- {-> caiProductPalette <-}
             toPalette <$> Array.index arr 0 <*> Array.index arr 1 <*> Array.index arr 2
         toTexture { r, g, b } =
             H.Start $ H.Solid
-                { r : H.Number $ Int.toNumber r
-                , g : H.Number $ Int.toNumber g
-                , b : H.Number $ Int.toNumber b
+                { r : H.Number $ Int.toNumber r / 255.0
+                , g : H.Number $ Int.toNumber g / 255.0
+                , b : H.Number $ Int.toNumber b / 255.0
                 , a : H.Number 1.0
                 }
 
