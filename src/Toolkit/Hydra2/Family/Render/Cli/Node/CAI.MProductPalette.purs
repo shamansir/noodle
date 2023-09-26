@@ -6,11 +6,16 @@ import Prim.Symbol (class Append) as S
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Data.Int (toNumber)
 import Data.Array (range, foldl, (:))
+import Data.Array (length) as Array
+import Data.String (take)
+import Data.String.Common (toUpper)
 import Data.Traversable (traverse)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Color as Color
 
 import Control.Monad.State as State
 
@@ -43,9 +48,11 @@ import Blessed.Core.Coord ((<->))
 import Blessed.Internal.Core as Core
 
 import Blessed.UI.Base.Node.Method (append) as Node
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.UI.Boxes.Box.Option (content, height, left, top, width, tags) as Box
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Element.Method (toggle) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
@@ -54,7 +61,10 @@ import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Noodle.Node2 (sendInM) as Node
 
 import Cli.Keys (NodeBoxKey)
+import Cli.Keys (statusLine, mainScreen) as Key
 import Cli.Style as Style
+import Cli.Tagging as T
+import Blessed.Tagger as T
 
 import CompArts.Product as CAI
 
@@ -75,9 +85,10 @@ render :: forall m. Applicative m => MonadEffect m => NodeBoxKey -> FProductPale
 render nodeBoxKey node = do
     products <- State.get
     let
-        productsCount = CAI.count products
-        gridHeight = productsCount / 8
-        gridWidth = productsCount / gridHeight
+        productsP = CAI.onlyWithPalette products
+        productsPCount = CAI.count products
+        gridHeight = productsPCount / 8
+        gridWidth = productsPCount / gridHeight
         (rootButtonKey :: ButtonKey) = NK.first -- FIXME, find the next one from state or as passed to the node
         buttonKey = NK.append nodeBoxKey rootButtonKey
         foldF :: Array (Int /\ NestedButtonKey /\ CAI.Product) /\ NestedButtonKey -> (Int /\ CAI.Product) -> Array (Int /\ NestedButtonKey /\ CAI.Product) /\ NestedButtonKey
@@ -86,14 +97,36 @@ render nodeBoxKey node = do
             in ((index /\ nextKey /\ product) : arr) /\ nextKey
         createButton :: (Int /\ NestedButtonKey /\ CAI.Product) -> _
         createButton (index /\ key /\ product) =
-            B.button key
+            let
+                buttonLabel = case product.twoLetter of
+                    Just two -> take 2 $ two
+                    Nothing ->
+                        case product.shortKey of
+                            Just skey -> toUpper $ take 2 $ skey
+                            Nothing -> toUpper $ take 2 $ product.name
+            in B.button key
                 [ Box.top $ Offset.px $ 1 + (index `div` gridHeight)
                 , Box.left $ Offset.px $ (index `mod` gridWidth) * 3
                 , Box.width $ Dimension.px 3
                 , Box.height $ Dimension.px 1
+                , Box.tags true
                 , Style.inputBox
                 , Button.mouse true
-                , Box.content $ show index
+                , Box.content buttonLabel
+                , Core.on Button.Press
+                    \_ _ -> do
+                        Node.sendInM node FProductPalette._in_product $ T.Number $ toNumber index
+                , Core.on Element.MouseOver
+                    \_ _ -> do
+                        key >~ Box.setContent $ T.render $ T.fgc (Color.rgb 50 50 50) $ T.s buttonLabel
+                        Key.statusLine >~ Box.setContent product.name
+                        Key.mainScreen >~ Screen.render
+                , Core.on Element.MouseOut
+                    \_ _ -> do
+                        key >~ Box.setContent buttonLabel
+                        Key.statusLine >~ Box.setContent ""
+                        Key.mainScreen >~ Screen.render
+                -- , Box.content $ show index
                 {-
                 , Core.on TextArea.Submit
                     \_ _ -> do
@@ -108,7 +141,7 @@ render nodeBoxKey node = do
                  -}
                 ]
                 [  ]
-    _ <- CAI.toArray products
+    _ <- CAI.toArray productsP
             # mapWithIndex ((/\))
             # foldl foldF ([] /\ buttonKey)
             # Tuple.fst # map createButton
@@ -119,7 +152,7 @@ render nodeBoxKey node = do
 
 
 size :: forall m. FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
-size _ = Just { width : 8 * 3 + 3, height : 11 } -- FIXME: we need Effect  to get the proper size from the State
+size _ = Just { width : 8 * 3 + 3, height : 10 } -- FIXME: we need Effect  to get the proper size from the State
 
 
 -- render :: forall m. RenderBody "number" State Inputs Outputs m

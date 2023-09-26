@@ -48,6 +48,9 @@ decodeAsMap str = do
 
 type Product =
     { name :: String
+    , twoLetter :: Maybe String
+    , key :: Maybe String
+    , shortKey :: Maybe String
     , palette :: Array { r :: Int, g :: Int, b :: Int, hex :: String }
     }
 
@@ -94,12 +97,24 @@ count :: Products -> Int
 count (Products array) = Array.length array
 
 
+onlyWithPalette :: Products -> Products
+onlyWithPalette (Products array) =
+    Products
+        $ Array.filter
+            (_.palette >>> Array.length >>> flip (>) 0)
+            array
+
+
 none :: Products
 none = Products [] -- derive newtype instance Monoid
 
 
 toArray :: Products -> Array Product
 toArray (Products arr) = arr
+
+
+at :: Products -> Int -> Maybe Product
+at (Products arr) index = Array.index arr index
 
 
 instance IsNodeState Products Products where

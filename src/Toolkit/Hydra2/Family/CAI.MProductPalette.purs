@@ -5,6 +5,8 @@ import Prelude
 
 import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Data.Maybe (Maybe(..))
+import Data.Int (fromNumber, toNumber) as Int
+import Data.Array (index) as Array
 
 import Control.Monad.State as State
 
@@ -79,14 +81,15 @@ family = -- {-> caiProductPalette <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            product <- P.receive _in_product
-            {-
-            mbProducts <- State.get
-            case mbProducts of
-                Just products -> do
-                    P.send _out_primary H.Empty
-                    P.send _out_secondary H.Empty
-                    P.send _out_ternary H.Empty
+            productV <- P.receive _in_product
+            products <- State.get
+            let
+                productsP = CAI.onlyWithPalette products
+            case toInt productV >>= CAI.at productsP <#> _.palette >>= loadPalette of
+                Just { primary, secondary, ternary } -> do
+                    P.send _out_primary $ toTexture primary
+                    P.send _out_secondary $ toTexture secondary
+                    P.send _out_ternary $ toTexture ternary
                 Nothing -> do
                     P.send _out_primary H.Empty
                     P.send _out_secondary H.Empty
@@ -94,8 +97,22 @@ family = -- {-> caiProductPalette <-}
                     -- P.send _out_primary $ H.Start $ H.Solid { r : H.Number 1.0, g : H.Number 0.0, b : H.Number 0.0, a : H.Number 1.0 }
                     -- P.send _out_secondary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 1.0, b : H.Number 0.0, a : H.Number 1.0 }
                     -- P.send _out_ternary $ H.Start $ H.Solid { r : H.Number 0.0, g : H.Number 0.0, b : H.Number 1.0, a : H.Number 1.0 }
-            -}
             pure unit
+    where
+        toInt = case _ of
+            H.Number n -> Int.fromNumber n
+            _ -> Nothing
+        toPalette primary secondary ternary =
+            { primary, secondary, ternary }
+        loadPalette arr =
+            toPalette <$> Array.index arr 0 <*> Array.index arr 1 <*> Array.index arr 2
+        toTexture { r, g, b } =
+            H.Start $ H.Solid
+                { r : H.Number $ Int.toNumber r
+                , g : H.Number $ Int.toNumber g
+                , b : H.Number $ Int.toNumber b
+                , a : H.Number 1.0
+                }
 
 
 type Node (m :: Type -> Type) =
