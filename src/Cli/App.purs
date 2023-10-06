@@ -6,6 +6,7 @@ import Prelude
 import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Either (Either(..))
 import Data.Map as Map
+import Data.Foldable (fold)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -37,12 +38,30 @@ import Web.Socket.Server as WSS
 
 import Noodle.Stateful (set) as Stateful
 
+import Options.Applicative as OA
+import Options.Applicative ((<**>))
+
 import CompArts.Product as CAI
 
 
+type Options =
+    { fromFile :: String
+    }
+
 
 run :: Effect Unit
-run = Blessed.runAnd State.initial MainScreen.component $ do
+run = runWith =<< OA.execParser opts
+  where -- FIXME: why it shows `run.js` in the info?
+    opts = OA.info (options <**> OA.helper)
+      ( OA.fullDesc
+     <> OA.progDesc "Noodle Terminal Interface"
+     <> OA.header "noodle - Noodle IDE"
+      )
+
+
+runWith :: Options -> Effect Unit
+runWith options =
+    Blessed.runAnd State.initial MainScreen.component $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
         hErr <- Blessed.impair1 handleError
@@ -81,3 +100,16 @@ run = Blessed.runAnd State.initial MainScreen.component $ do
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
         handleError :: Error -> BlessedOp State Effect
         handleError _ = pure unit
+
+
+options :: OA.Parser Options
+options = ado
+  fromFile <- OA.strOption $ fold
+    [ OA.long "file"
+    , OA.short 'f'
+    , OA.metavar "FILE"
+    , OA.value ""
+    , OA.help "The file to load the network structure from"
+    ]
+
+   in { fromFile }
