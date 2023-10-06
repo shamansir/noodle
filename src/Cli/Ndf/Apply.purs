@@ -1,6 +1,7 @@
-module Cli.Components.LoadFileButton where
+module Cli.Ndf.Apply where
 
 import Prelude
+
 
 import Effect (Effect)
 import Control.Monad.Rec.Class (class MonadRec)
@@ -78,12 +79,12 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
+import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile
 import Noodle.Text.NdfFile.Apply as File
 import Noodle.Text.NdfFile.Command as Cmd
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
-import Cli.Ndf.Apply (apply) as NdfFile
 
 
 addNodeBox
@@ -187,32 +188,23 @@ handlers stateRef patch (Network tk _) =
     }
 
 
-component ::
-    {-}:: forall fsrl
-     . Id.ListsFamilies (Hydra.Families Effect) fsrl
-    -- => RL.RowToList (Hydra.Instances Effect) isrl
-    -- => Record.Keys isrl
-    => Patch Hydra.State (Hydra.Instances Effect)
-    -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
-    -> -} Core.Blessed State
-component =
-    B.button Key.loadFileButton
-        [ Box.content "L"
-        , Box.top $ Offset.px 0
-        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3
-        , Box.width $ Dimension.px 1
-        , Box.height $ Dimension.px 1
-        , Button.mouse true
-        , Style.menuButton
-        , Core.on Button.Press
-            \_ _ ->
-                NdfFile.apply $ NdfFile.from
-                                    "hydra" 0.1
-                                    [ Cmd.MakeNode "osc" 40 60 "osc-1"
-                                    , Cmd.MakeNode "pi" 20 20 "pi-1"
-                                    , Cmd.Connect "pi-1" 0 "osc-1" 0
-                                    , Cmd.Send "osc-1" 1 "V N 20.0"
-                                    , Cmd.Send "osc-1" 2 "V N 40.0"
-                                    ]
-        ]
-        []
+apply :: forall m. MonadEffect m => NdfFile -> BlessedOpM State m Unit
+apply file = do
+    state <- State.get
+    stateRef <- BlessedOp.getStateRef -- FIXME: use `Blessed.impairN` for handlers
+    let network = unwrapN state.network
+    let mbCurrentPatchId = Tuple.snd <$> state.currentPatch
+    let mbCurrentPatch = mbCurrentPatchId >>= \id -> Network.patch id network
+    case mbCurrentPatch of
+        Just patch ->
+            liftEffect $ do
+                -- TODO
+                _ <- File.applyFile
+                        Hydra.withFamily
+                        (Proxy :: _ Hydra.WrapRepr)
+                        patch
+                        network
+                        (handlers stateRef patch network)
+                        file
+                pure unit
+        Nothing -> pure unit

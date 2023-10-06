@@ -7,6 +7,7 @@ import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Foldable (fold)
+import Data.String (length) as String
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -14,15 +15,17 @@ import Effect.Exception (Error)
 import Effect.Aff (runAff_)
 import Effect.Console (log) as Console
 
-
 import Control.Monad.State (modify_, get) as State
 
 import Node.HTTP (Request)
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff (readTextFile, stat)
 
 import Cli.State (State)
 import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
 import Cli.WsServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
+import Cli.Ndf.Apply (apply) as NdfFile
 
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.WsStatusButton as WsButton
@@ -37,6 +40,11 @@ import Blessed.UI.Base.Screen.Method as Screen
 import Web.Socket.Server as WSS
 
 import Noodle.Stateful (set) as Stateful
+import Noodle.Text.NdfFile as NdfFile
+import Noodle.Text.NdfFile.Parser as NdfFile
+import Noodle.Text.NdfFile.Apply as NdfFile
+
+import Parsing (runParser)
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))
@@ -74,10 +82,23 @@ runWith options =
             }
         State.modify_ $ State.informWsInitialized wss
         mainScreen >~ Screen.render
-        callback <- Blessed.impair1 storeProducts
-        liftEffect $ runAff_ callback CAI.requestProducts
-        pure unit
+        productsCallback <- Blessed.impair1 storeProducts
+        liftEffect $ runAff_ productsCallback CAI.requestProducts
+        if String.length options.fromFile > 0 then do
+            fileCallback <- Blessed.impair1 applyFile
+            liftEffect $ runAff_ fileCallback $ readTextFile UTF8 options.fromFile
+            pure unit
+        else pure unit
     where
+        applyFile :: Either _ String -> BlessedOp State Effect
+        applyFile (Right fileContents) = do
+            case runParser fileContents NdfFile.parser of
+                Right ndfFile ->
+                    NdfFile.apply ndfFile
+                Left parsingError ->
+                    pure unit
+        applyFile (Left error) =
+            pure unit
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect
         storeProducts (Right (Right productsMap)) =
             State.modify_ $ State.withCurrentPatch $ Stateful.set $ CAI.fromMap productsMap
