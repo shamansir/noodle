@@ -1,0 +1,7 @@
+hydra 0.1
+
+osc 3 19 osc-0
+out 4 20 out-0
+-> osc-0 sync N 0.01;
+-> osc-0 frequency N 0.0;
+<> osc-0 out out-0 what
