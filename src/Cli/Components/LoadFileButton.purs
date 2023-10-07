@@ -81,6 +81,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile
 import Noodle.Text.NdfFile.Apply as File
 import Noodle.Text.NdfFile.Command as Cmd
+import Noodle.Text.NdfFile.Command as C
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Ndf.Apply (apply) as NdfFile
@@ -114,79 +115,6 @@ addNodeBox tk patch node = do
     NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node'
 
 
-handlers
-    :: Ref State
-    -> Patch Hydra.State (Hydra.Instances Effect)
-    -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
-    -> File.Handlers Hydra.CliF Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
-handlers stateRef patch (Network tk _) =
-    { onNodeCreated : \(x /\ y) pHoldsNode -> do
-        -- _ <- BlessedOp.runM state (
-        --     Patch.withNode'
-        --         (pHoldsNode :: Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect)
-        --         (addNodeBox (tk :: Hydra.Toolkit Effect))
-        --     )
-        pure unit
-    , onNodeCreated2 : \(x /\ y) nHoldsNode -> do
-        -- _ <- BlessedOp.runM state (
-        --         Node.withNode'
-        --                 nHoldsNode
-        --                 \node ->
-        --                     --pure unit
-        --                     addNodeBox (tk :: Hydra.Toolkit Effect) patch node
-        --                     -- NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node
-        --             )
-        pure unit
-    , onNodeCreated3 : \(x /\ y) pHoldsNode -> do
-        _ <- Patch.withNodeMRepr
-            (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.CliF Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
-            (\patch node ->
-                BlessedOp.runM' stateRef (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
-            )
-        {-
-        _ <- BlessedOp.runM state (
-            Patch.withNodeMRepr
-                (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
-                (addNodeBox (tk :: Hydra.Toolkit Effect))
-            ) -}
-        pure unit
-    , onConnect : \(onode /\ inode) (outputIdx /\ inputIdx) link ->
-        BlessedOp.runM' stateRef $ do
-            state <- State.get
-            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
-                Just (onodeKey /\ inodeKey) -> do
-                    linkCmp <- Link.create
-                                state.lastLink
-                                onodeKey
-                                (OutputIndex outputIdx)
-                                inodeKey
-                                (InputIndex inputIdx)
-                    State.modify_ $ Link.store linkCmp
-                    Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
-                    Key.mainScreen >~ Screen.render
-                    pure unit
-                Nothing -> pure unit
-    , onConnect2 : \(onode /\ inode) (outputIdx /\ inputIdx) (outputId /\ inputId) link ->
-        BlessedOp.runM' stateRef $ do
-            state <- State.get
-            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
-                Just (onodeKey /\ inodeKey) -> do
-                    linkCmp <- Link.create
-                                state.lastLink
-                                onodeKey
-                                (OutputIndex outputIdx)
-                                inodeKey
-                                (InputIndex inputIdx)
-                    State.modify_ $ Link.store linkCmp
-                    Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
-                    Key.mainScreen >~ Screen.render
-                    pure unit
-                Nothing -> pure unit
-    }
-
-
 component ::
     {-}:: forall fsrl
      . Id.ListsFamilies (Hydra.Families Effect) fsrl
@@ -208,11 +136,11 @@ component =
             \_ _ ->
                 NdfFile.apply $ NdfFile.from
                                     "hydra" 0.1
-                                    [ Cmd.MakeNode "osc" 40 60 "osc-1"
-                                    , Cmd.MakeNode "pi" 20 20 "pi-1"
-                                    , Cmd.Connect "pi-1" 0 "osc-1" 0
-                                    , Cmd.Send "osc-1" 1 "V N 20.0"
-                                    , Cmd.Send "osc-1" 2 "V N 40.0"
+                                    [ Cmd.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
+                                    , Cmd.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-1")
+                                    , Cmd.Connect (C.nodeId "pi-1") (C.outputIndex 0) (C.nodeId "osc-1") (C.inputIndex 0)
+                                    , Cmd.Send (C.nodeId "osc-1") (C.inputIndex 1) (C.encodedValue "V N 20.0")
+                                    , Cmd.Send (C.nodeId "osc-1") (C.inputIndex 2) (C.encodedValue "V N 40.0")
                                     ]
         ]
         []

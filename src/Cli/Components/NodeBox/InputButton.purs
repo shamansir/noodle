@@ -68,6 +68,7 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Text.NdfFile.Command as Cmd
+import Noodle.Text.NdfFile.Command as C
 import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
@@ -216,7 +217,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'
 
-                    logNdfCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
+                    logNdfCommandM $ Cmd.Connect (C.nodeId onodeId) (C.outputIndex lco.index) (C.nodeId $ reflect' inodeId) (C.inputIndex idx) -- TODO: log somewhere else in a special place
                     -- FIXME: duplicates `CommandLogBox.refresh`, done due to cycle in dependencies
                     state <- State.get
                     Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state.commandLog

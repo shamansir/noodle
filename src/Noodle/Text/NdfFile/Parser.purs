@@ -7,6 +7,7 @@ import Data.Array (many)
 import Data.List.NonEmpty as NEL
 import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
+import Data.Either (Either(..))
 
 import Parsing (Parser)
 import Parsing.String (char, string, anyTill)
@@ -15,7 +16,10 @@ import Parsing.Combinators (many1, many1Till, try)
 import Control.Alt ((<|>))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
-import Noodle.Text.NdfFile.Command (Command(..))
+import Noodle.Text.NdfFile.Command (Command)
+import Noodle.Text.NdfFile.Command (Command(..)) as Cmd
+import Noodle.Text.NdfFile.Command (nodeId, family, coord, inputAlias, inputIndex, outputAlias, outputIndex, encodedValue) as C
+
 import Noodle.Text.NdfFile (NdfFile(..), Header(..))
 
 
@@ -28,11 +32,11 @@ createCommand = do
     y <- intDecimal
     _ <- many1 space
     instanceId <- tokenTill eol
-    pure $ MakeNode family x y instanceId
+    pure $ Cmd.MakeNode (C.family family) (C.coord x) (C.coord y) (C.nodeId instanceId)
 
 
-connectCommand :: Parser String Command
-connectCommand = do
+connectCommandII :: Parser String Command
+connectCommandII = do
     _ <- string "<>"
     _ <- many1 space
     instanceFromId <- tokenTill space
@@ -43,11 +47,11 @@ connectCommand = do
     _ <- many space
     inputIndex <- intDecimal
     eol
-    pure $ Connect instanceFromId outputIndex instanceToId inputIndex
+    pure $ Cmd.Connect (C.nodeId instanceFromId) (C.outputIndex outputIndex) (C.nodeId instanceToId) (C.inputIndex inputIndex)
 
 
-connectCommand_ :: Parser String Command
-connectCommand_ = do
+connectCommandSS :: Parser String Command
+connectCommandSS = do
     _ <- string "<>"
     _ <- many1 space
     instanceFromId <- tokenTill space
@@ -57,11 +61,40 @@ connectCommand_ = do
     instanceToId <- tokenTill space
     _ <- many space
     inputId <- tokenTill eol
-    pure $ Connect_ instanceFromId outputId instanceToId inputId
+    pure $ Cmd.Connect (C.nodeId instanceFromId) (C.outputAlias outputId) (C.nodeId instanceToId) (C.inputAlias inputId)
 
 
-sendCommand :: Parser String Command
-sendCommand = do
+connectCommandIS :: Parser String Command
+connectCommandIS = do
+    _ <- string "<>"
+    _ <- many1 space
+    instanceFromId <- tokenTill space
+    _ <- many space
+    outputIndex <- intDecimal
+    _ <- many1 space
+    instanceToId <- tokenTill space
+    _ <- many space
+    inputId <- tokenTill eol
+    pure $ Cmd.Connect (C.nodeId instanceFromId) (C.outputIndex outputIndex) (C.nodeId instanceToId) (C.inputAlias inputId)
+
+
+connectCommandSI :: Parser String Command
+connectCommandSI = do
+    _ <- string "<>"
+    _ <- many1 space
+    instanceFromId <- tokenTill space
+    _ <- many space
+    outputId <- tokenTill space
+    _ <- many space
+    instanceToId <- tokenTill space
+    _ <- many space
+    inputIndex <- intDecimal
+    eol
+    pure $ Cmd.Connect (C.nodeId instanceFromId) (C.outputAlias outputId) (C.nodeId instanceToId) (C.inputIndex inputIndex)
+
+
+sendCommandI :: Parser String Command
+sendCommandI = do
     _ <- string "->"
     _ <- many1 space
     instanceId <- tokenTill space
@@ -69,11 +102,11 @@ sendCommand = do
     inputIndex <- intDecimal
     _ <- many1 space
     valueStr <- Tuple.fst <$> anyTill eol
-    pure $ Send instanceId inputIndex valueStr
+    pure $ Cmd.Send (C.nodeId instanceId) (C.inputIndex inputIndex) (C.encodedValue valueStr)
 
 
-sendCommand_ :: Parser String Command
-sendCommand_ = do
+sendCommandS :: Parser String Command
+sendCommandS = do
     _ <- string "->"
     _ <- many1 space
     instanceId <- tokenTill space
@@ -81,11 +114,11 @@ sendCommand_ = do
     inputId <- tokenTill space
     _ <- many space
     valueStr <- Tuple.fst <$> anyTill eol
-    pure $ Send_ instanceId inputId valueStr
+    pure $ Cmd.Send (C.nodeId instanceId) (C.inputAlias inputId) (C.encodedValue valueStr)
 
 
-sendOCommand :: Parser String Command
-sendOCommand = do
+sendOCommandI :: Parser String Command
+sendOCommandI = do
     _ <- string "~>"
     _ <- many1 space
     instanceId <- tokenTill space
@@ -93,11 +126,11 @@ sendOCommand = do
     outputIndex <- intDecimal
     _ <- many1 space
     valueStr <- Tuple.fst <$> anyTill eol
-    pure $ SendO instanceId outputIndex valueStr
+    pure $ Cmd.SendO (C.nodeId instanceId) (C.outputIndex outputIndex) (C.encodedValue valueStr)
 
 
-sendOCommand_ :: Parser String Command
-sendOCommand_ = do
+sendOCommandS :: Parser String Command
+sendOCommandS = do
     _ <- string "~>"
     _ <- many1 space
     instanceId <- tokenTill space
@@ -105,18 +138,34 @@ sendOCommand_ = do
     outputId <- tokenTill space
     _ <- many space
     valueStr <- Tuple.fst <$> anyTill eol
-    pure $ SendO_ instanceId outputId valueStr
+    pure $ Cmd.SendO(C.nodeId instanceId) (C.outputAlias outputId) (C.encodedValue valueStr)
+
+
+moveCommand :: Parser String Command
+moveCommand = do
+    _ <- string "."
+    _ <- many1 space
+    x <- intDecimal
+    _ <- many1 space
+    y <- intDecimal
+    _ <- many1 space
+    instanceId <- tokenTill eol
+    pure $ Cmd.Move (C.nodeId instanceId) (C.coord x) (C.coord y)
 
 
 command :: Parser String Command
 command =
-  try connectCommand
-  <|> try connectCommand_
-  <|> try sendCommand
-  <|> try sendCommand_
-  <|> try sendOCommand
-  <|> try sendOCommand_
+  -- FIXME: just make a separate parser for InputId / OutputId
+  try connectCommandII
+  <|> try connectCommandSS
+  <|> try connectCommandIS
+  <|> try connectCommandSI
+  <|> try sendCommandI
+  <|> try sendCommandS
+  <|> try sendOCommandI
+  <|> try sendOCommandS
   <|> try createCommand
+  <|> try moveCommand
 
 
 parser :: Parser String NdfFile

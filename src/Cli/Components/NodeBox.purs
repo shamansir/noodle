@@ -84,6 +84,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 import Noodle.Node2.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
 import Noodle.Fn2.Protocol (ChangeFocus(..))
 import Noodle.Stateful (get, getM, setM) as Stateful
+import Noodle.Text.NdfFile.Command as Cmd
 
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
@@ -107,8 +108,6 @@ import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
-
-import Noodle.Text.NdfFile.Command as Cmd
 
 import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
@@ -172,7 +171,7 @@ fromNode curPatchId curPatch family node = do
 
     (nodeId /\ _ /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
 
-    logNdfCommandM $ Cmd.MakeNode (reflect family) topN leftN $ reflect' nodeId -- TODO: log somewhere else in a special place
+    logNdfCommandM $ Cmd.MakeNode (Cmd.family $ reflect family) (Cmd.coord topN) (Cmd.coord $ leftN) (Cmd.nodeId $ reflect' nodeId) -- TODO: log somewhere else in a special place
     CommandLogBox.refresh
 
     let (is :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
@@ -354,13 +353,13 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ inputs /\ outputs) =
         InputChange input ->
             case Map.lookup input inputs of
                 Just wrapRepr -> do
-                    flip logNdfCommandByRef stateRef $ Cmd.Send_ (reflect' nodeId) (reflect' input) $ encode wrapRepr
+                    flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inputAlias $ reflect' input) $ Cmd.encodedValue $ encode wrapRepr
                     liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
                 Nothing -> pure unit
         OutputChange output ->
             case Map.lookup output outputs of
                 Just wrapRepr -> do
-                    flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
+                    flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outputAlias $ reflect' output) $ Cmd.encodedValue $ encode wrapRepr
                     liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
                 Nothing -> pure unit
         _ -> pure unit

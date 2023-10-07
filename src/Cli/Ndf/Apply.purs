@@ -83,6 +83,7 @@ import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile
 import Noodle.Text.NdfFile.Apply as File
 import Noodle.Text.NdfFile.Command as Cmd
+import Noodle.Text.NdfFile.Command as C
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
 
@@ -164,7 +165,7 @@ handlers stateRef patch (Network tk _) =
                                 (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
+                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' onode) (C.outputIndex outputIdx) (C.nodeId $ reflect' inode) (C.inputIndex inputIdx)
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
@@ -181,7 +182,7 @@ handlers stateRef patch (Network tk _) =
                                 (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (reflect' onode) outputIdx (reflect' inode) inputIdx
+                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' onode) (C.outputIndex outputIdx) (C.nodeId $ reflect' inode) (C.inputIndex inputIdx)
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit

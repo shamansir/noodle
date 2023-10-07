@@ -27,6 +27,7 @@ import Data.List as List
 import Data.String.Read (class Read, read)
 import Data.Repr (Repr, wrap, fromRepr, class ToRepr, class FromRepr, class ReadWriteRepr, readRepr)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Either (Either(..))
 
 import Noodle.Network2 (Network(..))
 import Noodle.Network2 as NW
@@ -44,7 +45,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (extractCommands) as NdfFile
 import Noodle.Text.NdfFile.Command (Command)
-import Noodle.Text.NdfFile.Command (Command(..)) as C
+import Noodle.Text.NdfFile.Command (Command(..), NodeFamily(..), NodeId(..), Coord(..), InputId(..), OutputId(..), EncodedValue(..)) as C
 
 
 type Handlers x gstate instances m repr =
@@ -98,7 +99,10 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
 
         applyCommand :: (Network gstate families instances /\ IdMapping x gstate instances m repr) -> Command -> m (Network gstate families instances /\ IdMapping x gstate instances m repr)
 
-        applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
+        applyCommand (nw@(Network tk _) /\ nodesMap) (C.Move (C.NodeId nodeId) (C.Coord xPos) (C.Coord yPos)) = do
+            pure $ nw /\ nodesMap -- FIXME: TODO
+
+        applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode (C.NodeFamily familyStr) (C.Coord xPos) (C.Coord yPos) (C.NodeId mappingId)) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)
             let maybeFamilyR = List.find (reflect' >>> eq familyStr) nodeFamilies
             case maybeFamilyR of
@@ -117,7 +121,7 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                     pure $ nw /\ fromMaybe nodesMap ((\heldNode -> Map.insert mappingId heldNode nodesMap) <$> maybeHeldNode)
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
+        applyCommand (nw /\ nodesMap) (C.Connect (C.NodeId srcId) (C.OutputId (Right srcOutputIdx)) (C.NodeId dstId) (C.InputId (Right dstInputIdx))) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
                 Just ((srcNode :: Patch.HoldsNodeMRepr x gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr x gstate instances m repr)) ->
                     Patch.withNode2MRepr
@@ -149,7 +153,7 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                          )
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.Connect_ srcId srcOutputId dstId dstInputId) =
+        applyCommand (nw /\ nodesMap) (C.Connect (C.NodeId srcId) (C.OutputId (Left srcOutputId)) (C.NodeId dstId) (C.InputId (Left dstInputId))) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
                 Just ((srcNode :: Patch.HoldsNodeMRepr x gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr x gstate instances m repr)) ->
                     Patch.withNode2MRepr
@@ -181,7 +185,71 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                          )
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.Send nodeId inputIdx valueStr) =
+        applyCommand (nw /\ nodesMap) (C.Connect (C.NodeId srcId) (C.OutputId (Right srcOutputIdx)) (C.NodeId dstId) (C.InputId (Left dstInputId))) =
+            case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
+                Just ((srcNode :: Patch.HoldsNodeMRepr x gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr x gstate instances m repr)) ->
+                    Patch.withNode2MRepr
+                         srcNode
+                         dstNode
+                         (\nodeA nodeB _ _ ->
+                            let
+                                (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedNodeOutputsTest' nodeA
+                                (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeInputsTest' nodeB
+                                (maybeFoundOutput :: Maybe (Node.HoldsOutputInNodeMRepr m repr)) = Array.index nodeAOutputs srcOutputIdx
+                                (maybeFoundInput :: Maybe (Int /\ Node.HoldsInputInNodeMRepr m repr)) = Array.find (\(idx /\ holdsInput) -> Node.withInputInNodeMRepr holdsInput (\_ _ input -> reflect input) == dstInputId) $ mapWithIndex (/\) nodeBInputs -- TODO: same
+                            in do
+                                case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
+                                    Just (holdsOutput /\ (iidx /\ holdsInput)) ->
+                                        Node.withOutputInNodeMRepr
+                                            holdsOutput
+                                            (\_ onode outputId -> do
+                                                Node.withInputInNodeMRepr
+                                                    holdsInput
+                                                    (\_ inode inputId -> do
+                                                        link <- Node.connectByRepr prepr outputId inputId onode inode
+                                                        let nextPatch = Patch.registerLink link curPatch
+                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ iidx) (outputId /\ inputId) link
+                                                        pure $ nw /\ nodesMap
+                                                    )
+                                            )
+                                    Nothing ->
+                                        pure $ nw /\ nodesMap
+                         )
+                Nothing -> pure $ nw /\ nodesMap
+
+        applyCommand (nw /\ nodesMap) (C.Connect (C.NodeId srcId) (C.OutputId (Left srcOutputId)) (C.NodeId dstId) (C.InputId (Right dstInputIdx))) =
+            case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
+                Just ((srcNode :: Patch.HoldsNodeMRepr x gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr x gstate instances m repr)) ->
+                    Patch.withNode2MRepr
+                         srcNode
+                         dstNode
+                         (\nodeA nodeB _ _ ->
+                            let
+                                (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedNodeOutputsTest' nodeA
+                                (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeInputsTest' nodeB
+                                (maybeFoundOutput :: Maybe (Int /\ Node.HoldsOutputInNodeMRepr m repr)) = Array.find (\(idx /\ holdsOutput) -> Node.withOutputInNodeMRepr holdsOutput (\_ _ output -> reflect output) == srcOutputId) $ mapWithIndex (/\) nodeAOutputs -- TODO: some typeclass like `HoldsOutput/IsOutput`, to return only Output haha
+                                (maybeFoundInput :: Maybe (Node.HoldsInputInNodeMRepr m repr)) = Array.index nodeBInputs dstInputIdx
+                            in do
+                                case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
+                                    Just ((oidx /\ holdsOutput) /\ holdsInput) ->
+                                        Node.withOutputInNodeMRepr
+                                            holdsOutput
+                                            (\_ onode outputId -> do
+                                                Node.withInputInNodeMRepr
+                                                    holdsInput
+                                                    (\_ inode inputId -> do
+                                                        link <- Node.connectByRepr prepr outputId inputId onode inode
+                                                        let nextPatch = Patch.registerLink link curPatch
+                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (oidx /\ dstInputIdx) (outputId /\ inputId) link
+                                                        pure $ nw /\ nodesMap
+                                                    )
+                                            )
+                                    Nothing ->
+                                        pure $ nw /\ nodesMap
+                         )
+                Nothing -> pure $ nw /\ nodesMap
+
+        applyCommand (nw /\ nodesMap) (C.Send (C.NodeId nodeId) (C.InputId (Right inputIdx)) (C.EncodedValue valueStr)) =
             case Map.lookup nodeId nodesMap of
                 Just (nodeHeld :: Patch.HoldsNodeMRepr x gstate instances m repr) ->
                     Patch.withNodeMRepr
@@ -200,7 +268,7 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                         )
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.Send_ nodeId inputId valueStr) =
+        applyCommand (nw /\ nodesMap) (C.Send (C.NodeId nodeId) (C.InputId (Left inputId)) (C.EncodedValue valueStr)) =
             case Map.lookup nodeId nodesMap of
                 Just (nodeHeld :: Patch.HoldsNodeMRepr x gstate instances m repr) ->
                     Patch.withNodeMRepr
@@ -219,7 +287,7 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                         )
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.SendO nodeId outputIdx valueStr) =
+        applyCommand (nw /\ nodesMap) (C.SendO (C.NodeId nodeId) (C.OutputId (Right outputIdx)) (C.EncodedValue valueStr)) =
             case Map.lookup nodeId nodesMap of
                 Just (nodeHeld :: Patch.HoldsNodeMRepr x gstate instances m repr) ->
                     Patch.withNodeMRepr
@@ -238,7 +306,7 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                         )
                 Nothing -> pure $ nw /\ nodesMap
 
-        applyCommand (nw /\ nodesMap) (C.SendO_ nodeId outputId valueStr) =
+        applyCommand (nw /\ nodesMap) (C.SendO (C.NodeId nodeId) (C.OutputId (Left outputId)) (C.EncodedValue valueStr)) =
             case Map.lookup nodeId nodesMap of
                 Just (nodeHeld :: Patch.HoldsNodeMRepr x gstate instances m repr) ->
                     Patch.withNodeMRepr
