@@ -153,6 +153,14 @@ moveCommand = do
     pure $ Cmd.Move (C.nodeId instanceId) (C.coord x) (C.coord y)
 
 
+comment :: Parser String Command
+comment = do
+    _ <- string "#"
+    _ <- space
+    content <- Tuple.fst <$> anyTill eol
+    pure $ Cmd.Comment content
+
+
 command :: Parser String Command
 command =
   -- FIXME: just make a separate parser for InputId / OutputId
@@ -166,6 +174,7 @@ command =
   <|> try sendOCommandS
   <|> try createCommand
   <|> try moveCommand
+  <|> try comment
 
 
 parser :: Parser String NdfFile
@@ -179,6 +188,10 @@ parser = do
 
 tokenChar :: Parser String Char
 tokenChar = alphaNum <|> char '-'
+
+
+commentChar :: Parser String Char
+commentChar = alphaNum <|> char '-'
 
 
 token :: Parser String String

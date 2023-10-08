@@ -159,6 +159,10 @@ operator :: String -> Tag
 operator = T.fgc (C.crepr Palette.operator) <<< T.s
 
 
+comment :: String -> Tag
+comment = T.fgc (C.crepr Palette.operator) <<< T.s
+
+
 value :: String -> Tag
 value = T.fgc (C.crepr Palette.value) <<< T.s
 

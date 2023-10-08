@@ -102,6 +102,9 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.Move (C.NodeId nodeId) (C.Coord xPos) (C.Coord yPos)) = do
             pure $ nw /\ nodesMap -- FIXME: TODO
 
+        applyCommand (nw@(Network tk _) /\ nodesMap) (C.Comment _) = do
+            pure $ nw /\ nodesMap -- FIXME: TODO
+
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode (C.NodeFamily familyStr) (C.Coord xPos) (C.Coord yPos) (C.NodeId mappingId)) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)
             let maybeFamilyR = List.find (reflect' >>> eq familyStr) nodeFamilies

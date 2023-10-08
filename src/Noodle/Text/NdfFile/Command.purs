@@ -38,6 +38,7 @@ data Command
     | Connect NodeId OutputId NodeId InputId
     | Send NodeId InputId EncodedValue
     | SendO NodeId OutputId EncodedValue
+    | Comment String
 
 
 derive instance Eq Command
@@ -57,6 +58,7 @@ instance ToCode NDF Command where
             Connect (NodeId fromNode) (OutputId (Left oname))   (NodeId toNode) (InputId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
             Connect (NodeId fromNode) (OutputId (Right oindex)) (NodeId toNode) (InputId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
             Connect (NodeId fromNode) (OutputId (Left oname))   (NodeId toNode) (InputId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
+            Comment content -> "# " <> content
 
 
 instance ToTaggedCode NDF Command where
@@ -73,6 +75,7 @@ instance ToTaggedCode NDF Command where
             Connect (NodeId fromNode) (OutputId (Left oname))   (NodeId toNode) (InputId (Left iname))   -> T.operator "<>" <> T.s " " <> T.nodeId fromNode <> T.s " " <> T.outputId oname <> T.s " " <> T.nodeId toNode <> T.s " " <> T.inputId iname
             Connect (NodeId fromNode) (OutputId (Right oindex)) (NodeId toNode) (InputId (Left iname))   -> T.operator "<>" <> T.s " " <> T.nodeId fromNode <> T.s " " <> T.outputIdx oindex <> T.s " " <> T.nodeId toNode <> T.s " " <> T.inputId iname
             Connect (NodeId fromNode) (OutputId (Left oname))   (NodeId toNode) (InputId (Right iindex)) -> T.operator "<>" <> T.s " " <> T.nodeId fromNode <> T.s " " <> T.outputId oname <> T.s " " <> T.nodeId toNode <> T.s " " <> T.inputIdx iindex
+            Comment content -> T.comment $ "# " <> content
 
 
 -- instance ToCode NDF (Array Command) where

@@ -15,10 +15,12 @@ import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 sampleNdfText :: String
 sampleNdfText =
     """hydra 0.1
+# test example
 osc 40 60 osc-0
 osc 40 60 osc-1
 pi 20 20 pi-0
 number 40 40 num-0
+# connect pi to osc
 <> pi-0 0 osc-0 0
 <> num-0 0 osc-0 1
 -> osc-0 0 N 20.0
@@ -33,10 +35,12 @@ number 40 40 num-0
 expectedNdf :: NdfFile
 expectedNdf =
     NdfFile.from "hydra" 0.1
-        [ C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-0")
+        [ C.Comment "test example"
+        , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-0")
         , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
         , C.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-0")
         , C.MakeNode (C.family "number") (C.coord 40) (C.coord 40) (C.nodeId "num-0")
+        , C.Comment "connect pi to osc"
         , C.Connect (C.nodeId "pi-0") (C.outputIndex 0) (C.nodeId "osc-0") (C.inputIndex 0)
         , C.Connect (C.nodeId "num-0") (C.outputIndex 0) (C.nodeId "osc-0") (C.inputIndex 1)
         , C.Send (C.nodeId "osc-0") (C.inputIndex 0) (C.encodedValue "N 20.0")
