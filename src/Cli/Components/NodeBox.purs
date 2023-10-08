@@ -30,6 +30,7 @@ import Data.Mark (mark)
 import Data.TraversableWithIndex (traverseWithIndex)
 import Data.SProxy (reflect, reflect')
 import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.FromToFile (class Encode, encode)
 
 import Signal (Signal, (~>))
@@ -130,7 +131,17 @@ widthN familyName isCount osCount =
 
 -- widthN :: String -> Int -> Int -> Dimension
 
-fromNode
+
+autoPos :: forall m. BlessedOpM State m (Int /\ Int)
+autoPos = do
+    state <- State.get
+
+    let topN = state.lastShiftX + 2
+    let leftN = 16 + state.lastShiftY + 2
+    pure (leftN /\ topN)
+
+
+fromNodeAuto
     :: forall f state rli is rlo os repr_is repr_os instances'
      . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Noodle.Node f state is os Effect))
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
@@ -147,7 +158,29 @@ fromNode
     -> Id.Family f
     -> Noodle.Node f state is os Effect
     -> BlessedOpM State Effect _
-fromNode curPatchId curPatch family node = do
+fromNodeAuto curPatchId curPatch family node =
+    autoPos >>= \pos -> fromNodeAt pos curPatchId curPatch family node
+
+
+fromNodeAt
+    :: forall f state rli is rlo os repr_is repr_os instances'
+     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Noodle.Node f state is os Effect))
+    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
+    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
+    => FromToReprRow rli is Hydra.WrapRepr
+    => FromToReprRow rlo os Hydra.WrapRepr
+    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
+    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
+    => IsNodeState Hydra.State state
+    => Int /\ Int
+    -> Patch.Id
+    -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
+    -> Id.Family f
+    -> Noodle.Node f state is os Effect
+    -> BlessedOpM State Effect _
+fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
     --liftEffect $ Node.run node -- just Node.run ??
     liftEffect $ Node.runOnInputUpdates node
     liftEffect $ Node.runOnStateUpdates node
@@ -164,8 +197,6 @@ fromNode curPatchId curPatch family node = do
 
     let mbBodySize = size (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
 
-    let topN = state.lastShiftX + 2
-    let leftN = 16 + state.lastShiftY + 2
     let top = Offset.px topN
     let left = Offset.px leftN
 
@@ -314,7 +345,36 @@ fromNode curPatchId curPatch family node = do
 
 
 
-fromFamily
+fromFamilyAt
+    :: forall f state fs iis rli is rlo os repr_is repr_os
+     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
+    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
+    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
+    => FromToReprRow rli is Hydra.WrapRepr
+    => FromToReprRow rlo os Hydra.WrapRepr
+    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
+    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
+    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
+    => IsNodeState Hydra.State state
+    => Int /\ Int
+    -> Patch.Id
+    -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
+    -> Id.Family f
+    -> Family.Def state is os Effect
+    -> Hydra.Toolkit Effect
+    -> BlessedOpM State Effect _
+fromFamilyAt pos curPatchId curPatch family _ tk = do
+    (node :: Noodle.Node f state is os Effect) <- liftEffect $ Toolkit.spawn tk family
+    let (mbState :: Maybe state) = fromGlobal $ Stateful.get curPatch
+    node' <- liftEffect $ case mbState of
+        Just state -> Stateful.setM state node
+        Nothing -> pure node
+    -- TODO: update node in the patch?
+    fromNodeAt pos curPatchId curPatch family node'
+
+
+fromFamilyAuto
     :: forall f state fs iis rli is rlo os repr_is repr_os
      . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
@@ -332,14 +392,8 @@ fromFamily
     -> Family.Def state is os Effect
     -> Hydra.Toolkit Effect
     -> BlessedOpM State Effect _
-fromFamily curPatchId curPatch family _ tk = do
-    (node :: Noodle.Node f state is os Effect) <- liftEffect $ Toolkit.spawn tk family
-    let (mbState :: Maybe state) = fromGlobal $ Stateful.get curPatch
-    node' <- liftEffect $ case mbState of
-        Just state -> Stateful.setM state node
-        Nothing -> pure node
-    -- TODO: update node in the patch?
-    fromNode curPatchId curPatch family node'
+fromFamilyAuto curPatchId curPatch family def tk = do
+    autoPos >>= \pos -> fromFamilyAt pos curPatchId curPatch family def tk
 
 
 logDataCommand

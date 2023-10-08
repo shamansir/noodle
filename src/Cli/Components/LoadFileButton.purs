@@ -87,34 +87,6 @@ import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Ndf.Apply (apply) as NdfFile
 
 
-addNodeBox
-    :: forall f instances' state is os isrl osrl repr_is repr_os
-     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
-    -- => RL.RowToList (Hydra.Instances Effect) rli
-    -- => Record.Keys rli
-    => Id.HasInputsAt is isrl
-    => Id.HasOutputsAt os osrl
-    => R.ToReprHelper Effect f is isrl os osrl repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is isrl os osrl Hydra.WrapRepr state
-    => FromToReprRow isrl is Hydra.WrapRepr
-    => FromToReprRow osrl os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Node f state is os Effect)
-    => IsNodeState Hydra.State state
-    => Toolkit Hydra.State (Hydra.Families Effect)
-    -> Patch Hydra.State (Hydra.Instances Effect)
-    -> Node f state is os Effect
-    -> BlessedOpM State Effect _
-addNodeBox tk patch node = do
-    let (mbState :: Maybe state) = fromGlobal $ Stateful.get patch -- TODO: make a signal of global state changes and update node's state using subscription
-    node' <- liftEffect $ case mbState of
-        Just state -> Stateful.setM state node
-        Nothing -> pure node
-    NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node'
-
-
 component ::
     {-}:: forall fsrl
      . Id.ListsFamilies (Hydra.Families Effect) fsrl
@@ -136,8 +108,8 @@ component =
             \_ _ ->
                 NdfFile.apply $ NdfFile.from
                                     "hydra" 0.1
-                                    [ Cmd.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
-                                    , Cmd.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-1")
+                                    [ Cmd.MakeNode (C.family "osc") (C.coord 25) (C.coord 10) (C.nodeId "osc-1")
+                                    , Cmd.MakeNode (C.family "pi") (C.coord 22) (C.coord 2) (C.nodeId "pi-1")
                                     , Cmd.Connect (C.nodeId "pi-1") (C.outputIndex 0) (C.nodeId "osc-1") (C.inputIndex 0)
                                     , Cmd.Send (C.nodeId "osc-1") (C.inputIndex 1) (C.encodedValue "V N 20.0")
                                     , Cmd.Send (C.nodeId "osc-1") (C.inputIndex 2) (C.encodedValue "V N 40.0")

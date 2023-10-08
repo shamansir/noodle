@@ -16,7 +16,7 @@ import Control.Monad.State (get, modify_) as State
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Map as Map
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromToReprRow)
 
 import Blessed ((>~))
@@ -73,16 +73,17 @@ addNodeBox
     => HasBody' (Hydra.CliF f) (Node f state is os Effect) state Effect
     => HasCustomSize (Hydra.CliF f) (Node f state is os Effect)
     => IsNodeState Hydra.State state
-    => Toolkit Hydra.State (Hydra.Families Effect)
+    => Int /\ Int
+    -> Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Node f state is os Effect
     -> BlessedOpM State Effect _
-addNodeBox tk patch node = do
+addNodeBox pos tk patch node = do
     let (mbState :: Maybe state) = fromGlobal $ Stateful.get patch -- TODO: make a signal of global state changes and update node's state using subscription
     node' <- liftEffect $ case mbState of
         Just state -> Stateful.setM state node
         Nothing -> pure node
-    NodeBox.fromNode "" patch (Id.familyRev $ Node.family node) node'
+    NodeBox.fromNodeAt pos "" patch (Id.familyRev $ Node.family node) node'
 
 
 handlers
@@ -112,7 +113,7 @@ handlers stateRef patch (Network tk _) =
         _ <- Patch.withNodeMRepr
             (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.CliF Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
             (\patch node ->
-                BlessedOp.runM' stateRef (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
+                BlessedOp.runM' stateRef (addNodeBox (x /\ y) (tk :: Hydra.Toolkit Effect) patch node)
             )
         {-
         _ <- BlessedOp.runM state (
