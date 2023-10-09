@@ -49,7 +49,7 @@ import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InputButtonKey, mainScreen, statusLine)
 import Cli.State (State, LinkState, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
-import Cli.Bounds (collect, inputPos) as Bounds
+import Cli.Bounds (loadOrCollect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
 import Cli.Components.Link as Link
 import Cli.Components.OutputIndicator as OI
@@ -129,17 +129,17 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver (Node.family inode) nextNodeBox nextInfoBox idx inputId maybeRepr reprSignal
+            $ onMouseOver (Node.family inode) (Id.nodeIdR $ Node.id inode) nextNodeBox nextInfoBox idx inputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
-onMouseOver family nodeBox infoBox idx inputId _ reprSignal _ _ = do
+onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f -> Id.NodeIdR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver family nodeIdR nodeBox infoBox idx inputId _ reprSignal _ _ = do
     state <- State.get
-    nodeBounds <- Bounds.collect nodeBox
+    nodeBounds <- Bounds.loadOrCollect nodeIdR nodeBox -- FIXME: load from state.locations
     let inputPos = Bounds.inputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
@@ -200,10 +200,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
             Just lco ->
                 if inodeKey /= lco.nodeKey then do
                     linkCmp <- Link.create
-                                state.lastLink
-                                lco.nodeKey
+                                { key : lco.nodeKey, id : Id.withNodeId lco.nodeId Id.nodeIdR }
                                 (OutputIndex lco.index)
-                                inodeKey
+                                { key : inodeKey, id : Id.nodeIdR inodeId }
                                 (InputIndex idx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
@@ -239,7 +238,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                         -- FIXME: press handler triggers twice
                         if not state.linkWasMadeHack then do
                             let editor = Key.numValueEditor
-                            inodeBounds <- Bounds.collect inodeKey
+                            inodeBounds <- Bounds.loadOrCollect (Id.nodeIdR inodeId) inodeKey -- FIXME: use state.locations
                             State.modify_
                                 (\s -> s
                                     { editors =

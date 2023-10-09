@@ -134,8 +134,8 @@ newtype LinkState =
     LinkState
     { id :: Int
     , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
-    , fromNode :: NodeBoxKey
-    , toNode :: NodeBoxKey
+    , fromNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }
+    , toNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }
     , outputIndex :: Int
     , inputIndex :: Int
     , keys ::

@@ -38,13 +38,14 @@ import Blessed.UI.Base.Element.PropertySet (setHeight, setLeft, setTop, setWidth
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 
+import Noodle.Id as Id
 
-import Cli.State (State, LinkState(..), OutputIndex(..), InputIndex(..), FromToBounds, LinkCalc)
+import Cli.State (State, LinkState(..), OutputIndex(..), InputIndex(..), FromToBounds, LinkCalc, NodeBounds)
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
 import Cli.Style as Style
-import Cli.Bounds (collect, outputPos, inputPos) as Bounds
+import Cli.Bounds (loadOrCollect, outputPos, inputPos) as Bounds
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -52,10 +53,19 @@ import Cli.Bounds (collect, outputPos, inputPos) as Bounds
 type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJson → BlessedOp State Effect
 
 
-create :: Maybe LinkState -> NodeBoxKey -> OutputIndex -> NodeBoxKey -> InputIndex -> BlessedOpGet State Effect LinkState
-create maybePrev fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
-    from <- Bounds.collect fromNode
-    to <- Bounds.collect toNode
+-- FIXME: pass data from state as arguments and make Links independent from State type
+
+
+create
+    :: { key :: NodeBoxKey, id :: Id.NodeIdR }
+    -> OutputIndex
+    -> { key :: NodeBoxKey, id :: Id.NodeIdR }
+    -> InputIndex
+    -> BlessedOpGet State Effect LinkState
+create fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
+    maybePrev <- _.lastLink <$> State.get
+    from <- Bounds.loadOrCollect fromNode.id fromNode.key
+    to <- Bounds.loadOrCollect toNode.id fromNode.key
 
     let
 
@@ -163,8 +173,8 @@ on evt handler (LinkState link) = do
 
 update :: LinkState -> BlessedOp State Effect
 update (LinkState link) = do
-    from <- Bounds.collect link.fromNode
-    to <- Bounds.collect link.toNode
+    from <- Bounds.loadOrCollect link.fromNode.id link.fromNode.key
+    to <- Bounds.loadOrCollect link.toNode.id link.toNode.key
 
     let calc =
             calculate
@@ -192,9 +202,9 @@ forget :: LinkState -> State -> State
 forget link@(LinkState props) state =
     state
         { linksFrom =
-            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode) state.linksFrom
+            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode.key) state.linksFrom
         , linksTo =
-            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.toNode) state.linksTo
+            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.toNode.key) state.linksTo
         }
 
 
@@ -202,9 +212,9 @@ store :: LinkState -> State -> State
 store link@(LinkState props) state =
     state
         { linksFrom =
-            Map.alter (push props.id link) (NodeKey.rawify props.fromNode) state.linksFrom
+            Map.alter (push props.id link) (NodeKey.rawify props.fromNode.key) state.linksFrom
         , linksTo =
-            Map.alter (push props.id link) (NodeKey.rawify props.toNode) state.linksTo
+            Map.alter (push props.id link) (NodeKey.rawify props.toNode.key) state.linksTo
         , lastLink = Just link
         }
 

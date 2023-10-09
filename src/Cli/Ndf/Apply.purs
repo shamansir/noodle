@@ -128,10 +128,9 @@ handlers stateRef patch (Network tk _) =
             case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
-                                state.lastLink
-                                onodeKey
+                                { key : onodeKey, id : onode }
                                 (OutputIndex outputIdx)
-                                inodeKey
+                                { key: inodeKey, id : inode }
                                 (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
@@ -145,10 +144,9 @@ handlers stateRef patch (Network tk _) =
             case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
-                                state.lastLink
-                                onodeKey
+                                { key : onodeKey, id : onode }
                                 (OutputIndex outputIdx)
-                                inodeKey
+                                { key: inodeKey, id : inode }
                                 (InputIndex inputIdx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp

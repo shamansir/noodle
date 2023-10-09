@@ -476,10 +476,12 @@ renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsR
 onMove :: Id.NodeIdR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp State Effect
 onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.rawify nodeKey
-    bounds <- Bounds.collect nodeKey
-    state <- State.modify \s -> s { locations = Map.insert nodeId bounds s.locations }
+    newBounds <- Bounds.collect nodeKey
+    state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
+    where
+        updatePos nb = Just <<< Bounds.move nb
 
 
 onMouseOver :: forall f. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp State Effect
