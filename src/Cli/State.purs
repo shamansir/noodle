@@ -77,6 +77,7 @@ type State =
     , editors :: Editors
     , knownGlslFunctions :: Array T.GlslFn
     , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
+    , locations :: Map Id.NodeIdR NodeBounds
     }
 
 
@@ -110,6 +111,7 @@ initial =
     , editors : Map.empty
     , knownGlslFunctions : Glsl.knownFns
     , linkWasMadeHack : false
+    , locations : Map.empty
     }
 
 

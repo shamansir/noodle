@@ -109,6 +109,7 @@ import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
+import Cli.Bounds as Bounds
 
 import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
@@ -225,10 +226,15 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
+        (nodeIdR :: Id.NodeIdR) = Id.nodeIdR $ Node.id node
         boxWidth =
             case mbBodySize of
                 Just { width } -> width - 1
                 Nothing -> widthN (reflect family) (Array.length is) (Array.length os)
+        boxHeight =
+            case mbBodySize of
+                Just { width, height } -> height + 2
+                Nothing -> 5
         outputsTopOffset =
             Offset.px $
                 case mbBodySize of
@@ -253,15 +259,13 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
                 , Box.top top
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
-                , Box.height $ Dimension.px
-                    $ case mbBodySize of
-                        Just { width, height } -> height + 2
-                        Nothing -> 5
+                , Box.height $ Dimension.px boxHeight
                 , Box.label $ T.render $ T.nodeLabel family
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
-                , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
+                , Core.on Element.Move
+                    $ onMove nodeIdR nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 , Core.on Element.MouseOver
                     $ onMouseOver family
                 , Core.on Element.MouseOut
@@ -330,12 +334,19 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
             , infoBox : nextInfoBox
             , removeButton : nextRemoveButton
             }
+        location =
+            { width : boxWidth
+            , height : boxHeight
+            , left : leftN
+            , top : topN
+            }
 
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
         , lastKeys = lastKeys
         , nodeKeysMap = Map.insert nodeId nextNodeBox state.nodeKeysMap
+        , locations = Map.insert nodeId location state.locations
         }
     )
 
@@ -462,10 +473,11 @@ renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsR
                 Nothing -> pure unit
 
 
-onMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
-onMove nodeKey _ _ = do
-    state <- State.get
+onMove :: Id.NodeIdR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp State Effect
+onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.rawify nodeKey
+    bounds <- Bounds.collect nodeKey
+    state <- State.modify \s -> s { locations = Map.insert nodeId bounds s.locations }
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
 
