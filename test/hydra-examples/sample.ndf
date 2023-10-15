@@ -1,13 +1,13 @@
 hydra 0.1
-osc 40 60 osc-0
-osc 40 60 osc-1
-pi 20 20 pi-0
-number 40 40 num-0
+osc 22 10 osc-0
+osc 42 10 osc-1
+pi 22 2 pi-0
+number 40 2 num-0
 <> pi-0 0 osc-0 0
 <> num-0 0 osc-0 1
 -> osc-0 0 N 20.0
 ~> num-0 0 N 40.0
-<> pi-0 foo osc-0 bar
--> osc-0 foo N 20.0
-~> num-0 bar N 40.0
-. 20 30 pi-0
+<> pi-0 out osc-1 sync
+-> osc-0 out N 20.0
+~> num-0 out N 40.0
+. 22 3 pi-0
