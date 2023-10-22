@@ -16,7 +16,7 @@ module Noodle.Id
     , split, split', splitR
     , nodeId', nodeIdR, nodeIdR'
     , reflectNodeId, reflectNodeId', reflectNodeIdR
-    , familyOf, hashOf, hashOfR
+    , familyOf, familyOfR, hashOf, hashOfR
     , class Indexed, index
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
@@ -393,6 +393,10 @@ makeNodeId f = NodeId <$> ((/\) f) <$> UniqueHash.generate
 
 familyOf :: forall f. NodeId f -> Family' f
 familyOf (NodeId (family' /\ _)) = family'
+
+
+familyOfR :: NodeIdR -> FamilyR
+familyOfR (NodeIdR (family /\ _)) = family
 
 
 hashOf :: forall f. NodeId f -> UniqueHash

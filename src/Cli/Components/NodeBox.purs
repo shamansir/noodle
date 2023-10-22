@@ -334,11 +334,12 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
             , infoBox : nextInfoBox
             , removeButton : nextRemoveButton
             }
+
         location =
-            { width : boxWidth
-            , height : boxHeight
-            , left : leftN
+            { left : leftN
             , top : topN
+            , width : boxWidth
+            , height : boxHeight
             }
 
     State.modify_ (_

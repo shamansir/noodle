@@ -3,6 +3,8 @@ module Cli.Bounds where
 import Prelude
 
 import Effect.Exception (Error)
+import Effect.Console (log) as Console
+import Effect.Class (liftEffect, class MonadEffect)
 
 import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.State (get) as State
@@ -44,6 +46,7 @@ loadOrCollect
     :: forall subj key m
     .  K.Extends K.Element subj
     => K.IsSubject subj
+    -- => MonadEffect m
     => IsSymbol key
     => MonadThrow Error m
     => Id.NodeIdR
@@ -51,23 +54,26 @@ loadOrCollect
     -> BlessedOpGet State m NodeBounds
 loadOrCollect nodeId nodeKey = do
     locations <- _.locations <$> State.get
+    -- liftEffect $ Console.log $ ( show $ Map.lookup nodeId locations )
     case Map.lookup nodeId locations of
         Just nodeBounds -> pure nodeBounds
-        Nothing -> collect nodeKey -- FIXME: since we update bounds every time in the state, there's no need to collect them
+        Nothing -> collect nodeKey
+            -- FIXME: pure { top : 0, left : 0, width : 0, height : 0 },
+            -- since we update bounds every time in the state, there's no need to collect them
 
 
 outputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
 outputPos n outputIdx =
-    { x : n.left + (outputIdx * 4)
-    , y : n.top + 4
+    { x : n.left + 1 + (outputIdx * 4)
+    , y : n.top + 5
     }
 
 
 
 inputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
 inputPos n inputIdx =
-    { x : n.left + (inputIdx * 4)
-    , y : n.top
+    { x : n.left + 1 + (inputIdx * 4)
+    , y : n.top + 1
     }
 
 

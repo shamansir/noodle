@@ -52,8 +52,8 @@ type Handlers x gstate instances m repr =
     { onNodeCreated :: Int /\ Int -> Patch.HoldsNode' gstate instances m -> m Unit
     , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
     , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr x gstate instances m repr -> m Unit
-    , onConnect :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Node.Link fA fB oA iB -> m Unit
-    , onConnect2 :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Id.Output oA /\ Id.Input iB -> Node.Link fA fB oA iB -> m Unit
+    , onConnect :: forall fA fB oA iB. { onode :: Id.NodeIdR, inode :: Id.NodeIdR, outputIndex :: Int, inputIndex :: Int } -> Node.Link fA fB oA iB -> m Unit
+    , onConnect2 :: forall fA fB oA iB. { onode :: Id.NodeIdR, inode :: Id.NodeIdR, output :: Id.Output oA, input :: Id.Input iB, outputIndex :: Int, inputIndex :: Int } -> Node.Link fA fB oA iB -> m Unit
     }
 
 
@@ -147,7 +147,12 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                                                     (\_ inode inputId -> do
                                                         link <- Node.connectByRepr prepr outputId inputId onode inode
                                                         let nextPatch = Patch.registerLink link curPatch
-                                                        handlers.onConnect (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ dstInputIdx) link
+                                                        handlers.onConnect2
+                                                            { onode : Id.nodeIdR $ Node.id onode, inode : Id.nodeIdR $ Node.id inode
+                                                            , output : outputId, input : inputId
+                                                            , outputIndex : srcOutputIdx, inputIndex : dstInputIdx
+                                                            }
+                                                            link
                                                         pure $ nw /\ nodesMap
                                                     )
                                             )
@@ -179,7 +184,12 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                                                     (\_ inode inputId -> do
                                                         link <- Node.connectByRepr prepr outputId inputId onode inode
                                                         let nextPatch = Patch.registerLink link curPatch
-                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (oidx /\ iidx) (outputId /\ inputId) link
+                                                        handlers.onConnect2
+                                                            { onode : Id.nodeIdR $ Node.id onode, inode : Id.nodeIdR $ Node.id inode
+                                                            , output : outputId, input : inputId
+                                                            , outputIndex : oidx, inputIndex : iidx
+                                                            }
+                                                            link
                                                         pure $ nw /\ nodesMap
                                                     )
                                             )
@@ -211,7 +221,12 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                                                     (\_ inode inputId -> do
                                                         link <- Node.connectByRepr prepr outputId inputId onode inode
                                                         let nextPatch = Patch.registerLink link curPatch
-                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ iidx) (outputId /\ inputId) link
+                                                        handlers.onConnect2
+                                                            { onode : Id.nodeIdR $ Node.id onode, inode : Id.nodeIdR $ Node.id inode
+                                                            , output : outputId, input : inputId
+                                                            , outputIndex : srcOutputIdx, inputIndex : iidx
+                                                            }
+                                                            link
                                                         pure $ nw /\ nodesMap
                                                     )
                                             )
@@ -243,7 +258,12 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
                                                     (\_ inode inputId -> do
                                                         link <- Node.connectByRepr prepr outputId inputId onode inode
                                                         let nextPatch = Patch.registerLink link curPatch
-                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (oidx /\ dstInputIdx) (outputId /\ inputId) link
+                                                        handlers.onConnect2
+                                                            { onode : Id.nodeIdR $ Node.id onode, inode : Id.nodeIdR $ Node.id inode
+                                                            , output : outputId, input : inputId
+                                                            , outputIndex : oidx, inputIndex : dstInputIdx
+                                                            }
+                                                            link
                                                         pure $ nw /\ nodesMap
                                                     )
                                             )

@@ -7,7 +7,6 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 
-
 import Type.Proxy (Proxy(..))
 import Data.SProxy (reflect')
 
@@ -122,35 +121,35 @@ handlers stateRef patch (Network tk _) =
                 (addNodeBox (tk :: Hydra.Toolkit Effect))
             ) -}
         pure unit
-    , onConnect : \(onode /\ inode) (outputIdx /\ inputIdx) link ->
+    , onConnect : \def link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
-            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
+            case (/\) <$> Map.lookup def.onode state.nodeKeysMap <*> Map.lookup def.inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
-                                { key : onodeKey, id : onode }
-                                (OutputIndex outputIdx)
-                                { key: inodeKey, id : inode }
-                                (InputIndex inputIdx)
+                                { key : onodeKey, id : def.onode }
+                                (OutputIndex def.outputIndex)
+                                { key: inodeKey, id : def.inode }
+                                (InputIndex def.inputIndex)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' onode) (C.outputIndex outputIdx) (C.nodeId $ reflect' inode) (C.inputIndex inputIdx)
+                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' def.onode) (C.outputIndex def.outputIndex) (C.nodeId $ reflect' def.inode) (C.inputIndex def.inputIndex)
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
-    , onConnect2 : \(onode /\ inode) (outputIdx /\ inputIdx) (outputId /\ inputId) link ->
+    , onConnect2 : \def link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
-            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
+            case (/\) <$> Map.lookup def.onode state.nodeKeysMap <*> Map.lookup def.inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
-                                { key : onodeKey, id : onode }
-                                (OutputIndex outputIdx)
-                                { key: inodeKey, id : inode }
-                                (InputIndex inputIdx)
+                                { key : onodeKey, id : def.onode }
+                                (OutputIndex def.outputIndex)
+                                { key: inodeKey, id : def.inode }
+                                (InputIndex def.inputIndex)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' onode) (C.outputIndex outputIdx) (C.nodeId $ reflect' inode) (C.inputIndex inputIdx)
+                    logNdfCommandM $ Cmd.Connect (C.nodeId $ reflect' def.onode) (C.outputIndex def.outputIndex) (C.nodeId $ reflect' def.inode) (C.inputIndex def.inputIndex)
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit

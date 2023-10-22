@@ -65,7 +65,7 @@ create
 create fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
     maybePrev <- _.lastLink <$> State.get
     from <- Bounds.loadOrCollect fromNode.id fromNode.key
-    to <- Bounds.loadOrCollect toNode.id fromNode.key
+    to <- Bounds.loadOrCollect toNode.id toNode.key
 
     let
 
