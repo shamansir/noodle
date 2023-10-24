@@ -49,7 +49,7 @@ import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InputButtonKey, mainScreen, statusLine)
 import Cli.State (State, LinkState, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
-import Cli.Bounds (loadOrCollect, inputPos) as Bounds
+import Cli.Bounds (collect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
 import Cli.Components.Link as Link
 import Cli.Components.OutputIndicator as OI
@@ -139,7 +139,7 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
 onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f -> Id.NodeIdR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Input i -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family nodeIdR nodeBox infoBox idx inputId _ reprSignal _ _ = do
     state <- State.get
-    nodeBounds <- Bounds.loadOrCollect nodeIdR nodeBox -- FIXME: load from state.locations
+    nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
     let inputPos = Bounds.inputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
@@ -238,7 +238,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                         -- FIXME: press handler triggers twice
                         if not state.linkWasMadeHack then do
                             let editor = Key.numValueEditor
-                            inodeBounds <- Bounds.loadOrCollect (Id.nodeIdR inodeId) inodeKey -- FIXME: use state.locations
+                            inodeBounds <- Bounds.collect (Id.nodeIdR inodeId) inodeKey -- FIXME: use state.locations
                             State.modify_
                                 (\s -> s
                                     { editors =

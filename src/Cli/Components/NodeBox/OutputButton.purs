@@ -44,7 +44,7 @@ import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
 import Cli.Palette as Palette
 import Cli.Tagging as T
-import Cli.Bounds (loadOrCollect, outputPos) as Bounds
+import Cli.Bounds (collect, outputPos) as Bounds
 import Cli.Components.OutputIndicator as OI
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
@@ -131,7 +131,7 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
         -- TODO: highlight value
         -- currentContent <- Box.getContent buttonKey
         -- buttonKey >~ Box.setContent "x"
-    nodeBounds <- Bounds.loadOrCollect (Id.nodeIdR $ Node.id node) nextNodeBox
+    nodeBounds <- Bounds.collect (Id.nodeIdR $ Node.id node) nextNodeBox
     let outputPos = Bounds.outputPos nodeBounds index
     OI.move { x : outputPos.x, y : outputPos.y - 1 }
     OI.updateStatus OI.WaitConnection
@@ -153,7 +153,7 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
 onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> Id.NodeIdR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family nodeIdR nodeBox infoBox idx outputId _ reprSignal _ _ = do
     state <- State.get
-    nodeBounds <- Bounds.loadOrCollect nodeIdR nodeBox
+    nodeBounds <- Bounds.collect nodeIdR nodeBox
     let outputPos = Bounds.outputPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId

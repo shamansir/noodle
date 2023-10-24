@@ -45,7 +45,7 @@ import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
 import Cli.Style as Style
-import Cli.Bounds (loadOrCollect, outputPos, inputPos) as Bounds
+import Cli.Bounds (collect, outputPos, inputPos) as Bounds
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -64,8 +64,8 @@ create
     -> BlessedOpGet State Effect LinkState
 create fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
     maybePrev <- _.lastLink <$> State.get
-    from <- Bounds.loadOrCollect fromNode.id fromNode.key
-    to <- Bounds.loadOrCollect toNode.id toNode.key
+    from <- Bounds.collect fromNode.id fromNode.key
+    to <- Bounds.collect toNode.id toNode.key
 
     let
 
@@ -173,8 +173,8 @@ on evt handler (LinkState link) = do
 
 update :: LinkState -> BlessedOp State Effect
 update (LinkState link) = do
-    from <- Bounds.loadOrCollect link.fromNode.id link.fromNode.key
-    to <- Bounds.loadOrCollect link.toNode.id link.toNode.key
+    from <- Bounds.collect link.fromNode.id link.fromNode.key
+    to <- Bounds.collect link.toNode.id link.toNode.key
 
     let calc =
             calculate

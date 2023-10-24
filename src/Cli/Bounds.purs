@@ -33,8 +33,10 @@ collect
     => K.IsSubject subj
     => IsSymbol key
     => MonadThrow Error m
-    => NodeKey subj key → BlessedOp' state m NodeBounds
-collect node = do
+    => Id.NodeIdR
+    -> NodeKey subj key
+    -> BlessedOp' state m NodeBounds
+collect _ node = do
     left <- Element.left ~< node
     top <- Element.top ~< node
     width <- Element.width ~< node
@@ -57,23 +59,29 @@ loadOrCollect nodeId nodeKey = do
     -- liftEffect $ Console.log $ ( show $ Map.lookup nodeId locations )
     case Map.lookup nodeId locations of
         Just nodeBounds -> pure nodeBounds
-        Nothing -> collect nodeKey
+        Nothing -> collect nodeId nodeKey
             -- FIXME: pure { top : 0, left : 0, width : 0, height : 0 },
             -- since we update bounds every time in the state, there's no need to collect them
 
 
 outputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
 outputPos n outputIdx =
-    { x : n.left + 1 + (outputIdx * 4)
-    , y : n.top + 5
+    -- { x : n.left + 1 + (outputIdx * 4)
+    -- , y : n.top + 5
+    -- }
+    { x : n.left + (outputIdx * 4)
+    , y : n.top + 4
     }
 
 
 
 inputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
 inputPos n inputIdx =
-    { x : n.left + 1 + (inputIdx * 4)
-    , y : n.top + 1
+    -- { x : n.left + 1 + (inputIdx * 4)
+    -- , y : n.top + 1
+    -- }
+    { x : n.left + (inputIdx * 4)
+    , y : n.top
     }
 
 
