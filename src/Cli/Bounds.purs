@@ -70,7 +70,7 @@ outputPos n outputIdx =
     -- , y : n.top + 5
     -- }
     { x : n.left + (outputIdx * 4)
-    , y : n.top + 4
+    , y : n.top + (n.height - 1)
     }
 
 
