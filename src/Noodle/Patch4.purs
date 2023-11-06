@@ -65,6 +65,7 @@ type Links =
   , from :: Map Node.FromId HoldsLink
   , to :: Map Node.ToId HoldsLink
   , byNode :: Map Id.NodeIdR (Array (Node.FromId /\ Node.ToId))
+  , byId :: Map LinkId HoldsLink
   }
 
 
@@ -109,6 +110,7 @@ init' state tk =
         , from : Map.empty
         , to : Map.empty
         , byNode : Map.empty
+        , byId : Map.empty
         }
 
 
@@ -194,6 +196,8 @@ registerLink link (Patch state forder instances links) =
         : appendTo (fromId /\ toId) nodeFromIdR
         $ appendTo (fromId /\ toId) nodeToIdR
         $ links.byNode
+    , byId :
+        Map.insert nextId linkHeld links.byId
     }
    where
     nextId = LinkId $ unwrap links.lastId + 1
@@ -228,11 +232,28 @@ forgetLink link (Patch state forder instances links) =
         : Map.delete (Id.nodeIdR $ Node.fromNode link)
         $ Map.delete (Id.nodeIdR $ Node.toNode link)
         $ links.byNode
+    , byId : links.byId -- FIXME: remove link by its id
     }
 
 
-forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Patch gstate instances
-forgetLink' = const identity -- FIXME implement
+forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Effect Unit /\ Patch gstate instances
+forgetLink' linkId p@(Patch state forder instances links) =
+    case Map.lookup linkId links.byId of
+        Just linkHeld ->
+            withLink linkHeld
+                \link ->
+                    Node.getCanceler link /\
+                    (forgetLink
+                        link
+                        $ Patch
+                            state
+                            forder
+                            instances
+                        $ links
+                            { byId = Map.delete linkId links.byId
+                            }
+                    )
+        Nothing -> pure unit /\ p
 
 
 allLinksOf

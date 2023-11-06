@@ -205,10 +205,12 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                     let maybePrevLink = Map.lookup (NodeKey.rawify inodeKey) state.linksTo >>= Map.lookup idx
 
                     let
-                        curPatch' =
+                        canceler /\ curPatch' =
                             case maybePrevLink of
                                 Just (LinkState { inPatch }) -> Patch.forgetLink' inPatch curPatch
-                                Nothing -> curPatch
+                                Nothing -> pure unit /\ curPatch
+
+                    _ <- liftEffect canceler
 
                     linkId /\ nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow

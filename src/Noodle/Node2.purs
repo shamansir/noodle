@@ -440,6 +440,10 @@ sendInE' (Node _ _ protocol _) input din =
 data Link fo fi o i = Link (NodeId fo) (Output' o) (Input' i) (NodeId fi) (Effect Unit)
 
 
+getCanceler :: forall fo fi o i. Link fo fi o i -> Effect Unit
+getCanceler (Link _ _ _ _ c) = c
+
+
 -- FIXME: move to Noodle.Id or Link module
 newtype FromId = FromId String
 newtype ToId = ToId String

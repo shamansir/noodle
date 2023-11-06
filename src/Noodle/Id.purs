@@ -469,6 +469,8 @@ instance KH.Holder NodeId HoldsNodeId where
 newtype LinkId = LinkId Int -- ID inside Patch
 
 derive instance Newtype LinkId _
+derive newtype instance Eq LinkId
+derive newtype instance Ord LinkId
 
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
