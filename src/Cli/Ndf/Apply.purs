@@ -121,12 +121,13 @@ handlers stateRef patch (Network tk _) =
                 (addNodeBox (tk :: Hydra.Toolkit Effect))
             ) -}
         pure unit
-    , onConnect : \def link ->
+    , onConnect : \def linkId link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
             case (/\) <$> Map.lookup def.onode state.nodeKeysMap <*> Map.lookup def.inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
+                                linkId
                                 { key : onodeKey, id : def.onode }
                                 (OutputIndex def.outputIndex)
                                 { key: inodeKey, id : def.inode }
@@ -137,12 +138,13 @@ handlers stateRef patch (Network tk _) =
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
-    , onConnect2 : \def link ->
+    , onConnect2 : \def linkId link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
             case (/\) <$> Map.lookup def.onode state.nodeKeysMap <*> Map.lookup def.inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
+                                linkId
                                 { key : onodeKey, id : def.onode }
                                 (OutputIndex def.outputIndex)
                                 { key: inodeKey, id : def.inode }

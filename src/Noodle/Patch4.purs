@@ -20,6 +20,7 @@ import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
 import Data.Repr (class FromToReprRow)
 import Data.Foldable (foldr)
+import Data.Newtype (class Newtype, unwrap)
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -31,7 +32,7 @@ import Record.Extra as Record
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
 
-import Noodle.Id (Family, Family', NodeId, NodeIdR, HoldsNodeId)
+import Noodle.Id (Family, Family', NodeId, NodeIdR, HoldsNodeId, LinkId(..))
 import Noodle.Id as Id
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -59,9 +60,9 @@ import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- F
 type Id = String
 
 
-
 type Links =
-  { from :: Map Node.FromId HoldsLink
+  { lastId :: LinkId
+  , from :: Map Node.FromId HoldsLink
   , to :: Map Node.ToId HoldsLink
   , byNode :: Map Id.NodeIdR (Array (Node.FromId /\ Node.ToId))
   }
@@ -104,7 +105,8 @@ init' state tk =
         state
         (Toolkit.familiesOrder tk)
         (PI.init $ Toolkit.toRecord tk)
-        { from : Map.empty
+        { lastId : LinkId $ -1
+        , from : Map.empty
         , to : Map.empty
         , byNode : Map.empty
         }
@@ -179,13 +181,14 @@ registerLink
     => IsSymbol fi
     => Node.Link fo fi i o
     -> Patch gstate instances
-    -> Patch gstate instances
+    -> LinkId /\ Patch gstate instances
 registerLink link (Patch state forder instances links) =
-  Patch
+  nextId /\ Patch
     state
     forder
     instances
-    { from : Map.insert fromId linkHeld links.from
+    { lastId : nextId
+    , from : Map.insert fromId linkHeld links.from
     , to : Map.insert toId linkHeld links.to
     , byNode
         : appendTo (fromId /\ toId) nodeFromIdR
@@ -193,6 +196,7 @@ registerLink link (Patch state forder instances links) =
         $ links.byNode
     }
    where
+    nextId = LinkId $ unwrap links.lastId + 1
     fromId = Node.toFromId link
     toId = Node.toToId link
     linkHeld = holdLink link
@@ -217,13 +221,18 @@ forgetLink link (Patch state forder instances links) =
     state
     forder
     instances
-    { from : Map.delete (Node.toFromId link) links.from
+    { lastId : links.lastId -- TODO: no need in economy of link's IDs I suppose
+    , from : Map.delete (Node.toFromId link) links.from
     , to : Map.delete (Node.toToId link) links.to
     , byNode
         : Map.delete (Id.nodeIdR $ Node.fromNode link)
         $ Map.delete (Id.nodeIdR $ Node.toNode link)
         $ links.byNode
     }
+
+
+forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Patch gstate instances
+forgetLink' = const identity -- FIXME implement
 
 
 allLinksOf
@@ -277,7 +286,7 @@ connect
     -> Node fA stateA isA osA m
     -> Node fB stateB isB osB m
     -> Patch gstate ins
-    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+    -> m ((LinkId /\ Patch gstate ins) /\ Node.Link fA fB oA iB)
 connect o i f na nb patch =
     Node.connect o i f na nb >>= \link -> pure $ registerLink link patch /\ link
 
@@ -298,7 +307,7 @@ connectAlike
     -> Node fA stateA isA osA m
     -> Node fB stateB isB osB m
     -> Patch gstate ins
-    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+    -> m ((LinkId /\ Patch gstate ins) /\ Node.Link fA fB oA iB)
 connectAlike o i na nb patch =
     Node.connectAlike o i na nb >>= \link -> pure $ registerLink link patch /\ link
 
@@ -317,7 +326,7 @@ connect'
     -> Node fA stateA isA osA m
     -> Node fB stateB isB osB m
     -> Patch gstate ins
-    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+    -> m ((LinkId /\ Patch gstate ins) /\ Node.Link fA fB oA iB)
 connect' o i f na nb patch =
     Node.connect' o i f na nb >>= \link -> pure $ registerLink link patch /\ link
 
@@ -338,7 +347,7 @@ connectAlike'
     -> Node fA stateA isA osA m
     -> Node fB stateB isB osB m
     -> Patch gstate ins
-    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+    -> m ((LinkId /\ Patch gstate ins) /\ Node.Link fA fB oA iB)
 connectAlike' o i na nb patch =
     Node.connectAlike' o i na nb >>= \link -> pure $ registerLink link patch /\ link
 

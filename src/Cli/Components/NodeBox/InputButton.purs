@@ -32,6 +32,7 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.NodeKey (type (<^>))
+import Blessed.Internal.NodeKey (rawify) as NodeKey
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.UI.Boxes.Box.Option (content, height, left, style, top, width) as Box
 import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
@@ -47,7 +48,7 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 
 import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InputButtonKey, mainScreen, statusLine)
-import Cli.State (State, LinkState, OutputIndex(..), InputIndex(..), logNdfCommandM)
+import Cli.State (State, LinkState(..), OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Bounds (collect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
@@ -199,27 +200,40 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
         case state.lastClickedOutput of
             Just lco ->
                 if inodeKey /= lco.nodeKey then do
+                    state <- State.get
+
+                    let maybePrevLink = Map.lookup (NodeKey.rawify inodeKey) state.linksTo >>= Map.lookup idx
+
+                    let
+                        curPatch' =
+                            case maybePrevLink of
+                                Just (LinkState { inPatch }) -> Patch.forgetLink' inPatch curPatch
+                                Nothing -> curPatch
+
+                    linkId /\ nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
+                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
+                        (\_ onode outputId -> do
+                            link <- Node.connectByRepr (Proxy :: _ H.WrapRepr) outputId inputId onode inode
+                            let linkId /\ nextPatch' = Patch.registerLink link curPatch'
+                            pure $ linkId /\ nextPatch' /\ Patch.holdLink link
+                        )
+
                     linkCmp <- Link.create
+                                linkId
                                 { key : lco.nodeKey, id : Id.withNodeId lco.nodeId Id.nodeIdR }
                                 (OutputIndex lco.index)
                                 { key : inodeKey, id : Id.nodeIdR inodeId }
                                 (InputIndex idx)
+
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
-                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
-                        (\_ onode outputId -> do
-                            link <- Node.connectByRepr (Proxy :: _ H.WrapRepr) outputId inputId onode inode
-                            let nextPatch' = Patch.registerLink link curPatch
-                            pure $ nextPatch' /\ Patch.holdLink link
-                        )
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'
 
                     logNdfCommandM $ Cmd.Connect (C.nodeId onodeId) (C.outputIndex lco.index) (C.nodeId $ reflect' inodeId) (C.inputIndex idx) -- TODO: log somewhere else in a special place
                     -- FIXME: duplicates `CommandLogBox.refresh`, done due to cycle in dependencies
-                    state <- State.get
-                    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state.commandLog
+                    state' <- State.get
+                    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state'.commandLog
                     -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
                     -- END
 

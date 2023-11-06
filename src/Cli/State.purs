@@ -133,6 +133,7 @@ withCurrentPatch f state =
 newtype LinkState =
     LinkState
     { id :: Int
+    , inPatch :: Id.LinkId
     , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
     , fromNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }
     , toNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }

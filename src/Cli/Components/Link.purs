@@ -57,12 +57,13 @@ type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJ
 
 
 create
-    :: { key :: NodeBoxKey, id :: Id.NodeIdR }
+    :: Id.LinkId
+    -> { key :: NodeBoxKey, id :: Id.NodeIdR }
     -> OutputIndex
     -> { key :: NodeBoxKey, id :: Id.NodeIdR }
     -> InputIndex
     -> BlessedOpGet State Effect LinkState
-create fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
+create inPatch fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
     maybePrev <- _.lastLink <$> State.get
     from <- Bounds.collect fromNode.id fromNode.key
     to <- Bounds.collect toNode.id toNode.key
@@ -102,6 +103,7 @@ create fromNode (OutputIndex outputIdx) toNode (InputIndex inputIdx) = do
         linkState =
             LinkState
                 { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
+                , inPatch
                 , fromNode
                 , toNode
                 , outputIndex : outputIdx

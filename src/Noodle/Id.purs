@@ -29,6 +29,7 @@ module Noodle.Id
     , HoldsNodeId, holdNodeId, withNodeId
     , HoldsInput, holdInput, withInput
     , HoldsOutput, holdOutput, withOutput
+    , LinkId(..)
     -- , class HasInputs', inputs'
     -- , class IsSymbol
     )
@@ -50,6 +51,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
 import Data.SProxy (class SProxy, proxify, class Reflect, class Reflect', reflect, reflect')
+import Data.Newtype (class Newtype)
 
 import Effect (Effect)
 import Prim.Row as R
@@ -462,6 +464,11 @@ instance KH.Holder NodeId HoldsNodeId where
 -- instance KH.ReifyOrderedTo Input where
 --     reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Input sym
 --     reifyAt n _ = Input n
+
+
+newtype LinkId = LinkId Int -- ID inside Patch
+
+derive instance Newtype LinkId _
 
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
