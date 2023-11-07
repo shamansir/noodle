@@ -6,7 +6,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console as Console
 
-import Control.Monad.State (get, modify_) as State
+import Control.Monad.State (get, modify, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
@@ -202,7 +202,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                 if inodeKey /= lco.nodeKey then do
                     state <- State.get
 
-                    let maybePrevLink = Map.lookup (NodeKey.rawify inodeKey) state.linksTo >>= Map.lookup idx
+                    let maybePrevLink = Map.lookup (NodeKey.rawify inodeKey) state.linksTo >>= Map.lookup (InputIndex idx)
 
                     let
                         canceler /\ curPatch' =
@@ -211,6 +211,11 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                                 Nothing -> pure unit /\ curPatch
 
                     _ <- liftEffect canceler
+
+                    case maybePrevLink of
+                        Just linkState ->
+                            Key.patchBox >~ Link.remove linkState
+                        Nothing -> pure unit
 
                     linkId /\ nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
@@ -227,7 +232,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                                 { key : inodeKey, id : Id.nodeIdR inodeId }
                                 (InputIndex idx)
 
+                    -- State.modify_ $ Link.store linkCmp
                     State.modify_ $ Link.store linkCmp
+
                     Key.patchBox >~ Link.append linkCmp
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'

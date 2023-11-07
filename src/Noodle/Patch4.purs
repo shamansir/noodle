@@ -236,7 +236,7 @@ forgetLink link (Patch state forder instances links) =
     }
 
 
-forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Effect Unit /\ Patch gstate instances
+forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Effect Unit /\ Patch gstate instances -- FIXME: cancel the link inside the function, or return HoldsLink
 forgetLink' linkId p@(Patch state forder instances links) =
     case Map.lookup linkId links.byId of
         Just linkHeld ->

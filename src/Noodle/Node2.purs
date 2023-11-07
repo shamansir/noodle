@@ -438,6 +438,7 @@ sendInE' (Node _ _ protocol _) input din =
 
 -- FIXME: just store ID's as strings, close constructor and use constraints on functions to check if nodes/inputs/outputs do exist
 data Link fo fi o i = Link (NodeId fo) (Output' o) (Input' i) (NodeId fi) (Effect Unit)
+-- FIXME: store links in a separate module
 
 
 getCanceler :: forall fo fi o i. Link fo fi o i -> Effect Unit

@@ -15,11 +15,12 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
 import Data.Array ((:))
 import Data.Array as Array
-
+import Data.SProxy (reflect')
 import Control.Monad.State.Class (class MonadState, modify_)
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey (RawNodeKey, HoldsNodeKey)
+import Blessed.Internal.NodeKey as NK
 
 import Web.Socket.Server (WebSocketServer, WebSocketConnection) as WSS
 
@@ -63,8 +64,8 @@ type State =
     , lastShiftY :: Int
     , lastClickedOutput :: Maybe OutputInfo
     , lastLink :: Maybe LinkState
-    , linksFrom :: Map RawNodeKey (Map Int LinkState)
-    , linksTo :: Map RawNodeKey (Map Int LinkState)
+    , linksFrom :: Map RawNodeKey (Map OutputIndex LinkState)
+    , linksTo :: Map RawNodeKey (Map InputIndex LinkState)
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     , patchKeysMap :: Map Patch.Id PatchBoxKey
@@ -182,6 +183,12 @@ newtype OutputIndex = OutputIndex Int
 newtype InputIndex = InputIndex Int
 
 
+derive newtype instance Eq OutputIndex
+derive newtype instance Ord OutputIndex
+derive newtype instance Eq InputIndex
+derive newtype instance Ord InputIndex
+
+
 patchIdFromIndex :: Int -> String
 patchIdFromIndex = (+) 1 >>> show >>> (<>) "Patch "
 
@@ -259,3 +266,11 @@ toggleHydraCode s =
 toggleFullInfo :: State -> State
 toggleFullInfo s =
     s { fullInfoOn = not s.fullInfoOn }
+
+
+instance Show LinkState where
+    show (LinkState ({ id, inPatch, fromNode, toNode, outputIndex, inputIndex })) =
+        "(" <> show id <> "," <> show inPatch <> ") "
+            <> show (NK.rawify fromNode.key) <> ":" <> reflect' fromNode.id <> ":" <> show outputIndex
+            <> " -> "
+            <> show (NK.rawify toNode.key) <> ":" <> reflect' toNode.id <> ":" <> show inputIndex

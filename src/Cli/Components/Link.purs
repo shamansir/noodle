@@ -204,9 +204,9 @@ forget :: LinkState -> State -> State
 forget link@(LinkState props) state =
     state
         { linksFrom =
-            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode.key) state.linksFrom
+            Map.update (Map.delete (OutputIndex props.outputIndex) >>> Just) (NodeKey.rawify props.fromNode.key) state.linksFrom
         , linksTo =
-            Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.toNode.key) state.linksTo
+            Map.update (Map.delete (InputIndex props.inputIndex) >>> Just) (NodeKey.rawify props.toNode.key) state.linksTo
         }
 
 
@@ -214,14 +214,14 @@ store :: LinkState -> State -> State
 store link@(LinkState props) state =
     state
         { linksFrom =
-            Map.alter (push props.id link) (NodeKey.rawify props.fromNode.key) state.linksFrom
+            Map.alter (push (OutputIndex props.outputIndex) link) (NodeKey.rawify props.fromNode.key) state.linksFrom
         , linksTo =
-            Map.alter (push props.id link) (NodeKey.rawify props.toNode.key) state.linksTo
+            Map.alter (push (InputIndex props.inputIndex) link) (NodeKey.rawify props.toNode.key) state.linksTo
         , lastLink = Just link
         }
 
 
-push :: Int -> LinkState -> Maybe (Map Int LinkState) -> Maybe (Map Int LinkState)
+push :: forall key. Ord key => key -> LinkState -> Maybe (Map key LinkState) -> Maybe (Map key LinkState)
 push id link (Just map) = Just $ Map.insert id link map
 push id link Nothing = Just $ Map.singleton id link
 
