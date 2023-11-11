@@ -26,7 +26,7 @@ import Prelude
 
 import Control.Alt ((<|>))
 
-import Web.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsAutoLayout)
+import Prev.Web.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsAutoLayout)
 
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
