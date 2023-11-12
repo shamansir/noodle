@@ -1,4 +1,4 @@
-module Prev.Web.Socket.Server where
+module Web.Socket.Server where
 -- upgraded from : https://github.com/FruitieX/purescript-ws
 
 import Prelude

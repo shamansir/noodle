@@ -1,4 +1,4 @@
-module Layout.Strip
+module Prev.Layout.Strip
   where
 
 
@@ -18,7 +18,7 @@ import Data.Array as Array
 
 import Control.Alt ((<|>))
 
-import Web.Layout (class IsLayout, class IsSizedLayout, findDefault, sampleDefault) --, findDefault, sampleDefault)
+import Prev.Web.Layout (class IsLayout, class IsSizedLayout, findDefault, sampleDefault) --, findDefault, sampleDefault)
 
 
 data Strip a = Strip (Size /\ Size) Size (Array (Pos /\ a)) -- Bin2 Number Node.Family

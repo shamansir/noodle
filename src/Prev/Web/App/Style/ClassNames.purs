@@ -5,7 +5,7 @@ import Prelude ((<$>), (<>), show)
 import Halogen as H
 
 
-import Web.App.Style (NodeFlow(..), SlotDirection(..))
+import Prev.Web.App.Style (NodeFlow(..), SlotDirection(..))
 
 
 

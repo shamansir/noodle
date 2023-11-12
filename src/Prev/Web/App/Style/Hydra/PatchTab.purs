@@ -2,7 +2,7 @@ module Prev.Web.App.Style.Hydra.PatchTab where
 
 import Color as C
 
-import Web.App.Style (PatchTabStyle)
+import Prev.Web.App.Style (PatchTabStyle)
 
 patchTab :: PatchTabStyle
 patchTab =

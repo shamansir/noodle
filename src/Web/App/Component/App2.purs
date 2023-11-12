@@ -1,15 +1,15 @@
-module Prev.Web.App.Component.App2 where
+module Web.App.Component.App2 where
 
 import Prelude
 
 import Prev.Web.Emitters  as Emitters
-import Layout.Flex as Flex
+import Prev.Layout.Flex as Flex
 import Prev.Web.LayoutRenderer (render) as Layout
-import Layouts.App (layout, AppLayoutPart(..)) as App
-import Layouts.PatchTabs (layout) as PatchTabs
-import Layouts.PatchTabs (TabOrAdd(..)) as PT
-import Web.App.Style (Style, NodeFlow)
-import Web.App.Style.ClassNames as CS
+import Prev.Layouts.App (layout, AppLayoutPart(..)) as App
+import Prev.Layouts.PatchTabs (layout) as PatchTabs
+import Prev.Layouts.PatchTabs (TabOrAdd(..)) as PT
+import Prev.Web.App.Style (Style, NodeFlow)
+import Prev.Web.App.Style.ClassNames as CS
 import Prev.Web.Svg.Extra as HSA
 import Prev.Web.App.Toolkit.UI as ToolkitUI
 import CSS as CSS
@@ -40,11 +40,11 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Noodle.Network2 (Network) as Noodle
 import Noodle.Network2 as Network
-import Prev.Noodle.Node2 (Node)
+import Noodle.Node2 (Node)
 import Noodle.Id (Family) as Node
 import Noodle.Id (FamilyR) as Toolkit
-import Prev.Noodle.Node2 (dimensions, family) as Node
-import Prev.Noodle.Node2.MapsFolds as Node
+import Noodle.Node2 (dimensions, family) as Node
+import Noodle.Node2.MapsFolds as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Patch4.MapsFolds as Patch

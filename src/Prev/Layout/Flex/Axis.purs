@@ -1,4 +1,4 @@
-module Layout.Flex.Axis
+module Prev.Layout.Flex.Axis
   ( Align(..)
   , Axis, Axis2, Axis3, Axis4
   , Padding(..)
@@ -32,7 +32,7 @@ module Layout.Flex.Axis
 
 import Prelude
 
-import Web.App.Style.Order (Order)
+import Prev.Web.App.Style.Order (Order)
 import Control.Apply (lift2)
 import Data.Array ((:))
 import Data.Array as Array
@@ -49,7 +49,7 @@ import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 import Data.Vec2 as V2
 
 
-import Layout.Flex.Rule (Rule(..))
+import Prev.Layout.Flex.Rule (Rule(..))
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
 

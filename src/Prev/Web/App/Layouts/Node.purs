@@ -1,4 +1,4 @@
-module Layouts.Node
+module Prev.Layouts.Node
   ( layout, NodeLayoutPart
   )
   where
@@ -9,10 +9,10 @@ import Prelude
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\))
 
-import Layout.Flex (Flex)
-import Layout.Flex as F
-import Layout.Flex.Rule (Rule)
-import Layout.Flex.Rule as R
+import Prev.Layout.Flex (Flex)
+import Prev.Layout.Flex as F
+import Prev.Layout.Flex.Rule (Rule)
+import Prev.Layout.Flex.Rule as R
 
 
 data NodeLayoutPart

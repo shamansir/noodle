@@ -2,7 +2,7 @@ module Prev.Web.App.Style.Quartz.NodeTab where
 
 import Color as C
 
-import Web.App.Style (NodeTabStyle)
+import Prev.Web.App.Style (NodeTabStyle)
 
 nodeTab :: NodeTabStyle
 nodeTab =

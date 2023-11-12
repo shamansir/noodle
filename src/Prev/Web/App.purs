@@ -11,12 +11,12 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 
 
-import Noodle.Network (Network)
-import Noodle.Toolkit (Toolkit)
-import Noodle.Patch as Patch
+import Prev.Noodle.Network (Network)
+import Prev.Noodle.Toolkit (Toolkit)
+import Prev.Noodle.Patch as Patch
 
-import Web.App.Component.App as AppC
-import Web.App.Style (Style, NodeFlow)
+import Prev.Web.App.Component.App as AppC
+import Prev.Web.App.Style (Style, NodeFlow)
 
 
 type App d = App' Unit Unit d

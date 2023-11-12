@@ -2,7 +2,7 @@ module Prev.Web.App.Style.Hydra.Title where
 
 import Color as C
 
-import Web.App.Style (TitleStyle, TitleMode(..))
+import Prev.Web.App.Style (TitleStyle, TitleMode(..))
 import Data.Vec2 ((<+>))
 
 

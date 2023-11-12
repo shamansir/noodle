@@ -2,7 +2,7 @@ module Prev.Web.App.Style.Quartz.Body where
 
 import Color as C
 
-import Web.App.Style (BodyStyle, ShadowType(..))
+import Prev.Web.App.Style (BodyStyle, ShadowType(..))
 import Data.Vec2 ((<+>))
 
 

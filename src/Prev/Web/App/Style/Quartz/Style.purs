@@ -4,16 +4,16 @@ module Prev.Web.App.Style.Quartz
 
 import Data.Set as Set
 
-import Web.App.Style
-import Web.App.Style.Order as Order
+import Prev.Web.App.Style
+import Prev.Web.App.Style.Order as Order
 
-import Web.App.Style.Quartz.Background (bg)
-import Web.App.Style.Quartz.Body (body)
-import Web.App.Style.Quartz.Title (title)
-import Web.App.Style.Quartz.Slot (slot)
-import Web.App.Style.Quartz.Link (link)
-import Web.App.Style.Quartz.NodeTab (nodeTab)
-import Web.App.Style.Quartz.PatchTab (patchTab)
+import Prev.Web.App.Style.Quartz.Background (bg)
+import Prev.Web.App.Style.Quartz.Body (body)
+import Prev.Web.App.Style.Quartz.Title (title)
+import Prev.Web.App.Style.Quartz.Slot (slot)
+import Prev.Web.App.Style.Quartz.Link (link)
+import Prev.Web.App.Style.Quartz.NodeTab (nodeTab)
+import Prev.Web.App.Style.Quartz.PatchTab (patchTab)
 
 
 style :: Style

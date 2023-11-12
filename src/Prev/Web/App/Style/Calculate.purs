@@ -14,10 +14,10 @@ import Data.Maybe (Maybe(..), fromMaybe)
 
 import Prev.Noodle.Node (Node)
 import Prev.Noodle.Node as Node
-import Noodle.Channel as Ch
+import Prev.Noodle.Channel as Ch
 
-import Web.App.Style
-import Web.App.Style.Order as Order
+import Prev.Web.App.Style
+import Prev.Web.App.Style.Order as Order
 
 
 type Index = Int

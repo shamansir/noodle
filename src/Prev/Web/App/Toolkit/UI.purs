@@ -9,14 +9,14 @@ import Data.Vec2 (Size)
 import Data.Const (Const)
 
 import Prev.Noodle.Node (Node)
-import Noodle.Patch (Patch)
+import Prev.Noodle.Patch (Patch)
 import Prev.Noodle.Node as Node
-import Noodle.Network (Network)
-import Noodle.Channel as Channel
+import Prev.Noodle.Network (Network)
+import Prev.Noodle.Channel as Channel
 
 import Color (Color)
-import Web.App.Style (Flags)
-import Web.App.Style (defaultFlags) as Style
+import Prev.Web.App.Style (Flags)
+import Prev.Web.App.Style (defaultFlags) as Style
 
 import Effect.Aff (Aff)
 

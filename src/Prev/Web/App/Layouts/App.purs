@@ -1,11 +1,11 @@
-module Layouts.App where
+module Prev.Layouts.App where
 
 import Prelude
 
-import Layout.Flex (Layers)
-import Layout.Flex as F
-import Layout.Flex.Rule (Rule)
-import Layout.Flex.Rule as R
+import Prev.Layout.Flex (Layers)
+import Prev.Layout.Flex as F
+import Prev.Layout.Flex.Rule (Rule)
+import Prev.Layout.Flex.Rule as R
 import Data.Tuple.Nested ((/\))
 
 

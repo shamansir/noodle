@@ -1,4 +1,4 @@
-module Layouts.PatchTabs where
+module Prev.Layouts.PatchTabs where
 
 import Prelude
 
@@ -9,15 +9,15 @@ import Data.Array ((:))
 import Data.Ord (class Ord, compare)
 import Data.Ordering (Ordering(..))
 
-import Layout.Strip (Strip)
-import Layout.Strip (make) as Strip
-import Layout.Flex as F
-import Layout.Flex.Rule (Rule)
-import Layout.Flex.Rule as R
+import Prev.Layout.Strip (Strip)
+import Prev.Layout.Strip (make) as Strip
+import Prev.Layout.Flex as F
+import Prev.Layout.Flex.Rule (Rule)
+import Prev.Layout.Flex.Rule as R
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Patch (Patch)
-import Noodle.Patch (Id) as Patch
+import Prev.Noodle.Patch (Patch)
+import Prev.Noodle.Patch (Id) as Patch
 
 
 type Layout = Strip TabOrAdd

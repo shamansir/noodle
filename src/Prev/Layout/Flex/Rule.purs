@@ -1,4 +1,4 @@
-module Layout.Flex.Rule where
+module Prev.Layout.Flex.Rule where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Layout.Flex
+module Prev.Layout.Flex
   ( Flex, Layers
   , fit, fitLayers
   , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
@@ -24,12 +24,12 @@ import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 
 import Control.Alt ((<|>))
 
-import Layout.Flex.Axis as Axis
-import Layout.Flex.Axis (Axis2)
-import Layout.Flex.Rule (Rule)
+import Prev.Layout.Flex.Axis as Axis
+import Prev.Layout.Flex.Axis (Axis2)
+import Prev.Layout.Flex.Rule (Rule)
 
-import Web.Layout (class IsLayout, class IsSizedLayout)
-import Web.Layout as L
+import Prev.Web.Layout (class IsLayout, class IsSizedLayout)
+import Prev.Web.Layout as L
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)

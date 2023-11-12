@@ -1,4 +1,4 @@
-module Layout.BinPack.R2
+module Prev.Layout.BinPack.R2
 ( Bin2
 , Item
 , pack

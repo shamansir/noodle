@@ -4,16 +4,16 @@ module Prev.Web.App.Style.Hydra
 
 import Data.Set as Set
 
-import Web.App.Style
-import Web.App.Style.Order as Order
+import Prev.Web.App.Style
+import Prev.Web.App.Style.Order as Order
 
-import Web.App.Style.Hydra.Background (bg)
-import Web.App.Style.Hydra.Body (body)
-import Web.App.Style.Hydra.Title (title)
-import Web.App.Style.Hydra.Slot (slot)
-import Web.App.Style.Hydra.Link (link)
-import Web.App.Style.Hydra.NodeTab (nodeTab)
-import Web.App.Style.Hydra.PatchTab (patchTab)
+import Prev.Web.App.Style.Hydra.Background (bg)
+import Prev.Web.App.Style.Hydra.Body (body)
+import Prev.Web.App.Style.Hydra.Title (title)
+import Prev.Web.App.Style.Hydra.Slot (slot)
+import Prev.Web.App.Style.Hydra.Link (link)
+import Prev.Web.App.Style.Hydra.NodeTab (nodeTab)
+import Prev.Web.App.Style.Hydra.PatchTab (patchTab)
 
 
 style :: Style

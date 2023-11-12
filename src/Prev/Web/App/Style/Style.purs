@@ -3,7 +3,7 @@ module Prev.Web.App.Style where
 
 import Prelude (class Show)
 
-import Web.App.Style.Order as O
+import Prev.Web.App.Style.Order as O
 
 import Color (Color)
 import Color as C

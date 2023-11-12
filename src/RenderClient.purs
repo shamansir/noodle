@@ -28,7 +28,7 @@ import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget as ET
 import Web.HTML (window)
 import Web.HTML.Window as Window
-import Web.Emitters  as Emitters
+import Prev.Web.Emitters as Emitters
 
 import Web.Socket.WebSocket as WS
 import Web.Socket.Event.EventTypes as WS

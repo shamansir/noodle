@@ -2,7 +2,7 @@ module Prev.Web.App.Style.Hydra.Slot where
 
 import Color (rgb, rgba) as C
 
-import Web.App.Style (SlotStyle, Connector(..), SlotDirection(..), SlotInfoVisibility(..))
+import Prev.Web.App.Style (SlotStyle, Connector(..), SlotDirection(..), SlotInfoVisibility(..))
 import Data.Vec2 ((<+>))
 
 

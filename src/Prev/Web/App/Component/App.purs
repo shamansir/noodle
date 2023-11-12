@@ -3,13 +3,13 @@ module Prev.Web.App.Component.App where
 import Prelude
 
 import Prev.Web.Emitters  as Emitters
-import Layout.Flex as Flex
+import Prev.Layout.Flex as Flex
 import Prev.Web.LayoutRenderer (render) as Layout
-import Layouts.App (layout, AppLayoutPart(..)) as App
-import Layouts.PatchTabs (layout) as PatchTabs
-import Layouts.PatchTabs (TabOrAdd(..)) as PT
-import Web.App.Style (Style, NodeFlow)
-import Web.App.Style.ClassNames as CS
+import Prev.Layouts.App (layout, AppLayoutPart(..)) as App
+import Prev.Layouts.PatchTabs (layout) as PatchTabs
+import Prev.Layouts.PatchTabs (TabOrAdd(..)) as PT
+import Prev.Web.App.Style (Style, NodeFlow)
+import Prev.Web.App.Style.ClassNames as CS
 import Prev.Web.Svg.Extra as HSA
 import Prev.Web.App.Toolkit.UI as ToolkitUI
 import CSS as CSS
@@ -35,12 +35,12 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
-import Noodle.Network (Network) as Noodle
-import Noodle.Network as Network
+import Prev.Noodle.Network (Network) as Noodle
+import Prev.Noodle.Network as Network
 import Prev.Noodle.Node (Family, dimensions, family) as Node
-import Noodle.Patch as Patch
-import Noodle.Toolkit (Toolkit) as Noodle
-import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state, spawn) as Toolkit
+import Prev.Noodle.Patch as Patch
+import Prev.Noodle.Toolkit (Toolkit) as Noodle
+import Prev.Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state, spawn) as Toolkit
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window

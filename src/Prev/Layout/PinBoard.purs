@@ -1,4 +1,4 @@
-module Layout.PinBoard where
+module Prev.Layout.PinBoard where
 
 
 import Prelude
@@ -14,7 +14,7 @@ import Data.Vec2 as V2
 import Data.Newtype (unwrap, class Newtype)
 
 
-import Web.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsPinningLayout)
+import Prev.Web.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsPinningLayout)
 
 
 newtype Pin a
