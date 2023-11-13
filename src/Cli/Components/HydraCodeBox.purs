@@ -26,8 +26,8 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InputButton as InputButton
 
-import Toolkit.Hydra2.Lang (formProgram) as Lang
-import Toolkit.Hydra2.Lang.ToCode (toCode, javaScriptToDisplay) as Lang
+import Tookit.Hydra.Lang (formProgram) as Lang
+import Tookit.Hydra.Lang.ToCode (toCode, javaScriptToDisplay) as Lang
 
 
 width :: Int -> Dimension

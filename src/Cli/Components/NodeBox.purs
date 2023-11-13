@@ -67,23 +67,23 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Id as Id
-import Noodle.Toolkit3 as Toolkit
-import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
-import Noodle.Patch4 as Patch
-import Noodle.Patch4 (Patch) as Noodle
-import Noodle.Patch4.Has as Has
-import Noodle.Node2 as Node
-import Noodle.Node2 (Node) as Noodle
+import Noodle.Toolkit as Toolkit
+import Noodle.Toolkit.Has (class HasNodesOf) as Toolkit
+import Noodle.Patch as Patch
+import Noodle.Patch (Patch) as Noodle
+import Noodle.Patch.Has as Has
+import Noodle.Node as Node
+import Noodle.Node (Node) as Noodle
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr
+import Noodle.Node.MapsFolds.Repr
     ( class ToReprHelper, class ToReprFoldToMapsHelper
     , Repr(..)
     , nodeToRepr, nodeToMapRepr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
-import Noodle.Node2.MapsFolds.Flatten as R
-import Noodle.Node2.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
-import Noodle.Fn2.Protocol (ChangeFocus(..))
+import Noodle.Node.MapsFolds.Flatten as R
+import Noodle.Node.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
+import Noodle.Fn.Protocol (ChangeFocus(..))
 import Noodle.Stateful (get, getM, setM) as Stateful
 import Noodle.Text.NdfFile.Command as Cmd
 
@@ -111,13 +111,13 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
 import Cli.Bounds as Bounds
 
-import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
-import Toolkit.Hydra2.Group (toGroup) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
-import Toolkit.Hydra2.Lang as Lang
-import Toolkit.Hydra2.Lang.ToCode as Lang
+import Tookit.Hydra (Families, Instances, State, Toolkit) as Hydra
+import Tookit.Hydra.Group (toGroup) as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Repr.Info (InfoRepr) as Hydra
+import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra
+import Tookit.Hydra.Lang as Lang
+import Tookit.Hydra.Lang.ToCode as Lang
 
 
 width :: String -> Int -> Int -> Dimension

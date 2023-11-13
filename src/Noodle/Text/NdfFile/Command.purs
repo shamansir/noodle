@@ -9,7 +9,7 @@ import Data.Either (Either(..))
 
 import Type.Proxy (Proxy)
 
-import Toolkit.Hydra2.Lang.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode, NDF, ndf)
+import Tookit.Hydra.Lang.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode, NDF, ndf)
 
 import Blessed.Tagger (Tag)
 import Blessed.Tagger as T

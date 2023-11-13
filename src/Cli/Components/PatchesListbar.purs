@@ -25,8 +25,8 @@ import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.UI.Lists.ListBar.Method (setItems, select) as ListBar
 import Blessed.UI.Base.Screen.Method as Screen
 
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 (Id) as Patch
+import Noodle.Patch (Patch)
+import Noodle.Patch (Id) as Patch
 
 import Cli.Keys as Key
 import Cli.Palette as Palette

@@ -28,7 +28,7 @@ import Blessed.UI.Lists.List.Property (selected) as List
 
 
 import Noodle.Id as Id
-import Noodle.Network2 as Network
+import Noodle.Network as Network
 
 import Cli.Keys as Key
 import Cli.Palette as Palette
@@ -39,8 +39,8 @@ import Cli.Tagging as T
 
 import Cli.Components.NodeBox as NodeBox
 
-import Toolkit.Hydra2 as Hydra
-import Toolkit.Hydra2.Group as Hydra
+import Tookit.Hydra as Hydra
+import Tookit.Hydra.Group as Hydra
 
 import Blessed.Tagger (fgc, s, render) as T
 

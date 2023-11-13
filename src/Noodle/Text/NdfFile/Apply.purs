@@ -29,15 +29,15 @@ import Data.Repr (Repr, wrap, fromRepr, class ToRepr, class FromRepr, class Read
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Either (Either(..))
 
-import Noodle.Network2 (Network(..))
-import Noodle.Network2 as NW
-import Noodle.Patch4 as Patch
-import Noodle.Patch4 (Patch)
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
+import Noodle.Network (Network(..))
+import Noodle.Network as NW
+import Noodle.Patch as Patch
+import Noodle.Patch (Patch)
+import Noodle.Node (Node)
+import Noodle.Node as Node
 import Noodle.Id as Id
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3 as Toolkit
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
 
 import Unsafe.Coerce (unsafeCoerce)
 

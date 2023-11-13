@@ -30,11 +30,11 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Tagging as T
 
-import Toolkit.Hydra2.Repr.Info (class FullInfo, full)
+import Tookit.Hydra.Repr.Info (class FullInfo, full)
 
-import Toolkit.Hydra2.Lang (formProgram) as Lang
-import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Lang (formProgram) as Lang
+import Tookit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 import Noodle.Id as Id
 

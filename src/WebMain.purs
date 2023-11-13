@@ -8,10 +8,10 @@ import Data.Maybe (Maybe(..))
 
 import Web.App3 as App
 
-import Noodle.Network2 (Network)
-import Noodle.Network2 as Network
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3 as Toolkit
+import Noodle.Network (Network)
+import Noodle.Network as Network
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
 
 import Toolkit.Test (toolkit)
 --import Hydra.Network (network)

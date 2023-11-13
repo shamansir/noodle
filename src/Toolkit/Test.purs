@@ -8,13 +8,13 @@ import Data.Tuple.Nested ((/\))
 import Data.SOrder (SOrder, type (:::), T)
 
 import Noodle.Id (Input(..), Output(..)) as Fn
-import Noodle.Fn2 as Fn
-import Noodle.Fn2.Process as P
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3 as Toolkit
-import Noodle.Toolkit3.MapsFolds as TMF -- FIXME
+import Noodle.Fn as Fn
+import Noodle.Fn.Process as P
+import Noodle.Node (Node)
+import Noodle.Node as Node
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
+import Noodle.Toolkit.MapsFolds as TMF -- FIXME
 import Noodle.Family.Def as Family -- FIXME
 
 

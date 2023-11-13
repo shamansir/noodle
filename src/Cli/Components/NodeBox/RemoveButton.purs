@@ -46,13 +46,13 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
 
 import Noodle.Id as Id
-import Noodle.Network2 as Network
-import Noodle.Node2 (Node)
-import Noodle.Node2 (unsafeDisconnect) as Node
-import Noodle.Patch4 (removeNode, allLinksOf, withLink) as Patch
-import Noodle.Patch4.Has as Has
+import Noodle.Network as Network
+import Noodle.Node (Node)
+import Noodle.Node (unsafeDisconnect) as Node
+import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
+import Noodle.Patch.Has as Has
 
-import Toolkit.Hydra2 (Instances) as Hydra
+import Tookit.Hydra (Instances) as Hydra
 
 
 component

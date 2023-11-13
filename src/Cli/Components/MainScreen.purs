@@ -19,8 +19,8 @@ import Blessed.UI.Base.Screen.Option as Screen
 import Blessed.UI.Boxes.Box.Method as Box
 
 import Noodle.Id as Id
-import Noodle.Network2 as Network
-import Noodle.Toolkit3 as Toolkit
+import Noodle.Network as Network
+import Noodle.Toolkit as Toolkit
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State.NwWraper (unwrapN)
@@ -41,7 +41,7 @@ import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.FullInfoBox as FullInfoBox
 import Cli.Components.WsStatusButton as WsStatusButton
 
-import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
+import Tookit.Hydra (toolkit, Toolkit) as Hydra
 
 
 families :: Array Id.FamilyR

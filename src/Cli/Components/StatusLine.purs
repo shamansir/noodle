@@ -36,13 +36,13 @@ import Cli.Tagging as T
 -- import Cli.Components.NodeBox.InputButton as InputButton
 
 import Noodle.Id as Id
-import Noodle.Node2 as Node
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
+import Noodle.Node as Node
+import Noodle.Patch (Patch)
+import Noodle.Patch as Patch
 import Noodle.Family.Def as Family
 
-import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra (Instances, State) as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 
 {-}

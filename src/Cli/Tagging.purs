@@ -23,11 +23,11 @@ import Cli.Palette.Set.Pico8 as Pico
 
 
 
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (short, full) as Info
-import Toolkit.Hydra2.Group (toGroup, toGroupR) as Hydra
-import Toolkit.Hydra2.Types as H
-import Toolkit.Hydra2.Lang.Fn as H
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Repr.Info (short, full) as Info
+import Tookit.Hydra.Group (toGroup, toGroupR) as Hydra
+import Tookit.Hydra.Types as H
+import Tookit.Hydra.Lang.Fn as H
 
 
 input :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Tag

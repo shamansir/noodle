@@ -25,11 +25,11 @@ import Blessed.Internal.NodeKey as NK
 import Web.Socket.Server (WebSocketServer, WebSocketConnection) as WSS
 
 import Noodle.Id as Id
-import Noodle.Node2 as Node
-import Noodle.Patch4 as Patch
-import Noodle.Patch4 (Patch)
-import Noodle.Network2 (init, addPatch, withPatch) as Network
-import Noodle.Node2.HoldsNodeState (HoldsNodeState)
+import Noodle.Node as Node
+import Noodle.Patch as Patch
+import Noodle.Patch (Patch)
+import Noodle.Network (init, addPatch, withPatch) as Network
+import Noodle.Node.HoldsNodeState (HoldsNodeState)
 import Noodle.Stateful (set) as Stateful
 
 import Cli.Keys (InputsBoxKey, NodeBoxKey, OutputsBoxKey, InfoBoxKey, RemoveButtonKey, PatchBoxKey)
@@ -41,13 +41,13 @@ import Noodle.Text.NdfFile.Command (Command) as NdfFile
 import Noodle.Text.NdfFile (init, append) as NdfFile
 import Noodle.Text.NdfFile (NdfFile)
 
-import Toolkit.Hydra2 (toolkit, Toolkit, State, Instances) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Lang (empty) as Program
-import Toolkit.Hydra2.Lang (Program, Command) as Lang
-import Toolkit.Hydra2.Family.Render.Editor (Editors)
-import Toolkit.Hydra2.Types as T
-import Toolkit.Hydra2.Lang.Glsl as Glsl
+import Tookit.Hydra (toolkit, Toolkit, State, Instances) as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Lang (empty) as Program
+import Tookit.Hydra.Lang (Program, Command) as Lang
+import Tookit.Hydra.Family.Render.Editor (Editors)
+import Tookit.Hydra.Types as T
+import Tookit.Hydra.Lang.Glsl as Glsl
 
 import Signal (Signal)
 import Signal as Signal

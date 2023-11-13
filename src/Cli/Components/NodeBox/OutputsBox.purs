@@ -47,11 +47,11 @@ import Cli.State (State)
 import Cli.Components.NodeBox.OutputButton as OutputButton
 
 import Noodle.Id as Id
-import Noodle.Node2 (Node) as Noodle
-import Noodle.Node2 as Node
-import Noodle.Patch4 as Patch
+import Noodle.Node (Node) as Noodle
+import Noodle.Node as Node
+import Noodle.Patch as Patch
 
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 
 width :: Int -> Dimension

@@ -7,7 +7,7 @@ import Cli.Keys (NodeBoxKey)
 
 import Signal (Signal)
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Noodle.Node2 (Node)
+import Noodle.Node (Node)
 import Noodle.Id (Input, class HasInput)
 
 

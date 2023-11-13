@@ -2,9 +2,9 @@ module Cli.State.NwWraper where
 
 import Prelude (Unit, (>>>))
 
-import Noodle.Network2 (Network) as Noodle
+import Noodle.Network (Network) as Noodle
 
-import Toolkit.Hydra2 as Hydra
+import Tookit.Hydra as Hydra
 
 type NoodleNetwork m = Noodle.Network Hydra.State (Hydra.Families m) (Hydra.Instances m)
 

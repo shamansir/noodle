@@ -17,8 +17,8 @@ import Effect.Exception (Error)
 import Node.HTTP (Request)
 import Web.Socket.Server as WSS
 
-import Toolkit.Hydra2.Lang (Program) as Lang
-import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
+import Tookit.Hydra.Lang (Program) as Lang
+import Tookit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
 
 
 {-

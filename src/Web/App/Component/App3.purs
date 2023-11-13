@@ -17,9 +17,9 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 
-import Noodle.Network2 (Network) as Noodle
-import Noodle.Toolkit3 (Toolkit) as Noodle
-import Noodle.Patch4 as Patch
+import Noodle.Network (Network) as Noodle
+import Noodle.Toolkit (Toolkit) as Noodle
+import Noodle.Patch as Patch
 
 
 type Slots =

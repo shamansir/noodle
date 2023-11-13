@@ -55,27 +55,27 @@ import Cli.Components.NodeBox.HasBody (class HasBody', run', class HasCustomSize
 import Cli.Style as Style
 
 import Noodle.Id as Id
-import Noodle.Network2 (Network(..))
-import Noodle.Network2 as Network
-import Noodle.Patch4 as Patch
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4.Has as Has
-import Noodle.Node2 as Node
-import Noodle.Node2 (Node)
-import Noodle.Node2.MapsFolds.Repr
+import Noodle.Network (Network(..))
+import Noodle.Network as Network
+import Noodle.Patch as Patch
+import Noodle.Patch (Patch)
+import Noodle.Patch.Has as Has
+import Noodle.Node as Node
+import Noodle.Node (Node)
+import Noodle.Node.MapsFolds.Repr
     ( class ToReprHelper, class ToReprFoldToMapsHelper
     , Repr(..)
     , nodeToRepr, nodeToMapRepr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
-import Noodle.Node2.HoldsNodeState (class IsNodeState, fromGlobal)
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit.Has (class HasNodesOf) as Toolkit
+import Noodle.Node.HoldsNodeState (class IsNodeState, fromGlobal)
 import Noodle.Stateful (setM, get) as Stateful
 
-import Toolkit.Hydra2 as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Family.Render.Cli (CliD, CliF) as Hydra
+import Tookit.Hydra as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile

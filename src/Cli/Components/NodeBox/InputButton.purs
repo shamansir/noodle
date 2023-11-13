@@ -60,22 +60,22 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
 import Cli.Tagging as T
 
-import Noodle.Network2 as Network
-import Noodle.Patch4 as Patch
+import Noodle.Network as Network
+import Noodle.Patch as Patch
 
 import Noodle.Id as Id
-import Noodle.Node2 (Node) as Noodle
-import Noodle.Node2 as Node
-import Noodle.Patch4 (Patch)
+import Noodle.Node (Node) as Noodle
+import Noodle.Node as Node
+import Noodle.Patch (Patch)
 import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Text.NdfFile.Command as C
 import Noodle.Text.NdfFile.Command (commandsToNdf)
 
-import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as H
-import Toolkit.Hydra2.Family.Render.Cli (CliD, createEditorFor, editorIdOf) as Hydra
-import Toolkit.Hydra2.Family.Render.Editor (EditorId)
+import Tookit.Hydra (Instances, State) as Hydra
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as H
+import Tookit.Hydra.Family.Render.Cli (CliD, createEditorFor, editorIdOf) as Hydra
+import Tookit.Hydra.Family.Render.Editor (EditorId)
 
 
 

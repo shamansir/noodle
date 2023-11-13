@@ -11,8 +11,8 @@ import Record.Extra as Record
 import Prim.RowList as RL
 
 import Noodle.Id
-import Noodle.Fn2 (Fn)
-import Noodle.Fn2 as Fn
+import Noodle.Fn (Fn)
+import Noodle.Fn as Fn
 
 
 

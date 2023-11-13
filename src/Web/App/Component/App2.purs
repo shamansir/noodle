@@ -38,18 +38,18 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
-import Noodle.Network2 (Network) as Noodle
-import Noodle.Network2 as Network
-import Noodle.Node2 (Node)
+import Noodle.Network (Network) as Noodle
+import Noodle.Network as Network
+import Noodle.Node (Node)
 import Noodle.Id (Family) as Node
 import Noodle.Id (FamilyR) as Toolkit
-import Noodle.Node2 (dimensions, family) as Node
-import Noodle.Node2.MapsFolds as Node
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
-import Noodle.Patch4.MapsFolds as Patch
-import Noodle.Toolkit3 (Toolkit) as Noodle
-import Noodle.Toolkit3 (name, nodeFamilies, spawn, unsafeSpawn) as Toolkit
+import Noodle.Node (dimensions, family) as Node
+import Noodle.Node.MapsFolds as Node
+import Noodle.Patch (Patch)
+import Noodle.Patch as Patch
+import Noodle.Patch.MapsFolds as Patch
+import Noodle.Toolkit (Toolkit) as Noodle
+import Noodle.Toolkit (name, nodeFamilies, spawn, unsafeSpawn) as Toolkit
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window

@@ -37,10 +37,10 @@ import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.PatchesListbar as PatchesListbar
 import Cli.Style as Style
 
-import Noodle.Network2 as Network
-import Noodle.Patch4 as Patch
+import Noodle.Network as Network
+import Noodle.Patch as Patch
 
-import Toolkit.Hydra2 as Hydra
+import Tookit.Hydra as Hydra
 
 import CompArts.Product as CAI
 

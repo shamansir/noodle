@@ -26,7 +26,7 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Prisms (_Array, _Number, _Object)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 
-import Noodle.Node2.HoldsNodeState (class IsNodeState)
+import Noodle.Node.HoldsNodeState (class IsNodeState)
 
 import Affjax.Node as AJ
 import Affjax.ResponseFormat (json)

@@ -16,19 +16,19 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log)
 
-import Noodle.Network2 (Network)
-import Noodle.Network2 as Network
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3 as Toolkit
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
-import Noodle.Node2.MapsFolds.Flatten (NodeLineRec)
-import Noodle.Node2.MapsFolds.Repr (class HasRepr)
-import Noodle.Node2.MapsFolds.Repr (Repr(..)) as NMF
-import Noodle.Patch4.MapsFolds.Repr as PMF
+import Noodle.Network (Network)
+import Noodle.Network as Network
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
+import Noodle.Patch (Patch)
+import Noodle.Patch as Patch
+import Noodle.Node.MapsFolds.Flatten (NodeLineRec)
+import Noodle.Node.MapsFolds.Repr (class HasRepr)
+import Noodle.Node.MapsFolds.Repr (Repr(..)) as NMF
+import Noodle.Patch.MapsFolds.Repr as PMF
 -- import Test.Repr.Patch4 (MyRepr)
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
+import Noodle.Node (Node)
+import Noodle.Node as Node
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (NodeId, class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (familyOf, reflectFamily') as Id

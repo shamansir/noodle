@@ -172,12 +172,12 @@ familyModuleImports =
     , "Type.Proxy (Proxy(..))"
     , "Data.SOrder (SOrder, type (:::), T)"
     , "Data.SOrder as SOrder"
-    , "Noodle.Fn2 as Fn"
+    , "Noodle.Fn as Fn"
     , "Noodle.Id (Input(..), Output(..)) as Fn"
     , "Noodle.Id (Family(..)) as Node"
-    , "Noodle.Fn2.Process as P"
+    , "Noodle.Fn.Process as P"
     , "Noodle.Family.Def as Family"
-    , "Noodle.Node2 (Node) as N"
+    , "Noodle.Node (Node) as N"
     ]
 
 
@@ -195,13 +195,13 @@ toolkitModuleImports =
     , "Noodle.Id (Family, FamilyR) as Node"
     , "Noodle.Id (reclect, reflect') as Id"
     , "Noodle.Family.Def as Family"
-    , "Noodle.Toolkit3 (Toolkit) as Noodle"
-    , "Noodle.Toolkit3 as Toolkit"
-    , "Noodle.Patch4 (Patch) as Noodle"
-    , "Noodle.Patch4 as Patch"
-    , "Noodle.Node2 (Node) as Noodle"
-    , "Noodle.Toolkit3.Has (class HasFamilyDef) as Has"
-    , "Noodle.Patch4.Has (class HasInstancesOf) as Has"
+    , "Noodle.Toolkit (Toolkit) as Noodle"
+    , "Noodle.Toolkit as Toolkit"
+    , "Noodle.Patch (Patch) as Noodle"
+    , "Noodle.Patch as Patch"
+    , "Noodle.Node (Node) as Noodle"
+    , "Noodle.Toolkit.Has (class HasFamilyDef) as Has"
+    , "Noodle.Patch.Has (class HasInstancesOf) as Has"
     , "Noodle.Id (class HasInputsAt, class HasOutputsAt) as Has"
     ]
 

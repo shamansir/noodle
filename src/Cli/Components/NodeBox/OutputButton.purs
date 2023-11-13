@@ -51,12 +51,12 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
 
 import Noodle.Id as Id
-import Noodle.Node2 (Node) as Noodle
-import Noodle.Node2 as Node
-import Noodle.Patch4 as Patch
+import Noodle.Node (Node) as Noodle
+import Noodle.Node as Node
+import Noodle.Patch as Patch
 
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (short, full) as Info
+import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Tookit.Hydra.Repr.Info (short, full) as Info
 
 
 width :: Dimension
