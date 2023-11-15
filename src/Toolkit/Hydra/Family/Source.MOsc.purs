@@ -17,8 +17,6 @@ import Type.Proxy (Proxy(..))
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 
-import Tookit.Hydra.Repr.Info (full)
-
 
 id = Node.Family :: _ "osc"
 

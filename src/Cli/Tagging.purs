@@ -24,7 +24,7 @@ import Cli.Palette.Set.Pico8 as Pico
 
 
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Repr.Info (short, full) as Info
+import Tookit.Hydra.Repr.Info (shortLabel, statusLine) as Info
 import Tookit.Hydra.Group (toGroup, toGroupR) as Hydra
 import Tookit.Hydra.Types as H
 import Tookit.Hydra.Lang.Fn as H
@@ -36,7 +36,7 @@ input idx inputId = input' idx $ Id.inputR inputId
 
 input' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> Tag
 input' idx inputId (Just repr) =
-    T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    T.fgcs (mark repr) $ Info.shortLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 input' idx inputId Nothing = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
@@ -52,7 +52,7 @@ inputStatusLine family idx inputId = inputStatusLine' (Id.familyR' family) idx $
 inputStatusLine' :: Id.FamilyR -> Int -> Id.InputR -> Maybe Hydra.WrapRepr -> Tag
 inputStatusLine' familyR idx inputId (Just repr) =
     -- TODO: show node id and group as well
-    (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <> T.s " " <> (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <> T.s " " <> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <> T.s " " <> (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <> T.s " " <> (T.fgcs (mark repr) $ Info.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inputStatusLine' familyR idx inputId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
@@ -63,7 +63,7 @@ output idx outputId = output' idx $ Id.outputR outputId
 
 output' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> Tag
 output' idx outputId (Just repr) =
-    T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    T.fgcs (mark repr) $ Info.shortLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 output' idx outputId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
@@ -80,7 +80,7 @@ outputStatusLine family idx outputId = outputStatusLine' (Id.familyR' family) id
 outputStatusLine' :: Id.FamilyR -> Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> Tag
 outputStatusLine' familyR idx outputId (Just repr) =
     -- TODO: show group as well
-    (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <> T.s " " <> (T.fgcs (C.crepr Palette.outputId) $ Id.reflectOutputR outputId) <> T.s " " <> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <> T.s " " <> (T.fgcs (C.crepr Palette.outputId) $ Id.reflectOutputR outputId) <> T.s " " <> (T.fgcs (mark repr) $ Info.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 outputStatusLine' familyR idx outputId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
@@ -212,7 +212,7 @@ inputHover = T.fgc (C.crepr Palette.neutral) $ T.s "🮦"
 
 infoNode :: Hydra.WrapRepr -> Tag
 infoNode repr =
-    T.fgcs (mark repr) $ Info.full repr
+    T.fgcs (mark repr) $ Info.statusLine repr
 
 
 selected :: String -> Tag

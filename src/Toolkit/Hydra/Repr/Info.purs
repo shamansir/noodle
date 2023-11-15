@@ -7,10 +7,17 @@ import Color as Color
 import Data.Mark (class Mark)
 
 import Data.Array as Array
-import Data.String as String
-import Data.Maybe (Maybe(..))
+-- import Data.String as String
+-- import Data.String.CodePoints as SCP
+-- import Data.String.CodeUnits as SCU
+import Data.Maybe (Maybe)
 import Data.Either (Either(..))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
+-- import Data.FastVect.FastVect (Vect, (:), empty)
+-- import Data.FastVect.FastVect as FV
+-- import Data.FastVect.Common (term)
+-- import Typelevel.Arithmetic.Add (Term, term)
 
 import CompArts.Product as CAI
 
@@ -22,32 +29,47 @@ import Tookit.Hydra.Types as H
 import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as W
 
 
-data InfoRepr = InfoRepr { short :: String, full :: String }
+data InfoRepr = InfoRepr { shortLabel :: VShortChannelLabel, statusLine :: VStatusLine }
 
 
--- instance NMF.HasRepr a InfoRepr where
---     toRepr :: forall f i o. InNode f i o -> H.Value -> InfoRepr
---     toRepr _ a = InfoRepr
-
-class ShortInfo a where
-    short :: a -> String
+type VShortChannelLabel = String -- Vect 4 (Maybe SCP.CodePoint)
 
 
-class FullInfo a where
-    full :: a -> String
+type VStatusLine = String
 
 
-instance ShortInfo InfoRepr where
-    short (InfoRepr info) = info.short
+{-
+vshortLabel :: forall a. Show a => Char -> a -> Char /\ Char /\ Char /\ Char
+vshortLabel filler a =
+    case SCU.toCharArray $ SCU.takeRight 4 $ show a of
+        [] -> filler /\ filler /\ filler /\ filler
+        [ c1 ] -> filler /\ filler /\ filler /\ c1
+        [ c1, c2 ] -> filler /\ filler /\ c1 /\ c2
+        [ c1, c2, c3 ] -> filler /\ c1 /\ c2 /\ c3
+        [ c1, c2, c3, c4 ] -> c1 /\ c2 /\ c3 /\ c4
+        _ -> filler /\ filler /\ filler /\ filler
+-}
 
 
-instance FullInfo InfoRepr where
-    full (InfoRepr info) = info.full
+class ShortChannelLabel a where
+    shortLabel :: a -> VShortChannelLabel
 
 
-instance ShortInfo H.Value where
-    short :: H.Value -> String
-    short = case _ of
+class StatusLineInfo a where
+    statusLine :: a -> VStatusLine
+
+
+instance ShortChannelLabel InfoRepr where
+    shortLabel (InfoRepr info) = info.shortLabel
+
+
+instance StatusLineInfo InfoRepr where
+    statusLine (InfoRepr info) = info.statusLine
+
+
+instance ShortChannelLabel H.Value where
+    shortLabel :: H.Value -> VShortChannelLabel
+    shortLabel = case _ of
         H.None -> "-"
         H.Undefined -> "?"
         H.Number n -> show n
@@ -55,26 +77,26 @@ instance ShortInfo H.Value where
         H.Dep (H.Fn _) -> "→⨐"
         H.Dep (H.Unparsed _) -> "→⍟"
         H.Dep H.NoAction -> "→∅"
-        H.VArray vs ease -> short vs <> short ease
+        H.VArray vs ease -> shortLabel vs <> shortLabel ease
         H.Time -> "⏲" -- ⏰
         H.MouseX -> "MX"
         H.MouseY -> "MY"
         H.Width -> "↔" -- <->
         H.Height -> "↕" --
         H.Pi -> "π"
-        H.Fft bin -> "🔈" <> short bin
+        H.Fft bin -> "🔈" <> shortLabel bin
 
 
-instance ShortInfo Unit where
-    short :: Unit -> String
-    short = const "()"
+instance ShortChannelLabel Unit where
+    shortLabel :: Unit -> VShortChannelLabel
+    shortLabel = const "()"
 
 
-instance ShortInfo H.Texture where
-    short :: H.Texture -> String
-    short = case _ of
+instance ShortChannelLabel H.Texture where
+    shortLabel :: H.Texture -> VShortChannelLabel
+    shortLabel = case _ of
         H.Empty -> "∅"
-        H.Start from -> short from --"&" <> short from
+        H.Start from -> shortLabel from --"&" <> short from
         H.BlendOf { what, with } blend -> "BND" -- TODO: <> short blend
         H.Filter texture op -> "FLT" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
@@ -82,66 +104,66 @@ instance ShortInfo H.Texture where
         H.CallGlslFn texture glsl -> "GLS" -- TODO: expand fn
 
 
-instance ShortInfo H.TODO where
-    short :: H.TODO -> String
-    short = const "☀"
+instance ShortChannelLabel H.TODO where
+    shortLabel :: H.TODO -> VShortChannelLabel
+    shortLabel = const "☀"
 
 
-instance ShortInfo H.Context where
-    short :: H.Context -> String
-    short = const "CTX"
+instance ShortChannelLabel H.Context where
+    shortLabel :: H.Context -> VShortChannelLabel
+    shortLabel = const "CTX"
 
 
-instance ShortInfo H.UpdateFn where
-    short :: H.UpdateFn -> String
-    short = const "↦"
+instance ShortChannelLabel H.UpdateFn where
+    shortLabel :: H.UpdateFn -> VShortChannelLabel
+    shortLabel = const "↦"
 
 
-instance ShortInfo H.ExtSource where
-    short :: H.ExtSource -> String
-    short = case _ of
+instance ShortChannelLabel H.ExtSource where
+    shortLabel :: H.ExtSource -> VShortChannelLabel
+    shortLabel = case _ of
         H.Sketch _ -> "SKT"
         H.Video -> "VID"
         H.Camera _ -> "CAM" -- 🎥
         H.Unclear -> "???"
 
 
-instance ShortInfo H.Source where
-    short :: H.Source -> String
-    short = case _ of
+instance ShortChannelLabel H.Source where
+    shortLabel :: H.Source -> VShortChannelLabel
+    shortLabel = case _ of
         H.Gradient _ -> "GRD"
         H.Noise _ -> "NZE"
         H.Osc _ -> "OSC"
         H.Shape _ -> "SHP"
         H.Solid _ -> "SLD"
         H.Voronoi _ -> "VRN"
-        H.Load from -> short from
-        H.External src _ -> short src
+        H.Load from -> shortLabel from
+        H.External src _ -> shortLabel src
 
 
-instance ShortInfo H.Url where
-    short :: H.Url -> String
-    short = const "🔗"
+instance ShortChannelLabel H.Url where
+    shortLabel :: H.Url -> VShortChannelLabel
+    shortLabel = const "🔗" -- '#'
 
 
-instance ShortInfo H.GlslFn where
-    short :: H.GlslFn -> String
-    short = const "↬"
+instance ShortChannelLabel H.GlslFn where
+    shortLabel :: H.GlslFn -> VShortChannelLabel
+    shortLabel = const "↬"
 
 
-instance ShortInfo H.SourceOptions where
-    short :: H.SourceOptions -> String
-    short = const "OPT"
+instance ShortChannelLabel H.SourceOptions where
+    shortLabel :: H.SourceOptions -> VShortChannelLabel
+    shortLabel = const "OPT"
 
 
-instance ShortInfo H.Values where
-    short :: H.Values -> String
-    short (H.Values array) = "[" <> (show $ Array.length array) <> "]"
+instance ShortChannelLabel H.Values where
+    shortLabel :: H.Values -> VShortChannelLabel
+    shortLabel (H.Values array) = "[" <> (show $ Array.length array) <> "]"
 
 
-instance ShortInfo H.Ease where
-    short :: H.Ease -> String
-    short = case _ of
+instance ShortChannelLabel H.Ease where
+    shortLabel :: H.Ease -> VShortChannelLabel
+    shortLabel = case _ of
         H.Linear -> "╱"
         H.Fast _ -> "⏭"
         H.Smooth _ -> "↝"
@@ -150,22 +172,22 @@ instance ShortInfo H.Ease where
         H.InOutCubic -> "⊰"
 
 
-instance ShortInfo H.AudioSource where
-    short :: H.AudioSource -> String
-    short = case _ of
+instance ShortChannelLabel H.AudioSource where
+    shortLabel :: H.AudioSource -> VShortChannelLabel
+    shortLabel = case _ of
         H.Silence -> "⏹" -- 🔇
         H.Mic -> "" -- TODO
         H.File -> "" -- TODO
 
 
-instance ShortInfo H.AudioBin where
-    short :: H.AudioBin -> String
-    short (H.AudioBin n) = "H" <> show n -- 🔈 🔉
+instance ShortChannelLabel H.AudioBin where
+    shortLabel :: H.AudioBin -> VShortChannelLabel
+    shortLabel (H.AudioBin n) = "H" <> show n -- 🔈 🔉
 
 
-instance ShortInfo H.OutputN where
-    short :: H.OutputN -> String
-    short = case _ of
+instance ShortChannelLabel H.OutputN where
+    shortLabel :: H.OutputN -> VShortChannelLabel
+    shortLabel = case _ of
         H.Output0 -> "⎑0" -- OUT0
         H.Output1 -> "⎑1" -- OUT1
         H.Output2 -> "⎑2" -- OUT2
@@ -173,232 +195,232 @@ instance ShortInfo H.OutputN where
         H.Output4 -> "⎑4" -- OUT4
 
 
-instance ShortInfo H.SourceN where
-    short :: H.SourceN -> String
-    short = case _ of
+instance ShortChannelLabel H.SourceN where
+    shortLabel :: H.SourceN -> VShortChannelLabel
+    shortLabel = case _ of
         H.Source0 -> "S0"
 
 
-instance ShortInfo H.RenderTarget where
-    short :: H.RenderTarget -> String
-    short = case _ of
+instance ShortChannelLabel H.RenderTarget where
+    shortLabel :: H.RenderTarget -> VShortChannelLabel
+    shortLabel = case _ of
         H.Four -> "∀"
-        H.Output oN -> short oN
+        H.Output oN -> shortLabel oN
 
 
-instance ShortInfo H.Fn where
-    short :: H.Fn -> String
-    short = case _ of
+instance ShortChannelLabel H.Fn where
+    shortLabel :: H.Fn -> VShortChannelLabel
+    shortLabel = case _ of
         H.UserExpr jsexpr -> "EXP"
         H.Fn code -> "PS"
         H.Unparsed str -> "STR"
         H.NoAction -> "--"
 
 
-instance ShortInfo H.CanBeSource where
-    short :: H.CanBeSource -> String
-    short (H.CanBeSource cbs) = case cbs of
-        Left sourceN -> short sourceN
-        Right outputN -> short outputN
+instance ShortChannelLabel H.CanBeSource where
+    shortLabel :: H.CanBeSource -> VShortChannelLabel
+    shortLabel (H.CanBeSource cbs) = case cbs of
+        Left sourceN -> shortLabel sourceN
+        Right outputN -> shortLabel outputN
 
 
-instance ShortInfo H.TOrV where
-    short :: H.TOrV -> String
-    short (H.T tex) = short tex
-    short (H.V val) = short val
+instance ShortChannelLabel H.TOrV where
+    shortLabel :: H.TOrV -> VShortChannelLabel
+    shortLabel (H.T tex) = shortLabel tex
+    shortLabel (H.V val) = shortLabel val
 
 
-instance ShortInfo CAI.Products where
-    short :: CAI.Products -> String
-    short ps = show (CAI.count ps) <> "P"
+instance ShortChannelLabel CAI.Products where
+    shortLabel :: CAI.Products -> VShortChannelLabel
+    shortLabel ps = show (CAI.count ps) <> "P"
 
 
-instance ShortInfo CAI.Product' where
-    short :: CAI.Product' -> String
-    short = CAI.toShortId'
+instance ShortChannelLabel CAI.Product' where
+    shortLabel :: CAI.Product' -> VShortChannelLabel
+    shortLabel = CAI.toShortId'
 
 
 -- TODO: use color tags
 
-instance FullInfo H.Value where
-    full :: H.Value -> String
-    full = show
+instance StatusLineInfo H.Value where
+    statusLine :: H.Value -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo Unit where
-    full :: Unit -> String
-    full = show
+instance StatusLineInfo Unit where
+    statusLine :: Unit -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Texture where
-    full :: H.Texture -> String
-    full = show
+instance StatusLineInfo H.Texture where
+    statusLine :: H.Texture -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.TODO where
-    full :: H.TODO -> String
-    full = show
+instance StatusLineInfo H.TODO where
+    statusLine :: H.TODO -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Context where
-    full :: H.Context -> String
-    full = show
+instance StatusLineInfo H.Context where
+    statusLine :: H.Context -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.UpdateFn where
-    full :: H.UpdateFn -> String
-    full = show
+instance StatusLineInfo H.UpdateFn where
+    statusLine :: H.UpdateFn -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Source where
-    full :: H.Source -> String
-    full = show
+instance StatusLineInfo H.Source where
+    statusLine :: H.Source -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Url where
-    full :: H.Url -> String
-    full = show
+instance StatusLineInfo H.Url where
+    statusLine :: H.Url -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.GlslFn where
-    full :: H.GlslFn -> String
-    full = show
+instance StatusLineInfo H.GlslFn where
+    statusLine :: H.GlslFn -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.SourceOptions where
-    full :: H.SourceOptions -> String
-    full = show
+instance StatusLineInfo H.SourceOptions where
+    statusLine :: H.SourceOptions -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Values where
-    full :: H.Values -> String
-    full = show
+instance StatusLineInfo H.Values where
+    statusLine :: H.Values -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Ease where
-    full :: H.Ease -> String
-    full = show
+instance StatusLineInfo H.Ease where
+    statusLine :: H.Ease -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.AudioSource where
-    full :: H.AudioSource -> String
-    full = show
+instance StatusLineInfo H.AudioSource where
+    statusLine :: H.AudioSource -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.AudioBin where
-    full :: H.AudioBin -> String
-    full = show
+instance StatusLineInfo H.AudioBin where
+    statusLine :: H.AudioBin -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.OutputN where
-    full :: H.OutputN -> String
-    full = show
+instance StatusLineInfo H.OutputN where
+    statusLine :: H.OutputN -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.SourceN where
-    full :: H.SourceN -> String
-    full = show
+instance StatusLineInfo H.SourceN where
+    statusLine :: H.SourceN -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.ExtSource where
-    full :: H.ExtSource -> String
-    full = show
+instance StatusLineInfo H.ExtSource where
+    statusLine :: H.ExtSource -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.Fn where
-    full :: H.Fn -> String
-    full = show
+instance StatusLineInfo H.Fn where
+    statusLine :: H.Fn -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.RenderTarget where
-    full :: H.RenderTarget -> String
-    full = show
+instance StatusLineInfo H.RenderTarget where
+    statusLine :: H.RenderTarget -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.CanBeSource where
-    full :: H.CanBeSource -> String
-    full = show
+instance StatusLineInfo H.CanBeSource where
+    statusLine :: H.CanBeSource -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo CAI.Products where
-    full :: CAI.Products -> String
-    full = show
+instance StatusLineInfo CAI.Products where
+    statusLine :: CAI.Products -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo CAI.Product' where
-    full :: CAI.Product' -> String
-    full = show
+instance StatusLineInfo CAI.Product' where
+    statusLine :: CAI.Product' -> VStatusLine
+    statusLine = show
 
 
-instance FullInfo H.TOrV where
-    full :: H.TOrV -> String
-    full (H.T tex) = full tex
-    full (H.V val) = full val
+instance StatusLineInfo H.TOrV where
+    statusLine :: H.TOrV -> VStatusLine
+    statusLine (H.T tex) = statusLine tex
+    statusLine (H.V val) = statusLine val
 
 
-instance (ShortInfo a, FullInfo a) => NMF.HasRepr a InfoRepr where
+instance (ShortChannelLabel a, StatusLineInfo a) => NMF.HasRepr a InfoRepr where
     toRepr :: forall f i o. InNode f i o -> a -> InfoRepr
-    toRepr _ a = InfoRepr { short : short a, full : full a }
+    toRepr _ a = InfoRepr { shortLabel : shortLabel a, statusLine : statusLine a }
 
 
-instance (ShortInfo a, FullInfo a) => R.ToRepr a InfoRepr where
+instance (ShortChannelLabel a, StatusLineInfo a) => R.ToRepr a InfoRepr where
     toRepr :: a -> Maybe (R.Repr InfoRepr)
-    toRepr = R.exists <<< InfoRepr <<< \a -> { short : short a, full : full a }
+    toRepr = R.exists <<< InfoRepr <<< \a -> { shortLabel : shortLabel a, statusLine : statusLine a }
 
 
-instance FullInfo W.WrapRepr where
-    full :: W.WrapRepr -> String
-    full = case _ of
-        W.Value v -> full v
-        W.Unit u -> full u
-        W.Texture tex -> full tex
-        W.TOrV (H.T t) -> full t
-        W.TOrV (H.V v) -> full v
-        W.OutputN on -> full on
-        W.SourceN sn -> full sn
-        W.TODO todo -> full todo
-        W.Context ctx -> full ctx
-        W.UpdateFn fn -> full fn
-        W.Source src -> full src
-        W.Url url -> full url
-        W.GlslFn glsl -> full glsl
-        W.SourceOptions opts -> full opts
-        W.Values vals -> full vals
-        W.Ease ease -> full ease
-        W.Audio audio -> full audio
-        W.AudioBin bin -> full bin
-        W.ExtSource ext -> full ext
-        W.Fn fn -> full fn
-        W.Target trg -> full trg
-        W.Products products -> full products
-        W.Product product -> full product
-        W.CBS cbs -> full cbs
+instance ShortChannelLabel W.WrapRepr where
+    shortLabel :: W.WrapRepr -> VShortChannelLabel
+    shortLabel = case _ of
+        W.Value v -> shortLabel v
+        W.Unit u -> shortLabel u
+        W.Texture tex -> shortLabel tex
+        W.TOrV (H.T t) -> shortLabel t
+        W.TOrV (H.V v) -> shortLabel v
+        W.OutputN on -> shortLabel on
+        W.SourceN sn -> shortLabel sn
+        W.TODO todo -> shortLabel todo
+        W.Context ctx -> shortLabel ctx
+        W.UpdateFn fn -> shortLabel fn
+        W.Source src -> shortLabel src
+        W.Url url -> shortLabel url
+        W.GlslFn glsl -> shortLabel glsl
+        W.SourceOptions opts -> shortLabel opts
+        W.Values vals -> shortLabel vals
+        W.Ease ease -> shortLabel ease
+        W.Audio audio -> shortLabel audio
+        W.AudioBin bin -> shortLabel bin
+        W.ExtSource ext -> shortLabel ext
+        W.Fn fn -> shortLabel fn
+        W.Target trg -> shortLabel trg
+        W.Products products -> shortLabel products
+        W.Product product -> shortLabel product
+        W.CBS cbs -> shortLabel cbs
 
 
-instance ShortInfo W.WrapRepr where
-    short :: W.WrapRepr -> String
-    short = case _ of
-        W.Value v -> short v
-        W.Unit u -> short u
-        W.Texture tex -> short tex
-        W.TOrV (H.T t) -> short t
-        W.TOrV (H.V v) -> short v
-        W.OutputN on -> short on
-        W.SourceN sn -> short sn
-        W.TODO todo -> short todo
-        W.Context ctx -> short ctx
-        W.UpdateFn fn -> short fn
-        W.Source src -> short src
-        W.Url url -> short url
-        W.GlslFn glsl -> short glsl
-        W.SourceOptions opts -> short opts
-        W.Values vals -> short vals
-        W.Ease ease -> short ease
-        W.Audio audio -> short audio
-        W.AudioBin bin -> short bin
-        W.ExtSource ext -> short ext
-        W.Fn fn -> short fn
-        W.Target trg -> short trg
-        W.Products products -> short products
-        W.Product product -> short product
-        W.CBS cbs -> short cbs
+instance StatusLineInfo W.WrapRepr where
+    statusLine :: W.WrapRepr -> VStatusLine
+    statusLine = case _ of
+        W.Value v -> statusLine v
+        W.Unit u -> statusLine u
+        W.Texture tex -> statusLine tex
+        W.TOrV (H.T t) -> statusLine t
+        W.TOrV (H.V v) -> statusLine v
+        W.OutputN on -> statusLine on
+        W.SourceN sn -> statusLine sn
+        W.TODO todo -> statusLine todo
+        W.Context ctx -> statusLine ctx
+        W.UpdateFn fn -> statusLine fn
+        W.Source src -> statusLine src
+        W.Url url -> statusLine url
+        W.GlslFn glsl -> statusLine glsl
+        W.SourceOptions opts -> statusLine opts
+        W.Values vals -> statusLine vals
+        W.Ease ease -> statusLine ease
+        W.Audio audio -> statusLine audio
+        W.AudioBin bin -> statusLine bin
+        W.ExtSource ext -> statusLine ext
+        W.Fn fn -> statusLine fn
+        W.Target trg -> statusLine trg
+        W.Products products -> statusLine products
+        W.Product product -> statusLine product
+        W.CBS cbs -> statusLine cbs

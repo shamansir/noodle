@@ -30,7 +30,7 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Tagging as T
 
-import Tookit.Hydra.Repr.Info (class FullInfo, full)
+import Tookit.Hydra.Repr.Info (class StatusLineInfo, statusLine)
 
 import Tookit.Hydra.Lang (formProgram) as Lang
 import Tookit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
@@ -79,9 +79,9 @@ component =
         [ ]
 
 
-refresh :: forall state a. FullInfo a => a -> C.BlessedOp state Effect
+refresh :: forall state a. StatusLineInfo a => a -> C.BlessedOp state Effect
 refresh with =
-    Key.fullInfoBox >~ Box.setContent $ full with
+    Key.fullInfoBox >~ Box.setContent $ statusLine with
 
 
 clear :: forall state. C.BlessedOp state Effect

@@ -56,7 +56,6 @@ import Noodle.Node as Node
 import Noodle.Patch as Patch
 
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Repr.Info (short, full) as Info
 
 
 width :: Dimension
