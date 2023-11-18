@@ -5,6 +5,7 @@ import Prelude
 import Color (Color)
 import Color as Color
 import Data.Mark (class Mark)
+import Data.SProxy (reflect')
 
 import Data.Array as Array
 -- import Data.String as String
@@ -21,10 +22,11 @@ import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 
 import CompArts.Product as CAI
 
-
+import Noodle.Id (Family(..), FamilyR(..))
 import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
+import Tookit.Hydra.Group as HG
 import Tookit.Hydra.Types as H
 import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as W
 
@@ -32,10 +34,10 @@ import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as W
 data InfoRepr = InfoRepr { shortLabel :: VShortChannelLabel, statusLine :: VStatusLine }
 
 
-type VShortChannelLabel = String -- Vect 4 (Maybe SCP.CodePoint)
+type VShortChannelLabel = String -- Vect 4 (Maybe SCP.CodePoint) -- ShortChannelValueLabel
 
 
-type VStatusLine = String
+type VStatusLine = String -- TODO: Tagged
 
 
 {-
@@ -56,7 +58,11 @@ class ShortChannelLabel a where
 
 
 class StatusLineInfo a where
-    statusLine :: a -> VStatusLine
+    statusLine :: a -> VStatusLine -- Tagged
+
+
+class Documentation a where
+    docs :: a -> String
 
 
 instance ShortChannelLabel InfoRepr where
@@ -424,3 +430,139 @@ instance StatusLineInfo W.WrapRepr where
         W.Products products -> statusLine products
         W.Product product -> statusLine product
         W.CBS cbs -> statusLine cbs
+
+
+
+instance Documentation (Family "osc") where
+    docs = const $ familyDocs "osc"
+
+
+-- instance Documentation FamilyR where
+--     docs (FamilyR "osc") = docs (Family :: _ "osc")
+
+
+instance Documentation FamilyR where
+    docs = familyDocs <<< reflect'
+
+
+familyDocs :: String -> String
+familyDocs = case _ of -- use ToFn
+
+    -- Feed
+    "number" -> "Create a number value to pass further"
+    "pi" -> "Use PI value, which is close to ~3.14 to pass further"
+    "array" -> "Create an array of number values to pass it further"
+    "expression" -> "Define a JavaScript expression to be called on every frame" -- TODO: width * Math.PI, mouse.x * 2, (1.05 + 0.1 * Math.sin(0.05*time)) , a.fft[1]*40... JsExprParsing
+    "callFunction" -> ""
+
+    "info" -> "Show both quick information and documentation for the hovered subject"
+
+    -- Source
+    "noise" -> "Smooth sequences of random values over 2D plane in grayscale"
+    "voronoi" -> "The net of triangles of different sizes, in grayscale"
+    "osc" -> "The horizontal wave, oscillating between black and white"
+    "shape" -> "A polygon with given number of vertices, the larger the number, the more roundier is the shape"
+    "gradient" -> "RGB gradient through all colors, in 2D"
+    "src" -> "Take some output (see `out`) by number and make it a source for another sequence of transformations"
+    "solid" -> "Just the given color"
+    "prev" -> "--"
+
+    -- Geometry
+    "rotate" -> "Rotate the texture by given degree"
+    "scale" -> "Scale the texture by given amount"
+    "pixelate" -> "Break the texture into the solid color blocks of given size"
+    "repeat" -> "Repeat the texture by X and Y given amount of times"
+    "repeatX" -> "Repeat the texture by X given amount of times"
+    "repeatY" -> "Repeat the texture by Y given amount of times"
+    "kaleid" -> "Radially mirror the texture around the center given number of times"
+    "scroll" -> "Move the texture by X and Y with given speed"
+    "scrollX" -> "Move the texture by X with given speed"
+    "scrollY" -> "Move the texture by Y with given speed"
+
+    -- Color
+    "posterize" -> ""
+    "shift" -> Color
+    "invert" -> Color
+    "contrast" -> Color
+    "brightness" -> Color
+    "luma" -> Color
+    "thresh" -> Color
+    "color" -> Color
+    "saturate" -> Color
+    "hue" -> Color
+    "colorama" -> Color
+    "sum" -> Color
+    "r" -> Color
+    "g" -> Color
+    "b" -> Color
+    "a" -> Color
+
+    -- Blend
+    "add" -> Blend
+    "sub" -> Blend
+    "layer" -> Blend
+    "blend" -> Blend
+    "mult" -> Blend
+    "diff" -> Blend
+    "mask" -> Blend
+
+    -- Modulate
+    "modulateRepeat" -> Modulate
+    "modulateRepeatX" -> Modulate
+    "modulateRepeatY" -> Modulate
+    "modulateKaleid" -> Modulate
+    "modulateScrollX" -> Modulate
+    "modulateScrollY" -> Modulate
+    "modulate" -> Modulate
+    "modulateScale" -> Modulate
+    "modulatePixelate" -> Modulate
+    "modulateRotate" -> Modulate
+    "modulateHue" -> Modulate
+
+    -- ExternalSources
+    "initCam" -> ExternalSources
+    "initImage" -> ExternalSources
+    "initVideo" -> ExternalSources
+    "init" -> ExternalSources
+    "initStream" -> ExternalSources
+    "initScreen" -> ExternalSources
+
+    -- Synth
+    "render" -> Synth
+    "update" -> Synth
+    "setResolution" -> Synth
+    "hush" -> Synth
+    "setFunction" -> Synth
+    "speed" -> Synth
+    "bpm" -> Synth
+    "width" -> Synth
+    "height" -> Synth
+    "time" -> Synth
+    "mouse" -> Synth
+
+    -- Audio
+    "fft" -> Audio
+    "setSmooth" -> Audio
+    "setCutoff" -> Audio
+    "setBins" -> Audio
+    "setScale" -> Audio
+    "hide" -> Audio
+    "show" -> Audio
+
+    "setScale" -> Audio
+
+    -- Array
+    "fast" -> Array
+    "smooth" -> Array
+    "ease" -> Array
+    "offset" -> Array
+    "fit" -> Array
+
+    -- Out
+    "out" -> Out
+
+    _ -> Unknown
+
+
+    -- "colorama" -> "Shift HSV values"
+    -- _ -> "tralala"
