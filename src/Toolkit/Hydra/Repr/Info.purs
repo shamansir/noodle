@@ -480,88 +480,86 @@ familyDocs = case _ of -- use ToFn
     "scrollY" -> "Move the texture by Y with given speed"
 
     -- Color
-    "posterize" -> ""
-    "shift" -> Color
-    "invert" -> Color
-    "contrast" -> Color
-    "brightness" -> Color
-    "luma" -> Color
-    "thresh" -> Color
-    "color" -> Color
-    "saturate" -> Color
-    "hue" -> Color
-    "colorama" -> Color
-    "sum" -> Color
-    "r" -> Color
-    "g" -> Color
-    "b" -> Color
-    "a" -> Color
+    "posterize" -> "Reduce the number of colors on the texture to a given amount, makes the palette of the texture sparser"
+    "shift" -> ""
+    "invert" -> "Invert the colors on the texture"
+    "contrast" -> "Raise the contrast on the texture"
+    "brightness" -> "Make the texture brighter"
+    "luma" -> ""
+    "thresh" -> "Set a treshold on the colors on the texture"
+    "color" -> ""
+    "saturate" -> "Adjust the saturation level of colors on the texture"
+    "hue" -> "Adjust the hue of colors on the texture"
+    "colorama" -> ""
+    "sum" -> ""
+    "r" -> "Take only red part of the colors on the texture"
+    "g" -> "Take only green part of the colors on the texture"
+    "b" -> "Take only blue part of the colors on the texture"
+    "a" -> "Take only alpha (opacity) part of the colors on the texture"
 
     -- Blend
-    "add" -> Blend
-    "sub" -> Blend
-    "layer" -> Blend
-    "blend" -> Blend
-    "mult" -> Blend
-    "diff" -> Blend
-    "mask" -> Blend
+    "add" -> "Add the colors on both textures to a resulting texture"
+    "sub" -> "Subtract the colors on both textures to a resulting texture"
+    "layer" -> "Overlay one texture over another"
+    "blend" -> "Blend the colors on both textures with each other to get a resulting texture"
+    "mult" -> "Multiply the colors on two texture on each other"
+    "diff" -> "Produce a texture from the difference between the colors of two textures"
+    "mask" -> ""
 
     -- Modulate
-    "modulateRepeat" -> Modulate
-    "modulateRepeatX" -> Modulate
-    "modulateRepeatY" -> Modulate
-    "modulateKaleid" -> Modulate
-    "modulateScrollX" -> Modulate
-    "modulateScrollY" -> Modulate
-    "modulate" -> Modulate
-    "modulateScale" -> Modulate
-    "modulatePixelate" -> Modulate
-    "modulateRotate" -> Modulate
-    "modulateHue" -> Modulate
+    "modulateRepeat" -> ""
+    "modulateRepeatX" -> ""
+    "modulateRepeatY" -> ""
+    "modulateKaleid" -> ""
+    "modulateScrollX" -> ""
+    "modulateScrollY" -> ""
+    "modulate" -> ""
+    "modulateScale" -> ""
+    "modulatePixelate" -> ""
+    "modulateRotate" -> ""
+    "modulateHue" -> ""
 
     -- ExternalSources
-    "initCam" -> ExternalSources
-    "initImage" -> ExternalSources
-    "initVideo" -> ExternalSources
-    "init" -> ExternalSources
-    "initStream" -> ExternalSources
-    "initScreen" -> ExternalSources
+    "initCam" -> "Select and initialize the camera to be used (use `src`)"
+    "initImage" -> "Select the image source to be used (use `src`)"
+    "initVideo" -> "Select the video source to be used (use `src`)"
+    "init" -> "Set up the properties of the scene"
+    "initStream" -> "Select the video stream source to be used (use `src`)"
+    "initScreen" -> "Select the screen to be integrated in the scene (use `src`)"
 
     -- Synth
-    "render" -> Synth
-    "update" -> Synth
-    "setResolution" -> Synth
-    "hush" -> Synth
-    "setFunction" -> Synth
-    "speed" -> Synth
-    "bpm" -> Synth
-    "width" -> Synth
-    "height" -> Synth
-    "time" -> Synth
-    "mouse" -> Synth
+    "render" -> "Render all (four) outputs simultaneously"
+    "update" -> "Specify the function to be called on every frame"
+    "setResolution" -> ""
+    "hush" -> ""
+    "setFunction" -> ""
+    "speed" -> "Set the speed of the scene"
+    "bpm" -> "Set the audio BPM for the sceen"
+    "width" -> "Get current width of the screen"
+    "height" -> "Get current height of the screen"
+    "time" -> "Get current time"
+    "mouse" -> "Get current mouse position"
 
     -- Audio
-    "fft" -> Audio
-    "setSmooth" -> Audio
-    "setCutoff" -> Audio
-    "setBins" -> Audio
-    "setScale" -> Audio
-    "hide" -> Audio
-    "show" -> Audio
-
-    "setScale" -> Audio
+    "fft" -> "Get the harmonic of the audio by a number of a bin (see `setBins`)"
+    "setSmooth" -> ""
+    "setCutoff" -> ""
+    "setBins" -> "Set number of bins in the audio"
+    "setScale" -> ""
+    "hide" -> ""
+    "show" -> ""
 
     -- Array
-    "fast" -> Array
-    "smooth" -> Array
-    "ease" -> Array
-    "offset" -> Array
-    "fit" -> Array
+    "fast" -> "Specify how fast should we switch between values in the array"
+    "smooth" -> "Make switching between values in the array smooth"
+    "ease" -> "Select the easing on switching between the values in the array"
+    "offset" -> ""
+    "fit" -> ""
 
     -- Out
-    "out" -> Out
+    "out" -> "Send the texture to the given output (one of four, `0` by default)"
 
-    _ -> Unknown
+    _ -> ""
 
 
     -- "colorama" -> "Shift HSV values"
