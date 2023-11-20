@@ -1094,6 +1094,188 @@ encodeFnWithArgNames fn =
     -- Fn.name fn
 
 
+data FnArg
+    = TArg Texture
+    | VArg Value
+    | UrlArg Url
+    | OptionsArg SourceOptions
+    | CamIndexArg Int
+    | RenderTargetArg RenderTarget
+    | UpdateFnArg
+    | SideArg
+    | GlslFnArg
+    | ValuesArg Values
+    | AudioArg
+    | AudioBinsArg Int
+    | OutputArg OutputN
+
+
+narg :: Number -> FnArg
+narg = VArg <<< Number
+
+
+tArg :: FnArg
+tArg = TArg Empty
+
+
+urlArg :: FnArg
+urlArg = UrlArg $ Url ""
+
+
+ciArg :: FnArg
+ciArg = CamIndexArg 0
+
+
+optionsArg :: FnArg
+optionsArg = OptionsArg $ SourceOptions { src : Canvas }
+
+
+rtArg :: FnArg
+rtArg = RenderTargetArg Four
+
+
+updateArg :: FnArg
+updateArg = UpdateFnArg
+
+
+sideArg :: FnArg
+sideArg = SideArg
+
+
+glslArg :: FnArg
+glslArg = GlslFnArg
+
+
+valuesArg :: FnArg
+valuesArg = ValuesArg $ Values []
+
+
+audioArg :: FnArg
+audioArg = AudioArg
+
+
+audioBinsArg :: FnArg
+audioBinsArg = AudioBinsArg 4
+
+
+outputArg :: FnArg
+outputArg = OutputArg Output0
+
+
+class DefaultOf a where
+    default :: a
+
+
+defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg))
+-- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value))
+defaultsFor = case _ of
+    -- "number" -> Feed
+
+    "noise" -> Just $ "noise" /\ [ q "scale" $ narg 10.0, q "offset" $ narg 0.1 ]
+    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ narg 5.0, q "speed" $ narg 0.3, q "blending" $ narg 0.3 ]
+    "osc" -> Just $ "osc" /\ [ q "frequency" $ narg 60.0, q "sync" $ narg 0.1, q "offset" $ narg 0.0 ]
+    "shape" -> Just $ "shape" /\ [ q "sides" $ narg 3.0, q "radius" $ narg 0.3, q "smoothing" $ narg 0.01 ]
+    "gradient" -> Just $ "gradient" /\ [ q "speed" $ narg 0.0 ]
+    -- "src" -> Source
+    "solid" -> Just $ "solid" /\ [ q "r" $ narg 0.0, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 1.0 ]
+    -- "prev" -> Source
+
+    "rotate" -> Just $ "rotate" /\ [ q "what" tArg, q "angle" $ narg 10.0, q "speed" $ narg 0.0 ]
+    "scale" -> Just $ "scale" /\ [ q "what" tArg, q "amount" $ narg 1.5, q "xMult" $ narg 1.0, q "yMult" $ narg 1.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ]
+    "pixelate" -> Just $ "pixelate" /\ [ q "what" tArg, q "pixelX" $ narg 20.0, q "pixelY" $ narg 20.0 ]
+    "repeat" -> Just $ "repeat" /\ [ q "what" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.0, q "offsetY" $ narg 0.0 ]
+    "repeatX" -> Just $ "repeatX" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ]
+    "repeatY" -> Just $ "repeatY" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ]
+    "kaleid" -> Just $ "kaleid" /\ [ q "what" tArg, q "nSides" $ narg 4.0 ]
+    "scroll" -> Just $ "scroll" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "scrollY" $ narg 0.5, q "speedX" $ narg 0.0, q "speedY" $ narg 0.0 ]
+    "scrollX" -> Just $ "scrollX" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ]
+    "scrollY" -> Just $ "scrollY" /\ [ q "what" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ]
+
+    "posterize" -> Just $ "posterize" /\ [ q "what" tArg, q "bins" $ narg 3.0, q "gamma" $ narg 6.0 ]
+    "shift" -> Just $ "shift" /\ [ q "what" tArg, q "r" $ narg 0.5, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 0.5 ]
+    "invert" -> Just $ "invert" /\ [ q "what" tArg, q "amount" $ narg 1.0 ]
+    "contrast" -> Just $ "contrast" /\ [ q "what" tArg, q "amount" $ narg 1.6 ]
+    "brightness" -> Just $ "brightness" /\ [ q "what" tArg, q "amount" $ narg 0.4 ]
+    "luma" -> Just $ "luma" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.1 ]
+    "thresh" -> Just $ "thresh" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.04 ]
+    "color" -> Just $ "color" /\ [ q "what" tArg, q "r" $ narg 1.0, q "g" $ narg 1.0, q "b" $ narg 1.0, q "a" $ narg 1.0 ]
+    "saturate" -> Just $ "saturate" /\ [ q "what" tArg, q "amount" $ narg 2.0 ]
+    "hue" -> Just $ "hue" /\ [ q "what" tArg, q "amount" $ narg 0.4 ]
+    "colorama" -> Just $ "colorama" /\ [ q "what" tArg, q "amount" $ narg 0.005 ]
+    -- "sum" -> Color
+    "r" -> Just $ "r" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
+    "g" -> Just $ "g" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
+    "b" -> Just $ "b" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
+    "a" -> Just $ "a" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
+
+     -- FIXME : first arg is texture for everything below
+    "add" -> Just $ "add" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
+    "sub" -> Just $ "sub" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
+    "layer" -> Just $ "layer" /\ [ q "what" tArg, q "with" tArg ]
+    "blend" -> Just $ "blend" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.5 ]
+    "mult" -> Just $ "mult" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
+    "diff" -> Just $ "diff" /\ [ q "what" tArg, q "with" tArg ]
+    "mask" -> Just $ "mask" /\ [ q "what" tArg, q "with" tArg ]
+
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "what" tArg, q "with" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "what" tArg, q "with" tArg, q "nSides" $ narg 4.0 ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "what" tArg, q "with" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "what" tArg, q "with" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ]
+    "modulate" -> Just $ "modulate" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.1 ]
+    "modulateScale" -> Just $ "modScale" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 1.0 ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 10.0, q "offset" $ narg 3.0 ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 0.0 ]
+    "modulateHue" -> Just $ "modHue" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
+
+    "initCam" -> Just $ "initCam" /\ []
+    "initImage" -> Just $ "initImage" /\ [ q "url" urlArg ]
+    "initVideo" -> Just $ "initVideo" /\ [ q "url" urlArg ]
+    "init" -> Just $ "init" /\ [ q "options" optionsArg ]
+    "initStream" -> Just $ "initStream" /\ [ q "url" urlArg ]
+    "initCam" -> Just $ "initCam" /\ [ q "index" ciArg ]
+    "initScreen" -> Just $ "initScreen" /\ []
+
+    "render" -> Just $ "render" /\ [ q "target" rtArg ]
+    "update" -> Just $ "update" /\ [ q "update" updateArg ]
+    "setResolution" -> Just $ "setResolution" /\ [ q "width" sideArg, q "height" sideArg ]
+    "hush" -> Just $ "hush" /\ []
+    "setFunction" -> Just $ "setFunction" /\ [ q "fn" glslArg ]
+    -- "speed" -> Synth
+    -- "bpm" -> Synth
+    -- "width" -> Synth
+    -- "height" -> Synth
+    -- "time" -> Synth
+    -- "mouse" -> Synth
+    -- "pi" -> Synth
+
+    -- "fft" -> Audio
+    "setSmooth" -> Just $ "setSmooth" /\ [ q "audio" audioArg, q "smooth" $ narg 0.4 ]
+    "setCutoff" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "cutoff" $ narg 2.0 ]
+    "setBins" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "bins" audioBinsArg ]
+    "setScale" -> Just $ "setScale" /\ [ q "audio" audioArg, q "scale" $ narg 10.0 ]
+    "hide" -> Just $ "hide" /\ []
+    "show" -> Just $ "show" /\ []
+
+    -- "setScale" -> Audio
+
+    "out" -> Just $ "out" /\ [ q "output" outputArg ]
+
+    "linear" -> Just $ "linear" /\ [ q "array" valuesArg ]
+    "fast" -> Just $ "fast" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
+    "smooth" -> Just $ "smooth" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
+    "offset" -> Just $ "offset" /\ [ q "array" valuesArg, q "v" $ narg 0.5 ]
+    "fit" -> Just $ "fit" /\ [ q "array" valuesArg, q "low" $ narg 0.0, q "high" $ narg 1.0 ]
+
+    -- "inOutCubic" -> Just $ "inOutCubic" /\ []
+
+    _ -> Nothing
+
+
+-- instance FnDefault // FnDocs // FnTypes
+
+
 -- TODO: probably duplicates something
 -- TODO: private
 fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value))

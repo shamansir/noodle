@@ -37,6 +37,7 @@ to generate this file without the comments in this block.
   , "enums"
   , "exceptions"
   , "exists"
+  , "fast-vect"
   , "foldable-traversable"
   , "foreign"
   , "foreign-object"
