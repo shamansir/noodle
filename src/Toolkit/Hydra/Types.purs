@@ -228,11 +228,11 @@ data OutputN
 
 data Ease
     = Linear
+    | InOutCubic
     | Fast Value -- amount
     | Smooth Value -- amount
     | Fit { low :: Value, high :: Value }
     | Offset Value -- amount
-    | InOutCubic
     -- | ...
 
 
@@ -1108,6 +1108,8 @@ data FnArg
     | AudioArg
     | AudioBinsArg Int
     | OutputArg OutputN
+    | EaseArg Ease
+    | SourceArg SourceN
 
 
 narg :: Number -> FnArg
@@ -1162,6 +1164,14 @@ outputArg :: FnArg
 outputArg = OutputArg Output0
 
 
+easeArg :: FnArg
+easeArg = EaseArg Linear
+
+
+sourceArg :: FnArg
+sourceArg = SourceArg Source0
+
+
 class DefaultOf a where
     default :: a
 
@@ -1176,7 +1186,7 @@ defaultsFor = case _ of
     "osc" -> Just $ "osc" /\ [ q "frequency" $ narg 60.0, q "sync" $ narg 0.1, q "offset" $ narg 0.0 ]
     "shape" -> Just $ "shape" /\ [ q "sides" $ narg 3.0, q "radius" $ narg 0.3, q "smoothing" $ narg 0.01 ]
     "gradient" -> Just $ "gradient" /\ [ q "speed" $ narg 0.0 ]
-    -- "src" -> Source
+    "src" -> Just $ "src" /\ [ q "src" sourceArg  ]
     "solid" -> Just $ "solid" /\ [ q "r" $ narg 0.0, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 1.0 ]
     -- "prev" -> Source
 
@@ -1258,11 +1268,10 @@ defaultsFor = case _ of
     "hide" -> Just $ "hide" /\ []
     "show" -> Just $ "show" /\ []
 
-    -- "setScale" -> Audio
-
     "out" -> Just $ "out" /\ [ q "output" outputArg ]
 
     "linear" -> Just $ "linear" /\ [ q "array" valuesArg ]
+    "ease" -> Just $ "ease" /\ [ q "ease" easeArg ]
     "fast" -> Just $ "fast" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
     "smooth" -> Just $ "smooth" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
     "offset" -> Just $ "offset" /\ [ q "array" valuesArg, q "v" $ narg 0.5 ]
