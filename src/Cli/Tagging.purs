@@ -8,6 +8,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Mark (mark)
 import Data.SProxy (reflect)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array (foldl)
 
 import Noodle.Id as Id
 
@@ -24,10 +25,10 @@ import Cli.Palette.Set.Pico8 as Pico
 
 
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Repr.Info (shortLabel, statusLine) as Info
+import Tookit.Hydra.Repr.Info (shortLabel, statusLine, familyDocs) as Info
 import Tookit.Hydra.Group (toGroup, toGroupR) as Hydra
 import Tookit.Hydra.Types as H
-import Tookit.Hydra.Lang.Fn as H
+import Tookit.Hydra.Lang.Fn as HFn
 
 
 input :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Tag
@@ -125,7 +126,7 @@ libraryItem familyR =
 
 glslFnItem :: H.GlslFn -> Tag
 glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
-    T.fgc (C.crepr Pico.blue) $ T.s $ H.name glslFn
+    T.fgc (C.crepr Pico.blue) $ T.s $ HFn.name glslFn
     {-
     let color = mark $ Hydra.toGroupR familyR
     in T.fgc color $ T.s $ Id.reflectFamilyR familyR
@@ -217,3 +218,26 @@ infoNode repr =
 
 selected :: String -> Tag
 selected = T.fgc (C.crepr Palette.positive) <<< T.s
+
+
+familyHelp :: HFn.KnownFn -> Tag
+familyHelp knownFn =
+    case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg)) of
+        Just (name /\ args) ->
+            T.fgcs (C.crepr Pico.blue) name
+            <> T.s " -> "
+            <> foldl (<>) (T.s "") (tagArgument <$> args)
+        Nothing -> T.s "?"
+    where
+        tagArgument :: HFn.Argument H.FnArg -> Tag
+        tagArgument arg = T.s "<" <>
+            case HFn.argValue arg of
+                _ ->
+                    T.fgcs (C.crepr Pico.darkGreen) (HFn.argName arg)
+                    <> T.s "::"
+                    <> tagValue (HFn.argValue arg)
+            <> T.s ">"
+        tagValue :: H.FnArg -> Tag
+        tagValue val =
+            T.s ""
+            -- TODO: T.fgc (mark val) $ T.s $ Info.documentation val

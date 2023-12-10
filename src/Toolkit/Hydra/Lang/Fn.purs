@@ -29,8 +29,12 @@ instance Show x => Show (Argument x) where
 type ArgumentName = String
 
 
--- TODO
+-- TODO: use in `ToFn`
+-- TODO: add output type
 newtype Fn arg = Fn (String /\ Array (Argument arg))
+
+
+type FnS arg = String /\ Array (Argument arg)
 
 
 class ToFn arg a where

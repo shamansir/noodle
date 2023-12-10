@@ -1176,7 +1176,11 @@ class DefaultOf a where
     default :: a
 
 
-defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg))
+instance PossiblyToFn FnArg Fn.KnownFn where
+    possiblyToFn = Fn.nameOf >>> defaultsFor
+
+
+defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg)) -- TODO: output of Fn!
 -- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value))
 defaultsFor = case _ of
     -- "number" -> Feed
@@ -1282,10 +1286,14 @@ defaultsFor = case _ of
     _ -> Nothing
 
 
+
+{- instance PossiblyToFn Value Fn.KnownFn where
+    possiblyToFn = Fn.nameOf >>> defaultsFor -}
+
 -- instance FnDefault // FnDocs // FnTypes
 
 
--- TODO: probably duplicates something
+-- TODO: probably duplicates something, is it used? replace with above instance of `defaultsFor`?`
 -- TODO: private
 fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value))
 fromKnownFn = case _ of
