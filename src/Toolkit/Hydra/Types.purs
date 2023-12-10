@@ -11,7 +11,7 @@ import Data.Array ((:))
 import Data.Array (length) as Array
 import Data.Either (Either(..))
 import Data.Map (Map)
-import Data.Mark (class Mark)
+import Data.Mark (class Mark, mark)
 import Data.Maybe (Maybe(..))
 import Data.Maybe (Maybe(..))
 import Data.Maybe (fromMaybe)
@@ -1110,6 +1110,26 @@ data FnArg
     | OutputArg OutputN
     | EaseArg Ease
     | SourceArg SourceN
+
+
+instance Mark FnArg where
+    mark = case _ of
+        TArg texture -> mark texture
+        VArg value -> mark value
+        UrlArg url -> mark url
+        OptionsArg options -> mark options
+        CamIndexArg _ -> Color.rgb 30 30 205
+        RenderTargetArg rt -> mark rt
+        ValuesArg values -> mark values
+        UpdateFnArg -> Color.rgb 219 112 147
+        SideArg -> Color.rgb 155 205 155
+        GlslFnArg -> Color.rgb 139 137 137
+        AudioArg -> Color.rgb 173 255 47
+        AudioBinsArg _ -> Color.rgb 238 230 133
+        OutputArg output -> mark output
+        EaseArg ease -> mark ease
+        SourceArg source -> mark source
+
 
 
 narg :: Number -> FnArg
