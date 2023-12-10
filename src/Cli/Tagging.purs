@@ -25,7 +25,7 @@ import Cli.Palette.Set.Pico8 as Pico
 
 
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Repr.Info (shortLabel, statusLine, familyDocs) as Info
+import Tookit.Hydra.Repr.Info (shortLabel, statusLine, familyDocs, docs) as Info
 import Tookit.Hydra.Group (toGroup, toGroupR) as Hydra
 import Tookit.Hydra.Types as H
 import Tookit.Hydra.Lang.Fn as HFn
@@ -239,5 +239,4 @@ familyHelp knownFn =
             <> T.s ">"
         tagValue :: H.FnArg -> Tag
         tagValue val =
-            T.s ""
-            -- TODO: T.fgc (mark val) $ T.s $ Info.documentation val
+            T.fgc (mark val) $ T.s $ Info.docs val

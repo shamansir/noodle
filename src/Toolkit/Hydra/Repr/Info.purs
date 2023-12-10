@@ -40,6 +40,9 @@ type VShortChannelLabel = String -- Vect 4 (Maybe SCP.CodePoint) -- ShortChannel
 type VStatusLine = String -- TODO: Tagged
 
 
+type VDocs = String -- TODO: Tagged
+
+
 {-
 vshortLabel :: forall a. Show a => Char -> a -> Char /\ Char /\ Char /\ Char
 vshortLabel filler a =
@@ -62,7 +65,7 @@ class StatusLineInfo a where
 
 
 class Documentation a where
-    docs :: a -> String
+    docs :: a -> VDocs
 
 
 instance ShortChannelLabel InfoRepr where
@@ -433,6 +436,123 @@ instance StatusLineInfo W.WrapRepr where
 
 
 
+instance Documentation H.Value where
+    docs :: H.Value -> VDocs
+    docs = show
+
+
+instance Documentation Unit where
+    docs :: Unit -> VDocs
+    docs = show
+
+
+instance Documentation H.Texture where
+    docs :: H.Texture -> VDocs
+    docs = show
+
+
+instance Documentation H.TODO where
+    docs :: H.TODO -> VDocs
+    docs = show
+
+
+instance Documentation H.Context where
+    docs :: H.Context -> VDocs
+    docs = show
+
+
+instance Documentation H.UpdateFn where
+    docs :: H.UpdateFn -> VDocs
+    docs = show
+
+
+instance Documentation H.Source where
+    docs :: H.Source -> VDocs
+    docs = show
+
+
+instance Documentation H.Url where
+    docs :: H.Url -> VDocs
+    docs = show
+
+
+instance Documentation H.GlslFn where
+    docs :: H.GlslFn -> VDocs
+    docs = show
+
+
+instance Documentation H.SourceOptions where
+    docs :: H.SourceOptions -> VDocs
+    docs = show
+
+
+instance Documentation H.Values where
+    docs :: H.Values -> VDocs
+    docs = show
+
+
+instance Documentation H.Ease where
+    docs :: H.Ease -> VDocs
+    docs = show
+
+
+instance Documentation H.AudioSource where
+    docs :: H.AudioSource -> VDocs
+    docs = show
+
+
+instance Documentation H.AudioBin where
+    docs :: H.AudioBin -> VDocs
+    docs = show
+
+
+instance Documentation H.OutputN where
+    docs :: H.OutputN -> VDocs
+    docs = show
+
+
+instance Documentation H.SourceN where
+    docs :: H.SourceN -> VDocs
+    docs = show
+
+
+instance Documentation H.ExtSource where
+    docs :: H.ExtSource -> VDocs
+    docs = show
+
+
+instance Documentation H.Fn where
+    docs :: H.Fn -> VDocs
+    docs = show
+
+
+instance Documentation H.RenderTarget where
+    docs :: H.RenderTarget -> VDocs
+    docs = show
+
+
+instance Documentation H.CanBeSource where
+    docs :: H.CanBeSource -> VDocs
+    docs = show
+
+
+instance Documentation CAI.Products where
+    docs :: CAI.Products -> VDocs
+    docs = show
+
+
+instance Documentation CAI.Product' where
+    docs :: CAI.Product' -> VDocs
+    docs = show
+
+
+instance Documentation H.TOrV where
+    docs :: H.TOrV -> VDocs
+    docs (H.T tex) = docs tex
+    docs (H.V val) = docs val
+
+
+
 instance Documentation (Family "osc") where
     docs = const $ familyDocs "osc"
 
@@ -564,3 +684,22 @@ familyDocs = case _ of -- use ToFn
 
     -- "colorama" -> "Shift HSV values"
     -- _ -> "tralala"
+
+
+instance Documentation H.FnArg where
+    docs = case _ of
+        H.TArg texture -> docs texture
+        H.VArg value -> docs value
+        H.UrlArg url -> docs url
+        H.OptionsArg options -> docs options
+        H.CamIndexArg n -> "<Cam " <> show n <> ">"
+        H.RenderTargetArg rt -> docs rt
+        H.ValuesArg values -> docs values
+        H.UpdateFnArg -> "() => {}"
+        H.SideArg -> "Pixels"
+        H.GlslFnArg -> "{ ... }" -- TODO
+        H.AudioArg -> "Audio"
+        H.AudioBinsArg n -> "<Bins " <> show n <> ">"
+        H.OutputArg output -> docs output
+        H.EaseArg ease -> docs ease
+        H.SourceArg source -> docs source
