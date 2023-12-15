@@ -29,6 +29,8 @@ import Noodle.Node.Path (InNode)
 import Tookit.Hydra.Group as HG
 import Tookit.Hydra.Types as H
 import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as W
+import Tookit.Hydra.Lang.Fn (KnownFn)
+import Tookit.Hydra.Lang.Fn (nameOf) as Fn
 
 
 data InfoRepr = InfoRepr { shortLabel :: VShortChannelLabel, statusLine :: VStatusLine }
@@ -555,10 +557,17 @@ instance Documentation H.TOrV where
 
 instance Documentation (Family "osc") where
     docs = const $ familyDocs "osc"
+instance Documentation (Family "number") where
+    docs = const $ familyDocs "number"
+-- TODO
 
 
 -- instance Documentation FamilyR where
 --     docs (FamilyR "osc") = docs (Family :: _ "osc")
+
+
+instance Documentation KnownFn where
+    docs = familyDocs <<< Fn.nameOf
 
 
 instance Documentation FamilyR where

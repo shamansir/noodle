@@ -29,7 +29,7 @@ instance Show x => Show (Argument x) where
 type ArgumentName = String
 
 
--- TODO: use in `ToFn`
+-- TODO: use in `ToFn` & PossinlyToFn
 -- TODO: add output type
 newtype Fn arg = Fn (String /\ Array (Argument arg))
 

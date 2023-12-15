@@ -94,8 +94,15 @@ nodeLabel family =
 
 
 nodeMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
-nodeMouseOver family =
-    T.fgcs (C.crepr Palette.familyName) $ reflect family
+nodeMouseOver =
+    familyMouseOver
+
+
+familyMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
+familyMouseOver family =
+    {- T.fgcs (C.crepr Palette.familyName) (reflect family)
+    <> T.s " ==== "
+    <> -} familyHelp (HFn.KnownFn $ reflect family)
 
 
 removeButtonOut ∷ Tag
@@ -224,9 +231,12 @@ familyHelp :: HFn.KnownFn -> Tag
 familyHelp knownFn =
     case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg)) of
         Just (name /\ args) ->
-            T.fgcs (C.crepr Pico.blue) name
+            -- TODO: add familyDocs
+            T.fgcs (C.crepr Palette.familyName) name
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
+            <> T.s " // "
+            <> T.fgcs (C.crepr Pico.lavender) (Info.docs knownFn)
         Nothing -> T.s "?"
     where
         tagArgument :: HFn.Argument H.FnArg -> Tag
@@ -236,7 +246,7 @@ familyHelp knownFn =
                     T.fgcs (C.crepr Pico.darkGreen) (HFn.argName arg)
                     <> T.s "::"
                     <> tagValue (HFn.argValue arg)
-            <> T.s ">"
+            <> T.s "> "
         tagValue :: H.FnArg -> Tag
         tagValue val =
             T.fgc (mark val) $ T.s $ Info.docs val

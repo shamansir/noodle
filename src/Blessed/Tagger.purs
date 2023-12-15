@@ -35,6 +35,10 @@ data Tag
     | Pair Tag Tag
 
 
+-- TODO: binary operators for tags
+-- TODO: empty tag
+
+
 
 instance Show Align where
     show Left = "left"
