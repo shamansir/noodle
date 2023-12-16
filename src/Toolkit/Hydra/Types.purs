@@ -28,9 +28,9 @@ import Cli.Palette.Set.X11 as X11
 
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
-import Tookit.Hydra.Lang.Fn (Fn) as Lang
-import Tookit.Hydra.Lang.Fn (class PossiblyToFn, class ToFn, arg, possiblyToFn, q, toFn)
-import Tookit.Hydra.Lang.Fn (empty, Argument(..), name, argName, argValue, argsCount, nameOf, KnownFn) as Fn
+import Tookit.Hydra.Lang.Fn (Fn, FnU) as Lang
+import Tookit.Hydra.Lang.Fn (class PossiblyToFn, class ToFn, arg, out, possiblyToFn, q, o, toFn)
+import Tookit.Hydra.Lang.Fn (empty, Argument(..), Output(..), name, argName, argValue, argsCount, nameOf, KnownFn) as Fn
 
 
 data TODO = TODO
@@ -263,13 +263,16 @@ data GlslFnKind
 type GlslFnArg = TOrV
 
 
+type GlslFnOut = Unit
+
+
 newtype GlslFnCode = GlslFnCode String
 
 
-newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Lang.Fn GlslFnArg) -- holds default value in every argument
+newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Lang.Fn GlslFnArg GlslFnOut) -- holds default value in every argument
 
 
-newtype GlslFnRef = GlslFnRef (Lang.Fn GlslFnArg) -- should the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Lang.Fn GlslFnArg GlslFnOut) -- should the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -948,135 +951,140 @@ data TOrV
     | V Value
 
 
-instance ToFn Value ColorOp where
-    toFn :: ColorOp -> String /\ Array (Fn.Argument Value)
+data OTOrV
+    = OT
+    | OV
+
+
+instance ToFn Value Unit ColorOp where
+    toFn :: ColorOp -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
     toFn = case _ of
-        R { scale, offset } -> "r" /\ [ q "scale" scale, q "offset" offset ]
-        G { scale, offset } -> "g" /\ [ q "scale" scale, q "offset" offset ]
-        B { scale, offset } -> "b" /\ [ q "scale" scale, q "offset" offset ]
-        A { scale, offset } -> "a" /\ [ q "scale" scale, q "offset" offset ]
-        Posterize { bins, gamma } -> "posterize" /\ [ q "bins" bins, q "gamma" gamma ]
-        Shift { r, g, b, a } -> "shift" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
-        Invert amount -> "invert" /\ [ q "amount" amount ]
-        Contrast amount -> "contrast" /\ [ q "amount" amount ]
-        Brightness amount -> "brightness" /\ [ q "amount" amount ]
-        Luma { threshold, tolerance } -> "luma" /\ [ q "threshold" threshold, q "tolerance" tolerance ]
-        Thresh { threshold, tolerance } -> "thresh" /\ [ q "threshold" threshold, q "tolerance" tolerance ]
-        Color { r, g, b, a } -> "color" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
-        Saturate amount -> "saturate" /\ [ q "amount" amount ]
-        Hue amount -> "hue" /\ [ q "amount" amount ]
-        Colorama amount -> "colorama" /\ [ q "amount" amount ]
+        R { scale, offset } -> "r" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        G { scale, offset } -> "g" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        B { scale, offset } -> "b" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        A { scale, offset } -> "a" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        Posterize { bins, gamma } -> "posterize" /\ [ q "bins" bins, q "gamma" gamma ] /\ [ o "out" unit ]
+        Shift { r, g, b, a } -> "shift" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
+        Invert amount -> "invert" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Contrast amount -> "contrast" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Brightness amount -> "brightness" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Luma { threshold, tolerance } -> "luma" /\ [ q "threshold" threshold, q "tolerance" tolerance ] /\ [ o "out" unit ]
+        Thresh { threshold, tolerance } -> "thresh" /\ [ q "threshold" threshold, q "tolerance" tolerance ] /\ [ o "out" unit ]
+        Color { r, g, b, a } -> "color" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
+        Saturate amount -> "saturate" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Hue amount -> "hue" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Colorama amount -> "colorama" /\ [ q "amount" amount ] /\ [ o "out" unit ]
 
 
-instance ToFn Value Modulate where
-    toFn :: Modulate -> String /\ Array (Fn.Argument Value)
+instance ToFn Value Unit Modulate where
+    toFn :: Modulate -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
     toFn = case _ of
-        Modulate amount -> "modulate" /\ [ q "amount" amount ]
-        ModHue amount -> "modHue" /\ [ q "amount" amount ]
-        ModKaleid { nSides } -> "modKaleid" /\ [ q "nSides" nSides ]
-        ModPixelate { multiple, offset } -> "modPixelate" /\ [ q "multiple" multiple, q "offset" offset ]
-        ModRepeat { repeatX, repeatY, offsetX, offsetY } -> "modRepeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ]
-        ModRepeatX { reps, offset } -> "modRepeatX" /\ [ q "reps" reps, q "offset" offset ]
-        ModRepeatY { reps, offset } -> "modRepeatY" /\ [ q "reps" reps, q "offset" offset ]
-        ModRotate { multiple, offset } -> "modRotate" /\ [ q "multiple" multiple, q "offset" offset ]
-        ModScale { multiple, offset } -> "modScale" /\ [ q "multiple" multiple, q "offset" offset ]
-        ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ]
-        ModScrollX { scrollX, speed } -> "modScrollX" /\ [ q "scrollX" scrollX, q "speed" speed ]
-        ModScrollY { scrollY, speed } -> "modScrollY" /\ [ q "scrollY" scrollY, q "speed" speed ]
+        Modulate amount -> "modulate" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        ModHue amount -> "modHue" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        ModKaleid { nSides } -> "modKaleid" /\ [ q "nSides" nSides ] /\ [ o "out" unit ]
+        ModPixelate { multiple, offset } -> "modPixelate" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
+        ModRepeat { repeatX, repeatY, offsetX, offsetY } -> "modRepeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
+        ModRepeatX { reps, offset } -> "modRepeatX" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
+        ModRepeatY { reps, offset } -> "modRepeatY" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
+        ModRotate { multiple, offset } -> "modRotate" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
+        ModScale { multiple, offset } -> "modScale" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
+        ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ] /\ [ o "out" unit ]
+        ModScrollX { scrollX, speed } -> "modScrollX" /\ [ q "scrollX" scrollX, q "speed" speed ] /\ [ o "out" unit ]
+        ModScrollY { scrollY, speed } -> "modScrollY" /\ [ q "scrollY" scrollY, q "speed" speed ] /\ [ o "out" unit ]
 
 
-instance ToFn Value Blend where
-    toFn :: Blend -> String /\ Array (Fn.Argument Value)
+instance ToFn Value Unit Blend where
+    toFn :: Blend -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
     toFn = case _ of
-        Blend amount -> "blend" /\ [ q "amount" amount ]
-        Add amount -> "add" /\ [ q "amount" amount ]
-        Sub amount -> "sub" /\ [ q "amount" amount ]
-        Mult amount -> "mult" /\ [ q "amount" amount ]
-        Layer amount -> "layer" /\ [ q "amount" amount ]
-        Diff -> "diff" /\ []
-        Mask -> "mask" /\ []
+        Blend amount -> "blend" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Add amount -> "add" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Sub amount -> "sub" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Mult amount -> "mult" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Layer amount -> "layer" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        Diff -> "diff" /\ [] /\ []
+        Mask -> "mask" /\ [] /\ []
 
 
-instance ToFn Value Geometry where
-    toFn :: Geometry -> String /\ Array (Fn.Argument Value)
+instance ToFn Value Unit Geometry where
+    toFn :: Geometry -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
     toFn = case _ of
-        GKaleid { nSides } -> "kaleid" /\ [ q "nSides" nSides ]
-        GPixelate { pixelX, pixelY } -> "pixelate" /\ [ q "pixelX" pixelX, q "pixelY" pixelY ]
-        GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ]
-        GRepeatX { reps, offset } -> "repeatX" /\ [ q "reps" reps, q "offset" offset ]
-        GRepeatY { reps, offset } -> "repeatY" /\ [ q "reps" reps, q "offset" offset ]
-        GRotate { angle, speed } -> "rotate" /\ [ q "angle" angle, q "speed" speed ]
-        GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ q "amount" amount, q "xMult" xMult, q "yMult" yMult, q "offsetX" offsetX, q "offsetY" offsetY ]
-        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ]
-        GScrollX { scrollX, speed } -> "scrollX" /\ [ q "scrollX" scrollX, q "speed" speed ]
-        GScrollY { scrollY, speed } -> "scrollY" /\ [ q "scrollY" scrollY, q "speed" speed ]
+        GKaleid { nSides } -> "kaleid" /\ [ q "nSides" nSides ] /\ [ o "out" unit ]
+        GPixelate { pixelX, pixelY } -> "pixelate" /\ [ q "pixelX" pixelX, q "pixelY" pixelY ] /\ [ o "out" unit ]
+        GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
+        GRepeatX { reps, offset } -> "repeatX" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
+        GRepeatY { reps, offset } -> "repeatY" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
+        GRotate { angle, speed } -> "rotate" /\ [ q "angle" angle, q "speed" speed ] /\ [ o "out" unit ]
+        GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ q "amount" amount, q "xMult" xMult, q "yMult" yMult, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
+        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ] /\ [ o "out" unit ]
+        GScrollX { scrollX, speed } -> "scrollX" /\ [ q "scrollX" scrollX, q "speed" speed ] /\ [ o "out" unit ]
+        GScrollY { scrollY, speed } -> "scrollY" /\ [ q "scrollY" scrollY, q "speed" speed ] /\ [ o "out" unit ]
 
 
-instance ToFn Value Ease where
-    toFn :: Ease -> String /\ Array (Fn.Argument Value)
+instance ToFn Value Unit Ease where
+    toFn :: Ease -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
     toFn = case _ of
-        Linear -> "linear" /\ []
-        Fast v -> "fast" /\ [ q "v" v ]
-        Smooth v -> "smooth" /\ [ q "v" v ]
-        Fit { low, high } -> "fit" /\ [ q "low" low, q "high" high ]
-        Offset v -> "offset" /\ [ q "v" v ]
-        InOutCubic -> "inOutCubic" /\ []
+        Linear -> "linear" /\ [] /\ [ o "out" unit ]
+        Fast v -> "fast" /\ [ q "v" v ] /\ [ o "out" unit ]
+        Smooth v -> "smooth" /\ [ q "v" v ] /\ [ o "out" unit ]
+        Fit { low, high } -> "fit" /\ [ q "low" low, q "high" high ] /\ [ o "out" unit ]
+        Offset v -> "offset" /\ [ q "v" v ] /\ [ o "out" unit ]
+        InOutCubic -> "inOutCubic" /\ [] /\ [ o "out" unit ]
 
 
-instance ToFn TOrV GlslFn where
-    toFn :: GlslFn -> String /\ Array (Fn.Argument TOrV)
+instance ToFn GlslFnArg GlslFnOut GlslFn where
+    toFn :: GlslFn -> String /\ Array (Fn.Argument GlslFnArg) /\ Array (Fn.Output GlslFnOut)
     toFn (GlslFn (name /\ _ /\ fn)) = toFn fn
 
 
-instance ToFn TOrV GlslFnRef where
-    toFn :: GlslFnRef -> String /\ Array (Fn.Argument TOrV)
+instance ToFn GlslFnArg GlslFnOut GlslFnRef where
+    toFn :: GlslFnRef -> String /\ Array (Fn.Argument GlslFnArg) /\ Array (Fn.Output GlslFnOut)
     toFn (GlslFnRef fn) = toFn fn
 
 
-instance PossiblyToFn Value Source where
-    possiblyToFn :: Source -> Maybe (String /\ Array (Fn.Argument Value))
+instance PossiblyToFn Value Unit Source where
+    possiblyToFn :: Source -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
     possiblyToFn = case _ of
         Load outputN -> Nothing -- TODO: could be converted to `src()`
         External sourceN ext -> Nothing -- TODO: could be converted to `src()` ?
-        Gradient { speed } -> Just $ "gradient" /\ [ q "speed" speed ]
-        Noise { scale, offset } -> Just $ "noise" /\ [ q "scale" scale, q "offset" offset ]
-        Osc { frequency, sync, offset } -> Just $ "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ]
-        Shape { sides, radius, smoothing } -> Just $ "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ]
-        Solid { r, g, b, a } -> Just $ "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ]
-        Voronoi { scale, speed, blending } -> Just $ "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ]
+        Gradient { speed } -> Just $ "gradient" /\ [ q "speed" speed ] /\ [ o "out" unit ]
+        Noise { scale, offset } -> Just $ "noise" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        Osc { frequency, sync, offset } -> Just $ "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ] /\ [ o "out" unit ]
+        Shape { sides, radius, smoothing } -> Just $ "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ] /\ [ o "out" unit ]
+        Solid { r, g, b, a } -> Just $ "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
+        Voronoi { scale, speed, blending } -> Just $ "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ] /\ [ o "out" unit ]
 
 
-instance PossiblyToFn TOrV Texture where
-    possiblyToFn :: Texture -> Maybe (String /\ Array (Fn.Argument TOrV))
+instance PossiblyToFn TOrV OTOrV Texture where
+    possiblyToFn :: Texture -> Maybe (String /\ Array (Fn.Argument TOrV) /\ Array (Fn.Output OTOrV))
     possiblyToFn = case _ of
         Empty -> Nothing
         Start src ->
-            case (possiblyToFn src :: Maybe (String /\ Array (Fn.Argument Value))) of
-                Just (name /\ args) -> Just $ name /\ (map V <$> args)
+            case (possiblyToFn src :: Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))) of
+                Just (name /\ args /\ outs) -> Just $ name /\ (map V <$> args) /\ (map (const OT) <$> outs)
                 Nothing -> Nothing
         BlendOf { what, with } blend ->
-            case (toFn blend :: String /\ Array (Fn.Argument Value)) of
-                name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
+            case (toFn blend :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)) of
+                name /\ args /\ outs -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ]) /\ (map (const OT) <$> outs)
         Filter texture cop ->
-            case (toFn cop :: String /\ Array (Fn.Argument Value)) of
-                name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
+            case (toFn cop :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)) of
+                name /\ args /\ outs -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ]) /\ (map (const OT) <$> outs)
         ModulateWith { what, with } mod ->
-            case (toFn mod :: String /\ Array (Fn.Argument Value)) of
-                name /\ args -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ])
+            case (toFn mod :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)) of
+                name /\ args /\ outs -> Just $ name /\ ((q "what" $ T what) : (map V <$> args) <> [ q "with" $ T with ]) /\ (map (const OT) <$> outs)
         Geometry texture gmt ->
-            case (toFn gmt :: String /\ Array (Fn.Argument Value)) of
-                name /\ args -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ])
+            case (toFn gmt :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)) of
+                name /\ args /\ outs -> Just $ name /\ ((map V <$> args) <> [ q "texture" $ T texture ]) /\ (map (const OT) <$> outs)
         CallGlslFn { over, mbWith } fnRef ->
-            case (toFn fnRef :: String /\ Array (Fn.Argument TOrV)) of
-                name /\ args -> Just $ name /\ ((q "over" $ T over) : args <>
+            case (toFn fnRef :: String /\ Array (Fn.Argument TOrV) /\ Array (Fn.Output GlslFnOut)) of
+                name /\ args /\ outs -> Just $ name /\ ((q "over" $ T over) : args <>
                     case mbWith of
                         Just with -> [ q "with" $ T with ]
                         Nothing -> [ ]
-                    )
+                    ) /\ (map (const OT) <$> outs)
 
 
-instance PossiblyToFn Value Fn.KnownFn where
-    possiblyToFn :: Fn.KnownFn -> Maybe (String /\ Array (Fn.Argument Value))
+instance PossiblyToFn Value Unit Fn.KnownFn where
+    possiblyToFn :: Fn.KnownFn -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
     possiblyToFn = Fn.nameOf >>> fromKnownFn
 
 
@@ -1130,6 +1138,14 @@ instance Mark FnArg where
         EaseArg ease -> mark ease
         SourceArg source -> mark source
 
+
+
+data FnOut
+    = OutTexture
+    | OutValues -- same as OutValue?
+    -- | OutValue
+    | OutEase
+    -- | OutNothing
 
 
 narg :: Number -> FnArg
@@ -1192,90 +1208,98 @@ sourceArg :: FnArg
 sourceArg = SourceArg Source0
 
 
+tOut :: FnOut
+tOut = OutTexture
+
+
+arrOut :: FnOut
+arrOut = OutValues
+
+
 class DefaultOf a where
     default :: a
 
 
-instance PossiblyToFn FnArg Fn.KnownFn where
+instance PossiblyToFn FnArg FnOut Fn.KnownFn where
     possiblyToFn = Fn.nameOf >>> defaultsFor
 
 
-defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg)) -- TODO: output of Fn!
--- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value))
+defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg) /\ Array (Fn.Output FnOut)) -- TODO: output of Fn!
+-- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
 defaultsFor = case _ of
     -- "number" -> Feed
 
-    "noise" -> Just $ "noise" /\ [ q "scale" $ narg 10.0, q "offset" $ narg 0.1 ]
-    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ narg 5.0, q "speed" $ narg 0.3, q "blending" $ narg 0.3 ]
-    "osc" -> Just $ "osc" /\ [ q "frequency" $ narg 60.0, q "sync" $ narg 0.1, q "offset" $ narg 0.0 ]
-    "shape" -> Just $ "shape" /\ [ q "sides" $ narg 3.0, q "radius" $ narg 0.3, q "smoothing" $ narg 0.01 ]
-    "gradient" -> Just $ "gradient" /\ [ q "speed" $ narg 0.0 ]
-    "src" -> Just $ "src" /\ [ q "src" sourceArg  ]
-    "solid" -> Just $ "solid" /\ [ q "r" $ narg 0.0, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 1.0 ]
+    "noise" -> Just $ "noise" /\ [ q "scale" $ narg 10.0, q "offset" $ narg 0.1 ] /\ [ o "out" tOut ]
+    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ narg 5.0, q "speed" $ narg 0.3, q "blending" $ narg 0.3 ] /\ [ o "out" tOut ]
+    "osc" -> Just $ "osc" /\ [ q "frequency" $ narg 60.0, q "sync" $ narg 0.1, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "shape" -> Just $ "shape" /\ [ q "sides" $ narg 3.0, q "radius" $ narg 0.3, q "smoothing" $ narg 0.01 ] /\ [ o "out" tOut ]
+    "gradient" -> Just $ "gradient" /\ [ q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "src" -> Just $ "src" /\ [ q "src" sourceArg  ] /\ [ o "out" tOut ]
+    "solid" -> Just $ "solid" /\ [ q "r" $ narg 0.0, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 1.0 ] /\ [ o "out" tOut ]
     -- "prev" -> Source
 
-    "rotate" -> Just $ "rotate" /\ [ q "what" tArg, q "angle" $ narg 10.0, q "speed" $ narg 0.0 ]
-    "scale" -> Just $ "scale" /\ [ q "what" tArg, q "amount" $ narg 1.5, q "xMult" $ narg 1.0, q "yMult" $ narg 1.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ]
-    "pixelate" -> Just $ "pixelate" /\ [ q "what" tArg, q "pixelX" $ narg 20.0, q "pixelY" $ narg 20.0 ]
-    "repeat" -> Just $ "repeat" /\ [ q "what" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.0, q "offsetY" $ narg 0.0 ]
-    "repeatX" -> Just $ "repeatX" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ]
-    "repeatY" -> Just $ "repeatY" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ]
-    "kaleid" -> Just $ "kaleid" /\ [ q "what" tArg, q "nSides" $ narg 4.0 ]
-    "scroll" -> Just $ "scroll" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "scrollY" $ narg 0.5, q "speedX" $ narg 0.0, q "speedY" $ narg 0.0 ]
-    "scrollX" -> Just $ "scrollX" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ]
-    "scrollY" -> Just $ "scrollY" /\ [ q "what" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ]
+    "rotate" -> Just $ "rotate" /\ [ q "what" tArg, q "angle" $ narg 10.0, q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "scale" -> Just $ "scale" /\ [ q "what" tArg, q "amount" $ narg 1.5, q "xMult" $ narg 1.0, q "yMult" $ narg 1.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "pixelate" -> Just $ "pixelate" /\ [ q "what" tArg, q "pixelX" $ narg 20.0, q "pixelY" $ narg 20.0 ] /\ [ o "out" tOut ]
+    "repeat" -> Just $ "repeat" /\ [ q "what" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.0, q "offsetY" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "repeatX" -> Just $ "repeatX" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "repeatY" -> Just $ "repeatY" /\ [ q "what" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "kaleid" -> Just $ "kaleid" /\ [ q "what" tArg, q "nSides" $ narg 4.0 ] /\ [ o "out" tOut ]
+    "scroll" -> Just $ "scroll" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "scrollY" $ narg 0.5, q "speedX" $ narg 0.0, q "speedY" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "scrollX" -> Just $ "scrollX" /\ [ q "what" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "scrollY" -> Just $ "scrollY" /\ [ q "what" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
 
-    "posterize" -> Just $ "posterize" /\ [ q "what" tArg, q "bins" $ narg 3.0, q "gamma" $ narg 6.0 ]
-    "shift" -> Just $ "shift" /\ [ q "what" tArg, q "r" $ narg 0.5, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 0.5 ]
-    "invert" -> Just $ "invert" /\ [ q "what" tArg, q "amount" $ narg 1.0 ]
-    "contrast" -> Just $ "contrast" /\ [ q "what" tArg, q "amount" $ narg 1.6 ]
-    "brightness" -> Just $ "brightness" /\ [ q "what" tArg, q "amount" $ narg 0.4 ]
-    "luma" -> Just $ "luma" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.1 ]
-    "thresh" -> Just $ "thresh" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.04 ]
-    "color" -> Just $ "color" /\ [ q "what" tArg, q "r" $ narg 1.0, q "g" $ narg 1.0, q "b" $ narg 1.0, q "a" $ narg 1.0 ]
-    "saturate" -> Just $ "saturate" /\ [ q "what" tArg, q "amount" $ narg 2.0 ]
-    "hue" -> Just $ "hue" /\ [ q "what" tArg, q "amount" $ narg 0.4 ]
-    "colorama" -> Just $ "colorama" /\ [ q "what" tArg, q "amount" $ narg 0.005 ]
+    "posterize" -> Just $ "posterize" /\ [ q "what" tArg, q "bins" $ narg 3.0, q "gamma" $ narg 6.0 ] /\ [ o "out" tOut ]
+    "shift" -> Just $ "shift" /\ [ q "what" tArg, q "r" $ narg 0.5, q "g" $ narg 0.0, q "b" $ narg 0.0, q "a" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "invert" -> Just $ "invert" /\ [ q "what" tArg, q "amount" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "contrast" -> Just $ "contrast" /\ [ q "what" tArg, q "amount" $ narg 1.6 ] /\ [ o "out" tOut ]
+    "brightness" -> Just $ "brightness" /\ [ q "what" tArg, q "amount" $ narg 0.4 ] /\ [ o "out" tOut ]
+    "luma" -> Just $ "luma" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.1 ] /\ [ o "out" tOut ]
+    "thresh" -> Just $ "thresh" /\ [ q "what" tArg, q "threshold" $ narg 0.5, q "tolerance" $ narg 0.04 ] /\ [ o "out" tOut ]
+    "color" -> Just $ "color" /\ [ q "what" tArg, q "r" $ narg 1.0, q "g" $ narg 1.0, q "b" $ narg 1.0, q "a" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "saturate" -> Just $ "saturate" /\ [ q "what" tArg, q "amount" $ narg 2.0 ] /\ [ o "out" tOut ]
+    "hue" -> Just $ "hue" /\ [ q "what" tArg, q "amount" $ narg 0.4 ] /\ [ o "out" tOut ]
+    "colorama" -> Just $ "colorama" /\ [ q "what" tArg, q "amount" $ narg 0.005 ] /\ [ o "out" tOut ]
     -- "sum" -> Color
-    "r" -> Just $ "r" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
-    "g" -> Just $ "g" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
-    "b" -> Just $ "b" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
-    "a" -> Just $ "a" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ]
+    "r" -> Just $ "r" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "g" -> Just $ "g" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "b" -> Just $ "b" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "a" -> Just $ "a" /\ [ q "what" tArg, q "scale" $ narg 1.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
 
      -- FIXME : first arg is texture for everything below
-    "add" -> Just $ "add" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
-    "sub" -> Just $ "sub" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
-    "layer" -> Just $ "layer" /\ [ q "what" tArg, q "with" tArg ]
-    "blend" -> Just $ "blend" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.5 ]
-    "mult" -> Just $ "mult" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
-    "diff" -> Just $ "diff" /\ [ q "what" tArg, q "with" tArg ]
-    "mask" -> Just $ "mask" /\ [ q "what" tArg, q "with" tArg ]
+    "add" -> Just $ "add" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "sub" -> Just $ "sub" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "layer" -> Just $ "layer" /\ [ q "what" tArg, q "with" tArg ] /\ [ o "out" tOut ]
+    "blend" -> Just $ "blend" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "mult" -> Just $ "mult" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "diff" -> Just $ "diff" /\ [ q "what" tArg, q "with" tArg ] /\ [ o "out" tOut ]
+    "mask" -> Just $ "mask" /\ [ q "what" tArg, q "with" tArg ] /\ [ o "out" tOut ]
 
-    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "what" tArg, q "with" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ]
-    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ]
-    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ]
-    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "what" tArg, q "with" tArg, q "nSides" $ narg 4.0 ]
-    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "what" tArg, q "with" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ]
-    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "what" tArg, q "with" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ]
-    "modulate" -> Just $ "modulate" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.1 ]
-    "modulateScale" -> Just $ "modScale" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 1.0 ]
-    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 10.0, q "offset" $ narg 3.0 ]
-    "modulateRotate" -> Just $ "modRotate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 0.0 ]
-    "modulateHue" -> Just $ "modHue" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ]
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "what" tArg, q "with" tArg, q "repeatX" $ narg 3.0, q "repeatY" $ narg 3.0, q "offsetX" $ narg 0.5, q "offsetY" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "what" tArg, q "with" tArg, q "reps" $ narg 3.0, q "offset" $ narg 0.5 ] /\ [ o "out" tOut ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "what" tArg, q "with" tArg, q "nSides" $ narg 4.0 ] /\ [ o "out" tOut ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "what" tArg, q "with" tArg, q "scrollX" $ narg 0.5, q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "what" tArg, q "with" tArg, q "scrollY" $ narg 0.5, q "speed" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "modulate" -> Just $ "modulate" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 0.1 ] /\ [ o "out" tOut ]
+    "modulateScale" -> Just $ "modScale" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 1.0 ] /\ [ o "out" tOut ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 10.0, q "offset" $ narg 3.0 ] /\ [ o "out" tOut ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ q "what" tArg, q "with" tArg, q "multiple" $ narg 1.0, q "offset" $ narg 0.0 ] /\ [ o "out" tOut ]
+    "modulateHue" -> Just $ "modHue" /\ [ q "what" tArg, q "with" tArg, q "amount" $ narg 1.0 ] /\ [ o "out" tOut ]
 
-    "initCam" -> Just $ "initCam" /\ []
-    "initImage" -> Just $ "initImage" /\ [ q "url" urlArg ]
-    "initVideo" -> Just $ "initVideo" /\ [ q "url" urlArg ]
-    "init" -> Just $ "init" /\ [ q "options" optionsArg ]
-    "initStream" -> Just $ "initStream" /\ [ q "url" urlArg ]
-    "initCam" -> Just $ "initCam" /\ [ q "index" ciArg ]
-    "initScreen" -> Just $ "initScreen" /\ []
+    "initCam" -> Just $ "initCam" /\ [] /\ []
+    "initImage" -> Just $ "initImage" /\ [ q "url" urlArg ] /\ []
+    "initVideo" -> Just $ "initVideo" /\ [ q "url" urlArg ] /\ []
+    "init" -> Just $ "init" /\ [ q "options" optionsArg ] /\ []
+    "initStream" -> Just $ "initStream" /\ [ q "url" urlArg ] /\ []
+    "initCam" -> Just $ "initCam" /\ [ q "index" ciArg ] /\ []
+    "initScreen" -> Just $ "initScreen" /\ [] /\ []
 
-    "render" -> Just $ "render" /\ [ q "target" rtArg ]
-    "update" -> Just $ "update" /\ [ q "update" updateArg ]
-    "setResolution" -> Just $ "setResolution" /\ [ q "width" sideArg, q "height" sideArg ]
-    "hush" -> Just $ "hush" /\ []
-    "setFunction" -> Just $ "setFunction" /\ [ q "fn" glslArg ]
+    "render" -> Just $ "render" /\ [ q "target" rtArg ] /\ []
+    "update" -> Just $ "update" /\ [ q "update" updateArg ] /\ []
+    "setResolution" -> Just $ "setResolution" /\ [ q "width" sideArg, q "height" sideArg ] /\ []
+    "hush" -> Just $ "hush" /\ [] /\ []
+    "setFunction" -> Just $ "setFunction" /\ [ q "fn" glslArg ] /\ []
     -- "speed" -> Synth
     -- "bpm" -> Synth
     -- "width" -> Synth
@@ -1285,21 +1309,21 @@ defaultsFor = case _ of
     -- "pi" -> Synth
 
     -- "fft" -> Audio
-    "setSmooth" -> Just $ "setSmooth" /\ [ q "audio" audioArg, q "smooth" $ narg 0.4 ]
-    "setCutoff" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "cutoff" $ narg 2.0 ]
-    "setBins" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "bins" audioBinsArg ]
-    "setScale" -> Just $ "setScale" /\ [ q "audio" audioArg, q "scale" $ narg 10.0 ]
-    "hide" -> Just $ "hide" /\ []
-    "show" -> Just $ "show" /\ []
+    "setSmooth" -> Just $ "setSmooth" /\ [ q "audio" audioArg, q "smooth" $ narg 0.4 ] /\ []
+    "setCutoff" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "cutoff" $ narg 2.0 ] /\ []
+    "setBins" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "bins" audioBinsArg ] /\ []
+    "setScale" -> Just $ "setScale" /\ [ q "audio" audioArg, q "scale" $ narg 10.0 ] /\ []
+    "hide" -> Just $ "hide" /\ [] /\ []
+    "show" -> Just $ "show" /\ [] /\ []
 
-    "out" -> Just $ "out" /\ [ q "output" outputArg ]
+    "out" -> Just $ "out" /\ [ q "output" outputArg ] /\ []
 
-    "linear" -> Just $ "linear" /\ [ q "array" valuesArg ]
-    "ease" -> Just $ "ease" /\ [ q "ease" easeArg ]
-    "fast" -> Just $ "fast" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
-    "smooth" -> Just $ "smooth" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ]
-    "offset" -> Just $ "offset" /\ [ q "array" valuesArg, q "v" $ narg 0.5 ]
-    "fit" -> Just $ "fit" /\ [ q "array" valuesArg, q "low" $ narg 0.0, q "high" $ narg 1.0 ]
+    "linear" -> Just $ "linear" /\ [ q "array" valuesArg ] /\ [ o "out" arrOut ]
+    "ease" -> Just $ "ease" /\ [ q "ease" easeArg ] /\ [ o "out" arrOut ]
+    "fast" -> Just $ "fast" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ] /\ [ o "out" arrOut ]
+    "smooth" -> Just $ "smooth" /\ [ q "array" valuesArg, q "v" $ narg 1.0 ] /\ [ o "out" arrOut ]
+    "offset" -> Just $ "offset" /\ [ q "array" valuesArg, q "v" $ narg 0.5 ] /\ [ o "out" arrOut ]
+    "fit" -> Just $ "fit" /\ [ q "array" valuesArg, q "low" $ narg 0.0, q "high" $ narg 1.0 ] /\ [ o "out" arrOut ]
 
     -- "inOutCubic" -> Just $ "inOutCubic" /\ []
 
@@ -1307,7 +1331,7 @@ defaultsFor = case _ of
 
 
 
-{- instance PossiblyToFn Value Fn.KnownFn where
+{- instance PossiblyToFn Value Fn Unit.KnownFn where
     possiblyToFn = Fn.nameOf >>> defaultsFor -}
 
 -- instance FnDefault // FnDocs // FnTypes
@@ -1315,7 +1339,7 @@ defaultsFor = case _ of
 
 -- TODO: probably duplicates something, is it used? replace with above instance of `defaultsFor`?`
 -- TODO: private
-fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value))
+fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
 fromKnownFn = case _ of
     -- "number" -> Feed
 
@@ -1429,7 +1453,7 @@ showUsingFn _ a =
                 "<" <> String.pascalCase name <> ">"
 
 
-showUsingFnV :: forall x. ToFn Value x => x -> String
+showUsingFnV :: forall x. ToFn Value x Unit => x -> String
 showUsingFnV = showUsingFn (Proxy :: _ Value)
 
 
@@ -1449,7 +1473,7 @@ showUsingPossiblyFn _ fallback a =
             fallback a
 
 
-showUsingPossiblyFnV :: forall x. PossiblyToFn Value x => (x -> String) -> x -> String
+showUsingPossiblyFnV :: forall x. PossiblyToFn Value x Unit => (x -> String) -> x -> String
 showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) fallback a
 
 
@@ -1500,9 +1524,9 @@ glslEnd :: String
 glslEnd = "■¤¤¤¤"
 
 
-encodeUsingFn :: forall a. ToFn Value a => a -> String
+encodeUsingFn :: forall a. ToFn Value a Unit => a -> String
 encodeUsingFn a =
-    case toFn a :: String /\ Array (Fn.Argument Value) of
+    case toFn a :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit) of
         name /\ args ->
             if Array.length args > 0 then
                 String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
