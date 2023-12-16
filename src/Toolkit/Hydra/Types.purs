@@ -506,6 +506,12 @@ instance Show TOrV where
         V val -> show val
 
 
+instance Show OTOrV where
+    show = case _ of
+        OT -> "TEX"
+        OV -> "VAL"
+
+
 instance Show JsExpr where
     show :: JsExpr -> String
     show = case _ of
@@ -641,12 +647,12 @@ instance Show GlslFnKind where
 
 instance Show GlslFn where
     show :: GlslFn -> String
-    show (GlslFn (kind /\ _ /\ fn)) = "Define {" <> show kind <> "} " <> showUsingFnTOrV fn
+    show (GlslFn (kind /\ _ /\ fn)) = "Define {" <> show kind <> "} " <> showUsingFnTOrV' fn
 
 
 instance Show GlslFnRef where
     show :: GlslFnRef -> String
-    show (GlslFnRef fn) = "Call " <> showUsingFnTOrV fn
+    show (GlslFnRef fn) = "Call " <> showUsingFnTOrV' fn
 
 
 instance Show SourceOptions where
@@ -1088,10 +1094,10 @@ instance PossiblyToFn Value Unit Fn.KnownFn where
     possiblyToFn = Fn.nameOf >>> fromKnownFn
 
 
-encodeFnWithArgNames :: forall arg. Encode arg => Lang.Fn arg -> String
+encodeFnWithArgNames :: forall arg out. Encode arg => Lang.Fn arg out -> String
 encodeFnWithArgNames fn =
-    case (toFn fn :: String /\ Array (Fn.Argument arg)) of
-        name /\ args ->
+    case (toFn fn :: String /\ Array (Fn.Argument arg) /\ Array (Fn.Output out)) of
+        name /\ args /\ _ ->
             if Array.length args > 0 then
                 name <> " " <> show (Array.length args) <> " " <> String.joinWith argSep (encodeArg <$> args) <> argsEnd
             else
@@ -1143,7 +1149,7 @@ instance Mark FnArg where
 data FnOut
     = OutTexture
     | OutValues -- same as OutValue?
-    -- | OutValue
+    | OutValue
     | OutEase
     -- | OutNothing
 
@@ -1214,6 +1220,14 @@ tOut = OutTexture
 
 arrOut :: FnOut
 arrOut = OutValues
+
+
+vOut :: FnOut
+vOut = OutValue
+
+
+eOut :: FnOut
+eOut = OutEase
 
 
 class DefaultOf a where
@@ -1300,15 +1314,16 @@ defaultsFor = case _ of
     "setResolution" -> Just $ "setResolution" /\ [ q "width" sideArg, q "height" sideArg ] /\ []
     "hush" -> Just $ "hush" /\ [] /\ []
     "setFunction" -> Just $ "setFunction" /\ [ q "fn" glslArg ] /\ []
+
     -- "speed" -> Synth
     -- "bpm" -> Synth
-    -- "width" -> Synth
-    -- "height" -> Synth
-    -- "time" -> Synth
-    -- "mouse" -> Synth
-    -- "pi" -> Synth
+    "width" -> Just $ "width" /\ [] /\ [ o "out" vOut ]
+    "height" -> Just $ "height" /\ [] /\ [ o "out" vOut ]
+    "time" -> Just $ "time" /\ [] /\ [ o "out" vOut ]
+    "mouse" -> Just $ "time" /\ [] /\ [ o "x" vOut, o "y" vOut ]
+    "pi" -> Just $ "time" /\ [] /\ [ o "out" vOut ]
 
-    -- "fft" -> Audio
+    "fft" -> Just $ "fft" /\ [ q "audio" audioArg ] /\ [ o "out" vOut ]
     "setSmooth" -> Just $ "setSmooth" /\ [ q "audio" audioArg, q "smooth" $ narg 0.4 ] /\ []
     "setCutoff" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "cutoff" $ narg 2.0 ] /\ []
     "setBins" -> Just $ "setCutoff" /\ [ q "audio" audioArg, q "bins" audioBinsArg ] /\ []
@@ -1343,63 +1358,63 @@ fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn
 fromKnownFn = case _ of
     -- "number" -> Feed
 
-    "noise" -> Just $ "noise" /\ [ q "scale" $ Number 10.0, q "offset" $ Number 0.1 ]
-    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ Number 5.0, q "speed" $ Number 0.3, q "blending" $ Number 0.3 ]
-    "osc" -> Just $ "osc" /\ [ q "frequency" $ Number 60.0, q "sync" $ Number 0.1, q "offset" $ Number 0.0 ]
-    "shape" -> Just $ "shape" /\ [ q "sides" $ Number 3.0, q "radius" $ Number 0.3, q "smoothing" $ Number 0.01 ]
-    "gradient" -> Just $ "gradient" /\ [ q "speed" $ Number 0.0 ]
+    "noise" -> Just $ "noise" /\ [ q "scale" $ Number 10.0, q "offset" $ Number 0.1 ] /\ [ o "out" unit ]
+    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ Number 5.0, q "speed" $ Number 0.3, q "blending" $ Number 0.3 ] /\ [ o "out" unit ]
+    "osc" -> Just $ "osc" /\ [ q "frequency" $ Number 60.0, q "sync" $ Number 0.1, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "shape" -> Just $ "shape" /\ [ q "sides" $ Number 3.0, q "radius" $ Number 0.3, q "smoothing" $ Number 0.01 ] /\ [ o "out" unit ]
+    "gradient" -> Just $ "gradient" /\ [ q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
     -- "src" -> Source
-    "solid" -> Just $ "solid" /\ [ q "r" $ Number 0.0, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 1.0 ]
+    "solid" -> Just $ "solid" /\ [ q "r" $ Number 0.0, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 1.0 ] /\ [ o "out" unit ]
     -- "prev" -> Source
 
-    "rotate" -> Just $ "rotate" /\ [ q "angle" $ Number 10.0, q "speed" $ Number 0.0 ]
-    "scale" -> Just $ "scale" /\ [ q "amount" $ Number 1.5, q "xMult" $ Number 1.0, q "yMult" $ Number 1.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ]
-    "pixelate" -> Just $ "pixelate" /\ [ q "pixelX" $ Number 20.0, q "pixelY" $ Number 20.0 ]
-    "repeat" -> Just $ "repeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.0, q "offsetY" $ Number 0.0 ]
-    "repeatX" -> Just $ "repeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ]
-    "repeatY" -> Just $ "repeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ]
-    "kaleid" -> Just $ "kaleid" /\ [ q "nSides" $ Number 4.0 ]
-    "scroll" -> Just $ "scroll" /\ [ q "scrollX" $ Number 0.5, q "scrollY" $ Number 0.5, q "speedX" $ Number 0.0, q "speedY" $ Number 0.0 ]
-    "scrollX" -> Just $ "scrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ]
-    "scrollY" -> Just $ "scrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ]
+    "rotate" -> Just $ "rotate" /\ [ q "angle" $ Number 10.0, q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
+    "scale" -> Just $ "scale" /\ [ q "amount" $ Number 1.5, q "xMult" $ Number 1.0, q "yMult" $ Number 1.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ] /\ [ o "out" unit ]
+    "pixelate" -> Just $ "pixelate" /\ [ q "pixelX" $ Number 20.0, q "pixelY" $ Number 20.0 ] /\ [ o "out" unit ]
+    "repeat" -> Just $ "repeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.0, q "offsetY" $ Number 0.0 ] /\ [ o "out" unit ]
+    "repeatX" -> Just $ "repeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "repeatY" -> Just $ "repeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "kaleid" -> Just $ "kaleid" /\ [ q "nSides" $ Number 4.0 ] /\ [ o "out" unit ]
+    "scroll" -> Just $ "scroll" /\ [ q "scrollX" $ Number 0.5, q "scrollY" $ Number 0.5, q "speedX" $ Number 0.0, q "speedY" $ Number 0.0 ] /\ [ o "out" unit ]
+    "scrollX" -> Just $ "scrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
+    "scrollY" -> Just $ "scrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
 
-    "posterize" -> Just $ "posterize" /\ [ q "bins" $ Number 3.0, q "gamma" $ Number 6.0 ]
-    "shift" -> Just $ "shift" /\ [ q "r" $ Number 0.5, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 0.5 ]
-    "invert" -> Just $ "invert" /\ [ q "amount" $ Number 1.0 ]
-    "contrast" -> Just $ "contrast" /\ [ q "amount" $ Number 1.6 ]
-    "brightness" -> Just $ "brightness" /\ [ q "amount" $ Number 0.4 ]
-    "luma" -> Just $ "luma" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.1 ]
-    "thresh" -> Just $ "thresh" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.04 ]
-    "color" -> Just $ "color" /\ [ q "r" $ Number 1.0, q "g" $ Number 1.0, q "b" $ Number 1.0, q "a" $ Number 1.0 ]
-    "saturate" -> Just $ "saturate" /\ [ q "amount" $ Number 2.0 ]
-    "hue" -> Just $ "hue" /\ [ q "amount" $ Number 0.4 ]
-    "colorama" -> Just $ "colorama" /\ [ q "amount" $ Number 0.005 ]
+    "posterize" -> Just $ "posterize" /\ [ q "bins" $ Number 3.0, q "gamma" $ Number 6.0 ] /\ [ o "out" unit ]
+    "shift" -> Just $ "shift" /\ [ q "r" $ Number 0.5, q "g" $ Number 0.0, q "b" $ Number 0.0, q "a" $ Number 0.5 ] /\ [ o "out" unit ]
+    "invert" -> Just $ "invert" /\ [ q "amount" $ Number 1.0 ] /\ [ o "out" unit ]
+    "contrast" -> Just $ "contrast" /\ [ q "amount" $ Number 1.6 ] /\ [ o "out" unit ]
+    "brightness" -> Just $ "brightness" /\ [ q "amount" $ Number 0.4 ] /\ [ o "out" unit ]
+    "luma" -> Just $ "luma" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.1 ] /\ [ o "out" unit ]
+    "thresh" -> Just $ "thresh" /\ [ q "threshold" $ Number 0.5, q "tolerance" $ Number 0.04 ] /\ [ o "out" unit ]
+    "color" -> Just $ "color" /\ [ q "r" $ Number 1.0, q "g" $ Number 1.0, q "b" $ Number 1.0, q "a" $ Number 1.0 ] /\ [ o "out" unit ]
+    "saturate" -> Just $ "saturate" /\ [ q "amount" $ Number 2.0 ] /\ [ o "out" unit ]
+    "hue" -> Just $ "hue" /\ [ q "amount" $ Number 0.4 ] /\ [ o "out" unit ]
+    "colorama" -> Just $ "colorama" /\ [ q "amount" $ Number 0.005 ] /\ [ o "out" unit ]
     -- "sum" -> Color
-    "r" -> Just $ "r" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
-    "g" -> Just $ "g" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
-    "b" -> Just $ "b" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
-    "a" -> Just $ "a" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ]
+    "r" -> Just $ "r" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "g" -> Just $ "g" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "b" -> Just $ "b" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "a" -> Just $ "a" /\ [ q "scale" $ Number 1.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
 
      -- FIXME : first arg is texture for everything below
-    "add" -> Just $ "add" /\ [ q "amount" $ Number 1.0 ]
-    "sub" -> Just $ "sub" /\ [ q "amount" $ Number 1.0 ]
-    "layer" -> Just $ "layer" /\ []
-    "blend" -> Just $ "blend" /\ [ q "amount" $ Number 0.5 ]
-    "mult" -> Just $ "mult" /\ [ q "amount" $ Number 1.0 ]
-    "diff" -> Just $ "diff" /\ []
-    "mask" -> Just $ "mask" /\ []
+    "add" -> Just $ "add" /\ [ q "amount" $ Number 1.0 ] /\ [ o "out" unit ]
+    "sub" -> Just $ "sub" /\ [ q "amount" $ Number 1.0 ] /\ [ o "out" unit ]
+    "layer" -> Just $ "layer" /\ [] /\ []
+    "blend" -> Just $ "blend" /\ [ q "amount" $ Number 0.5 ] /\ [ o "out" unit ]
+    "mult" -> Just $ "mult" /\ [ q "amount" $ Number 1.0 ] /\ [ o "out" unit ]
+    "diff" -> Just $ "diff" /\ [] /\ []
+    "mask" -> Just $ "mask" /\ [] /\ []
 
-    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ]
-    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ]
-    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ]
-    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "nSides" $ Number 4.0 ]
-    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ]
-    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ]
-    "modulate" -> Just $ "modulate" /\ [ q "amount" $ Number 0.1 ]
-    "modulateScale" -> Just $ "modScale" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 1.0 ]
-    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "multiple" $ Number 10.0, q "offset" $ Number 3.0 ]
-    "modulateRotate" -> Just $ "modRotate" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 0.0 ]
-    "modulateHue" -> Just $ "modHue" /\ [ q "amount" $ Number 1.0 ]
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "repeatX" $ Number 3.0, q "repeatY" $ Number 3.0, q "offsetX" $ Number 0.5, q "offsetY" $ Number 0.5 ] /\ [ o "out" unit ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ] /\ [ o "out" unit ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "reps" $ Number 3.0, q "offset" $ Number 0.5 ] /\ [ o "out" unit ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "nSides" $ Number 4.0 ] /\ [ o "out" unit ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "scrollX" $ Number 0.5, q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "scrollY" $ Number 0.5, q "speed" $ Number 0.0 ] /\ [ o "out" unit ]
+    "modulate" -> Just $ "modulate" /\ [ q "amount" $ Number 0.1 ] /\ [ o "out" unit ]
+    "modulateScale" -> Just $ "modScale" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 1.0 ] /\ [ o "out" unit ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "multiple" $ Number 10.0, q "offset" $ Number 3.0 ] /\ [ o "out" unit ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ q "multiple" $ Number 1.0, q "offset" $ Number 0.0 ] /\ [ o "out" unit ]
+    "modulateHue" -> Just $ "modHue" /\ [ q "amount" $ Number 1.0 ] /\ [ o "out" unit ]
 
     -- "initCam" -> ExternalSources
     -- "initImage" -> ExternalSources
@@ -1433,48 +1448,65 @@ fromKnownFn = case _ of
 
     -- "out" -> Out
 
-    "linear" -> Just $ "linear" /\ []
-    "fast" -> Just $ "fast" /\ [ q "v" $ Number 1.0 ]
-    "smooth" -> Just $ "smooth" /\ [ q "v" $ Number 1.0 ]
-    "fit" -> Just $ "fit" /\ [ q "low" $ Number 0.0, q "high" $ Number 1.0 ]
-    "offset" -> Just $ "offset" /\ [ q "v" $ Number 0.5 ]
+    "linear" -> Just $ "linear" /\ [] /\ [ o "out" unit ]
+    "fast" -> Just $ "fast" /\ [ q "v" $ Number 1.0 ] /\ [ o "out" unit ]
+    "smooth" -> Just $ "smooth" /\ [ q "v" $ Number 1.0 ] /\ [ o "out" unit ]
+    "fit" -> Just $ "fit" /\ [ q "low" $ Number 0.0, q "high" $ Number 1.0 ] /\ [ o "out" unit ]
+    "offset" -> Just $ "offset" /\ [ q "v" $ Number 0.5 ] /\ [ o "out" unit ]
     -- "inOutCubic" -> Just $ "inOutCubic" /\ []
 
     _ -> Nothing
 
 
-showUsingFn :: forall arg x. Show arg => ToFn arg x => Proxy arg -> x -> String
-showUsingFn _ a =
-    case (toFn a :: String /\ Array (Fn.Argument arg)) of
-        name /\ args ->
-            if Array.length args > 0 then
+showUsingFn :: forall arg out x. Show arg => Show out => ToFn arg out x => Proxy arg -> Proxy out -> x -> String
+showUsingFn _ _ a =
+    case (toFn a :: String /\ Array (Fn.Argument arg) /\ Array (Fn.Output out)) of
+        name /\ args /\ outs ->
+            if Array.length args > 0 && Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+            else if Array.length args > 0 then
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else if Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
             else
-                "<" <> String.pascalCase name <> ">"
+                 "<" <> String.pascalCase name <> ">"
 
 
-showUsingFnV :: forall x. ToFn Value x Unit => x -> String
-showUsingFnV = showUsingFn (Proxy :: _ Value)
+showUsingFnV :: forall x. ToFn Value Unit x => x -> String
+showUsingFnV = showUsingFn (Proxy :: _ Value) (Proxy :: _ Unit)
 
 
-showUsingFnTOrV :: forall x. ToFn TOrV x => x -> String
-showUsingFnTOrV = showUsingFn (Proxy :: _ TOrV)
+showUsingFnTOrV :: forall x. ToFn TOrV OTOrV x => x -> String
+showUsingFnTOrV = showUsingFn (Proxy :: _ TOrV) (Proxy :: _ OTOrV)
 
 
-showUsingPossiblyFn :: forall arg x. Show arg => PossiblyToFn arg x => Proxy arg -> (x -> String) -> x -> String
-showUsingPossiblyFn _ fallback a =
-    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument arg))) of
-        Just (name /\ args) ->
-            if Array.length args > 0 then
+showUsingFnTOrV' :: forall x. ToFn TOrV Unit x => x -> String
+showUsingFnTOrV' = showUsingFn (Proxy :: _ TOrV) (Proxy :: _ Unit)
+
+
+
+-- showUsingFnArgOut :: forall x. ToFn FnArg FnOut x => x -> String
+-- showUsingFnArgOut = showUsingFn (Proxy :: _ FnArg) (Proxy :: _ FnOut)
+
+
+showUsingPossiblyFn :: forall arg out x. Show arg => Show out => PossiblyToFn arg out x => Proxy arg -> Proxy out -> (x -> String) -> x -> String
+showUsingPossiblyFn _ _ fallback a =
+    case (possiblyToFn a :: Maybe (String /\ Array (Fn.Argument arg) /\ Array (Fn.Output out))) of
+        Just (name /\ args /\ outs ) ->
+            if Array.length args > 0 && Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+            else if Array.length args > 0 then
                 "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else if Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
             else
                  "<" <> String.pascalCase name <> ">"
         Nothing ->
             fallback a
 
 
-showUsingPossiblyFnV :: forall x. PossiblyToFn Value x Unit => (x -> String) -> x -> String
-showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) fallback a
+showUsingPossiblyFnV :: forall x. PossiblyToFn Value Unit x  => (x -> String) -> x -> String
+showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) (Proxy :: _ Unit) fallback a
 
 
 argSep :: String
@@ -1524,10 +1556,10 @@ glslEnd :: String
 glslEnd = "■¤¤¤¤"
 
 
-encodeUsingFn :: forall a. ToFn Value a Unit => a -> String
+encodeUsingFn :: forall a. ToFn Value Unit a => a -> String
 encodeUsingFn a =
     case toFn a :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit) of
-        name /\ args ->
+        name /\ args /\ _ ->
             if Array.length args > 0 then
                 String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
             else
