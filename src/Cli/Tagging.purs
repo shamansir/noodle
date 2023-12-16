@@ -95,14 +95,14 @@ nodeLabel family =
 
 nodeMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
 nodeMouseOver =
-    familyMouseOver
+    familyShortInfo
 
 
 familyMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
-familyMouseOver family =
+familyMouseOver =
     {- T.fgcs (C.crepr Palette.familyName) (reflect family)
     <> T.s " ==== "
-    <> -} familyHelp (HFn.KnownFn $ reflect family)
+    <> -} familyShortInfo
 
 
 removeButtonOut ∷ Tag
@@ -227,8 +227,23 @@ selected :: String -> Tag
 selected = T.fgc (C.crepr Palette.positive) <<< T.s
 
 
-familyHelp :: HFn.KnownFn -> Tag
-familyHelp knownFn =
+familyDocs :: forall f. IsSymbol f => Id.Family f -> Tag
+familyDocs family =
+    let familyGroup = Hydra.toGroup family
+    in T.fgcs (mark familyGroup) (show familyGroup)
+        <> T.s " " <> familySignature (HFn.KnownFn $ reflect family)
+
+
+familyShortInfo :: forall f. IsSymbol f => Id.Family f -> Tag
+familyShortInfo family =
+    let familyGroup = Hydra.toGroup family
+    -- in T.bgc (C.crepr Palette.groupBg) (T.fgcs (mark familyGroup) (Info.statusLine familyGroup))
+    in T.s "/" <> T.fgcs (mark familyGroup) (Info.statusLine familyGroup) <> T.s "/"
+        <> T.s " " <> familySignature (HFn.KnownFn $ reflect family)
+
+
+familySignature :: HFn.KnownFn -> Tag
+familySignature knownFn =
     case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg)) of
         Just (name /\ args) ->
             -- TODO: add familyDocs

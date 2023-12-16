@@ -91,7 +91,7 @@ clear =
 
 familyStatus :: forall state f m. IsSymbol f => Id.Family f -> C.BlessedOp state m
 familyStatus family =
-    Key.fullInfoBox >~ Box.setContent $ T.render $ T.familyMouseOver family
+    Key.fullInfoBox >~ Box.setContent $ T.render $ T.familyDocs family
 
 
 inputStatus :: forall state f i m. IsSymbol f => IsSymbol i => Id.Family' f -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> C.BlessedOp state m

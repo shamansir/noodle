@@ -19,7 +19,7 @@ import Data.Array (length) as Array
 --       or in example/Hydra/Fn
 
 
-data Argument x = Argument String x
+data Argument x = Argument ArgumentName x
 
 
 instance Show x => Show (Argument x) where

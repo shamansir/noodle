@@ -32,6 +32,24 @@ data Group
     | Unknown
 
 
+instance Show Group where
+    show = case _ of
+        Array -> "Array"
+        Audio -> "Audio"
+        Blend -> "Blend"
+        Color -> "Color"
+        ExternalSources -> "External Sources"
+        Feed -> "Feed"
+        Geometry -> "Geometry"
+        Modulate -> "Modulate"
+        Out -> "Out"
+        Source -> "Source"
+        Synth -> "Synth"
+        Display -> "Display"
+        CAI -> "CAI"
+        Unknown -> "??"
+
+
 -- just store group inside each generated node and have a function to return them ?
 
 -- may be return a

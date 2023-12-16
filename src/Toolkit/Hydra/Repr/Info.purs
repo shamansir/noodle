@@ -437,6 +437,38 @@ instance StatusLineInfo W.WrapRepr where
         W.CBS cbs -> statusLine cbs
 
 
+instance StatusLineInfo HG.Group where
+    statusLine :: HG.Group -> VStatusLine
+    statusLine = case _ of
+        HG.Array -> "array"
+        HG.Audio -> "audio"
+        HG.Blend -> "blend"
+        HG.Color -> "color"
+        HG.ExternalSources -> "ext.src."
+        HG.Feed -> "feed"
+        HG.Geometry -> "geometry"
+        HG.Modulate -> "modulate"
+        HG.Out -> "out"
+        HG.Source -> "source"
+        HG.Synth -> "synth"
+        HG.Display -> "display"
+        HG.CAI -> "cai"
+        HG.Unknown -> "???"
+        -- HG.Array -> "arr"
+        -- HG.Audio -> "aud"
+        -- HG.Blend -> "bld"
+        -- HG.Color -> "clr"
+        -- HG.ExternalSources -> "ext"
+        -- HG.Feed -> "ffd"
+        -- HG.Geometry -> "gmt"
+        -- HG.Modulate -> "mod"
+        -- HG.Out -> "out"
+        -- HG.Source -> "src"
+        -- HG.Synth -> "syn"
+        -- HG.Display -> "dpl"
+        -- HG.CAI -> "cai"
+        -- HG.Unknown -> "???"
+
 
 instance Documentation H.Value where
     docs :: H.Value -> VDocs

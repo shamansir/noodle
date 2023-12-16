@@ -40,6 +40,7 @@ positive = Pico.lightYellow :: Item
 neutral = Pico.lightGrey :: Item
 negative = Pico.darkRed :: Item
 nodeHlBg = Pico.mauve :: Item
+groupBg = Pico.blue :: Item
 
 
 networkBg' = repr networkBg :: String
