@@ -31,7 +31,7 @@ import Tookit.Hydra.Repr.Wrap
 import Tookit.Hydra.Types as T
 import Tookit.Hydra.Lang.SketchParser.Utils as U
 import Tookit.Hydra.Lang.Fn (Fn, fnOf) as Lang
-import Tookit.Hydra.Lang.Fn (empty, argsCount) as Fn
+import Tookit.Hydra.Lang.Fn (empty, argsCount, out1) as Fn
 
 
 -- newtype HasParser = HasParser WrapRepr
@@ -293,7 +293,7 @@ glsl = do
     pure $ T.GlslFn $ kind /\ T.GlslFnCode (U.f1ts code) /\ fd
 
 
-langFn ::forall x. Parser String x -> Parser String (Lang.Fn x)
+langFn ::forall x. Parser String x -> Parser String (Lang.Fn x Unit)
 langFn argParser = do
     name <- many1 alphaNum
     _ <- space
@@ -303,7 +303,7 @@ langFn argParser = do
     -- args <- if (argsN > 0) then
     --             space *> parseNamedArgsHelper argParser argsN (identity >>> Just)
     --         else pure []
-    pure $ Lang.fnOf (U.f1ts name) args
+    pure $ Lang.fnOf (U.f1ts name) args # Fn.out1 ("out" /\ unit)
 
 
 tOrV :: Parser String T.TOrV

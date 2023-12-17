@@ -744,3 +744,11 @@ instance Documentation H.FnArg where
         H.OutputArg output -> docs output
         H.EaseArg ease -> docs ease
         H.SourceArg source -> docs source
+
+
+instance Documentation H.FnOut where
+    docs = case _ of
+        H.OutTexture -> "TEX"
+        H.OutValue -> "VAL"
+        H.OutValues -> "ARR"
+        H.OutEase -> "EAS"

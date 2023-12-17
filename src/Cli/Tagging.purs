@@ -244,12 +244,14 @@ familyShortInfo family =
 
 familySignature :: HFn.KnownFn -> Tag
 familySignature knownFn =
-    case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg)) of
-        Just (name /\ args) ->
+    case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg H.FnOut)) of
+        Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
+            <> T.s " -> "
+            <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> T.s " // "
             <> T.fgcs (C.crepr Pico.lavender) (Info.docs knownFn)
         Nothing -> T.s "?"
@@ -260,8 +262,19 @@ familySignature knownFn =
                 _ ->
                     T.fgcs (C.crepr Pico.darkGreen) (HFn.argName arg)
                     <> T.s "::"
-                    <> tagValue (HFn.argValue arg)
+                    <> tagArgValue (HFn.argValue arg)
             <> T.s "> "
-        tagValue :: H.FnArg -> Tag
-        tagValue val =
+        tagOut :: HFn.Output H.FnOut -> Tag
+        tagOut out = T.s "(" <>
+            case HFn.outValue out of
+                _ ->
+                    T.fgcs (C.crepr Pico.darkGreen) (HFn.outName out)
+                    <> T.s "::"
+                    <> tagOutValue (HFn.outValue out)
+            <> T.s ") "
+        tagArgValue :: H.FnArg -> Tag
+        tagArgValue val =
+            T.fgc (mark val) $ T.s $ Info.docs val
+        tagOutValue :: H.FnOut -> Tag
+        tagOutValue val =
             T.fgc (mark val) $ T.s $ Info.docs val

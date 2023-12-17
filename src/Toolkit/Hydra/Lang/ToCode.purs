@@ -119,32 +119,32 @@ instance ToCode PS Source where
 instance ToCode PS ColorOp where
     toCode :: Proxy PS -> ColorOp -> String
     toCode _ cop =
-        case (toFnX cop :: String /\ Array Value) of
-            name /\ args -> fnPs name args
+        case (toFnX cop :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnPs name args
 
 
 
 instance ToCode PS Blend where
     toCode :: Proxy PS -> Blend -> String
     toCode _ blend =
-        case (toFnX blend :: String /\ Array Value) of
-            name /\ args -> fnPs name args
+        case (toFnX blend :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnPs name args
 
 
 
 instance ToCode PS Modulate where
     toCode :: Proxy PS -> Modulate -> String
     toCode _ mod =
-        case (toFnX mod :: String /\ Array Value) of
-            name /\ args -> fnPs name args
+        case (toFnX mod :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnPs name args
 
 
 
 instance ToCode PS Geometry where
     toCode :: Proxy PS -> Geometry -> String
     toCode _ geom =
-        case (toFnX geom :: String /\ Array Value) of
-            name /\ args -> fnPs name args
+        case (toFnX geom :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnPs name args
 
 
 instance ToCode PS SourceN where
@@ -171,8 +171,8 @@ instance ToCode PS Values where
 instance ToCode PS Ease where
     toCode :: Proxy PS -> Ease -> String
     toCode _ ease =
-        case (toFnX ease :: String /\ Array Value) of
-            name /\ args -> fnPs name args
+        case (toFnX ease :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnPs name args
 
 
 instance ToCode PS AudioBin where
@@ -205,27 +205,27 @@ instance ToCode PS Texture where
         -- FIXME: use PossiblyToFn
         BlendOf { what, with } blend ->
             toCode pureScript with <> "\n\t# " <>
-            case (toFnX blend :: String /\ Array Value) of
-                name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
+            case (toFnX blend :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         Filter texture cop ->
             toCode pureScript texture <> "\n\t# " <>
-            case (toFnX cop :: String /\ Array Value) of
-                name /\ args -> fnPs name args
+            case (toFnX cop :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnPs name args
         ModulateWith { what, with } mod ->
             toCode pureScript with <> "\n\t# " <>
-            case (toFnX mod :: String /\ Array Value) of
-                name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
+            case (toFnX mod :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         Geometry texture gmt ->
             toCode pureScript texture <> "\n\t# " <>
-            case (toFnX gmt :: String /\ Array Value) of
-                name /\ args -> fnPs name args
+            case (toFnX gmt :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnPs name args
         CallGlslFn { over, mbWith } fnRef ->
             case over of
                 Empty -> ""
                 _ -> toCode pureScript over <> "\n\t#"
             <>
-            case (toFnX fnRef :: String /\ Array TOrV) of
-                name /\ args -> fnsPs name $ case mbWith of
+            case (toFnX fnRef :: String /\ Array GlslFnArg /\ Array GlslFnOut) of
+                name /\ args /\ _ -> fnsPs name $ case mbWith of
                     Just with -> toCode pureScript with : (toCode pureScript <$> args)
                     Nothing -> toCode pureScript <$> args
 
@@ -281,29 +281,29 @@ instance ToCode JS Source where
 instance ToCode JS ColorOp where
     toCode :: Proxy JS -> ColorOp -> String
     toCode _ cop =
-        case (toFnX cop :: String /\ Array Value) of
-            name /\ args -> fnJs name args
+        case (toFnX cop :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnJs name args
 
 
 instance ToCode JS Blend where
     toCode :: Proxy JS -> Blend -> String
     toCode _ blend =
-        case (toFnX blend :: String /\ Array Value) of
-            name /\ args -> fnJs name args
+        case (toFnX blend :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnJs name args
 
 
 instance ToCode JS Modulate where
     toCode :: Proxy JS -> Modulate -> String
     toCode _ mod =
-        case (toFnX mod :: String /\ Array Value) of
-            name /\ args -> fnJs name args
+        case (toFnX mod :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnJs name args
 
 
 instance ToCode JS Geometry where
     toCode :: Proxy JS -> Geometry -> String
     toCode _ geom =
-        case (toFnX geom :: String /\ Array Value) of
-            name /\ args -> fnJs name args
+        case (toFnX geom :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnJs name args
 
 
 instance ToCode JS SourceN where
@@ -325,8 +325,8 @@ instance ToCode JS OutputN where
 instance ToCode JS Ease where
     toCode :: Proxy JS -> Ease -> String
     toCode _ ease =
-        case (toFnX ease :: String /\ Array Value) of
-            name /\ args -> fnJs name args
+        case (toFnX ease :: String /\ Array Value /\ Array Unit) of
+            name /\ args /\ _ -> fnJs name args
 
 
 instance ToCode JS AudioBin where
@@ -363,27 +363,27 @@ instance ToCode JS Texture where
         Start src -> toCode javaScript src
         BlendOf { what, with } blend ->
             toCode javaScript what <> "\n\t." <>
-            case (toFnX blend :: String /\ Array Value) of
-                name /\ args -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
+            case (toFnX blend :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
         Filter texture cop ->
             toCode javaScript texture <> "\n\t." <>
-            case (toFnX cop :: String /\ Array Value) of
-                name /\ args -> fnJs name args
+            case (toFnX cop :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnJs name args
         ModulateWith { what, with } mod ->
             toCode javaScript what <> "\n\t." <>
-            case (toFnX mod :: String /\ Array Value) of
-                name /\ args -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
+            case (toFnX mod :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnsJs name $ toCode javaScript with : (toCode javaScript <$> args)
         Geometry texture gmt ->
             toCode javaScript texture <> "\n\t." <>
-            case (toFnX gmt :: String /\ Array Value) of
-                name /\ args -> fnJs name args
+            case (toFnX gmt :: String /\ Array Value /\ Array Unit) of
+                name /\ args /\ _ -> fnJs name args
         CallGlslFn { over, mbWith } fnRef ->
             case over of
                 Empty -> ""
                 _ -> toCode javaScript over <> "\n\t."
             <>
-            case (toFnX fnRef :: String /\ Array TOrV) of
-                name /\ args -> fnsJs name $ case mbWith of
+            case (toFnX fnRef :: String /\ Array GlslFnArg /\ Array GlslFnOut) of
+                name /\ args /\ _ -> fnsJs name $ case mbWith of
                     Just with -> toCode javaScript with : (toCode javaScript <$> args)
                     Nothing -> toCode javaScript <$> args
 

@@ -1154,6 +1154,15 @@ data FnOut
     -- | OutNothing
 
 
+instance Mark FnOut where
+    mark = case _ of
+        OutTexture -> mark Empty
+        OutValues -> mark $ Values []
+        OutValue -> mark None
+        OutEase -> mark Linear
+
+
+
 narg :: Number -> FnArg
 narg = VArg <<< Number
 
@@ -1346,8 +1355,8 @@ defaultsFor = case _ of
 
 
 
-{- instance PossiblyToFn Value Fn Unit.KnownFn where
-    possiblyToFn = Fn.nameOf >>> defaultsFor -}
+-- instance PossiblyToFn Value Unit Fn.KnownFn where
+--     possiblyToFn = Fn.nameOf >>> defaultsFor
 
 -- instance FnDefault // FnDocs // FnTypes
 

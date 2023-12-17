@@ -10,7 +10,7 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..), isJust, fromMaybe)
 import Data.Either (Either(..), either)
 import Data.Foldable (foldl)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Parsing (Parser, runParser)
 import Parsing.String (char, string, anyChar, satisfy)
@@ -25,7 +25,7 @@ import Data.String as String
 
 import Tookit.Hydra.Types (Value(..))
 import Tookit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
-import Tookit.Hydra.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..))
+import Tookit.Hydra.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..), Output(..))
 
 import Tookit.Hydra.Lang.SketchParser.Utils
 import Tookit.Hydra.Lang.SketchParser.JsExpr (JsExpr, inlineExprParser) -- FIXME: use JsExpr from Lang.Types
@@ -344,8 +344,8 @@ instance ToCode PS Expr where
       valueToExpr (Number n) = Num n
       valueToExpr _ = Token "fail"  -- all the default values for Hydra arguments are numerals, so we're kinda safe here
       fillLackingArgs startOp args =
-        case possiblyToFn (KnownFn startOp) of
-          Just (_ /\ defArgs) ->
+        case (possiblyToFn (KnownFn startOp) :: Maybe (String /\ Array (Argument Value) /\ Array (Output Unit))) of
+          Just (_ /\ defArgs /\ _) ->
             if (Array.length args) < (Array.length defArgs) then
               Array.range (Array.length args) (Array.length defArgs - 1)
                 # foldl

@@ -123,6 +123,26 @@ fn8 n a1 a2 a3 a4 a5 a6 a7 a8 =
     fnOf n [ a1, a2, a3, a4, a5, a6, a7, a8 ]
 
 
+addOuts :: forall arg out. Array (String /\ out) -> Fn arg out -> Fn arg out
+addOuts next_outs (Fn (name /\ args /\ cur_outs)) =
+    Fn $ name /\ args /\ (cur_outs <> (Tuple.uncurry Output <$> next_outs))
+
+
+out1 :: forall arg out. (String /\ out) -> Fn arg out -> Fn arg out
+out1 o1 =
+    addOuts [ o1 ]
+
+
+out2 :: forall arg out. (String /\ out) -> (String /\ out) -> Fn arg out -> Fn arg out
+out2 o1 o2 =
+    addOuts [ o1, o2 ]
+
+
+out3 :: forall arg out. (String /\ out) -> (String /\ out) -> (String /\ out) -> Fn arg out -> Fn arg out
+out3 o1 o2 o3 =
+    addOuts [ o1, o2, o3 ]
+
+
 arg :: forall x. ArgumentName -> x -> Argument x
 arg = Argument
 
@@ -159,8 +179,8 @@ argName :: forall x. Argument x -> ArgumentName
 argName (Argument name _) = name
 
 
-outputName :: forall x. Output x -> OutputName
-outputName (Output name _) = name
+outName :: forall x. Output x -> OutputName
+outName (Output name _) = name
 
 
 argsCount :: forall i o. Fn i o -> Int
