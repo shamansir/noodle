@@ -22,6 +22,7 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
 import Blessed.UI.Lists.List.Option (items, keys, mouse, style) as List
 import Blessed.UI.Lists.List.Property (selected) as List
@@ -64,6 +65,10 @@ component families =
         , Box.tags true
         , Style.library
         , Style.libraryBorder
+        -- , Core.on Element.MouseOver
+        --     \_ _ -> do
+        --         selected <- List.selected ~< Key.library
+        --         liftEffect $ Console.log $ show selected
         , Core.on List.Select
             \_ _ -> do
                 -- lastShiftX <- _.lastShiftX <$> State.get
