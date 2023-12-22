@@ -41,6 +41,8 @@ import Noodle.Patch.Has as Has
 import Noodle.Patch.MapsFolds as PF
 import Noodle.Patch.MapsFolds as PI
 import Noodle.Patch.MapsFolds as PM
+import Noodle.Node.Is as Node
+import Noodle.Patch.Is as Patch
 import Noodle.Patch.MapsFolds.Repr as R
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
@@ -395,11 +397,7 @@ newtype HoldsNode m =
     HoldsNode
         (forall r.
             (  forall f gstate instances' instances rli state is os isrl osrl
-             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-            => RL.RowToList instances rli
-            => Record.Keys rli
-            => Id.HasInputsAt is isrl
-            => Id.HasOutputsAt os osrl
+             . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
             => Patch gstate instances
             -> Node f state is os m
             -> m r
@@ -411,11 +409,7 @@ newtype HoldsNode' gstate instances m =
     HoldsNode'
         (forall r.
             (  forall instances' rli f state is os isrl osrl
-             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-            => RL.RowToList instances rli
-            => Record.Keys rli
-            => Id.HasInputsAt is isrl
-            => Id.HasOutputsAt os osrl
+             . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -427,20 +421,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
     HoldsNodeMRepr
         (forall r.
             (  forall instances' rli f state is os isrl osrl repr_is repr_os
-             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-            => RL.RowToList instances rli
-            => Record.Keys rli
-            => Id.HasInputsAt is isrl
-            => Id.HasOutputsAt os osrl
-            => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-            => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-            => FromToReprRow isrl is repr
-            => FromToReprRow osrl os repr
-            => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-            => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-            => HasBody' (x f) (Node f state is os m) state m
-            => HasCustomSize (x f) (Node f state is os m)
-            => IsNodeState gstate state
+             . Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -450,12 +431,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
 
 holdNode
     :: forall f gstate instances' instances rli state is os isrl osrl m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-    => RL.RowToList instances rli
-    => Record.Keys rli
-    => IsSymbol f
-    => Id.HasInputsAt is isrl
-    => Id.HasOutputsAt os osrl
+     . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode m
@@ -464,11 +440,7 @@ holdNode patch node = HoldsNode \f -> f patch node
 
 holdNode'
     :: forall f gstate instances' instances rli state is os isrl osrl m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-    => RL.RowToList instances rli
-    => Record.Keys rli
-    => Id.HasInputsAt is isrl
-    => Id.HasOutputsAt os osrl
+     . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode' gstate instances m
@@ -477,24 +449,19 @@ holdNode' patch node = HoldsNode' \f -> f patch node
 
 holdNodeMRepr
     :: forall x gstate instances m repr instances' rli f state is os isrl osrl repr_is repr_os
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-    => RL.RowToList instances rli
-    => Record.Keys rli
-    => Id.HasInputsAt is isrl
-    => Id.HasOutputsAt os osrl
-    => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-    => FromToReprRow isrl is repr
-    => FromToReprRow osrl os repr
-    => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-    => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    => HasBody' (x f) (Node f state is os m) state m
-    => HasCustomSize (x f) (Node f state is os m)
-    => IsNodeState gstate state
+     . Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNodeMRepr x gstate instances m repr
 holdNodeMRepr patch node = HoldsNodeMRepr \f -> f patch node
+
+
+-- Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+--     , RL.RowToList instances rli
+--     , Record.Keys rli
+--     , Id.HasInputsAt is isrl
+--     , Id.HasOutputsAt os osrl
+
 
 
 withNode
@@ -502,11 +469,7 @@ withNode
      . HoldsNode m ->
     --    -> Proxy m ->
         (  forall f gstate instances' instances rli state is os isrl osrl
-         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-        => RL.RowToList instances rli
-        => Record.Keys rli
-        => Id.HasInputsAt is isrl
-        => Id.HasOutputsAt os osrl
+         . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -519,11 +482,7 @@ withNode'
     :: forall gstate instances m r
      . HoldsNode' gstate instances m ->
         (  forall instances' rli f state is os isrl osrl
-         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-        => RL.RowToList instances rli
-        => Record.Keys rli
-        => Id.HasInputsAt is isrl
-        => Id.HasOutputsAt os osrl
+         . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
         => Patch gstate instances
         -> Node f state is os m
         -> r
@@ -543,12 +502,9 @@ withNode2
                   fB stateB isB osB
                   gstateA instancesA' instancesA rliA
                   gstateB instancesB' instancesB rliB
-         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
-        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
-        => RL.RowToList instancesA rliA
-        => Record.Keys rliA
-        => RL.RowToList instancesB rliB
-        => Record.Keys rliB
+                  isrlA osrlA isrlB osrlB
+         . Patch.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
+        => Patch.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA
@@ -579,12 +535,9 @@ withNode2'
                   fB stateB isB osB
                   instancesA' rliA
                   instancesB' rliB
-         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
-        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
-        => RL.RowToList instancesA rliA
-        => Record.Keys rliA
-        => RL.RowToList instancesB rliB
-        => Record.Keys rliB
+                  isrlA osrlA isrlB osrlB
+         . Patch.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
+        => Patch.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA
@@ -603,24 +556,11 @@ withNode2' (HoldsNode' fA) (HoldsNode' fB) f =
 
 
 withNodeMRepr
-    :: forall r x gstate instances repr m
+    :: forall r (x :: Symbol -> Type) gstate instances repr m
      . HoldsNodeMRepr x gstate instances m repr ->
     --    -> Proxy m ->
         (  forall instances' rli f state is os isrl osrl repr_is repr_os
-         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
-        => RL.RowToList instances rli
-        => Record.Keys rli
-        => Id.HasInputsAt is isrl
-        => Id.HasOutputsAt os osrl
-        => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-        => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-        => FromToReprRow isrl is repr
-        => FromToReprRow osrl os repr
-        => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-        => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-        => HasBody' (x f) (Node f state is os m) state m
-        => HasCustomSize (x f) (Node f state is os m)
-        => IsNodeState gstate state
+        .  Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -644,34 +584,8 @@ withNode2MRepr
                   repr_isB repr_osB
                   instancesA' rliA
                   instancesB' rliB
-         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
-        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
-        => RL.RowToList instancesA rliA
-        => Record.Keys rliA
-        => RL.RowToList instancesB rliB
-        => Record.Keys rliB
-        => Id.HasInputsAt isA isrlA
-        => Id.HasOutputsAt osA osrlA
-        => Id.HasInputsAt isB isrlB
-        => Id.HasOutputsAt osB osrlB
-        => R.ToReprHelper m fA isA isrlA osA osrlA repr_isA repr_osA repr stateA
-        => R.ToReprHelper m fB isB isrlB osB osrlB repr_isB repr_osB repr stateB
-        => R.ToReprFoldToMapsHelper fA isA isrlA osA osrlA repr stateA
-        => R.ToReprFoldToMapsHelper fB isB isrlB osB osrlB repr stateB
-        => FromToReprRow isrlA isA repr
-        => FromToReprRow isrlB isB repr
-        => FromToReprRow osrlA osA repr
-        => FromToReprRow osrlA osA repr
-        => Node.NodeBoundKeys Node.I isrlA Id.Input fA stateA isA osA m (Node.HoldsInputInNodeMRepr m repr)
-        => Node.NodeBoundKeys Node.O osrlA Id.Output fA stateA isA osA m (Node.HoldsOutputInNodeMRepr m repr)
-        => Node.NodeBoundKeys Node.I isrlB Id.Input fB stateB isB osB m (Node.HoldsInputInNodeMRepr m repr)
-        => Node.NodeBoundKeys Node.O osrlB Id.Output fB stateB isB osB m (Node.HoldsOutputInNodeMRepr m repr)
-        => HasBody' (x fA) (Node fA stateA isA osA m) stateA m
-        => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
-        => HasCustomSize (x fA) (Node fA stateA isA osA m)
-        => HasCustomSize (x fB) (Node fB stateB isB osB m)
-        => IsNodeState gstateA stateA
-        => IsNodeState gstateB stateB
+         . Patch.IsNodeInPatch' x gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA repr_isA repr_osA repr m
+        => Patch.IsNodeInPatch' x gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB repr_isB repr_osB repr m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA

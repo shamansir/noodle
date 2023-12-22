@@ -1,14 +1,11 @@
 module Cli.Components.NodeBox.HasBody where
 
-import Prelude
 import Type.Proxy (Proxy)
 import Data.Maybe (Maybe)
 import Cli.Keys (NodeBoxKey)
 
-import Signal (Signal)
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Noodle.Node (Node)
-import Noodle.Id (Input, class HasInput)
 
 
 -- TODO: we have the conflict between m for `Node` and `BlessedOp` in the result,
