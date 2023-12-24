@@ -38,7 +38,8 @@ import Noodle.Network (Network(..))
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Patch (Patch)
-import Noodle.Patch.Has as Has
+import Noodle.Patch.Has as PHas
+import Noodle.Patch.Is as PIs
 import Noodle.Node as Node
 import Noodle.Node (Node)
 import Noodle.Node.MapsFolds.Repr (class ToReprFoldToMapsHelper, class ToReprHelper) as R
@@ -57,21 +58,8 @@ import Noodle.Text.NdfFile.Command as C
 
 
 addNodeBox
-    :: forall f instances' state is os isrl osrl repr_is repr_os
-     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
-    -- => RL.RowToList (Hydra.Instances Effect) rli
-    -- => Record.Keys rli
-    => Id.HasInputsAt is isrl
-    => Id.HasOutputsAt os osrl
-    => R.ToReprHelper Effect f is isrl os osrl repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is isrl os osrl Hydra.WrapRepr state
-    => FromToReprRow isrl is Hydra.WrapRepr
-    => FromToReprRow osrl os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Node f state is os Effect)
-    => IsNodeState Hydra.State state
+    :: forall f rlins instances' state is os isrl osrl repr_is repr_os
+     . PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)

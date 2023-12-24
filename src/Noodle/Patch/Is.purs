@@ -9,7 +9,7 @@ import Record.Extra (class Keys) as Record
 import Noodle.Id (Input, Output, class HasInput, class HasOutput, class HasInputsAt, class HasOutputsAt) as Id
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Patch.Has (class HasInstancesOf) as Has
+import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Node.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
@@ -17,7 +17,7 @@ import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- F
 
 class IsNodeInPatch :: forall k. k -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> (Type -> Type) -> Constraint
 class
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -26,7 +26,7 @@ class
 
 
 instance
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -34,9 +34,9 @@ instance
     ) => IsNodeInPatch gstate instances' instances rlins f state is os isrl osrl m
 
 
-class IsNodeInPatch' :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
+class IsReprableNodeInPatch :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -50,11 +50,11 @@ class
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) <= IsNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) <= IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 instance
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -68,12 +68,12 @@ instance
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) => IsNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) => IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
-class IsNodeInPatch'' :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
+class IsReprableNodeInPatch' :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
@@ -83,11 +83,11 @@ class
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) <= IsNodeInPatch'' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) <= IsReprableNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 instance
-    ( Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
@@ -97,18 +97,18 @@ instance
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) => IsNodeInPatch'' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) => IsReprableNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 class LinkStartInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
 class
-    ( Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    ( PHas.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
     , Id.HasOutput oA doutA osA' osA
     ) <= LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
 
 
 class LinkEndInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
 class
-    ( Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    ( PHas.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
     , Id.HasInput iB dinB isB' isB
     ) <= LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m

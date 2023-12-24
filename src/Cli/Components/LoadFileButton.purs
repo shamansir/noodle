@@ -59,7 +59,7 @@ import Noodle.Network (Network(..))
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Patch (Patch)
-import Noodle.Patch.Has as Has
+import Noodle.Patch.Has as PHas
 import Noodle.Node as Node
 import Noodle.Node (Node)
 import Noodle.Node.MapsFolds.Repr
@@ -69,7 +69,6 @@ import Noodle.Node.MapsFolds.Repr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
 import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit.Has (class HasNodesOf) as Toolkit
 import Noodle.Node.HoldsNodeState (class IsNodeState, fromGlobal)
 import Noodle.Stateful (setM, get) as Stateful
 

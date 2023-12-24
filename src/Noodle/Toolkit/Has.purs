@@ -7,7 +7,7 @@ import Prim.RowList as RL
 import Data.Repr (class FromToReprRow, class ReadWriteRepr)
 
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
-import Noodle.Patch.Has (class HasInstancesOf)
+import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Family.Def as Family
 import Noodle.Node (Node) as Noodle
@@ -45,7 +45,7 @@ instance
 class
     ( IsSymbol f
     , HasFamilyDef f families' families (Family.Def state is os m)
-    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
+    , PHas.HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is isrl
     , Has.HasInputsAt' is isrl
     , Has.HasOutputsAt os osrl
@@ -55,7 +55,7 @@ class
 instance
     ( IsSymbol f
     , HasFamilyDef f families' families (Family.Def state is os m)
-    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
+    , PHas.HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is isrl
     , Has.HasInputsAt' is isrl
     , Has.HasOutputsAt os osrl
@@ -64,8 +64,8 @@ instance
 
 
 class
-    ( ReadWriteRepr repr
-    , HasNodesOf families' families instances' instances f state isrl is osrl os m
+    ( HasNodesOf families' families instances' instances f state isrl is osrl os m
+    , ReadWriteRepr repr
     , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , Node.NodeBoundKeys Node.I isrl Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -77,8 +77,8 @@ class
     ) <= HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 instance
-    ( ReadWriteRepr repr
-    , HasNodesOf families' families instances' instances f state isrl is osrl os m
+    ( HasNodesOf families' families instances' instances f state isrl is osrl os m
+    , ReadWriteRepr repr
     , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , Node.NodeBoundKeys Node.I isrl Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -90,13 +90,13 @@ instance
     ) => HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 
-class HasReprableNodesOf' :: forall k. (Symbol -> k) -> Type -> Row Type -> Row Type -> Row Type -> Row Type -> Type -> Symbol -> Type -> RL.RowList Type -> Row Type -> RL.RowList Type -> Row Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class HasReprableRenderableNodesOf :: forall k. (Symbol -> k) -> Type -> Row Type -> Row Type -> Row Type -> Row Type -> Type -> Symbol -> Type -> RL.RowList Type -> Row Type -> RL.RowList Type -> Row Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
 class
     ( HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
     , HasBody' (x f) (Noodle.Node f state is os m) state m
     , HasCustomSize (x f) (Noodle.Node f state is os m)
     , IsNodeState gstate state
-    ) <= HasReprableNodesOf' x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
+    ) <= HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 
 instance
@@ -104,16 +104,16 @@ instance
     , HasBody' (x f) (Noodle.Node f state is os m) state m
     , HasCustomSize (x f) (Noodle.Node f state is os m)
     , IsNodeState gstate state
-    ) => HasReprableNodesOf' x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
+    ) => HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 -- class ( IsSymbol f
 --         , HasFamilyDef f fs (Families m) (Family.Def state is os m)
---         , HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
+--         , PHas.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
 --         ) <= HasNodesOf f state fs iis is os m
 
 -- instance ( IsSymbol f
 --         , HasFamilyDef f fs (Families m) (Family.Def state is os m)
---         , HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
+--         , PHas.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
 --         ) => HasNodesOf f state fs iis is os m
 
 

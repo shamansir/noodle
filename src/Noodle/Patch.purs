@@ -401,7 +401,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
     HoldsNodeMRepr
         (forall r.
             (  forall instances' rlins f state is os isrl osrl repr_is repr_os
-             . PIs.IsNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+             . PIs.IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -429,7 +429,7 @@ holdNode' patch node = HoldsNode' \f -> f patch node
 
 holdNodeMRepr
     :: forall x gstate instances m repr instances' rlins f state is os isrl osrl repr_is repr_os
-     . PIs.IsNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+     . PIs.IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNodeMRepr x gstate instances m repr
@@ -540,7 +540,7 @@ withNodeMRepr
      . HoldsNodeMRepr x gstate instances m repr ->
     --    -> Proxy m ->
         (  forall instances' rlins f state is os isrl osrl repr_is repr_os
-        .  PIs.IsNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+        .  PIs.IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -564,8 +564,8 @@ withNode2MRepr
                   repr_isB repr_osB
                   instancesA' rlinsA
                   instancesB' rlinsB
-         . PIs.IsNodeInPatch' x gstateA instancesA' instancesA rlinsA fA stateA isA osA isrlA osrlA repr_isA repr_osA repr m
-        => PIs.IsNodeInPatch' x gstateB instancesB' instancesB rlinsB fB stateB isB osB isrlB osrlB repr_isB repr_osB repr m
+         . PIs.IsReprableNodeInPatch x gstateA instancesA' instancesA rlinsA fA stateA isA osA isrlA osrlA repr_isA repr_osA repr m
+        => PIs.IsReprableNodeInPatch x gstateB instancesB' instancesB rlinsB fB stateB isB osB isrlB osrlB repr_isB repr_osB repr m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA

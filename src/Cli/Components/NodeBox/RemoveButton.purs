@@ -50,7 +50,7 @@ import Noodle.Network as Network
 import Noodle.Node (Node)
 import Noodle.Node (unsafeDisconnect) as Node
 import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
-import Noodle.Patch.Has as Has
+import Noodle.Patch.Has as PHas
 
 import Tookit.Hydra (Instances) as Hydra
 
@@ -58,7 +58,7 @@ import Tookit.Hydra (Instances) as Hydra
 component
     :: forall f instances' state is os
      . IsSymbol f
-    => Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
+    => PHas.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
     => Offset
     -> Id.Family f
     -> Node f state is os Effect

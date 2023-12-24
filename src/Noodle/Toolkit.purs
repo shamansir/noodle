@@ -50,7 +50,7 @@ import Data.SOrder (instantiate) as SOrder
 -- import Heterogeneous.Folding as H
 -- import Heterogeneous.Mapping as H
 import Noodle.Family.Def as Family
-import Noodle.Toolkit.Has as Has
+import Noodle.Toolkit.Has as THas
 import Noodle.Node.MapsFolds as NM
 import Noodle.Node.MapsFolds as NF
 import Noodle.Node.MapsFolds.Repr as NR
@@ -58,7 +58,7 @@ import Noodle.Node.HoldsNodeState (class IsNodeState)
 import Noodle.Toolkit.MapsFolds as TM
 import Noodle.Toolkit.MapsFolds as TF
 import Noodle.Toolkit.MapsFolds.Repr as TR
-import Noodle.Toolkit.Has (class HasReprableNodesOf, class HasReprableNodesOf')
+
 
 import Noodle.Id
 import Noodle.Node (Node)
@@ -159,7 +159,7 @@ toRepr repr (Toolkit _ _ defs) =
 spawn
     :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m
      . MonadEffect m
-    => Has.HasFamilyDef f families' families (Family.Def state is os m)
+    => THas.HasFamilyDef f families' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family f
     -> m (Node f state is os m)
@@ -171,10 +171,10 @@ spawn (Toolkit _ _ tk) fsym =
 
 
 unsafeSpawn
-    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m rlfs
      . MonadEffect m
-    => ListsFamilies families ks
-    => Has.HasFamilyDef f families' families (Family.Def state is os m)
+    => ListsFamilies families rlfs
+    => THas.HasFamilyDef f families' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family' f
     -> m (Maybe (Family f /\ Node f state is os m))
@@ -186,10 +186,10 @@ unsafeSpawn toolkit@(Toolkit name _ tk) family =
 
 
 unsafeSpawnR
-    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
+    :: forall f (families :: Row Type) gstate state is os m rlfs
      . MonadEffect m
     => IsSymbol f
-    => ListsFamilies families ks
+    => ListsFamilies families rlfs
     -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
     => Toolkit gstate families
     -> FamilyR
@@ -207,10 +207,10 @@ unsafeSpawnR toolkit@(Toolkit _ name tk) familyR =
 
 
 unsafeSpawnR'
-    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
+    :: forall f (families :: Row Type) gstate state is os m rlfs
      . MonadEffect m
     => IsSymbol f
-    => ListsFamilies families ks
+    => ListsFamilies families rlfs
     -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
     => Toolkit gstate families
     -> FamilyR
@@ -223,7 +223,7 @@ name :: forall gstate families. Toolkit gstate families -> Name
 name (Toolkit name _ _) = name
 
 
-nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit gstate families -> List FamilyR
+nodeFamilies :: forall gstate rlfs families. ListsFamilies families rlfs => Toolkit gstate families -> List FamilyR
 nodeFamilies (Toolkit _ order _) = keysToFamiliesR order (Proxy :: Proxy families)
 
 
@@ -264,7 +264,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
     => MonadRec m
     => MonadEffect m
     => (  forall families' instances' f state (isrl :: RL.RowList Type) (is :: Row Type) (osrl :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-        .  HasReprableNodesOf' x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
+        .  THas.HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
         => Family f
         -> Family.Def state is os m
         -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
@@ -281,8 +281,8 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
     => MonadEffect m
     => (  forall familiesA' instancesA' fA stateA (isrlA :: RL.RowList Type) (isA :: Row Type) (osrlA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
                  familiesB' instancesB' fB stateB (isrlB :: RL.RowList Type) (isB :: Row Type) (osrlB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
-        .  Has.HasReprableNodesOf' x gstate familiesA' families instancesA' instances repr fA stateA isrlA isA osrlA osA repr_isA repr_osA m
-        => Has.HasReprableNodesOf' x gstate familiesB' families instancesB' instances repr fB stateB isrlB isB osrlB osB repr_isB repr_osB m
+        .  THas.HasReprableRenderableNodesOf x gstate familiesA' families instancesA' instances repr fA stateA isrlA isA osrlA osA repr_isA repr_osA m
+        => THas.HasReprableRenderableNodesOf x gstate familiesB' families instancesB' instances repr fB stateB isrlB isB osrlB osB repr_isB repr_osB m
         => Family fA
         -> Family fB
         -> Family.Def stateA isA osA m

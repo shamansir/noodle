@@ -68,10 +68,10 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 
 import Noodle.Id as Id
 import Noodle.Toolkit as Toolkit
-import Noodle.Toolkit.Has (class HasNodesOf) as Toolkit
+import Noodle.Toolkit.Has as THas
 import Noodle.Patch as Patch
 import Noodle.Patch (Patch) as Noodle
-import Noodle.Patch.Has as Has
+import Noodle.Patch.Has as PHas
 import Noodle.Patch.Is as PIs
 import Noodle.Node as Node
 import Noodle.Node (Node) as Noodle
@@ -145,7 +145,7 @@ autoPos = do
 
 fromNodeAuto
     :: forall instances' rlins f state isrl is osrl os repr_is repr_os
-     . PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
+     . PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -157,7 +157,7 @@ fromNodeAuto curPatchId curPatch family node =
 
 fromNodeAt
     :: forall instances' rlins f state isrl is osrl os repr_is repr_os
-     . PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
+     . PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -342,8 +342,8 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
 
 fromFamilyAt
     :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
-     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
-    => PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
+     . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
+    => PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -363,8 +363,8 @@ fromFamilyAt pos curPatchId curPatch family _ tk = do
 
 fromFamilyAuto
     :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
-     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
-    => PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
+     . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
+    => PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
