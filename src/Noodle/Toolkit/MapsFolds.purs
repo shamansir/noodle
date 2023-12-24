@@ -52,29 +52,29 @@ instance mappingIndexedTo ::
 
 
 class
-    ( RL.RowToList families rli
+    ( RL.RowToList families rlfs
     , ConvertFamilyDefTo x
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families target
-    ) <= Map (rli :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
+    , HM.MapRecordWithIndex rlfs (HM.ConstMapping (MapFamilyDefs x)) families target
+    ) <= Map (rlfs :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
 
 instance mapFamilies_ ::
-    ( RL.RowToList families rli
+    ( RL.RowToList families rlfs
     , ConvertFamilyDefTo x
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families target
-    ) => Map rli families target x
+    , HM.MapRecordWithIndex rlfs (HM.ConstMapping (MapFamilyDefs x)) families target
+    ) => Map rlfs families target x
 
 
 class
-    ( RL.RowToList families rli
+    ( RL.RowToList families rlfs
     , ConvertFamilyDefIndexedTo x
-    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families target
-    ) <= MapI (rli :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
+    , HM.MapRecordWithIndex rlfs (MapFamilyDefsIndexed x) families target
+    ) <= MapI (rlfs :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
 
 instance mapFamiliesIndexed_ ::
-    ( RL.RowToList families rli
+    ( RL.RowToList families rlfs
     , ConvertFamilyDefIndexedTo x
-    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families target
-    ) => MapI rli families target x
+    , HM.MapRecordWithIndex rlfs (MapFamilyDefsIndexed x) families target
+    ) => MapI rlfs families target x
 
 
 {- Special Maps -}
@@ -86,8 +86,8 @@ data ExtractShape = ExtractShape
 
 
 instance toShapesMap ::
-    ( Fn.HasInputsAt is iks
-    , Fn.HasOutputsAt os oks
+    ( Fn.HasInputsAt is isrl
+    , Fn.HasOutputsAt os osrl
     ) =>
     HM.Mapping
         ToShape

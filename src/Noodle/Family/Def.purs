@@ -20,12 +20,12 @@ newtype Def state (is :: Row Type) (os :: Row Type) (m :: Type -> Type) =
     Def (state /\ Record is /\ Record os /\ Fn state is os m)
 
 
-instance HasInputsAt is rli => HasInputs is rli (Def state is os m) where
+instance HasInputsAt is isrl => HasInputs is isrl (Def state is os m) where
     inputs :: Def state is os m -> List InputR
     inputs = Fn.inputsShape <<< fn
 
 
-instance HasOutputsAt os rlo => HasOutputs os rlo (Def state is os m) where
+instance HasOutputsAt os osrl => HasOutputs os osrl (Def state is os m) where
     outputs :: Def state is os m -> List OutputR
     outputs = Fn.outputsShape <<< fn
 

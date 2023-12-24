@@ -136,27 +136,27 @@ name :: forall state is os m. Fn state is os m -> Name
 name (Fn n _ _) = n
 
 
-inputsShape :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List InputR
+inputsShape :: forall state (is :: Row Type) os m isrl. HasInputsAt is isrl => Fn state is os m -> List InputR
 inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: _ is)
 
 
-outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List OutputR
+outputsShape :: forall state is (os :: Row Type) m osrl. HasOutputsAt os osrl => Fn state is os m -> List OutputR
 outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: _ os)
 
 
-inputsShapeHeld :: forall state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Fn state is os m -> Array HoldsInput
+inputsShapeHeld :: forall state (is :: Row Type) os m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Fn state is os m -> Array HoldsInput
 inputsShapeHeld (Fn _ { inputs } _) = KH.orderedKeys' (Proxy :: _ Input) inputs (Proxy :: _ is)
 
 
-outputsShapeHeld :: forall state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Fn state is os m -> Array HoldsOutput
+outputsShapeHeld :: forall state is (os :: Row Type) m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Fn state is os m -> Array HoldsOutput
 outputsShapeHeld (Fn _ { outputs } _) = KH.orderedKeys' (Proxy :: _ Output) outputs (Proxy :: _ os)
 
 
-inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder
+inputsOrder :: forall state (is :: Row Type) os m isrl. HasInputsAt is isrl => Fn state is os m -> SOrder
 inputsOrder (Fn _ { inputs } _) = inputs
 
 
-outputsOrder :: forall state (is :: Row Type) os m rlo. HasOutputsAt os rlo => Fn state is os m -> SOrder
+outputsOrder :: forall state (is :: Row Type) os m osrl. HasOutputsAt os osrl => Fn state is os m -> SOrder
 outputsOrder (Fn _ { outputs } _) = outputs
 
 
@@ -165,27 +165,27 @@ outputsOrder (Fn _ { outputs } _) = outputs
 
 
 shape
-    :: forall state (is :: Row Type) (os :: Row Type) m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall state (is :: Row Type) (os :: Row Type) m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => Fn state is os m
     -> List InputR /\ List OutputR
 shape fn = inputsShape fn /\ outputsShape fn
 
 
 dimensions
-    :: forall state is os m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall state is os m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => Fn state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall state is os m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall state is os m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
     -> Fn state is os m

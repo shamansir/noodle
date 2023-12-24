@@ -477,17 +477,17 @@ derive newtype instance Show LinkId
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
  -- FIXME: use newtype
 -- FIXME: another module?
-class (RL.RowToList is rli, Record.Keys rli) <= HasInputsAt is rli
-instance (RL.RowToList is rli, Record.Keys rli) => HasInputsAt is rli
+class (RL.RowToList is isrl, Record.Keys isrl) <= HasInputsAt is isrl
+instance (RL.RowToList is isrl, Record.Keys isrl) => HasInputsAt is isrl
 
 
-class (RL.RowToList is rli, KH.KeysO rli Input HoldsInput) <= HasInputsAt' is rli
-instance (RL.RowToList is rli, KH.KeysO rli Input HoldsInput) => HasInputsAt' is rli
+class (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) <= HasInputsAt' is isrl
+instance (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) => HasInputsAt' is isrl
 
 
-class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
+class HasInputsAt is isrl <= HasInputs is isrl a | a -> is, a -> isrl
     where inputs :: a -> List InputR
--- class HasInputsAt is rli <= HasInputs' is rli
+-- class HasInputsAt is isrl <= HasInputs' is isrl
 --     where
 --         --inputs' :: forall proxy. proxy is -> List InputR
 --         inputs' :: Unit -> List InputR
@@ -495,9 +495,9 @@ class HasOutputsAt os rlo <= HasOutputs os rlo a | a -> os, a -> rlo
     where outputs :: a -> List OutputR
 
 
-class HasInputsAt is rli <= HasInputsH is rli a | a -> is, a -> rli
+class HasInputsAt is isrl <= HasInputsH is isrl a | a -> is, a -> isrl
     where inputsH :: a -> List HoldsInput
--- class HasInputsAt is rli <= HasInputs' is rli
+-- class HasInputsAt is isrl <= HasInputs' is isrl
 --     where
 --         --inputs' :: forall proxy. proxy is -> List InputR
 --         inputs' :: Unit -> List InputR
@@ -513,12 +513,12 @@ class (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) <= HasOutputsAt' os
 instance (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) => HasOutputsAt' os rlo
 
 
-class (RL.RowToList fs rlf, Record.Keys rlf) <= ListsFamilies fs rlf
-instance (RL.RowToList fs rlf, Record.Keys rlf) => ListsFamilies fs rlf
+class (RL.RowToList fs rlfs, Record.Keys rlfs) <= ListsFamilies fs rlfs
+instance (RL.RowToList fs rlfs, Record.Keys rlfs) => ListsFamilies fs rlfs
 
 
-class (RL.RowToList ins rlin, Record.Keys rlin) <= ListsInstances ins rlin
-instance (RL.RowToList ins rlin, Record.Keys rlin) => ListsInstances ins rlin
+class (RL.RowToList ins rlins, Record.Keys rlins) <= ListsInstances ins rlins
+instance (RL.RowToList ins rlins, Record.Keys rlins) => ListsInstances ins rlins
 
 
 -- class HasInput :: forall k. Symbol -> k -> Row k -> Row k -> Constraint

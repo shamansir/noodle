@@ -61,9 +61,9 @@ class HasRepr a repr where
 
 
 nodeToRepr'
-    :: forall m is os repr state f iks repr_is oks repr_os
+    :: forall m is os repr state f isrl repr_is osrl repr_os
      . MonadEffect m
-    => ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> m (NodeLineRec f repr repr_is repr_os)
@@ -82,9 +82,9 @@ nodeToRepr' (ToReprTop repr) node = do
 
 
 nodeToRepr
-    :: forall m is os repr state f iks repr_is oks repr_os
+    :: forall m is os repr state f isrl repr_is osrl repr_os
      . MonadEffect m
-    => ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => Proxy m
     -> Repr repr
     -> Node f state is os m
@@ -94,9 +94,9 @@ nodeToRepr _ repr =
 
 
 nodeToMapRepr'
-    :: forall m is os repr state f iks oks
+    :: forall m is os repr state f isrl osrl
      . MonadEffect m
-    => ToReprFoldToMapsHelper f is iks os oks repr state
+    => ToReprFoldToMapsHelper f is isrl os osrl repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> m (NodeLineMap repr)
@@ -115,9 +115,9 @@ nodeToMapRepr' (ToReprTop repr) node = do
 
 
 nodeToMapRepr
-    :: forall m is os repr state f iks oks
+    :: forall m is os repr state f isrl osrl
      . MonadEffect m
-    => ToReprFoldToMapsHelper f is iks os oks repr state
+    => ToReprFoldToMapsHelper f is isrl os osrl repr state
     => Proxy m
     -> Repr repr
     -> Node f state is os m
@@ -127,8 +127,8 @@ nodeToMapRepr _ repr =
 
 
 subscribeReprChanges'
-    :: forall f state is iks os oks m repr repr_is repr_os
-     . ToReprHelper m f is iks os oks repr_is repr_os repr state
+    :: forall f state is isrl os osrl m repr repr_is repr_os
+     . ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
@@ -147,8 +147,8 @@ subscribeReprChanges' (ToReprTop repr) node =
 
 
 subscribeReprChanges
-    :: forall f state is iks os oks m repr repr_is repr_os
-     . ToReprHelper m f is iks os oks repr_is repr_os repr state
+    :: forall f state is isrl os osrl m repr repr_is repr_os
+     . ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => Repr repr
     -> Node f state is os m
     -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
@@ -157,8 +157,8 @@ subscribeReprChanges repr =
 
 
 subscribeReprMapChanges'
-    :: forall f state is iks os oks m repr
-     . ToReprFoldToMapsHelper f is iks os oks repr state
+    :: forall f state is isrl os osrl m repr
+     . ToReprFoldToMapsHelper f is isrl os osrl repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> Signal (ChangeFocus /\ NodeLineMap repr)
@@ -177,8 +177,8 @@ subscribeReprMapChanges' (ToReprTop repr) node =
 
 
 subscribeReprMapChanges
-    :: forall f state is iks os oks m repr
-     . ToReprFoldToMapsHelper f is iks os oks repr state
+    :: forall f state is isrl os osrl m repr
+     . ToReprFoldToMapsHelper f is isrl os osrl repr state
     => Repr repr
     -> Node f state is os m
     -> Signal (ChangeFocus /\ NodeLineMap repr)
@@ -188,8 +188,8 @@ subscribeReprMapChanges repr =
 
 instance toReprTopInstance ::
     ( MonadEffect m
-    , ToReprHelper m f is iks os oks repr_is repr_os repr state
-    -- , HM.MapRecordWithIndex iks (ToReprDownI f3 repr4)
+    , ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+    -- , HM.MapRecordWithIndex isrl (ToReprDownI f3 repr4)
     --                                          is5
     --                                          repr_is6
     ) =>
@@ -268,43 +268,43 @@ class
     ( MonadEffect m
     , IsSymbol sym
     , HasRepr state repr
-    , Fn.HasInputsAt is iks
-    , Fn.HasOutputsAt os oks
-    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
-    ) <= ToReprHelper m sym is iks os oks repr_is repr_os repr state
+    , Fn.HasInputsAt is isrl
+    , Fn.HasOutputsAt os osrl
+    , HM.MapRecordWithIndex isrl (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex osrl (ToReprDownO sym repr) os repr_os
+    ) <= ToReprHelper m sym is isrl os osrl repr_is repr_os repr state
 instance
     ( MonadEffect m
     , IsSymbol sym
     , HasRepr state repr
-    , Fn.HasInputsAt is iks
-    , Fn.HasOutputsAt os oks
-    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
-    ) => ToReprHelper m sym is iks os oks repr_is repr_os repr state
+    , Fn.HasInputsAt is isrl
+    , Fn.HasOutputsAt os osrl
+    , HM.MapRecordWithIndex isrl (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex osrl (ToReprDownO sym repr) os repr_os
+    ) => ToReprHelper m sym is isrl os osrl repr_is repr_os repr state
 
 class
     ( IsSymbol f
     , HasRepr state repr
-    , Fn.HasInputsAt is iks
-    , Fn.HasOutputsAt os oks
-    , HF.FoldlRecord (ToReprDownI f repr) (Map InputR repr) iks is (Map InputR repr)
-    , HF.FoldlRecord (ToReprDownO f repr) (Map OutputR repr) oks os (Map OutputR repr)
-    ) <= ToReprFoldToMapsHelper f is iks os oks repr state
+    , Fn.HasInputsAt is isrl
+    , Fn.HasOutputsAt os osrl
+    , HF.FoldlRecord (ToReprDownI f repr) (Map InputR repr) isrl is (Map InputR repr)
+    , HF.FoldlRecord (ToReprDownO f repr) (Map OutputR repr) osrl os (Map OutputR repr)
+    ) <= ToReprFoldToMapsHelper f is isrl os osrl repr state
 instance
     ( IsSymbol f
     , HasRepr state repr
-    , Fn.HasInputsAt is iks
-    , Fn.HasOutputsAt os oks
-    , HF.FoldlRecord (ToReprDownI f repr) (Map InputR repr) iks is (Map InputR repr)
-    , HF.FoldlRecord (ToReprDownO f repr) (Map OutputR repr) oks os (Map OutputR repr)
-    ) => ToReprFoldToMapsHelper f is iks os oks repr state
+    , Fn.HasInputsAt is isrl
+    , Fn.HasOutputsAt os osrl
+    , HF.FoldlRecord (ToReprDownI f repr) (Map InputR repr) isrl is (Map InputR repr)
+    , HF.FoldlRecord (ToReprDownO f repr) (Map OutputR repr) osrl os (Map OutputR repr)
+    ) => ToReprFoldToMapsHelper f is isrl os osrl repr state
 
 
 instance foldToReprsMap ::
     ( Semigroup (m (Array (NodeLineMap repr)))
     , MonadEffect m
-    , ToReprFoldToMapsHelper f is iks os oks repr state
+    , ToReprFoldToMapsHelper f is isrl os osrl repr state
     )
     => HF.FoldingWithIndex
             (ToReprTop m repr)

@@ -686,36 +686,36 @@ set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
 
 
 
-inputsShape :: forall f state (is :: Row Type) os m rli. HasInputsAt is rli => Node f state is os m -> List InputR
+inputsShape :: forall f state (is :: Row Type) os m isrl. HasInputsAt is isrl => Node f state is os m -> List InputR
 inputsShape (Node _ _ _ fn) = Fn.inputsShape fn
 
 
-outputsShape :: forall f state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Node f state is os m -> List OutputR
+outputsShape :: forall f state is (os :: Row Type) m osrl. HasOutputsAt os osrl => Node f state is os m -> List OutputR
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
-inputsShapeHeld :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Node f state is os m -> Array HoldsInput
+inputsShapeHeld :: forall f state (is :: Row Type) os m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Node f state is os m -> Array HoldsInput
 inputsShapeHeld (Node _ _ _ fn) = Fn.inputsShapeHeld fn
 
 
-outputsShapeHeld :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutput
+outputsShapeHeld :: forall f state is (os :: Row Type) m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Node f state is os m -> Array HoldsOutput
 outputsShapeHeld (Node _ _ _ fn) = Fn.outputsShapeHeld fn
 
 {-
-inputsShapeInNode :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInputInNode => HasInputsAt is rli => Node f state is os m -> Array HoldsInputInNode
+inputsShapeInNode :: forall f state (is :: Row Type) os m rli. KH.KeysO isrl Input HoldsInputInNode => HasInputsAt is isrl => Node f state is os m -> Array HoldsInputInNode
 inputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Input) (Fn.inputsOrder fn) (Proxy :: _ is)
 
 
-outputsShapeInNode :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutputInNode => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutputInNode
+outputsShapeInNode :: forall f state is (os :: Row Type) m rlo. KH.KeysO osrl Output HoldsOutputInNode => HasOutputsAt os osrl => Node f state is os m -> Array HoldsOutputInNode
 outputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Output) (Fn.outputsOrder fn) (Proxy :: _ os)
 -}
 
 
-inputsOrder :: forall f state is os m rli. HasInputsAt is rli => Node f state is os m -> SOrder
+inputsOrder :: forall f state is os m isrl. HasInputsAt is isrl => Node f state is os m -> SOrder
 inputsOrder (Node _ _ _ fn) = Fn.inputsOrder fn
 
 
-outputsOrder :: forall f state is os m rlo. HasOutputsAt os rlo => Node f state is os m -> SOrder
+outputsOrder :: forall f state is os m osrl. HasOutputsAt os osrl => Node f state is os m -> SOrder
 outputsOrder (Node _ _ _ fn) = Fn.outputsOrder fn
 
 
@@ -723,38 +723,38 @@ outputsOrder (Node _ _ _ fn) = Fn.outputsOrder fn
 
 
 shape
-    :: forall f state (is :: Row Type) (os :: Row Type) m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall f state (is :: Row Type) (os :: Row Type) m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => Node f state is os m
     -> List InputR /\ List OutputR
 shape node = inputsShape node /\ outputsShape node
 
 
 shapeHeld
-    :: forall f state (is :: Row Type) (os :: Row Type) m rli rlo
-     . KH.KeysO rli Input HoldsInput
-    => KH.KeysO rlo Output HoldsOutput
-    => HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall f state (is :: Row Type) (os :: Row Type) m isrl osrl
+     . KH.KeysO isrl Input HoldsInput
+    => KH.KeysO osrl Output HoldsOutput
+    => HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => Node f state is os m
     -> Array HoldsInput /\ Array HoldsOutput
 shapeHeld node = inputsShapeHeld node /\ outputsShapeHeld node
 
 
 dimensions
-    :: forall f state is os m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall f state is os m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => Node f state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall f state is os m rli rlo
-     . HasInputsAt is rli
-    => HasOutputsAt os rlo
+    :: forall f state is os m isrl osrl
+     . HasInputsAt is isrl
+    => HasOutputsAt os osrl
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
     -> Node f state is os m
@@ -1041,8 +1041,8 @@ else instance consKeysO ::
 -}
 
 
-class (IsSymbol f) <= HoldsInputs (is :: Row Type) (rli :: RL.RowList Type) f state os m | is -> rli where
-    holdInputs :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+class (IsSymbol f) <= HoldsInputs (is :: Row Type) (isrl :: RL.RowList Type) f state os m | is -> isrl where
+    holdInputs :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
 
 
 instance nilHoldsInputs :: (IsSymbol f) => HoldsInputs is RL.Nil f state os m where
@@ -1053,7 +1053,7 @@ else instance consHoldsInputs ::
   , HasInputsAt is tail
   , HoldsInputs is tail f state os m
   ) => HoldsInputs is (RL.Cons i din tail) f state os m where
-  holdInputs :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  holdInputs :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
   holdInputs _ node =
     Array.insertBy cmpF (index /\ holdInputInNode node (Input index :: _ i)) (holdInputs (Proxy :: _ tail) node)
     where
@@ -1064,20 +1064,20 @@ else instance consHoldsInputs ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputs :: forall rli f state is os m
+orderedInputs :: forall isrl f state is os m
    . IsSymbol f
-  => HoldsInputs is rli f state os m
+  => HoldsInputs is isrl f state os m
   => Node f state is os m
   -> Array HoldsInputInNode
-orderedInputs node = Tuple.snd <$> holdInputs (Proxy :: _ rli) node
+orderedInputs node = Tuple.snd <$> holdInputs (Proxy :: _ isrl) node
 
 
 instance Reflect' HoldsInputInNode where
     reflect' hiin = withInputInNode hiin (const reflect)
 
 
-class (IsSymbol f) <= HoldsOutputs (os :: Row Type) (rlo :: RL.RowList Type) f state is m | os -> rlo where
-    holdOutputs :: Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+class (IsSymbol f) <= HoldsOutputs (os :: Row Type) (osrl :: RL.RowList Type) f state is m | os -> osrl where
+    holdOutputs :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
 
 
 instance nilHoldsOutputs :: (IsSymbol f) => HoldsOutputs os RL.Nil f state is m where
@@ -1089,7 +1089,7 @@ else instance consHoldsOutputs ::
   , HasOutputsAt os tail
   , HoldsOutputs os tail f state is m
   ) => HoldsOutputs os (RL.Cons o dout tail) f state is m where
-  holdOutputs :: forall rlo. Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+  holdOutputs :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
   holdOutputs _ node =
     Array.insertBy cmpF (index /\ holdOutputInNode node (Output index :: _ o)) (holdOutputs (Proxy :: _ tail) node)
     where
@@ -1100,12 +1100,12 @@ else instance consHoldsOutputs ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputs :: forall rlo f state is os m
+orderedOutputs :: forall osrl f state is os m
    . IsSymbol f
-  => HoldsOutputs os rlo f state is m
+  => HoldsOutputs os osrl f state is m
   => Node f state is os m
   -> Array HoldsOutputInNode
-orderedOutputs node = Tuple.snd <$> holdOutputs (Proxy :: _ rlo) node
+orderedOutputs node = Tuple.snd <$> holdOutputs (Proxy :: _ osrl) node
 
 
 instance Reflect' HoldsOutputInNode where
@@ -1113,8 +1113,8 @@ instance Reflect' HoldsOutputInNode where
 
 
 
-class (IsSymbol f) <= HoldsInputsM (is :: Row Type) (rli :: RL.RowList Type) f state os m | is -> rli where
-    holdInputsM :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
+class (IsSymbol f) <= HoldsInputsM (is :: Row Type) (isrl :: RL.RowList Type) f state os m | is -> isrl where
+    holdInputsM :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
 
 
 instance nilHoldsInputsM :: (IsSymbol f) => HoldsInputsM is RL.Nil f state os m where
@@ -1126,7 +1126,7 @@ else instance consHoldsInputsM ::
   , HasInputsAt is tail
   , HoldsInputsM is tail f state os m
   ) => HoldsInputsM is (RL.Cons i din tail) f state os m where
-  holdInputsM :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
+  holdInputsM :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
   holdInputsM _ node =
     Array.insertBy cmpF (index /\ holdInputInNodeM node (Input index :: _ i)) (holdInputsM (Proxy :: _ tail) node)
     where
@@ -1137,21 +1137,21 @@ else instance consHoldsInputsM ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputsM :: forall rli f state is os m
+orderedInputsM :: forall isrl f state is os m
    . IsSymbol f
-  => HoldsInputsM is rli f state os m
+  => HoldsInputsM is isrl f state os m
   => Node f state is os m
   -> Array (HoldsInputInNodeM m)
 orderedInputsM node =
-  Tuple.snd <$> holdInputsM (Proxy :: _ rli) node
+  Tuple.snd <$> holdInputsM (Proxy :: _ isrl) node
 
 
 instance Reflect' (HoldsInputInNodeM m) where
     reflect' hiin = withInputInNodeM hiin (const reflect)
 
 
-class (IsSymbol f) <= HoldsOutputsM (os :: Row Type) (rlo :: RL.RowList Type) f state is m | os -> rlo where
-    holdOutputsM :: Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
+class (IsSymbol f) <= HoldsOutputsM (os :: Row Type) (osrl :: RL.RowList Type) f state is m | os -> osrl where
+    holdOutputsM :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
 
 
 instance nilHoldsOutputsM :: (IsSymbol f) => HoldsOutputsM os RL.Nil f state is m where
@@ -1163,7 +1163,7 @@ else instance consHoldsOutputsM ::
   , HasOutputsAt os tail
   , HoldsOutputsM os tail f state is m
   ) => HoldsOutputsM os (RL.Cons o dout tail) f state is m where
-  holdOutputsM :: forall rlo. Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
+  holdOutputsM :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
   holdOutputsM _ node =
     Array.insertBy cmpF (index /\ holdOutputInNodeM node (Output index :: _ o)) (holdOutputsM (Proxy :: _ tail) node)
     where
@@ -1174,13 +1174,13 @@ else instance consHoldsOutputsM ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputsM :: forall rlo f state is os m
+orderedOutputsM :: forall osrl f state is os m
    . IsSymbol f
-  => HoldsOutputsM os rlo f state is m
+  => HoldsOutputsM os osrl f state is m
   => Node f state is os m
   -> Array (HoldsOutputInNodeM m)
 orderedOutputsM node =
-  Tuple.snd <$> holdOutputsM (Proxy :: _ rlo) node
+  Tuple.snd <$> holdOutputsM (Proxy :: _ osrl) node
 
 
 instance Reflect' (HoldsOutputInNodeM m) where
@@ -1188,8 +1188,8 @@ instance Reflect' (HoldsOutputInNodeM m) where
 
 
 
-class (IsSymbol f, ReadWriteRepr repr, FromToReprRow rli is repr) <= HoldsInputsMRepr (is :: Row Type) (rli :: RL.RowList Type) f state os m repr | is -> rli where
-    holdInputsMRepr :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
+class (IsSymbol f, ReadWriteRepr repr, FromToReprRow isrl is repr) <= HoldsInputsMRepr (is :: Row Type) (isrl :: RL.RowList Type) f state os m repr | is -> isrl where
+    holdInputsMRepr :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
 
 
 instance nilHoldsInputsMRepr :: (IsSymbol f, ReadWriteRepr repr) => HoldsInputsMRepr is RL.Nil f state os m repr where
@@ -1204,7 +1204,7 @@ else instance consHoldsInputsMRepr ::
   , FromRepr repr din
   , HoldsInputsMRepr is tail f state os m repr
   ) => HoldsInputsMRepr is (RL.Cons i din tail) f state os m repr where
-  holdInputsMRepr :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
+  holdInputsMRepr :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
   holdInputsMRepr _ node =
     Array.insertBy cmpF (index /\ holdInputInNodeMRepr (Proxy :: _ din) node (Input index :: _ i)) (holdInputsMRepr (Proxy :: _ tail) node)
     where
@@ -1215,20 +1215,20 @@ else instance consHoldsInputsMRepr ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputsMRepr :: forall rli f state is os m repr
+orderedInputsMRepr :: forall isrl f state is os m repr
    . IsSymbol f
-  => HoldsInputsMRepr is rli f state os m repr
+  => HoldsInputsMRepr is isrl f state os m repr
   => Node f state is os m
   -> Array (HoldsInputInNodeMRepr m repr)
-orderedInputsMRepr node = Tuple.snd <$> holdInputsMRepr (Proxy :: _ rli) node
+orderedInputsMRepr node = Tuple.snd <$> holdInputsMRepr (Proxy :: _ isrl) node
 
 
 instance Reflect' (HoldsInputInNodeMRepr m repr) where
     reflect' hiinr = withInputInNodeMRepr hiinr (const $ const reflect)
 
 
-class (IsSymbol f, ReadWriteRepr repr, FromToReprRow rlo os repr) <= HoldsOutputsMRepr (os :: Row Type) (rlo :: RL.RowList Type) f state is m repr | os -> rlo where
-    holdOutputsMRepr :: Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
+class (IsSymbol f, ReadWriteRepr repr, FromToReprRow osrl os repr) <= HoldsOutputsMRepr (os :: Row Type) (osrl :: RL.RowList Type) f state is m repr | os -> osrl where
+    holdOutputsMRepr :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
 
 
 instance nilHoldsOutputsMRepr :: (IsSymbol f, ReadWriteRepr repr) => HoldsOutputsMRepr os RL.Nil f state is m repr where
@@ -1242,7 +1242,7 @@ else instance consHoldsOutputsMRepr ::
   , FromRepr repr dout
   , HoldsOutputsMRepr os tail f state is m repr
   ) => HoldsOutputsMRepr os (RL.Cons o dout tail) f state is m repr where
-  holdOutputsMRepr :: forall rlo. Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
+  holdOutputsMRepr :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
   holdOutputsMRepr _ node =
     Array.insertBy cmpF (index /\ holdOutputInNodeMRepr (Proxy :: _ dout) node (Output index :: _ o)) (holdOutputsMRepr (Proxy :: _ tail) node)
     where
@@ -1253,12 +1253,12 @@ else instance consHoldsOutputsMRepr ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputsMRepr :: forall rlo f state is os m repr
+orderedOutputsMRepr :: forall osrl f state is os m repr
    . IsSymbol f
-  => HoldsOutputsMRepr os rlo f state is m repr
+  => HoldsOutputsMRepr os osrl f state is m repr
   => Node f state is os m
   -> Array (HoldsOutputInNodeMRepr m repr)
-orderedOutputsMRepr node = Tuple.snd <$> holdOutputsMRepr (Proxy :: _ rlo) node
+orderedOutputsMRepr node = Tuple.snd <$> holdOutputsMRepr (Proxy :: _ osrl) node
 
 
 instance Reflect' (HoldsOutputInNodeMRepr m repr) where

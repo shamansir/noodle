@@ -125,28 +125,28 @@ instance initInstances ::
 
 
 class
-    ( RL.RowToList instances rli
+    ( RL.RowToList instances rlins
     , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances target
-    ) <= Map (rli :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
+    , HM.MapRecordWithIndex rlins (HM.ConstMapping (MapNodes x)) instances target
+    ) <= Map (rlins :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
 
 instance mapInstances ::
-    ( RL.RowToList instances rli
+    ( RL.RowToList instances rlins
     , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances target
-    ) => Map rli instances target x
+    , HM.MapRecordWithIndex rlins (HM.ConstMapping (MapNodes x)) instances target
+    ) => Map rlins instances target x
 
 class
-    ( RL.RowToList instances rli
+    ( RL.RowToList instances rlins
     , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances target
-    ) <= MapI (rli :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
+    , HM.MapRecordWithIndex rlins (MapNodesIndexed x) instances target
+    ) <= MapI (rlins :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
 
 instance mapInstancesIndexed ::
-    ( RL.RowToList instances rli
+    ( RL.RowToList instances rlins
     , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances target
-    ) => MapI rli instances target x
+    , HM.MapRecordWithIndex rlins (MapNodesIndexed x) instances target
+    ) => MapI rlins instances target x
 
 
 instance mappingTo ::
@@ -174,31 +174,31 @@ instance mappingIndexedTo ::
 class
     ( Monoid (ff result)
     , NMF.ConvertNodeTo result
-    , RL.RowToList instances rla
-    , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
-    ) <= Fold (rla :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
+    , RL.RowToList instances rlins
+    , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rlins instances (ff result)
+    ) <= Fold (rlins :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
 
 instance foldInstances ::
     ( Monoid (ff result)
     , NMF.ConvertNodeTo result
-    , RL.RowToList instances rla
-    , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
-    ) => Fold rla instances ff result
+    , RL.RowToList instances rlins
+    , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rlins instances (ff result)
+    ) => Fold rlins instances ff result
 
 
 class
     ( Monoid (ff result)
     , NMF.ConvertNodeIndexedTo result
-    , RL.RowToList instances rla
-    , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
-    ) <= FoldI (rla :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
+    , RL.RowToList instances rlins
+    , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rlins instances (ff result)
+    ) <= FoldI (rlins :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
 
 instance foldInstacesIndexed ::
     ( Monoid (ff result)
     , NMF.ConvertNodeIndexedTo result
-    , RL.RowToList instances rla
-    , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
-    ) => FoldI rla instances ff result
+    , RL.RowToList instances rlins
+    , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rlins instances (ff result)
+    ) => FoldI rlins instances ff result
 
 
 instance foldNodesArr ::
@@ -330,8 +330,8 @@ init = HM.hmap NoInstancesOfNodeYet
 
 
 hmap
-    :: forall instances rli x target
-     . Map rli instances target x
+    :: forall instances rlins x target
+     . Map rlins instances target x
     => Proxy x
     -> Record instances
     -> Record target
@@ -339,8 +339,8 @@ hmap _ = HM.hmap (MapNodes :: MapNodes x)
 
 
 hmapWithIndex
-    :: forall instances rli x target
-     . MapI rli instances target x
+    :: forall instances rlins x target
+     . MapI rlins instances target x
     => Proxy x
     -> Record instances
     -> Record target
@@ -348,16 +348,16 @@ hmapWithIndex _ = HM.hmapWithIndex (MapNodesIndexed :: MapNodesIndexed x)
 
 
 hfoldl_
-    :: forall (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . Fold rla instances ff result
+    :: forall (instances :: Row Type) (rlins ∷ RL.RowList Type) result (ff :: Type -> Type)
+     . Fold rlins instances ff result
     => Record instances
     -> ff result
 hfoldl_ = HF.hfoldl (FoldNodes :: FoldNodes ff result) (mempty :: ff result)
 
 
 hfoldl
-    :: forall f state is os instances rla m
-     . Fold rla instances Array (Node f state is os m)
+    :: forall f state is os instances rlins m
+     . Fold rlins instances Array (Node f state is os m)
     => Record instances
     -> Array (Node f state is os m)
 hfoldl = hfoldl_
@@ -365,25 +365,25 @@ hfoldl = hfoldl_
 
 
 hfoldlWithIndex_
-    :: forall (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . FoldI rla instances ff result
+    :: forall (instances :: Row Type) (rlins ∷ RL.RowList Type) result (ff :: Type -> Type)
+     . FoldI rlins instances ff result
     => Record instances
     -> ff result
 hfoldlWithIndex_ = HF.hfoldlWithIndex (FoldNodesIndexed :: FoldNodesIndexed ff result) (mempty :: ff result)
 
 
 hfoldlWithIndex
-    :: forall f state is os m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type)
-     . FoldI rla instances Array (NodeWithIndex f state is os m)
+    :: forall f state is os m (instances :: Row Type) (rlins ∷ RL.RowList Type) (ff :: Type -> Type)
+     . FoldI rlins instances Array (NodeWithIndex f state is os m)
     => Record instances
     -> Array (NodeWithIndex f state is os m)
 hfoldlWithIndex = hfoldlWithIndex_
 
 
 toReprs
-    :: forall (m :: Type -> Type) (instances :: Row Type) (rla ∷ RL.RowList Type) (reprs :: Row Type) repr
+    :: forall (m :: Type -> Type) (instances :: Row Type) (rlins ∷ RL.RowList Type) (reprs :: Row Type) repr
      . MonadEffect m
-    => ExtractReprs m rla instances reprs repr
+    => ExtractReprs m rlins instances reprs repr
     => Proxy m
     -> Repr repr
     -> Record instances
@@ -393,9 +393,9 @@ toReprs _ repr =
 
 
 toReprsFlat
-    :: forall m (instances :: Row Type) (rla ∷ RL.RowList Type) repr
+    :: forall m (instances :: Row Type) (rlins ∷ RL.RowList Type) repr
      . MonadEffect m
-    => FoldToReprsMap m rla instances repr
+    => FoldToReprsMap m rlins instances repr
     => Proxy m
     -> Repr repr
     -> Record instances

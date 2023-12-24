@@ -167,10 +167,10 @@ renderNode node =
 
 
 render
-    :: forall patch_action gstate nodes instances rln rli rla
-     . Record.Keys rln ⇒ RL.RowToList nodes rln
-    => Record.Keys rli ⇒ RL.RowToList instances rli  ⇒ RL.RowToList instances rla
-    => Patch.Fold rla instances Array NodeHtml'
+    :: forall patch_action gstate nodes instances rlns rlins
+     . Record.Keys rlns ⇒ RL.RowToList nodes rlns
+    => Record.Keys rlins ⇒ RL.RowToList instances rlins
+    => Patch.Fold rlins instances Array NodeHtml'
     => State gstate nodes instances
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
 render (s@{ network, toolkit, windowSize }) =
@@ -346,12 +346,11 @@ handleAction = case _ of
 
 
 component
-    :: forall query output gstate nodes instances rln rli rla
-     .Record.Keys rln ⇒ RL.RowToList nodes rln
-    => Record.Keys rli ⇒ RL.RowToList instances rli
-    => Record.Keys rla ⇒ RL.RowToList instances rla
-    => Patch.Fold rla instances Array NodeHtml'
-    => Patch.Init rla nodes instances
+    :: forall query output gstate nodes instances rlns rlins
+     . Record.Keys rlns ⇒ RL.RowToList nodes rlns
+    => Record.Keys rlins ⇒ RL.RowToList instances rlins
+    => Patch.Fold rlins instances Array NodeHtml'
+    => Patch.Init rlins nodes instances
     => H.Component query (Input gstate nodes instances) output Aff -- FIXME: there is MonadAff here!
 component =
     H.mkComponent
