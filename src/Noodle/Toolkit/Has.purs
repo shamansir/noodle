@@ -3,6 +3,7 @@ module Noodle.Toolkit.Has where
 
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Row as Row
+import Prim.RowList as RL
 import Data.Repr (class FromToReprRow, class ReadWriteRepr)
 
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
@@ -12,6 +13,9 @@ import Noodle.Family.Def as Family
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Node.MapsFolds.Repr as NMF
+import Noodle.Node.HoldsNodeState (class IsNodeState)
+
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: must be located somewhere in generic UI
 
 
 class HasFamilyDef :: forall k. Symbol -> Row k -> Row k -> k -> Constraint
@@ -84,6 +88,23 @@ instance
     , FromToReprRow rli is repr
     , FromToReprRow rlo os repr
     ) => HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
+
+
+class HasReprableNodesOf' :: forall k. (Symbol -> k) -> Type -> Row Type -> Row Type -> Row Type -> Row Type -> Type -> Symbol -> Type -> RL.RowList Type -> Row Type -> RL.RowList Type -> Row Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class
+    ( HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
+    , HasBody' (x f) (Noodle.Node f state is os m) state m
+    , HasCustomSize (x f) (Noodle.Node f state is os m)
+    , IsNodeState gstate state
+    ) <= HasReprableNodesOf' x gstate families' families instances' instances repr f state rli is rlo os repr_is repr_os m
+
+
+instance
+    ( HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
+    , HasBody' (x f) (Noodle.Node f state is os m) state m
+    , HasCustomSize (x f) (Noodle.Node f state is os m)
+    , IsNodeState gstate state
+    ) => HasReprableNodesOf' x gstate families' families instances' instances repr f state rli is rlo os repr_is repr_os m
 
 -- class ( IsSymbol f
 --         , HasFamilyDef f fs (Families m) (Family.Def state is os m)

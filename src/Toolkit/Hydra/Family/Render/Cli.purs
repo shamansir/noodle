@@ -48,6 +48,10 @@ import Noodle.Id as Id
 import Tookit.Hydra.Family.Render.Editor (EditorId(..), HasEditors)
 
 
+-- TODO: kind: data RenderTarget
+
+
+-- TODO: kind data CliF :: Symbol -> RenderTarget -> Type
 data CliF (f :: Symbol) = CliF
 
 

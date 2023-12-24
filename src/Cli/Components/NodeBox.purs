@@ -72,6 +72,7 @@ import Noodle.Toolkit.Has (class HasNodesOf) as Toolkit
 import Noodle.Patch as Patch
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch.Has as Has
+import Noodle.Patch.Is as PIs
 import Noodle.Node as Node
 import Noodle.Node (Node) as Noodle
 import Noodle.Family.Def as Family
@@ -143,17 +144,8 @@ autoPos = do
 
 
 fromNodeAuto
-    :: forall f state rli is rlo os repr_is repr_os instances'
-     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Noodle.Node f state is os Effect))
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
-    => FromToReprRow rli is Hydra.WrapRepr
-    => FromToReprRow rlo os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState Hydra.State state
+    :: forall instances' rlins f state isrl is osrl os repr_is repr_os
+     . PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -164,17 +156,8 @@ fromNodeAuto curPatchId curPatch family node =
 
 
 fromNodeAt
-    :: forall f state rli is rlo os repr_is repr_os instances'
-     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Noodle.Node f state is os Effect))
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
-    => FromToReprRow rli is Hydra.WrapRepr
-    => FromToReprRow rlo os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState Hydra.State state
+    :: forall instances' rlins f state isrl is osrl os repr_is repr_os
+     . PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -358,17 +341,9 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
 
 
 fromFamilyAt
-    :: forall families' instances' f state rli is rlo os repr_is repr_os
-     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state rli is rlo os Effect
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
-    => FromToReprRow rli is Hydra.WrapRepr
-    => FromToReprRow rlo os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState Hydra.State state
+    :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
+     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
+    => PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -387,17 +362,9 @@ fromFamilyAt pos curPatchId curPatch family _ tk = do
 
 
 fromFamilyAuto
-    :: forall f instances' families' state rli is rlo os repr_is repr_os
-     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state rli is rlo os Effect
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
-    => FromToReprRow rli is Hydra.WrapRepr
-    => FromToReprRow rlo os Hydra.WrapRepr
-    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    => HasBody' (Hydra.CliF f) (Noodle.Node f state is os Effect) state Effect
-    => HasCustomSize (Hydra.CliF f) (Noodle.Node f state is os Effect)
-    => IsNodeState Hydra.State state
+    :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
+     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Effect
+    => PIs.IsNodeInPatch'' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
