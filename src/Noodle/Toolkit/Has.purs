@@ -3,14 +3,15 @@ module Noodle.Toolkit.Has where
 
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Row as Row
+import Prim.RowList as RL
 import Data.Repr (class FromToReprRow, class ReadWriteRepr)
 
-import Noodle.Id (Family, FamilyR, Input, Output) as Node
+import Noodle.Id (Input, Output) as Node
 import Noodle.Patch.Has (class HasInstancesOf)
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Family.Def as Family
 import Noodle.Node (Node) as Noodle
-import Noodle.Node as Node
+import Noodle.Node (class NodeBoundKeys, HoldsInputInNodeMRepr, HoldsOutputInNodeMRepr, I, O) as Node
 import Noodle.Node.MapsFolds.Repr as NMF
 
 
@@ -38,30 +39,31 @@ instance
     => HasFamilyDef' f families' families x -- FIXME: use newtype
 
 
+class HasNodesOf :: Row Type → Row Type → Symbol → Type → Row Type → Row Type → RL.RowList Type → Row Type → RL.RowList Type → Row Type → (Type → Type) → Constraint
 class
     ( IsSymbol f
     , HasFamilyDef f fs families (Family.Def state is os m)
-    , HasInstancesOf f iis instances (Array (Noodle.Node f state is os m))
+    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is rli
     , Has.HasInputsAt' is rli
     , Has.HasOutputsAt os rlo
     , Has.HasOutputsAt' os rlo
-    ) <= HasNodesOf families instances f state fs iis rli is rlo os m
+    ) <= HasNodesOf families instances f state fs instances' rli is rlo os m
 
 instance
     ( IsSymbol f
     , HasFamilyDef f fs families (Family.Def state is os m)
-    , HasInstancesOf f iis instances (Array (Noodle.Node f state is os m))
+    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is rli
     , Has.HasInputsAt' is rli
     , Has.HasOutputsAt os rlo
     , Has.HasOutputsAt' os rlo
-    ) => HasNodesOf families instances f state fs iis rli is rlo os m
+    ) => HasNodesOf families instances f state fs instances' rli is rlo os m
 
 
 class
     ( ReadWriteRepr repr
-    , HasNodesOf families instances f state fs iis rli is rlo os m
+    , HasNodesOf families instances f state fs instances' rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -70,11 +72,11 @@ class
     --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
     , FromToReprRow rli is repr
     , FromToReprRow rlo os repr
-    ) <= HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+    ) <= HasReprableNodesOf families instances repr f state fs instances' rli is rlo os repr_is repr_os m
 
 instance
     ( ReadWriteRepr repr
-    , HasNodesOf families instances f state fs iis rli is rlo os m
+    , HasNodesOf families instances f state fs instances' rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -83,7 +85,7 @@ instance
     --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
     , FromToReprRow rli is repr
     , FromToReprRow rlo os repr
-    ) => HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+    ) => HasReprableNodesOf families instances repr f state fs instances' rli is rlo os repr_is repr_os m
 
 -- class ( IsSymbol f
 --         , HasFamilyDef f fs (Families m) (Family.Def state is os m)

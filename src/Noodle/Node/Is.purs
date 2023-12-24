@@ -6,6 +6,7 @@ import Data.Repr (class FromRepr, class ReadWriteRepr, class ToRepr)
 import Noodle.Id (class HasInput)
 
 
+class IsInputInNode :: Symbol → Type → Row Type → Row Type → Type → Constraint
 class
   ( HasInput i din is' is
   , ReadWriteRepr repr
