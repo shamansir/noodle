@@ -358,8 +358,8 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
 
 
 fromFamilyAt
-    :: forall f state fs iis rli is rlo os repr_is repr_os
-     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
+    :: forall families' instances' f state rli is rlo os repr_is repr_os
+     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
     => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
     => FromToReprRow rli is Hydra.WrapRepr
@@ -387,8 +387,8 @@ fromFamilyAt pos curPatchId curPatch family _ tk = do
 
 
 fromFamilyAuto
-    :: forall f state fs iis rli is rlo os repr_is repr_os
-     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
+    :: forall f instances' families' state rli is rlo os repr_is repr_os
+     . Toolkit.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
     => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
     => FromToReprRow rli is Hydra.WrapRepr

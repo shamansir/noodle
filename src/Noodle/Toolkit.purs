@@ -263,8 +263,8 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
      . Applicative t
     => MonadRec m
     => MonadEffect m
-    => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-        .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+    => (  forall families' instances' f state (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
+        .  HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
         => HasBody' (x f) (Node f state is os m) state m
         => HasCustomSize (x f) (Node f state is os m)
         => IsNodeState gstate state
@@ -282,10 +282,10 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
      . Applicative t
     => MonadRec m
     => MonadEffect m
-    => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
-                 fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
-        .  Has.HasReprableNodesOf families instances repr fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
-        => Has.HasReprableNodesOf families instances repr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
+    => (  forall familiesA' instancesA' fA stateA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
+                 familiesB' instancesB' fB stateB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
+        .  Has.HasReprableNodesOf familiesA' families instancesA' instances repr fA stateA rliA isA rloA osA repr_isA repr_osA m
+        => Has.HasReprableNodesOf familiesB' families instancesB' instances repr fB stateB rliB isB rloB osB repr_isB repr_osB m
         => HasBody' (x fA) (Node fA stateA isA osA m) stateA m
         => HasBody' (x fB) (Node fB stateB isB osB m) stateB m
         => HasCustomSize (x fA) (Node fA stateA isA osA m)

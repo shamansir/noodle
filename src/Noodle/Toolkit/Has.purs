@@ -40,28 +40,28 @@ instance
 
 class
     ( IsSymbol f
-    , HasFamilyDef f fs families (Family.Def state is os m)
-    , HasInstancesOf f iis instances (Array (Noodle.Node f state is os m))
+    , HasFamilyDef f families' families (Family.Def state is os m)
+    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is rli
     , Has.HasInputsAt' is rli
     , Has.HasOutputsAt os rlo
     , Has.HasOutputsAt' os rlo
-    ) <= HasNodesOf families instances f state fs iis rli is rlo os m
+    ) <= HasNodesOf families' families instances' instances f state rli is rlo os m
 
 instance
     ( IsSymbol f
-    , HasFamilyDef f fs families (Family.Def state is os m)
-    , HasInstancesOf f iis instances (Array (Noodle.Node f state is os m))
+    , HasFamilyDef f families' families (Family.Def state is os m)
+    , HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is rli
     , Has.HasInputsAt' is rli
     , Has.HasOutputsAt os rlo
     , Has.HasOutputsAt' os rlo
-    ) => HasNodesOf families instances f state fs iis rli is rlo os m
+    ) => HasNodesOf families' families instances' instances f state rli is rlo os m
 
 
 class
     ( ReadWriteRepr repr
-    , HasNodesOf families instances f state fs iis rli is rlo os m
+    , HasNodesOf families' families instances' instances f state rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -70,11 +70,11 @@ class
     --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
     , FromToReprRow rli is repr
     , FromToReprRow rlo os repr
-    ) <= HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+    ) <= HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
 
 instance
     ( ReadWriteRepr repr
-    , HasNodesOf families instances f state fs iis rli is rlo os m
+    , HasNodesOf families' families instances' instances f state rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -83,7 +83,7 @@ instance
     --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
     , FromToReprRow rli is repr
     , FromToReprRow rlo os repr
-    ) => HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+    ) => HasReprableNodesOf families' families instances' instances repr f state rli is rlo os repr_is repr_os m
 
 -- class ( IsSymbol f
 --         , HasFamilyDef f fs (Families m) (Family.Def state is os m)
