@@ -8,53 +8,39 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Array ((:))
 import Data.Array as Array
-import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (sequence)
 import Data.Symbol (class IsSymbol)
-import Data.SProxy (proxify, reflect)
+import Data.SProxy (proxify)
 import Data.SOrder (SOrder)
-import Data.SOrder as SOrder
-import Data.Repr (class FromToReprRow)
 import Data.Foldable (foldr)
-import Data.Newtype (class Newtype, unwrap)
-
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
-import Unsafe.Coerce (unsafeCoerce)
+import Data.Newtype (unwrap)
 
 import Prim.RowList as RL
-import Prim.Row (Cons)
-import Record as Record
-import Record.Extra as Record
+import Record (get, modify) as Record
+import Record.Extra (class Keys) as Record
 import Type.Proxy (Proxy(..))
-import Heterogeneous.Mapping as H
 
-import Noodle.Id (Family, Family', NodeId, NodeIdR, HoldsNodeId, LinkId(..))
+import Noodle.Id (Family, Family', LinkId(..), NodeId)
 import Noodle.Id as Id
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Toolkit.Has as Has
-import Noodle.Patch.Has as Has
+import Noodle.Toolkit.Has as THas
+import Noodle.Patch.Has as PHas
+import Noodle.Patch.Is as PIs
 import Noodle.Patch.MapsFolds as PF
 import Noodle.Patch.MapsFolds as PI
 import Noodle.Patch.MapsFolds as PM
-import Noodle.Node.Is as Node
-import Noodle.Patch.Is as Patch
-import Noodle.Patch.MapsFolds.Repr as R
+import Noodle.Patch.MapsFolds.Repr (class ExtractReprs) as R
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Family.Def as Family
-import Noodle.Node.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as R
+import Noodle.Node.MapsFolds.Flatten (NodeLineMap) as R
 import Noodle.Node.MapsFolds.Repr (Repr) as R
-import Noodle.Patch.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
-import Noodle.Node.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
-import Noodle.Node.HoldsNodeState (class IsNodeState)
+import Noodle.Patch.MapsFolds.Repr (class FoldToReprsMap)
 import Noodle.Stateful (class Stateful)
-
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
 
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
@@ -118,7 +104,7 @@ init' state tk =
 
 registerNode
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -132,7 +118,7 @@ registerNode node (Patch state forder instances links) =
 
 forgetNode -- TODO: test
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -150,8 +136,8 @@ forgetNode node (Patch state forder instances links) =
 spawnAndRegisterNodeIfKnown
     :: forall gstate instances' instances f families' families state is os m
      . MonadEffect m
-    => Has.HasFamilyDef f families' families (Family.Def state is os m)
-    => Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => THas.HasFamilyDef f families' families (Family.Def state is os m)
+    => PHas.HasNodesOf instances' instances f state is os m
     => Family f
     -> Toolkit gstate families
     -> Patch gstate instances
@@ -162,7 +148,7 @@ spawnAndRegisterNodeIfKnown family toolkit patch =
 
 nodesOf
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Family f
     -> Patch ps instances
     -> Array (Node f state is os m)
@@ -172,7 +158,7 @@ nodesOf family (Patch _ _ instances _) =
 
 howMany
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Family f
     -> Patch ps instances
     -> Int
@@ -238,7 +224,11 @@ forgetLink link (Patch state forder instances links) =
     }
 
 
-forgetLink' :: forall gstate instances. LinkId -> Patch gstate instances -> Effect Unit /\ Patch gstate instances -- FIXME: cancel the link inside the function, or return HoldsLink
+forgetLink'
+    :: forall gstate instances
+     . LinkId
+    -> Patch gstate instances
+    -> Effect Unit /\ Patch gstate instances -- FIXME: cancel the link inside the function, or return HoldsLink
 forgetLink' linkId p@(Patch state forder instances links) =
     case Map.lookup linkId links.byId of
         Just linkHeld ->
@@ -260,7 +250,7 @@ forgetLink' linkId p@(Patch state forder instances links) =
 
 allLinksOf
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Node f state is os m
     -> Patch ps instances
     -> Array HoldsLink
@@ -284,7 +274,7 @@ allLinksOf node (Patch _ _ _ links) =
 
 removeNode -- TODO: test
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -299,10 +289,8 @@ connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
      . MonadEffect m
     => MonadRec m
-    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
-    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
-    => Id.HasOutput oA doutA osA' osA
-    => Id.HasInput iB dinB isB' isB
+    => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
+    => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Id.Output oA
     -> Id.Input iB
     -> (doutA -> dinB)
@@ -321,10 +309,8 @@ connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
      . MonadEffect m
     => MonadRec m
-    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
-    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
-    => Id.HasOutput oA d osA' osA
-    => Id.HasInput iB d isB' isB
+    => PIs.LinkStartInPatch fA oA d stateA isA osA osA' gstate ins insA m
+    => PIs.LinkEndInPatch fB iB d stateB isB isB' osB gstate ins insB m
     => Id.Output oA
     -> Id.Input iB
     -> Node fA stateA isA osA m
@@ -339,10 +325,8 @@ connect'
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
      . MonadEffect m
     => MonadRec m
-    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
-    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
-    => Id.HasOutput oA doutA osA' osA
-    => Id.HasInput iB dinB isB' isB
+    => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
+    => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Id.Output' oA
     -> Id.Input' iB
     -> (doutA -> dinB)
@@ -361,10 +345,8 @@ connectAlike'
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
      . MonadEffect m
     => MonadRec m
-    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
-    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
-    => Id.HasOutput oA d osA' osA
-    => Id.HasInput iB d isB' isB
+    => PIs.LinkStartInPatch fA oA d stateA isA osA osA' gstate ins insA m
+    => PIs.LinkEndInPatch fB iB d stateB isB isB' osB gstate ins insB m
     => Id.Output' oA
     -> Id.Input' iB
     -> Node fA stateA isA osA m
@@ -379,10 +361,8 @@ disconnect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
      . MonadEffect m
     => MonadRec m
-    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
-    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
-    => Id.HasOutput oA doutA osA' osA
-    => Id.HasInput iB dinB isB' isB
+    => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
+    => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Show dinB
     => Node.Link fA fB oA iB
     -> Node fA stateA isA osA m
@@ -397,7 +377,7 @@ newtype HoldsNode m =
     HoldsNode
         (forall r.
             (  forall f gstate instances' instances rli state is os isrl osrl
-             . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+             . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
             => Patch gstate instances
             -> Node f state is os m
             -> m r
@@ -409,7 +389,7 @@ newtype HoldsNode' gstate instances m =
     HoldsNode'
         (forall r.
             (  forall instances' rli f state is os isrl osrl
-             . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+             . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -421,7 +401,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
     HoldsNodeMRepr
         (forall r.
             (  forall instances' rli f state is os isrl osrl repr_is repr_os
-             . Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
+             . PIs.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -431,7 +411,7 @@ newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
 
 holdNode
     :: forall f gstate instances' instances rli state is os isrl osrl m
-     . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+     . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode m
@@ -440,7 +420,7 @@ holdNode patch node = HoldsNode \f -> f patch node
 
 holdNode'
     :: forall f gstate instances' instances rli state is os isrl osrl m
-     . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+     . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode' gstate instances m
@@ -449,14 +429,14 @@ holdNode' patch node = HoldsNode' \f -> f patch node
 
 holdNodeMRepr
     :: forall x gstate instances m repr instances' rli f state is os isrl osrl repr_is repr_os
-     . Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
+     . PIs.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNodeMRepr x gstate instances m repr
 holdNodeMRepr patch node = HoldsNodeMRepr \f -> f patch node
 
 
--- Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+-- Has.HasNodesOf instances' instances f state is os m
 --     , RL.RowToList instances rli
 --     , Record.Keys rli
 --     , Id.HasInputsAt is isrl
@@ -469,7 +449,7 @@ withNode
      . HoldsNode m ->
     --    -> Proxy m ->
         (  forall f gstate instances' instances rli state is os isrl osrl
-         . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+         . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -482,7 +462,7 @@ withNode'
     :: forall gstate instances m r
      . HoldsNode' gstate instances m ->
         (  forall instances' rli f state is os isrl osrl
-         . Patch.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
+         . PIs.IsNodeInPatch gstate instances instances' rli f state is os isrl osrl m
         => Patch gstate instances
         -> Node f state is os m
         -> r
@@ -503,8 +483,8 @@ withNode2
                   gstateA instancesA' instancesA rliA
                   gstateB instancesB' instancesB rliB
                   isrlA osrlA isrlB osrlB
-         . Patch.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
-        => Patch.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
+         . PIs.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
+        => PIs.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA
@@ -536,8 +516,8 @@ withNode2'
                   instancesA' rliA
                   instancesB' rliB
                   isrlA osrlA isrlB osrlB
-         . Patch.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
-        => Patch.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
+         . PIs.IsNodeInPatch gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA m
+        => PIs.IsNodeInPatch gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA
@@ -560,7 +540,7 @@ withNodeMRepr
      . HoldsNodeMRepr x gstate instances m repr ->
     --    -> Proxy m ->
         (  forall instances' rli f state is os isrl osrl repr_is repr_os
-        .  Patch.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
+        .  PIs.IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -584,8 +564,8 @@ withNode2MRepr
                   repr_isB repr_osB
                   instancesA' rliA
                   instancesB' rliB
-         . Patch.IsNodeInPatch' x gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA repr_isA repr_osA repr m
-        => Patch.IsNodeInPatch' x gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB repr_isB repr_osB repr m
+         . PIs.IsNodeInPatch' x gstateA instancesA instancesA' rliA fA stateA isA osA isrlA osrlA repr_isA repr_osA repr m
+        => PIs.IsNodeInPatch' x gstateB instancesB instancesB' rliB fB stateB isB osB isrlB osrlB repr_isB repr_osB repr m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA
@@ -605,7 +585,7 @@ withNode2MRepr (HoldsNodeMRepr fA) (HoldsNodeMRepr fB) f =
 
 findNode
     :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m
-     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+     . PHas.HasNodesOf instances' instances f state is os m
     => RL.RowToList instances rli
     => Record.Keys rli
     => NodeId f

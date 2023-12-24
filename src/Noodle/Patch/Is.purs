@@ -6,7 +6,7 @@ import Data.Repr (class FromToReprRow)
 import Prim.RowList as RL
 import Record.Extra (class Keys) as Record
 
-import Noodle.Id (Input, Output, class HasInputsAt, class HasOutputsAt) as Id
+import Noodle.Id (Input, Output, class HasInput, class HasOutput, class HasInputsAt, class HasOutputsAt) as Id
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Patch.Has (class HasInstancesOf) as Has
@@ -69,3 +69,17 @@ instance
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
     ) => IsNodeInPatch' x gstate instances instances' rli f state is os isrl osrl repr_is repr_os repr m
+
+
+class LinkStartInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class
+    ( Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    , Id.HasOutput oA doutA osA' osA
+    ) <= LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
+
+
+class LinkEndInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class
+    ( Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    , Id.HasInput iB dinB isB' isB
+    ) <= LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
