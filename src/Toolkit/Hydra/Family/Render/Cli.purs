@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, class HasBody'') {-, class HasEditor, class HasEditor', class HasEditor'')-}
 
 import Cli.Keys (NodeBoxKey)
 
@@ -46,16 +46,46 @@ import Noodle.Id as Id
 
 
 import Tookit.Hydra.Family.Render.Editor (EditorId(..), HasEditors)
+import Toolkit.Hydra.Family.Render.RenderTarget
 
 
 -- TODO: kind: data RenderTarget
 
 
--- TODO: kind data CliF :: Symbol -> RenderTarget -> Type
+--data CliF :: Symbol -> RenderTarget -> Type
 data CliF (f :: Symbol) = CliF
 
 
+
+-- data RendersToCli :: Cli
+
+newtype RendersToCli = R (RendersTo Cli)
+
+
 data CliD din = CliD
+
+
+foreign import data HH :: Symbol -> RenderTarget -> RenderItem
+
+
+{- instance (Applicative m, MonadEffect m) => HasBody (RendersFamily Cli "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
+    run :: Proxy _ -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
+    run _ = FNumber.render -}
+
+
+instance (Applicative m, MonadEffect m) => HasBody'' (HH "number" Cli) "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
+    run'' :: Proxy _ -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
+    run'' _ = FNumber.render
+
+
+{-
+instance (Applicative m, MonadEffect m) => HasBody (RendersTo Cli) "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
+    run :: Proxy _ -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
+    run _ = FNumber.render
+else instance (MonadRec m, MonadEffect m) => HasBody (RendersTo Cli) "out" FOut.State FOut.Inputs FOut.Outputs m where
+    run :: Proxy _ -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
+    run _ = FOut.render
+-}
 
 
 instance (Applicative m, MonadEffect m) => HasBody (CliF "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where

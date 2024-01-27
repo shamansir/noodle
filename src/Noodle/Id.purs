@@ -21,7 +21,7 @@ module Noodle.Id
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
     , class HasInputsAt, class HasOutputsAt
-    , class HasInputsAt', class HasOutputsAt'
+    , class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt
     , class HasInput, class HasOutput, class HasFamily
     , class HasInputs, inputs, class HasOutputs, outputs
     , class ListsFamilies, class ListsInstances
@@ -481,8 +481,8 @@ class (RL.RowToList is isrl, Record.Keys isrl) <= HasInputsAt is isrl
 instance (RL.RowToList is isrl, Record.Keys isrl) => HasInputsAt is isrl
 
 
-class (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) <= HasInputsAt' is isrl
-instance (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) => HasInputsAt' is isrl
+class (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) <= HasOrderedInputKeysAt is isrl
+instance (RL.RowToList is isrl, KH.KeysO isrl Input HoldsInput) => HasOrderedInputKeysAt is isrl
 
 
 class HasInputsAt is isrl <= HasInputs is isrl a | a -> is, a -> isrl
@@ -509,8 +509,8 @@ class (RL.RowToList os rlo, Record.Keys rlo) <= HasOutputsAt os rlo
 instance (RL.RowToList os rlo, Record.Keys rlo) => HasOutputsAt os rlo
 
 
-class (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) <= HasOutputsAt' os rlo
-instance (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) => HasOutputsAt' os rlo
+class (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) <= HasOrderedOutputKeysAt os rlo
+instance (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) => HasOrderedOutputKeysAt os rlo
 
 
 class (RL.RowToList fs rlfs, Record.Keys rlfs) <= ListsFamilies fs rlfs

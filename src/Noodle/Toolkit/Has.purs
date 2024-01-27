@@ -8,7 +8,7 @@ import Data.Repr (class FromToReprRow, class ReadWriteRepr)
 
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
-import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt) as Has
 import Noodle.Family.Def as Family
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
@@ -47,9 +47,9 @@ class
     , HasFamilyDef f families' families (Family.Def state is os m)
     , PHas.HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is isrl
-    , Has.HasInputsAt' is isrl
+    , Has.HasOrderedInputKeysAt is isrl
     , Has.HasOutputsAt os osrl
-    , Has.HasOutputsAt' os osrl
+    , Has.HasOrderedOutputKeysAt os osrl
     ) <= HasNodesOf families' families instances' instances f state isrl is osrl os m
 
 instance
@@ -57,9 +57,9 @@ instance
     , HasFamilyDef f families' families (Family.Def state is os m)
     , PHas.HasInstancesOf f instances' instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is isrl
-    , Has.HasInputsAt' is isrl
+    , Has.HasOrderedInputKeysAt is isrl
     , Has.HasOutputsAt os osrl
-    , Has.HasOutputsAt' os osrl
+    , Has.HasOrderedOutputKeysAt os osrl
     ) => HasNodesOf families' families instances' instances f state isrl is osrl os m
 
 

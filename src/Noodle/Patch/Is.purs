@@ -71,7 +71,7 @@ instance
     ) => IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
-class IsReprableNodeInPatch' :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
+class IsReprableRenderableNodeInPatch :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
     ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
@@ -83,7 +83,7 @@ class
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) <= IsReprableNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) <= IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 instance
@@ -97,7 +97,7 @@ instance
     , HasBody' (x f) (Node f state is os m) state m
     , HasCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
-    ) => IsReprableNodeInPatch' x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
+    ) => IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 class LinkStartInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint

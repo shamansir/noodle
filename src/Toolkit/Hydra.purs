@@ -33,7 +33,7 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Toolkit.Has (class HasFamilyDef, class HasReprableNodesOf) as THas
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
-import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as NHas
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt) as NHas
 import Noodle.Node.MapsFolds.Repr as NMF
 
 import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra

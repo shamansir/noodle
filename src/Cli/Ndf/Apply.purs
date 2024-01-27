@@ -59,7 +59,7 @@ import Noodle.Text.NdfFile.Command as C
 
 addNodeBox
     :: forall f rlins instances' state is os isrl osrl repr_is repr_os
-     . PIs.IsReprableNodeInPatch' Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
+     . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     => Int /\ Int
     -> Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
