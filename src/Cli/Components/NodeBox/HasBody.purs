@@ -13,14 +13,13 @@ import Toolkit.Hydra.Family.Render.RenderTarget
 -- TODO: we have the conflict between m for `Node` and `BlessedOp` in the result,
 --       we can not afford `MonadEffect` for `BlessedOp` due to problems in compiling handlers (see `HandlerFn` in `Blessed` which is bound to `Effect` for this reason)
 
+{-
 class HasBody :: forall k. k -> Symbol -> Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
-class HasBody x f state is os m {- repr -} | x -> f, f -> state is os where
---     {-
+class HasBody x f state is os m repr | x -> f, f -> state is os where
 --     component :: x -> Blessed state m
 --     init :: x -> Blessed state m -> BlessedOp state m
---     -}
-    run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
-
+    run :: Proxy x -> NodeBoxKey -> Node f state is os m -> Signal repr -> BlessedOp state m
+-}
 
 class HasBody' :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
 class HasBody' x y {- repr -} state m | x -> y state where
@@ -31,22 +30,22 @@ class HasBody' x y {- repr -} state m | x -> y state where
     run' :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} BlessedOp state m
 
 
+{-
 class HasBody'' :: RenderItem -> Symbol -> Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
-class HasBody'' x f state is os m {- repr -} | x -> f, f -> state is os where
---     {-
+class HasBody'' x f state is os m repr | x -> f, f -> state is os where
 --     component :: x -> Blessed state m
 --     init :: x -> Blessed state m -> BlessedOp state m
---     -}
-    run'' :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
+    run'' :: Proxy x -> NodeBoxKey -> Node f state is os m -> Signal repr -> BlessedOp state m
+-}
 
 
+{-
 class HasBody''' :: RenderItem -> Type -> Type -> (Type -> Type) -> Constraint
-class HasBody''' x y{- repr -} state m | x -> y state where
---     {-
+class HasBody''' x y repr state m | x -> y state where
 --     component :: x -> Blessed state m
 --     init :: x -> Blessed state m -> BlessedOp state m
---     -}
-    run''' :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} BlessedOp state m
+    run''' :: Proxy x -> NodeBoxKey -> y -> Signal repr -> BlessedOp state m
+-}
 
 
 class HasCustomSize :: forall k. k -> Type -> Constraint

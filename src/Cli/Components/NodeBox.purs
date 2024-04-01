@@ -103,8 +103,8 @@ import Cli.Components.NodeBox.InputButton as InputButton
 import Cli.Components.NodeBox.OutputButton as OutputButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Components.NodeBox.InfoBox as InfoBox
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, size)
-import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize, size)
+import Cli.Components.NodeBox.HasBody (run') as NodeBody
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.NodeBox.InfoBox as IB

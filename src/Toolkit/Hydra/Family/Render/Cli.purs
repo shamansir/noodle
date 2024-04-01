@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody', class HasCustomSize, class HasBody'') {-, class HasEditor, class HasEditor', class HasEditor'')-}
+import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
 
 import Cli.Keys (NodeBoxKey)
 
@@ -73,9 +73,11 @@ foreign import data HH :: Symbol -> RenderTarget -> RenderItem
     run _ = FNumber.render -}
 
 
+{-
 instance (Applicative m, MonadEffect m) => HasBody'' (HH "number" Cli) "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
     run'' :: Proxy _ -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
     run'' _ = FNumber.render
+-}
 
 
 {-
@@ -88,6 +90,7 @@ else instance (MonadRec m, MonadEffect m) => HasBody (RendersTo Cli) "out" FOut.
 -}
 
 
+{-
 instance (Applicative m, MonadEffect m) => HasBody (CliF "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
     run :: Proxy (CliF "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
     run _ = FNumber.render
@@ -112,6 +115,7 @@ else instance (Applicative m, MonadEffect m) => HasBody (CliF "caiProductPalette
 else instance HasBody (CliF f) f state is os m where
     run :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
     run _ _ _ = pure unit
+-}
 
 
 instance (Applicative m, MonadEffect m) => HasBody' (CliF "number") (FNumber.Node m) FNumber.State m where
