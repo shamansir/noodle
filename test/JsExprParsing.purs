@@ -17,16 +17,16 @@ import Parsing (runParser)
 
 import Test.Generating (parses)
 
-import Toolkit.Hydra2.Types
-import Toolkit.Hydra2.Repr.Wrap
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as W
-import Toolkit.Hydra2.Types (AudioBin(..), Values(..), GlslFn(..)) as T
-import Toolkit.Hydra2.Lang.Fn as Lang
+import Toolkit.Hydra.Types
+import Toolkit.Hydra.Repr.Wrap
+import Toolkit.Hydra.Repr.Wrap (WrapRepr(..)) as W
+import Toolkit.Hydra.Types (AudioBin(..), Values(..), GlslFn(..)) as T
+import Toolkit.Hydra.Lang.Fn as Lang
 
 
 import Data.FromToFile (encode, decode)
 
-import Toolkit.Hydra2.Lang.SketchParser.JsExpr (JsExpr(..), inlineExprParser)
+import Toolkit.Hydra.Lang.SketchParser.JsExpr (JsExpr(..), inlineExprParser)
 
 -- TODO: use fuzzy generator
 samples :: Array (String /\ JsExpr)

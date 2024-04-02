@@ -1,9 +1,8 @@
-module Test.Repr.Toolkit3 where
+module Test.Repr.Patch where
 
 import Prelude
 
-
-import Noodle.Toolkit3.MapsFolds.Repr (class HasRepr)
+import Noodle.Node.MapsFolds.Repr (class HasRepr)
 
 
 data MyRepr
@@ -33,7 +32,7 @@ instance Eq MyRepr
         eq _ _ = false
 
 
-instance HasRepr String MyRepr  where toRepr _ = String_
+instance HasRepr String MyRepr where toRepr _ = String_
 instance HasRepr Int MyRepr where toRepr _ = Int_
 instance HasRepr Unit MyRepr where toRepr _ _ = Unit_
-instance HasRepr  Boolean MyRepr where toRepr _ = Bool_
+instance HasRepr Boolean MyRepr where toRepr _ = Bool_

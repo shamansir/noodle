@@ -1,4 +1,4 @@
-module Test.Node2 where
+module Test.Node where
 
 import Prelude
 
@@ -27,11 +27,11 @@ import Type.Proxy (Proxy(..))
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
-import Noodle.Fn2 (Fn)
-import Noodle.Fn2 as Fn
-import Noodle.Fn2.Process as P
+import Noodle.Node (Node)
+import Noodle.Node as Node
+import Noodle.Fn (Fn)
+import Noodle.Fn as Fn
+import Noodle.Fn.Process as P
 import Noodle.Id (Family(..)) as Node
 import Noodle.Id (Input(..), Output(..), InputR(..), HoldsInput, HoldsOutput) as Fn
 

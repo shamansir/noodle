@@ -26,7 +26,7 @@ import Test.Signal (expectFn, expect)
 -- import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Fn (Fn, Fn')
+import Noodle.Fn (Fn)
 import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
@@ -57,9 +57,9 @@ spec = do
         it "summing works" $ do
             p <- liftEffect $ Protocol.mkDefault [ "a" /\ 5, "b" /\ 3 ]
             let
-                fn :: forall m. MonadEffect m => Fn' String String Unit m Int
+                fn :: forall m. MonadEffect m => Fn String String Unit m Int
                 fn =
-                    Fn.make' "foo" [ "a", "b" ] [ "sum" ] $ do
+                    Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
@@ -69,9 +69,9 @@ spec = do
         it "summing works with sendIn" $ do
             p <- liftEffect $ Protocol.mkDefault [ "a" /\ 0, "b" /\ 0 ]
             let
-                fn :: forall m. MonadEffect m => Fn' String String Unit m Int
+                fn :: forall m. MonadEffect m => Fn String String Unit m Int
                 fn =
-                    Fn.make' "foo" [ "a", "b" ] [ "sum" ] $ do
+                    Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
                         Fn.sendIn "a" 6
                         Fn.sendIn "b" 7
                         a <- Fn.receive "a"

@@ -22,10 +22,10 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
 
-import Layout.Flex.Rule (Rule)
-import Layout.Flex.Rule as R
-import Layout.Flex (Flex, flex, flex1, put, putAll, nest, nest', nest1, fit)
-import Layout.Flex as Flex
+import Prev.Layout.Flex.Rule (Rule)
+import Prev.Layout.Flex.Rule as R
+import Prev.Layout.Flex (Flex, flex, flex1, put, putAll, nest, nest', nest1, fit)
+import Prev.Layout.Flex as Flex
 
 
 

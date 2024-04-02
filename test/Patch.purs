@@ -1,4 +1,4 @@
-module Test.Patch4 where
+module Test.Patch where
 
 import Prelude
 
@@ -28,26 +28,26 @@ import Test.Signal (expectFn, expect)
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
-import Noodle.Fn2 (Fn)
-import Noodle.Fn2 as Fn
+import Noodle.Node (Node)
+import Noodle.Node as Node
+import Noodle.Fn (Fn)
+import Noodle.Fn as Fn
 import Noodle.Id (reflectFamily', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..), InputR, OutputR) as Fn
 
-import Noodle.Toolkit3 (Toolkit)
-import Noodle.Toolkit3 as Toolkit
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
-import Noodle.Node2.MapsFolds as NMF
-import Noodle.Node2.MapsFolds.Repr as NMF
-import Noodle.Node2.MapsFolds.Flatten as NMF
-import Noodle.Patch4.MapsFolds as PMF
-import Noodle.Patch4.MapsFolds.Repr as PMF
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
+import Noodle.Patch (Patch)
+import Noodle.Patch as Patch
+import Noodle.Node.MapsFolds as NMF
+import Noodle.Node.MapsFolds.Repr as NMF
+import Noodle.Node.MapsFolds.Flatten as NMF
+import Noodle.Patch.MapsFolds as PMF
+import Noodle.Patch.MapsFolds.Repr as PMF
 import Noodle.Family.Def as Family
 
-import Test.Repr.Patch4 (MyRepr(..))
+import Test.Repr.Patch (MyRepr(..))
 
 import Unsafe.Coerce (unsafeCoerce)
 

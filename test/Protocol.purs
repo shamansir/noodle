@@ -1,4 +1,4 @@
-module Test.Protocol2 where
+module Test.Protocol where
 
 import Prelude
 
@@ -40,11 +40,11 @@ import Noodle.Node as Node
 -- import Noodle.Fn.Protocol (Protocol)
 -- import Noodle.Fn.Protocol as Protocol
 
-import Noodle.Fn2.Process (ProcessM)
-import Noodle.Fn2.Process as Fn
-import Noodle.Fn2.Process as Process
-import Noodle.Fn2.Protocol (Protocol)
-import Noodle.Fn2.Protocol as Protocol
+import Noodle.Fn.Process (ProcessM)
+import Noodle.Fn.Process as Fn
+import Noodle.Fn.Process as Process
+import Noodle.Fn.Protocol (Protocol)
+import Noodle.Fn.Protocol as Protocol
 import Noodle.Id (Family(..)) as Node
 import Noodle.Id (Input(..), Output(..)) as Fn
 

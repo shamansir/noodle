@@ -1,38 +1,47 @@
-module Test.Toolkit
-  ( spec
-  )
-  where
+module Test.Toolkit where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect, class MonadEffect)
+import Effect.Console (log) as Console
+import Effect.Random (randomInt)
 
-import Data.Array as Array
-import Data.Identity (Identity)
-import Data.Map (Map)
-import Data.Map as Map
+import Type.Proxy (Proxy(..))
+
+import Record.Extra (class Keys)
+import Record.Extra as Record
+import Record (get) as Record
+import Prim.RowList as RL
+import Unsafe.Coerce (unsafeCoerce)
+
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, reifySymbol, reflectSymbol)
-import Data.Traversable (sequence)
-import Data.Tuple (snd) as Tuple
+import Data.List ((:), List)
+import Data.List as List
+import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (bimap)
+import Data.SOrder (type (:::), T)
+import Data.SProxy (reflect')
 
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Console as Console
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-
-import Noodle.Channel as Ch
+import Noodle.Fn (Fn)
 import Noodle.Fn as Fn
-import Noodle.Fn.Process as Fn
+import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt, FamilyR) as Node
+import Noodle.Id (Input(..), Output(..), InputR) as Fn
+import Noodle.Id (inputs) as Def
+import Noodle.Id (keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR, reflectFamily'')
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
-
-import Prim.Row (class Cons)
-import Record as Record
-import Record.Extra as Record
+import Noodle.Node.MapsFolds as NMF
+import Noodle.Node.MapsFolds.Repr as NMF
+import Noodle.Toolkit.MapsFolds as TMF
+import Noodle.Toolkit.MapsFolds.Repr as TMF
+import Noodle.Fn.Process as Fn
+import Noodle.Family.Def as Family
+import Noodle.Patch as Patch
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -42,89 +51,256 @@ import Signal.Time as SignalT
 import Test.Signal (expectFn, expect)
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
-import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (reflectSymbol, class IsSymbol)
 
-import Unsafe.Coerce (unsafeCoerce)
+import Test.Repr.Toolkit (MyRepr(..))
 
-import Control.Monad.State as State
+
+type Families1 m
+    = ( foo :: Family.Def Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m )
+
+type Toolkit1 m
+    = Toolkit Unit (Families1 m)
+
+type Families2 m =
+    ( foo :: Family.Def Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: Family.Def Unit ( a :: String, b :: String, c :: String ) ( x :: Int ) m
+    , sum :: Family.Def Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    )
+
+type Toolkit2 m
+    = Toolkit Unit (Families2 m)
 
 
 spec :: Spec Unit
 spec = do
 
-    describe "foo" $ do
+    describe "toolkit" $ do
+
+        let (toolkit :: Toolkit1 Aff) =
+                Toolkit.from "test"
+                    families1Order
+                    { foo :
+                        Family.def
+                            unit
+                            { foo : "aaa", bar : "bbb", c : 32 }
+                            { out : false }
+                            $ Fn.make "foo" fooOrders
+                            $ pure unit
+                    -- , bar :
+                    --     unit
+                    --     /\ { foo : "aaa", bar : "bbb", c : 32 }
+                    --     /\ { out : false }
+                    --     /\ Fn.make "bar" (pure unit)
+
+                        -- /\ { a : "aaa", b : "bbb", c : "ccc" }
+                        -- /\ { x : 12 }
+                        -- /\ Fn.make "bar" (pure unit)
+                    }
+
+            (toolkit2 :: Toolkit2 Aff) =
+                Toolkit.from "test2"
+                    families2Order
+                    { foo :
+                        Family.def
+                            unit
+                            { foo : "aaa", bar : "bbb", c : 32 }
+                            { out : false }
+                            $ Fn.make "foo" fooOrders $ pure unit
+                    , bar :
+                        Family.def
+                            unit
+                            { a : "aaa", b : "bbb", c : "ccc" }
+                            { x : 12 }
+                            $ Fn.make "bar" barOrders $ pure unit
+                    , sum :
+                        Family.def
+                            unit
+                            { a : 40, b : 2 }
+                            { sum : 42 }
+                            $ Fn.make "sumFn" sumOrders $ pure unit
+                    }
+
+        -- TODO: add `Random` effect
 
         it "spawning works" $ do
-            let
-                intChan = Ch.hot "int" 0
-                toolkit :: Toolkit Unit Int
-                toolkit =
-                    Toolkit.registerFn (Toolkit.empty "Ints" unit 0)
-                        $ Fn.make "sum"
-                            -- TODO: withInlets / withInputs ...
-                                -- -< "a" /\ intChan
-                            [ Fn.in_ "a" /\ intChan
-                            , Fn.in_ "b" /\ intChan
-                            ]
-                            -- TODO: withOutlets / withInputs ...
-                                -- >- "a" /\ intChan
-                            [ Fn.out_ "sum" /\ intChan
-                            ]
-                        $ do
-                            a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
-                            b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
-                            Fn.send (Fn.out_ "sum") $ a + b  -- TODO: some operator i.e. +>> "b"
-            maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect -- or `spawnAndRun`
-            case maybeNode of
-                Just node -> liftEffect $ do -- do inside `NodeM` ?
-                    Node.run' $ Node.imapState Tuple.snd ((/\) unit) $ node -- FIXME: may be no need in `imapState` and joining it with patch state
-                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
-                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
-                    sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
-                    shouldEqual sum 8
-                Nothing ->
-                    fail "node wasn't spawned"
+
+            nodeA <- Toolkit.spawn toolkit (Node.Family :: _ "foo")
+
+            state <- Node.state nodeA
+            state `shouldEqual` unit
+
+            atC <- Node.inputs nodeA <#> _.c
+            atC `shouldEqual` 32
+
+            nodeB <- Toolkit.spawn toolkit2 (Node.Family :: _ "sum")
+            atSum <- Node.outputs nodeB <#> _.sum
+
+            atSum `shouldEqual` 42
 
             pure unit
 
-        it "spawning with state works" $ do
+
+        it "getting family list" $ do
+            (reflect' <$> Toolkit.nodeFamilies toolkit) `shouldEqual` ( "foo" : List.Nil )
+            (reflect' <$> Toolkit.nodeFamilies toolkit2) `shouldEqual` ( "foo" : "bar" : "sum" : List.Nil )
+
+            Toolkit.familyDefs toolkit `shouldEqual` [ NI "foo" ]
+
+            Toolkit.familyDefsIndexed toolkit `shouldEqual` [ FI "foo" ]
+
+            Toolkit.familyDefs toolkit2 `shouldEqual` [ NI "sumFn", NI "foo", NI "bar" ]
+
+            Toolkit.familyDefsIndexed toolkit2 `shouldEqual` [ FI "sum", FI "foo", FI "bar" ]
+
+        it "getting shapes" $ do
+            (TMF.extractShapes $ Toolkit.toShapes toolkit2)
+                `shouldEqual`
+
+                    { bar :
+                        [ "a", "b", "c" ] /\ [ "x" ]
+                    , foo :
+                        [ "foo", "bar", "c" ] /\ [ "out" ]
+                    , sum :
+                        [ "a", "b" ] /\ [ "sum" ]
+                    }
+
+
+        it "getting representations" $ do
+            (Toolkit.toRepr (TMF.Repr :: _ MyRepr) toolkit2)
+                `shouldEqual`
+
+                    { foo :
+                        Unit_
+                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                        /\ { out : Bool_ false }
+                    , bar :
+                        Unit_
+                        /\ { a : String_ "aaa", b : String_ "bbb", c : String_ "ccc" }
+                        /\ { x : Int_ 12 }
+                    , sum :
+                        Unit_
+                        /\ { a : Int_ 40, b : Int_ 2 }
+                        /\ { sum : Int_ 42 }
+                    }
+
+
+        it "spawn" $ do
+            let families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
+            let families = Toolkit.familyDefsIndexed toolkit2 :: Array FamilyRT
+            let patch = Patch.init toolkit2
             let
-                intChan = Ch.hot "int" 0
-                toolkit :: Toolkit Unit Int
-                toolkit =
-                    Toolkit.registerFn (Toolkit.empty "Ints" unit 0)
-                        $ Fn.make "sum"
-                            -- TODO: withInlets / withInputs ...
-                                -- -< "a" /\ intChan
-                            [ Fn.in_ "a" /\ intChan
-                            , Fn.in_ "b" /\ intChan
-                            ]
-                            -- TODO: withOutlets / withInputs ...
-                                -- >- "a" /\ intChan
-                            [ Fn.out_ "sum" /\ intChan
-                            ]
-                        $ do
-                            a <- Fn.receive $ Fn.in_ "a"
-                            b <- Fn.receive $ Fn.in_ "b"
-                            State.modify_ (map $ const $ show $ a - b)
-                            Fn.send (Fn.out_ "sum") $ a + b
-            maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect
-            case maybeNode of
-                Just node -> liftEffect $ do -- do inside `NodeM` ?
-                    Console.log $ show "before everything"
-                    stateSig <- Node.run "---" $ Node.imapState Tuple.snd ((/\) unit) $ node
-                    stateAtStart <- Signal.get stateSig
-                    stateAtStart `shouldEqual` "0"
-                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
-                    stateAfterFirstInlet <- Signal.get stateSig
-                    stateAfterFirstInlet `shouldEqual` "5"
-                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
-                    finalState <- Signal.get stateSig
-                    finalState `shouldEqual` "2"
-                Nothing ->
-                    fail "node wasn't spawned"
+                testFn "foo" = do
+                    node <- Toolkit.spawn toolkit2 families_.foo
+                    pure $ Patch.registerNode node patch
+                testFn "bar" =
+                    do
+                    node <- Toolkit.spawn toolkit2 families_.bar
+                    pure $ Patch.registerNode node patch
+                testFn _ = pure patch
+            case Array.index families 0 of
+                Just (RT familyR) -> do
+                    -- maybeNode <- Toolkit.spawn toolkit2 families_.foo -- FIXME: spawn node of the given family
+                    pure unit
+                Nothing -> fail "families list wasn't produced"
 
-            pure unit
+        {-
+        it "unsafe spawn" $ do
+            let families = Toolkit.familyDefsIndexed toolkit2 :: Array FamilyRT
+            case Array.index families 0 of
+                Just (RT familyR) -> do
+                    maybeNode <- Toolkit.unsafeSpawnR toolkit2 familyR
+                    case maybeNode of
+                        Just _ -> pure unit
+                        Nothing -> fail "falied to spawn"
+                Nothing -> fail "families list wasn't produced"
+        -}
 
-    describe "bar" $ do
-        pure unit
+families1Order
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+families2Order
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+fooOrders :: Fn.Orders _ _
+fooOrders =
+    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+barOrders :: Fn.Orders _ _
+barOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+sumOrders :: Fn.Orders _ _
+sumOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
+    , outputs : Proxy :: _ ( "sum" ::: T )
+    }
+
+
+--newtype Inputs = Inputs (List Fn.InputR)
+
+families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
+testFn' tk patch "foo" = do
+    Patch.spawnAndRegisterNodeIfKnown families_.foo tk patch
+    -- node <- Toolkit.spawn tk families_.foo
+    -- pure $ Patch.registerNode node patch
+testFn' tk patch "bar" =
+    Patch.spawnAndRegisterNodeIfKnown families_.bar tk patch
+testFn' _ patch _ = pure patch
+
+
+newtype NameNT = NI String
+
+newtype FamilyNT = FI String
+
+newtype FamilyRT = RT Node.FamilyR
+
+
+derive newtype instance Show NameNT
+derive newtype instance Eq NameNT
+
+derive newtype instance Show FamilyNT
+derive newtype instance Eq FamilyNT
+
+derive newtype instance Show FamilyRT
+derive newtype instance Eq FamilyRT
+
+
+instance TMF.ConvertFamilyDefTo NameNT where
+    convertFamilyDef
+            :: forall state is os m
+             . Family.Def state is os m
+            -> NameNT
+    convertFamilyDef def = NI $ Fn.name $ Family.fn def
+
+
+instance TMF.ConvertFamilyDefIndexedTo FamilyNT where
+    convertFamilyDefIndexed
+        :: forall f state is os m. IsSymbol f => Node.Family' f -> Family.Def state is os m -> FamilyNT
+    convertFamilyDefIndexed family _ = FI $ reflect' family
+
+
+instance TMF.ConvertFamilyDefIndexedTo FamilyRT where
+    convertFamilyDefIndexed
+        :: forall f state is os m. IsSymbol f => Node.Family' f -> Family.Def state is os m -> FamilyRT
+    convertFamilyDefIndexed family _ = RT $ reflectFamily'' family
+
+
+{-
+instance Node.HasInputsAt is ks => TMF.ConvertFamilyDefTo (Inputs is ks)
+    where
+        convertFamilyDef
+            :: forall state' is' os' m'
+             . Node.HasInputsAt is ks
+            => Family.Def state' is' os' m'
+            -> Inputs is ks
+        convertFamilyDef def = Inputs (Def.inputs def)
+-}

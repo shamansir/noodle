@@ -9,8 +9,8 @@ import Data.Int as Int
 import Data.Repr (Repr(..), class ToRepr)
 import Data.Repr as Repr
 
-import Noodle.Node2.MapsFolds.Repr (class HasRepr)
-import Noodle.Node2.MapsFolds.Repr as HasRepr
+import Noodle.Node.MapsFolds.Repr (class HasRepr)
+import Noodle.Node.MapsFolds.Repr as HasRepr
 
 
 
