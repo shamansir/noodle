@@ -21,13 +21,13 @@ class HasBody x f state is os m repr | x -> f, f -> state is os where
     run :: Proxy x -> NodeBoxKey -> Node f state is os m -> Signal repr -> BlessedOp state m
 -}
 
-class HasBody' :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
-class HasBody' x y {- repr -} state m | x -> y state where
+class HasCliBody :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
+class HasCliBody x y {- repr -} state m | x -> y state where
 --     {-
 --     component :: x -> Blessed state m
 --     init :: x -> Blessed state m -> BlessedOp state m
 --     -}
-    run' :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} BlessedOp state m
+    runBlessed :: Proxy x -> NodeBoxKey -> y -> {- Signal repr -> -} BlessedOp state m
 
 
 {-
@@ -48,9 +48,9 @@ class HasBody''' x y repr state m | x -> y state where
 -}
 
 
-class HasCustomSize :: forall k. k -> Type -> Constraint
-class HasCustomSize x y | x -> y where
-    size :: Proxy x -> NodeBoxKey -> y -> Maybe { width :: Int, height :: Int }
+class HasCliCustomSize :: forall k. k -> Type -> Constraint
+class HasCliCustomSize x y | x -> y where
+    cliSize :: Proxy x -> NodeBoxKey -> y -> Maybe { width :: Int, height :: Int }
 
 
 {-

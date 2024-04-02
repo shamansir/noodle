@@ -103,8 +103,8 @@ import Cli.Components.NodeBox.InputButton as InputButton
 import Cli.Components.NodeBox.OutputButton as OutputButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Components.NodeBox.InfoBox as InfoBox
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize, size)
-import Cli.Components.NodeBox.HasBody (run') as NodeBody
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize, cliSize)
+import Cli.Components.NodeBox.HasBody (runBlessed) as NodeBody
 import Cli.Components.CommandLogBox as CommandLogBox
 import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.NodeBox.InfoBox as IB
@@ -116,7 +116,7 @@ import Tookit.Hydra (Families, Instances, State, Toolkit) as Hydra
 import Tookit.Hydra.Group (toGroup) as Hydra
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 import Tookit.Hydra.Repr.Info (InfoRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra
+import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
 import Tookit.Hydra.Lang as Lang
 import Tookit.Hydra.Lang.ToCode as Lang
 
@@ -179,7 +179,7 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
     let nextRemoveButton = NodeKey.next state.lastKeys.removeButton
 
-    let mbBodySize = size (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
+    let mbBodySize = cliSize (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
 
     let top = Offset.px topN
     let left = Offset.px leftN
@@ -305,7 +305,7 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
 
     -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
     -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
-    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run' (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
+    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.runBlessed (Proxy :: _ (Hydra.CliF f)) nextNodeBox node
 
     -- nextNodeBox >~ Node.append inputText
 

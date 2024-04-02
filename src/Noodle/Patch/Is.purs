@@ -13,7 +13,7 @@ import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Node.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
 
 class IsNodeInPatch :: forall k. k -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> (Type -> Type) -> Constraint
 class
@@ -47,8 +47,8 @@ class
     , FromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasBody' (x f) (Node f state is os m) state m
-    , HasCustomSize (x f) (Node f state is os m)
+    , HasCliBody (x f) (Node f state is os m) state m
+    , HasCliCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
     ) <= IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
@@ -65,8 +65,8 @@ instance
     , FromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasBody' (x f) (Node f state is os m) state m
-    , HasCustomSize (x f) (Node f state is os m)
+    , HasCliBody (x f) (Node f state is os m) state m
+    , HasCliCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
     ) => IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
@@ -80,8 +80,8 @@ class
     , FromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasBody' (x f) (Node f state is os m) state m
-    , HasCustomSize (x f) (Node f state is os m)
+    , HasCliBody (x f) (Node f state is os m) state m
+    , HasCliCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
     ) <= IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
@@ -94,8 +94,8 @@ instance
     , FromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasBody' (x f) (Node f state is os m) state m
-    , HasCustomSize (x f) (Node f state is os m)
+    , HasCliBody (x f) (Node f state is os m) state m
+    , HasCliCustomSize (x f) (Node f state is os m)
     , IsNodeState gstate state
     ) => IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 

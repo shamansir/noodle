@@ -65,7 +65,7 @@ import Noodle.Node (Node)
 import Noodle.Node as Node
 
 import Unsafe.Coerce (unsafeCoerce)
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: must be located somewhere in generic UI
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: must be located somewhere in generic UI
 
 
 type Name = String

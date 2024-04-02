@@ -36,7 +36,6 @@ import Noodle.Family.Def as Family
 
 import Tookit.Hydra (Instances, State) as Hydra
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliD) as Hydra
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
 
 

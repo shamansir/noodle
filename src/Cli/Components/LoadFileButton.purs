@@ -51,7 +51,7 @@ import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.Link as Link
-import Cli.Components.NodeBox.HasBody (class HasBody', run', class HasCustomSize)
+import Cli.Components.NodeBox.HasBody (class HasCliBody, runBlessed, class HasCliCustomSize)
 import Cli.Style as Style
 
 import Noodle.Id as Id
@@ -74,7 +74,7 @@ import Noodle.Stateful (setM, get) as Stateful
 
 import Tookit.Hydra as Hydra
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra
+import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile

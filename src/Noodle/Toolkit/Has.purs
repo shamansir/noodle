@@ -15,7 +15,7 @@ import Noodle.Node as Node
 import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) -- FIXME: must be located somewhere in generic UI
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: must be located somewhere in generic UI
 
 
 class HasFamilyDef :: forall k. Symbol -> Row k -> Row k -> k -> Constraint
@@ -93,16 +93,16 @@ instance
 class HasReprableRenderableNodesOf :: forall k. (Symbol -> k) -> Type -> Row Type -> Row Type -> Row Type -> Row Type -> Type -> Symbol -> Type -> RL.RowList Type -> Row Type -> RL.RowList Type -> Row Type -> Row Type -> Row Type -> (Type -> Type) -> Constraint
 class
     ( HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
-    , HasBody' (x f) (Noodle.Node f state is os m) state m
-    , HasCustomSize (x f) (Noodle.Node f state is os m)
+    , HasCliBody (x f) (Noodle.Node f state is os m) state m
+    , HasCliCustomSize (x f) (Noodle.Node f state is os m)
     , IsNodeState gstate state
     ) <= HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 
 instance
     ( HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
-    , HasBody' (x f) (Noodle.Node f state is os m) state m
-    , HasCustomSize (x f) (Noodle.Node f state is os m)
+    , HasCliBody (x f) (Noodle.Node f state is os m) state m
+    , HasCliCustomSize (x f) (Noodle.Node f state is os m)
     , IsNodeState gstate state
     ) => HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 

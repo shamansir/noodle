@@ -31,7 +31,7 @@ import Cli.State (State, OutputIndex(..), InputIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN)
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.Link as Link
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize)
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize)
 
 import Noodle.Id as Id
 import Noodle.Network (Network(..))

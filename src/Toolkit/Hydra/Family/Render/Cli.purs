@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 
 import Type.Proxy (Proxy)
-import Cli.Components.NodeBox.HasBody (class HasBody', class HasCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
+import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
 
 import Cli.Keys (NodeBoxKey)
 
@@ -59,13 +59,13 @@ data CliF (f :: Symbol) = CliF
 
 -- data RendersToCli :: Cli
 
-newtype RendersToCli = R (RendersTo Cli)
+-- newtype RendersToCli = R (RendersTo Cli)
 
 
-data CliD din = CliD
+-- data CliD din = CliD
 
 
-foreign import data HH :: Symbol -> RenderTarget -> RenderItem
+--foreign import data HH :: Symbol -> RenderTarget -> RenderItem
 
 
 {- instance (Applicative m, MonadEffect m) => HasBody (RendersFamily Cli "number") "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
@@ -74,7 +74,7 @@ foreign import data HH :: Symbol -> RenderTarget -> RenderItem
 
 
 {-
-instance (Applicative m, MonadEffect m) => HasBody'' (HH "number" Cli) "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
+instance (Applicative m, MonadEffect m) => HasCliBody' (HH "number" Cli) "number" FNumber.State FNumber.Inputs FNumber.Outputs m where
     run'' :: Proxy _ -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
     run'' _ = FNumber.render
 -}
@@ -118,44 +118,44 @@ else instance HasBody (CliF f) f state is os m where
 -}
 
 
-instance (Applicative m, MonadEffect m) => HasBody' (CliF "number") (FNumber.Node m) FNumber.State m where
-    run' :: Proxy (CliF "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
-    run' _ = FNumber.render
-else instance (MonadRec m, MonadEffect m) => HasBody' (CliF "out") (FOut.Node m) FOut.State m where
-    run' :: Proxy (CliF "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
-    run' _ = FOut.render
-else instance (MonadRec m, MonadEffect m) => HasBody' (CliF "info") (FInfo.Node m) FInfo.State m  where
-    run' :: Proxy (CliF "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
-    run' _ = FInfo.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "expression") (FExpression.Node m) FExpression.State m where
-    run' :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> BlessedOp FExpression.State m
-    run' _ = FExpression.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "array") (FArray.Node m) FArray.State m where
-    run' :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
-    run' _ = FArray.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "callFunction") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
-    run' :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
-    run' _ = FCallGlslFunction.render
-else instance (Applicative m, MonadEffect m) => HasBody' (CliF "caiProductPalette") (FProductPalette.Node m) FProductPalette.State m where
-    run' :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
-    run' _ = FProductPalette.render
-else instance HasBody' (CliF f) (Node f state is os m) state m where
-    run' :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
-    run' _ _ _ = pure unit
+instance (Applicative m, MonadEffect m) => HasCliBody (CliF "number") (FNumber.Node m) FNumber.State m where
+    runBlessed :: Proxy (CliF "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
+    runBlessed _ = FNumber.render
+else instance (MonadRec m, MonadEffect m) => HasCliBody (CliF "out") (FOut.Node m) FOut.State m where
+    runBlessed :: Proxy (CliF "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
+    runBlessed _ = FOut.render
+else instance (MonadRec m, MonadEffect m) => HasCliBody (CliF "info") (FInfo.Node m) FInfo.State m  where
+    runBlessed :: Proxy (CliF "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
+    runBlessed _ = FInfo.render
+else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "expression") (FExpression.Node m) FExpression.State m where
+    runBlessed :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> BlessedOp FExpression.State m
+    runBlessed _ = FExpression.render
+else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "array") (FArray.Node m) FArray.State m where
+    runBlessed :: Proxy (CliF "array") -> NodeBoxKey -> FArray.Node m -> BlessedOp FArray.State m
+    runBlessed _ = FArray.render
+else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "callFunction") (FCallGlslFunction.Node m) FCallGlslFunction.State m where
+    runBlessed :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> BlessedOp FCallGlslFunction.State m
+    runBlessed _ = FCallGlslFunction.render
+else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "caiProductPalette") (FProductPalette.Node m) FProductPalette.State m where
+    runBlessed :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
+    runBlessed _ = FProductPalette.render
+else instance HasCliBody (CliF f) (Node f state is os m) state m where
+    runBlessed :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
+    runBlessed _ _ _ = pure unit
 
 
-instance HasCustomSize (CliF "expression") (FExpression.Node m) where
-    size :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Just { width : 35, height : 5 }
-else instance HasCustomSize (CliF "callFunction") (FCallGlslFunction.Node m) where
-    size :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Just { width : 30, height : Array.length Glsl.knownFns + 2 }
-else instance HasCustomSize (CliF "caiProductPalette") (FProductPalette.Node m) where
-    size :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
-    size _ _ node = FProductPalette.size node
-else instance HasCustomSize (CliF f) (Node f state is os m) where
-    size :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
-    size _ _ _ = Nothing
+instance HasCliCustomSize (CliF "expression") (FExpression.Node m) where
+    cliSize :: Proxy (CliF "expression") -> NodeBoxKey -> FExpression.Node m -> Maybe { width :: Int, height :: Int }
+    cliSize _ _ _ = Just { width : 35, height : 5 }
+else instance HasCliCustomSize (CliF "callFunction") (FCallGlslFunction.Node m) where
+    cliSize :: Proxy (CliF "callFunction") -> NodeBoxKey -> FCallGlslFunction.Node m -> Maybe { width :: Int, height :: Int }
+    cliSize _ _ _ = Just { width : 30, height : Array.length Glsl.knownFns + 2 }
+else instance HasCliCustomSize (CliF "caiProductPalette") (FProductPalette.Node m) where
+    cliSize :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
+    cliSize _ _ node = FProductPalette.size node
+else instance HasCliCustomSize (CliF f) (Node f state is os m) where
+    cliSize :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
+    cliSize _ _ _ = Nothing
 
 
 

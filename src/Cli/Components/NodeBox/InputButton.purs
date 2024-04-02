@@ -74,7 +74,7 @@ import Noodle.Text.NdfFile.Command (commandsToNdf)
 
 import Tookit.Hydra (Instances, State) as Hydra
 import Tookit.Hydra.Repr.Wrap (WrapRepr) as H
-import Tookit.Hydra.Family.Render.Cli (CliD, createEditorFor, editorIdOf) as Hydra
+import Tookit.Hydra.Family.Render.Cli (editorIdOf) as Hydra
 import Tookit.Hydra.Family.Render.Editor (EditorId)
 
 

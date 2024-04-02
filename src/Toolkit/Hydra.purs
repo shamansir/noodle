@@ -36,7 +36,7 @@ import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt) as NHas
 import Noodle.Node.MapsFolds.Repr as NMF
 
-import Tookit.Hydra.Family.Render.Cli (CliD, CliF) as Hydra
+import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
 import Tookit.Hydra.Repr.Wrap (WrapRepr)
 import Tookit.Hydra.Family.Feed.FPi as FPi
 import Tookit.Hydra.Family.Feed.FNumber as FNumber
