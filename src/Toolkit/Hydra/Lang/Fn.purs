@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.Fn where
+module Toolkit.Hydra.Lang.Fn where
 
 
 import Prelude
@@ -12,8 +12,8 @@ import Data.Array (length) as Array
 import Data.Bifunctor (bimap)
 
 
--- import Tookit.Hydra.Types
--- import Tookit.Hydra.Repr.Wrap (WrapRepr)
+-- import Toolkit.Hydra.Types
+-- import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 

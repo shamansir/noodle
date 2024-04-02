@@ -1,4 +1,4 @@
-module Tookit.Hydra.Repr.Wrap.Parser where
+module Toolkit.Hydra.Repr.Wrap.Parser where
 -- TODO: may be move value parsers to Hydra.Lang, but these parsers here encode NDF file structure, they are different from SketchParser,
 -- but JsExpr parser could be separated since it is the same everywhere
 
@@ -27,11 +27,11 @@ import Parsing.String.Basic (space, number, intDecimal, alphaNum, takeWhile1, no
 import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 
-import Tookit.Hydra.Repr.Wrap
-import Tookit.Hydra.Types as T
-import Tookit.Hydra.Lang.SketchParser.Utils as U
-import Tookit.Hydra.Lang.Fn (Fn, fnOf) as Lang
-import Tookit.Hydra.Lang.Fn (empty, argsCount, out1) as Fn
+import Toolkit.Hydra.Repr.Wrap
+import Toolkit.Hydra.Types as T
+import Toolkit.Hydra.Lang.SketchParser.Utils as U
+import Toolkit.Hydra.Lang.Fn (Fn, fnOf) as Lang
+import Toolkit.Hydra.Lang.Fn (empty, argsCount, out1) as Fn
 
 
 -- newtype HasParser = HasParser WrapRepr

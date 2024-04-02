@@ -40,8 +40,8 @@ import Cli.Tagging as T
 
 import Cli.Components.NodeBox as NodeBox
 
-import Tookit.Hydra as Hydra
-import Tookit.Hydra.Group as Hydra
+import Toolkit.Hydra as Hydra
+import Toolkit.Hydra.Group as Hydra
 
 import Blessed.Tagger (fgc, s, render) as T
 

@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Color.FHue where
+module Toolkit.Hydra.Family.Color.FHue where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

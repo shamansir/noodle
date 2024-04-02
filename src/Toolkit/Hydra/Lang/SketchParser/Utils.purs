@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.SketchParser.Utils where
+module Toolkit.Hydra.Lang.SketchParser.Utils where
 
 import Prelude
 

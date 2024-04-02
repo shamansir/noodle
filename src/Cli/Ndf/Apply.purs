@@ -47,9 +47,9 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Node.HoldsNodeState (class IsNodeState, fromGlobal)
 import Noodle.Stateful (setM, get) as Stateful
 
-import Tookit.Hydra (Families, Instances, State, Toolkit, withFamily) as Hydra
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
+import Toolkit.Hydra (Families, Instances, State, Toolkit, withFamily) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Family.Render.Cli (CliF) as Hydra
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Apply as File

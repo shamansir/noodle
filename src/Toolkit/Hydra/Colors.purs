@@ -1,4 +1,4 @@
-module Tookit.Hydra.Colors where
+module Toolkit.Hydra.Colors where
 
 import Prelude
 

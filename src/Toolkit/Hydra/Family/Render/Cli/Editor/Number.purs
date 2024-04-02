@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Render.Cli.Editor.Number where
+module Toolkit.Hydra.Family.Render.Cli.Editor.Number where
 
 import Prelude
 
@@ -60,12 +60,12 @@ import Cli.Style as Style
 
 -- import Noodle.Node (Node)
 
-import Tookit.Hydra.Types as H
--- import Tookit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
--- import Tookit.Hydra.Family.Feed.FNumber (Node, State, _out_out) as FNumber
--- import Tookit.Hydra (State) as Hydra
+import Toolkit.Hydra.Types as H
+-- import Toolkit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
+-- import Toolkit.Hydra.Family.Feed.FNumber (Node, State, _out_out) as FNumber
+-- import Toolkit.Hydra (State) as Hydra
 
-import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr(..)) as H
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Id as Id
@@ -75,7 +75,7 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 import Cli.Keys (PatchBoxKey)
 import Cli.Keys (mainScreen, patchBox, numValueEditor, NumValueEditorKey) as Key
 
-import Tookit.Hydra.Family.Render.Editor (EditorId(..), HasEditors)
+import Toolkit.Hydra.Family.Render.Editor (EditorId(..), HasEditors)
 
 import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
 

@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Geometry.FScroll where
+module Toolkit.Hydra.Family.Geometry.FScroll where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

@@ -1,11 +1,11 @@
-module Tookit.Hydra.Lang.ToCode where
+module Toolkit.Hydra.Lang.ToCode where
 
 import Prelude hiding (show)
 import Prelude (show) as Core
 
-import Tookit.Hydra.Types
-import Tookit.Hydra.Repr.Wrap (WrapRepr)
-import Tookit.Hydra.Lang.Fn (toFnX, name, args, Argument(..))
+import Toolkit.Hydra.Types
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
+import Toolkit.Hydra.Lang.Fn (toFnX, name, args, Argument(..))
 
 import Data.Array ((:))
 import Data.Maybe (Maybe(..))

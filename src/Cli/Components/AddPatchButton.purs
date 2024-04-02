@@ -40,7 +40,7 @@ import Cli.Style as Style
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 
-import Tookit.Hydra as Hydra
+import Toolkit.Hydra as Hydra
 
 import CompArts.Product as CAI
 

@@ -72,9 +72,9 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Node.HoldsNodeState (class IsNodeState, fromGlobal)
 import Noodle.Stateful (setM, get) as Stateful
 
-import Tookit.Hydra as Hydra
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
+import Toolkit.Hydra as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Family.Render.Cli (CliF) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile

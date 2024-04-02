@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.SketchParser.Expr where
+module Toolkit.Hydra.Lang.SketchParser.Expr where
 
 import Prelude
 
@@ -23,12 +23,12 @@ import Control.Lazy (defer)
 import Data.Array (many, fromFoldable)
 import Data.String as String
 
-import Tookit.Hydra.Types (Value(..))
-import Tookit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
-import Tookit.Hydra.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..), Output(..))
+import Toolkit.Hydra.Types (Value(..))
+import Toolkit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+import Toolkit.Hydra.Lang.Fn (possiblyToFn, KnownFn(..), Argument(..), Output(..))
 
-import Tookit.Hydra.Lang.SketchParser.Utils
-import Tookit.Hydra.Lang.SketchParser.JsExpr (JsExpr, inlineExprParser) -- FIXME: use JsExpr from Lang.Types
+import Toolkit.Hydra.Lang.SketchParser.Utils
+import Toolkit.Hydra.Lang.SketchParser.JsExpr (JsExpr, inlineExprParser) -- FIXME: use JsExpr from Lang.Types
 
 
 data Level

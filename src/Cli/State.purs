@@ -41,13 +41,13 @@ import Noodle.Text.NdfFile.Command (Command) as NdfFile
 import Noodle.Text.NdfFile (init, append) as NdfFile
 import Noodle.Text.NdfFile (NdfFile)
 
-import Tookit.Hydra (toolkit, Toolkit, State, Instances) as Hydra
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Lang (empty) as Program
-import Tookit.Hydra.Lang (Program, Command) as Lang
-import Tookit.Hydra.Family.Render.Editor (Editors)
-import Tookit.Hydra.Types as T
-import Tookit.Hydra.Lang.Glsl as Glsl
+import Toolkit.Hydra (toolkit, Toolkit, State, Instances) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Lang (empty) as Program
+import Toolkit.Hydra.Lang (Program, Command) as Lang
+import Toolkit.Hydra.Family.Render.Editor (Editors)
+import Toolkit.Hydra.Types as T
+import Toolkit.Hydra.Lang.Glsl as Glsl
 
 import Signal (Signal)
 import Signal as Signal

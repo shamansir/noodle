@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.SketchParser.JsExpr where
+module Toolkit.Hydra.Lang.SketchParser.JsExpr where
 
 import Prelude
 
@@ -16,10 +16,10 @@ import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 import Control.Alt ((<|>))
 import Control.Lazy (defer)
 
-import Tookit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+import Toolkit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 
-import Tookit.Hydra.Lang.SketchParser.Utils (betweenSpaces, f1ts, spaces, tokenChar)
+import Toolkit.Hydra.Lang.SketchParser.Utils (betweenSpaces, f1ts, spaces, tokenChar)
 
 
 data JsExpr

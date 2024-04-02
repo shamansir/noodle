@@ -1,11 +1,11 @@
-module Tookit.Hydra.Lang.Api where
+module Toolkit.Hydra.Lang.Api where
 
-import Tookit.Hydra.Types
+import Toolkit.Hydra.Types
 
 import Prelude
 
-import Tookit.Hydra.Lang (Command(..), Program(..), Single(..))
-import Tookit.Hydra.Types (Value(..)) as T
+import Toolkit.Hydra.Lang (Command(..), Program(..), Single(..))
+import Toolkit.Hydra.Types (Value(..)) as T
 
 
 unknown ∷ Program Unit -- private

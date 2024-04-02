@@ -1,4 +1,4 @@
-module Tookit.Hydra.Group where
+module Toolkit.Hydra.Group where
 
 import Prelude
 

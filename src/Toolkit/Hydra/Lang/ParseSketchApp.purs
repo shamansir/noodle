@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.ParseSketchApp where
+module Toolkit.Hydra.Lang.ParseSketchApp where
 
 import Prelude
 
@@ -23,8 +23,8 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
 import Node.Path (FilePath, extname, basenameWithoutExt)
 
-import Tookit.Hydra.Lang.ToCode (class ToCode, pureScript, toCode, javaScript)
-import Tookit.Hydra.Lang.SketchParser as Parser
+import Toolkit.Hydra.Lang.ToCode (class ToCode, pureScript, toCode, javaScript)
+import Toolkit.Hydra.Lang.SketchParser as Parser
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))

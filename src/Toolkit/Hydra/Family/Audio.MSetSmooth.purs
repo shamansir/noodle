@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Audio.FSetSmooth where
+module Toolkit.Hydra.Family.Audio.FSetSmooth where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

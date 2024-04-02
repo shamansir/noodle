@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Modulate.FModulateKaleid where
+module Toolkit.Hydra.Family.Modulate.FModulateKaleid where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

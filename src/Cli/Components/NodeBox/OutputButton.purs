@@ -55,7 +55,7 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Patch as Patch
 
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 
 width :: Dimension

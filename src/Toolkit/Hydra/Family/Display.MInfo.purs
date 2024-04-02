@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Display.FInfo where
+module Toolkit.Hydra.Family.Display.FInfo where
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Repr.Wrap (WrapRepr(..))
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr(..))
 
 
 import Prelude (Unit, unit, ($), bind, pure)

@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.CAI.FProductPalette where
+module Toolkit.Hydra.Family.CAI.FProductPalette where
 
 
 import Prelude
@@ -19,7 +19,7 @@ import Noodle.Id (Family(..)) as Node
 
 import Type.Proxy (Proxy(..))
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 import CompArts.Product as CAI
 

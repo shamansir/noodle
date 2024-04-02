@@ -1,4 +1,4 @@
-module Tookit.Hydra.Types where
+module Toolkit.Hydra.Types where
 
 import Prelude
 
@@ -28,9 +28,9 @@ import Cli.Palette.Set.X11 as X11
 
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
-import Tookit.Hydra.Lang.Fn (Fn, FnU) as Lang
-import Tookit.Hydra.Lang.Fn (class PossiblyToFn, class ToFn, arg, out, possiblyToFn, q, o, toFn)
-import Tookit.Hydra.Lang.Fn (empty, Argument(..), Output(..), name, argName, argValue, argsCount, nameOf, KnownFn) as Fn
+import Toolkit.Hydra.Lang.Fn (Fn, FnU) as Lang
+import Toolkit.Hydra.Lang.Fn (class PossiblyToFn, class ToFn, arg, out, possiblyToFn, q, o, toFn)
+import Toolkit.Hydra.Lang.Fn (empty, Argument(..), Output(..), name, argName, argValue, argsCount, nameOf, KnownFn) as Fn
 
 
 data TODO = TODO

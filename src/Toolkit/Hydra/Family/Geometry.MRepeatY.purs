@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Geometry.FRepeatY where
+module Toolkit.Hydra.Family.Geometry.FRepeatY where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

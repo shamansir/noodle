@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Render.Cli.Out.FOut where
+module Toolkit.Hydra.Family.Render.Cli.Out.FOut where
 
 import Prelude
 
@@ -46,12 +46,12 @@ import Blessed.Tagger as T
 
 import Noodle.Node (sendInM, subscribeInput) as Node
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 -- import Noodle.Node (Node)
 
-import Tookit.Hydra.Family.Out.FOut (Inputs, Outputs, State, Node, _in_target) as FOut
+import Toolkit.Hydra.Family.Out.FOut (Inputs, Outputs, State, Node, _in_target) as FOut
 
 import Cli.Style as Style
 import Cli.Tagging as T

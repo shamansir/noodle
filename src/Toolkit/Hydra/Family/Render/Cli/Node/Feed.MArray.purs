@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Render.Cli.Feed.FArray where
+module Toolkit.Hydra.Family.Render.Cli.Feed.FArray where
 
 import Prelude
 
@@ -47,11 +47,11 @@ import Cli.Style as Style
 
 -- import Noodle.Node (Node)
 
-import Tookit.Hydra.Types as T
--- import Tookit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Tookit.Hydra.Family.Feed.FArray (Node, State, _out_out) as FArray
--- import Tookit.Hydra (State) as Hydra
-import Tookit.Hydra.Repr.Wrap.Parser (findValues) as T
+import Toolkit.Hydra.Types as T
+-- import Toolkit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
+import Toolkit.Hydra.Family.Feed.FArray (Node, State, _out_out) as FArray
+-- import Toolkit.Hydra (State) as Hydra
+import Toolkit.Hydra.Repr.Wrap.Parser (findValues) as T
 
 type TextBoxKey = TextBox <^> "array-text-box"
 

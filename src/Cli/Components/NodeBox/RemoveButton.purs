@@ -52,7 +52,7 @@ import Noodle.Node (unsafeDisconnect) as Node
 import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
 import Noodle.Patch.Has as PHas
 
-import Tookit.Hydra (Instances) as Hydra
+import Toolkit.Hydra (Instances) as Hydra
 
 
 component

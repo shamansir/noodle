@@ -4,7 +4,7 @@ import Prelude (Unit, (>>>))
 
 import Noodle.Network (Network) as Noodle
 
-import Tookit.Hydra as Hydra
+import Toolkit.Hydra as Hydra
 
 type NoodleNetwork m = Noodle.Network Hydra.State (Hydra.Families m) (Hydra.Instances m)
 

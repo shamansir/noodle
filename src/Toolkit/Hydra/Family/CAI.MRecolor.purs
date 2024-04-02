@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.CAI.FRecolor where
+module Toolkit.Hydra.Family.CAI.FRecolor where
 
 import Prelude
 
@@ -15,8 +15,8 @@ import Noodle.Family.Def as Family
 import Noodle.Node (Node) as N
 import Noodle.Id (Family(..)) as Node
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Lang.Fn as HFn
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Lang.Fn as HFn
 
 
 id = Node.Family :: _ "caiRecolor"

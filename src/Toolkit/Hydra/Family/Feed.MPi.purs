@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Feed.FPi where
+module Toolkit.Hydra.Family.Feed.FPi where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

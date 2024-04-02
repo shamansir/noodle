@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Render.Cli.Feed.FNumber where
+module Toolkit.Hydra.Family.Render.Cli.Feed.FNumber where
 
 import Prelude
 
@@ -49,10 +49,10 @@ import Cli.Style as Style
 
 -- import Noodle.Node (Node)
 
-import Tookit.Hydra.Types as T
--- import Tookit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Tookit.Hydra.Family.Feed.FNumber (Node, State, _out_out) as FNumber
--- import Tookit.Hydra (State) as Hydra
+import Toolkit.Hydra.Types as T
+-- import Toolkit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
+import Toolkit.Hydra.Family.Feed.FNumber (Node, State, _out_out) as FNumber
+-- import Toolkit.Hydra (State) as Hydra
 
 type TextBoxKey = TextBox <^> "number-text-box"
 

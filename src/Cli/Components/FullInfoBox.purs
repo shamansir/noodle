@@ -30,11 +30,11 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Tagging as T
 
-import Tookit.Hydra.Repr.Info (class StatusLineInfo, statusLine)
+import Toolkit.Hydra.Repr.Info (class StatusLineInfo, statusLine)
 
-import Tookit.Hydra.Lang (formProgram) as Lang
-import Tookit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Lang (formProgram) as Lang
+import Toolkit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 import Noodle.Id as Id
 

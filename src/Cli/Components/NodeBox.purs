@@ -112,13 +112,13 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.FullInfoBox as FI
 import Cli.Bounds as Bounds
 
-import Tookit.Hydra (Families, Instances, State, Toolkit) as Hydra
-import Tookit.Hydra.Group (toGroup) as Hydra
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
-import Tookit.Hydra.Repr.Info (InfoRepr) as Hydra
-import Tookit.Hydra.Family.Render.Cli (CliF) as Hydra
-import Tookit.Hydra.Lang as Lang
-import Tookit.Hydra.Lang.ToCode as Lang
+import Toolkit.Hydra (Families, Instances, State, Toolkit) as Hydra
+import Toolkit.Hydra.Group (toGroup) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Repr.Info (InfoRepr) as Hydra
+import Toolkit.Hydra.Family.Render.Cli (CliF) as Hydra
+import Toolkit.Hydra.Lang as Lang
+import Toolkit.Hydra.Lang.ToCode as Lang
 
 
 width :: String -> Int -> Int -> Dimension

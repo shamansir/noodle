@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.Glsl where
+module Toolkit.Hydra.Lang.Glsl where
 
 import Prelude
 
@@ -7,8 +7,8 @@ import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Lang.Fn as Fn
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Lang.Fn as Fn
 
 
 -- examples are from: https://hydra-book.glitch.me/#/glsl

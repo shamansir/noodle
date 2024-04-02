@@ -41,7 +41,7 @@ import Cli.Components.HydraCodeBox as HydraCodeBox
 import Cli.Components.FullInfoBox as FullInfoBox
 import Cli.Components.WsStatusButton as WsStatusButton
 
-import Tookit.Hydra (toolkit, Toolkit) as Hydra
+import Toolkit.Hydra (toolkit, Toolkit) as Hydra
 
 
 families :: Array Id.FamilyR

@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang.SketchParser where
+module Toolkit.Hydra.Lang.SketchParser where
 
 import Prelude
 
@@ -19,10 +19,10 @@ import Parsing.Combinators (many1)
 import Data.Array (fromFoldable)
 import Data.String (joinWith, replaceAll)  as String
 import Data.Tuple.Nested ((/\), type (/\))
-import Tookit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
+import Toolkit.Hydra.Lang.ToCode (class ToCode, NDF, PS, JS, pureScript, toCode, javaScript)
 
 
-import Tookit.Hydra.Lang.SketchParser.Expr (Expr(..), Level(..), expr)
+import Toolkit.Hydra.Lang.SketchParser.Expr (Expr(..), Level(..), expr)
 
 
 type ModuleName = String
@@ -124,10 +124,10 @@ pursHeader moduleName =
   , "import Effect (Effect)"
   , "import Effect.Console as Console"
   , ""
-  , "import Tookit.Hydra.Types (Context(..))"
-  , "import Tookit.Hydra.Lang"
-  , "import Tookit.Hydra.Lang.ToCode (toCode, pureScript, javaScript)"
-  , "import Tookit.Hydra.Lang.Api"
+  , "import Toolkit.Hydra.Types (Context(..))"
+  , "import Toolkit.Hydra.Lang"
+  , "import Toolkit.Hydra.Lang.ToCode (toCode, pureScript, javaScript)"
+  , "import Toolkit.Hydra.Lang.Api"
   ]
 
 

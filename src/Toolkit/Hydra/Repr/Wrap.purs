@@ -1,4 +1,4 @@
-module Tookit.Hydra.Repr.Wrap where
+module Toolkit.Hydra.Repr.Wrap where
 
 import Prelude
 
@@ -15,7 +15,7 @@ import Data.Number as Number
 import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 import CompArts.Product as CAI
 

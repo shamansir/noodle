@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Audio.FShow where
+module Toolkit.Hydra.Family.Audio.FShow where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Prelude (Unit, unit, ($), bind, pure)

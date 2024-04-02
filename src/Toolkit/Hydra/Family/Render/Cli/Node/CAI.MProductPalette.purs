@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Render.Cli.Node.CAI.FProductPalette where
+module Toolkit.Hydra.Family.Render.Cli.Node.CAI.FProductPalette where
 
 import Prelude
 
@@ -71,10 +71,10 @@ import Noodle.Stateful (getM) as Stateful
 
 -- import Noodle.Node (Node)
 
-import Tookit.Hydra.Types as T
--- import Tookit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
-import Tookit.Hydra.Family.CAI.FProductPalette (Node, State, _in_product) as FProductPalette
--- import Tookit.Hydra (State) as Hydra
+import Toolkit.Hydra.Types as T
+-- import Toolkit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
+import Toolkit.Hydra.Family.CAI.FProductPalette (Node, State, _in_product) as FProductPalette
+-- import Toolkit.Hydra (State) as Hydra
 
 type ButtonKey = Button <^> "product-palette-text-box"
 

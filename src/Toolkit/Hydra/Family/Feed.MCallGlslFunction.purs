@@ -1,4 +1,4 @@
-module Tookit.Hydra.Family.Feed.FCallGlslFunction where
+module Toolkit.Hydra.Family.Feed.FCallGlslFunction where
 
 import Prelude
 
@@ -6,8 +6,8 @@ import Effect.Class (class MonadEffect)
 
 import Data.Int (floor)
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Lang.Glsl as Glsl
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Lang.Glsl as Glsl
 
 import Data.Tuple.Nested ((/\))
 import Data.SOrder (SOrder, type (:::), T, s1, s7)
@@ -25,8 +25,8 @@ import Noodle.Id (Family(..)) as Node
 import Noodle.Fn as Fn
 import Noodle.Fn.Process as P
 
-import Tookit.Hydra.Lang.Fn as HFn
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Lang.Fn as HFn
+import Toolkit.Hydra.Types as H
 
 
 import Type.Proxy (Proxy(..))

@@ -41,8 +41,8 @@ import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
 import Noodle.Family.Def as Family
 
-import Tookit.Hydra (Instances, State) as Hydra
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra (Instances, State) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 
 {-}

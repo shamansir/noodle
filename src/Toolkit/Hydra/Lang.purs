@@ -1,4 +1,4 @@
-module Tookit.Hydra.Lang where
+module Toolkit.Hydra.Lang where
 
 import Prelude
 import Prelude (class Show, show) as Core
@@ -29,13 +29,13 @@ import Data.String as String
 import Noodle.Id as Id
 import Noodle.Node.MapsFolds.Flatten as R
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Lang.Fn as Fn
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Lang.Fn as Fn
 
-import Tookit.Hydra.Lang.ToCode
-import Tookit.Hydra.Lang.ToCode (fnPs, fnJs) as ToCode
-import Tookit.Hydra.Repr.Wrap (WrapRepr(..))
-import Tookit.Hydra.Lang.Glsl as Glsl
+import Toolkit.Hydra.Lang.ToCode
+import Toolkit.Hydra.Lang.ToCode (fnPs, fnJs) as ToCode
+import Toolkit.Hydra.Repr.Wrap (WrapRepr(..))
+import Toolkit.Hydra.Lang.Glsl as Glsl
 
 
 data Single

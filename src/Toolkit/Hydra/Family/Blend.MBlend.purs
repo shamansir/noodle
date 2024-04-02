@@ -1,7 +1,7 @@
-module Tookit.Hydra.Family.Blend.FBlend where
+module Toolkit.Hydra.Family.Blend.FBlend where
 
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 import Effect.Class (class MonadEffect, liftEffect)

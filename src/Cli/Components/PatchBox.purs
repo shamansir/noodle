@@ -24,9 +24,9 @@ import Cli.Style (patchBox, patchBoxBorder) as Style
 
 import Noodle.Id as Id
 
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Repr.Wrap as H
-import Tookit.Hydra.Family.Render.Cli (createEditorFor) as Hydra
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap as H
+import Toolkit.Hydra.Family.Render.Cli (createEditorFor) as Hydra
 
 import Cli.Components.InputIndicator as InputIndicator
 import Cli.Components.OutputIndicator as OutputIndicator

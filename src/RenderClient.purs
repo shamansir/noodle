@@ -37,8 +37,8 @@ import Web.Socket.Event.MessageEvent as WSMsg
 import Web.File.Url as Web
 import Web.File.Blob as Blob
 
-import Tookit.Hydra.Engine as Hydra
-import Tookit.Hydra.Engine (HydraCode(..))
+import Toolkit.Hydra.Engine as Hydra
+import Toolkit.Hydra.Engine (HydraCode(..))
 
 
 main :: Effect Unit

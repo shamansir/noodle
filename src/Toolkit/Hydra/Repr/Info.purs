@@ -1,4 +1,4 @@
-module Tookit.Hydra.Repr.Info where
+module Toolkit.Hydra.Repr.Info where
 
 import Prelude
 
@@ -26,11 +26,11 @@ import Noodle.Id (Family(..), FamilyR(..))
 import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
-import Tookit.Hydra.Group as HG
-import Tookit.Hydra.Types as H
-import Tookit.Hydra.Repr.Wrap (WrapRepr(..)) as W
-import Tookit.Hydra.Lang.Fn (KnownFn)
-import Tookit.Hydra.Lang.Fn (nameOf) as Fn
+import Toolkit.Hydra.Group as HG
+import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr(..)) as W
+import Toolkit.Hydra.Lang.Fn (KnownFn)
+import Toolkit.Hydra.Lang.Fn (nameOf) as Fn
 
 
 data InfoRepr = InfoRepr { shortLabel :: VShortChannelLabel, statusLine :: VStatusLine }

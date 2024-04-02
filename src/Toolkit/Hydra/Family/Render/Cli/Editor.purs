@@ -1,9 +1,9 @@
-module Tookit.Hydra.Family.Render.Editor where
+module Toolkit.Hydra.Family.Render.Editor where
 
 import Prelude
 
 import Effect (Effect)
-import Tookit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
 
 
 import Data.Map (Map)

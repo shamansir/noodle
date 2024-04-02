@@ -1,4 +1,4 @@
-module Tookit.Hydra.Repr.Text where
+module Toolkit.Hydra.Repr.Text where
 
 import Prelude
 
@@ -9,7 +9,7 @@ import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
-import Tookit.Hydra.Types as H
+import Toolkit.Hydra.Types as H
 
 
 data TextRepr = TextRepr String
