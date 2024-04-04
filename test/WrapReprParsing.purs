@@ -143,18 +143,18 @@ test
 multiline
 code
             """
-            /\ Lang.Fn ("abc" /\ [])
+            /\ Lang.Fn ("abc" /\ [] /\ [])
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
-        $ GlslFnRef $ Lang.Fn ("aaa" /\ [])
+        $ GlslFnRef $ Lang.Fn ("aaa" /\ [] /\ [])
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
-        $ GlslFnRef $ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty ])
+        $ GlslFnRef $ Lang.Fn ("aaa" /\ [ Lang.q "arg1" $ T $ Empty ] /\ [])
     , W.GlslFn
         $ T.GlslFn
         $ FnSrc
             /\ GlslFnCode "foo\nbar\nbzz"
-            /\ Lang.Fn ("axz" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ])
+            /\ Lang.Fn ("axz" /\ [ Lang.q "arg1" $ T $ Empty, Lang.q "arg2" $ V $ Number 2.0 ] /\ [])
     , Texture
         $ CallGlslFn { over : Filter Empty $ Posterize { bins : Time, gamma : Height }, mbWith : Nothing }
         $ GlslFnRef $ Lang.Fn
@@ -163,7 +163,8 @@ code
                 , Lang.q "a2"
                     $ T $ BlendOf { what : Empty, with : Empty } $ Diff
                 , Lang.q "a3" $ V $ Number 2.0
-                ]
+                ] /\
+                []
     ]
 
 

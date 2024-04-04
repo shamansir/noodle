@@ -5,7 +5,7 @@ import Prelude (Unit, ($), discard)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 
-import Test.Spec (describe, describeOnly)
+import Test.Spec (describe, describeOnly, pending')
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
@@ -13,7 +13,6 @@ import Test.Spec.Runner (runSpec)
 import Test.Node (spec) as Node
 import Test.Fn (spec) as Fn
 import Test.Toolkit (spec) as Toolkit
--- import Test.Toolkit2 (spec) as Toolkit2
 import Test.Protocol (spec) as Protocol
 import Test.Patch (spec) as Patch
 import Test.Flex (spec) as Flex
@@ -31,23 +30,21 @@ main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "UniqueHash"
     UniqueHash.spec
-  -- describe "Fn"
-  --   Fn.spec
+  describe "Fn"
+    Fn.spec
   describe "Node"
     Node.spec
   -- describe "Nodes"
   --   Nodes.spec
-  -- describe "Toolkit"
-  --   Toolkit.spec
-  -- describe "Toolkit2"
-  --   Toolkit2.spec
+  describe "Toolkit"
+    Toolkit.spec
   describe "Patch"
     Patch.spec
   describe "Toolkit"
     Toolkit.spec
   describe "Protocol"
     Protocol.spec
-  describeOnly "NDF Parsing"
+  describe "NDF Parsing"
     NdfParsing.spec
   describe "Parsing & Generating Toolkits"
     Generating.spec
@@ -57,9 +54,9 @@ main = launchAff_ $ runSpec [consoleReporter] do
     SOrder.spec
   describe "NodeKey"
     NodeKey.spec
-  describeOnly "Expressions parsing"
+  describe "Expressions parsing"
     JsExprParsing.spec
-  describeOnly "Expressions parsing (Wrap)"
+  describe "Expressions parsing (Wrap)"
     JsExprParsingWrap.spec
-  describeOnly "Hydra Serialization"
+  describe "Hydra Serialization"
     WrapReprParsing.spec
