@@ -52,6 +52,7 @@ import Noodle.Fn.Protocol as Protocol
 import Noodle.Fn (Fn)
 import Noodle.Fn (inputsShape, outputsShape, inputsShapeHeld, outputsShapeHeld, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
 import Noodle.Stateful (class StatefulM)
+import Noodle.Wiring (class Wiring)
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -177,8 +178,7 @@ makeRun' family state is os fn = do
 -- TODO: private
 runOnInputUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) m
-    .  MonadRec m
-    => MonadEffect m
+    .  Wiring m
     => Node f state is os m
     -> m Unit
 runOnInputUpdates node =
@@ -188,8 +188,7 @@ runOnInputUpdates node =
 -- TODO: private
 runOnStateUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) m
-    .  MonadRec m
-    => MonadEffect m
+    .  Wiring m
     => Node f state is os m
     -> m Unit
 runOnStateUpdates node =
@@ -199,8 +198,7 @@ runOnStateUpdates node =
 --- FIXME: find better name
 listenUpdatesAndRun
   :: forall f state (is :: Row Type) (os :: Row Type) m
-   . MonadRec m
-  => MonadEffect m
+   . Wiring m
   => Node f state is os m
   -> m Unit
 listenUpdatesAndRun node = do
@@ -487,10 +485,10 @@ toFullId (Link nodeA outA inB nodeB _) =
 
 -- TODO: Path.connect2 (from different patches)
 
+
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output oA
@@ -525,8 +523,7 @@ connect
 
 connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output oA
@@ -542,8 +539,7 @@ connectAlike
 
 connect'
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output' oA
@@ -579,8 +575,7 @@ connect'
 
 connectAlike'
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output' oA
@@ -596,8 +591,7 @@ connectAlike'
 
 connectByRepr
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m repr
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => ToRepr doutA repr
@@ -640,8 +634,7 @@ connectByRepr
 
 disconnect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => IsSymbol fA
     => IsSymbol fB
     => HasOutput oA doutA osA' osA

@@ -9,6 +9,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+import Signal.Extra (class RunInSignal)
 
 import Type.Proxy (Proxy)
 import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) {-, class HasEditor, class HasEditor', class HasEditor'')-}
@@ -121,10 +122,10 @@ else instance HasBody (CliF f) f state is os m where
 instance (Applicative m, MonadEffect m) => HasCliBody (CliF "number") (FNumber.Node m) FNumber.State m where
     runBlessed :: Proxy (CliF "number") -> NodeBoxKey -> FNumber.Node m -> BlessedOp FNumber.State m
     runBlessed _ = FNumber.render
-else instance (MonadRec m, MonadEffect m) => HasCliBody (CliF "out") (FOut.Node m) FOut.State m where
+else instance (RunInSignal m, MonadRec m, MonadEffect m) => HasCliBody (CliF "out") (FOut.Node m) FOut.State m where
     runBlessed :: Proxy (CliF "out") -> NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m
     runBlessed _ = FOut.render
-else instance (MonadRec m, MonadEffect m) => HasCliBody (CliF "info") (FInfo.Node m) FInfo.State m  where
+else instance (RunInSignal m, MonadRec m, MonadEffect m) => HasCliBody (CliF "info") (FInfo.Node m) FInfo.State m  where
     runBlessed :: Proxy (CliF "info") -> NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
     runBlessed _ = FInfo.render
 else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "expression") (FExpression.Node m) FExpression.State m where

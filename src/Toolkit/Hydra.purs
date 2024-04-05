@@ -34,6 +34,7 @@ import Noodle.Node as Node
 import Noodle.Toolkit.Has (class HasFamilyDef, class HasReprableNodesOf) as THas
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt) as NHas
+import Noodle.Wiring (class Wiring)
 import Noodle.Node.MapsFolds.Repr as NMF
 
 import Toolkit.Hydra.Family.Render.Cli (CliF) as Hydra
@@ -237,7 +238,7 @@ type Families (m :: Type -> Type) =
         )
 
 
-families :: forall (m :: Type -> Type). MonadEffect m => Record (Families m)
+families :: forall (m :: Type -> Type). Wiring m => Record (Families m)
 families =
         { number : (FNumber.family :: FNumber.Family m)
         , pi : (FPi.family :: FPi.Family m)
@@ -479,7 +480,7 @@ type Toolkit (m :: Type -> Type)
     = Noodle.Toolkit State (Families m)
 
 
-toolkit :: forall (m :: Type -> Type). MonadEffect m => Toolkit m
+toolkit :: forall (m :: Type -> Type). Wiring m => Toolkit m
 toolkit =
     Toolkit.from "hydra" familiesOrder families
 

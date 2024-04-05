@@ -14,7 +14,7 @@ import Cli.Keys (NodeBoxKey)
 import Data.Maybe (Maybe(..))
 
 import Signal (Signal, (~>))
-import Signal.Extra (runSignal)
+import Signal.Extra (runSignal, class RunInSignal)
 
 import Blessed as B
 import Blessed ((>~), (~<))
@@ -60,7 +60,7 @@ import Cli.Tagging as T
 type OutputButtonKey = Button <^> "output-button"
 
 
-render :: forall m. MonadEffect m => MonadRec m => NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m -- FIXME: why it doesn't work with `sendOut` ??
+render :: forall m. RunInSignal m => MonadEffect m => MonadRec m => NodeBoxKey -> FOut.Node m -> BlessedOp FOut.State m -- FIXME: why it doesn't work with `sendOut` ??
 render nodeBoxKey node = do
     let
         (rootOutputButtonKey :: OutputButtonKey) = NK.first -- FIXME, find the next one from state or as passed to the node

@@ -63,6 +63,7 @@ import Noodle.Toolkit.MapsFolds.Repr as TR
 import Noodle.Id
 import Noodle.Node (Node)
 import Noodle.Node as Node
+import Noodle.Wiring (class Wiring)
 
 import Unsafe.Coerce (unsafeCoerce)
 import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: must be located somewhere in generic UI
@@ -261,8 +262,7 @@ ensureDataInterchangeIn _ = unit
 type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families instances repr
     =  forall t a
      . Applicative t
-    => MonadRec m
-    => MonadEffect m
+    => Wiring m
     => (  forall families' instances' f state (isrl :: RL.RowList Type) (is :: Row Type) (osrl :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  THas.HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
         => Family f
@@ -277,8 +277,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
 type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families instances repr
     = forall t a
      . Applicative t
-    => MonadRec m
-    => MonadEffect m
+    => Wiring m
     => (  forall familiesA' instancesA' fA stateA (isrlA :: RL.RowList Type) (isA :: Row Type) (osrlA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
                  familiesB' instancesB' fB stateB (isrlB :: RL.RowList Type) (isB :: Row Type) (osrlB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
         .  THas.HasReprableRenderableNodesOf x gstate familiesA' families instancesA' instances repr fA stateA isrlA isA osrlA osA repr_isA repr_osA m

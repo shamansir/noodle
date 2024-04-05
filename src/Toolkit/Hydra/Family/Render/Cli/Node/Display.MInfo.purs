@@ -13,7 +13,7 @@ import Effect.Console as Console
 import Data.Maybe (Maybe(..))
 
 import Signal (Signal, (~>))
-import Signal.Extra (runSignal)
+import Signal.Extra (runSignal, class RunInSignal)
 
 import Blessed as B
 import Blessed ((>~), (~<))
@@ -60,7 +60,7 @@ import Toolkit.Hydra.Family.Display.FInfo (Node, State, _in_in) as FInfo
 type TextBoxKey = TextBox <^> "info-text-box"
 
 
-render :: forall m. MonadRec m => MonadEffect m => NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
+render :: forall m. RunInSignal m => MonadRec m => MonadEffect m => NodeBoxKey -> FInfo.Node m -> BlessedOp FInfo.State m
 render nodeBoxKey node = do
     let
         (rootTextBoxKey :: TextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node

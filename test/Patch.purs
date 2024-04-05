@@ -22,7 +22,7 @@ import Data.Map as Map
 import Data.SOrder (SOrder, type (:::), T)
 import Data.SProxy (reflect', proxify)
 
-import Test.Spec (Spec, pending, describe, it, pending')
+import Test.Spec (Spec, pending, describe, it, itOnly, pending')
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
@@ -139,7 +139,7 @@ spec = do
 
             pure unit
 
-        pending' "storing links works" $ do -- FIXME: hangs indefinitely
+        it "storing links works" $ do
 
             nodeA <- Toolkit.spawn toolkit _foo
             nodeB <- Toolkit.spawn toolkit _bar
@@ -175,7 +175,7 @@ spec = do
             pure unit
 
 
-        pending' "converting works" $ do -- FIXME: hangs indefinitely
+        it "converting works" $ do
 
             nodeA <- Toolkit.spawn toolkit _foo
             nodeB <- Toolkit.spawn toolkit _bar

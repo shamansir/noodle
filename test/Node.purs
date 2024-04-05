@@ -144,7 +144,7 @@ spec = do
 
     describe "connecting & disconnecting" $ do
 
-        pending' "is possible to connect nodes" $ do -- FIXME: hangs indefinitely
+        it "is possible to connect nodes" $ do
             nodeA <-
                 Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
                     $ do
@@ -178,7 +178,7 @@ spec = do
             pure unit
 
 
-        pending' "is possible to connect nodes and keep sending values" $ do -- FIXME: hangs indefinitely
+        it "is possible to connect nodes and keep sending values" $ do
             nodeA <-
                 Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
                     $ do
@@ -220,7 +220,7 @@ spec = do
 
             pure unit
 
-        pending' "disconnecting works" $ do -- FIXME: hangs indefinitely
+        it "disconnecting works" $ do
             nodeA <-
                 Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
                     $ do

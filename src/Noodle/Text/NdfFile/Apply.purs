@@ -38,6 +38,7 @@ import Noodle.Node as Node
 import Noodle.Id as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
+import Noodle.Wiring (class Wiring)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -65,8 +66,7 @@ type IdMapping x gstate instances m repr = Map String (Patch.HoldsNodeMRepr x gs
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
 applyFile
     :: forall x m gstate (families :: Row Type) (instances :: Row Type) repr fsrl isrl
-     . MonadRec m
-    => MonadEffect m
+     . Wiring m
     => Id.ListsFamilies families fsrl
     => RL.RowToList instances isrl
     => Record.Keys isrl

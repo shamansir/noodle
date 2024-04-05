@@ -4,7 +4,6 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -41,6 +40,7 @@ import Noodle.Node.MapsFolds.Flatten (NodeLineMap) as R
 import Noodle.Node.MapsFolds.Repr (Repr) as R
 import Noodle.Patch.MapsFolds.Repr (class FoldToReprsMap)
 import Noodle.Stateful (class Stateful)
+import Noodle.Wiring (class Wiring)
 
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
@@ -287,8 +287,7 @@ removeNode node =
 
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
     => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Id.Output oA
@@ -307,8 +306,7 @@ connect o i f na nb patch =
 
 connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => PIs.LinkStartInPatch fA oA d stateA isA osA osA' gstate ins insA m
     => PIs.LinkEndInPatch fB iB d stateB isB isB' osB gstate ins insB m
     => Id.Output oA
@@ -323,8 +321,7 @@ connectAlike o i na nb patch =
 
 connect'
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
     => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Id.Output' oA
@@ -343,8 +340,7 @@ connect' o i f na nb patch =
 
 connectAlike'
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => PIs.LinkStartInPatch fA oA d stateA isA osA osA' gstate ins insA m
     => PIs.LinkEndInPatch fB iB d stateB isB isB' osB gstate ins insB m
     => Id.Output' oA
@@ -359,8 +355,7 @@ connectAlike' o i na nb patch =
 
 disconnect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
-     . MonadEffect m
-    => MonadRec m
+     . Wiring m
     => PIs.LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
     => PIs.LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
     => Show dinB
