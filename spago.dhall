@@ -86,6 +86,8 @@ to generate this file without the comments in this block.
   , "strings-extra"
   , "stringutils"
   , "tailrec"
+  , "tidy"
+  , "tidy-codegen"
   , "transformers"
   , "tuples"
   , "typelevel"
