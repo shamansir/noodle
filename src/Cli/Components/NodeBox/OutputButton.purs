@@ -14,6 +14,8 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
 import Data.SProxy (reflect)
+import Data.Text.Format as T
+import Data.Text.Output (render) as T
 
 import Signal (Signal)
 import Signal (get) as Signal
@@ -27,7 +29,6 @@ import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Tagger as T
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box

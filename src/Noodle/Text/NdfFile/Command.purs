@@ -11,8 +11,8 @@ import Type.Proxy (Proxy)
 
 import Toolkit.Hydra.Lang.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode, NDF, ndf)
 
-import Blessed.Tagger (Tag)
-import Blessed.Tagger as T
+import Data.Text.Format (Tag)
+import Data.Text.Format as T
 import Cli.Tagging as T
 
 

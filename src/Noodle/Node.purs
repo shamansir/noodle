@@ -620,8 +620,8 @@ connectByRepr
                 if flagOn then do
                   liftEffect $ sendInE nodeB inputB din
                   -- Could be fixed because previosly `SignalX.runSignal` didn't work
-                  -- run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
-                  --             maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
+                  run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
+                  --           maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
                 else pure unit
             sendToBWhenConditionsMet Nothing =
                 pure unit

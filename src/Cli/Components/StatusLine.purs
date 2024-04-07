@@ -10,10 +10,11 @@ import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Symbol (class IsSymbol)
+import Data.Text.Format as T
+import Data.Text.Output (render) as T
 
 import Blessed ((>~))
 import Blessed as B
-import Blessed.Tagger as T
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension

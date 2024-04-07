@@ -64,7 +64,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (statusLine, mainScreen) as Key
 import Cli.Style as Style
 import Cli.Tagging as T
-import Blessed.Tagger as T
+import Data.Text.Format as T
 
 import CompArts.Product as CAI
 import Noodle.Stateful (getM) as Stateful

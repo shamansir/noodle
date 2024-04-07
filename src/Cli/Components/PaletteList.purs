@@ -3,8 +3,8 @@ module Cli.Components.PaletteList where
 import Prelude
 
 import Data.Array ((:))
-import Blessed.Tagger (s, bg ,fg)
-import Blessed.Tagger (render) as Tags
+import Data.Text.Format (s, bg ,fg)
+import Data.Text.Output (render) as Tags
 
 import Blessed as B
 import Blessed.Internal.BlessedSubj (List)

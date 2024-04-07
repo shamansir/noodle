@@ -14,7 +14,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Type.Proxy (Proxy(..))
 
 
-import Blessed.Tagger as T
+import Data.Text.Format as T
 
 
 data Target

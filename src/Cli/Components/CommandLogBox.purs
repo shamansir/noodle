@@ -2,6 +2,8 @@ module Cli.Components.CommandLogBox where
 
 import Prelude
 
+import Data.Text.Output (render) as T
+
 import Effect (Effect)
 
 import Control.Monad.State (get) as State
@@ -20,8 +22,6 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
-
-import Blessed.Tagger as T
 
 import Cli.Keys (commandLogBox) as Key
 import Cli.Style as Style

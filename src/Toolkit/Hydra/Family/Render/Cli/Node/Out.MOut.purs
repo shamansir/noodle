@@ -3,18 +3,19 @@ module Toolkit.Hydra.Family.Render.Cli.Out.FOut where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
-import Control.Monad.Rec.Class (class MonadRec)
 
+import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State as State
 
 import Type.Proxy (Proxy)
 
-import Cli.Keys (NodeBoxKey)
-
 import Data.Maybe (Maybe(..))
+import Data.Text.Output as T
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal, class RunInSignal)
+
+import Cli.Keys (NodeBoxKey)
 
 import Blessed as B
 import Blessed ((>~), (~<))
@@ -42,7 +43,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
 import Blessed.Core.Coord as C
 import Blessed.Core.Coord ((<->))
-import Blessed.Tagger as T
+
 
 import Noodle.Node (sendInM, subscribeInput) as Node
 

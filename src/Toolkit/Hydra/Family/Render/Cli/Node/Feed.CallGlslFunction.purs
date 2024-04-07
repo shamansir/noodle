@@ -56,7 +56,8 @@ import Noodle.Node (sendOut, sendOutM, atI, atIM, sendInM) as Node
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
 import Cli.Tagging as T
-import Blessed.Tagger (fgc, s, render) as T
+import Data.Text.Format (fgc, s) as T
+import Data.Text.Output (render) as T
 
 -- import Noodle.Node (Node)
 

@@ -4,6 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
+import Data.Text.Output as T
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -32,7 +33,6 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
 import Blessed.Core.Coord as C
 import Blessed.Core.Coord ((<->))
-import Blessed.Tagger as T
 
 import Blessed.Internal.Core as Core
 

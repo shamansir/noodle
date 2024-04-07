@@ -5,6 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Either (Either(..))
+import Data.Text.Output (render) as T
 
 import Blessed as B
 import Blessed ((>~))
@@ -20,7 +21,6 @@ import Blessed.UI.Boxes.Box.Option (content, height, left, top, width, tags) as 
 
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
-import Blessed.Tagger (render) as T
 
 import Cli.Keys as Key
 import Cli.State (State)

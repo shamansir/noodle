@@ -1,6 +1,10 @@
 module Cli.Components.NodeBox where
 
 import Prelude
+
+import Data.Text.Format (fgc, bgc, s, fgcs) as T
+import Data.Text.Output (render) as T
+
 import Debug as Debug
 
 import Cli.WsServer as WSS
@@ -40,8 +44,7 @@ import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
-import Blessed.Tagger (fgc, bgc, s, fgcs) as T
-import Blessed.Tagger (render) as T
+
 
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension (Dimension)

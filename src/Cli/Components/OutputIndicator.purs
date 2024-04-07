@@ -5,6 +5,8 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.Text.Output (render) as T
+
 import Blessed as B
 import Blessed ((>~))
 
@@ -20,8 +22,6 @@ import Blessed.UI.Base.Element.PropertySet (setLeft, setTop) as Element
 
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.UI.Base.Element.Method (hide, show, setFront) as Element
-
-import Blessed.Tagger (render) as T
 
 import Cli.Keys as Key
 import Cli.State (State)

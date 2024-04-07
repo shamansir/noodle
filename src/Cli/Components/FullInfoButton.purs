@@ -2,6 +2,8 @@ module Cli.Components.FullInfoButton where
 
 import Prelude
 
+import Data.Text.Output (render) as T
+
 import Control.Monad.State (get, modify_) as State
 
 import Blessed as B
@@ -20,8 +22,6 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Method (toggle, show) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
-
-import Blessed.Tagger (render) as T
 
 import Cli.Keys as Key
 import Cli.State (State)

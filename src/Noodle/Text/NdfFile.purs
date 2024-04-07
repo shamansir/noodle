@@ -8,7 +8,7 @@ import Data.Array ((:))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
 
-import Blessed.Tagger as T
+import Data.Text.Format as T
 import Cli.Tagging as T
 
 import Noodle.Text.NdfFile.Command (Command, commandsToNdf, commandsToTaggedNdf)

@@ -10,6 +10,7 @@ import Data.Tuple as Tuple
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Foldable (for_)
 import Data.Map (lookup, empty) as Map
+import Data.Text.Output (render) as T
 
 import Control.Monad.State (get, modify_) as State
 
@@ -22,7 +23,6 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Tagger (render) as T
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box

@@ -3,6 +3,8 @@ module Cli.Components.NodeBox.InfoBox where
 import Prelude
 
 import Data.Symbol (class IsSymbol)
+import Data.Text.Output (render) as T
+
 
 import Blessed as B
 import Blessed ((>~))
@@ -11,7 +13,6 @@ import Blessed.Internal.Core (Blessed) as Core
 import Blessed.Internal.BlessedOp (BlessedOp) as C
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-import Blessed.Tagger (render) as T
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box

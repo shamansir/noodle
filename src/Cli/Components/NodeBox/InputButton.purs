@@ -15,6 +15,8 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.SProxy (reflect, reflect')
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
+import Data.Text.Format as T
+import Data.Text.Output (render) as T
 
 import Type.Proxy (Proxy(..))
 import Signal (Signal)
@@ -22,7 +24,6 @@ import Signal (get) as Signal
 
 import Blessed as B
 import Blessed ((>~))
-import Blessed.Tagger as T
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)

@@ -13,8 +13,8 @@ import Data.Array (foldl)
 import Noodle.Id as Id
 
 
-import Blessed.Tagger (Tag)
-import Blessed.Tagger as T
+import Data.Text.Format (Tag)
+import Data.Text.Format as T
 
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as C

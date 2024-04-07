@@ -6,12 +6,12 @@ import Effect (Effect)
 
 import Data.Maybe (Maybe)
 import Data.Symbol (class IsSymbol)
+import Data.Text.Output as T
 
 import Control.Monad.State (get) as State
 
 import Blessed as B
 import Blessed ((>~))
-import Blessed.Tagger as T
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
