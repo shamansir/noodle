@@ -23,6 +23,9 @@ data Format
     | Invisible
 
 
+newtype Indent = Indent Int
+
+
 data Tag
     = Plain String
     | FgC Color Tag
@@ -33,6 +36,8 @@ data Tag
     | Format Format Tag
     | Split Tag Tag
     | Pair Tag Tag
+    | Nest Indent (Array Tag)
+    | Newline
 
 
 -- TODO: binary operators for tags
@@ -168,7 +173,19 @@ split = Split
 
 
 nl :: Tag
-nl = s "\n"
+nl = Newline
+
+
+nest :: Int -> Array Tag -> Tag
+nest n = Nest $ Indent n
+
+
+indent :: Int -> Tag -> Tag
+indent n = nest n <<< singleton
+
+
+group :: Array Tag -> Tag
+group = nest 0
 
 
 joinWith :: Tag -> Array Tag -> Tag
@@ -192,5 +209,7 @@ render = case _ of
     Format format tagged -> wrap (show format) tagged
     Split taggedA taggedB -> render taggedA <> "{|}" <> render taggedB
     Pair taggedA taggedB -> render taggedA <> render taggedB
+    Nest _ taggedArr -> String.joinWith "" $ render <$> taggedArr
+    Newline -> "\n"
     where
         wrap tag tagged = "{" <> tag <> "}" <> render tagged <> "{/" <> tag <> "}"
