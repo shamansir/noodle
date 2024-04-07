@@ -8,6 +8,8 @@ import Color as Color
 import Data.Array (singleton)
 import Data.String (joinWith) as String
 
+import Type.Proxy (Proxy)
+
 
 data Align
     = Left
@@ -21,9 +23,31 @@ data Format
     | Blink
     | Inverse
     | Invisible
+    -- | Strikethrough
+    -- | Monospaced
+    -- | Header Level (Maybe Id)
+    -- | Quote
+    -- | Verbatim
+    -- | Footnote FtnId
+    -- | Code Language
+    -- | Sub
+    -- | Sup
 
 
 newtype Indent = Indent Int
+
+
+-- data ListKind
+--     = Ordered TheWay
+--     | Unordered
+
+
+-- data TaskStatus
+--     = Done
+--     | Doing
+--     | ProgressPercent Int
+--     | ProgressOf Int Int
+--     | AutoProgress
 
 
 data Tag
@@ -38,6 +62,18 @@ data Tag
     | Pair Tag Tag
     | Nest Indent (Array Tag)
     | Newline
+    -- | Date Date
+    -- | Header Level Tag
+    -- | List Tag (Array Tag)
+    -- | Table (Array (Tag /\ Array Tag)))
+    -- | Link Tag Tag
+    -- | LinkTo Tag FtnId
+    -- | Definition Tag Tag
+    -- | Hr
+    -- | Image String
+    -- | Property String String
+    -- | Comment String
+    -- | Macro String
 
 
 -- TODO: binary operators for tags
@@ -196,6 +232,23 @@ joinWith sep ts = s $ String.joinWith (render sep) $ render <$> ts
 
 instance Show Tag where
     show = render
+
+
+data OutputKind
+
+
+foreign import data Blessed :: OutputKind
+-- foreign import data OneLine :: OutputKind
+-- foreign import data PlainText :: OutputKind
+-- foreign import data Markdown :: OutputKind
+foreign import data Html :: OutputKind
+
+
+type Options = { oneLine :: Boolean, indent :: Int }
+
+
+class Renderer (x :: OutputKind) where
+    renderTo :: Proxy x -> Tag -> String
 
 
 render :: Tag -> String
