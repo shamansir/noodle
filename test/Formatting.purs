@@ -7,8 +7,8 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Text.Output.Blessed (render) as T
 import Data.Text.Format as F
 import Data.Text.Doc (Doc(..))
-import Data.Text.Doc as D
-import Data.Text.Doc3 as D2
+-- import Data.Text.Doc as D
+import Data.Text.Doc3 as D
 import Data.String as String
 import Data.String.Extra (words) as String
 import Data.Array (concat, take) as Array
@@ -19,127 +19,61 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
-{-
-docIndentedSamples :: Array (Doc /\ String)
+docIndentedSamples :: Array (D.Doc /\ String)
 docIndentedSamples =
-    [ (D.s "foo" <> D.br) /\ "foo\n"
-    , (D.nest 1 $ D.s "foo" ) /\ "    foo"
-    , (D.nest 1 $ D.para [ D.s "foo", D.s "bar", D.s "buz" ] ) /\ "    foo\n    bar\n    buz"
-    , (D.nest 1 $ D.pair (D.l "test") $ D.nest 2 $ D.para [ D.s "foo", D.s "bar", D.s "buz" ] )
-        /\ """    test
-            foo
-            bar
-            buz"""
-    , (D.nest 1 $ D.pair (D.para [ D.s "test" ] <> D.br) $ D.nest 2 $ D.para [ D.s "foo", D.s "bar", D.s "buz" ] )
-        /\ """    test
-            foo
-            bar
-            buz"""
-    , (D.mark "*" $ D.s "foo") /\ "* foo"
-    , (D.ws "'" "`" $ D.s "foo") /\ "'foo`"
-    , (D.ww "\"" $ D.s "foo") /\ "\"foo\""
-    , (D.w "[" "]" $ D.s "foo" <> (D.mark "," $ D.s "bar") <> (D.mark "," $ D.s "buz")) /\
-        "[ foo, bar, buz ]"
-    , (D.s "func" <> (D.ws "(" ")" $ D.s "foo" <> (D.mark "," $ D.s "bar") <> (D.mark "," $ D.s "buz"))) /\
-        "func(foo, bar, buz)"
-    , (D.nest 1 $ D.wrap (D.s "[" <> D.sp) (D.s "]") $ D.para [ D.s "foo", D.mark "," $ D.s "bar", D.mark "," $ D.s "buz" <> D.br ])
-        /\ """    [ foo
-    , bar
-    , buz
-    ]"""
-    , (D.nest 1 $ D.para [ D.s "subj", D.mark "|>" $ D.s "modify 1", D.mark "|>" $ D.s "foo" <> D.br ])
-        /\ """    subj
-    |> modify 1
-    |> foo
-"""
-    , (D.nest 0 (D.s "subj") <> D.br <> (D.nest 1 $ D.para [ D.mark "|>" $ D.s "modify 1", D.mark "|>" $ D.s "foo" <> D.br ]))
-        /\ """subj
-    |> modify 1
-    |> foo
-"""
-    , (D.para [ D.mark "-" $ D.s "Item 1", D.mark "-" $ D.s "Item 2", D.mark "-" $ D.s "Item 3" ]) /\
-        """- Item 1
-- Item 2
-- Item 3"""
-    , (D.nest 0 $ D.para
-        [ D.mark "*" $ D.s "Item 1"
-        , (D.mark "*" $ D.s "Item 2")
-            <> D.br
-            <> D.nest 1
-                (D.para
-                    [ D.mark "-" $ D.s "Item 2.1"
-                    , D.mark "-" $ D.s "Item 2.2"
-                    , D.mark "-" $ D.s "Item 2.3"
-                        <> D.br
-                        <> D.nest 1 (D.mark "o" $ D.s "Item 2.3.1")
-                    , D.mark "-" $ D.s "Item 2.4"
-                    ])
-        , D.mark "*" $ D.s "Item 3"
-        ]) /\ """* Item 1
-* Item 2
-   - Item 2.1
-   - Item 2.2
-   - Item 2.3
-       o Item 2.3.1
-* Item 3"""
-    ] -}
-
-
-docIndentedSamples :: Array (D2.DOC /\ String)
-docIndentedSamples =
-    [ (D2.text "foo" <> D2.line) /\ "foo\n"
-    , (D2.nest 1 $ D2.text "foo" ) /\ "    foo"
-    , (D2.nest 1 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] ) /\ "    foo\n    bar\n    buz"
-    , (D2.nest 1 $ D2.concat (D2.text "test" <> D2.line) $ D2.nest 2 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] )
+    [ (D.text "foo" <> D.break) /\ "foo\n"
+    , (D.nest 1 $ D.text "foo" ) /\ "    foo"
+    , (D.nest 1 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] ) /\ "    foo\n    bar\n    buz"
+    , (D.nest 1 $ D.concat (D.text "test" <> D.break) $ D.nest 2 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] )
         /\ """    test
         foo
         bar
         buz"""
-    , (D2.nest 1 $ D2.concat (D2.stack [ D2.text "test" ] <> D2.line) $ D2.nest 2 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] )
+    , (D.nest 1 $ D.concat (D.stack [ D.text "test" ] <> D.break) $ D.nest 2 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] )
         /\ """    test
         foo
         bar
         buz"""
-    , (D2.mark "*" $ D2.text "foo") /\ "* foo"
-    , (D2.wbracket "'" "`" $ D2.text "foo") /\ "'foo`"
-    , (D2.wrap "\"" $ D2.text "foo") /\ "\"foo\""
-    , (D2.wbracket "[" "]" $ D2.text "foo" <> (D2.mark "," $ D2.text "bar") <> (D2.mark "," $ D2.text "buz")) /\
+    , (D.mark "*" $ D.text "foo") /\ "* foo"
+    , (D.wbracket "'" "`" $ D.text "foo") /\ "'foo`"
+    , (D.wrap "\"" $ D.text "foo") /\ "\"foo\""
+    , (D.wbracket "[" "]" $ D.text "foo" <> (D.mark "," $ D.text "bar") <> (D.mark "," $ D.text "buz")) /\
         "[foo, bar, buz]"
-    , (D2.text "func" <> (D2.wbracket "(" ")" $ D2.text "foo" <> (D2.mark "," $ D2.text "bar") <> (D2.mark "," $ D2.text "buz"))) /\
+    , (D.text "func" <> (D.wbracket "(" ")" $ D.text "foo" <> (D.mark "," $ D.text "bar") <> (D.mark "," $ D.text "buz"))) /\
         "func(foo, bar, buz)"
-    , (D2.nest 1 $ D2.stack [ D2.mark "[" $ D2.text "foo", D2.mark "," $ D2.text "bar", D2.mark "," $ D2.text "buz", D2.text "]" ])
+    , (D.nest 1 $ D.stack [ D.mark "[" $ D.text "foo", D.mark "," $ D.text "bar", D.mark "," $ D.text "buz", D.text "]" ])
         /\ """    [ foo
     , bar
     , buz
     ]"""
-    , (D2.nest 1 $ D2.stack [ D2.text "subj", D2.mark "|>" $ D2.text "modify 1", D2.mark "|>" $ D2.text "foo" <> D2.line ])
+    , (D.nest 1 $ D.stack [ D.text "subj", D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ])
         /\ """    subj
     |> modify 1
     |> foo
 """
-    , (D2.nest 0 (D2.text "subj") <> D2.line <> (D2.nest 1 $ D2.stack [ D2.mark "|>" $ D2.text "modify 1", D2.mark "|>" $ D2.text "foo" <> D2.line ]))
+    , (D.nest 0 (D.text "subj") <> D.break <> (D.nest 1 $ D.stack [ D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ]))
         /\ """subj
     |> modify 1
     |> foo
 """
-    , (D2.stack [ D2.mark "-" $ D2.text "Item 1", D2.mark "-" $ D2.text "Item 2", D2.mark "-" $ D2.text "Item 3" ]) /\
+    , (D.stack [ D.mark "-" $ D.text "Item 1", D.mark "-" $ D.text "Item 2", D.mark "-" $ D.text "Item 3" ]) /\
         """- Item 1
 - Item 2
 - Item 3"""
-    , (D2.nest 0 $ D2.stack
-        [ D2.mark "*" $ D2.text "Item 1"
-        , (D2.mark "*" $ D2.text "Item 2")
-            <> D2.line
-            <> D2.nest 1
-                (D2.stack
-                    [ D2.mark "-" $ D2.text "Item 2.1"
-                    , D2.mark "-" $ D2.text "Item 2.2"
-                    , D2.mark "-" $ D2.text "Item 2.3"
-                        <> D2.line
-                        <> D2.nest 2 (D2.mark "o" $ D2.text "Item 2.3.1")
-                    , D2.mark "-" $ D2.text "Item 2.4"
+    , (D.nest 0 $ D.stack
+        [ D.mark "*" $ D.text "Item 1"
+        , (D.mark "*" $ D.text "Item 2")
+            <> D.break
+            <> D.nest 1
+                (D.stack
+                    [ D.mark "-" $ D.text "Item 2.1"
+                    , D.mark "-" $ D.text "Item 2.2"
+                    , D.mark "-" $ D.text "Item 2.3"
+                        <> D.break
+                        <> D.nest 2 (D.mark "o" $ D.text "Item 2.3.1")
+                    , D.mark "-" $ D.text "Item 2.4"
                     ])
-        , D2.mark "*" $ D2.text "Item 3"
+        , D.mark "*" $ D.text "Item 3"
         ]) /\ """* Item 1
 * Item 2
     - Item 2.1
@@ -148,15 +82,15 @@ docIndentedSamples =
         o Item 2.3.1
     - Item 2.4
 * Item 3"""
-    , (D2.nest 0
-            $ D2.stack [ D2.text "zero"
-                       , D2.nest 1
-                            $ D2.stack [ D2.text "one"
-                                       , D2.nest 2
-                                            $ D2.stack [ D2.text "two"
-                                                       , D2.nest 3
-                                                            $ D2.stack [ D2.text "three"
-                                                                       , D2.nest 4 $ D2.text "four"
+    , (D.nest 0
+            $ D.stack [ D.text "zero"
+                       , D.nest 1
+                            $ D.stack [ D.text "one"
+                                       , D.nest 2
+                                            $ D.stack [ D.text "two"
+                                                       , D.nest 3
+                                                            $ D.stack [ D.text "three"
+                                                                       , D.nest 4 $ D.text "four"
                                                                        ]
                                                        ]
                                        ]
@@ -188,7 +122,7 @@ spec = do
   describe "Formatting works properly for Doc" $ do
 
     -- helper { title : \idx (doc /\ _) -> show idx <> " : " <> show doc, render : D.layout 0 } docIndentedSamples
-    helper { title : \idx (doc /\ _) -> show idx <> " : " <> String.take 200 (show doc), render : D2.pretty 30 } docIndentedSamples
+    helper { title : \idx (doc /\ _) -> show idx <> " : " <> String.take 200 (show doc), render : D.render } docIndentedSamples
 
   describe "Formatting works properly for Blessed" $ do
 
@@ -212,34 +146,34 @@ helper { title, render } =
 data Tree = Node String (List Tree)
 
 
-showTree :: Tree -> D2.DOC
-showTree (Node s ts) = D2.group $ D2.text s <> D2.nest (String.length s) (showBracket ts)
+showTree :: Tree -> D.Doc
+showTree (Node s ts) = D.text s <> D.nest (String.length s) (showBracket ts)
 
 
-showBracket :: List Tree -> D2.DOC
-showBracket List.Nil = D2.nil
-showBracket ts = D2.text "[" <> D2.nest 1 (showTrees ts) <> D2.text "]"
+showBracket :: List Tree -> D.Doc
+showBracket List.Nil = D.nil
+showBracket ts = D.text "[" <> D.nest 1 (showTrees ts) <> D.text "]"
 
 
-showTrees :: List Tree -> D2.DOC
-showTrees List.Nil = D2.nil
+showTrees :: List Tree -> D.Doc
+showTrees List.Nil = D.nil
 showTrees (List.Cons t List.Nil) = showTree t
-showTrees (List.Cons t ts) = showTree t <> D2.text "," <> D2.line <> showTrees ts
+showTrees (List.Cons t ts) = showTree t <> D.text "," <> D.break <> showTrees ts
 
 
-showTree' :: Tree -> D2.DOC
-showTree' (Node s ts) = D2.text s <> showBracket' ts
+showTree' :: Tree -> D.Doc
+showTree' (Node s ts) = D.text s <> showBracket' ts
 
 
-showBracket' :: List Tree -> D2.DOC
-showBracket' List.Nil = D2.nil
-showBracket' ts = D2.bracket "[" (showTrees' ts) "]"
+showBracket' :: List Tree -> D.Doc
+showBracket' List.Nil = D.nil
+showBracket' ts = D.bracket "[" (showTrees' ts) "]"
 
 
-showTrees' :: List Tree -> D2.DOC
-showTrees' List.Nil = D2.nil
+showTrees' :: List Tree -> D.Doc
+showTrees' List.Nil = D.nil
 showTrees' (List.Cons t List.Nil) = showTree' t
-showTrees' (List.Cons t ts) = showTree' t <> D2.text "," <> D2.line <> showTrees' ts
+showTrees' (List.Cons t ts) = showTree' t <> D.text "," <> D.break <> showTrees' ts
 
 
 tree :: Tree
@@ -261,10 +195,10 @@ tree =
         )
 
 
-testtree :: Int -> String
-testtree w = D2.pretty w $ showTree tree
-testtree' :: Int -> String
-testtree' w = D2.pretty w $ showTree' tree
+-- testtree :: Int -> String
+-- testtree w = D.pretty w $ showTree tree
+-- testtree' :: Int -> String
+-- testtree' w = D.pretty w $ showTree' tree
 
 
 data XML
@@ -275,33 +209,33 @@ data XML
 data Att = Att String String
 
 
-showXML :: XML -> D2.DOC
-showXML x = D2.folddoc (<>) (showXMLs x)
+showXML :: XML -> D.Doc
+showXML x = D.folddoc (<>) (showXMLs x)
 
 
-showXMLs :: XML -> Array D2.DOC
-showXMLs (Elt n a []) = [ D2.text "<" <> showTag n a <> D2.text "/>" ]
+showXMLs :: XML -> Array D.Doc
+showXMLs (Elt n a []) = [ D.text "<" <> showTag n a <> D.text "/>" ]
 showXMLs (Elt n a c)  =
-    [ D2.text "<" <> showTag n a <> D2.text ">" <>
+    [ D.text "<" <> showTag n a <> D.text ">" <>
         showFill showXMLs c <>
-      D2.text "</" <> D2.text n <> D2.text "/>"
+      D.text "</" <> D.text n <> D.text "/>"
     ]
-showXMLs (Txt s) = map D2.text (String.words s)
+showXMLs (Txt s) = map D.text (String.words s)
 
 
-showAtts :: Att -> Array D2.DOC
-showAtts (Att n v) = [ D2.text n <> D2.text "=" <> D2.text (quoted v) ]
+showAtts :: Att -> Array D.Doc
+showAtts (Att n v) = [ D.text n <> D.text "=" <> D.text (quoted v) ]
 
 
 quoted :: String -> String
 quoted s = "\"" <> s <> "\""
 
-showTag :: String -> Array Att -> D2.DOC
-showTag n a = D2.text n <> showFill showAtts a
+showTag :: String -> Array Att -> D.Doc
+showTag n a = D.text n <> showFill showAtts a
 
-showFill :: forall a. (a -> Array D2.DOC) -> Array a -> D2.DOC
-showFill _ [] = D2.nil
-showFill f xs = D2.bracket "" (D2.fill $ Array.concat $ map f xs) ""
+showFill :: forall a. (a -> Array D.Doc) -> Array a -> D.Doc
+showFill _ [] = D.nil
+showFill f xs = D.bracket "" (D.stack $ Array.concat $ map f xs) ""
 
 
 xml :: XML
@@ -326,5 +260,5 @@ xml =
     ]
 
 
-testXML :: Int -> String
-testXML w = D2.pretty w $ showXML xml
+-- testXML :: Int -> String
+-- testXML w = D.pretty w $ showXML xml

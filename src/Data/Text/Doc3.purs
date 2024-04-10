@@ -8,9 +8,6 @@ import Data.Array (intersperse, uncons) as Array
 import Data.Maybe (Maybe(..))
 
 
-type DOC = Doc
-
-
 data Doc
     = Nil
     | Text String
@@ -19,6 +16,9 @@ data Doc
     | Para (Array Doc)
     | Nest Int Doc
     | Pair Doc Doc
+
+
+infixr 6 Nest as :<>
 
 
 render :: Doc -> String
@@ -49,14 +49,16 @@ text :: String -> Doc
 text = Text
 nil :: Doc
 nil = Nil
-line :: Doc
-line = Break
+break :: Doc
+break = Break
 nest :: Int -> Doc -> Doc
 nest = Nest
 stack :: Array Doc -> Doc
 stack = Para
 concat :: Doc -> Doc -> Doc
 concat = Pair
+indent :: Doc
+indent = Indent
 
 
 space :: Doc
@@ -71,15 +73,20 @@ wrap :: String -> Doc -> Doc
 wrap q = wbracket q q
 
 
-pretty :: Int -> Doc -> String
-pretty w = render
-group :: Doc -> Doc
-group = identity
-fill :: Array Doc -> Doc
-fill = stack
+sp :: Doc -> Doc -> Doc
+sp x y = x <> text " " <> y
+br :: Doc -> Doc -> Doc
+br x y = x <> break <> y
+-- spbr :: Doc -> Doc -> Doc
+-- spbr x y = x <> (break) <> y
 
 
-folddoc :: (DOC -> DOC -> DOC) -> Array DOC -> DOC
+infixr 6 sp as <+>
+infixr 6 br as </>
+-- infixr 6 spbr as <+/>
+
+
+folddoc :: (Doc -> Doc -> Doc) -> Array Doc -> Doc
 folddoc f arr =
     case Array.uncons arr of
         Nothing -> nil
