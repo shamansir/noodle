@@ -5,8 +5,8 @@ package-lock.json
 .spago
 .parcel-cache
 node_modules
-dist
-output
+/dist
+/output
 index.js
 hydra.bundle.*.js
 static
