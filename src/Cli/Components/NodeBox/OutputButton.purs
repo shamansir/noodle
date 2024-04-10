@@ -15,7 +15,7 @@ import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
 import Data.SProxy (reflect)
 import Data.Text.Format as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Signal (Signal)
 import Signal (get) as Signal

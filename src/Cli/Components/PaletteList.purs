@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Array ((:))
 import Data.Text.Format (s, bg ,fg)
-import Data.Text.Output (render) as Tags
+import Data.Text.Output.Blessed (render) as Tags
 
 import Blessed as B
 import Blessed.Internal.BlessedSubj (List)

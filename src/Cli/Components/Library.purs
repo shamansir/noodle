@@ -44,7 +44,7 @@ import Toolkit.Hydra as Hydra
 import Toolkit.Hydra.Group as Hydra
 
 import Data.Text.Format (fgc, s) as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 
 

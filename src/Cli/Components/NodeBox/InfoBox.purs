@@ -3,7 +3,7 @@ module Cli.Components.NodeBox.InfoBox where
 import Prelude
 
 import Data.Symbol (class IsSymbol)
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 
 import Blessed as B

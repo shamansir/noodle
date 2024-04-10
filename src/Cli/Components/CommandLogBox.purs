@@ -2,7 +2,7 @@ module Cli.Components.CommandLogBox where
 
 import Prelude
 
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Effect (Effect)
 

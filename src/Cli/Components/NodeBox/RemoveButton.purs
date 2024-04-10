@@ -10,7 +10,7 @@ import Data.Tuple as Tuple
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Foldable (for_)
 import Data.Map (lookup, empty) as Map
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Control.Monad.State (get, modify_) as State
 

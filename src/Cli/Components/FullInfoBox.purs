@@ -6,7 +6,7 @@ import Effect (Effect)
 
 import Data.Maybe (Maybe)
 import Data.Symbol (class IsSymbol)
-import Data.Text.Output as T
+import Data.Text.Output.Blessed (render) as T
 
 import Control.Monad.State (get) as State
 

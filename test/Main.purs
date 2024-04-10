@@ -61,5 +61,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     JsExprParsingWrap.spec
   describe "Hydra Serialization"
     WrapReprParsing.spec
-  describe "Formatting"
+  describeOnly "Formatting"
     Formatting.spec

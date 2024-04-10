@@ -3,7 +3,7 @@ module Cli.Components.NodeBox where
 import Prelude
 
 import Data.Text.Format (fgc, bgc, s, fgcs) as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Debug as Debug
 

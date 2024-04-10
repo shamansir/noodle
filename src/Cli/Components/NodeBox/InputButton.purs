@@ -16,7 +16,7 @@ import Data.SProxy (reflect, reflect')
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
 import Data.Text.Format as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Type.Proxy (Proxy(..))
 import Signal (Signal)

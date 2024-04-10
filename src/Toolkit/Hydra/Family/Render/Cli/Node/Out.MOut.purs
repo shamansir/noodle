@@ -10,7 +10,7 @@ import Control.Monad.State as State
 import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
-import Data.Text.Output as T
+import Data.Text.Output.Blessed (render) as T
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal, class RunInSignal)

@@ -4,7 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
-import Data.Text.Output as T
+import Data.Text.Output.Blessed (render) as T
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)

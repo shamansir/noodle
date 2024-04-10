@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Symbol (class IsSymbol)
 import Data.Text.Format as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Blessed ((>~))
 import Blessed as B

@@ -3,7 +3,7 @@ module Cli.Components.CommandLogButton where
 
 import Prelude
 
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Control.Monad.State as State
 

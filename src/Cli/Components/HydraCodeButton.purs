@@ -6,7 +6,7 @@ import Prelude
 import Control.Monad.State (get, modify_) as State
 
 import Data.Text.Format as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Blessed as B
 import Blessed ((>~))

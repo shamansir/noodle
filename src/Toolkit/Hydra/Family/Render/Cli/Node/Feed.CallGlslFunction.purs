@@ -57,7 +57,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
 import Cli.Tagging as T
 import Data.Text.Format (fgc, s) as T
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 -- import Noodle.Node (Node)
 

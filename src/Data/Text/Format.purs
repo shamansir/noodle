@@ -8,6 +8,8 @@ import Color as Color
 import Data.Array (singleton)
 import Data.Date (Date)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either)
+import Data.Either (Either(..)) as E
 import Data.String (joinWith) as String
 import Data.Time (Time)
 import Data.Tuple (uncurry)
@@ -57,6 +59,8 @@ data Format
     | Code ProgrammingLanguage
     | Sub
     | Sup
+    | Fg (Either String Color)
+    | Bg (Either String Color)
 
 
 -- data ListKind
@@ -73,23 +77,30 @@ data TaskStatus
     | AutoProgress
 
 
+data Bullet
+    = None
+    | Dash
+    | Num
+    | Circle
+    | Alpha
+    | AlphaInv
+    -- ..
+
+
 data Tag
     = Empty
     | Plain String
-    | FgC Color Tag
-    | Fg String Tag
-    | BgC Color Tag
-    | Bg String Tag
-    | Align Align Tag
     | Format Format Tag
+    | Align Align Tag
     | Split Tag Tag
     | Pair Tag Tag
-    | Nest Indent (Array Tag)
     | Join Tag (Array Tag)
+    | Para (Array Tag)
+    | Nest Indent (Array Tag)
     | Newline
     | Date Date
     | Time Time
-    | List Tag (Array Tag) -- FIXME: homomorphic to join but the meaning is different
+    | List Bullet Tag (Array Tag) -- FIXME: homomorphic to join but the meaning is different
     | Table (Array (Tag /\ Array Tag))
     | Link Tag Tag
     | LinkTo Tag FootnoteId
@@ -188,7 +199,7 @@ fgcs c = fgc c <<< plain
 
 
 fgc :: Color -> Tag -> Tag
-fgc = FgC
+fgc = Format <<< Fg <<< E.Right
 
 
 fgs :: String -> String -> Tag
@@ -196,7 +207,7 @@ fgs cs = fg cs <<< plain
 
 
 fg :: String -> Tag -> Tag
-fg = Fg
+fg = Format <<< Fg <<< E.Left
 
 
 bgcs :: Color -> String -> Tag
@@ -204,7 +215,7 @@ bgcs c = bgc c <<< plain
 
 
 bgc :: Color -> Tag -> Tag
-bgc = BgC
+bgc = Format <<< Bg <<< E.Right
 
 
 bgs :: String -> String -> Tag
@@ -212,7 +223,7 @@ bgs cs = bg cs <<< plain
 
 
 bg :: String -> Tag -> Tag
-bg = Bg
+bg = Format <<< Bg <<< E.Left
 
 
 split :: Tag -> Tag -> Tag
@@ -253,14 +264,15 @@ instance Show Tag where
     show = case _ of
         Empty -> just "empty"
         Plain str -> wrap "plain" str
-        FgC color tag -> wraparg "fg" (show color) $ show tag
-        Fg color tag -> wraparg "fg" (show color) $ show tag
-        BgC color tag -> wraparg "bg" (show color) $ show tag
-        Bg color tag -> wraparg "bg" (show color) $ show tag
         Align align tag -> wraparg "align" (show align) $ show tag
+        Format (Fg (E.Left colorStr)) tag -> wraparg "fg" (show colorStr) $ show tag
+        Format (Fg (E.Right color)) tag -> wraparg "fg" (show color) $ show tag
+        Format (Bg (E.Left colorStr)) tag -> wraparg "bg" (show colorStr) $ show tag
+        Format (Bg (E.Right color)) tag -> wraparg "bg" (show color) $ show tag
         Format format tag -> wraparg "format" (show format) $ show tag
         Split tag1 tag2 -> wraptag2 "split" (show tag1) $ show tag2
         Pair tag1 tag2 -> wraptag2 "pair" (show tag1) $ show tag2
+        Para tags -> wraplist "para" $ show <$> tags
         Newline -> just "nl"
         Hr -> just "hr"
         Link tag1 tag2 -> wraptag2 "link" (show tag1) $ show tag2
@@ -274,7 +286,7 @@ instance Show Tag where
         Task status tag -> wraparg "task" (show status) $ show tag
         Nest indent tags -> wraplistarg "nest" (show indent) $ show <$> tags
         Join tag tags -> wraplistarg "join" (show tag) $ show <$> tags
-        List tag tags -> wraplistarg "list" (show tag) $ show <$> tags
+        List bullet tag tags -> wraplistarg2 "list" (show bullet) (show tag) $ show <$> tags
         LinkTo tag ftnId -> wraparg "to" (show ftnId) $ show tag
         Table tags -> wrap "table" $ String.joinWith "|" $ uncurry tableitems <$> tags
         where
@@ -282,8 +294,9 @@ instance Show Tag where
             wrap title v = "(" <> title <> ":" <> v <> ")"
             wraparg title arg v = "(" <> title <> "(" <> arg <> "):" <> v <> ")"
             wraptag2 title tag1 tag2 = "(" <> title <> ":" <> tag1 <> "," <> tag2 <> ")"
-            -- wraplist title vals = "(" <> title <> ":" <> String.joinWith "," vals <> ")"
+            wraplist title vals = "(" <> title <> ":" <> String.joinWith "," vals <> ")"
             wraplistarg title arg vals = "(" <> title <> "(" <> arg <> "):" <> String.joinWith "," vals <> ")"
+            wraplistarg2 title arg1 arg2 vals = "(" <> title <> "(" <> arg1 <> "," <> arg2 <> "):" <> String.joinWith "," vals <> ")"
             tableitems t ts = show t <> ":" <> String.joinWith "," (show <$> ts)
 
 
@@ -291,6 +304,15 @@ instance Show Align where
     show Left = "left"
     show Right = "right"
     show Center = "center"
+
+
+instance Show Bullet where
+    show None = "none"
+    show Dash = "dash"
+    show Circle = "circle"
+    show Alpha = "alpha"
+    show AlphaInv = "alphainv"
+    show Num = "num"
 
 
 instance Show Format where
@@ -306,10 +328,18 @@ instance Show Format where
     show Sup = "sup"
     show Verbatim = "verbatim"
     show (Footnote ftnId) = "footnote#" <> show ftnId
+    show (Code lang) = "code:" <> show lang
     show (Header level anchor) = "header#" <> show level <> case anchor of
                                             Just anchor -> "{" <> show anchor <> "}"
                                             Nothing -> ""
-    show (Code lang) = "code:" <> show lang
+    show (Fg ecolor) =
+        "fg(" <> case ecolor of
+                E.Left colorStr -> show colorStr
+                E.Right color -> show color <> ")"
+    show (Bg ecolor) =
+        "bg(" <> case ecolor of
+                E.Left colorStr -> show colorStr
+                E.Right color -> show color <> ")"
 
 
 instance Show TaskStatus where

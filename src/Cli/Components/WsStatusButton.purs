@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Either (Either(..))
-import Data.Text.Output (render) as T
+import Data.Text.Output.Blessed (render) as T
 
 import Blessed as B
 import Blessed ((>~))
