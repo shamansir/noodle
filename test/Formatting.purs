@@ -8,7 +8,7 @@ import Data.Text.Output.Blessed (render) as T
 import Data.Text.Format as F
 import Data.Text.Doc (Doc(..))
 import Data.Text.Doc as D
-import Data.Text.Doc2 as D2
+import Data.Text.Doc3 as D2
 import Data.String as String
 import Data.String.Extra (words) as String
 import Data.Array (concat, take) as Array
@@ -92,22 +92,22 @@ docIndentedSamples =
     , (D2.nest 1 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] ) /\ "    foo\n    bar\n    buz"
     , (D2.nest 1 $ D2.concat (D2.text "test" <> D2.line) $ D2.nest 2 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] )
         /\ """    test
-            foo
-            bar
-            buz"""
+        foo
+        bar
+        buz"""
     , (D2.nest 1 $ D2.concat (D2.stack [ D2.text "test" ] <> D2.line) $ D2.nest 2 $ D2.stack [ D2.text "foo", D2.text "bar", D2.text "buz" ] )
         /\ """    test
-            foo
-            bar
-            buz"""
+        foo
+        bar
+        buz"""
     , (D2.mark "*" $ D2.text "foo") /\ "* foo"
     , (D2.wbracket "'" "`" $ D2.text "foo") /\ "'foo`"
     , (D2.wrap "\"" $ D2.text "foo") /\ "\"foo\""
     , (D2.wbracket "[" "]" $ D2.text "foo" <> (D2.mark "," $ D2.text "bar") <> (D2.mark "," $ D2.text "buz")) /\
-        "[ foo, bar, buz ]"
+        "[foo, bar, buz]"
     , (D2.text "func" <> (D2.wbracket "(" ")" $ D2.text "foo" <> (D2.mark "," $ D2.text "bar") <> (D2.mark "," $ D2.text "buz"))) /\
         "func(foo, bar, buz)"
-    , (D2.nest 1 $ D2.wbracket "[ " "]" $ D2.stack [ D2.text "foo", D2.mark "," $ D2.text "bar", D2.mark "," $ D2.text "buz" <> D2.line ])
+    , (D2.nest 1 $ D2.stack [ D2.mark "[" $ D2.text "foo", D2.mark "," $ D2.text "bar", D2.mark "," $ D2.text "buz", D2.text "]" ])
         /\ """    [ foo
     , bar
     , buz
@@ -142,15 +142,37 @@ docIndentedSamples =
         , D2.mark "*" $ D2.text "Item 3"
         ]) /\ """* Item 1
 * Item 2
-   - Item 2.1
-   - Item 2.2
-   - Item 2.3
-       o Item 2.3.1
+    - Item 2.1
+    - Item 2.2
+    - Item 2.3
+        o Item 2.3.1
+    - Item 2.4
 * Item 3"""
+    , (D2.nest 0
+            $ D2.stack [ D2.text "zero"
+                       , D2.nest 1
+                            $ D2.stack [ D2.text "one"
+                                       , D2.nest 2
+                                            $ D2.stack [ D2.text "two"
+                                                       , D2.nest 3
+                                                            $ D2.stack [ D2.text "three"
+                                                                       , D2.nest 4 $ D2.text "four"
+                                                                       ]
+                                                       ]
+                                       ]
+                       ])
+        /\ """zero
+    one
+        two
+            three
+                four"""
     , showTree tree /\ ""
     , showTree' tree /\ ""
     , showXML xml /\ ""
     ]
+
+-- zero\n    one\n            two\n                    three\n                            four
+-- zero\n    one\n        two\n            three\n                four
 
 
 blessedSamples :: Array (F.Tag /\ String)

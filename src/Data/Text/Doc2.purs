@@ -34,6 +34,7 @@ data Doc
     = Nil
     | Text String Doc
     | Line Int Doc
+    | Pair Doc Doc
 
 
 nil :: DOC
@@ -65,6 +66,7 @@ layout :: Doc -> String
 layout Nil = ""
 layout (Text s x) = s <> layout x
 layout (Line i x) = "\n" <> (String.joinWith "" $ Array.replicate i " ") <> layout x
+layout (Pair docA docB) = layout docA <> layout docB
 
 
 best :: Int -> Int -> DOC -> Doc
@@ -95,6 +97,7 @@ fits w _ | w < 0 = false
 fits _ Nil = true
 fits w (Text s x) = fits (w - String.length s) x
 fits _ (Line _ _) = true
+fits w (Pair a b) = fits w a -- || fits w b
 
 
 pretty :: Int -> DOC -> String
@@ -184,3 +187,4 @@ instance Show Doc where
         Nil -> "Nil"
         Text s doc -> "Text(" <> s <> "," <> show doc <> ")"
         Line n doc -> "Line(" <> show n <> "," <> show doc <> ")"
+        Pair docA docB -> "Pair(" <> show docA <> "," <> show docB <> ")"
