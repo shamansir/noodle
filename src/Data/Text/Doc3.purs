@@ -2,9 +2,11 @@ module Data.Text.Doc3 where
 
 import Prelude
 
+import Debug as Debug
+
 import Data.String (joinWith) as String
 import Data.Array ((:))
-import Data.Array (intersperse, uncons) as Array
+import Data.Array (mapWithIndex, intersperse, uncons) as Array
 import Data.Maybe (Maybe(..))
 
 
@@ -21,24 +23,59 @@ data Doc
 infixr 6 Nest as :<>
 
 
+-- TODO: Indent size as an option
+-- TODO: Word wrap
+-- TODO: Doc with Value
+
+
+{-
 render :: Doc -> String
 render = case _ of
     Nil -> ""
     Text s -> s
     Break -> "\n"
-    Indent -> "    "
+    Indent -> "<-->"
     Para docs -> String.joinWith "" $ render <$> Array.intersperse Break docs
     Nest n (Para docs) -> String.joinWith "" $ render <$> (mkIndent n : (Array.intersperse (brindent n) $ adapt n <$> docs))
     -- Nest _ (Nest m doc) -> render $ Pair (Pair Break $ mkIndent m) doc
-    Nest n doc -> render $ Pair (mkIndent n) $ adapt n doc
+    Nest n doc -> render $ Pair (mkIndent $ Debug.spy "n'" n) $ adapt n doc
     Pair a b -> render a <> render b
     where
-        adapt n (Nest m x) = Nest (max 0 $ m - n) x
+        adapt n (Nest m x) = Nest m x -- Nest (max 0 $ m - n) x
         adapt n Break = brindent n
         adapt _ doc = doc
         brindent = Pair Break <<< mkIndent
         mkIndent 0 = Nil
         mkIndent n = Pair Indent $ mkIndent $ n - 1
+-}
+
+
+render' :: Int -> Doc -> String
+render' level = case _ of
+    Nil -> ""
+    Text s -> s
+    Break -> "\n"
+    Indent -> "<-->"
+    Para docs -> String.joinWith "" $ render <$> Array.intersperse (brIndent level) docs
+    Nest n (Para docs) -> String.joinWith "" $ render <$> Array.mapWithIndex (adapt n) docs
+    -- Nest _ (Nest m doc) -> render $ Pair (Pair Break $ mkIndent m) doc
+    Nest n doc -> render $ adapt n 0 doc
+    Pair a b -> render a <> render b
+    where
+        -- adapt n (Nest m x) = Nest (max 0 $ m - n + 1) $ adapt (max 0 $ m - n) x
+        adapt _ 0 (Nest m x) = Nest m x
+        adapt _ i (Nest m x) = Pair Break $ Nest m x
+        adapt n i Break = brIndent n
+        adapt n 0 doc = Pair (mkIndent n) doc
+        adapt n i doc = Pair (brIndent n) doc
+        brIndent = Pair Break <<< mkIndent
+        mkIndent 0 = Nil
+        mkIndent n = Pair Indent $ mkIndent $ n - 1
+
+
+-- render :: Doc -> String
+render :: Doc -> String
+render doc = render' 0 doc
 
 
 instance Semigroup Doc where

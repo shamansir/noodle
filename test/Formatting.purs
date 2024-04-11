@@ -9,9 +9,10 @@ import Data.Text.Format as F
 import Data.Text.Doc (Doc(..))
 -- import Data.Text.Doc as D
 import Data.Text.Doc3 as D
+import Data.Text.Doc3 ((<+>), (</>))
 import Data.String as String
 import Data.String.Extra (words) as String
-import Data.Array (concat, take) as Array
+import Data.Array (concat, take, fromFoldable) as Array
 import Data.List (List, (:))
 import Data.List (List(..)) as List
 
@@ -22,18 +23,19 @@ import Test.Spec.Assertions (shouldEqual)
 docIndentedSamples :: Array (D.Doc /\ String)
 docIndentedSamples =
     [ (D.text "foo" <> D.break) /\ "foo\n"
-    , (D.nest 1 $ D.text "foo" ) /\ "    foo"
-    , (D.nest 1 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] ) /\ "    foo\n    bar\n    buz"
+    , (D.nest 1 $ D.text "foo" ) /\ "<-->foo"
+    , (D.break <> D.indent <> D.text "foo" ) /\ "\n<-->foo"
+    , (D.nest 1 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] ) /\ "<-->foo\n<-->bar\n<-->buz"
     , (D.nest 1 $ D.concat (D.text "test" <> D.break) $ D.nest 2 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] )
-        /\ """    test
-        foo
-        bar
-        buz"""
+        /\ """<-->test
+<--><-->foo
+<--><-->bar
+<--><-->buz"""
     , (D.nest 1 $ D.concat (D.stack [ D.text "test" ] <> D.break) $ D.nest 2 $ D.stack [ D.text "foo", D.text "bar", D.text "buz" ] )
-        /\ """    test
-        foo
-        bar
-        buz"""
+        /\ """<-->test
+<--><-->foo
+<--><-->bar
+<--><-->buz"""
     , (D.mark "*" $ D.text "foo") /\ "* foo"
     , (D.wbracket "'" "`" $ D.text "foo") /\ "'foo`"
     , (D.wrap "\"" $ D.text "foo") /\ "\"foo\""
@@ -42,19 +44,19 @@ docIndentedSamples =
     , (D.text "func" <> (D.wbracket "(" ")" $ D.text "foo" <> (D.mark "," $ D.text "bar") <> (D.mark "," $ D.text "buz"))) /\
         "func(foo, bar, buz)"
     , (D.nest 1 $ D.stack [ D.mark "[" $ D.text "foo", D.mark "," $ D.text "bar", D.mark "," $ D.text "buz", D.text "]" ])
-        /\ """    [ foo
-    , bar
-    , buz
-    ]"""
+        /\ """<-->[ foo
+<-->, bar
+<-->, buz
+<-->]"""
     , (D.nest 1 $ D.stack [ D.text "subj", D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ])
-        /\ """    subj
-    |> modify 1
-    |> foo
+        /\ """<-->subj
+<-->|> modify 1
+<-->|> foo
 """
     , (D.nest 0 (D.text "subj") <> D.break <> (D.nest 1 $ D.stack [ D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ]))
         /\ """subj
-    |> modify 1
-    |> foo
+<-->|> modify 1
+<-->|> foo
 """
     , (D.stack [ D.mark "-" $ D.text "Item 1", D.mark "-" $ D.text "Item 2", D.mark "-" $ D.text "Item 3" ]) /\
         """- Item 1
@@ -76,11 +78,11 @@ docIndentedSamples =
         , D.mark "*" $ D.text "Item 3"
         ]) /\ """* Item 1
 * Item 2
-    - Item 2.1
-    - Item 2.2
-    - Item 2.3
-        o Item 2.3.1
-    - Item 2.4
+<-->- Item 2.1
+<-->- Item 2.2
+<-->- Item 2.3
+<--><-->o Item 2.3.1
+<-->- Item 2.4
 * Item 3"""
     , (D.nest 0
             $ D.stack [ D.text "zero"
@@ -96,12 +98,32 @@ docIndentedSamples =
                                        ]
                        ])
         /\ """zero
-    one
-        two
-            three
-                four"""
-    , showTree tree /\ ""
-    , showTree' tree /\ ""
+<-->one
+<--><-->two
+<--><--><-->three
+<--><--><--><-->four"""
+    ,(D.nest 1 $ D.stack
+        [ D.text "name" <+> D.text "["
+        , D.nest 2 $ D.stack [ D.text "a", D.text "b", D.text "c" ]
+        , D.text "]"
+        ]) /\ """<-->name [
+<--><-->a
+<--><-->b
+<--><-->c
+<-->]"""
+    , showTree 0 tree
+        /\ """aaa [
+<-->bbb [
+<--><-->ccc []
+<--><-->dd []
+<-->]
+<-->eee []
+<-->fff [
+<--><-->gg []
+<--><-->hhh []
+<--><-->ii []
+<-->]
+]"""
     , showXML xml /\ ""
     ]
 
@@ -146,10 +168,24 @@ helper { title, render } =
 data Tree = Node String (List Tree)
 
 
-showTree :: Tree -> D.Doc
-showTree (Node s ts) = D.text s <> D.nest (String.length s) (showBracket ts)
+showTree :: Int -> Tree -> D.Doc
+showTree _ (Node s List.Nil) = D.text s <+> D.bracket "[" D.nil "]"
+-- showTree n (Node s ts) = D.text s <+> D.text "[" </> (D.nest n $ D.stack $ Array.fromFoldable $ showTree (n + 1) <$> ts) </> D.nest (max 0 $ n - 1) (D.text "]")
+showTree n (Node s ts) =
+    D.nest n $ D.stack
+        [ D.text s <+> D.text "["
+        , D.nest (n + 1) $ D.stack $ Array.fromFoldable $ showTree (n + 1) <$> ts
+        , D.text "]"
+        ]
+
+--     name [\n        a\n        b\n        c\n    ]
+--     name [\n        a\n        b\n        c\n    ]
+
+-- aaa [\n    bbb [\n        ccc []\n        dd []\n]\n    eee []\n    fff [\n        gg []\n        hhh []\n        ii []\n]\n]
+-- aaa [\n    bbb [\n        ccc []\n        dd []\n    ]\n    eee []\n    fff [\n        gg []\n        hhh []\n        ii []\n    ]\n]
 
 
+{-
 showBracket :: List Tree -> D.Doc
 showBracket List.Nil = D.nil
 showBracket ts = D.text "[" <> D.nest 1 (showTrees ts) <> D.text "]"
@@ -174,6 +210,7 @@ showTrees' :: List Tree -> D.Doc
 showTrees' List.Nil = D.nil
 showTrees' (List.Cons t List.Nil) = showTree' t
 showTrees' (List.Cons t ts) = showTree' t <> D.text "," <> D.break <> showTrees' ts
+-}
 
 
 tree :: Tree
