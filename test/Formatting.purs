@@ -124,11 +124,28 @@ docIndentedSamples =
 <--><-->ii []
 <-->]
 ]"""
-    , showXML xml /\ ""
+    , showXML xml /\ """<p
+<-->color="red"
+<-->font="Times"
+<-->size="10"
+>
+<-->Here is some
+<--><em>
+<--><-->emphasized
+<--></em>
+<-->text.
+<-->Here is a
+<--><a
+<--><-->href="http://www.eg.com"
+<-->>
+<--><-->link
+<--></a>
+<-->elsewhere.
+</p>"""
     ]
 
--- zero\n    one\n            two\n                    three\n                            four
--- zero\n    one\n        two\n            three\n                four
+-- <p\n<-->color=\"red\"\n<-->font=\"Times\"\n<-->size=\"10\"\n>\nHere is some<--><em\n\n<-->>\n<-->emphasized\n<--><em/>text.Here is a<--><a\n<--><-->href=\"http://www.eg.com\"\n<-->>\n<-->link\n<--><a/>elsewhere.\n<p/>
+-- <p\n<-->color=\"red\"\n<-->font=\"Times\"\n<-->size=\"10\"\n>\n<-->Here is some\n<--><em>\n<--><-->emphasized\n<--></em>\n<-->text.\n<-->Here is a\n<--><a\n<--><-->href=\"http://www.eg.com\"\n<-->>\n<--><-->link\n<--></a>\n<-->elsewhere.\n</p>
 
 
 blessedSamples :: Array (F.Tag /\ String)
@@ -178,40 +195,6 @@ showTree n (Node s ts) =
         , D.text "]"
         ]
 
---     name [\n        a\n        b\n        c\n    ]
---     name [\n        a\n        b\n        c\n    ]
-
--- aaa [\n    bbb [\n        ccc []\n        dd []\n]\n    eee []\n    fff [\n        gg []\n        hhh []\n        ii []\n]\n]
--- aaa [\n    bbb [\n        ccc []\n        dd []\n    ]\n    eee []\n    fff [\n        gg []\n        hhh []\n        ii []\n    ]\n]
-
-
-{-
-showBracket :: List Tree -> D.Doc
-showBracket List.Nil = D.nil
-showBracket ts = D.text "[" <> D.nest 1 (showTrees ts) <> D.text "]"
-
-
-showTrees :: List Tree -> D.Doc
-showTrees List.Nil = D.nil
-showTrees (List.Cons t List.Nil) = showTree t
-showTrees (List.Cons t ts) = showTree t <> D.text "," <> D.break <> showTrees ts
-
-
-showTree' :: Tree -> D.Doc
-showTree' (Node s ts) = D.text s <> showBracket' ts
-
-
-showBracket' :: List Tree -> D.Doc
-showBracket' List.Nil = D.nil
-showBracket' ts = D.bracket "[" (showTrees' ts) "]"
-
-
-showTrees' :: List Tree -> D.Doc
-showTrees' List.Nil = D.nil
-showTrees' (List.Cons t List.Nil) = showTree' t
-showTrees' (List.Cons t ts) = showTree' t <> D.text "," <> D.break <> showTrees' ts
--}
-
 
 tree :: Tree
 tree =
@@ -251,6 +234,16 @@ showXML x = showXMLs 0 x -- D.folddoc (<>) (showXMLs x)
 
 
 showXMLs :: Int -> XML -> D.Doc
+showXMLs i (Elt n [] []) =
+    D.nest i
+        $ D.bracket "<" (D.text n) "/>"
+showXMLs i (Elt n [] c) =
+    D.nest i
+        $ D.stack
+            [ D.bracket "<" (D.text n) ">"
+            , D.nest (i + 1) $ D.stack $ showXMLs (i + 1) <$> c
+            , D.bracket "</" (D.text n) ">"
+            ]
 showXMLs i (Elt n a []) =
     D.nest i
         $ D.stack
@@ -264,32 +257,16 @@ showXMLs i (Elt n a c)  =
             $ [ D.text $ "<" <> n
               , D.nest (i + 1) $ D.stack $ showAttr <$> a
               , D.text ">"
-              , D.folddoc (<>) (showXMLs (i + 1) <$> c)
-              , D.bracket "<" (D.text n) "/>"
+              , D.nest (i + 1) $ D.stack $ showXMLs (i + 1) <$> c
+              , D.bracket "</" (D.text n) ">"
               ]
 showXMLs i (Txt s) = D.text s
-
--- showTag :: String -> Array Att -> D.Doc
--- showTag n a = D.text n <> showFill showAtts a
-
 
 showAttr :: Att -> D.Doc
 showAttr (Att n v) = D.text n <> D.text "=" <> D.text (quoted v)
 
-
--- showAtts :: Att -> Array D.Doc
--- showAtts (Att n v) = [ D.text n <> D.text "=" <> D.text (quoted v) ]
-
-
 quoted :: String -> String
 quoted s = "\"" <> s <> "\""
-
--- showTag :: String -> Array Att -> D.Doc
--- showTag n a = D.text n <> showFill showAtts a
-
--- showFill :: forall a. (a -> Array D.Doc) -> Array a -> D.Doc
--- showFill _ [] = D.nil
--- showFill f xs = D.bracket "" (D.stack $ Array.concat $ map f xs) ""
 
 
 xml :: XML
