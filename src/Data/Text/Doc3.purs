@@ -2,12 +2,10 @@ module Data.Text.Doc3 where
 
 import Prelude
 
-import Debug as Debug
-
-import Data.String (joinWith) as String
 import Data.Array ((:))
-import Data.Array (mapWithIndex, intersperse, uncons) as Array
+import Data.Array (mapWithIndex, intersperse, replicate, uncons) as Array
 import Data.Maybe (Maybe(..))
+import Data.String (codePointFromChar, singleton, fromCodePointArray, joinWith) as String
 
 
 data Doc
@@ -15,7 +13,7 @@ data Doc
     | Text String
     | Break
     | Indent
-    | Para (Array Doc)
+    | Para (Array Doc) -- TODO: merge into `Nest (Maybe Int) (Array Doc)`
     | Nest Int Doc
     | Pair Doc Doc
 
@@ -25,57 +23,83 @@ infixr 6 Nest as :<>
 
 -- TODO: Indent size as an option
 -- TODO: Word wrap
--- TODO: Doc with Value
+-- TODO: `Doc a` with `Value a` constructor
 
 
-{-
-render :: Doc -> String
-render = case _ of
+data Break
+    = None
+    | Space
+    -- | WordWrap Int
+    | All
+
+
+data Indent
+    = Empty
+    | Spaces Int
+    | Custom String
+    | Tab
+
+
+renderIndent :: Indent -> String
+renderIndent Empty = ""
+renderIndent (Spaces n) = String.fromCodePointArray $ Array.replicate n $ String.codePointFromChar ' '
+renderIndent (Custom s) = s
+renderIndent Tab = String.singleton $ String.codePointFromChar '\t'
+
+
+renderBreak :: Break -> String
+renderBreak None = ""
+renderBreak Space = " "
+renderBreak All = "\n"
+
+
+type Options =
+    { break :: Break
+    , indent :: Indent
+    }
+
+
+type Options' =
+    { break :: String
+    , indent :: String
+    }
+
+
+render' :: Options' -> Int -> Doc -> String
+render' opts level = case _ of
     Nil -> ""
     Text s -> s
-    Break -> "\n"
-    Indent -> "<-->"
-    Para docs -> String.joinWith "" $ render <$> Array.intersperse Break docs
-    Nest n (Para docs) -> String.joinWith "" $ render <$> (mkIndent n : (Array.intersperse (brindent n) $ adapt n <$> docs))
+    Break -> opts.break
+    Indent -> opts.indent
+    Para docs -> String.joinWith "" $ render' opts 0 <$> Array.intersperse (brIndent level) docs
+    Nest n (Para docs) -> String.joinWith "" $ render' opts 0 <$> Array.mapWithIndex (adapt n) docs
     -- Nest _ (Nest m doc) -> render $ Pair (Pair Break $ mkIndent m) doc
-    Nest n doc -> render $ Pair (mkIndent $ Debug.spy "n'" n) $ adapt n doc
-    Pair a b -> render a <> render b
+    Nest n doc -> render' opts 0 $ adapt n 0 doc
+    Pair a b -> render' opts 0 a <> render' opts 0 b
     where
-        adapt n (Nest m x) = Nest m x -- Nest (max 0 $ m - n) x
-        adapt n Break = brindent n
-        adapt _ doc = doc
-        brindent = Pair Break <<< mkIndent
-        mkIndent 0 = Nil
-        mkIndent n = Pair Indent $ mkIndent $ n - 1
--}
-
-
-render' :: Int -> Doc -> String
-render' level = case _ of
-    Nil -> ""
-    Text s -> s
-    Break -> "\n"
-    Indent -> "<-->"
-    Para docs -> String.joinWith "" $ render <$> Array.intersperse (brIndent level) docs
-    Nest n (Para docs) -> String.joinWith "" $ render <$> Array.mapWithIndex (adapt n) docs
-    -- Nest _ (Nest m doc) -> render $ Pair (Pair Break $ mkIndent m) doc
-    Nest n doc -> render $ adapt n 0 doc
-    Pair a b -> render a <> render b
-    where
+        -- raw :: Doc -> String
+        -- raw = render' opts 0 -- fails to run after compilation
         -- adapt n (Nest m x) = Nest (max 0 $ m - n + 1) $ adapt (max 0 $ m - n) x
         adapt _ 0 (Nest m x) = Nest m x
-        adapt _ i (Nest m x) = Pair Break $ Nest m x
-        adapt n i Break = brIndent n
+        adapt _ _ (Nest m x) = Pair Break $ Nest m x
+        adapt n _ Break = brIndent n
         adapt n 0 doc = Pair (mkIndent n) doc
-        adapt n i doc = Pair (brIndent n) doc
+        adapt n _ doc = Pair (brIndent n) doc
         brIndent = Pair Break <<< mkIndent
         mkIndent 0 = Nil
         mkIndent n = Pair Indent $ mkIndent $ n - 1
 
 
+makeOpts :: Options -> Options'
+makeOpts { break, indent } =
+    { break : renderBreak break
+    , indent : renderIndent indent
+    }
+
+
 -- render :: Doc -> String
-render :: Doc -> String
-render doc = render' 0 doc
+render :: Options -> Doc -> String
+render opts = render' (makeOpts opts) 0
 
 
 instance Semigroup Doc where
@@ -90,6 +114,8 @@ break :: Doc
 break = Break
 nest :: Int -> Doc -> Doc
 nest = Nest
+nest' :: Int -> Array Doc -> Doc
+nest' i = Nest i <<< Para
 stack :: Array Doc -> Doc
 stack = Para
 concat :: Doc -> Doc -> Doc

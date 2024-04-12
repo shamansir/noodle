@@ -43,17 +43,17 @@ docIndentedSamples =
         "[foo, bar, buz]"
     , (D.text "func" <> (D.wbracket "(" ")" $ D.text "foo" <> (D.mark "," $ D.text "bar") <> (D.mark "," $ D.text "buz"))) /\
         "func(foo, bar, buz)"
-    , (D.nest 1 $ D.stack [ D.mark "[" $ D.text "foo", D.mark "," $ D.text "bar", D.mark "," $ D.text "buz", D.text "]" ])
+    , (D.nest' 1 [ D.mark "[" $ D.text "foo", D.mark "," $ D.text "bar", D.mark "," $ D.text "buz", D.text "]" ])
         /\ """<-->[ foo
 <-->, bar
 <-->, buz
 <-->]"""
-    , (D.nest 1 $ D.stack [ D.text "subj", D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ])
+    , (D.nest' 1 [ D.text "subj", D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ])
         /\ """<-->subj
 <-->|> modify 1
 <-->|> foo
 """
-    , (D.nest 0 (D.text "subj") <> D.break <> (D.nest 1 $ D.stack [ D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ]))
+    , (D.nest 0 (D.text "subj") <> D.break <> (D.nest' 1 $ [ D.mark "|>" $ D.text "modify 1", D.mark "|>" $ D.text "foo" <> D.break ]))
         /\ """subj
 <-->|> modify 1
 <-->|> foo
@@ -66,15 +66,14 @@ docIndentedSamples =
         [ D.mark "*" $ D.text "Item 1"
         , (D.mark "*" $ D.text "Item 2")
             <> D.break
-            <> D.nest 1
-                (D.stack
-                    [ D.mark "-" $ D.text "Item 2.1"
-                    , D.mark "-" $ D.text "Item 2.2"
-                    , D.mark "-" $ D.text "Item 2.3"
-                        <> D.break
-                        <> D.nest 2 (D.mark "o" $ D.text "Item 2.3.1")
-                    , D.mark "-" $ D.text "Item 2.4"
-                    ])
+            <> D.nest' 1
+                [ D.mark "-" $ D.text "Item 2.1"
+                , D.mark "-" $ D.text "Item 2.2"
+                , D.mark "-" $ D.text "Item 2.3"
+                    <> D.break
+                    <> D.nest 2 (D.mark "o" $ D.text "Item 2.3.1")
+                , D.mark "-" $ D.text "Item 2.4"
+                ]
         , D.mark "*" $ D.text "Item 3"
         ]) /\ """* Item 1
 * Item 2
@@ -84,27 +83,27 @@ docIndentedSamples =
 <--><-->o Item 2.3.1
 <-->- Item 2.4
 * Item 3"""
-    , (D.nest 0
-            $ D.stack [ D.text "zero"
-                       , D.nest 1
-                            $ D.stack [ D.text "one"
-                                       , D.nest 2
-                                            $ D.stack [ D.text "two"
-                                                       , D.nest 3
-                                                            $ D.stack [ D.text "three"
-                                                                       , D.nest 4 $ D.text "four"
-                                                                       ]
-                                                       ]
-                                       ]
-                       ])
+    , (D.nest' 0
+            [ D.text "zero"
+            , D.nest' 1
+                [ D.text "one"
+                , D.nest' 2
+                        [ D.text "two"
+                        , D.nest' 3
+                            [ D.text "three"
+                            , D.nest 4 $ D.text "four"
+                            ]
+                        ]
+                ]
+            ])
         /\ """zero
 <-->one
 <--><-->two
 <--><--><-->three
 <--><--><--><-->four"""
-    ,(D.nest 1 $ D.stack
+    ,(D.nest' 1
         [ D.text "name" <+> D.text "["
-        , D.nest 2 $ D.stack [ D.text "a", D.text "b", D.text "c" ]
+        , D.nest' 2 [ D.text "a", D.text "b", D.text "c" ]
         , D.text "]"
         ]) /\ """<-->name [
 <--><-->a
@@ -161,11 +160,19 @@ spec = do
   describe "Formatting works properly for Doc" $ do
 
     -- helper { title : \idx (doc /\ _) -> show idx <> " : " <> show doc, render : D.layout 0 } docIndentedSamples
-    helper { title : \idx (doc /\ _) -> show idx <> " : " <> String.take 200 (show doc), render : D.render } docIndentedSamples
+    helper
+        { title : \idx (doc /\ _) -> show idx <> " : " <> String.take 200 (show doc)
+        , render : D.render { break : D.All, indent : D.Custom "<-->" }
+        }
+        docIndentedSamples
 
   describe "Formatting works properly for Blessed" $ do
 
-    helper { title : \idx (_ /\ expected) -> show idx <> " : " <> expected, render : T.render } blessedSamples
+    helper
+        { title : \idx (_ /\ expected) -> show idx <> " : " <> expected
+        , render : T.render
+        }
+        blessedSamples
 
 
 
@@ -189,9 +196,9 @@ showTree :: Int -> Tree -> D.Doc
 showTree _ (Node s List.Nil) = D.text s <+> D.bracket "[" D.nil "]"
 -- showTree n (Node s ts) = D.text s <+> D.text "[" </> (D.nest n $ D.stack $ Array.fromFoldable $ showTree (n + 1) <$> ts) </> D.nest (max 0 $ n - 1) (D.text "]")
 showTree n (Node s ts) =
-    D.nest n $ D.stack
+    D.nest' n
         [ D.text s <+> D.text "["
-        , D.nest (n + 1) $ D.stack $ Array.fromFoldable $ showTree (n + 1) <$> ts
+        , D.nest' (n + 1) $ Array.fromFoldable $ showTree (n + 1) <$> ts
         , D.text "]"
         ]
 
@@ -238,29 +245,26 @@ showXMLs i (Elt n [] []) =
     D.nest i
         $ D.bracket "<" (D.text n) "/>"
 showXMLs i (Elt n [] c) =
-    D.nest i
-        $ D.stack
-            [ D.bracket "<" (D.text n) ">"
+    D.nest' i
+        [ D.bracket "<" (D.text n) ">"
+        , D.nest (i + 1) $ D.stack $ showXMLs (i + 1) <$> c
+        , D.bracket "</" (D.text n) ">"
+        ]
+showXMLs i (Elt n a []) =
+    D.nest' i
+        [ D.text "<" <+> D.text n
+        , D.nest (i + 1) $ D.stack $ showAttr <$> a
+        , D.text "/>"
+        ]
+showXMLs i (Elt n a c)  =
+    D.nest' i
+        $ [ D.text $ "<" <> n
+            , D.nest (i + 1) $ D.stack $ showAttr <$> a
+            , D.text ">"
             , D.nest (i + 1) $ D.stack $ showXMLs (i + 1) <$> c
             , D.bracket "</" (D.text n) ">"
             ]
-showXMLs i (Elt n a []) =
-    D.nest i
-        $ D.stack
-            [ D.text "<" <+> D.text n
-            , D.nest (i + 1) $ D.stack $ showAttr <$> a
-            , D.text "/>"
-            ]
-showXMLs i (Elt n a c)  =
-    D.nest i
-        $ D.stack
-            $ [ D.text $ "<" <> n
-              , D.nest (i + 1) $ D.stack $ showAttr <$> a
-              , D.text ">"
-              , D.nest (i + 1) $ D.stack $ showXMLs (i + 1) <$> c
-              , D.bracket "</" (D.text n) ">"
-              ]
-showXMLs i (Txt s) = D.text s
+showXMLs _ (Txt s) = D.text s
 
 showAttr :: Att -> D.Doc
 showAttr (Att n v) = D.text n <> D.text "=" <> D.text (quoted v)
