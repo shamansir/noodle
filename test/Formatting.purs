@@ -247,32 +247,49 @@ data Att = Att String String
 
 
 showXML :: XML -> D.Doc
-showXML x = D.folddoc (<>) (showXMLs x)
+showXML x = showXMLs 0 x -- D.folddoc (<>) (showXMLs x)
 
 
-showXMLs :: XML -> Array D.Doc
-showXMLs (Elt n a []) = [ D.text "<" <> showTag n a <> D.text "/>" ]
-showXMLs (Elt n a c)  =
-    [ D.text "<" <> showTag n a <> D.text ">" <>
-        showFill showXMLs c <>
-      D.text "</" <> D.text n <> D.text "/>"
-    ]
-showXMLs (Txt s) = map D.text (String.words s)
+showXMLs :: Int -> XML -> D.Doc
+showXMLs i (Elt n a []) =
+    D.nest i
+        $ D.stack
+            [ D.text "<" <+> D.text n
+            , D.nest (i + 1) $ D.stack $ showAttr <$> a
+            , D.text "/>"
+            ]
+showXMLs i (Elt n a c)  =
+    D.nest i
+        $ D.stack
+            $ [ D.text $ "<" <> n
+              , D.nest (i + 1) $ D.stack $ showAttr <$> a
+              , D.text ">"
+              , D.folddoc (<>) (showXMLs (i + 1) <$> c)
+              , D.bracket "<" (D.text n) "/>"
+              ]
+showXMLs i (Txt s) = D.text s
+
+-- showTag :: String -> Array Att -> D.Doc
+-- showTag n a = D.text n <> showFill showAtts a
 
 
-showAtts :: Att -> Array D.Doc
-showAtts (Att n v) = [ D.text n <> D.text "=" <> D.text (quoted v) ]
+showAttr :: Att -> D.Doc
+showAttr (Att n v) = D.text n <> D.text "=" <> D.text (quoted v)
+
+
+-- showAtts :: Att -> Array D.Doc
+-- showAtts (Att n v) = [ D.text n <> D.text "=" <> D.text (quoted v) ]
 
 
 quoted :: String -> String
 quoted s = "\"" <> s <> "\""
 
-showTag :: String -> Array Att -> D.Doc
-showTag n a = D.text n <> showFill showAtts a
+-- showTag :: String -> Array Att -> D.Doc
+-- showTag n a = D.text n <> showFill showAtts a
 
-showFill :: forall a. (a -> Array D.Doc) -> Array a -> D.Doc
-showFill _ [] = D.nil
-showFill f xs = D.bracket "" (D.stack $ Array.concat $ map f xs) ""
+-- showFill :: forall a. (a -> Array D.Doc) -> Array a -> D.Doc
+-- showFill _ [] = D.nil
+-- showFill f xs = D.bracket "" (D.stack $ Array.concat $ map f xs) ""
 
 
 xml :: XML
