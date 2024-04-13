@@ -2,207 +2,181 @@ module Data.Text.Doc where
 
 import Prelude
 
-import Data.Array (intersperse, replicate) as Array
+import Data.Array ((:))
+import Data.Array (mapWithIndex, intersperse, replicate, uncons) as Array
 import Data.Maybe (Maybe(..))
-import Data.String (Pattern(..))
-import Data.String (split, joinWith) as String
+import Data.String (codePointFromChar, singleton, fromCodePointArray, joinWith) as String
 
-
--- loosely based on https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf
 
 data Doc
     = Nil
-    | Space
-    | Indent
     | Text String
     | Break
-    | Concat Doc Doc
-    | Marker String Doc
-    | Join Doc (Array Doc)
-    | Para (Array Doc)
-    | Wrap { start :: Doc, end :: Doc } Doc
+    | Indent
+    | Para (Array Doc) -- TODO: merge into `Nest (Maybe Int) (Array Doc)`
     | Nest Int Doc
-    -- TODO JoinDistribute
+    | Pair Doc Doc
 
 
-nil :: Doc
-nil = Nil
+infixr 6 Nest as :<>
 
 
-s :: String -> Doc
-s = Text
+-- TODO: Indent size as an option
+-- TODO: Word wrap
+-- TODO: `Doc a` with `Value a` constructor
 
 
-i :: Doc
-i = Indent
-
-
-sp :: Doc
-sp = space
-
-
-space :: Doc
-space = Space
-
-
-br :: Doc
-br = Break
-
-
-line :: String -> Doc
-line str = s str <> br
-
-
-l :: String -> Doc
-l = line
-
-
-break :: Doc
-break = Break
-
-
-mark :: String -> Doc -> Doc
-mark = Marker
-
-
-join :: Doc -> Array Doc -> Doc
-join = Join
-
-
-para :: Array Doc -> Doc
-para = Para
-
-
-wr :: Doc -> Doc -> Doc -> Doc
-wr start end = Wrap { start, end }
-
-
-wrap :: Doc -> Doc -> Doc -> Doc
-wrap = wr
-
-
-w :: String -> String -> Doc -> Doc
-w start end = wr (s start <> sp) (sp <> s end)
-
-
-ws :: String -> String -> Doc -> Doc
-ws start end = wr (s start) (s end)
-
-
-ww :: String -> Doc -> Doc
-ww sym = ws sym sym
-
-
-nest :: Int -> Doc -> Doc
-nest = Nest
-
-
-pair :: Doc -> Doc -> Doc
-pair = Concat
+data Break
+    = None
+    | Space
+    -- | WordWrap Int
+    | All
 
 
 data Indent
-    = OneLiner
-    | IndentWithSpaces Int
-    | IndentWithTabs
+    = Empty
+    | Spaces Int
+    | Custom String
+    | Tab
 
 
-data Colors
-    = All
-    | NoColors
-    -- Palette?
+renderIndent :: Indent -> String
+renderIndent Empty = ""
+renderIndent (Spaces n) = String.fromCodePointArray $ Array.replicate n $ String.codePointFromChar ' '
+renderIndent (Custom s) = s
+renderIndent Tab = String.singleton $ String.codePointFromChar '\t'
+
+
+renderBreak :: Break -> String
+renderBreak None = ""
+renderBreak Space = " "
+renderBreak All = "\n"
 
 
 type Options =
-    { indent :: Indent
-    -- , colors :: Colors
-    , maxWidth :: Maybe Int
+    { break :: Break
+    , indent :: Indent
     }
 
 
+type Options' =
+    { break :: String
+    , indent :: String
+    }
+
+
+render' :: Options' -> Int -> Doc -> String
+render' opts level = case _ of
+    Nil -> ""
+    Text s -> s
+    Break -> opts.break
+    Indent -> opts.indent
+    Para docs -> String.joinWith "" $ render' opts 0 <$> Array.intersperse (brIndent level) docs
+    Nest n (Para docs) -> String.joinWith "" $ render' opts 0 <$> Array.mapWithIndex (adapt n) docs
+    -- Nest _ (Nest m doc) -> render $ Pair (Pair Break $ mkIndent m) doc
+    Nest n doc -> render' opts 0 $ adapt n 0 doc
+    Pair a b -> render' opts 0 a <> render' opts 0 b
+    where
+        -- raw :: Doc -> String
+        -- raw = render' opts 0 -- fails to run after compilation
+        -- adapt n (Nest m x) = Nest (max 0 $ m - n + 1) $ adapt (max 0 $ m - n) x
+        adapt _ 0 (Nest m x) = Nest m x
+        adapt _ _ (Nest m x) = Pair Break $ Nest m x
+        adapt n _ Break = brIndent n
+        adapt n 0 doc = Pair (mkIndent n) doc
+        adapt n _ doc = Pair (brIndent n) doc
+        brIndent = Pair Break <<< mkIndent
+        mkIndent 0 = Nil
+        mkIndent n = Pair Indent $ mkIndent $ n - 1
+
+
+makeOpts :: Options -> Options'
+makeOpts { break, indent } =
+    { break : renderBreak break
+    , indent : renderIndent indent
+    }
+
+
+-- render :: Doc -> String
+render :: Options -> Doc -> String
+render opts = render' (makeOpts opts) 0
+
+
 instance Semigroup Doc where
-    append :: Doc -> Doc -> Doc
-    append = Concat
+    append = Pair
 
 
-{-
-layout :: Int -> Doc -> String
-layout indent = case _ of
-    Nil -> ""
-    Space -> " "
-    Break -> "\n"
-    Indent -> mkIndent indent
-    Text str ->
-        case str # String.split (Pattern "\n") of
-            [] -> ""
-            [one] -> mkIndent indent <> one
-            more -> layout indent $ Para $ Text <$> more
-    Para docs ->
-       String.joinWith "" (layout indent <$> Array.intersperse Break <$> docs)
-    Concat docA docB -> layout indent docA <> layout 0 docB
-    Marker str doc -> layout indent $ Text str <> Space <> doc
-    Join sep docs -> layout indent $ Para $ Array.intersperse sep docs -- FIXME
-    Wrap { start, end } doc -> layout indent $ Text $ layout 0 start <> layout 0 doc <> layout 0 end
-    Nest nextIndent doc ->
-        layout (indent + nextIndent) doc
-    where
-        -- raw = layout 0 -- TODO
-        mkIndent n = String.joinWith "" $ Array.replicate (n * 4) " "
--}
-
-indents :: Int -> Doc
-indents = case _ of
-    0 -> Nil
-    n -> Concat Indent $ indents (n - 1)
+text :: String -> Doc
+text = Text
+nil :: Doc
+nil = Nil
+break :: Doc
+break = Break
+nest :: Int -> Doc -> Doc
+nest = Nest
+nest' :: Int -> Array Doc -> Doc
+nest' i = Nest i <<< Para
+stack :: Array Doc -> Doc
+stack = Para
+concat :: Doc -> Doc -> Doc
+concat = Pair
+indent :: Doc
+indent = Indent
 
 
-
-layout :: Int -> Doc -> String
-layout is = case _ of
-    Nil -> ""
-    Space -> " "
-    Break -> "\n"
-    Indent -> mkIndent is
-    Text str ->
-        case str # String.split (Pattern "\n") of
-            [] -> ""
-            [one] -> one
-            more -> layout is $ Para $ Text <$> more
-    Para docs ->
-       String.joinWith "" $ raw <$> Array.intersperse (Break <> indents is) docs
-    Concat docA docB -> raw docA <> raw docB
-    Marker str doc -> raw $ Text str <> Space <> doc
-    Join sep docs -> String.joinWith "" $ raw <$> Array.intersperse sep docs
-    Wrap { start, end } doc -> raw $ Text $ raw start <> raw doc <> raw end
-    Nest nis doc ->
-        layout nis doc
-    where
-        raw doc = layout 0 doc
-        mkIndent n = String.joinWith "" $ Array.replicate (n * 4) " "
+space :: Doc
+space = Text " "
+mark :: String -> Doc -> Doc
+mark s doc = Text s <> space <> doc
+bracket :: String -> Doc -> String -> Doc
+bracket l x r = Text l <> x <> Text r
+wbracket :: String -> String -> Doc -> Doc
+wbracket l = flip $ bracket l
+wrap :: String -> Doc -> Doc
+wrap q = wbracket q q
 
 
--- raw :: Doc -> String
--- raw = layout 0
+sp :: Doc -> Doc -> Doc
+sp x y = x <> text " " <> y
+br :: Doc -> Doc -> Doc
+br x y = x <> break <> y
+-- spbr :: Doc -> Doc -> Doc
+-- spbr x y = x <> (break) <> y
+
+
+infixr 6 sp as <+>
+infixr 6 br as </>
+-- infixr 6 spbr as <+/>
+
+
+folddoc :: (Doc -> Doc -> Doc) -> Array Doc -> Doc
+folddoc f arr =
+    case Array.uncons arr of
+        Nothing -> nil
+        Just { head, tail } ->
+            case tail of
+                [] -> head
+                _ -> f head $ folddoc f tail
 
 
 instance Show Doc where
     show :: Doc -> String
     show = case _ of
         Nil -> "<nil>"
-        Space -> "<sp>"
+        -- Space -> "<sp>"
         Break -> "<br>"
         Indent -> "<ind>"
         Text str ->
             "<text(" <> str <> ")>"
         Para docs ->
             "<para(" <> (String.joinWith "," $ show <$> docs) <> ")>"
-        Concat docA docB ->
+        Pair docA docB ->
             "<concat(" <> show docA <> "," <> show docB <> ")>"
-        Marker str doc ->
-            "<marker(" <> show str <> "," <> show doc <> ")>"
-        Join sep docs ->
-            "<join(" <> show sep <> ",(" <> (String.joinWith "," $ show <$> docs) <> "))>"
-        Wrap { start, end } doc ->
-            "<wrap(" <> show start <> "," <> show end <> "," <> show doc <> ")>"
+        -- Marker str doc ->
+        --     "<marker(" <> show str <> "," <> show doc <> ")>"
+        -- Join sep docs ->
+        --     "<join(" <> show sep <> ",(" <> (String.joinWith "," $ show <$> docs) <> "))>"
+        -- Wrap { start, end } doc ->
+        --     "<wrap(" <> show start <> "," <> show end <> "," <> show doc <> ")>"
         Nest nextIndent doc ->
             "<nest(" <> show nextIndent <> "," <> show doc <> ")>"

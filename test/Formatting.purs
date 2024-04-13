@@ -6,10 +6,9 @@ import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Text.Output.Blessed (render) as T
 import Data.Text.Format as F
-import Data.Text.Doc (Doc(..))
 -- import Data.Text.Doc as D
-import Data.Text.Doc3 as D
-import Data.Text.Doc3 ((<+>), (</>))
+import Data.Text.Doc as D
+import Data.Text.Doc ((<+>), (</>))
 import Data.String as String
 import Data.String.Extra (words) as String
 import Data.Array (concat, take, fromFoldable) as Array
