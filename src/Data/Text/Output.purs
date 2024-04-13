@@ -8,9 +8,9 @@ import Data.String as String
 
 import Type.Proxy (Proxy)
 
-import Data.Text.Format (Tag(..))
+import Data.Text.Format (Tag(..), class Formatter, format)
 import Data.Text.Doc (Doc)
-import Data.Text.Doc (Doc(..)) as Doc
+import Data.Text.Doc (Doc(..), Options, render) as Doc
 
 
 data OutputKind
@@ -34,3 +34,11 @@ class Renderer (x :: OutputKind) where
     -- options :: Proxy x -> Options
     supported :: Proxy x -> Tag -> Support
     layout :: Proxy x -> Tag -> Doc
+
+
+class (Renderer x, Formatter a) <= Format (x :: OutputKind) a | x -> a where
+    perform :: Proxy x -> Doc.Options -> Tag -> String
+
+
+instance (Renderer x, Formatter a) => Format x a where
+    perform p opts = layout p >>> Doc.render opts

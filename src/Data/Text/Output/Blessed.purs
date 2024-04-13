@@ -12,7 +12,7 @@ import Data.Either (Either(..)) as E
 import Data.String (joinWith) as String
 import Data.Text.Format (Tag(..), Format(..), Align(..))
 import Data.Text.Output (OutputKind, class Renderer, layout, Support)
-import Data.Text.Output (Support(..)) as S
+import Data.Text.Output (Support(..), perform) as S
 import Data.Text.Doc (Doc)
 import Data.Text.Doc as D
 
@@ -102,18 +102,5 @@ instance Renderer Blessed where
 
 
 render :: Tag -> String
-render = case _ of
-    Plain str -> str
-    Align align tagged -> wrap (show align) tagged
-    Format (Fg (E.Left colorStr)) tagged -> wrap (colorStr <> "-fg") tagged
-    Format (Fg (E.Right color)) tagged -> wrap (Color.toHexString color <> "-fg") tagged
-    Format (Bg (E.Left colorStr)) tagged -> wrap (colorStr <> "-bg") tagged
-    Format (Bg (E.Right color)) tagged -> wrap (Color.toHexString color <> "-bg") tagged
-    Format format tagged -> wrap (show format) tagged
-    Split taggedA taggedB -> render taggedA <> "{|}" <> render taggedB
-    Pair taggedA taggedB -> render taggedA <> render taggedB
-    Nest _ taggedArr -> String.joinWith "" $ render <$> taggedArr
-    Newline -> "\n"
-    _ -> "" -- FIXME
-    where
-        wrap tag tagged = "{" <> tag <> "}" <> render tagged <> "{/" <> tag <> "}"
+render = layout blessed >>> D.render { break : D.Space, indent : D.Empty }
+-- render = S.perform blessed { break : D.Space, indent : D.Empty }
