@@ -102,7 +102,7 @@ data Tag
     | Time Time
     | List Bullet Tag (Array Tag) -- FIXME: homomorphic to join but the meaning is different
     | Table (Array (Tag /\ Array Tag))
-    | Link Tag Tag
+    | Link Tag String
     | LinkTo Tag FootnoteId
     | Definition Tag Tag
     | Hr
@@ -275,7 +275,7 @@ instance Show Tag where
         Para tags -> wraplist "para" $ show <$> tags
         Newline -> just "nl"
         Hr -> just "hr"
-        Link tag1 tag2 -> wraptag2 "link" (show tag1) $ show tag2
+        Link tag url -> wraptag2 "link" (show tag) url
         Definition tag1 tag2 -> wraptag2 "def" (show tag1) $ show tag2
         Property name value -> wraptag2 "prop" name value
         Date date -> wrap "date" $ show date
