@@ -75,10 +75,12 @@ data TaskStatus
     | ProgressPercent Int
     | ProgressOf Int Int
     | AutoProgress
+    -- TODO :  -- add interval
 
 
 data Bullet
     = None
+    | Asterisk
     | Dash
     | Num
     | Circle
@@ -98,15 +100,15 @@ data Tag
     | Para (Array Tag)
     | Nest Indent (Array Tag)
     | Newline
-    | Date Date
-    | Time Time
+    | Date Date -- merge with date, add interval?
+    | Time Time -- merge with time, add interval?
     | List Bullet Tag (Array Tag) -- FIXME: homomorphic to join but the meaning is different
     | Table (Array (Tag /\ Array Tag))
-    | Link Tag String
-    | LinkTo Tag FootnoteId
-    | Definition Tag Tag
+    | Link Tag String -- move under `Format`
+    | LinkTo Tag FootnoteId-- move under `Format`
+    | Definition Tag Tag -- move under  `Format` ?
     | Hr
-    | Image Tag String
+    | Image Tag String-- move under `Format``
     | Property String String
     | Comment String
     | Macro String
@@ -258,6 +260,17 @@ instance Formatter Tag where
     format = identity
 
 
+bulletSym :: Int -> Bullet -> String
+bulletSym index = case _ of
+    None -> ""
+    Asterisk -> "*"
+    Dash -> "-"
+    Circle -> "o" -- FIXME
+    Alpha -> "a." -- FIXME: TODO
+    AlphaInv -> "z." -- FIXME: TODO
+    Num -> "1" -- FIXME: TODO
+
+
 -- TODO: do syntax?
 
 instance Show Tag where
@@ -308,6 +321,7 @@ instance Show Align where
 
 instance Show Bullet where
     show None = "none"
+    show Asterisk = "asterisk"
     show Dash = "dash"
     show Circle = "circle"
     show Alpha = "alpha"
