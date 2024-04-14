@@ -14,7 +14,7 @@ import Data.Either (Either(..)) as E
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
-import Data.Text.Format (Tag(..), Format(..), Align(..), Timing(..), Term(..), Url(..), MacroCode(..), bulletPrefix)
+import Data.Text.Format (Tag(..), Format(..), Align(..), Term(..), Url(..), bulletPrefix)
 import Data.Text.Output (OutputKind, class Renderer, layout, Support)
 import Data.Text.Output (Support(..), perform) as S
 import Data.Text.Doc (Doc, (<+>))
@@ -65,13 +65,9 @@ instance Renderer Blessed where
         Para _ -> S.Full
         Nest _ _ -> S.Full
         Join _ _ -> S.Full
-        Timing _ -> S.Partly
         List _ _ _ -> S.Text
         Table _ -> S.None
         Hr -> S.Text
-        Property _ _ -> S.Text
-        Macro _ -> S.Text
-        Task _ _ -> S.None -- FIXME
 
     layout :: Proxy Blessed -> Tag -> Doc
     layout = const $ case _ of
@@ -103,17 +99,6 @@ instance Renderer Blessed where
         Para tags -> D.stack $ layout blessed <$> tags
         Nest i tags -> D.nest' (unwrap i) $ layout blessed <$> tags
         Join tag tags -> D.folddoc (<>) $ layout blessed <$> Array.intersperse tag tags
-        Timing timing ->
-            case timing of
-                Date date -> case FDT.formatDateTime "YYYY-DD-MM" $ DT.DateTime date zeroTime of
-                        E.Right success -> D.text success
-                        E.Left _ -> D.text "<Date?>"
-                Time time -> case FDT.formatDateTime "HH:mm:ss" $ DT.DateTime zeroDate time of
-                        E.Right success -> D.text success
-                        E.Left _ -> D.text "<Time?>"
-                DateTime datetime -> case FDT.formatDateTime "YYYY-DD-MM HH:mm:ss" datetime of
-                        E.Right success -> D.text success
-                        E.Left _ -> D.text "<Time?>"
         List bullet Empty items ->
             D.nest' 1 $ uncurry D.mark <$> b bullet <$> Array.mapWithIndex (/\) (layout blessed <$> items)
         List bullet start items ->
@@ -123,13 +108,8 @@ instance Renderer Blessed where
                 ]
         Table items -> D.nil
         Hr -> D.text "----------"
-        Property prop value -> D.break <> D.text (unwrap prop) <+> D.text "::" <+> D.text (unwrap value) <> D.break
-        Macro (MacroCode str) -> D.text str
-        Task status tag -> D.nil -- FIXME
         where
             b bullet (index /\ doc) = bulletPrefix index bullet /\ doc
-            zeroDate = Dt.canonicalDate (fromMaybe bottom $ toEnum 0) bottom bottom
-            zeroTime = Tm.Time bottom bottom bottom bottom
             wrap cmd tag = D.bracket "{" (D.text cmd) "}" <> layout blessed tag <> D.bracket "{/" (D.text cmd) "}"
 
 

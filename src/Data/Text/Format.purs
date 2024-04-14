@@ -25,9 +25,6 @@ newtype ProgrammingLanguage = ProgrammingLanguage String
 newtype Url = Url String
 newtype Term = Term Tag
 newtype Definition = Definition Tag
-newtype PropName = PropName String
-newtype PropValue = PropValue String
-newtype MacroCode = MacroCode String
 
 
 derive instance Newtype Indent _
@@ -38,9 +35,6 @@ derive instance Newtype ProgrammingLanguage _
 derive instance Newtype Url _
 derive instance Newtype Term _
 derive instance Newtype Definition _
-derive instance Newtype PropName _
-derive instance Newtype PropValue _
-derive instance Newtype MacroCode _
 
 
 derive newtype instance Show Indent
@@ -86,16 +80,6 @@ data Format
 --     | Unordered
 
 
-data TaskStatus
-    = Done
-    | Doing
-    | Scheduled Date (Maybe Time)
-    | ProgressPercent Int
-    | ProgressOf Int Int
-    | AutoProgress
-    -- TODO :  -- add interval
-
-
 data Bullet
     = None
     | Asterisk
@@ -105,14 +89,6 @@ data Bullet
     | Alpha
     | AlphaInv
     -- ..
-
-
-data Timing
-    = Date Date
-    | Time Time
-    | DateTime DateTime
-    -- TODO | Interval
-    -- TODO | Repeat
 
 
 data Tag
@@ -126,14 +102,9 @@ data Tag
     | Para (Array Tag)
     | Nest Indent (Array Tag)
     | Newline
-    | Timing Timing
     | List Bullet Tag (Array Tag) -- The root `Tag`` is optional (if `Empty`) header of the list
     | Table (Array (Tag /\ Array Tag))
     | Hr
-    | Property PropName PropValue
-    | Macro MacroCode
-    | Task TaskStatus Tag
-
 
 -- TODO: binary operators for tags
 -- TODO: empty tag
@@ -321,12 +292,6 @@ instance Show Tag where
         Para tags -> wraplist "para" $ show <$> tags
         Newline -> just "nl"
         Hr -> just "hr"
-        Property (PropName name) (PropValue value) -> wraptag2 "prop" name value
-        Timing (Date date) -> wrap "date" $ show date
-        Timing (Time time) -> wrap "time" $ show time
-        Timing (DateTime datetime) -> wrap "time" $ show datetime
-        Macro (MacroCode str) -> wrap "macro" str
-        Task status tag -> wraparg "task" (show status) $ show tag
         Nest indent tags -> wraplistarg "nest" (show indent) $ show <$> tags
         Join tag tags -> wraplistarg "join" (show tag) $ show <$> tags
         List bullet tag tags -> wraplistarg2 "list" (show bullet) (show tag) $ show <$> tags
@@ -391,13 +356,3 @@ instance Show Format where
             "bg(" <> case ecolor of
                     E.Left colorStr -> show colorStr
                     E.Right color -> show color <> ")"
-
-
-instance Show TaskStatus where
-    show = case _ of
-        Done -> "DONE"
-        Doing -> "DOING"
-        Scheduled date time -> "AT" <> show date <> "::" <> show time
-        ProgressPercent prc -> show prc <> "%"
-        ProgressOf done total -> show done <> "/" <> show total
-        AutoProgress -> "AUTO"
