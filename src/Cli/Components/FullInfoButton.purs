@@ -2,7 +2,7 @@ module Cli.Components.FullInfoButton where
 
 import Prelude
 
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Control.Monad.State (get, modify_) as State
 
@@ -36,7 +36,7 @@ import Cli.Tagging as T
 component ∷ Core.Blessed State
 component =
     B.button Key.fullInfoButton
-        [ Box.content $ T.render $ T.buttonToggle "F" false
+        [ Box.content $ T.singleLine $ T.buttonToggle "F" false
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 9
         , Box.width $ Dimension.px 1
@@ -49,7 +49,7 @@ component =
                 State.modify_ State.toggleFullInfo
                 Key.fullInfoBox >~ Element.toggle
                 state <- State.get
-                Key.fullInfoButton >~ Box.setContent $ T.render $ T.buttonToggle "F" state.fullInfoOn
+                Key.fullInfoButton >~ Box.setContent $ T.singleLine $ T.buttonToggle "F" state.fullInfoOn
                 Key.mainScreen >~ Screen.render
         {-
         , Core.on Element.MouseOver

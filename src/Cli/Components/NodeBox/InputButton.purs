@@ -16,7 +16,7 @@ import Data.SProxy (reflect, reflect')
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
 import Data.Text.Format as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Type.Proxy (Proxy(..))
 import Signal (Signal)
@@ -119,7 +119,7 @@ component
     -> Core.Blessed State
 component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr reprSignal pdin inode inputId =
     B.button buttonKey
-        [ Box.content $ T.render $ T.input idx inputId maybeRepr
+        [ Box.content $ T.singleLine $ T.input idx inputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -243,7 +243,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId mbEditorId _ _ =
                     logNdfCommandM $ Cmd.Connect (C.nodeId onodeId) (C.outputIndex lco.index) (C.nodeId $ reflect' inodeId) (C.inputIndex idx) -- TODO: log somewhere else in a special place
                     -- FIXME: duplicates `CommandLogBox.refresh`, done due to cycle in dependencies
                     state' <- State.get
-                    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state'.commandLog
+                    Key.commandLogBox >~ Box.setContent $ T.singleLine $ NdfFile.toTaggedNdfCode state'.commandLog
                     -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
                     -- END
 

@@ -3,7 +3,7 @@ module Cli.Components.NodeBox.InfoBox where
 import Prelude
 
 import Data.Symbol (class IsSymbol)
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 
 import Blessed as B
@@ -42,22 +42,22 @@ component nextInfoBox boxWidth =
 
 {- familyStatus :: forall state f m. IsSymbol f => InfoBox -> Id.Family f -> C.BlessedOp state m
 familyStatus family =
-    Key.statusLine >~ Box.setContent $ T.render $ T.nodeMouseOver family -}
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.nodeMouseOver family -}
 
 
 inputInfo :: forall state i m. IsSymbol i => Id.Input i -> InfoBoxKey -> C.BlessedOp state m
 inputInfo inputId infoBox =
-    infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
+    infoBox >~ Box.setContent $ T.singleLine $ T.inputInfoBox inputId
 
 
 outputInfo :: forall state o m. IsSymbol o => Id.Output o -> InfoBoxKey -> C.BlessedOp state m
 outputInfo outputId infoBox =
-    infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
+    infoBox >~ Box.setContent $ T.singleLine $ T.outputInfoBox outputId
 
 
 removeInfo :: forall state m. InfoBoxKey -> C.BlessedOp state m
 removeInfo infoBox =
-    infoBox >~ Box.setContent $ T.render $ T.removeInfoBox
+    infoBox >~ Box.setContent $ T.singleLine $ T.removeInfoBox
 
 
 clear :: forall state m. InfoBoxKey -> C.BlessedOp state m

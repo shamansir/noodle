@@ -10,7 +10,7 @@ import Control.Monad.State as State
 import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal, class RunInSignal)
@@ -98,25 +98,25 @@ render nodeBoxKey node = do
                     $ \repr ->
                         case repr of
                             H.Output0 -> do
-                                output0ButtonKey >~ Box.setContent $ T.render $ T.selected $ show 0
+                                output0ButtonKey >~ Box.setContent $ T.singleLine $ T.selected $ show 0
                                 output1ButtonKey >~ Box.setContent $ show 1
                                 output2ButtonKey >~ Box.setContent $ show 2
                                 output3ButtonKey >~ Box.setContent $ show 3
                             H.Output1 -> do
                                 output0ButtonKey >~ Box.setContent $ show 0
-                                output1ButtonKey >~ Box.setContent $ T.render $ T.selected $ show 1
+                                output1ButtonKey >~ Box.setContent $ T.singleLine $ T.selected $ show 1
                                 output2ButtonKey >~ Box.setContent $ show 2
                                 output3ButtonKey >~ Box.setContent $ show 3
                             H.Output2 -> do
                                 output0ButtonKey >~ Box.setContent $ show 0
                                 output1ButtonKey >~ Box.setContent $ show 1
-                                output2ButtonKey >~ Box.setContent $ T.render $ T.selected $ show 2
+                                output2ButtonKey >~ Box.setContent $ T.singleLine $ T.selected $ show 2
                                 output3ButtonKey >~ Box.setContent $ show 3
                             H.Output3 -> do
                                 output0ButtonKey >~ Box.setContent $  show 0
                                 output1ButtonKey >~ Box.setContent $ show 1
                                 output2ButtonKey >~ Box.setContent $ show 2
-                                output3ButtonKey >~ Box.setContent $ T.render $ T.selected $ show 3
+                                output3ButtonKey >~ Box.setContent $ T.singleLine $ T.selected $ show 3
                             _ -> pure unit
 
     Blessed.lift $ runSignal $ Node.subscribeInput _.target node ~> renderer

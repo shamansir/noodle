@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Symbol (class IsSymbol)
 import Data.Text.Format as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed ((>~))
 import Blessed as B
@@ -88,22 +88,22 @@ component =
 
 familyStatus :: forall state f m. IsSymbol f => Id.Family f -> C.BlessedOp state m
 familyStatus family =
-    Key.statusLine >~ Box.setContent $ T.render $ T.nodeMouseOver family
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.nodeMouseOver family
 
 
 inputStatus :: forall state f i m. IsSymbol f => IsSymbol i => Id.Family' f -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> C.BlessedOp state m
 inputStatus family idx inputId maybeRepr =
-    Key.statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.inputStatusLine family idx inputId maybeRepr
 
 
 outputStatus :: forall state f o m. IsSymbol f => IsSymbol o => Id.Family' f -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> C.BlessedOp state m
 outputStatus family idx outputId maybeRepr =
-    Key.statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.outputStatusLine family idx outputId maybeRepr
 
 
 removeStatus :: forall state f m. IsSymbol f ⇒ Id.Family f -> C.BlessedOp state m
 removeStatus family =
-    Key.statusLine >~ Box.setContent $ T.render $ T.removeStatusLine family
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.removeStatusLine family
 
 
 clear :: forall state m. C.BlessedOp state m

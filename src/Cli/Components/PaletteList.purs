@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Array ((:))
 import Data.Text.Format (s, bg ,fg)
-import Data.Text.Output.Blessed (render) as Tags
+import Data.Text.Output.Blessed (singleLine) as Tags
 
 import Blessed as B
 import Blessed.Internal.BlessedSubj (List)
@@ -30,7 +30,7 @@ paletteKey = (nk :: List <^> "palette")
 
 pitemToListRow :: Palette.Item -> String
 pitemToListRow =
-    Tags.render <<< T.paletteItem
+    Tags.singleLine <<< T.paletteItem
 
 
 selfNamedColors :: Array String

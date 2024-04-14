@@ -3,7 +3,7 @@ module Cli.Components.CommandLogButton where
 
 import Prelude
 
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Control.Monad.State as State
 
@@ -37,7 +37,7 @@ import Cli.Tagging as T
 component ∷ Core.Blessed State
 component =
     B.button Key.commandLogButton
-        [ Box.content $ T.render $ T.buttonToggle "C" false
+        [ Box.content $ T.singleLine $ T.buttonToggle "C" false
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 5
         , Box.width $ Dimension.px 1
@@ -50,7 +50,7 @@ component =
                 State.modify_ State.toggleCommandBox
                 Key.commandLogBox >~ Element.toggle
                 state <- State.get
-                Key.commandLogButton >~ Box.setContent $ T.render $ T.buttonToggle "C" state.commandBoxOn
+                Key.commandLogButton >~ Box.setContent $ T.singleLine $ T.buttonToggle "C" state.commandBoxOn
                 CommandLogBox.refresh
                 Key.mainScreen >~ Screen.render
         {-

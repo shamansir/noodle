@@ -2,7 +2,7 @@ module Cli.Components.CommandLogBox where
 
 import Prelude
 
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Effect (Effect)
 
@@ -76,5 +76,5 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state.commandLog
+    Key.commandLogBox >~ Box.setContent $ T.singleLine $ NdfFile.toTaggedNdfCode state.commandLog
     -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog

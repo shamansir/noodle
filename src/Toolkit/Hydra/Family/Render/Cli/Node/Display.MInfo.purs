@@ -4,7 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 import Data.Number as Number
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -77,5 +77,5 @@ render nodeBoxKey node = do
                 ]
                 [  ]
     nodeBoxKey >~ Node.append innerText
-    renderer <- Blessed.impair1 $ \repr -> textBoxKey >~ Box.setContent $ T.render $ T.infoNode repr
+    renderer <- Blessed.impair1 $ \repr -> textBoxKey >~ Box.setContent $ T.singleLine $ T.infoNode repr
     Blessed.lift $ runSignal $ Node.subscribeInput _.in node ~> renderer

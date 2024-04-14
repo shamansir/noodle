@@ -5,7 +5,7 @@ import Prelude
 
 import Effect (Effect)
 
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed as B
 import Blessed ((>~))
@@ -38,7 +38,7 @@ data Status
 
 contentFor :: Status -> String
 contentFor Off = ""
-contentFor Hover = T.render $ T.inputHover
+contentFor Hover = T.singleLine $ T.inputHover
 
 
 component ∷ Core.Blessed State

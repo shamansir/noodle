@@ -3,7 +3,7 @@ module Cli.Components.NodeBox where
 import Prelude
 
 import Data.Text.Format (fgc, bgc, s, fgcs) as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Debug as Debug
 
@@ -246,7 +246,7 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
                 , Box.height $ Dimension.px boxHeight
-                , Box.label $ T.render $ T.nodeLabel family
+                , Box.label $ T.singleLine $ T.nodeLabel family
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
@@ -435,12 +435,12 @@ renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsR
         updateInput inputR repr =
             case Map.lookup inputR inputsKeysMap of
                 Just inputKey -> do
-                    inputKey >~ Box.setContent $ T.render $ T.input' 0 inputR $ Just repr
+                    inputKey >~ Box.setContent $ T.singleLine $ T.input' 0 inputR $ Just repr
                 Nothing -> pure unit
         updateOutput outputR repr =
             case Map.lookup outputR outputsKeysMap of
                 Just outputKey -> do
-                    outputKey >~ Box.setContent $ T.render $ T.output' 0 outputR $ Just repr
+                    outputKey >~ Box.setContent $ T.singleLine $ T.output' 0 outputR $ Just repr
                 Nothing -> pure unit
 
 

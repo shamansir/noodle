@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Either (Either(..))
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed as B
 import Blessed ((>~))
@@ -36,9 +36,9 @@ data Status
 
 
 contentFor :: Status -> String
-contentFor Off = T.render $ T.buttonConnection $ Left "-"
-contentFor Waiting = T.render $ T.buttonConnection $ Right 0
-contentFor (Connected n) = T.render $ T.buttonConnection $ Right n
+contentFor Off = T.singleLine $ T.buttonConnection $ Left "-"
+contentFor Waiting = T.singleLine $ T.buttonConnection $ Right 0
+contentFor (Connected n) = T.singleLine $ T.buttonConnection $ Right n
 
 
 component ∷ Core.Blessed State

@@ -57,7 +57,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
 import Cli.Tagging as T
 import Data.Text.Format (fgc, s) as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 -- import Noodle.Node (Node)
 
@@ -83,7 +83,7 @@ render nodeBoxKey node = do
                 , Box.width $ Dimension.px 20
                 , Box.height $ Dimension.px $ Array.length Glsl.knownFns
                 , Box.scrollable true
-                , List.items $ (T.render <<< T.glslFnItem) <$> Glsl.knownFns
+                , List.items $ (T.singleLine <<< T.glslFnItem) <$> Glsl.knownFns
                 , List.mouse true
                 , List.keys true
                 , Box.tags true

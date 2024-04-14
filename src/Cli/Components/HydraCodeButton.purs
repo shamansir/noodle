@@ -6,7 +6,7 @@ import Prelude
 import Control.Monad.State (get, modify_) as State
 
 import Data.Text.Format as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed as B
 import Blessed ((>~))
@@ -38,7 +38,7 @@ import Cli.Tagging as T
 component ∷ Core.Blessed State
 component =
     B.button Key.hydraCodeButton
-        [ Box.content $ T.render $ T.buttonToggle "H" false
+        [ Box.content $ T.singleLine $ T.buttonToggle "H" false
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 7
         , Box.width $ Dimension.px 1
@@ -51,7 +51,7 @@ component =
                 State.modify_ State.toggleHydraCode
                 Key.hydraCodeBox >~ Element.toggle
                 state <- State.get
-                Key.hydraCodeButton >~ Box.setContent $ T.render $ T.buttonToggle "H" state.hydraCodeOn
+                Key.hydraCodeButton >~ Box.setContent $ T.singleLine $ T.buttonToggle "H" state.hydraCodeOn
                 HydraCodeBox.refresh
                 Key.mainScreen >~ Screen.render
         {-

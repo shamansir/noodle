@@ -10,7 +10,7 @@ import Data.Tuple as Tuple
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Foldable (for_)
 import Data.Map (lookup, empty) as Map
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Control.Monad.State (get, modify_) as State
 
@@ -68,7 +68,7 @@ component
     -> Core.Blessed State
 component topOffset family node nodeBoxKey infoBoxKey buttonKey =
     B.button buttonKey
-        [ Box.content $ T.render $ T.removeButtonOut
+        [ Box.content $ T.singleLine $ T.removeButtonOut
         , Box.top topOffset
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -98,14 +98,14 @@ component topOffset family node nodeBoxKey infoBoxKey buttonKey =
                     Nothing -> pure unit
         , Core.on Element.MouseOver
             \_ _ -> do
-                buttonKey >~ Box.setContent $ T.render $ T.removeButtonOver
+                buttonKey >~ Box.setContent $ T.singleLine $ T.removeButtonOver
                 infoBoxKey >~ IB.removeInfo
                 SL.removeStatus family
                 FI.removeStatus family
                 Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         , Core.on Element.MouseOut
             \_ _ -> do
-                buttonKey >~ Box.setContent $ T.render $ T.removeButtonOut
+                buttonKey >~ Box.setContent $ T.singleLine $ T.removeButtonOut
                 -- Info box : delete this node
                 infoBoxKey >~ IB.clear
                 SL.clear

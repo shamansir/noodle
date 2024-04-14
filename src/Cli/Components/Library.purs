@@ -44,7 +44,7 @@ import Toolkit.Hydra as Hydra
 import Toolkit.Hydra.Group as Hydra
 
 import Data.Text.Format (fgc, s) as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 
 
@@ -60,7 +60,7 @@ component families =
         , Box.height $ Dimension.percents 65.0
         , Box.draggable true
         , Box.scrollable true
-        , List.items $ (T.render <<< T.libraryItem) <$> families
+        , List.items $ (T.singleLine <<< T.libraryItem) <$> families
         , List.mouse true
         , List.keys true
         , Box.tags true

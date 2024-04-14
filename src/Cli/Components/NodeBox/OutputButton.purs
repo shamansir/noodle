@@ -15,7 +15,7 @@ import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
 import Data.SProxy (reflect)
 import Data.Text.Format as T
-import Data.Text.Output.Blessed (render) as T
+import Data.Text.Output.Blessed (singleLine) as T
 
 import Signal (Signal)
 import Signal (get) as Signal
@@ -91,7 +91,7 @@ component
     -> Core.Blessed State
 component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutputsBox idx maybeRepr reprSignal pdout onode outputId =
     B.button buttonKey
-        [ Box.content $ T.render $ T.output idx outputId maybeRepr
+        [ Box.content $ T.singleLine $ T.output idx outputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
