@@ -7,6 +7,7 @@ import Color as Color
 
 import Data.Array (singleton)
 import Data.Date (Date)
+import Data.DateTime (DateTime)
 import Data.Maybe (Maybe(..))
 import Data.Either (Either)
 import Data.Either (Either(..)) as E
@@ -18,9 +19,15 @@ import Data.Newtype (class Newtype, wrap, unwrap)
 
 newtype Indent = Indent Int
 newtype Level = Level Int
-newtype FootnoteId = FootnoteId Int
+newtype FootnoteId = FootnoteId (Either Int String)
 newtype Anchor = Anchor String
 newtype ProgrammingLanguage = ProgrammingLanguage String
+newtype Url = Url String
+newtype Term = Term Tag
+newtype Definition = Definition Tag
+newtype PropName = PropName String
+newtype PropValue = PropValue String
+newtype MacroCode = MacroCode String
 
 
 derive instance Newtype Indent _
@@ -28,6 +35,12 @@ derive instance Newtype Level _
 derive instance Newtype FootnoteId _
 derive instance Newtype Anchor _
 derive instance Newtype ProgrammingLanguage _
+derive instance Newtype Url _
+derive instance Newtype Term _
+derive instance Newtype Definition _
+derive instance Newtype PropName _
+derive instance Newtype PropValue _
+derive instance Newtype MacroCode _
 
 
 derive newtype instance Show Indent
@@ -55,8 +68,13 @@ data Format
     | Header Level (Maybe Anchor)
     | Quote
     | Verbatim
+    | Link Url
+    | Image Url
     | Footnote FootnoteId
+    | LinkTo FootnoteId
     | Code ProgrammingLanguage
+    | Define Term
+    | Comment
     | Sub
     | Sup
     | Fg (Either String Color)
@@ -89,6 +107,14 @@ data Bullet
     -- ..
 
 
+data Timing
+    = Date Date
+    | Time Time
+    | DateTime DateTime
+    -- TODO | Interval
+    -- TODO | Repeat
+
+
 data Tag
     = Empty
     | Plain String
@@ -100,18 +126,12 @@ data Tag
     | Para (Array Tag)
     | Nest Indent (Array Tag)
     | Newline
-    | Date Date -- merge with date, add interval?
-    | Time Time -- merge with time, add interval?
-    | List Bullet Tag (Array Tag) -- FIXME: homomorphic to join but the meaning is different
+    | Timing Timing
+    | List Bullet Tag (Array Tag) -- The root `Tag`` is optional (if `Empty`) header of the list
     | Table (Array (Tag /\ Array Tag))
-    | Link Tag String -- move under `Format`
-    | LinkTo Tag FootnoteId-- move under `Format`
-    | Definition Tag Tag -- move under  `Format` ?
     | Hr
-    | Image Tag String-- move under `Format``
-    | Property String String
-    | Comment String
-    | Macro String
+    | Property PropName PropValue
+    | Macro MacroCode
     | Task TaskStatus Tag
 
 
@@ -260,8 +280,8 @@ instance Formatter Tag where
     format = identity
 
 
-bulletSym :: Int -> Bullet -> String
-bulletSym index = case _ of
+bulletPrefix :: Int -> Bullet -> String
+bulletPrefix index = case _ of
     None -> ""
     Asterisk -> "*"
     Dash -> "-"
@@ -278,29 +298,38 @@ instance Show Tag where
         Empty -> just "empty"
         Plain str -> wrap "plain" str
         Align align tag -> wraparg "align" (show align) $ show tag
-        Format (Fg (E.Left colorStr)) tag -> wraparg "fg" (show colorStr) $ show tag
-        Format (Fg (E.Right color)) tag -> wraparg "fg" (show color) $ show tag
-        Format (Bg (E.Left colorStr)) tag -> wraparg "bg" (show colorStr) $ show tag
-        Format (Bg (E.Right color)) tag -> wraparg "bg" (show color) $ show tag
-        Format format tag -> wraparg "format" (show format) $ show tag
+        Format format tag -> case format of
+            Fg (E.Left colorStr) -> wraparg "fg" (show colorStr) $ show tag
+            Fg (E.Right color) -> wraparg "fg" (show color) $ show tag
+            Bg (E.Left colorStr) -> wraparg "bg" (show colorStr) $ show tag
+            Bg (E.Right color) -> wraparg "bg" (show color) $ show tag
+            Link (Url url) -> wraptag2 "link" (show tag) url
+            LinkTo (FootnoteId ftnId) ->
+                case ftnId of
+                    E.Left ftnIntId -> wraptag2 "link" (show tag) $ wrap "ftn#" $ show ftnIntId
+                    E.Right ftnStrId -> wraptag2 "link" (show tag) $ wrap "ftn" $ ftnStrId
+            Define (Term term) -> let definition = tag in wraptag2 "def" (show term) $ show definition
+            Image (Url url) -> let title = tag in wraparg "image" (show title) $ show url
+            Comment -> wrap "comment" $ show tag
+            Footnote (FootnoteId ftnId) ->
+                case ftnId of
+                    E.Left ftnIntId -> wraparg "footnote" ("#" <> show ftnIntId) $ show tag
+                    E.Right ftnStrId -> wraparg "footnote" ftnStrId $ show tag
+            _ -> wraparg "format" (show format) $ show tag
         Split tag1 tag2 -> wraptag2 "split" (show tag1) $ show tag2
         Pair tag1 tag2 -> wraptag2 "pair" (show tag1) $ show tag2
         Para tags -> wraplist "para" $ show <$> tags
         Newline -> just "nl"
         Hr -> just "hr"
-        Link tag url -> wraptag2 "link" (show tag) url
-        Definition tag1 tag2 -> wraptag2 "def" (show tag1) $ show tag2
-        Property name value -> wraptag2 "prop" name value
-        Date date -> wrap "date" $ show date
-        Time time -> wrap "time" $ show time
-        Image title url -> wraparg "image" (show title) $ show url
-        Comment str -> wrap "comment" str
-        Macro str -> wrap "macro" str
+        Property (PropName name) (PropValue value) -> wraptag2 "prop" name value
+        Timing (Date date) -> wrap "date" $ show date
+        Timing (Time time) -> wrap "time" $ show time
+        Timing (DateTime datetime) -> wrap "time" $ show datetime
+        Macro (MacroCode str) -> wrap "macro" str
         Task status tag -> wraparg "task" (show status) $ show tag
         Nest indent tags -> wraplistarg "nest" (show indent) $ show <$> tags
         Join tag tags -> wraplistarg "join" (show tag) $ show <$> tags
         List bullet tag tags -> wraplistarg2 "list" (show bullet) (show tag) $ show <$> tags
-        LinkTo tag ftnId -> wraparg "to" (show ftnId) $ show tag
         Table tags -> wrap "table" $ String.joinWith "|" $ uncurry tableitems <$> tags
         where
             just title = "(" <> title <> ")"
@@ -330,30 +359,38 @@ instance Show Bullet where
 
 
 instance Show Format where
-    show Bold = "bold"
-    show Underline = "underline"
-    show Blink = "blink"
-    show Inverse = "inverse"
-    show Invisible = "invisible"
-    show Strikethrough = "striked"
-    show Monospaced = "mono"
-    show Quote = "quote"
-    show Sub = "sub"
-    show Sup = "sup"
-    show Verbatim = "verbatim"
-    show (Footnote ftnId) = "footnote#" <> show ftnId
-    show (Code lang) = "code:" <> show lang
-    show (Header level anchor) = "header#" <> show level <> case anchor of
+    show = case _ of
+        Bold -> "bold"
+        Underline -> "underline"
+        Blink -> "blink"
+        Inverse -> "inverse"
+        Invisible -> "invisible"
+        Strikethrough -> "striked"
+        Monospaced -> "mono"
+        Quote -> "quote"
+        Sub -> "sub"
+        Sup -> "sup"
+        Verbatim -> "verbatim"
+        Footnote ftnId -> "footnote#" <> show ftnId
+        Code lang -> "code:" <> show lang
+        Header level anchor -> "header#" <> show level <> case anchor of
                                             Just anchor -> "{" <> show anchor <> "}"
                                             Nothing -> ""
-    show (Fg ecolor) =
-        "fg(" <> case ecolor of
-                E.Left colorStr -> show colorStr
-                E.Right color -> show color <> ")"
-    show (Bg ecolor) =
-        "bg(" <> case ecolor of
-                E.Left colorStr -> show colorStr
-                E.Right color -> show color <> ")"
+        Link (Url url) -> "link:" <> show url
+        Image (Url url) -> "image:" <> show url
+        LinkTo (FootnoteId ftnId) -> case ftnId of
+            E.Left intId -> "footnote:#" <> show intId
+            E.Right strId -> "footnote:" <> strId
+        Define (Term term) -> "define:" <> show term
+        Comment -> "comment"
+        Fg ecolor ->
+            "fg(" <> case ecolor of
+                    E.Left colorStr -> show colorStr
+                    E.Right color -> show color <> ")"
+        Bg ecolor ->
+            "bg(" <> case ecolor of
+                    E.Left colorStr -> show colorStr
+                    E.Right color -> show color <> ")"
 
 
 instance Show TaskStatus where

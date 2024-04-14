@@ -14,12 +14,12 @@ import Data.Either (Either(..)) as E
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
-import Data.Text.Format (Tag(..), Format(..), Align(..), bulletSym)
+import Data.Text.Format (Tag(..), Format(..), Align(..), Timing(..), Term(..), Url(..), MacroCode(..), bulletPrefix)
 import Data.Text.Output (OutputKind, class Renderer, layout, Support)
 import Data.Text.Output (Support(..), perform) as S
 import Data.Text.Doc (Doc, (<+>))
 import Data.Text.Doc as D
-import Data.DateTime (DateTime(..))
+import Data.DateTime (DateTime(..)) as DT
 import Data.DateTime as DateTime
 import Data.Date (Date(..), canonicalDate) as Dt
 import Data.Date as Date
@@ -44,31 +44,32 @@ instance Renderer Blessed where
         Empty -> S.Full
         Plain _ -> S.Full
         Newline -> S.Full
-        Format (Fg _) _ -> S.Full
-        Format (Bg _) _ -> S.Full
-        Format Bold _ -> S.Full
-        Format Underline _ -> S.Full
-        Format Blink _ -> S.Full
-        Format Inverse _ -> S.Full
-        Format Invisible _ -> S.Full
-        Format _ _ -> S.Text
+        Format format _ ->
+            case format of
+                Fg _ -> S.Full
+                Bg _ -> S.Full
+                Bold -> S.Full
+                Underline -> S.Full
+                Blink -> S.Full
+                Inverse -> S.Full
+                Invisible -> S.Full
+                Define _ -> S.Text
+                Link _ -> S.Partly
+                Image _ -> S.Text
+                LinkTo _ -> S.Partly
+                Comment -> S.Text
+                _ -> S.Text -- TODO
         Split _ _ -> S.Partly
         Align _ _ -> S.Full
         Pair _ _ -> S.Full
         Para _ -> S.Full
         Nest _ _ -> S.Full
         Join _ _ -> S.Full
-        Date _ -> S.Partly
-        Time _ -> S.Partly
+        Timing _ -> S.Partly
         List _ _ _ -> S.Text
         Table _ -> S.None
-        Link _ _ -> S.Partly
-        Definition _ _ -> S.Text
-        LinkTo _ _ -> S.Text
         Hr -> S.Text
-        Image _ _ -> S.Text
         Property _ _ -> S.Text
-        Comment _ -> S.Text
         Macro _ -> S.Text
         Task _ _ -> S.None -- FIXME
 
@@ -77,16 +78,23 @@ instance Renderer Blessed where
         Empty -> D.nil
         Plain str -> D.text str
         Newline -> D.break
-        Format (Fg (E.Left colorStr)) tag -> wrap (colorStr <> "-fg") tag
-        Format (Fg (E.Right color)) tag -> wrap (Color.toHexString color <> "-fg") tag
-        Format (Bg (E.Left colorStr)) tag -> wrap (colorStr <> "-bg") tag
-        Format (Bg (E.Right color)) tag -> wrap (Color.toHexString color <> "-bg") tag
-        Format Bold tag -> wrap "bold" tag
-        Format Underline tag -> wrap "underline" tag
-        Format Blink tag -> wrap "blink" tag
-        Format Inverse tag -> wrap "inverse" tag
-        Format Invisible tag -> wrap "invisible" tag
-        Format _ tag -> layout blessed tag -- other format's are not supported
+        Format format tag ->
+            case format of
+                Fg (E.Left colorStr) -> wrap (colorStr <> "-fg") tag
+                Fg (E.Right color) -> wrap (Color.toHexString color <> "-fg") tag
+                Bg (E.Left colorStr) -> wrap (colorStr <> "-bg") tag
+                Bg (E.Right color) -> wrap (Color.toHexString color <> "-bg") tag
+                Bold -> wrap "bold" tag
+                Underline -> wrap "underline" tag
+                Blink -> wrap "blink" tag
+                Inverse -> wrap "inverse" tag
+                Invisible -> wrap "invisible" tag
+                Define (Term dt) -> let dd = tag in D.break <> layout blessed dt <+> D.text "::" <+> layout blessed dd <> D.break
+                LinkTo ftn -> layout blessed tag <+> D.bracket "[" (D.text $ show $ unwrap ftn) "]"
+                Link (Url url) -> let title = tag in layout blessed title <+> D.bracket "(" (D.text url) ")"
+                Image (Url url) -> let title = tag in layout blessed title <+> D.bracket "(" (D.text url) ")"
+                Comment -> D.break <> layout blessed tag
+                _ -> layout blessed tag -- other format's are not supported
         Split tagA tagB -> layout blessed tagA <> D.text "{|}" <> layout blessed tagB
         Align Left tag -> wrap "left" tag
         Align Right tag -> wrap "right" tag
@@ -95,10 +103,15 @@ instance Renderer Blessed where
         Para tags -> D.stack $ layout blessed <$> tags
         Nest i tags -> D.nest' (unwrap i) $ layout blessed <$> tags
         Join tag tags -> D.folddoc (<>) $ layout blessed <$> Array.intersperse tag tags
-        Date date -> case FDT.formatDateTime "YYYY-DD-MM" $ DateTime date zeroTime of
+        Timing timing ->
+            case timing of
+                Date date -> case FDT.formatDateTime "YYYY-DD-MM" $ DT.DateTime date zeroTime of
                         E.Right success -> D.text success
                         E.Left _ -> D.text "<Date?>"
-        Time time -> case FDT.formatDateTime "HH-DD-MM" $ DateTime zeroDate time of
+                Time time -> case FDT.formatDateTime "HH:mm:ss" $ DT.DateTime zeroDate time of
+                        E.Right success -> D.text success
+                        E.Left _ -> D.text "<Time?>"
+                DateTime datetime -> case FDT.formatDateTime "YYYY-DD-MM HH:mm:ss" datetime of
                         E.Right success -> D.text success
                         E.Left _ -> D.text "<Time?>"
         List bullet Empty items ->
@@ -109,17 +122,12 @@ instance Renderer Blessed where
                 , D.nest' 1 $ uncurry D.mark <$> b bullet <$> Array.mapWithIndex (/\) (layout blessed <$> items)
                 ]
         Table items -> D.nil
-        Link text url -> layout blessed text <+> D.bracket "(" (D.text url) ")"
-        Definition dt dd -> D.break <> layout blessed dt <+> D.text "::" <+> layout blessed dd <> D.break
-        LinkTo tag ftn -> layout blessed tag <+> D.bracket "[" (D.text $ show $ unwrap ftn) "]"
         Hr -> D.text "----------"
-        Image tag url -> layout blessed tag <+> D.bracket "(" (D.text url) ")"
-        Property prop value -> D.break <> D.text prop <+> D.text "::" <+> D.text value <> D.break
-        Comment tag -> D.break <> D.text tag
-        Macro str -> D.text str
+        Property prop value -> D.break <> D.text (unwrap prop) <+> D.text "::" <+> D.text (unwrap value) <> D.break
+        Macro (MacroCode str) -> D.text str
         Task status tag -> D.nil -- FIXME
         where
-            b bullet (index /\ doc) = bulletSym index bullet /\ doc
+            b bullet (index /\ doc) = bulletPrefix index bullet /\ doc
             zeroDate = Dt.canonicalDate (fromMaybe bottom $ toEnum 0) bottom bottom
             zeroTime = Tm.Time bottom bottom bottom bottom
             wrap cmd tag = D.bracket "{" (D.text cmd) "}" <> layout blessed tag <> D.bracket "{/" (D.text cmd) "}"
