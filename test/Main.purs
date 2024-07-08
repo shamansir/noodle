@@ -24,7 +24,6 @@ import Test.NodeKey (spec) as NodeKey
 import Test.JsExprParsing (spec) as JsExprParsing
 import Test.WrapReprParsing (spec) as WrapReprParsing
 import Test.JsExprParsing.Wrap (spec) as JsExprParsingWrap
-import Test.Formatting (spec) as Formatting
 
 
 main :: Effect Unit
@@ -61,5 +60,3 @@ main = launchAff_ $ runSpec [consoleReporter] do
     JsExprParsingWrap.spec
   describe "Hydra Serialization"
     WrapReprParsing.spec
-  describeOnly "Formatting"
-    Formatting.spec

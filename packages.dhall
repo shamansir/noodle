@@ -190,5 +190,5 @@ in  upstream
     , repo = "https://github.com/natefaubion/purescript-tidy-codegen.git"
     , version = "v4.0.0"
     }
-  with text-output-unified =
-    ../purescript-text-output-unified/spago.dhall as Location
+  with doc =
+    ../purescript-text-formatting/spago.dhall as Location
