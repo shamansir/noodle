@@ -7,6 +7,9 @@ module Noodle.Fn.Protocol
   , lastInput, lastOutput
   , ChangeFocus(..)
   , FocusedUpdate
+--   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
+--   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
+--   , CurIFn, CurOFn, CurIVal, CurOVal
   )
   where
 
@@ -35,6 +38,30 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (InputR, OutputR)
 import Noodle.Stateful (class StatefulM)
+
+
+{-}
+type ITest1 = Maybe (forall i. IsSymbol i => Input i)
+type ITest2 = (forall i. IsSymbol i => Maybe (Input i))
+type ITest3 = Maybe InputId
+type IFnTest1 m = (ITest1 -> m Unit)
+type IFnTest2 m = (ITest2 -> m Unit)
+type IFnTest3 m = (ITest3 -> m Unit)
+
+type CurIVal = ITest3
+type CurIFn m = IFnTest3 m
+
+
+type OTest1 = Maybe (forall o. IsSymbol o => Output o)
+type OTest2 = (forall o. IsSymbol o => Maybe (Output o))
+type OTest3 = Maybe OutputId
+type OFnTest1 m = (OTest1 -> m Unit)
+type OFnTest2 m = (OTest2 -> m Unit)
+type OFnTest3 m = (OTest3 -> m Unit)
+
+
+type CurOVal = OTest3
+type CurOFn m = OFnTest3 m -}
 
 
 data InputChange
@@ -86,14 +113,40 @@ type Protocol state is os =
     , modifyInputs :: (Record is -> InputChange /\ Record is) -> Effect Unit
     , modifyOutputs :: (Record os -> OutputChange /\ Record os) -> Effect Unit
     , modifyState :: (state -> state) -> Effect Unit
+    -- TODO: try `Cons i is is'`
+    -- , storeLastInput :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit -- could be `InputId`` since we use `Protocol` only internally
+    -- , storeLastOutput :: (forall o. IsSymbol o => Maybe (Output o)) -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
+    -- , storeLastInput :: InputId -> m Unit -- could be `InputId`` since we use `Protocol` only internally
+    -- , storeLastOutput :: OutputId -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
     }
 
+
+{-
+instance StatefulM (Protocol state is os) Effect state where
+    getM :: Protocol state is os -> Effect state
+    getM = _.getState unit
+    setM :: state -> Protocol state is os -> Effect (Protocol state is os)
+    setM state proto = do
+        proto.modifyState (const state) *> pure proto -}
+
+
+-- Functor etc., (only for Signal)
+
+
+-- TODO: all Channel-stuff is `Track`
 
 type Tracker state is os =
     { state :: Signal state
     , inputs :: Signal (InputChange /\ Record is)
     , outputs :: Signal (OutputChange /\ Record os)
     , all :: Signal (FocusedUpdate state is os)
+    -- , lastInput :: w (Maybe InputId)
+    -- , lastOutput :: w (Maybe OutputId)
+    -- , lastInput :: w (forall i. IsSymbol i => Maybe (Input i))
+    -- , lastOutput :: w (forall o. IsSymbol o => Maybe (Output o))
+    -- , lastInput :: Signal (Maybe InputId)
+    -- , lastOutput :: Signal (Maybe OutputId)
+    -- , byInput :: Signal (forall din. InputId -> din )
     }
 
 
@@ -272,3 +325,47 @@ lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMay
 
 lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputR)
 lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
+
+
+-- type Tracker k v = Ref (k /-> v)
+
+
+-- newTracker :: forall k v. Effect (Tracker k v)
+-- newTracker = Ref.new Map.empty
+
+
+-- put :: forall k v. Ord k => k -> v -> Tracker k v -> Effect Unit
+-- put k v = Ref.modify_ (Map.insert k v)
+
+
+-- check :: forall k v. Ord k => k -> Tracker k v -> Effect (Maybe v)
+-- check k tracker =
+--     Ref.read tracker <#> Map.lookup k
+
+
+{-
+mkDefault
+    :: forall inputs outputs d
+     . Record inputs
+    -> Record outputs
+    -> Effect (protocol :: Protocol d /\ Record outputs)
+mkDefault initials = do
+    let initialsMap = Map.fromFoldable initials
+    inputs <- newTracker
+    outputs <- newTracker
+    lastRef <- Ref.new Nothing
+    let
+        protocol =
+            { last : const $ Ref.read lastRef
+            , receive : \input -> do
+                maybeValAtInput <- check input inputs
+                pure $ case maybeValAtInput of
+                    Just val -> Just val
+                    Nothing -> Map.lookup input initialsMap
+            , send : \output val -> put output val outputs
+            , sendIn : \input val -> do
+                Ref.write (Just input) lastRef
+                inputs # put input val
+            }
+    pure { protocol, inputs, outputs }
+-}
