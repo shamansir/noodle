@@ -15,6 +15,7 @@ module Noodle.Fn.Protocol
 
 import Prelude
 
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
@@ -106,12 +107,12 @@ outputChangeToMaybe (SingleOutput oid) = Just oid
 outputChangeToMaybe AllOutputs = Nothing
 
 
-type Protocol state is os =
-    { getInputs :: Unit -> Effect (InputChange /\ Record is)
-    , getOutputs :: Unit -> Effect (OutputChange /\ Record os)
+type Protocol state repr =
+    { getInputs :: Unit -> Effect (InputChange /\ Map InputR repr)
+    , getOutputs :: Unit -> Effect (OutputChange /\ Map OutputR repr)
     , getState :: Unit -> Effect state
-    , modifyInputs :: (Record is -> InputChange /\ Record is) -> Effect Unit
-    , modifyOutputs :: (Record os -> OutputChange /\ Record os) -> Effect Unit
+    , modifyInputs :: (Map InputR repr -> InputChange /\ Map InputR repr) -> Effect Unit
+    , modifyOutputs :: (Map OutputR repr -> OutputChange /\ Map OutputR repr) -> Effect Unit
     , modifyState :: (state -> state) -> Effect Unit
     -- TODO: try `Cons i is is'`
     -- , storeLastInput :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit -- could be `InputId`` since we use `Protocol` only internally
@@ -135,11 +136,11 @@ instance StatefulM (Protocol state is os) Effect state where
 
 -- TODO: all Channel-stuff is `Track`
 
-type Tracker state is os =
+type Tracker state repr =
     { state :: Signal state
-    , inputs :: Signal (InputChange /\ Record is)
-    , outputs :: Signal (OutputChange /\ Record os)
-    , all :: Signal (FocusedUpdate state is os)
+    , inputs :: Signal (InputChange /\ Map InputR repr)
+    , outputs :: Signal (OutputChange /\ Map OutputR repr)
+    , all :: Signal (FocusedUpdate state repr)
     -- , lastInput :: w (Maybe InputId)
     -- , lastOutput :: w (Maybe OutputId)
     -- , lastInput :: w (forall i. IsSymbol i => Maybe (Input i))
@@ -224,18 +225,18 @@ onSignals state inputs outputs = do
 -}
 
 
-type PreUpdatesRow state is os = (Boolean /\ state) /\ (Boolean /\ InputChange /\ Record is) /\ (Boolean /\ OutputChange /\ Record os)
-type PostUpdatesRow state is os = ChangeFocus /\ PreUpdatesRow state is os
-type FocusedUpdate state is os = ChangeFocus /\ state /\ Record is /\ Record os
+type PreUpdatesRow state repr = (Boolean /\ state) /\ (Boolean /\ InputChange /\ Map InputR repr) /\ (Boolean /\ OutputChange /\ Map OutputR repr)
+type PostUpdatesRow state repr = ChangeFocus /\ PreUpdatesRow state repr
+type FocusedUpdate state repr = ChangeFocus /\ state /\ Map InputR repr /\ Map OutputR repr
 
 
 make
-    :: forall state is os m
+    :: forall state repr m
     .  MonadEffect m
     => state
-    -> Record is
-    -> Record os
-    -> m (Tracker state is os /\ Protocol state is os)
+    -> Map InputR repr
+    -> Map OutputR repr
+    -> m (Tracker state repr /\ Protocol state repr)
 make state inputs outputs =
     liftEffect $ do
 
@@ -246,7 +247,7 @@ make state inputs outputs =
             inputsInit = true /\ AllInputs /\ inputs
             outputsInit = true /\ AllOutputs /\ outputs
 
-            (initAll :: PostUpdatesRow state is os) = Everything /\ stateInit /\ inputsInit /\ outputsInit
+            (initAll :: PostUpdatesRow state repr) = Everything /\ stateInit /\ inputsInit /\ outputsInit
 
         stateCh <- channel stateInit
         inputsCh <- channel inputsInit
@@ -259,7 +260,7 @@ make state inputs outputs =
             outputsSig = Channel.subscribe outputsCh
             changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inputsSig <*> outputsSig)
 
-            foldUpdates :: PreUpdatesRow state is os -> PostUpdatesRow state is os -> PostUpdatesRow state is os
+            foldUpdates :: PreUpdatesRow state repr -> PostUpdatesRow state repr -> PostUpdatesRow state repr
             foldUpdates
                 lastChange@((bState /\ state) /\ (bInput /\ inputChange /\ is) /\ (bOutput /\ outputChange /\ os))
                 (_ /\ (bStatePrev /\ _) /\ (bInputPrev /\ _ /\ _) /\ (bOutputPrev /\ _))
@@ -283,13 +284,13 @@ make state inputs outputs =
 
             toPreUpdateRow
                 :: (Boolean /\ state)
-                -> (Boolean /\ InputChange /\ Record is)
-                -> (Boolean /\ OutputChange /\ Record os)
-                -> PreUpdatesRow state is os
+                -> (Boolean /\ InputChange /\ Map InputR repr)
+                -> (Boolean /\ OutputChange /\ Map OutputR repr)
+                -> PreUpdatesRow state repr
             toPreUpdateRow = (/\) >>> Tuple.curry
 
         let
-            tracker :: Tracker state is os
+            tracker :: Tracker state repr
             tracker =
                 { state : Tuple.snd <$> stateSig
                 , inputs : Tuple.snd <$>inputsSig
@@ -297,7 +298,7 @@ make state inputs outputs =
                 , all : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
                 }
 
-            protocol :: Protocol state is os
+            protocol :: Protocol state repr
             protocol =
                 { getInputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> outputsSig
@@ -311,19 +312,19 @@ make state inputs outputs =
         pure $ tracker /\ protocol
 
 
-inputs :: forall state is os. Tracker state is os -> Effect (Record is)
+inputs :: forall state repr. Tracker state repr -> Effect (Map InputR repr)
 inputs tracker = Signal.get tracker.inputs <#> Tuple.snd
 
 
-outputs :: forall state is os. Tracker state is os -> Effect (Record os)
+outputs :: forall state repr. Tracker state repr -> Effect (Map OutputR repr)
 outputs tracker = Signal.get tracker.outputs <#> Tuple.snd
 
 
-lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputR)
+lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InputR)
 lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMaybe
 
 
-lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputR)
+lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
 lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
 
 
