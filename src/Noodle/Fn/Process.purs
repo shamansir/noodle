@@ -54,8 +54,11 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
 import Noodle.Fn.Protocol (InputChange(..), OutputChange(..), Protocol)
-
-
+import Noodle.Fn.Raw.Protocol (InputChange(..), OutputChange(..)) as Raw
+import Noodle.Fn.Raw.Protocol (RawProtocol)
+import Noodle.Fn.Raw.Process (RawProcessM(..))
+import Noodle.Fn.Raw.Process (RawProcessF)
+import Noodle.Fn.Raw.Process (RawProcessF(..)) as Raw
 
 
 data ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) -> Type -> Type
@@ -274,3 +277,16 @@ runFreeM protocol fn =
         sendToInput iid v = liftEffect $ protocol.modifyInputs $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInput iid)
         -- modifyInputs :: (Record is -> Record is) -> m Unit
         -- modifyInputs fn = protocol.modifyInputs fn
+
+
+compile :: forall state is os m a repr. ProcessM state is os m a -> RawProcessM state repr m a
+compile (ProcessM processFree) =
+    let
+        compileProcessF :: ProcessF state is os m ~> RawProcessF state repr m
+        compileProcessF pf = case pf of
+            State f -> Raw.State f
+            Lift m -> Raw.Lift m
+            Send outputR dout a -> Raw.Send outputR (unsafeCoerce dout) a -- FIXME: `toRepr`` instead of `unsafeCoerce``
+            SendIn inputR din a -> Raw.SendIn inputR (unsafeCoerce din) a  -- FIXME: `toRepr`` instead of `unsafeCoerce``
+            Receive inputR f -> Raw.Receive inputR \repr -> f (unsafeCoerce repr)  -- FIXME: `fromRepr`` instead of `unsafeCoerce``
+    in RawProcessM (foldFree (Free.liftF <<< compileProcessF) processFree)

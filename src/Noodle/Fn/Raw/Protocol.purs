@@ -1,6 +1,6 @@
-module Noodle.Fn.Protocol
-  ( Protocol
-  , Tracker
+module Noodle.Fn.Raw.Protocol
+  ( RawProtocol
+  , RawTracker
   , make
   , InputChange(..), OutputChange(..)
   , inputs, outputs
@@ -107,7 +107,7 @@ outputChangeToMaybe (SingleOutput oid) = Just oid
 outputChangeToMaybe AllOutputs = Nothing
 
 
-type Protocol state repr =
+type RawProtocol state repr =
     { getInputs :: Unit -> Effect (InputChange /\ Map InputR repr)
     , getOutputs :: Unit -> Effect (OutputChange /\ Map OutputR repr)
     , getState :: Unit -> Effect state
@@ -136,7 +136,7 @@ instance StatefulM (Protocol state is os) Effect state where
 
 -- TODO: all Channel-stuff is `Track`
 
-type Tracker state repr =
+type RawTracker state repr =
     { state :: Signal state
     , inputs :: Signal (InputChange /\ Map InputR repr)
     , outputs :: Signal (OutputChange /\ Map OutputR repr)
@@ -236,7 +236,7 @@ make
     => state
     -> Map InputR repr
     -> Map OutputR repr
-    -> m (Tracker state repr /\ Protocol state repr)
+    -> m (RawTracker state repr /\ RawProtocol state repr)
 make state inputs outputs =
     liftEffect $ do
 
@@ -290,7 +290,7 @@ make state inputs outputs =
             toPreUpdateRow = (/\) >>> Tuple.curry
 
         let
-            tracker :: Tracker state repr
+            tracker :: RawTracker state repr
             tracker =
                 { state : Tuple.snd <$> stateSig
                 , inputs : Tuple.snd <$>inputsSig
@@ -298,7 +298,7 @@ make state inputs outputs =
                 , all : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
                 }
 
-            protocol :: Protocol state repr
+            protocol :: RawProtocol state repr
             protocol =
                 { getInputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> outputsSig
@@ -312,19 +312,19 @@ make state inputs outputs =
         pure $ tracker /\ protocol
 
 
-inputs :: forall state repr. Tracker state repr -> Effect (Map InputR repr)
+inputs :: forall state repr. RawTracker state repr -> Effect (Map InputR repr)
 inputs tracker = Signal.get tracker.inputs <#> Tuple.snd
 
 
-outputs :: forall state repr. Tracker state repr -> Effect (Map OutputR repr)
+outputs :: forall state repr. RawTracker state repr -> Effect (Map OutputR repr)
 outputs tracker = Signal.get tracker.outputs <#> Tuple.snd
 
 
-lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InputR)
+lastInput :: forall state repr. RawTracker state repr -> Effect (Maybe InputR)
 lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMaybe
 
 
-lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
+lastOutput :: forall state repr. RawTracker state repr -> Effect (Maybe OutputR)
 lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
 
 

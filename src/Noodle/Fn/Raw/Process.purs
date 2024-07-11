@@ -1,6 +1,6 @@
 module Noodle.Fn.Raw.Process
-  ( RawProcessF
-  , RawProcessM
+  ( RawProcessF(..)  -- FIXME: close the constructor
+  , RawProcessM(..) -- FIXME: close the constructor
   , imapFState
   , imapMState
   , lift
