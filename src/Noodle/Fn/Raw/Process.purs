@@ -63,9 +63,9 @@ data RawProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
 data RawProcessF state repr m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send OutputR repr a
-    | SendIn InputR repr a
-    | Receive InputR (repr -> a)
+    | Send OutputR (Repr repr) a
+    | SendIn InputR (Repr repr) a
+    | Receive InputR (Repr repr -> a)
 
 
 instance functorProcessF :: Functor m => Functor (RawProcessF state repr m) where
@@ -118,17 +118,17 @@ instance monadRecProcessM :: MonadRec (RawProcessM state repr m) where
 
 receive :: forall state repr m. InputR -> RawProcessM state repr m (Repr repr)
 receive inputR =
-    RawProcessM $ Free.liftF $ Receive inputR $ Repr
+    RawProcessM $ Free.liftF $ Receive inputR $ identity
 
 
 send :: forall state repr m. OutputR -> Repr repr -> RawProcessM state repr m Unit
 send outputR orepr =
-    RawProcessM $ Free.liftF $ Send outputR (unwrap orepr :: repr) unit
+    RawProcessM $ Free.liftF $ Send outputR orepr unit
 
 
 sendIn ∷ forall state repr m. InputR → Repr repr → RawProcessM state repr m Unit
 sendIn inputR irepr =
-    RawProcessM $ Free.liftF $ SendIn inputR (unwrap irepr :: repr) unit
+    RawProcessM $ Free.liftF $ SendIn inputR irepr unit
 
 
 lift :: forall state repr m. m Unit -> RawProcessM state repr m Unit

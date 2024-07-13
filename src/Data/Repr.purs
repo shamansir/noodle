@@ -1,7 +1,7 @@
 module Data.Repr
     ( Repr(..)
-    , class ToRepr, toRepr
-    , class FromRepr, fromRepr
+    , class ToRepr, toRepr, fallbackTo, ensureTo
+    , class FromRepr, fromRepr, fallbackFrom, ensureFrom
     , exists, wrap, unwrap
     , class ToReprRow, toReprRow, toReprRowBuilder
     -- , class FromReprRow, fromReprRow, fromReprRowBuilder
@@ -24,11 +24,18 @@ import Record.Builder as Builder
 import Prim.Row as Row
 import Prim.RowList as RL
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 
 
 -- FIXME: Merge with `Node2.MapsFolds.Repr` and `Patch4.MapsFolds.Repr` and `Toolkit3.MapsFolds.Repr`.
 -- FIXME: Maybe reorganize into `MapsFolds.Node2.Path` & `MapsFolds.Node2.Repr` and `MapsFolds.Patch4` and `MapsFolds.Toolkit3.Path` & `MapsFolds.Toolkit3.Repr`
+
+{-
+data Repr a
+  = Pass a
+  | Decline
+-}
+
 
 data Repr a = Repr a
 
@@ -37,11 +44,13 @@ instance Functor Repr where
   map f = unwrap >>> f >>> Repr
 
 
-class ToRepr a repr where
+class ToRepr a repr | repr -> a where
+    fallbackTo :: Repr repr
     toRepr :: a -> Maybe (Repr repr)
 
 
-class FromRepr repr a where
+class FromRepr repr a | a -> repr where
+    fallbackFrom :: a
     fromRepr :: Repr repr -> Maybe a
 
 
@@ -76,6 +85,14 @@ exists = Just <<< wrap
 
 unwrap :: forall repr. Repr repr -> repr
 unwrap (Repr repr) = repr
+
+
+ensureTo :: forall repr a. ToRepr a repr => a -> Repr repr
+ensureTo = fromMaybe fallbackTo <<< toRepr
+
+
+ensureFrom :: forall repr a. FromRepr repr a => Repr repr -> a
+ensureFrom = fromMaybe fallbackFrom <<< fromRepr
 
 
 class ToReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
