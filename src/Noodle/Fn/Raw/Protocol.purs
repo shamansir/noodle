@@ -237,7 +237,7 @@ make
     -> Map InputR repr
     -> Map OutputR repr
     -> m (RawTracker state repr /\ RawProtocol state repr)
-make state inputs outputs =
+make state inputs outputs = -- the same code as in Fn.Protocol, if you remove the type spec
     liftEffect $ do
 
          -- boolean flags help to find out which signal was updated the latest in the merged all changes by flipping them on modification
