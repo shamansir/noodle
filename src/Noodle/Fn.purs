@@ -64,14 +64,14 @@ type Orders (iorder :: SOrder) (oorder :: SOrder) =
     { inputs :: Proxy iorder, outputs :: Proxy oorder }
 
 
-data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name { inputs :: SOrder, outputs :: SOrder } (ProcessM state is os m Unit)
+data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn Name { inputs :: SOrder, outputs :: SOrder } (ProcessM state is os repr m Unit)
 
 
-class ToFn a state is os where
-    toFn :: forall m. a -> Fn state is os m
+class ToFn a state is os repr where
+    toFn :: forall m. a -> Fn state is os repr m
 
 
-make :: forall state is iorder os oorder m. HasSymbolsOrder iorder is => HasSymbolsOrder oorder os => Name -> Orders iorder oorder -> ProcessM state is os m Unit -> Fn state is os m
+make :: forall state is iorder os oorder repr m. HasSymbolsOrder iorder is => HasSymbolsOrder oorder os => Name -> Orders iorder oorder -> ProcessM state is os repr m Unit -> Fn state is os repr m
 make name order = Fn name { inputs : SOrder.instantiate (Proxy :: _ is) order.inputs, outputs : SOrder.instantiate (Proxy :: _ os) order.outputs }
 
 
@@ -97,11 +97,11 @@ program = do
 -}
 
 
-mapM :: forall state is os m m'. (m ~> m') -> Fn state is os m -> Fn state is os m'
+mapM :: forall state is os repr m m'. (m ~> m') -> Fn state is os repr m -> Fn state is os repr m'
 mapM f (Fn name order processM) = Fn name order $ Process.mapMM f processM
 
 
-imapState :: forall state state' is os m. (state -> state') -> (state' -> state) -> Fn state is os m -> Fn state' is os m
+imapState :: forall state state' is os repr m. (state -> state') -> (state' -> state) -> Fn state is os repr m -> Fn state' is os repr m
 imapState f g (Fn name order processM) = Fn name order $ Process.imapMState f g processM
 
 {- Running -}
@@ -115,7 +115,7 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
-run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m ( state /\ Record is /\ Record os )
+run :: forall state is os repr m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
 run protocol (Fn _ _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ protocol.getState unit
@@ -124,7 +124,7 @@ run protocol (Fn _ _ process) = do
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 
-run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m Unit
+run' :: forall state is os repr m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os repr m -> m Unit
 run' protocol (Fn _ _ process) =
     Process.runM protocol process
 
@@ -132,31 +132,31 @@ run' protocol (Fn _ _ process) =
 {- Get information about the function -}
 
 
-name :: forall state is os m. Fn state is os m -> Name
+name :: forall state is os repr m. Fn state is os repr m -> Name
 name (Fn n _ _) = n
 
 
-inputsShape :: forall state (is :: Row Type) os m isrl. HasInputsAt is isrl => Fn state is os m -> List InputR
+inputsShape :: forall state (is :: Row Type) os repr m isrl. HasInputsAt is isrl => Fn state is os repr m -> List InputR
 inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: _ is)
 
 
-outputsShape :: forall state is (os :: Row Type) m osrl. HasOutputsAt os osrl => Fn state is os m -> List OutputR
+outputsShape :: forall state is (os :: Row Type) repr m osrl. HasOutputsAt os osrl => Fn state is os repr m -> List OutputR
 outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: _ os)
 
 
-inputsShapeHeld :: forall state (is :: Row Type) os m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Fn state is os m -> Array HoldsInput
+inputsShapeHeld :: forall state (is :: Row Type) os repr m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Fn state is os repr m -> Array HoldsInput
 inputsShapeHeld (Fn _ { inputs } _) = KH.orderedKeys' (Proxy :: _ Input) inputs (Proxy :: _ is)
 
 
-outputsShapeHeld :: forall state is (os :: Row Type) m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Fn state is os m -> Array HoldsOutput
+outputsShapeHeld :: forall state is (os :: Row Type) repr m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Fn state is os repr m -> Array HoldsOutput
 outputsShapeHeld (Fn _ { outputs } _) = KH.orderedKeys' (Proxy :: _ Output) outputs (Proxy :: _ os)
 
 
-inputsOrder :: forall state (is :: Row Type) os m isrl. HasInputsAt is isrl => Fn state is os m -> SOrder
+inputsOrder :: forall state (is :: Row Type) os repr m isrl. HasInputsAt is isrl => Fn state is os repr m -> SOrder
 inputsOrder (Fn _ { inputs } _) = inputs
 
 
-outputsOrder :: forall state (is :: Row Type) os m osrl. HasOutputsAt os osrl => Fn state is os m -> SOrder
+outputsOrder :: forall state (is :: Row Type) os repr m osrl. HasOutputsAt os osrl => Fn state is os repr m -> SOrder
 outputsOrder (Fn _ { outputs } _) = outputs
 
 
@@ -165,36 +165,36 @@ outputsOrder (Fn _ { outputs } _) = outputs
 
 
 shape
-    :: forall state (is :: Row Type) (os :: Row Type) m isrl osrl
+    :: forall state (is :: Row Type) (os :: Row Type) repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
-    => Fn state is os m
+    => Fn state is os repr m
     -> List InputR /\ List OutputR
 shape fn = inputsShape fn /\ outputsShape fn
 
 
 dimensions
-    :: forall state is os m isrl osrl
+    :: forall state is os repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
-    => Fn state is os m
+    => Fn state is os repr m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall state is os m isrl osrl
+    :: forall state is os repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
-    -> Fn state is os m
+    -> Fn state is os repr m
     -> Int /\ Int
 dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (List.filter oPred >>> List.length)
 
 
 {-
-findInput :: forall i ii o oo state m d. (i -> Boolean) -> Fn state is os m -> Maybe (i /\ ii)
+findInput :: forall i ii o oo state m d. (i -> Boolean) -> Fn state is os repr m -> Maybe (i /\ ii)
 findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex (Tuple.fst >>> pred) inputs
 
 
@@ -203,7 +203,7 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 -}
 
 
-cloneReplace :: forall state is os m. Fn state is os m -> ProcessM state is os m Unit -> Fn state is os m
+cloneReplace :: forall state is os repr m. Fn state is os repr m -> ProcessM state is os repr m Unit -> Fn state is os repr m
 cloneReplace (Fn name order _) newProcessM =
     Fn name order newProcessM
 

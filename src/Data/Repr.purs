@@ -1,7 +1,9 @@
 module Data.Repr
     ( Repr(..)
-    , class ToRepr, toRepr, fallbackTo, ensureTo
-    , class FromRepr, fromRepr, fallbackFrom, ensureFrom
+    , ensureTo, ensureFrom
+    , class IsRepr, fallback
+    , class ToRepr, toRepr
+    , class FromRepr, fromRepr, whenFailed
     , exists, wrap, unwrap
     , class ToReprRow, toReprRow, toReprRowBuilder
     -- , class FromReprRow, fromReprRow, fromReprRowBuilder
@@ -32,25 +34,29 @@ import Data.Maybe (Maybe(..), fromMaybe)
 
 {-
 data Repr a
-  = Pass a
+  = Accept a
   | Decline
 -}
 
 
-data Repr a = Repr a
+data Repr a
+  = Repr a
 
 
 instance Functor Repr where
-  map f = unwrap >>> f >>> Repr
+    map f = unwrap >>> f >>> Repr
 
 
-class ToRepr a repr | repr -> a where
-    fallbackTo :: Repr repr
+class IsRepr repr where
+    fallback :: repr
+
+
+class IsRepr repr <= ToRepr a repr where
     toRepr :: a -> Maybe (Repr repr)
 
 
-class FromRepr repr a | a -> repr where
-    fallbackFrom :: a
+class IsRepr repr <= FromRepr repr a | a -> repr where
+    whenFailed :: a
     fromRepr :: Repr repr -> Maybe a
 
 
@@ -88,11 +94,11 @@ unwrap (Repr repr) = repr
 
 
 ensureTo :: forall repr a. ToRepr a repr => a -> Repr repr
-ensureTo = fromMaybe fallbackTo <<< toRepr
+ensureTo = fromMaybe (Repr fallback) <<< toRepr
 
 
 ensureFrom :: forall repr a. FromRepr repr a => Repr repr -> a
-ensureFrom = fromMaybe fallbackFrom <<< fromRepr
+ensureFrom = fromMaybe whenFailed <<< fromRepr
 
 
 class ToReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint

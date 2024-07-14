@@ -28,8 +28,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List (List)
 import Data.SProxy (reflect')
-import Data.Repr (class ToRepr, class FromRepr, fromRepr, toRepr)
-import Data.Repr (Repr(..), unwrap)
+import Data.Repr (class ToRepr, class FromRepr, class IsRepr, fromRepr, toRepr)
+import Data.Repr (Repr(..), unwrap, fallback)
 import Data.Traversable (traverse)
 
 import Prim.RowList as RL
@@ -183,23 +183,23 @@ runM
     :: forall state repr m
      . MonadEffect m
     => MonadRec m
-    => repr
-    -> RawProtocol state repr
+    => IsRepr repr
+    => RawProtocol state repr
     -> RawProcessM state repr m
     ~> m
-runM default protocol (RawProcessM processFree) =
-    runFreeM default protocol processFree
+runM protocol (RawProcessM processFree) =
+    runFreeM protocol processFree
 
 
 runFreeM
     :: forall state repr m
      . MonadEffect m
     => MonadRec m
-    => repr
-    -> RawProtocol state repr
+    => IsRepr repr
+    => RawProtocol state repr
     -> Free (RawProcessF state repr m)
     ~> m
-runFreeM default protocol fn =
+runFreeM protocol fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
@@ -243,7 +243,7 @@ runFreeM default protocol fn =
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
         getInputAt :: InputR -> m (Repr repr)
-        getInputAt iid = liftEffect $ maybe (Repr default) Repr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
+        getInputAt iid = liftEffect $ maybe (Repr fallback) Repr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
         sendToOutput :: OutputR -> Repr repr -> m Unit
         sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
         sendToInput :: InputR -> Repr repr -> m Unit
