@@ -2,6 +2,7 @@ module Toolkit.Hydra.Family.Modulate.FModulateScrollY where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -63,6 +64,7 @@ type Family (m :: Type -> Type) = -- {-> modulate <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -86,4 +88,5 @@ type Node (m :: Type -> Type) =
     N.Node "modulateScrollY" State
         Inputs
         Outputs
+        WrapRepr
         m

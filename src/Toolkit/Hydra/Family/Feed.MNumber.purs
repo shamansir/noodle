@@ -2,6 +2,7 @@ module Toolkit.Hydra.Family.Feed.FNumber where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -57,6 +58,7 @@ type Family (m :: Type -> Type) = -- {-> number <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -77,4 +79,5 @@ type Node (m :: Type -> Type) =
     N.Node "number" State
         Inputs
         Outputs
+        WrapRepr
         m

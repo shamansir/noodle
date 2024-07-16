@@ -28,7 +28,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List (List)
 import Data.SProxy (reflect')
-import Data.Repr (class ToRepr, class FromRepr, class IsRepr, fromRepr, toRepr)
+import Data.Repr (class ToRepr, class FromRepr, class HasFallback, fromRepr, toRepr, fallbackByRepr)
 import Data.Repr (Repr(..), unwrap, fallback)
 import Data.Traversable (traverse)
 
@@ -183,7 +183,7 @@ runM
     :: forall state repr m
      . MonadEffect m
     => MonadRec m
-    => IsRepr repr
+    => HasFallback repr
     => RawProtocol state repr
     -> RawProcessM state repr m
     ~> m
@@ -195,7 +195,7 @@ runFreeM
     :: forall state repr m
      . MonadEffect m
     => MonadRec m
-    => IsRepr repr
+    => HasFallback repr
     => RawProtocol state repr
     -> Free (RawProcessF state repr m)
     ~> m
@@ -243,7 +243,7 @@ runFreeM protocol fn =
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
         getInputAt :: InputR -> m (Repr repr)
-        getInputAt iid = liftEffect $ maybe (Repr fallback) Repr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
+        getInputAt iid = liftEffect $ fallbackByRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
         sendToOutput :: OutputR -> Repr repr -> m Unit
         sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
         sendToInput :: InputR -> Repr repr -> m Unit

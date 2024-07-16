@@ -1,9 +1,9 @@
 module Data.Repr
     ( Repr(..)
     , ensureTo, ensureFrom
-    , class IsRepr, fallback
+    , class HasFallback, fallback, fallbackByRepr, fallbackBy
     , class ToRepr, toRepr
-    , class FromRepr, fromRepr, whenFailed
+    , class FromRepr, fromRepr
     , exists, wrap, unwrap
     , class ToReprRow, toReprRow, toReprRowBuilder
     -- , class FromReprRow, fromReprRow, fromReprRowBuilder
@@ -26,7 +26,7 @@ import Record.Builder as Builder
 import Prim.Row as Row
 import Prim.RowList as RL
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 
 
 -- FIXME: Merge with `Node2.MapsFolds.Repr` and `Patch4.MapsFolds.Repr` and `Toolkit3.MapsFolds.Repr`.
@@ -47,16 +47,15 @@ instance Functor Repr where
     map f = unwrap >>> f >>> Repr
 
 
-class IsRepr repr where
-    fallback :: repr
+class HasFallback a where
+    fallback :: a
 
 
-class IsRepr repr <= ToRepr a repr where
+class HasFallback repr <= ToRepr a repr where
     toRepr :: a -> Maybe (Repr repr)
 
 
-class IsRepr repr <= FromRepr repr a | a -> repr where
-    whenFailed :: a
+class (HasFallback repr, HasFallback a) <= FromRepr repr a where
     fromRepr :: Repr repr -> Maybe a
 
 
@@ -98,7 +97,15 @@ ensureTo = fromMaybe (Repr fallback) <<< toRepr
 
 
 ensureFrom :: forall repr a. FromRepr repr a => Repr repr -> a
-ensureFrom = fromMaybe whenFailed <<< fromRepr
+ensureFrom = fromMaybe fallback <<< fromRepr
+
+
+fallbackByRepr :: forall repr. HasFallback repr => Maybe repr -> Repr repr
+fallbackByRepr = fallbackBy Repr
+
+
+fallbackBy:: forall a b. HasFallback a => (a -> b) -> Maybe a -> b
+fallbackBy f = maybe (f fallback) f
 
 
 class ToReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint

@@ -61,6 +61,7 @@ import Cli.Style as Style
 -- import Noodle.Node (Node)
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 -- import Toolkit.Hydra.Family.Feed.FNumber (Inputs, Outputs, Node)
 -- import Toolkit.Hydra.Family.Feed.FNumber (Node, State, _out_out) as FNumber
 -- import Toolkit.Hydra (State) as Hydra

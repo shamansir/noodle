@@ -15,6 +15,9 @@ import Toolkit.Hydra.Types as H
 data TextRepr = TextRepr String
 
 
+instance R.HasFallback TextRepr where
+    fallback = TextRepr "?"
+
 -- instance NMF.HasRepr a TextRepr where
 --     toRepr :: forall f i o. InNode f i o -> H.Value -> TextRepr
 --     toRepr _ a = TextRepr

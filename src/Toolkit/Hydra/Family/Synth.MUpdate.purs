@@ -2,6 +2,8 @@ module Toolkit.Hydra.Family.Synth.FUpdate where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -14,6 +16,7 @@ import Noodle.Id (Family(..)) as Node
 import Data.SOrder (SOrder, type (:::), T, s1)
 import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
+
 
 
 id = Node.Family :: _ "update"
@@ -59,6 +62,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -80,4 +84,5 @@ type Node (m :: Type -> Type) =
     N.Node "update" State
         Inputs
         Outputs
+        WrapRepr
         m

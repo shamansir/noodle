@@ -49,6 +49,7 @@ import Blessed.UI.Lists.List.Property (selected) as List
 
 import Toolkit.Hydra.Lang.Glsl as Glsl
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra.Lang.Fn as Fn
 
 import Noodle.Node (sendOut, sendOutM, atI, atIM, sendInM) as Node

@@ -17,6 +17,7 @@ import Noodle.Id (Family(..)) as Node
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra.Lang.Fn as HFn
 
 
@@ -71,6 +72,7 @@ type Family (m :: Type -> Type) = -- {-> caiSmartGradient <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -101,4 +103,5 @@ type Node (m :: Type -> Type) =
     N.Node "caiSmartGradient" State
         Inputs
         Outputs
+        WrapRepr
         m

@@ -2,6 +2,7 @@ module Toolkit.Hydra.Family.Synth.FHush where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -59,6 +60,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -79,4 +81,5 @@ type Node (m :: Type -> Type) =
     N.Node "hush" State
         Inputs
         Outputs
+        WrapRepr
         m

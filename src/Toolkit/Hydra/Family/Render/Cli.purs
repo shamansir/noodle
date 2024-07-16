@@ -40,6 +40,7 @@ import Toolkit.Hydra.Family.Render.Cli.Editor.Number as ENumber
 import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra.Repr.Wrap (WrapRepr(..)) as H
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra.Lang.Glsl as Glsl
 
 import Noodle.Node (Node)

@@ -48,6 +48,7 @@ import Blessed.Core.Coord ((<->))
 import Noodle.Node (sendInM, subscribeInput) as Node
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 -- import Noodle.Node (Node)

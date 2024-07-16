@@ -16,25 +16,25 @@ import Noodle.Fn as Fn
 
 
 
-newtype Def state (is :: Row Type) (os :: Row Type) (m :: Type -> Type) =
-    Def (state /\ Record is /\ Record os /\ Fn state is os m)
+newtype Def state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) =
+    Def (state /\ Record is /\ Record os /\ Fn state is os repr m)
 
 
-instance HasInputsAt is isrl => HasInputs is isrl (Def state is os m) where
-    inputs :: Def state is os m -> List InputR
+instance HasInputsAt is isrl => HasInputs is isrl (Def state is os repr m) where
+    inputs :: Def state is os repr m -> List InputR
     inputs = Fn.inputsShape <<< fn
 
 
-instance HasOutputsAt os osrl => HasOutputs os osrl (Def state is os m) where
-    outputs :: Def state is os m -> List OutputR
+instance HasOutputsAt os osrl => HasOutputs os osrl (Def state is os repr m) where
+    outputs :: Def state is os repr m -> List OutputR
     outputs = Fn.outputsShape <<< fn
 
 
-fn :: forall state is os m. Def state is os m -> Fn state is os m
+fn :: forall state is os repr m. Def state is os repr m -> Fn state is os repr m
 fn (Def (_ /\ _ /\ _ /\ fn_)) = fn_
 
 
-def :: forall state is os m. state -> Record is -> Record os -> Fn state is os m -> Def state is os m
+def :: forall state is os repr m. state -> Record is -> Record os -> Fn state is os repr m -> Def state is os repr m
 def state is os fn_ = Def (state /\ is /\ os /\ fn_)
 
 

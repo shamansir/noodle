@@ -1,6 +1,7 @@
 module Toolkit.Hydra.Family.Feed.FExpression where
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -56,6 +57,7 @@ type Family (m :: Type -> Type) = -- {-> expression <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -76,4 +78,5 @@ type Node (m :: Type -> Type) =
     N.Node "expression" State
         Inputs
         Outputs
+        WrapRepr
         m

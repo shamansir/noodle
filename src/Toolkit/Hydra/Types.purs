@@ -21,6 +21,7 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.FromToFile (class Encode, encode, class Decode, decode)
 import Data.Monoid (mempty)
+import Data.Repr (class HasFallback)
 
 import Type.Proxy (Proxy(..))
 
@@ -374,6 +375,25 @@ instance IsNodeState a OutputN where
 instance IsNodeState a CanBeSource where
     default = defaultCanBeSource
     fromGlobal = const Nothing
+
+
+{- HAS_FALLBACK -}
+
+instance HasFallback Value where fallback = None
+instance HasFallback Texture where fallback = Empty
+instance HasFallback OutputN where fallback = Output0
+instance HasFallback SourceN where fallback = Source0
+instance HasFallback ExtSource where fallback = Unclear
+instance HasFallback TODO where fallback = TODO
+instance HasFallback Context where fallback = initialContext
+instance HasFallback UpdateFn where fallback = defaultUpdateFn
+instance HasFallback Url where fallback = noUrl
+instance HasFallback GlslFn where fallback = defaultGlslFn
+instance HasFallback SourceOptions where fallback = defaultSourceOptions
+instance HasFallback Values where fallback = noValues
+instance HasFallback Ease where fallback = Linear
+instance HasFallback AudioSource where fallback = Silence
+instance HasFallback AudioBin where fallback = AudioBin 0
 
 
 {- MARK -}

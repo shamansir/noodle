@@ -65,7 +65,7 @@ nodeToRepr'
      . MonadEffect m
     => ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => ToReprTop m repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> m (NodeLineRec f repr repr_is repr_os)
 nodeToRepr' (ToReprTop repr) node = do
     let
@@ -87,7 +87,7 @@ nodeToRepr
     => ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => Proxy m
     -> Repr repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> m (NodeLineRec f repr repr_is repr_os)
 nodeToRepr _ repr =
     nodeToRepr' $ ToReprTop repr
@@ -98,7 +98,7 @@ nodeToMapRepr'
      . MonadEffect m
     => ToReprFoldToMapsHelper f is isrl os osrl repr state
     => ToReprTop m repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> m (NodeLineMap repr)
 nodeToMapRepr' (ToReprTop repr) node = do
     let
@@ -120,7 +120,7 @@ nodeToMapRepr
     => ToReprFoldToMapsHelper f is isrl os osrl repr state
     => Proxy m
     -> Repr repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> m (NodeLineMap repr)
 nodeToMapRepr _ repr =
     nodeToMapRepr' $ ToReprTop repr
@@ -130,7 +130,7 @@ subscribeReprChanges'
     :: forall f state is isrl os osrl m repr repr_is repr_os
      . ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => ToReprTop m repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
 subscribeReprChanges' (ToReprTop repr) node =
     let
@@ -150,7 +150,7 @@ subscribeReprChanges
     :: forall f state is isrl os osrl m repr repr_is repr_os
      . ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     => Repr repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
 subscribeReprChanges repr =
     subscribeReprChanges' $ ToReprTop repr
@@ -160,7 +160,7 @@ subscribeReprMapChanges'
     :: forall f state is isrl os osrl m repr
      . ToReprFoldToMapsHelper f is isrl os osrl repr state
     => ToReprTop m repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> Signal (ChangeFocus /\ NodeLineMap repr)
 subscribeReprMapChanges' (ToReprTop repr) node =
     let
@@ -180,7 +180,7 @@ subscribeReprMapChanges
     :: forall f state is isrl os osrl m repr
      . ToReprFoldToMapsHelper f is isrl os osrl repr state
     => Repr repr
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> Signal (ChangeFocus /\ NodeLineMap repr)
 subscribeReprMapChanges repr =
     subscribeReprMapChanges' $ ToReprTop repr
@@ -196,7 +196,7 @@ instance toReprTopInstance ::
     HM.MappingWithIndex
         (ToReprTop m repr)
         (Proxy f)
-        (Array (Node f state is os m))
+        (Array (Node f state is os repr m))
         (m (Array (NodeLineRec f repr repr_is repr_os))) -- FIXME becomes orphan instance when put in Patch4.MapsFolds.Repr
     where
     mappingWithIndex (ToReprTop repr) fsym =
@@ -310,7 +310,7 @@ instance foldToReprsMap ::
             (ToReprTop m repr)
             (Proxy sym)
             (m (Array (NodeLineMap repr)))
-            (Array (Node f state is os m))
+            (Array (Node f state is os repr m))
             (m (Array (NodeLineMap repr)))
     where
     foldingWithIndex (ToReprTop repr) _ acc nodes =

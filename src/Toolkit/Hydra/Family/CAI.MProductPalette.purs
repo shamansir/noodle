@@ -20,6 +20,7 @@ import Noodle.Id (Family(..)) as Node
 import Type.Proxy (Proxy(..))
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 import CompArts.Product as CAI
 
@@ -69,6 +70,7 @@ type Family (m :: Type -> Type) = -- {-> caiProductPalette <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -113,4 +115,5 @@ type Node (m :: Type -> Type) =
     N.Node "caiProductPalette" State
         Inputs
         Outputs
+        WrapRepr
         m

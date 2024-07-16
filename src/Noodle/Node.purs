@@ -69,12 +69,12 @@ import Effect.Console (log) as Console
 
 
 -- store inputs list in the node (or the family def) itself, create it when we create the node
-data Node (f :: Symbol) state (is :: Row Type) (os :: Row Type) m
+data Node (f :: Symbol) state (is :: Row Type) (os :: Row Type) repr m
     = Node
         (NodeId f)
         (Tracker state is os)
         (Protocol state is os)
-        (Fn state is os m)
+        (Fn state is os repr m)
 
 
 -- TODO: implement ToFn
@@ -93,20 +93,20 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
-instance IsSymbol f => Eq (Node f state is os m) where
-    eq :: Node f state is os m -> Node f state is os m -> Boolean
+instance IsSymbol f => Eq (Node f state is os repr m) where
+    eq :: Node f state is os repr m -> Node f state is os repr m -> Boolean
     eq nodeA nodeB = reflect' (id nodeA) == reflect' (id nodeB)
 
 
-instance StatefulM (Node f state is os m) Effect state where
-  getM :: Node f state is os m -> Effect state
+instance StatefulM (Node f state is os repr m) Effect state where
+  getM :: Node f state is os repr m -> Effect state
   getM = getState
-  setM :: state -> Node f state is os m -> Effect (Node f state is os m)
+  setM :: state -> Node f state is os repr m -> Effect (Node f state is os repr m)
   setM s node = setState s node *> pure node
 
 
 make
-    :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) m
+    :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) repr m
      . IsSymbol f
     => HasSymbolsOrder iorder is
     => HasSymbolsOrder oorder os
@@ -117,21 +117,21 @@ make
     -> Proxy oorder
     -> Record is
     -> Record os
-    -> ProcessM state is os m Unit
-    -> m (Node f state is os m)
+    -> ProcessM state is os repr m Unit
+    -> m (Node f state is os repr m)
 make family state iorder oorder is os process =
     make' (family' family) state is os $ Fn.make (reflect family) { inputs : iorder, outputs : oorder } process
 
 
 make'
-    :: forall f state (is :: Row Type) (os :: Row Type) m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
      . MonadEffect m
     => Family' f
     -> state
     -> Record is
     -> Record os
-    -> Fn state is os m
-    -> m (Node f state is os m)
+    -> Fn state is os repr m
+    -> m (Node f state is os repr m)
 make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
     tracker /\ protocol <- Protocol.make state is os
@@ -152,7 +152,7 @@ make' family state is os fn = do
     -> Record is
     -> Record os
     -> ProcessM state is os m Unit
-    -> m (Node f state is os m)
+    -> m (Node f state is os repr m)
 makeRun family state iorder oorder is os process = do
   node <- make family state iorder oorder is os process
   listenUpdatesAndRun node
@@ -160,7 +160,7 @@ makeRun family state iorder oorder is os process = do
 
 
 makeRun'
-    :: forall f state (is :: Row Type) (os :: Row Type) m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
      . MonadRec m
     => MonadEffect m
     => Family' f
@@ -168,7 +168,7 @@ makeRun'
     -> Record is
     -> Record os
     -> Fn state is os m
-    -> m (Node f state is os m)
+    -> m (Node f state is os repr m)
 makeRun' family state is os fn = do
   node <- make' family state is os fn
   listenUpdatesAndRun node
@@ -177,9 +177,9 @@ makeRun' family state is os fn = do
 
 -- TODO: private
 runOnInputUpdates
-    :: forall f state (is :: Row Type) (os :: Row Type) m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
-    => Node f state is os m
+    => Node f state is os repr m
     -> m Unit
 runOnInputUpdates node =
   SignalX.runSignal $ subscribeInputs node ~> const (run node)
@@ -187,9 +187,9 @@ runOnInputUpdates node =
 
 -- TODO: private
 runOnStateUpdates
-    :: forall f state (is :: Row Type) (os :: Row Type) m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
-    => Node f state is os m
+    => Node f state is os repr m
     -> m Unit
 runOnStateUpdates node =
   SignalX.runSignal $ subscribeState node ~> const (run node)
@@ -197,9 +197,9 @@ runOnStateUpdates node =
 
 --- FIXME: find better name
 listenUpdatesAndRun
-  :: forall f state (is :: Row Type) (os :: Row Type) m
+  :: forall f state (is :: Row Type) (os :: Row Type) repr m
    . Wiring m
-  => Node f state is os m
+  => Node f state is os repr m
   -> m Unit
 listenUpdatesAndRun node = do
   runOnInputUpdates node
@@ -208,20 +208,20 @@ listenUpdatesAndRun node = do
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 
 
-id :: forall f state is os m. Node f state is os m -> NodeId f
+id :: forall f state is os repr m. Node f state is os repr m -> NodeId f
 id (Node id _ _ _) = id
 
 
-family :: forall f state is os m. Node f state is os m -> Family' f
+family :: forall f state is os repr m. Node f state is os repr m -> Family' f
 family = id >>> familyOf
 
 
-hash :: forall f state is os m. Node f state is os m -> UniqueHash
+hash :: forall f state is os repr m. Node f state is os repr m -> UniqueHash
 hash = id >>> hashOf
 
 
 {-}
-mapM :: forall f state is os m m'. (m ~> m') -> Fn state is os m -> Fn state is os m'
+mapM :: forall f state is os repr m m'. (m ~> m') -> Fn state is os m -> Fn state is os m'
 mapM f (Node id protocol processM) = Fn name state is os $ Process.mapMM f processM
 
 
@@ -232,100 +232,100 @@ imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process
 {- Running -}
 
 
-run :: forall f state is os m. MonadRec m => MonadEffect m => Node f state is os m -> m Unit
+run :: forall f state is os repr m. MonadRec m => MonadEffect m => Node f state is os repr m -> m Unit
 run (Node _ _ protocol fn) = Fn.run' protocol fn
 
 
 {- Get information about the function -}
 
 
-state :: forall f state is os m. MonadEffect m => Node f state is os m -> m state
+state :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m state
 state (Node _ _ protocol _) = liftEffect $ protocol.getState unit
 
 
-inputs :: forall f state is os m. MonadEffect m => Node f state is os m -> m (Record is)
+inputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record is)
 inputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
 
 
-inputsM :: forall f state is os m m'. MonadEffect m => Node f state is os m' -> m (Record is)
+inputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record is)
 inputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
 
 
-outputs :: forall f state is os m. MonadEffect m => Node f state is os m -> m (Record os)
+outputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record os)
 outputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
 
 
-outputsM :: forall f state is os m m'. MonadEffect m => Node f state is os m' -> m (Record os)
+outputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record os)
 outputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
 
 
-inputsRow :: forall f state is os m. MonadEffect m => Node f state is os m -> Proxy is
+inputsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
 inputsRow _ = Proxy :: _ is
 
 
-outputsRow :: forall f state is os m. MonadEffect m => Node f state is os m -> Proxy os
+outputsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy os
 outputsRow _ = Proxy :: _ os
 
 
-atInput :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os m -> m din
+atInput :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os repr m -> m din
 atInput i node = inputs node <#> Record.get (proxify i)
 
 
-atInputM :: forall f i state is' is os m m' din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os m' -> m din
+atInputM :: forall f i state is' is os repr m m' din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os repr m' -> m din
 atInputM i node = inputsM node <#> Record.get (proxify i)
 
 
-atInput' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Input' i -> Node f state is os m -> m din
+atInput' :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Input' i -> Node f state is os repr m -> m din
 atInput' i node = inputs node <#> Record.get (proxify i)
 
 
-atOutput :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m -> m dout
+atOutput :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os repr m -> m dout
 atOutput o node = outputs node <#> Record.get (proxify o)
 
 
-atOutputM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m' -> m dout
+atOutputM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os repr m' -> m dout
 atOutputM o node = outputsM node <#> Record.get (proxify o)
 
 
-atOutput' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> Node f state is os m -> m dout
+atOutput' :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> Node f state is os repr m -> m dout
 atOutput' o node = outputs node <#> Record.get (proxify o)
 
 
-atI :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> m din
+atI :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input i -> m din
 atI = flip atInput
 
 
-atIM :: forall f i state is' is os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> m din
+atIM :: forall f i state is' is os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input i -> m din
 atIM = flip atInputM
 
 
-atI' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input' i -> m din
+atI' :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input' i -> m din
 atI' = flip atInput'
 
 
-atO :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> m dout
+atO :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output o -> m dout
 atO = flip atOutput
 
 
-atOM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> m dout
+atOM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> m dout
 atOM = flip atOutputM
 
 
-atO' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output' o -> m dout
+atO' :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output' o -> m dout
 atO' = flip atOutput'
 
 -- TODO: operator
--- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node f state is os m → (Record is -> dout) -> m dout
-_at ∷ forall f state is os m din. MonadEffect m ⇒ Node f state is os m → (Record is -> din) -> m din
+-- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node f state is os repr m → (Record is -> dout) -> m dout
+_at ∷ forall f state is os repr m din. MonadEffect m ⇒ Node f state is os repr m → (Record is -> din) -> m din
 _at node fn = inputs node <#> fn
 
 
 -- TODO: operator
-at_ ∷ forall f state is os m dout. MonadEffect m ⇒ Node f state is os m → (Record os -> dout) -> m dout
+at_ ∷ forall f state is os repr m dout. MonadEffect m ⇒ Node f state is os repr m → (Record os -> dout) -> m dout
 at_ node fn = outputs node <#> fn
 
 
-get :: forall f state is os m. MonadEffect m => Node f state is os m -> m ( state /\ Record is /\ Record os )
+get :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m ( state /\ Record is /\ Record os )
 get node = do
     state <- state node
     is <- inputs node
@@ -333,52 +333,52 @@ get node = do
     pure $ state /\ is /\ os
 
 
-subscribeInput :: forall f state is os m din. (Record is -> din) -> Node f state is os m -> Signal din
+subscribeInput :: forall f state is os repr m din. (Record is -> din) -> Node f state is os repr m -> Signal din
 subscribeInput fn node = fn <$> subscribeInputs node
 
 
 -- ToDO: with HasInput / HasOuput
 
 
-subscribeInputs :: forall f state is os m. Node f state is os m -> Signal (Record is)
+subscribeInputs :: forall f state is os repr m. Node f state is os repr m -> Signal (Record is)
 subscribeInputs (Node _ tracker _ _) = Tuple.snd <$> tracker.inputs
 
 
-subscribeInputs' :: forall f state is os m. Node f state is os m -> Signal (InputChange /\ Record is)
+subscribeInputs' :: forall f state is os repr m. Node f state is os repr m -> Signal (InputChange /\ Record is)
 subscribeInputs' (Node _ tracker _ _) = tracker.inputs
 
 
-subscribeOutput :: forall f state is os m dout. (Record os -> dout) -> Node f state is os m -> Signal dout
+subscribeOutput :: forall f state is os repr m dout. (Record os -> dout) -> Node f state is os repr m -> Signal dout
 subscribeOutput fn node = fn <$> subscribeOutputs node
 
 
-subscribeOutputs :: forall f state is os m. Node f state is os m -> Signal (Record os)
+subscribeOutputs :: forall f state is os repr m. Node f state is os repr m -> Signal (Record os)
 subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 
 
-subscribeOutputs' :: forall f state is os m. Node f state is os m -> Signal (OutputChange /\ Record os)
+subscribeOutputs' :: forall f state is os repr m. Node f state is os repr m -> Signal (OutputChange /\ Record os)
 subscribeOutputs' (Node _ tracker _ _) = tracker.outputs
 
 
-subscribeState :: forall f state is os m. Node f state is os m -> Signal state
+subscribeState :: forall f state is os repr m. Node f state is os repr m -> Signal state
 subscribeState (Node _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall f state is os m. Node f state is os m -> Signal (ChangeFocus /\ state /\ Record is /\ Record os)
+subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (ChangeFocus /\ state /\ Record is /\ Record os)
 subscribeChanges (Node _ tracker _ _) = tracker.all
 
 
-sendOut :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> m Unit
+sendOut :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> m Unit
 sendOut node o = liftEffect <<< sendOutE node o
 
 
 -- private?
-sendOutM :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> dout -> m Unit
+sendOutM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> dout -> m Unit
 sendOutM node o = liftEffect <<< sendOutE node o
 
 
 -- private?
-sendOutE :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> Effect Unit
+sendOutE :: forall f o state is os os' repr m dout. HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> Effect Unit
 sendOutE (Node _ _ protocol _) output dout =
     protocol.modifyOutputs
         (\curOutputs ->
@@ -387,12 +387,12 @@ sendOutE (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendOut' :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output' o -> dout -> m Unit
+sendOut' :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output' o -> dout -> m Unit
 sendOut' node o = liftEffect <<< sendOutE' node o
 
 
 -- private?
-sendOutE' :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f state is os m -> Output' o -> dout -> Effect Unit
+sendOutE' :: forall f o state is os os' repr m dout. HasOutput o dout os' os => Node f state is os repr m -> Output' o -> dout -> Effect Unit
 sendOutE' (Node _ _ protocol _) output dout =
     protocol.modifyOutputs
         (\curOutputs ->
@@ -401,17 +401,17 @@ sendOutE' (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendIn :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> din -> m Unit
+sendIn :: forall f i state is is' os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> m Unit
 sendIn node i = liftEffect <<< sendInE node i
 
 
 -- private?
-sendInM :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> din -> m Unit
+sendInM :: forall f i state is is' os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input i -> din -> m Unit
 sendInM node i = liftEffect <<< sendInE node i
 
 
 -- private?
-sendInE :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> din -> Effect Unit
+sendInE :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> Effect Unit
 sendInE (Node _ _ protocol _) input din =
     protocol.modifyInputs
         (\curInputs ->
@@ -419,12 +419,12 @@ sendInE (Node _ _ protocol _) input din =
         )
 
 
-sendIn' :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input' i -> din -> m Unit
+sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input' i -> din -> m Unit
 sendIn' node i = liftEffect <<< sendInE' node i
 
 
 -- private?
-sendInE' :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input' i -> din -> Effect Unit
+sendInE' :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input' i -> din -> Effect Unit
 sendInE' (Node _ _ protocol _) input din =
     protocol.modifyInputs
         (\curInputs ->
@@ -487,15 +487,15 @@ toFullId (Link nodeA outA inB nodeB _) =
 
 
 connect
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output oA
     -> Input iB
     -> (doutA -> dinB)
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
 connect
     outputA
@@ -522,14 +522,14 @@ connect
 
 
 connectAlike
-    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output oA
     -> Input iB
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
 connectAlike
     outputA
@@ -538,15 +538,15 @@ connectAlike
 
 
 connect'
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output' oA
     -> Input' iB
     -> (doutA -> dinB)
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
 connect'
     outputA
@@ -574,14 +574,14 @@ connect'
 
 
 connectAlike'
-    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output' oA
     -> Input' iB
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
 connectAlike'
     outputA
@@ -599,8 +599,8 @@ connectByRepr
     => Proxy repr
     -> Output oA
     -> Input iB
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA repr m
+    -> Node fB stateB isB osB repr m
     -> m (Link fA fB oA iB)
 connectByRepr
     _
@@ -634,7 +634,7 @@ connectByRepr
 
 
 disconnect
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
@@ -642,8 +642,8 @@ disconnect
     => HasInput iB dinB isB' isB
     => Show dinB
     => Link fA fB oA iB
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
     -> m Boolean
 disconnect (Link nodeAIdL _ _ nodeBIdL doDisconnect) (Node nodeAId _ _ _) (Node nodeBId _ _ _) =
     if (nodeAIdL == nodeAId) && (nodeBIdL == nodeBId) then
@@ -661,16 +661,16 @@ unsafeDisconnect (Link _ _ _ _ doDisconnect) =
 
 
 
--- withInput :: forall f state is is' os m a. Applicative m => InputR -> (forall i din. Input i -> Node f state is os m -> a) -> Node f state is os m -> a
+-- withInput :: forall f state is is' os m a. Applicative m => InputR -> (forall i din. Input i -> Node f state is os repr m -> a) -> Node f state is os repr m -> a
 -- withInput inputR fn node = reifySymbol (reflect' inputR) (\input -> fn input node)
 
 
--- withOutput :: forall f state is is' os m a. Applicative m => OutputR -> (forall i din. Output i -> Node f state is os m -> a) -> Node f state is os m -> a
+-- withOutput :: forall f state is is' os m a. Applicative m => OutputR -> (forall i din. Output i -> Node f state is os repr m -> a) -> Node f state is os repr m -> a
 -- withOutput outputR fn node = reifySymbol (reflect' outputR) (\output -> fn output node)
 
 
 {-
-set :: forall f state is os m. MonadEffect m => ( state /\ Record is /\ Record os ) -> Node f state is os m -> m (Node f state is os m)
+set :: forall f state is os repr m. MonadEffect m => ( state /\ Record is /\ Record os ) -> Node f state is os repr m -> m (Node f state is os repr m)
 set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
     pure node -- FIXME
 -}
@@ -680,36 +680,36 @@ set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
 
 
 
-inputsShape :: forall f state (is :: Row Type) os m isrl. HasInputsAt is isrl => Node f state is os m -> List InputR
+inputsShape :: forall f state (is :: Row Type) os repr m isrl. HasInputsAt is isrl => Node f state is os repr m -> List InputR
 inputsShape (Node _ _ _ fn) = Fn.inputsShape fn
 
 
-outputsShape :: forall f state is (os :: Row Type) m osrl. HasOutputsAt os osrl => Node f state is os m -> List OutputR
+outputsShape :: forall f state is (os :: Row Type) repr m osrl. HasOutputsAt os osrl => Node f state is os repr m -> List OutputR
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
-inputsShapeHeld :: forall f state (is :: Row Type) os m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Node f state is os m -> Array HoldsInput
+inputsShapeHeld :: forall f state (is :: Row Type) os repr m isrl. KH.KeysO isrl Input HoldsInput => HasInputsAt is isrl => Node f state is os repr m -> Array HoldsInput
 inputsShapeHeld (Node _ _ _ fn) = Fn.inputsShapeHeld fn
 
 
-outputsShapeHeld :: forall f state is (os :: Row Type) m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Node f state is os m -> Array HoldsOutput
+outputsShapeHeld :: forall f state is (os :: Row Type) repr m osrl. KH.KeysO osrl Output HoldsOutput => HasOutputsAt os osrl => Node f state is os repr m -> Array HoldsOutput
 outputsShapeHeld (Node _ _ _ fn) = Fn.outputsShapeHeld fn
 
 {-
-inputsShapeInNode :: forall f state (is :: Row Type) os m rli. KH.KeysO isrl Input HoldsInputInNode => HasInputsAt is isrl => Node f state is os m -> Array HoldsInputInNode
+inputsShapeInNode :: forall f state (is :: Row Type) os m rli. KH.KeysO isrl Input HoldsInputInNode => HasInputsAt is isrl => Node f state is os repr m -> Array HoldsInputInNode
 inputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Input) (Fn.inputsOrder fn) (Proxy :: _ is)
 
 
-outputsShapeInNode :: forall f state is (os :: Row Type) m rlo. KH.KeysO osrl Output HoldsOutputInNode => HasOutputsAt os osrl => Node f state is os m -> Array HoldsOutputInNode
+outputsShapeInNode :: forall f state is (os :: Row Type) m rlo. KH.KeysO osrl Output HoldsOutputInNode => HasOutputsAt os osrl => Node f state is os repr m -> Array HoldsOutputInNode
 outputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Output) (Fn.outputsOrder fn) (Proxy :: _ os)
 -}
 
 
-inputsOrder :: forall f state is os m isrl. HasInputsAt is isrl => Node f state is os m -> SOrder
+inputsOrder :: forall f state is os repr m isrl. HasInputsAt is isrl => Node f state is os repr m -> SOrder
 inputsOrder (Node _ _ _ fn) = Fn.inputsOrder fn
 
 
-outputsOrder :: forall f state is os m osrl. HasOutputsAt os osrl => Node f state is os m -> SOrder
+outputsOrder :: forall f state is os repr m osrl. HasOutputsAt os osrl => Node f state is os repr m -> SOrder
 outputsOrder (Node _ _ _ fn) = Fn.outputsOrder fn
 
 
@@ -717,41 +717,41 @@ outputsOrder (Node _ _ _ fn) = Fn.outputsOrder fn
 
 
 shape
-    :: forall f state (is :: Row Type) (os :: Row Type) m isrl osrl
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
-    => Node f state is os m
+    => Node f state is os repr m
     -> List InputR /\ List OutputR
 shape node = inputsShape node /\ outputsShape node
 
 
 shapeHeld
-    :: forall f state (is :: Row Type) (os :: Row Type) m isrl osrl
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m isrl osrl
      . KH.KeysO isrl Input HoldsInput
     => KH.KeysO osrl Output HoldsOutput
     => HasInputsAt is isrl
     => HasOutputsAt os osrl
-    => Node f state is os m
+    => Node f state is os repr m
     -> Array HoldsInput /\ Array HoldsOutput
 shapeHeld node = inputsShapeHeld node /\ outputsShapeHeld node
 
 
 dimensions
-    :: forall f state is os m isrl osrl
+    :: forall f state is os repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
-    => Node f state is os m
+    => Node f state is os repr m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall f state is os m isrl osrl
+    :: forall f state is os repr m isrl osrl
      . HasInputsAt is isrl
     => HasOutputsAt os osrl
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
-    -> Node f state is os m
+    -> Node f state is os repr m
     -> Int /\ Int
 dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (List.filter oPred >>> List.length)
 
@@ -766,7 +766,7 @@ dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (
     => (  forall f state fs iis is os
         .  HasNodesOf f state fs iis is os m
         => Node.Family f
-        -> Family.Def state is os m
+        -> Family.Def state is os repr m
         -> Toolkit m
         -> m a
         )
@@ -784,45 +784,45 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 -}
 
 
-getState :: forall f state is os m. Node f state is os m -> Effect state
+getState :: forall f state is os repr m. Node f state is os repr m -> Effect state
 getState (Node _ _ protocol _) =
   protocol.getState unit
 
 
-setState :: forall f state is os m. state -> Node f state is os m -> Effect Unit
+setState :: forall f state is os repr m. state -> Node f state is os repr m -> Effect Unit
 setState s =
   modifyState $ const s
 
 
-modifyState :: forall f state is os m. (state -> state) -> Node f state is os m -> Effect Unit
+modifyState :: forall f state is os repr m. (state -> state) -> Node f state is os repr m -> Effect Unit
 modifyState fn (Node _ _ protocol _) =
   protocol.modifyState fn
 
 
-with :: forall f state is os m. MonadEffect m => MonadRec m => Node f state is os m -> ProcessM state is os m Unit -> m Unit
+with :: forall f state is os repr m. MonadEffect m => MonadRec m => Node f state is os repr m -> ProcessM state is os repr m Unit -> m Unit
 with (Node _ _ protocol fn) process =
     Fn.run' protocol $ Fn.cloneReplace fn process
 
 
-newtype HoldsNode' f m = HoldsNode' (forall r. (forall state is os. IsSymbol f => Node f state is os m -> r) -> r)
+newtype HoldsNode' f m = HoldsNode' (forall r. (forall state is os repr. IsSymbol f => Node f state is os repr m -> r) -> r)
 
 
-newtype HoldsNode = HoldsNode (forall r. (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r)
+newtype HoldsNode = HoldsNode (forall r. (forall f state is os repr m. IsSymbol f => Node f state is os repr m -> r) -> r)
 
 
-holdNode :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode
+holdNode :: forall f state is os repr m. IsSymbol f => Node f state is os repr m -> HoldsNode
 holdNode node = HoldsNode (_ $ node)
 
 
-holdNode' :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode' f m
+holdNode' :: forall f state is os repr m. IsSymbol f => Node f state is os repr m -> HoldsNode' f m
 holdNode' node = HoldsNode' (_ $ node)
 
 
-withNode :: forall r. HoldsNode -> (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r
+withNode :: forall r. HoldsNode -> (forall f state is os repr m. IsSymbol f => Node f state is os repr m -> r) -> r
 withNode (HoldsNode f) = f
 
 
-withNode' :: forall f m r. HoldsNode' f m -> (forall state is os. IsSymbol f => Node f state is os m -> r) -> r
+withNode' :: forall f m r. HoldsNode' f m -> (forall state is os repr. IsSymbol f => Node f state is os repr m -> r) -> r
 withNode' (HoldsNode' f) = f
 
 
@@ -830,7 +830,7 @@ withNode2
   :: forall r
    . HoldsNode
   -> HoldsNode
-  -> (forall fA stateA isA osA fB stateB isB osB mA mB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA mA -> Node fB stateB isB osB mB -> r)
+  -> (forall fA stateA isA osA fB stateB isB osB reprA reprB mA mB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA reprA mA -> Node fB stateB isB osB reprB mB -> r)
   -> r
 withNode2 holdsFA holdsFB fn =
   withNode
@@ -847,7 +847,7 @@ withNode2'
   :: forall fA fB m r
    . HoldsNode' fA m
   -> HoldsNode' fB m
-  -> (forall stateA isA osA stateB isB osB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA m -> Node fB stateB isB osB m -> r)
+  -> (forall stateA isA osA stateB isB osB reprA reprB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA reprA m -> Node fB stateB isB osB reprB m -> r)
   -> r
 withNode2' holdsFA holdsFB fn =
   withNode'
@@ -861,98 +861,98 @@ withNode2' holdsFA holdsFB fn =
       )
 
 
-findInputByIndex :: forall f state i din is is' os m. IsSymbol i => HasInput i din is' is => Int -> Node f state is os m -> Maybe (Input i /\ Proxy din)
+findInputByIndex :: forall f state i din is is' os repr m. IsSymbol i => HasInput i din is' is => Int -> Node f state is os repr m -> Maybe (Input i /\ Proxy din)
 findInputByIndex _ _ = Nothing
 
 
-findInput :: forall f state i din is is' os m. IsSymbol i => HasInput i din is' is => InputR -> Node f state is os m -> Maybe (Input i /\ Proxy din)
+findInput :: forall f state i din is is' os repr m. IsSymbol i => HasInput i din is' is => InputR -> Node f state is os repr m -> Maybe (Input i /\ Proxy din)
 findInput _ _ = Nothing
 
 
-findHeldInput :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Node f state is os m -> InputR -> Maybe (HoldsInputInNodeMRepr m repr)
+findHeldInput :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Node f state is os repr m -> InputR -> Maybe (HoldsInputInNodeMRepr m repr)
 findHeldInput node n = case findInput n node of
     Just ((input :: Input i) /\ (pdin :: Proxy din)) -> Just $ holdInputInNodeMRepr pdin node input
     Nothing -> Nothing
 
 
-findHeldInputByIndex :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Node f state is os m -> Int -> Maybe (HoldsInputInNodeMRepr m repr)
+findHeldInputByIndex :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Node f state is os repr m -> Int -> Maybe (HoldsInputInNodeMRepr m repr)
 findHeldInputByIndex node n = case findInputByIndex n node of
     Just ((input :: Input i) /\ (pdin :: Proxy din)) -> Just $ holdInputInNodeMRepr pdin node input
     Nothing -> Nothing
 
 
-findOutputByIndex :: forall f state o dout is os os' m. IsSymbol o => HasOutput o dout os' os => Int -> Node f state is os m -> Maybe (Output o /\ Proxy dout)
+findOutputByIndex :: forall f state o dout is os os' repr m. IsSymbol o => HasOutput o dout os' os => Int -> Node f state is os repr m -> Maybe (Output o /\ Proxy dout)
 findOutputByIndex _ _ = Nothing
 
 
-findOutput :: forall f state o dout is os os' m. IsSymbol o => HasOutput o dout os' os => InputR -> Node f state is os m -> Maybe (Output o /\ Proxy dout)
+findOutput :: forall f state o dout is os os' repr m. IsSymbol o => HasOutput o dout os' os => InputR -> Node f state is os repr m -> Maybe (Output o /\ Proxy dout)
 findOutput _ _ = Nothing
 
 
-findHeldOutput :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Node f state is os m -> InputR -> Maybe (HoldsOutputInNodeMRepr m repr)
+findHeldOutput :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Node f state is os repr m -> InputR -> Maybe (HoldsOutputInNodeMRepr m repr)
 findHeldOutput node n = case findOutput n node of
     Just ((output :: Output o) /\ (pdout :: Proxy dout)) -> Just $ holdOutputInNodeMRepr pdout node output
     Nothing -> Nothing
 
 
-findHeldOutputByIndex :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Node f state is os m -> Int -> Maybe (HoldsOutputInNodeMRepr m repr)
+findHeldOutputByIndex :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Node f state is os repr m -> Int -> Maybe (HoldsOutputInNodeMRepr m repr)
 findHeldOutputByIndex node n = case findOutputByIndex n node of
     Just ((output :: Output o) /\ (pdout :: Proxy dout)) -> Just $ holdOutputInNodeMRepr pdout node output
     Nothing -> Nothing
 
 
-newtype HoldsInputInNode = HoldsInputInNode (forall r. (forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
-newtype HoldsInputInNode' f m = HoldsInputInNode' (forall r. (forall state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
-newtype HoldsInputInNode'' f state is os m = HoldsInputInNode'' (forall r. (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
-newtype HoldsInputInNodeM m = HoldsInputInNodeM (forall r. (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
-newtype HoldsInputInNodeMRepr m repr = HoldsInputInNodeMRepr (forall r. (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os m -> Input i -> r) -> r)
+newtype HoldsInputInNode = HoldsInputInNode (forall r. (forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r)
+newtype HoldsInputInNode' f m = HoldsInputInNode' (forall r. (forall state i din is is' os repr. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r)
+newtype HoldsInputInNode'' f state is os repr m = HoldsInputInNode'' (forall r. (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r)
+newtype HoldsInputInNodeM m = HoldsInputInNodeM (forall r. (forall f state i din is is' os repr. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r)
+newtype HoldsInputInNodeMRepr m repr = HoldsInputInNodeMRepr (forall r. (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os repr m -> Input i -> r) -> r)
 
 
-holdInputInNode :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode
+holdInputInNode :: forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> HoldsInputInNode
 holdInputInNode node input = HoldsInputInNode \f -> f node input
 
 
-holdInputInNode' :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode' f m
+holdInputInNode' :: forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> HoldsInputInNode' f m
 holdInputInNode' node input = HoldsInputInNode' \f -> f node input
 
 
-holdInputInNode'' :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode'' f state is os m
+holdInputInNode'' :: forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> HoldsInputInNode'' f state is os repr m
 holdInputInNode'' node input = HoldsInputInNode'' \f -> f node input
 
 
-holdInputInNodeM :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNodeM m
+holdInputInNodeM :: forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> HoldsInputInNodeM m
 holdInputInNodeM node input = HoldsInputInNodeM \f -> f node input
 
 
-holdInputInNodeMRepr :: forall f state i din is is' os m repr. IsSymbol f => IsSymbol i => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os m -> Input i -> HoldsInputInNodeMRepr m repr
+holdInputInNodeMRepr :: forall f state i din is is' os m repr. IsSymbol f => IsSymbol i => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os repr m -> Input i -> HoldsInputInNodeMRepr m repr
 holdInputInNodeMRepr p node input = HoldsInputInNodeMRepr \f -> f p node input
 
 
-withInputInNode :: forall r. HoldsInputInNode -> (forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+withInputInNode :: forall r. HoldsInputInNode -> (forall f state i din is is' os repr m. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r
 withInputInNode (HoldsInputInNode f) = f
 
 
-withInputInNode' :: forall f m r. HoldsInputInNode' f m -> (forall state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r)  -> r
+withInputInNode' :: forall f m r. HoldsInputInNode' f m -> (forall state i din is is' os repr. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r)  -> r
 withInputInNode' (HoldsInputInNode' f) = f
 
 
-withInputInNode'' :: forall f state is os m r. HoldsInputInNode'' f state is os m -> (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+withInputInNode'' :: forall f state is os repr m r. HoldsInputInNode'' f state is os repr m -> (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r
 withInputInNode'' (HoldsInputInNode'' f) = f
 
 
-withInputInNodeM :: forall r m. HoldsInputInNodeM m -> (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+withInputInNodeM :: forall r m. HoldsInputInNodeM m -> (forall f state i din is is' os repr. IsSymbol f => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r
 withInputInNodeM (HoldsInputInNodeM f) = f
 
 
-withInputInNodeMRepr :: forall r m repr. HoldsInputInNodeMRepr m repr -> (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os m -> Input i -> r) -> r
+withInputInNodeMRepr :: forall r m repr. HoldsInputInNodeMRepr m repr -> (forall f state i din is is' os. IsSymbol f => HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os repr m -> Input i -> r) -> r
 withInputInNodeMRepr (HoldsInputInNodeMRepr f) = f
 
 
-newtype HoldsOutputInNode = HoldsOutputInNode (forall r. (forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
-newtype HoldsOutputInNode' f m = HoldsOutputInNode' (forall r. (forall state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
-newtype HoldsOutputInNode'' f state is os m = HoldsOutputInNode'' (forall r. (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
-newtype HoldsOutputInNodeM m = HoldsOutputInNodeM (forall r. (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
-newtype HoldsOutputInNodeMRepr m repr = HoldsOutputInNodeMRepr (forall r. (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os m -> Output o -> r) -> r)
+newtype HoldsOutputInNode = HoldsOutputInNode (forall r. (forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r)
+newtype HoldsOutputInNode' f m = HoldsOutputInNode' (forall r. (forall state o dout is os os' repr. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r)
+newtype HoldsOutputInNode'' f state is os repr m = HoldsOutputInNode'' (forall r. (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r)
+newtype HoldsOutputInNodeM m = HoldsOutputInNodeM (forall r. (forall f state o dout is os os' repr. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r)
+newtype HoldsOutputInNodeMRepr m repr = HoldsOutputInNodeMRepr (forall r. (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os repr m -> Output o -> r) -> r)
 
 
 instance Show (HoldsInputInNodeMRepr m repr) where
@@ -963,51 +963,51 @@ instance Show (HoldsOutputInNodeMRepr m repr) where
     show houtput = withOutputInNodeMRepr houtput \_ _ output -> reflect output
 
 
-holdOutputInNode :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode
+holdOutputInNode :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> HoldsOutputInNode
 holdOutputInNode node output = HoldsOutputInNode \f -> f node output
 
 
-holdOutputInNode' :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode' f m
+holdOutputInNode' :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> HoldsOutputInNode' f m
 holdOutputInNode' node output = HoldsOutputInNode' \f -> f node output
 
 
-holdOutputInNode'' :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode'' f state is os m
+holdOutputInNode'' :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> HoldsOutputInNode'' f state is os repr m
 holdOutputInNode'' node output = HoldsOutputInNode'' \f -> f node output
 
 
-holdOutputInNodeM :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNodeM m
+holdOutputInNodeM :: forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> HoldsOutputInNodeM m
 holdOutputInNodeM node output = HoldsOutputInNodeM \f -> f node output
 
 
-holdOutputInNodeMRepr :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os m -> Output o -> HoldsOutputInNodeMRepr m repr
+holdOutputInNodeMRepr :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os repr m -> Output o -> HoldsOutputInNodeMRepr m repr
 holdOutputInNodeMRepr p node output = HoldsOutputInNodeMRepr \f -> f p node output
 
 
-withOutputInNode :: forall r. HoldsOutputInNode -> (forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r
+withOutputInNode :: forall r. HoldsOutputInNode -> (forall f state o dout is os os' repr m. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r
 withOutputInNode (HoldsOutputInNode f) = f
 
 
-withOutputInNode' :: forall f m r. HoldsOutputInNode' f m -> (forall state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r)  -> r
+withOutputInNode' :: forall f m r. HoldsOutputInNode' f m -> (forall state o dout is os os' repr. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r)  -> r
 withOutputInNode' (HoldsOutputInNode' f) = f
 
 
-withOutputInNode'' :: forall f state is os m r. HoldsOutputInNode'' f state is os m -> (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r
+withOutputInNode'' :: forall f state is os repr m r. HoldsOutputInNode'' f state is os repr m -> (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r) -> r
 withOutputInNode'' (HoldsOutputInNode'' f) = f
 
 
-withOutputInNodeM :: forall m r. HoldsOutputInNodeM m -> (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r)  -> r
+withOutputInNodeM :: forall m r. HoldsOutputInNodeM m -> (forall f state o dout is os os' repr. IsSymbol f => HasOutput o dout os' os => Node f state is os repr m -> Output o -> r)  -> r
 withOutputInNodeM (HoldsOutputInNodeM f) = f
 
 
-withOutputInNodeMRepr :: forall m repr r. HoldsOutputInNodeMRepr m repr -> (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os m -> Output o -> r) -> r
+withOutputInNodeMRepr :: forall m repr r. HoldsOutputInNodeMRepr m repr -> (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os repr m -> Output o -> r) -> r
 withOutputInNodeMRepr (HoldsOutputInNodeMRepr f) = f
 
 
 {-
-instance KH.Holder1 Input (Node f state is os m) HoldsInputInNode where
-    hold1 :: forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode
+instance KH.Holder1 Input (Node f state is os repr m) HoldsInputInNode where
+    hold1 :: forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input i -> HoldsInputInNode
     hold1 = holdInputInNode
-    extract1 :: forall r is'. HoldsInputInNode -> (forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+    extract1 :: forall r is'. HoldsInputInNode -> (forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input i -> r) -> r
     extract1 = withInputInNode
 -}
 
@@ -1035,19 +1035,19 @@ else instance consKeysO ::
 -}
 
 
-class (IsSymbol f) <= HoldsInputs (is :: Row Type) (isrl :: RL.RowList Type) f state os m | is -> isrl where
-    holdInputs :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+class (IsSymbol f) <= HoldsInputs (is :: Row Type) (isrl :: RL.RowList Type) f state os repr m | is -> isrl where
+    holdInputs :: Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNode)
 
 
-instance nilHoldsInputs :: (IsSymbol f) => HoldsInputs is RL.Nil f state os m where
-  holdInputs :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+instance nilHoldsInputs :: (IsSymbol f) => HoldsInputs is RL.Nil f state os repr m where
+  holdInputs :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsInputInNode)
   holdInputs _ _ = mempty
 else instance consHoldsInputs ::
   ( IsSymbol f, HasInput i din is' is
   , HasInputsAt is tail
-  , HoldsInputs is tail f state os m
-  ) => HoldsInputs is (RL.Cons i din tail) f state os m where
-  holdInputs :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  , HoldsInputs is tail f state os repr m
+  ) => HoldsInputs is (RL.Cons i din tail) f state os repr m where
+  holdInputs :: forall isrl. Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNode)
   holdInputs _ node =
     Array.insertBy cmpF (index /\ holdInputInNode node (Input index :: _ i)) (holdInputs (Proxy :: _ tail) node)
     where
@@ -1058,10 +1058,10 @@ else instance consHoldsInputs ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputs :: forall isrl f state is os m
+orderedInputs :: forall isrl f state is os repr m
    . IsSymbol f
-  => HoldsInputs is isrl f state os m
-  => Node f state is os m
+  => HoldsInputs is isrl f state os repr m
+  => Node f state is os repr m
   -> Array HoldsInputInNode
 orderedInputs node = Tuple.snd <$> holdInputs (Proxy :: _ isrl) node
 
@@ -1070,20 +1070,20 @@ instance Reflect' HoldsInputInNode where
     reflect' hiin = withInputInNode hiin (const reflect)
 
 
-class (IsSymbol f) <= HoldsOutputs (os :: Row Type) (osrl :: RL.RowList Type) f state is m | os -> osrl where
-    holdOutputs :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+class (IsSymbol f) <= HoldsOutputs (os :: Row Type) (osrl :: RL.RowList Type) f state is repr m | os -> osrl where
+    holdOutputs :: Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNode)
 
 
-instance nilHoldsOutputs :: (IsSymbol f) => HoldsOutputs os RL.Nil f state is m where
-  holdOutputs :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+instance nilHoldsOutputs :: (IsSymbol f) => HoldsOutputs os RL.Nil f state is repr m where
+  holdOutputs :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNode)
   holdOutputs _ _ = mempty
 else instance consHoldsOutputs ::
   ( IsSymbol f, HasOutput o dout os' os
 --   , HasInputsAt is (RL.Cons i din tail)
   , HasOutputsAt os tail
-  , HoldsOutputs os tail f state is m
-  ) => HoldsOutputs os (RL.Cons o dout tail) f state is m where
-  holdOutputs :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+  , HoldsOutputs os tail f state is repr m
+  ) => HoldsOutputs os (RL.Cons o dout tail) f state is repr m where
+  holdOutputs :: forall osrl. Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNode)
   holdOutputs _ node =
     Array.insertBy cmpF (index /\ holdOutputInNode node (Output index :: _ o)) (holdOutputs (Proxy :: _ tail) node)
     where
@@ -1094,10 +1094,10 @@ else instance consHoldsOutputs ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputs :: forall osrl f state is os m
+orderedOutputs :: forall osrl f state is os repr m
    . IsSymbol f
-  => HoldsOutputs os osrl f state is m
-  => Node f state is os m
+  => HoldsOutputs os osrl f state is repr m
+  => Node f state is os repr m
   -> Array HoldsOutputInNode
 orderedOutputs node = Tuple.snd <$> holdOutputs (Proxy :: _ osrl) node
 
@@ -1107,20 +1107,20 @@ instance Reflect' HoldsOutputInNode where
 
 
 
-class (IsSymbol f) <= HoldsInputsM (is :: Row Type) (isrl :: RL.RowList Type) f state os m | is -> isrl where
-    holdInputsM :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
+class (IsSymbol f) <= HoldsInputsM (is :: Row Type) (isrl :: RL.RowList Type) f state os repr m | is -> isrl where
+    holdInputsM :: Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeM m)
 
 
-instance nilHoldsInputsM :: (IsSymbol f) => HoldsInputsM is RL.Nil f state os m where
-  holdInputsM :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
+instance nilHoldsInputsM :: (IsSymbol f) => HoldsInputsM is RL.Nil f state os repr m where
+  holdInputsM :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeM m)
   holdInputsM _ _ = mempty
 else instance consHoldsInputsM ::
   ( IsSymbol f, HasInput i din is' is
 --   , HasInputsAt is (RL.Cons i din tail)
   , HasInputsAt is tail
-  , HoldsInputsM is tail f state os m
-  ) => HoldsInputsM is (RL.Cons i din tail) f state os m where
-  holdInputsM :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeM m)
+  , HoldsInputsM is tail f state os repr m
+  ) => HoldsInputsM is (RL.Cons i din tail) f state os repr m where
+  holdInputsM :: forall isrl. Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeM m)
   holdInputsM _ node =
     Array.insertBy cmpF (index /\ holdInputInNodeM node (Input index :: _ i)) (holdInputsM (Proxy :: _ tail) node)
     where
@@ -1131,10 +1131,10 @@ else instance consHoldsInputsM ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputsM :: forall isrl f state is os m
+orderedInputsM :: forall isrl f state is os repr m
    . IsSymbol f
-  => HoldsInputsM is isrl f state os m
-  => Node f state is os m
+  => HoldsInputsM is isrl f state os repr m
+  => Node f state is os repr m
   -> Array (HoldsInputInNodeM m)
 orderedInputsM node =
   Tuple.snd <$> holdInputsM (Proxy :: _ isrl) node
@@ -1144,20 +1144,20 @@ instance Reflect' (HoldsInputInNodeM m) where
     reflect' hiin = withInputInNodeM hiin (const reflect)
 
 
-class (IsSymbol f) <= HoldsOutputsM (os :: Row Type) (osrl :: RL.RowList Type) f state is m | os -> osrl where
-    holdOutputsM :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
+class (IsSymbol f) <= HoldsOutputsM (os :: Row Type) (osrl :: RL.RowList Type) f state is repr m | os -> osrl where
+    holdOutputsM :: Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeM m)
 
 
-instance nilHoldsOutputsM :: (IsSymbol f) => HoldsOutputsM os RL.Nil f state is m where
-  holdOutputsM :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
+instance nilHoldsOutputsM :: (IsSymbol f) => HoldsOutputsM os RL.Nil f state is repr m where
+  holdOutputsM :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeM m)
   holdOutputsM _ _ = mempty
 else instance consHoldsOutputsM ::
   ( IsSymbol f, HasOutput o dout os' os
 --   , HasInputsAt is (RL.Cons i din tail)
   , HasOutputsAt os tail
-  , HoldsOutputsM os tail f state is m
-  ) => HoldsOutputsM os (RL.Cons o dout tail) f state is m where
-  holdOutputsM :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeM m)
+  , HoldsOutputsM os tail f state is repr m
+  ) => HoldsOutputsM os (RL.Cons o dout tail) f state is repr m where
+  holdOutputsM :: forall osrl. Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeM m)
   holdOutputsM _ node =
     Array.insertBy cmpF (index /\ holdOutputInNodeM node (Output index :: _ o)) (holdOutputsM (Proxy :: _ tail) node)
     where
@@ -1168,10 +1168,10 @@ else instance consHoldsOutputsM ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputsM :: forall osrl f state is os m
+orderedOutputsM :: forall osrl f state is os repr m
    . IsSymbol f
-  => HoldsOutputsM os osrl f state is m
-  => Node f state is os m
+  => HoldsOutputsM os osrl f state is repr m
+  => Node f state is os repr m
   -> Array (HoldsOutputInNodeM m)
 orderedOutputsM node =
   Tuple.snd <$> holdOutputsM (Proxy :: _ osrl) node
@@ -1183,11 +1183,11 @@ instance Reflect' (HoldsOutputInNodeM m) where
 
 
 class (IsSymbol f, ReadWriteRepr repr, FromToReprRow isrl is repr) <= HoldsInputsMRepr (is :: Row Type) (isrl :: RL.RowList Type) f state os m repr | is -> isrl where
-    holdInputsMRepr :: Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
+    holdInputsMRepr :: Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
 
 
 instance nilHoldsInputsMRepr :: (IsSymbol f, ReadWriteRepr repr) => HoldsInputsMRepr is RL.Nil f state os m repr where
-  holdInputsMRepr :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
+  holdInputsMRepr :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
   holdInputsMRepr _ _ = mempty
 else instance consHoldsInputsMRepr ::
   ( IsSymbol f
@@ -1198,7 +1198,7 @@ else instance consHoldsInputsMRepr ::
   , FromRepr repr din
   , HoldsInputsMRepr is tail f state os m repr
   ) => HoldsInputsMRepr is (RL.Cons i din tail) f state os m repr where
-  holdInputsMRepr :: forall isrl. Proxy isrl -> Node f state is os m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
+  holdInputsMRepr :: forall isrl. Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
   holdInputsMRepr _ node =
     Array.insertBy cmpF (index /\ holdInputInNodeMRepr (Proxy :: _ din) node (Input index :: _ i)) (holdInputsMRepr (Proxy :: _ tail) node)
     where
@@ -1209,10 +1209,10 @@ else instance consHoldsInputsMRepr ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedInputsMRepr :: forall isrl f state is os m repr
+orderedInputsMRepr :: forall isrl f state is os repr m repr
    . IsSymbol f
   => HoldsInputsMRepr is isrl f state os m repr
-  => Node f state is os m
+  => Node f state is os repr m
   -> Array (HoldsInputInNodeMRepr m repr)
 orderedInputsMRepr node = Tuple.snd <$> holdInputsMRepr (Proxy :: _ isrl) node
 
@@ -1222,11 +1222,11 @@ instance Reflect' (HoldsInputInNodeMRepr m repr) where
 
 
 class (IsSymbol f, ReadWriteRepr repr, FromToReprRow osrl os repr) <= HoldsOutputsMRepr (os :: Row Type) (osrl :: RL.RowList Type) f state is m repr | os -> osrl where
-    holdOutputsMRepr :: Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
+    holdOutputsMRepr :: Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
 
 
 instance nilHoldsOutputsMRepr :: (IsSymbol f, ReadWriteRepr repr) => HoldsOutputsMRepr os RL.Nil f state is m repr where
-  holdOutputsMRepr :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
+  holdOutputsMRepr :: Proxy RL.Nil -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
   holdOutputsMRepr _ _ = mempty
 else instance consHoldsOutputsMRepr ::
   ( IsSymbol f, HasOutput o dout os' os
@@ -1236,7 +1236,7 @@ else instance consHoldsOutputsMRepr ::
   , FromRepr repr dout
   , HoldsOutputsMRepr os tail f state is m repr
   ) => HoldsOutputsMRepr os (RL.Cons o dout tail) f state is m repr where
-  holdOutputsMRepr :: forall osrl. Proxy osrl -> Node f state is os m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
+  holdOutputsMRepr :: forall osrl. Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
   holdOutputsMRepr _ node =
     Array.insertBy cmpF (index /\ holdOutputInNodeMRepr (Proxy :: _ dout) node (Output index :: _ o)) (holdOutputsMRepr (Proxy :: _ tail) node)
     where
@@ -1247,10 +1247,10 @@ else instance consHoldsOutputsMRepr ::
     --   ordered = inputsHeld (Proxy :: _ tail)
 
 
-orderedOutputsMRepr :: forall osrl f state is os m repr
+orderedOutputsMRepr :: forall osrl f state is os repr m repr
    . IsSymbol f
   => HoldsOutputsMRepr os osrl f state is m repr
-  => Node f state is os m
+  => Node f state is os repr m
   -> Array (HoldsOutputInNodeMRepr m repr)
 orderedOutputsMRepr node = Tuple.snd <$> holdOutputsMRepr (Proxy :: _ osrl) node
 
@@ -1271,44 +1271,44 @@ instance Holder Input Unit HoldsInput where
   hold input _ = KH.hold input
 
 
-instance Holder Input (Node f state is os m) HoldsInput where
-  hold :: forall sym. IsSymbol sym => Input sym -> Node f state is os m -> HoldsInput
+instance Holder Input (Node f state is os repr m) HoldsInput where
+  hold :: forall sym. IsSymbol sym => Input sym -> Node f state is os repr m -> HoldsInput
   hold input _ = KH.hold input
 
 
-class HolderI :: forall k1 k2. (Symbol -> Type) -> Symbol -> k1 -> Row Type -> k2 -> Symbol -> (Type -> Type) -> Type -> Constraint
-class HolderI (proxy :: Symbol -> Type) i din is is' f m x | i -> din, is -> is', is -> m, is -> f where
-  holdI :: forall state os. proxy i -> Node f state is os m -> x
+class HolderI :: forall k1 k2. (Symbol -> Type) -> Symbol -> k1 -> Row Type -> k2 -> Symbol -> Type -> (Type -> Type) -> Type -> Constraint
+class HolderI (proxy :: Symbol -> Type) i din is is' f repr m x | i -> din, is -> is', is -> m, is -> f where
+  holdI :: forall state os. proxy i -> Node f state is os repr m -> x
 
 
-class HolderO :: forall k1 k2. (Symbol -> Type) -> Symbol -> k1 -> Row Type -> k2 -> Symbol -> (Type -> Type) -> Type -> Constraint
-class HolderO (proxy :: Symbol -> Type) o dout os os' f m x | o -> dout, os -> os', os -> m, os -> f where
-  holdO :: forall state is. proxy o -> Node f state is os m -> x
+class HolderO :: forall k1 k2. (Symbol -> Type) -> Symbol -> k1 -> Row Type -> k2 -> Symbol -> Type -> (Type -> Type) -> Type -> Constraint
+class HolderO (proxy :: Symbol -> Type) o dout os os' f repr m x | o -> dout, os -> os', os -> m, os -> f where
+  holdO :: forall state is. proxy o -> Node f state is os repr m -> x
 
 
-instance (IsSymbol f, IsSymbol i, HasInput i din is' is) => HolderI Input i din is is' f m (HoldsInputInNodeM m) where
-  holdI :: forall state os. Input i -> Node f state is os m -> HoldsInputInNodeM m
+instance (IsSymbol f, IsSymbol i, HasInput i din is' is) => HolderI Input i din is is' f repr m (HoldsInputInNodeM m) where
+  holdI :: forall state os. Input i -> Node f state is os repr m -> HoldsInputInNodeM m
   holdI input node = holdInputInNodeM node input
 
 
-instance (IsSymbol f, IsSymbol i, HasInput i din is' is, ReadWriteRepr repr, ToRepr din repr, FromRepr repr din) => HolderI Input i din is is' f m (HoldsInputInNodeMRepr m repr) where
-  holdI :: forall state os. IsSymbol f => Input i -> Node f state is os m -> HoldsInputInNodeMRepr m repr
+instance (IsSymbol f, IsSymbol i, HasInput i din is' is, ReadWriteRepr repr, ToRepr din repr, FromRepr repr din) => HolderI Input i din is is' f repr m (HoldsInputInNodeMRepr m repr) where
+  holdI :: forall state os. IsSymbol f => Input i -> Node f state is os repr m -> HoldsInputInNodeMRepr m repr
   holdI input node = holdInputInNodeMRepr (Proxy :: _ din) node input
 
 
-instance (IsSymbol f, IsSymbol o, HasOutput o dout os' os) => HolderO Output o dout os os' f m (HoldsOutputInNodeM m) where
-  holdO :: forall state is. Output o -> Node f state is os m -> HoldsOutputInNodeM m
+instance (IsSymbol f, IsSymbol o, HasOutput o dout os' os) => HolderO Output o dout os os' f repr m (HoldsOutputInNodeM m) where
+  holdO :: forall state is. Output o -> Node f state is os repr m -> HoldsOutputInNodeM m
   holdO output node = holdOutputInNodeM node output
 
 
-instance (IsSymbol f, IsSymbol o, HasOutput o dout os' os, ReadWriteRepr repr, ToRepr dout repr, FromRepr repr dout) => HolderO Output o dout os os' f m (HoldsOutputInNodeMRepr m repr) where
-  holdO :: forall state is. IsSymbol f => Output o -> Node f state is os m -> HoldsOutputInNodeMRepr m repr
+instance (IsSymbol f, IsSymbol o, HasOutput o dout os' os, ReadWriteRepr repr, ToRepr dout repr, FromRepr repr dout) => HolderO Output o dout os os' f repr m (HoldsOutputInNodeMRepr m repr) where
+  holdO :: forall state is. IsSymbol f => Output o -> Node f state is os repr m -> HoldsOutputInNodeMRepr m repr
   holdO output node = holdOutputInNodeMRepr (Proxy :: _ dout) node output
 
 
 
-{- instance (IsSymbol f, HasInputsAt is irl) => Holder Input (Node f state is os m) (HoldsInputInNode'' f state is os m) where
-  hold :: forall i din is'. IsSymbol i => HasInput i din is' is => Input i -> Node f state is os m -> HoldsInputInNode'' f state is os m
+{- instance (IsSymbol f, HasInputsAt is irl) => Holder Input (Node f state is os repr m) (HoldsInputInNode'' f state is os repr m) where
+  hold :: forall i din is'. IsSymbol i => HasInput i din is' is => Input i -> Node f state is os repr m -> HoldsInputInNode'' f state is os repr m
   hold input node = holdInputInNode'' node input -}
 
 
@@ -1322,13 +1322,13 @@ instance ReifyOrderedTo Input Unit where
   reifyAt n _ _ = Input n
 
 
-instance ReifyOrderedTo Input (Node f state is os m) where
-  reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> (Node f state is os m) -> Input sym
+instance ReifyOrderedTo Input (Node f state is os repr m) where
+  reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> (Node f state is os repr m) -> Input sym
   reifyAt n _ _ = Input n
 
 
-instance ReifyOrderedTo Output (Node f state is os m) where
-  reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> (Node f state is os m) -> Output sym
+instance ReifyOrderedTo Output (Node f state is os repr m) where
+  reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> (Node f state is os repr m) -> Output sym
   reifyAt n _ _ = Output n
 
 
@@ -1354,8 +1354,8 @@ else instance consKeysTest ::
       ordered = subjectBoundKeysImpl p order (Proxy :: _ tail) a
 
 
-class NodeBoundKeys k (xs :: RL.RowList Type) (proxy :: Symbol -> Type) f state is os m x where
-  nodeBoundKeysImpl :: Proxy k -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+class NodeBoundKeys k (xs :: RL.RowList Type) (proxy :: Symbol -> Type) f state is os repr m x where
+  nodeBoundKeysImpl :: Proxy k -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os repr m -> Array (Int /\ x)
 
 
 {-
@@ -1373,15 +1373,15 @@ Noodle.Node.NodeBoundKeys I
 
 
 
-instance nilNKeysITest :: NodeBoundKeys k RL.Nil proxy f state is os m x where
+instance nilNKeysITest :: NodeBoundKeys k RL.Nil proxy f state is os repr m x where
   nodeBoundKeysImpl _ _ _ _ = mempty
 else instance consNKeysITest ::
   ( IsSymbol name
-  , HolderI proxy name ty is is' f m x
-  , ReifyOrderedTo proxy (Node f state is os m)
-  , NodeBoundKeys I tail proxy f state is os m x
-  ) => NodeBoundKeys I (RL.Cons name ty tail) proxy f state is os m x where
-  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+  , HolderI proxy name ty is is' f repr m x
+  , ReifyOrderedTo proxy (Node f state is os repr m)
+  , NodeBoundKeys I tail proxy f state is os repr m x
+  ) => NodeBoundKeys I (RL.Cons name ty tail) proxy f state is os repr m x where
+  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os repr m -> Array (Int /\ x)
   nodeBoundKeysImpl pi p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
@@ -1391,11 +1391,11 @@ else instance consNKeysITest ::
       ordered = nodeBoundKeysImpl pi p order (Proxy :: _ tail) node
 else instance consNKeysOTest ::
   ( IsSymbol name
-  , HolderO proxy name ty os os' f m x
-  , ReifyOrderedTo proxy (Node f state is os m)
-  , NodeBoundKeys O tail proxy f state is os m x
-  ) => NodeBoundKeys O (RL.Cons name ty tail) proxy f state is os m x where
-  nodeBoundKeysImpl :: forall xs. Proxy O -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+  , HolderO proxy name ty os os' f repr m x
+  , ReifyOrderedTo proxy (Node f state is os repr m)
+  , NodeBoundKeys O tail proxy f state is os repr m x
+  ) => NodeBoundKeys O (RL.Cons name ty tail) proxy f state is os repr m x where
+  nodeBoundKeysImpl :: forall xs. Proxy O -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os repr m -> Array (Int /\ x)
   nodeBoundKeysImpl po p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
@@ -1405,11 +1405,11 @@ else instance consNKeysOTest ::
       ordered = nodeBoundKeysImpl po p order (Proxy :: _ tail) node
 else instance consNKeysITest' ::
   ( IsSymbol name
-  , HolderI Input name ty is is' f m (HoldsInputInNodeMRepr m repr)
-  , ReifyOrderedTo Input (Node f state is os m)
-  , NodeBoundKeys I tail Input f state is os m (HoldsInputInNodeMRepr m repr)
-  ) => NodeBoundKeys I (RL.Cons name ty tail) Input f state is os m (HoldsInputInNodeMRepr m repr) where
-  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy Input -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ (HoldsInputInNodeMRepr m repr))
+  , HolderI Input name ty is is' f repr m (HoldsInputInNodeMRepr m repr)
+  , ReifyOrderedTo Input (Node f state is os repr m)
+  , NodeBoundKeys I tail Input f state is os repr m (HoldsInputInNodeMRepr m repr)
+  ) => NodeBoundKeys I (RL.Cons name ty tail) Input f state is os repr m (HoldsInputInNodeMRepr m repr) where
+  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy Input -> SOrder -> Proxy xs -> Node f state is os repr m -> Array (Int /\ (HoldsInputInNodeMRepr m repr))
   nodeBoundKeysImpl pi p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
@@ -1429,21 +1429,21 @@ orderedNodeBoundKeysTest :: forall g row rl proxy x
 orderedNodeBoundKeysTest p order _ = Tuple.snd <$> subjectBoundKeysImpl p order (Proxy :: _ rl) unit
 
 
-orderedNodeBoundKeysTest' :: forall g row rl proxy x f state is os m
+orderedNodeBoundKeysTest' :: forall g row rl proxy x f state is os repr m
    . RL.RowToList row rl
-  => SubjectBoundKeys rl proxy (Node f state is os m) x
+  => SubjectBoundKeys rl proxy (Node f state is os repr m) x
   => Proxy proxy
   -> SOrder
   -> g row -- this will work for any type with the row as a param!
-  -> Node f state is os m
+  -> Node f state is os repr m
   -> Array x
 orderedNodeBoundKeysTest' p order _ node = Tuple.snd <$> subjectBoundKeysImpl p order (Proxy :: _ rl) node
 
 
-orderedNodeInputsTest :: forall rl iholder f state is os m
+orderedNodeInputsTest :: forall rl iholder f state is os repr m
    . HasInputsAt is rl
-  => SubjectBoundKeys rl Input (Node f state is os m) iholder
-  => Node f state is os m
+  => SubjectBoundKeys rl Input (Node f state is os repr m) iholder
+  => Node f state is os repr m
   -> Array iholder
 orderedNodeInputsTest node = Tuple.snd <$> subjectBoundKeysImpl (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
 
@@ -1454,26 +1454,26 @@ data O
 
 
 
-orderedNodeInputsTest' :: forall rl iholder f state is os m
+orderedNodeInputsTest' :: forall rl iholder f state is os repr m
    . HasInputsAt is rl
-  => NodeBoundKeys I rl Input f state is os m iholder
-  => Node f state is os m
+  => NodeBoundKeys I rl Input f state is os repr m iholder
+  => Node f state is os repr m
   -> Array iholder
 orderedNodeInputsTest' node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
 
 
-orderedNodeInputsTest'' :: forall rl iholder f state is os m
+orderedNodeInputsTest'' :: forall rl iholder f state is os repr m
    . HasInputsAt is rl
-  => NodeBoundKeys I rl Input f state is os m iholder
+  => NodeBoundKeys I rl Input f state is os repr m iholder
   => Proxy rl
-  -> Node f state is os m
+  -> Node f state is os repr m
   -> Array iholder
 orderedNodeInputsTest'' prl node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) prl node
 
 
-orderedNodeOutputsTest' :: forall rl oholder f state is os m
+orderedNodeOutputsTest' :: forall rl oholder f state is os repr m
    . HasOutputsAt os rl
-  => NodeBoundKeys O rl Output f state is os m oholder
-  => Node f state is os m
+  => NodeBoundKeys O rl Output f state is os repr m oholder
+  => Node f state is os repr m
   -> Array oholder
 orderedNodeOutputsTest' node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ O) (Proxy :: _ Output) (outputsOrder node) (Proxy :: _ rl) node

@@ -2,6 +2,7 @@ module Toolkit.Hydra.Family.Geometry.FRotate where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure)
@@ -60,6 +61,7 @@ type Family (m :: Type -> Type) = -- {-> geometry <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -83,4 +85,5 @@ type Node (m :: Type -> Type) =
     N.Node "rotate" State
         Inputs
         Outputs
+        WrapRepr
         m

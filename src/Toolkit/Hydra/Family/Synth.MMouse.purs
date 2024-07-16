@@ -2,6 +2,7 @@ module Toolkit.Hydra.Family.Synth.FMouse where
 
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Prelude (Unit, unit, ($), bind, pure, discard)
@@ -61,6 +62,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 family :: forall (m :: Type -> Type). Family m
@@ -80,4 +82,5 @@ type Node (m :: Type -> Type) =
     N.Node "mouse" State
         Inputs
         Outputs
+        WrapRepr
         m

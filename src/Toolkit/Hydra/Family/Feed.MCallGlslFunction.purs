@@ -7,6 +7,7 @@ import Effect.Class (class MonadEffect)
 import Data.Int (floor)
 
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra.Lang.Glsl as Glsl
 
 import Data.Tuple.Nested ((/\))
@@ -27,6 +28,7 @@ import Noodle.Fn.Process as P
 
 import Toolkit.Hydra.Lang.Fn as HFn
 import Toolkit.Hydra.Types as H
+import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
 import Type.Proxy (Proxy(..))
@@ -90,6 +92,7 @@ type Family (m :: Type -> Type) = -- {-> callFunction <-}
     Family.Def State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -119,6 +122,7 @@ type Node (m :: Type -> Type) =
     N.Node "callFunction" State
         Inputs
         Outputs
+        WrapRepr
         m
 
 
@@ -151,6 +155,7 @@ collectFuncRef'
         State
         Inputs
         Outputs
+        WrapRepr
         m'
     -> m H.GlslFnRef
 collectFuncRef' index node = do
