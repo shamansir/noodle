@@ -15,28 +15,28 @@ import Noodle.Node.HoldsNodeState (class IsNodeState)
 
 import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
 
-class IsNodeInPatch :: forall k. k -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> (Type -> Type) -> Constraint
+class IsNodeInPatch :: forall k. k -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
     , Id.HasOutputsAt os osrl
-    ) <= IsNodeInPatch gstate instances' instances rlins f state is os isrl osrl m
+    ) <= IsNodeInPatch gstate instances' instances rlins f state is os isrl osrl repr m
 
 
 instance
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
     , Id.HasOutputsAt os osrl
-    ) => IsNodeInPatch gstate instances' instances rlins f state is os isrl osrl m
+    ) => IsNodeInPatch gstate instances' instances rlins f state is os isrl osrl repr m
 
 
 class IsReprableNodeInPatch :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -45,16 +45,16 @@ class
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
     , FromToReprRow osrl os repr
-    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasCliBody (x f) (Node f state is os m) state m
-    , HasCliCustomSize (x f) (Node f state is os m)
+    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
+    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
+    , HasCliBody (x f) (Node f state is os repr m) state m
+    , HasCliCustomSize (x f) (Node f state is os repr m)
     , IsNodeState gstate state
     ) <= IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 instance
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , RL.RowToList instances rlins
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
@@ -63,52 +63,52 @@ instance
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
     , FromToReprRow osrl os repr
-    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasCliBody (x f) (Node f state is os m) state m
-    , HasCliCustomSize (x f) (Node f state is os m)
+    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
+    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
+    , HasCliBody (x f) (Node f state is os repr m) state m
+    , HasCliCustomSize (x f) (Node f state is os repr m)
     , IsNodeState gstate state
     ) => IsReprableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 class IsReprableRenderableNodeInPatch :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
     , FromToReprRow osrl os repr
-    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasCliBody (x f) (Node f state is os m) state m
-    , HasCliCustomSize (x f) (Node f state is os m)
+    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
+    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
+    , HasCliBody (x f) (Node f state is os repr m) state m
+    , HasCliCustomSize (x f) (Node f state is os repr m)
     , IsNodeState gstate state
     ) <= IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
 instance
-    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , FromToReprRow isrl is repr
     , FromToReprRow osrl os repr
-    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
-    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
-    , HasCliBody (x f) (Node f state is os m) state m
-    , HasCliCustomSize (x f) (Node f state is os m)
+    , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
+    , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
+    , HasCliBody (x f) (Node f state is os repr m) state m
+    , HasCliCustomSize (x f) (Node f state is os repr m)
     , IsNodeState gstate state
     ) => IsReprableRenderableNodeInPatch x gstate instances' instances rlins f state is os isrl osrl repr_is repr_os repr m
 
 
-class LinkStartInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class LinkStartInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( PHas.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    ( PHas.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA reprA m))
     , Id.HasOutput oA doutA osA' osA
-    ) <= LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA m
+    ) <= LinkStartInPatch fA oA doutA stateA isA osA osA' gstate ins insA reprA m
 
 
-class LinkEndInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> (Type -> Type) -> Constraint
+class LinkEndInPatch :: forall k. Symbol -> Symbol -> Type -> Type -> Row Type -> Row Type -> Row Type -> k -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
-    ( PHas.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    ( PHas.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB reprB m))
     , Id.HasInput iB dinB isB' isB
-    ) <= LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB m
+    ) <= LinkEndInPatch fB iB dinB stateB isB isB' osB gstate ins insB reprB m

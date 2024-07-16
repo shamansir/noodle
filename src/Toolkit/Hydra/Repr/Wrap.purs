@@ -54,6 +54,10 @@ data WrapRepr
 --     toRepr _ a = WrapRepr
 
 
+instance R.HasFallback WrapRepr where
+    fallback = Unit unit
+
+
 -- FIXME: There's a Generic class that is [almost] the same as `toRepr` / `FromRepr`: https://purescript-simple-json.readthedocs.io/en/latest/generics-rep.html
 
 

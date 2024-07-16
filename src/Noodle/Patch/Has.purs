@@ -22,12 +22,12 @@ instance
 
 
 class
-    ( HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     )
-    <= HasNodesOf instances' instances f state is os m
+    <= HasNodesOf instances' instances f state is os repr m
 
 
 instance
-    ( HasInstancesOf f instances' instances (Array (Node f state is os m))
+    ( HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     )
-    => HasNodesOf instances' instances f state is os m
+    => HasNodesOf instances' instances f state is os repr m

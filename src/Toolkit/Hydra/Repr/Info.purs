@@ -369,6 +369,9 @@ instance StatusLineInfo H.TOrV where
     statusLine (H.V val) = statusLine val
 
 
+instance R.HasFallback InfoRepr where fallback = InfoRepr { shortLabel : "", statusLine : ""}
+
+
 instance (ShortChannelLabel a, StatusLineInfo a) => NMF.HasRepr a InfoRepr where
     toRepr :: forall f i o. InNode f i o -> a -> InfoRepr
     toRepr _ a = InfoRepr { shortLabel : shortLabel a, statusLine : statusLine a }

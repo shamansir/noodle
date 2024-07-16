@@ -41,13 +41,13 @@ data FoldFamilyDefsIndexed x = FoldFamilyDefsIndexed
 
 instance mappingTo ::
   ( ConvertFamilyDefTo x ) =>
-  HM.Mapping (MapFamilyDefs x) (Family.Def state is os m) x where
+  HM.Mapping (MapFamilyDefs x) (Family.Def state is os repr m) x where
   mapping MapFamilyDefs = convertFamilyDef
 
 
 instance mappingIndexedTo ::
   ( IsSymbol f, ConvertFamilyDefIndexedTo x ) =>
-  HM.MappingWithIndex (MapFamilyDefsIndexed x) (Proxy f) (Family.Def state is os m) x where
+  HM.MappingWithIndex (MapFamilyDefsIndexed x) (Proxy f) (Family.Def state is os repr m) x where
   mappingWithIndex MapFamilyDefsIndexed psym = convertFamilyDefIndexed $ familyP psym
 
 
@@ -91,7 +91,7 @@ instance toShapesMap ::
     ) =>
     HM.Mapping
         ToShape
-        (Family.Def state is os m)
+        (Family.Def state is os repr m)
         (List Fn.InputR /\ List Fn.OutputR)
     where
     mapping ToShape def =
@@ -148,7 +148,7 @@ instance foldDefsArr ::
     => HF.Folding
             (FoldFamilyDefs x)
             (Array x)
-            (Family.Def state is os m)
+            (Family.Def state is os repr m)
             (Array x)
     where
     folding FoldFamilyDefs acc def = convertFamilyDef def : acc
@@ -160,7 +160,7 @@ instance foldDefsIndexedArr ::
             (FoldFamilyDefsIndexed x)
             (Proxy f)
             (Array x)
-            (Family.Def state is os m)
+            (Family.Def state is os repr m)
             (Array x)
     where
     foldingWithIndex FoldFamilyDefsIndexed sym acc def = convertFamilyDefIndexed (familyP sym) def : acc
@@ -170,11 +170,11 @@ instance foldDefsIndexedArr ::
 
 
 class ConvertFamilyDefTo x where
-    convertFamilyDef :: forall state is os m. Family.Def state is os m -> x
+    convertFamilyDef :: forall state is os repr m. Family.Def state is os repr m -> x
 
 
 class ConvertFamilyDefIndexedTo x where
-    convertFamilyDefIndexed :: forall f state is os m. IsSymbol f => Family' f -> Family.Def state is os m -> x
+    convertFamilyDefIndexed :: forall f state is os repr m. IsSymbol f => Family' f -> Family.Def state is os repr m -> x
 
 
 

@@ -158,12 +158,12 @@ toRepr repr (Toolkit _ _ defs) =
 
 
 spawn
-    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os repr m
      . MonadEffect m
-    => THas.HasFamilyDef f families' families (Family.Def state is os m)
+    => THas.HasFamilyDef f families' families (Family.Def state is os repr m)
     => Toolkit gstate families
     -> Family f
-    -> m (Node f state is os m)
+    -> m (Node f state is os repr m)
 spawn (Toolkit _ _ tk) fsym =
     Record.get (proxify fsym) tk
         # makeNode
@@ -172,13 +172,13 @@ spawn (Toolkit _ _ tk) fsym =
 
 
 unsafeSpawn
-    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m rlfs
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os repr m rlfs
      . MonadEffect m
     => ListsFamilies families rlfs
-    => THas.HasFamilyDef f families' families (Family.Def state is os m)
+    => THas.HasFamilyDef f families' families (Family.Def state is os repr m)
     => Toolkit gstate families
     -> Family' f
-    -> m (Maybe (Family f /\ Node f state is os m))
+    -> m (Maybe (Family f /\ Node f state is os repr m))
 unsafeSpawn toolkit@(Toolkit name _ tk) family =
     if List.elem (reflect' family) $ Record.keys tk then
         let (family_ :: Family f) = reifySymbol (reflect' family) unsafeCoerce
@@ -187,14 +187,14 @@ unsafeSpawn toolkit@(Toolkit name _ tk) family =
 
 
 unsafeSpawnR
-    :: forall f (families :: Row Type) gstate state is os m rlfs
+    :: forall f (families :: Row Type) gstate state is os repr m rlfs
      . MonadEffect m
     => IsSymbol f
     => ListsFamilies families rlfs
-    -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
+    -- => Has.HasFamilyDef' f families' families (Family.Def state is os repr m) -- it's unsafe in the end
     => Toolkit gstate families
     -> FamilyR
-    -> m (Maybe (Node f state is os m))
+    -> m (Maybe (Node f state is os repr m))
 unsafeSpawnR toolkit@(Toolkit _ name tk) familyR =
     if List.elem (reflect' familyR) $ Record.keys tk then
         RecordU.unsafeGet familyStr tk
@@ -208,16 +208,16 @@ unsafeSpawnR toolkit@(Toolkit _ name tk) familyR =
 
 
 unsafeSpawnR'
-    :: forall f (families :: Row Type) gstate state is os m rlfs
+    :: forall f (families :: Row Type) gstate state is os repr m rlfs
      . MonadEffect m
     => IsSymbol f
     => ListsFamilies families rlfs
-    -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
+    -- => Has.HasFamilyDef' f families' families (Family.Def state is os repr m) -- it's unsafe in the end
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node.HoldsNode' f m))
 unsafeSpawnR' toolkit familyR =
-    map Node.holdNode' <$> (unsafeSpawnR toolkit familyR :: m (Maybe (Node f state is os m)))
+    map Node.holdNode' <$> (unsafeSpawnR toolkit familyR :: m (Maybe (Node f state is os repr m)))
 
 
 name :: forall gstate families. Toolkit gstate families -> Name
@@ -235,22 +235,22 @@ instance nilNilDataInterchange :: DataInterchange RL.Nil RL.Nil
 else instance consNilDataInterchange ::
   ( IsSymbol f
   , DataInterchange tail RL.Nil
-  ) => DataInterchange (RL.Cons f (Family.Def state is os m) tail) RL.Nil
+  ) => DataInterchange (RL.Cons f (Family.Def state is os repr m) tail) RL.Nil
 else instance nilConsDataInterchange ::
   ( IsSymbol f
   , DataInterchange tail RL.Nil
-  ) => DataInterchange RL.Nil (RL.Cons f (Family.Def state is os m) tail)
+  ) => DataInterchange RL.Nil (RL.Cons f (Family.Def state is os repr m) tail)
 else instance consConsDataInterchange ::
   ( IsSymbol fA
   , IsSymbol fB
   , RL.RowToList osA osArl
   , RL.RowToList isA isBrl
   , Pairs osArl isBrl
-  , DataInterchange tailA (RL.Cons fB (Family.Def stateB isB osB m) tailB)
-  , DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) tailB
+  , DataInterchange tailA (RL.Cons fB (Family.Def stateB isB osB repr m) tailB)
+  , DataInterchange (RL.Cons fA (Family.Def stateA isA osA repr m) tailA) tailB
   -- , DataInterchange RL.Nil (RL.Cons fB (Family.Def stateB isB osB m) tailB)
   -- , DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) RL.Nil
-  ) => DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) (RL.Cons fB (Family.Def stateB isB osB m) tailB)
+  ) => DataInterchange (RL.Cons fA (Family.Def stateA isA osA repr m) tailA) (RL.Cons fB (Family.Def stateB isB osB repr m) tailB)
 
 
 ensureDataInterchangeIn :: forall state families fl. DataInterchange fl fl => RL.RowToList families fl => Toolkit state families -> Unit
@@ -266,7 +266,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
     => (  forall families' instances' f state (isrl :: RL.RowList Type) (is :: Row Type) (osrl :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  THas.HasReprableRenderableNodesOf x gstate families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
         => Family f
-        -> Family.Def state is os m
+        -> Family.Def state is os repr m
         -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
         -> t a
         )
@@ -284,8 +284,8 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
         => THas.HasReprableRenderableNodesOf x gstate familiesB' families instancesB' instances repr fB stateB isrlB isB osrlB osB repr_isB repr_osB m
         => Family fA
         -> Family fB
-        -> Family.Def stateA isA osA m
-        -> Family.Def stateB isB osB m
+        -> Family.Def stateA isA osA repr m
+        -> Family.Def stateB isB osB repr m
         -> Toolkit gstate families
         -> t a
         )
@@ -302,9 +302,9 @@ type WithNodeFn (m :: Type -> Type) gstate families instances repr
     => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
         => Family f
-        -> Family.Def state is os m
+        -> Family.Def state is os repr m
         -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
-        -> Node f state is os m
+        -> Node f state is os repr m
         -> t a
         )
     -> FamilyR
@@ -320,10 +320,10 @@ class HasWithFamilyFn m gstate families instances repr where
 
 
 {-
-inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os m -> List InputR
+inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os repr m -> List InputR
 inputsFromDef _ = keysToInputsR (Proxy :: Proxy is)
 
 
-outputsFromDef :: forall rlo state is os m. HasOutputsAt os rlo => Family.Def state is os m -> List OutputR
+outputsFromDef :: forall rlo state is os m. HasOutputsAt os rlo => Family.Def state is os repr m -> List OutputR
 outputsFromDef _ = keysToOutputsR (Proxy :: Proxy os)
 -}

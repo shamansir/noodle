@@ -141,18 +141,18 @@ unwrapNodeHtml' (NodeHtml' html) = html
 
 
 -- instance Patch.ConvertNodeTo (NodeHtml p i) where
---     convertNode :: Node f state is os m -> NodeHtml p i
+--     convertNode :: Node f state is os repr m -> NodeHtml p i
 --     convertNode = renderNode >>> NodeHtml
 
 
 instance Node.ConvertNodeTo NodeHtml' where
-    convertNode :: forall f state is os m g. {- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ -} Node f state is os m -> NodeHtml'
+    convertNode :: forall f state is os repr m g. {- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ -} Node f state is os repr m -> NodeHtml'
     convertNode = renderNode >>> NodeHtml'
 
 
 -- NodeHtml (ComponentSlot () Aff Action) Action
 
-renderNode :: ∀ p i f state is os m g. {-FIXME RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒-} Node f state is os m -> HH.HTML (H.ComponentSlot () Aff Action) Action
+renderNode :: ∀ p i f state is os repr m g. {-FIXME RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒-} Node f state is os repr m -> HH.HTML (H.ComponentSlot () Aff Action) Action
 renderNode node =
     let
         inletsCount /\ outletsCount = 5 /\ 15 -- Node.dimensions node
@@ -225,7 +225,7 @@ render (s@{ network, toolkit, windowSize }) =
         --patchBody :: forall p i gstate instances rla. Patch gstate instances → HH.HTML (H.ComponentSlot () Aff Action) Action
         patchBody patch =
             HS.g [] $ unwrapNodeHtml' <$> Patch.nodes_ patch
-        renderNode_ :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
+        renderNode_ :: ∀ p i f state is os repr m repr g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os repr m -> HH.HTML p i
         renderNode_ node =
             let
                 inletsCount /\ outletsCount = Node.dimensions node

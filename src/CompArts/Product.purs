@@ -20,6 +20,7 @@ import Data.Profunctor.Choice (fanin)
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (toUpper, take)
+import Data.Repr (class HasFallback)
 
 import Data.Argonaut (decodeJson, jsonParser, JsonDecodeError(..))
 import Data.Argonaut.Core (Json)
@@ -93,6 +94,10 @@ type ProductsShape =
 
 
 newtype Products = Products (Array Product)
+
+
+instance HasFallback Products where fallback = Products []
+instance HasFallback Product' where fallback = defaultProduct'
 
 
 type ProductRequestError = Either AJ.Error JsonDecodeError

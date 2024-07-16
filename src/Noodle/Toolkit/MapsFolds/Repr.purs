@@ -49,7 +49,7 @@ instance toReprTopInstance ::
     HM.MappingWithIndex
         (ToReprTop repr)
         (Proxy f)
-        (Family.Def state is os m)
+        (Family.Def state is os repr m)
         (repr /\ Record repr_is /\ Record repr_os)
     where
     mappingWithIndex (ToReprTop repr) fsym (Family.Def (s /\ iRec /\ oRec /\ fn)) =

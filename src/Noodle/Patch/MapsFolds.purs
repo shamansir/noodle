@@ -40,7 +40,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- newtype NodeInfo f = NodeInfo (Family' f /\ Int /\ NodeId f)
 
-newtype NodeWithIndex f state is os m = NodeWithIndex (Family' f /\ Int /\ Node f state is os m)
+newtype NodeWithIndex f state is os repr m = NodeWithIndex (Family' f /\ Int /\ Node f state is os repr m)
 
 
 {- Inits / Maps / Folds tags -}
@@ -106,7 +106,7 @@ data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
 
 
 instance initToNIONY ::
-    HM.Mapping NoInstancesOfNodeYet node_def (Array (Node f state is os m)) where
+    HM.Mapping NoInstancesOfNodeYet node_def (Array (Node f state is os repr m)) where
     mapping NoInstancesOfNodeYet = const []
 
 
@@ -153,7 +153,7 @@ instance mappingTo ::
     ( NMF.ConvertNodeTo x ) =>
     HM.Mapping
         (MapNodes x)
-        (Array (Node f state is os m))
+        (Array (Node f state is os repr m))
         (Array x)
     where
     mapping MapNodes = convertNodes
@@ -164,7 +164,7 @@ instance mappingIndexedTo ::
     HM.MappingWithIndex
         (MapNodesIndexed x)
         (Proxy f)
-        (Array (Node f state is os m))
+        (Array (Node f state is os repr m))
         (Array x)
     where
     mappingWithIndex MapNodesIndexed psym = convertNodesIndexed $ familyP psym
@@ -206,7 +206,7 @@ instance foldNodesArr ::
     => HF.Folding
             (FoldNodes Array x)
             (Array x)
-            (Array (Node f state is os m))
+            (Array (Node f state is os repr m))
             (Array x)
     where
     folding FoldNodes acc nodes = acc <> (NMF.convertNode <$> nodes)
@@ -217,7 +217,7 @@ instance foldNodesIndexedArr ::
             (FoldNodesIndexed Array x)
             (Proxy f)
             (Array x)
-            (Array (Node f state is os m))
+            (Array (Node f state is os repr m))
             (Array x)
     where
     foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> Array.mapWithIndex (NMF.convertNodeIndexed $ familyP psym) nodes
@@ -228,7 +228,7 @@ instance foldNodesList ::
     => HF.Folding
             (FoldNodes List x)
             (List x)
-            (Array (Node f state is os m))
+            (Array (Node f state is os repr m))
             (List x)
     where
     folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ NMF.convertNode <$> nodes)
@@ -240,7 +240,7 @@ instance foldNodesIndexedList ::
             (FoldNodesIndexed List x)
             (Proxy f)
             (List x)
-            (Array (Node f state is os m))
+            (Array (Node f state is os repr m))
             (List x)
     where
     foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (mapWithIndex (NMF.convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)
@@ -250,12 +250,12 @@ instance foldNodesIndexedList ::
 
 
 class ConvertNodesTo x where
-    convertNodes :: forall f state is os m. Array (Node f state is os m) -> x
+    convertNodes :: forall f state is os repr m. Array (Node f state is os repr m) -> x
 
 
 --class ConvertNodesTo' :: Row Type -> Row Type -> Type -> Constraint
 class ConvertNodesIndexedTo x where
-    convertNodesIndexed :: forall f state is os m. Family' f -> Array (Node f state is os m) -> x
+    convertNodesIndexed :: forall f state is os repr m. Family' f -> Array (Node f state is os repr m) -> x
 
 
 instance convertNodesToArray :: NMF.ConvertNodeTo x => ConvertNodesTo (Array x) where
@@ -266,54 +266,54 @@ instance convertNodesToArray :: NMF.ConvertNodeTo x => ConvertNodesTo (Array x) 
 --     convertNodesIndexed fsym arr = convertNode <$> arr
 
 instance extractShape :: (HasInputsAt is irl, HasOutputsAt os orl) => NMF.ConvertNodeTo' is os irl orl (List InputR) where
-    convertNode' :: forall f state m. Node f state is os m -> List InputR
+    convertNode' :: forall f state m. Node f state is os repr m -> List InputR
     convertNode' node = Node.inputsShape node
 
 
 instance extractId :: NMF.ConvertNodeTo (NodeId f') where
-    convertNode :: forall f state is os m. Node f state is os m -> NodeId f'
+    convertNode :: forall f state is os repr m. Node f state is os repr m -> NodeId f'
     convertNode node = unsafeCoerce $ Node.id node
 
 
 instance extractFamily :: NMF.ConvertNodeTo (Family' f') where
-    convertNode :: forall f state is os m. Node f state is os m -> Family' f'
+    convertNode :: forall f state is os repr m. Node f state is os repr m -> Family' f'
     convertNode node = unsafeCoerce $ Node.family node
 
 
 instance extractHash :: NMF.ConvertNodeTo UniqueHash where
-    convertNode :: forall f state is os m. Node f state is os m -> UniqueHash
+    convertNode :: forall f state is os repr m. Node f state is os repr m -> UniqueHash
     convertNode = Node.hash
 
 
 instance extractIdIndexed :: ConvertNodeIndexedTo (Int /\ NodeId f') where
     convertNodeIndexed
-        :: forall f state is os m
+        :: forall f state is os repr m
          . IsSymbol f
         => Family' f
         -> Int
-        -> Node f state is os m
+        -> Node f state is os repr m
         -> Int /\ NodeId f'
     convertNodeIndexed _ idx node = idx /\ (unsafeCoerce $ Node.id node)
 
 
 instance extractIdIndexedInfo :: ConvertNodeIndexedTo (NodeInfo f') where
     convertNodeIndexed
-        :: forall f state is os m
+        :: forall f state is os repr m
          . IsSymbol f
         => Family' f
         -> Int
-        -> Node f state is os m
+        -> Node f state is os repr m
         -> NodeInfo f'
     convertNodeIndexed family idx node = NodeInfo $ unsafeCoerce family /\ idx /\ (unsafeCoerce $ Node.id node)
 
 
 instance extractNodeWithIndex :: ConvertNodeIndexedTo (NodeWithIndex f' state' is' os' m') where
     convertNodeIndexed
-        :: forall f state is os m
+        :: forall f state is os repr m
          . IsSymbol f
         => Family' f
         -> Int
-        -> Node f state is os m
+        -> Node f state is os repr m
         -> NodeWithIndex f' state' is' os' m'
     convertNodeIndexed family idx node = NodeWithIndex $ unsafeCoerce family /\ idx /\ unsafeCoerce node
 -}
@@ -356,10 +356,10 @@ hfoldl_ = HF.hfoldl (FoldNodes :: FoldNodes ff result) (mempty :: ff result)
 
 
 hfoldl
-    :: forall f state is os instances rlins m
-     . Fold rlins instances Array (Node f state is os m)
+    :: forall f state is os instances rlins repr m
+     . Fold rlins instances Array (Node f state is os repr m)
     => Record instances
-    -> Array (Node f state is os m)
+    -> Array (Node f state is os repr m)
 hfoldl = hfoldl_
 
 
@@ -373,10 +373,10 @@ hfoldlWithIndex_ = HF.hfoldlWithIndex (FoldNodesIndexed :: FoldNodesIndexed ff r
 
 
 hfoldlWithIndex
-    :: forall f state is os m (instances :: Row Type) (rlins ∷ RL.RowList Type) (ff :: Type -> Type)
-     . FoldI rlins instances Array (NodeWithIndex f state is os m)
+    :: forall f state is os repr m (instances :: Row Type) (rlins ∷ RL.RowList Type) (ff :: Type -> Type)
+     . FoldI rlins instances Array (NodeWithIndex f state is os repr m)
     => Record instances
-    -> Array (NodeWithIndex f state is os m)
+    -> Array (NodeWithIndex f state is os repr m)
 hfoldlWithIndex = hfoldlWithIndex_
 
 
