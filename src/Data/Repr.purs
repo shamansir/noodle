@@ -77,6 +77,16 @@ class (ReadRepr repr, WriteRepr repr) <= ReadWriteRepr repr
 instance (ReadRepr repr, WriteRepr repr) => ReadWriteRepr repr
 
 
+-- instance HasFallback x => FromRepr x x where fromRepr = unwrap >>> Just
+-- instance HasFallback x => ToRepr x x where toRepr = wrap >>> Just
+--instance Monoid a => HasFallback a where fallback = mempty
+
+
+instance HasFallback Unit where fallback = unit
+instance HasFallback Int where fallback = 0
+instance HasFallback String where fallback = ""
+
+
 -- wrap :: forall a. a -> Repr a
 -- wrap = Repr
 

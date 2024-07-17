@@ -10,6 +10,7 @@ import Type.Proxy (Proxy(..))
 import Record as Record
 import Record.Extra as Record
 import Prim.RowList as RL
+import Data.Repr as R
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -33,21 +34,17 @@ import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (NodeId, class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (familyOf, reflectFamily') as Id
 
-import Toolkit.Test (toolkit)
-import Toolkit.Test (Instances) as TestToolkit
-
-_foo = (Node.Family :: Node.Family "foo")
-_bar = (Node.Family :: Node.Family "bar")
-_sum = (Node.Family :: Node.Family "sum")
+import Toolkit.Test (toolkit) as Test
+import Toolkit.Test (TestToolkit)
+import Toolkit.Test (Instances, Families) as TestToolkit
+import Toolkit.Test (FooNode, BarNode, SumNode, ConcatNode) as T
 
 
-app gstate nw =
-  { toolkit
-  -- , components
-  , currentPatch : Nothing -- Just "hydra"
-  , network : nw
-  , patchState : gstate
-  }
+_foo = (Node.Family :: _ "foo")
+_bar = (Node.Family :: _ "bar")
+_concat = (Node.Family :: _ "concat")
+_sum = (Node.Family :: _ "sum")
+
 
 data AlwaysUnitRepr = Unit_
 
@@ -55,7 +52,6 @@ data AlwaysUnitRepr = Unit_
 instance Show AlwaysUnitRepr
     where
         show Unit_ = "Unit"
-
 
 instance HasRepr Unit AlwaysUnitRepr where toRepr _ _ = Unit_
 instance HasRepr String AlwaysUnitRepr where toRepr _ _ = Unit_
@@ -75,26 +71,41 @@ renderNode' (nodeId /\ state /\ is /\ os) = liftEffect $ do
 
 
 -- renderNode :: forall f (is :: Row Type) irl (os :: Row Type) orl. HasInputsAt is irl => HasInputsAt os orl => Node f Unit is os Effect -> Effect Unit
-renderNode :: forall f is os m. MonadEffect m => Node f Unit is os m -> m Unit
+renderNode :: forall f is os m. MonadEffect m => Node f Unit is os AlwaysUnitRepr m -> m Unit
 renderNode node = liftEffect $ do
   log $ Id.reflectFamily' $ Id.familyOf $ Node.id node
   -- log $ show $ Node.shape node
 
 
+instance R.HasFallback AlwaysUnitRepr where fallback = Unit_
+
+
+instance R.ToRepr Int AlwaysUnitRepr where toRepr _ = Just $ R.Repr Unit_
+instance R.ToRepr String AlwaysUnitRepr where toRepr _ = Just $ R.Repr Unit_
+instance R.FromRepr AlwaysUnitRepr Int where fromRepr _ = Just 0
+instance R.FromRepr AlwaysUnitRepr String where fromRepr _ = Just ""
+
+
 main :: Effect Unit
 main = do
+  let
+    toolkit :: TestToolkit AlwaysUnitRepr Effect
+    toolkit = Test.toolkit
+
   nodeA <- Toolkit.spawn toolkit _foo
   nodeB <- Toolkit.spawn toolkit _bar
   nodeC <- Toolkit.spawn toolkit _bar
   nodeD <- Toolkit.spawn toolkit _sum
+  nodeE <- Toolkit.spawn toolkit _concat
 
   let
-    patch :: Patch Unit (TestToolkit.Instances Effect)
     patch = Patch.init toolkit
                 # Patch.registerNode nodeA
                 # Patch.registerNode nodeB
                 # Patch.registerNode nodeC
                 # Patch.registerNode nodeD
+                # Patch.registerNode nodeE
+    -- nw :: Network
     nw = Network.init toolkit
                 # Network.addPatch "test" patch
     families = Toolkit.nodeFamilies toolkit
@@ -107,6 +118,7 @@ main = do
 
   fooReprs <- Record.get (proxify _foo) reprMap
   barReprs <- Record.get (proxify _bar) reprMap
+  concatReprs <- Record.get (proxify _concat) reprMap
   sumReprs <- Record.get (proxify _sum) reprMap
   --   -- Patch.nodes patch
 
@@ -117,6 +129,25 @@ main = do
   log "nodes 2"
   traverse_ renderNode' fooReprs
   traverse_ renderNode' barReprs
+  traverse_ renderNode' concatReprs
   traverse_ renderNode' sumReprs
 
   liftEffect $ log "🍝"
+
+
+type AppState gstate repr m =
+  { toolkit :: TestToolkit repr m
+  , currentPatch :: Maybe (Patch gstate (TestToolkit.Instances repr m))
+  , network :: Network gstate (TestToolkit.Families repr m) (TestToolkit.Instances repr m)
+  , patchState :: gstate
+  }
+
+
+app :: Unit -> _ -> AppState Unit AlwaysUnitRepr Effect
+app gstate nw =
+  { toolkit : Test.toolkit
+  -- , components
+  , currentPatch : Nothing -- Just "hydra"
+  , network : nw
+  , patchState : gstate
+  }

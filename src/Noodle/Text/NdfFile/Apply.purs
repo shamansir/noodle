@@ -82,14 +82,14 @@ applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
     where
         -- nodesMap :: IdMapping gstate instances m repr
         -- nodesMap = Map.empty
-        tryReadAndSend :: forall f state i din is is' os. Id.HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => String -> Proxy din -> Node f state is os m -> Id.Input i -> m Unit
+        tryReadAndSend :: forall f state i din is is' os. Id.HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => String -> Proxy din -> Node f state is os repr m -> Id.Input i -> m Unit
         tryReadAndSend valueStr _ node input =
             let (maybeDin :: Maybe din) = (readRepr valueStr :: Maybe (Repr repr)) >>= fromRepr
             in case maybeDin of
                 Just din -> Node.sendIn node input din *> Node.run node
                 Nothing -> pure unit
 
-        tryReadAndSendO :: forall f state o dout is os os'. Id.HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => String -> Proxy dout -> Node f state is os m -> Id.Output o -> m Unit
+        tryReadAndSendO :: forall f state o dout is os os'. Id.HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => String -> Proxy dout -> Node f state is os repr m -> Id.Output o -> m Unit
         tryReadAndSendO valueStr _ node output =
             let (maybeDout :: Maybe dout) = (readRepr valueStr :: Maybe (Repr repr)) >>= fromRepr
             in case maybeDout of

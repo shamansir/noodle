@@ -6,6 +6,7 @@ import Type.Proxy (Proxy(..))
 
 import Data.Tuple.Nested ((/\))
 import Data.SOrder (SOrder, type (:::), T)
+import Data.Repr as R
 
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn as Fn
@@ -21,25 +22,44 @@ import Noodle.Family.Def as Family -- FIXME
 type Family = Family.Def
 
 
-type Families m =
-    ( foo :: Family Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
-    , bar :: Family Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
-    , sum :: Family Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+type Families repr m =
+    ( foo :: FooFamily repr m
+    , bar :: BarFamily repr m
+    , sum :: SumFamily repr m
+    , concat :: ConcatFamily repr m
     )
 
-type Instances m =
-    ( foo :: Array (Node "foo" Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m)
-    , bar :: Array (Node "bar" Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m)
-    , sum :: Array (Node "sum" Unit ( a :: Int, b :: Int ) ( sum :: Int ) m)
+type Instances repr m =
+    ( foo :: Array (FooNode repr m)
+    , bar :: Array (BarNode repr m)
+    , sum :: Array (SumNode repr m)
+    , concat :: Array (ConcatNode repr m)
     )
 
 
-type TestToolkit m =
-    Toolkit Unit (Families m)
+type FooNode repr m   = Node "foo" Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) repr m
+type FooFamily repr m =     Family Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) repr m
+
+type BarNode repr m   = Node "bar" Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) repr m
+type BarFamily repr m =     Family Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) repr m
+
+type SumNode repr m   = Node "sum" Unit ( a :: Int, b :: Int ) ( sum :: Int ) repr m
+type SumFamily repr m =     Family Unit ( a :: Int, b :: Int ) ( sum :: Int ) repr m
+
+type ConcatNode repr m   = Node "concat" Unit ( one :: String, two :: String ) ( concat :: String ) repr m
+type ConcatFamily repr m =        Family Unit ( one :: String, two :: String ) ( concat :: String ) repr m
+
+
+type TestToolkit repr m =
+    Toolkit Unit (Families repr m)
 
 
 -- toolkit :: Toolkit
-toolkit :: forall m. TestToolkit m
+toolkit
+    :: forall repr m
+     . R.ToRepr Int repr => R.FromRepr repr Int
+    => R.ToRepr String repr => R.FromRepr repr String
+    => TestToolkit repr m
 toolkit =
     Toolkit.from "test"
         familiesOrder
@@ -57,6 +77,16 @@ toolkit =
                 { x : false }
                 $ Fn.make "bar" barOrders
                 $ pure unit
+        , concat :
+            Family.def
+                unit
+                { one : "", two : "" }
+                { concat : "" }
+                $ Fn.make "concat" concatOrders
+                $ do
+                    one <- P.receive (Fn.Input 0 :: _ "one")
+                    two <- P.receive (Fn.Input 1 :: _ "two")
+                    P.send (Fn.Output 0 :: _ "concat") $ one <> two
         , sum :
             Family.def
                 unit
@@ -64,9 +94,9 @@ toolkit =
                 { sum : 0 }
                 $ Fn.make "sum" sumOrders
                 $ do
-                    a <- P.receive (Fn.Input 0 :: Fn.Input "a")
-                    b <- P.receive (Fn.Input 1 :: Fn.Input "b")
-                    P.send (Fn.Output 0 :: Fn.Output "sum") $ a + b
+                    a <- P.receive (Fn.Input 0 :: _ "a")
+                    b <- P.receive (Fn.Input 1 :: _ "b")
+                    P.send (Fn.Output 0 :: _ "sum") $ a + b
         }
 
     {-
@@ -109,6 +139,13 @@ barOrders :: Fn.Orders _ _
 barOrders =
     { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
     , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+concatOrders :: Fn.Orders _ _
+concatOrders =
+    { inputs : Proxy :: _ ( "one" ::: "two" ::: T )
+    , outputs : Proxy :: _ ( "concat" ::: T )
     }
 
 
