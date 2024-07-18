@@ -114,7 +114,7 @@ component
     -> Maybe H.WrapRepr
     -> Signal (Maybe H.WrapRepr)
     -> Proxy din -- H.WrapRepr?
-    -> Noodle.Node f nstate is os Effect
+    -> Noodle.Node f nstate is os H.WrapRepr Effect
     -> Id.Input i
     -> Core.Blessed State
 component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr reprSignal pdin inode inputId =
@@ -183,7 +183,7 @@ onPress
     -> NodeBoxKey
     -> Int
     -> Proxy din
-    -> Noodle.Node f nstate is os Effect
+    -> Noodle.Node f nstate is os H.WrapRepr Effect
     -> Id.Input i
     -> Maybe EditorId
     -> _

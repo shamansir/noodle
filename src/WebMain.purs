@@ -18,11 +18,12 @@ import Toolkit.Test (toolkit)
 import Toolkit.Test (TestToolkit)
 import Toolkit.Test (Instances, Families) as TestToolkit
 --import Hydra.Network (network)
+import Toolkit.Test.Repr (AlwaysUnitRepr)
 
 
 type AppState gstate repr m =
   { toolkit :: TestToolkit repr m
-  , currentPatch :: Maybe (Patch gstate (TestToolkit.Instances repr m))
+  , currentPatch :: Maybe String -- (Patch gstate (TestToolkit.Instances repr m))
   , network :: Network gstate (TestToolkit.Families repr m) (TestToolkit.Instances repr m)
   , patchState :: gstate
   }
@@ -30,7 +31,7 @@ type AppState gstate repr m =
 
 --app :: Network Hydra -> App' UI.Action UI.State Unit Hydra
 --app :: Network Hydra -> App UI.State Hydra Hydra
-app :: forall repr. Unit -> _ -> AppState Unit repr Effect
+app :: forall repr. Unit -> _ -> AppState Unit AlwaysUnitRepr Effect
 app gstate nw =
     { toolkit
     -- , components

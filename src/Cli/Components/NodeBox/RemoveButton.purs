@@ -53,15 +53,16 @@ import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
 import Noodle.Patch.Has as PHas
 
 import Toolkit.Hydra (Instances) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as H
 
 
 component
     :: forall f instances' state is os
      . IsSymbol f
-    => PHas.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
+    => PHas.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os H.WrapRepr Effect))
     => Offset
     -> Id.Family f
-    -> Node f state is os Effect
+    -> Node f state is os H.WrapRepr Effect
     -> NodeBoxKey
     -> InfoBoxKey
     -> RemoveButtonKey

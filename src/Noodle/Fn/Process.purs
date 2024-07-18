@@ -201,7 +201,7 @@ runFreeM protocol fn =
                     pure next
         go (Raw.Lift m) = m
         go (Raw.Receive iid getV) = do
-            valueAtInput <- getInputAt iid
+            valueAtInput <- getInputAt iid  -- FIXME: we're unsafe-writing repr'ed values into the records now, we should unrepr them back before writing
             pure
                 $ getV
                 $ valueAtInput
@@ -209,11 +209,11 @@ runFreeM protocol fn =
         go (Raw.Send oid v next) = do
             -- markLastOutput oid
             -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
-            sendToOutput oid v
+            sendToOutput oid v -- FIXME: we're writing unsafe-repr'ed values into the records now, we should unrepr them back before writing
             pure next
         go (Raw.SendIn iid v next) = do
             -- markLastInput iid
-            sendToInput iid v
+            sendToInput iid v -- FIXME: we're writing unsafe-repr'ed values into the records now, we should unrepr them back before writing
             pure next
         -- go (RunEffect eff) = do
         --     liftEffect eff

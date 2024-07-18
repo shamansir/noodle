@@ -38,25 +38,13 @@ import Toolkit.Test (toolkit) as Test
 import Toolkit.Test (TestToolkit)
 import Toolkit.Test (Instances, Families) as TestToolkit
 import Toolkit.Test (FooNode, BarNode, SumNode, ConcatNode) as T
+import Toolkit.Test.Repr (AlwaysUnitRepr)
 
 
 _foo = (Node.Family :: _ "foo")
 _bar = (Node.Family :: _ "bar")
 _concat = (Node.Family :: _ "concat")
 _sum = (Node.Family :: _ "sum")
-
-
-data AlwaysUnitRepr = Unit_
-
-
-instance Show AlwaysUnitRepr
-    where
-        show Unit_ = "Unit"
-
-instance HasRepr Unit AlwaysUnitRepr where toRepr _ _ = Unit_
-instance HasRepr String AlwaysUnitRepr where toRepr _ _ = Unit_
-instance HasRepr Int AlwaysUnitRepr where toRepr _ _ = Unit_
-instance HasRepr Boolean AlwaysUnitRepr where toRepr _ _ = Unit_
 
 
 renderNode' :: forall m f is irl os orl. HasInputsAt is irl => HasOutputsAt os orl => MonadEffect m => NodeLineRec f AlwaysUnitRepr is os -> m Unit
@@ -75,15 +63,6 @@ renderNode :: forall f is os m. MonadEffect m => Node f Unit is os AlwaysUnitRep
 renderNode node = liftEffect $ do
   log $ Id.reflectFamily' $ Id.familyOf $ Node.id node
   -- log $ show $ Node.shape node
-
-
-instance R.HasFallback AlwaysUnitRepr where fallback = Unit_
-
-
-instance R.ToRepr Int AlwaysUnitRepr where toRepr _ = Just $ R.Repr Unit_
-instance R.ToRepr String AlwaysUnitRepr where toRepr _ = Just $ R.Repr Unit_
-instance R.FromRepr AlwaysUnitRepr Int where fromRepr _ = Just 0
-instance R.FromRepr AlwaysUnitRepr String where fromRepr _ = Just ""
 
 
 main :: Effect Unit

@@ -126,7 +126,7 @@ type Node (m :: Type -> Type) =
         m
 
 
-collectFuncRef :: forall m. Int -> P.ProcessM State Inputs Outputs m H.GlslFnRef
+collectFuncRef :: forall m. Int -> P.ProcessM State Inputs Outputs WrapRepr m H.GlslFnRef
 collectFuncRef index = do
     let mbSelectedFn = Glsl.knownFns !! index
     case mbSelectedFn of

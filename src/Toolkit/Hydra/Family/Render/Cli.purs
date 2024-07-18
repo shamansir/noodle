@@ -141,8 +141,8 @@ else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "callFunction")
 else instance (Applicative m, MonadEffect m) => HasCliBody (CliF "caiProductPalette") (FProductPalette.Node m) FProductPalette.State m where
     runBlessed :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> BlessedOp FProductPalette.State m
     runBlessed _ = FProductPalette.render
-else instance HasCliBody (CliF f) (Node f state is os m) state m where
-    runBlessed :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
+else instance HasCliBody (CliF f) (Node f state is os repr m) state m where
+    runBlessed :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os repr m -> BlessedOp state m
     runBlessed _ _ _ = pure unit
 
 
@@ -155,8 +155,8 @@ else instance HasCliCustomSize (CliF "callFunction") (FCallGlslFunction.Node m) 
 else instance HasCliCustomSize (CliF "caiProductPalette") (FProductPalette.Node m) where
     cliSize :: Proxy (CliF "caiProductPalette") -> NodeBoxKey -> FProductPalette.Node m -> Maybe { width :: Int, height :: Int }
     cliSize _ _ node = FProductPalette.size node
-else instance HasCliCustomSize (CliF f) (Node f state is os m) where
-    cliSize :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os m -> Maybe { width :: Int, height :: Int }
+else instance HasCliCustomSize (CliF f) (Node f state is os repr m) where
+    cliSize :: Proxy (CliF f) -> NodeBoxKey -> Node f state is os repr m -> Maybe { width :: Int, height :: Int }
     cliSize _ _ _ = Nothing
 
 

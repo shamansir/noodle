@@ -63,7 +63,7 @@ addNodeBox
     => Int /\ Int
     -> Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
-    -> Node f state is os Effect
+    -> Node f state is os Hydra.WrapRepr Effect
     -> BlessedOpM State Effect _
 addNodeBox pos tk patch node = do
     let (mbState :: Maybe state) = fromGlobal $ Stateful.get patch -- TODO: make a signal of global state changes and update node's state using subscription

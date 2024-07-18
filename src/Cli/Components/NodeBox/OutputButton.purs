@@ -56,7 +56,7 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Patch as Patch
 
-import Toolkit.Hydra.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra.Repr.Wrap (WrapRepr) as H
 
 
 width :: Dimension
@@ -75,18 +75,18 @@ component
     :: forall f nstate o dout is os os'
      . IsSymbol f
     => Id.HasOutput o dout os' os
-    => ToRepr dout Hydra.WrapRepr
-    => FromRepr Hydra.WrapRepr dout
+    => ToRepr dout H.WrapRepr
+    => FromRepr H.WrapRepr dout
     => OutputButtonKey
     -> InfoBoxKey
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutputsBoxKey
     -> Int
-    -> Maybe Hydra.WrapRepr
-    -> Signal (Maybe Hydra.WrapRepr)
+    -> Maybe H.WrapRepr
+    -> Signal (Maybe H.WrapRepr)
     -> Proxy dout
-    -> Noodle.Node f nstate is os Effect
+    -> Noodle.Node f nstate is os H.WrapRepr Effect
     -> Id.Output o
     -> Core.Blessed State
 component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutputsBox idx maybeRepr reprSignal pdout onode outputId =
@@ -114,14 +114,14 @@ onPress
     :: forall f nstate o dout is os os'
      . IsSymbol f
     => Id.HasOutput o dout os' os
-    => ToRepr dout Hydra.WrapRepr
-    => FromRepr Hydra.WrapRepr dout
+    => ToRepr dout H.WrapRepr
+    => FromRepr H.WrapRepr dout
     => OutputButtonKey
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> Int
     -> Proxy dout
-    -> Noodle.Node f nstate is os Effect
+    -> Noodle.Node f nstate is os H.WrapRepr Effect
     -> Id.Output o
     -> BlessedOp State Effect
     -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outputs-bar" State
@@ -150,7 +150,7 @@ onPress buttonKey nodeHolder nextNodeBox index pdout node output =
 
 
 
-onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> Id.NodeIdR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> Id.NodeIdR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.Output o -> Maybe H.WrapRepr -> Signal (Maybe H.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver family nodeIdR nodeBox infoBox idx outputId _ reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox
