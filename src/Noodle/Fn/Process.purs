@@ -10,7 +10,7 @@ module Noodle.Fn.Process
   , inputsOf
   , outputsOf
   , runM
-  , runFreeM
+--   , runFreeM
   , toRaw
   )
   where
@@ -27,7 +27,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List (List)
 import Data.SProxy (reflect')
-import Data.Repr (class ToRepr, class FromRepr, toRepr, fromRepr, class FromToReprRow)
+import Data.Repr (class ToRepr, class FromRepr, toRepr, fromRepr, class FromToReprRow, class HasFallback)
 import Data.Repr (ensureTo, ensureFrom) as Repr
 import Data.Newtype (class Newtype, wrap, unwrap)
 
@@ -55,12 +55,12 @@ import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Protocol (InputChange(..), OutputChange(..), Protocol)
-import Noodle.Fn.Raw.Protocol (InputChange(..), OutputChange(..)) as Raw
-import Noodle.Fn.Raw.Protocol (RawProtocol)
+import Noodle.Fn.Generic.Protocol (InputChange(..), OutputChange(..))
+-- import Noodle.Fn.Raw.Protocol (InputChange, OutputChange) as Raw
+import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Fn.Raw.Process (RawProcessM(..))
 import Noodle.Fn.Raw.Process (RawProcessF)
-import Noodle.Fn.Raw.Process (RawProcessF(..), imapFState, mapFM) as Raw
+import Noodle.Fn.Raw.Process (RawProcessF(..), imapFState, mapFM, runM, runFreeM) as Raw
 
 
 newtype ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
@@ -172,7 +172,8 @@ runM
     :: forall state is os repr m
      . MonadEffect m
     => MonadRec m
-    => Protocol state is os
+    => HasFallback repr
+    => Fn.Protocol state is os repr -- Protocol state is os
     -> ProcessM state is os repr m
     ~> m
 runM protocol processM =
@@ -180,63 +181,16 @@ runM protocol processM =
         RawProcessM processFree -> runFreeM protocol processFree
 
 
-
 runFreeM
     :: forall state is os repr m
      . MonadEffect m
     => MonadRec m
-    => Protocol state is os
+    => HasFallback repr
+    => Fn.Protocol state is os repr
     -> Free (RawProcessF state repr m)
     ~> m
 runFreeM protocol fn =
-    --foldFree go-- (go stateRef)
-    Free.runFreeM go fn
-    where
-        go :: forall a. RawProcessF state repr m a -> m a
-        go (Raw.State f) = do
-            state <- getUserState
-            case f state of
-                next /\ nextState -> do
-                    writeUserState state nextState
-                    pure next
-        go (Raw.Lift m) = m
-        go (Raw.Receive iid getV) = do
-            valueAtInput <- getInputAt iid  -- FIXME: we're unsafe-writing repr'ed values into the records now, we should unrepr them back before writing
-            pure
-                $ getV
-                $ valueAtInput
-
-        go (Raw.Send oid v next) = do
-            -- markLastOutput oid
-            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
-            sendToOutput oid v -- FIXME: we're writing unsafe-repr'ed values into the records now, we should unrepr them back before writing
-            pure next
-        go (Raw.SendIn iid v next) = do
-            -- markLastInput iid
-            sendToInput iid v -- FIXME: we're writing unsafe-repr'ed values into the records now, we should unrepr them back before writing
-            pure next
-        -- go (RunEffect eff) = do
-        --     liftEffect eff
-        -- go (ToEffect fn) = do
-        --     liftEffect eff
-
-
-        {-
-        go (LoadFromInputs (fn /\ getV)) = do
-            valueFromInputs <- loadFromInputs fn
-            pure
-                $ getV
-                $ valueFromInputs
-        -}
-
-        getUserState = liftEffect $ protocol.getState unit
-        writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        getInputAt :: forall din. InputR -> m din
-        getInputAt iid = liftEffect $ Record.unsafeGet (reflect' iid) <$> Tuple.snd <$> protocol.getInputs unit
-        sendToOutput :: forall dout. OutputR -> dout -> m Unit
-        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
-        sendToInput :: forall din. InputR -> din -> m Unit
-        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInput iid)
+    Raw.runFreeM protocol fn
 
 
 toRaw :: forall state is os m a repr. ProcessM state is os repr m a -> RawProcessM state repr m a

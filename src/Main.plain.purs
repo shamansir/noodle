@@ -30,7 +30,7 @@ import Noodle.Patch.MapsFolds.Repr as PMF
 -- import Test.Repr.Patch4 (MyRepr)
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Id (Family(..), Family') as Node
+import Noodle.Id (Family(..), Family', Input(..), Output(..)) as Node
 import Noodle.Id (NodeId, class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (familyOf, reflectFamily') as Id
 
@@ -45,6 +45,16 @@ _foo = (Node.Family :: _ "foo")
 _bar = (Node.Family :: _ "bar")
 _concat = (Node.Family :: _ "concat")
 _sum = (Node.Family :: _ "sum")
+
+
+_a = (Node.Input 0 :: _ "a")
+_b = (Node.Input 1 :: _ "b")
+_o_sum = (Node.Output 0 :: _ "sum")
+
+
+_one = (Node.Input 0 :: _ "one")
+_two = (Node.Input 1 :: _ "two")
+_o_concat = (Node.Output 0 :: _ "concat")
 
 
 renderNode' :: forall m f is irl os orl. HasInputsAt is irl => HasOutputsAt os orl => MonadEffect m => NodeLineRec f AlwaysUnitRepr is os -> m Unit
@@ -110,6 +120,22 @@ main = do
   traverse_ renderNode' barReprs
   traverse_ renderNode' concatReprs
   traverse_ renderNode' sumReprs
+
+  Node.sendIn nodeD _a 2
+  Node.sendIn nodeD _b 3
+  Node.run nodeD
+
+  Node.sendIn nodeE _one "one"
+  Node.sendIn nodeE _two "two"
+  Node.run nodeE
+
+  log "sum"
+  sum :: Int <- Node.atO nodeD _o_sum
+  liftEffect $ log $ show sum
+
+  log "concat"
+  concat :: String <- Node.atO nodeE _o_concat
+  liftEffect $ log concat
 
   liftEffect $ log "🍝"
 

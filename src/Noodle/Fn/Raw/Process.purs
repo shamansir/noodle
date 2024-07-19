@@ -56,7 +56,8 @@ import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Raw.Protocol (InputChange(..), OutputChange(..), RawProtocol)
+import Noodle.Fn.Generic.Protocol (InputChange(..), OutputChange(..))
+import Noodle.Fn.Raw.Protocol (Protocol) as Raw
 
 
 
@@ -184,7 +185,7 @@ runM
      . MonadEffect m
     => MonadRec m
     => HasFallback repr
-    => RawProtocol state repr
+    => Raw.Protocol state repr
     -> RawProcessM state repr m
     ~> m
 runM protocol (RawProcessM processFree) =
@@ -196,7 +197,7 @@ runFreeM
      . MonadEffect m
     => MonadRec m
     => HasFallback repr
-    => RawProtocol state repr
+    => Raw.Protocol state repr
     -> Free (RawProcessF state repr m)
     ~> m
 runFreeM protocol fn =
@@ -227,18 +228,6 @@ runFreeM protocol fn =
             -- markLastInput iid
             sendToInput iid v
             pure next
-        -- go (RunEffect eff) = do
-        --     liftEffect eff
-        -- go (ToEffect fn) = do
-        --     liftEffect eff
-
-        {-
-        go (LoadFromInputs (fn /\ getV)) = do
-            valueFromInputs <- loadFromInputs fn
-            pure
-                $ getV
-                $ valueFromInputs
-        -}
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState

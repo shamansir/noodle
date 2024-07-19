@@ -1,10 +1,9 @@
-module Noodle.Fn.Raw.Protocol
+module Noodle.Fn.Rec.Protocol
   ( Protocol
   , Tracker
   , make
   , inputs, outputs
   , lastInput, lastOutput
-  , PreUpdatesRow, PostUpdatesRow, FocusedUpdate
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
@@ -40,36 +39,36 @@ import Noodle.Stateful (class StatefulM)
 import Noodle.Fn.Generic.Protocol as Generic
 
 
-type Protocol state repr = Generic.Protocol state (Map InputR repr) (Map OutputR repr)
-type Tracker state repr = Generic.Tracker state (Map InputR repr) (Map OutputR repr)
+type Protocol state (is :: Row Type) (os :: Row Type) = Generic.Protocol state (Record is) (Record os)
+type Tracker  state (is :: Row Type) (os :: Row Type) = Generic.Tracker  state (Record is) (Record os)
 
 
-type PreUpdatesRow state repr = Generic.PreUpdatesRow state (Map InputR repr) (Map OutputR repr)
-type PostUpdatesRow state repr = Generic.PostUpdatesRow state (Map InputR repr) (Map OutputR repr)
-type FocusedUpdate state repr = Generic.FocusedUpdate state (Map InputR repr) (Map OutputR repr)
+type PreUpdatesRow  state is os = Generic.PreUpdatesRow  state (Record is) (Record os)
+type PostUpdatesRow state is os = Generic.PostUpdatesRow state (Record is) (Record os)
+type FocusedUpdate  state is os = Generic.FocusedUpdate  state (Record is) (Record os)
 
 
 make
-    :: forall state repr m
+    :: forall state (is :: Row Type) (os :: Row Type) m
     .  MonadEffect m
     => state
-    -> Map InputR repr
-    -> Map OutputR repr
-    -> m (Tracker state repr /\ Protocol state repr)
+    -> Record is
+    -> Record os
+    -> m (Tracker state is os /\ Protocol state is os)
 make = Generic.make
 
 
-inputs :: forall state repr. Tracker state repr -> Effect (Map InputR repr)
+inputs :: forall state is os. Tracker state is os -> Effect (Record is)
 inputs = Generic.inputs
 
 
-outputs :: forall state repr. Tracker state repr -> Effect (Map OutputR repr)
+outputs :: forall state is os. Tracker state is os -> Effect (Record os)
 outputs = Generic.outputs
 
 
-lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InputR)
+lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputR)
 lastInput = Generic.lastInput
 
 
-lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
+lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputR)
 lastOutput = Generic.lastOutput
