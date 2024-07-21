@@ -36,6 +36,7 @@ import Data.List (length, filter) as List
 import Data.SOrder (SOrder, class HasSymbolsOrder)
 import Data.SOrder (instantiate) as SOrder
 import Data.KeyHolder as KH
+import Data.Repr (class HasFallback)
 
 import Type.Proxy (Proxy(..))
 
@@ -115,7 +116,7 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
-run :: forall state is os repr m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
+run :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
 run protocol (Fn _ _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ protocol.getState unit
@@ -124,7 +125,7 @@ run protocol (Fn _ _ process) = do
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 
-run' :: forall state is os repr m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os repr m -> m Unit
+run' :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m Unit
 run' protocol (Fn _ _ process) =
     Process.runM protocol process
 

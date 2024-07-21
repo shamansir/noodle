@@ -58,6 +58,9 @@ import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
 
 
+-- FIXME: should not be used anymore, Raw process on Repr-ing looks much better
+
+
 data ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) -> Type -> Type
 data ProcessF state is os m a
     = State (state -> a /\ state)

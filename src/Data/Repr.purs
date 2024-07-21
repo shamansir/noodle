@@ -6,27 +6,31 @@ module Data.Repr
     , class FromRepr, fromRepr
     , exists, wrap, unwrap
     , class ToReprRow, toReprRow, toReprRowBuilder
-    -- , class FromReprRow, fromReprRow, fromReprRowBuilder
+    , class FromReprRow, fromReprRow, fromReprRowBuilder
     , class FromToReprRow
     , class ReadRepr, readRepr
     , class WriteRepr, writeRepr
     , class ReadWriteRepr
+    , fromMap
     )
     where
 
 import Prelude
 
 import Type.Proxy (Proxy(..))
-import Data.Symbol (class IsSymbol)
 
-import Record (get) as R
-import Record.Builder (Builder)
-import Record.Builder as Builder
+import Data.Map (Map)
+import Data.Map (lookup) as Map
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.SProxy (reflect')
 
 import Prim.Row as Row
 import Prim.RowList as RL
 
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Record (get) as R
+import Record.Builder (Builder)
+import Record.Builder as Builder
 
 
 -- FIXME: Merge with `Node2.MapsFolds.Repr` and `Patch4.MapsFolds.Repr` and `Toolkit3.MapsFolds.Repr`.
@@ -123,9 +127,34 @@ class ToReprRow xs row repr from to | xs -> row from to, repr -> row from to whe
   toReprRowBuilder :: Proxy repr -> Proxy xs -> Record row -> Builder { | from } { | to }
 
 
+class FromReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
+class FromReprRow xs row repr from to | xs -> row from to, repr -> row from to where
+  fromReprRowBuilder :: Proxy repr -> Proxy xs -> Map String (Repr repr) -> Builder { | from } { | to }
+
 
 class FromToReprRow :: RL.RowList Type -> Row Type -> Type -> Constraint
 class FromToReprRow xs row repr | xs -> row, repr -> row
+
+
+instance fromReprRowNil :: FromReprRow RL.Nil row repr () () where
+  fromReprRowBuilder _ _ _ = identity
+else instance fromReprRowCons ::
+  ( IsSymbol name
+  , HasFallback a
+  , FromRepr repr a
+  , Row.Cons name a trash row
+  -- , ToReprRow tail row repr from from'
+  , Row.Lacks name from'
+  , Row.Cons name a from' to
+  , FromReprRow tail row repr from from'
+  ) => FromReprRow (RL.Cons name a tail) row repr from to where
+  fromReprRowBuilder _ _ map =
+    first <<< rest
+    where
+      nameP = Proxy :: _ name
+      (val :: a) = fromMaybe fallback $ fromRepr =<< Map.lookup (reflectSymbol nameP) map
+      rest = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) map
+      first = Builder.insert nameP val
 
 
 instance fromToReprRowNil :: FromToReprRow RL.Nil row repr
@@ -168,6 +197,22 @@ toReprRow r = Builder.build builder {}
   where
     builder = toReprRowBuilder (Proxy :: _ repr) (Proxy :: _ xs) r
 
+
+fromReprRow :: forall row xs repr
+   . RL.RowToList row xs
+  => FromReprRow xs row repr () row
+  => Map String (Repr repr) -> Record row
+fromReprRow map = Builder.build builder {}
+  where
+    builder :: Builder (Record ()) (Record row)
+    builder = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ xs) map
+
+
+fromMap :: forall row xs repr
+   . RL.RowToList row xs
+  => FromReprRow xs row repr () row
+  => Map String (Repr repr) -> Record row
+fromMap = fromReprRow
 
 
 {-
