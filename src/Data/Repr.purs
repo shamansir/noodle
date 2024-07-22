@@ -6,7 +6,7 @@ module Data.Repr
     , class FromRepr, fromRepr
     , exists, wrap, unwrap
     , class ToReprRow, toReprRow, toReprRowBuilder
-    , class FromReprRow, fromReprRow, fromReprRowBuilder
+    , class FromReprRow, class FromReprRowBase, fromReprRow, fromReprRowBuilder
     , class FromToReprRow
     , class ReadRepr, readRepr
     , class WriteRepr, writeRepr
@@ -127,16 +127,20 @@ class ToReprRow xs row repr from to | xs -> row from to, repr -> row from to whe
   toReprRowBuilder :: Proxy repr -> Proxy xs -> Record row -> Builder { | from } { | to }
 
 
-class FromReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class FromReprRow xs row repr from to | xs -> row from to, repr -> row from to where
+class FromReprRowBase :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
+class FromReprRowBase xs row repr from to | xs -> row from to, repr -> row from to where
   fromReprRowBuilder :: Proxy repr -> Proxy xs -> Map String (Repr repr) -> Builder { | from } { | to }
+
+
+class FromReprRowBase xs row repr () row <= FromReprRow xs row repr
+instance FromReprRowBase xs row repr () row => FromReprRow xs row repr
 
 
 class FromToReprRow :: RL.RowList Type -> Row Type -> Type -> Constraint
 class FromToReprRow xs row repr | xs -> row, repr -> row
 
 
-instance fromReprRowNil :: FromReprRow RL.Nil row repr () () where
+instance fromReprRowNil :: FromReprRowBase RL.Nil row repr () () where
   fromReprRowBuilder _ _ _ = identity
 else instance fromReprRowCons ::
   ( IsSymbol name
@@ -146,8 +150,8 @@ else instance fromReprRowCons ::
   -- , ToReprRow tail row repr from from'
   , Row.Lacks name from'
   , Row.Cons name a from' to
-  , FromReprRow tail row repr from from'
-  ) => FromReprRow (RL.Cons name a tail) row repr from to where
+  , FromReprRowBase tail row repr from from'
+  ) => FromReprRowBase (RL.Cons name a tail) row repr from to where
   fromReprRowBuilder _ _ map =
     first <<< rest
     where
@@ -200,7 +204,7 @@ toReprRow r = Builder.build builder {}
 
 fromReprRow :: forall row xs repr
    . RL.RowToList row xs
-  => FromReprRow xs row repr () row
+  => FromReprRow xs row repr
   => Map String (Repr repr) -> Record row
 fromReprRow map = Builder.build builder {}
   where
@@ -210,7 +214,7 @@ fromReprRow map = Builder.build builder {}
 
 fromMap :: forall row xs repr
    . RL.RowToList row xs
-  => FromReprRow xs row repr () row
+  => FromReprRow xs row repr
   => Map String (Repr repr) -> Record row
 fromMap = fromReprRow
 

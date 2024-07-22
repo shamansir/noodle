@@ -39,9 +39,9 @@ lastOutput :: forall state is os repr. Tracker state is os repr -> Effect (Maybe
 lastOutput = Raw.lastOutput
 
 
-inputsRec :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr () is => Tracker state is os repr -> Effect (Record is)
+inputsRec :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Tracker state is os repr -> Effect (Record is)
 inputsRec tracker = Raw.inputs tracker <#> map Repr <#> Map.stringifyKeys reflect' <#> Repr.fromMap
 
 
-outputsRec :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow osrl os repr () os => Tracker state is os repr -> Effect (Record os)
+outputsRec :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow osrl os repr => Tracker state is os repr -> Effect (Record os)
 outputsRec tracker = Raw.outputs tracker <#> map Repr <#> Map.stringifyKeys reflect' <#> Repr.fromMap
