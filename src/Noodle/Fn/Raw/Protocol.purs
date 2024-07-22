@@ -1,52 +1,26 @@
 module Noodle.Fn.Raw.Protocol
   ( Protocol
-  , Tracker
   , make
-  , inputs, outputs
-  , lastInput, lastOutput
-  , PreUpdatesRow, PostUpdatesRow, FocusedUpdate
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
   )
   where
 
-import Prelude
-
 import Data.Map (Map)
-import Data.Map as Map
-import Data.Map.Extra (type (/->))
-import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Tuple as Tuple
+import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Bifunctor (bimap)
-import Data.SProxy (reflect, reflect')
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-
-import Signal (Signal)
-import Signal as Signal
-import Signal.Channel (Channel, channel)
-import Signal.Channel as Channel
-
-import Unsafe.Coerce (unsafeCoerce)
+import Effect.Class (class MonadEffect)
 
 import Noodle.Id (InputR, OutputR)
-import Noodle.Stateful (class StatefulM)
+
+import Noodle.Fn.Raw.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 
 
 type Protocol state repr = Generic.Protocol state (Map InputR repr) (Map OutputR repr)
-type Tracker state repr = Generic.Tracker state (Map InputR repr) (Map OutputR repr)
-
-
-type PreUpdatesRow state repr = Generic.PreUpdatesRow state (Map InputR repr) (Map OutputR repr)
-type PostUpdatesRow state repr = Generic.PostUpdatesRow state (Map InputR repr) (Map OutputR repr)
-type FocusedUpdate state repr = Generic.FocusedUpdate state (Map InputR repr) (Map OutputR repr)
 
 
 make
@@ -57,19 +31,3 @@ make
     -> Map OutputR repr
     -> m (Tracker state repr /\ Protocol state repr)
 make = Generic.make
-
-
-inputs :: forall state repr. Tracker state repr -> Effect (Map InputR repr)
-inputs = Generic.inputs
-
-
-outputs :: forall state repr. Tracker state repr -> Effect (Map OutputR repr)
-outputs = Generic.outputs
-
-
-lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InputR)
-lastInput = Generic.lastInput
-
-
-lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
-lastOutput = Generic.lastOutput

@@ -17,17 +17,9 @@ module Noodle.Fn.Process
 
 import Prelude
 
-import Data.Bifunctor (lmap)
-import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Maybe as Maybe
-import Data.Tuple (Tuple(..))
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
+import Data.Symbol (class IsSymbol)
 import Data.List (List)
-import Data.SProxy (reflect')
-import Data.Repr (class ToRepr, class FromRepr, toRepr, fromRepr, class FromToReprRow, class HasFallback)
+import Data.Repr (class FromRepr, class HasFallback, class ToRepr)
 import Data.Repr (ensureTo, ensureFrom) as Repr
 import Data.Newtype (class Newtype, wrap, unwrap)
 
@@ -40,27 +32,17 @@ import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
 
-import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-import Effect.Console as Console
 -- import Noodle.Fn.Protocol (Protocol)
 
 import Prim.Row (class Cons)
-import Record as Record
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
-import Type.Proxy (Proxy(..))
-import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Generic.Protocol (InputChange(..), OutputChange(..))
+import Noodle.Id (Input, Output, inputR, outputR)
 -- import Noodle.Fn.Raw.Protocol (InputChange, OutputChange) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
-import Noodle.Fn.Raw.Process (RawProcessM(..))
-import Noodle.Fn.Raw.Process (RawProcessF)
-import Noodle.Fn.Raw.Process (RawProcessF(..), imapFState, mapFM, runM, runFreeM) as Raw
+import Noodle.Fn.Raw.Process (RawProcessM(..), RawProcessF)
+import Noodle.Fn.Raw.Process (RawProcessF(..), imapFState, mapFM, runFreeM) as Raw
 
 
 newtype ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type

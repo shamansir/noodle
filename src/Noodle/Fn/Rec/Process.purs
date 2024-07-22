@@ -19,13 +19,10 @@ module Noodle.Fn.Rec.Process
 import Prelude
 
 import Data.Bifunctor (lmap)
-import Data.Map as Map
-import Data.Maybe (Maybe(..))
-import Data.Maybe as Maybe
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
+import Data.Symbol (class IsSymbol)
 import Data.List (List)
 import Data.SProxy (reflect')
 
@@ -38,22 +35,16 @@ import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
 
-import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-import Effect.Console as Console
 -- import Noodle.Fn.Protocol (Protocol)
 
 import Prim.Row (class Cons)
-import Record as Record
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
-import Type.Proxy (Proxy(..))
+import Record.Unsafe (unsafeGet, unsafeSet) as Record
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Generic.Protocol (InputChange(..), OutputChange(..))
+import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..))
 import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
 

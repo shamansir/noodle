@@ -20,17 +20,11 @@ import Prelude
 
 import Data.Bifunctor (lmap)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Maybe as Maybe
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List (List)
-import Data.SProxy (reflect')
-import Data.Repr (class ToRepr, class FromRepr, class HasFallback, fromRepr, toRepr, fallbackByRepr)
-import Data.Repr (Repr(..), unwrap, fallback)
-import Data.Traversable (traverse)
+import Data.Repr (class HasFallback, fallbackByRepr, Repr, unwrap)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -41,22 +35,13 @@ import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
 
-import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-import Effect.Console as Console
 -- import Noodle.Fn.Protocol (Protocol)
 
-import Prim.Row (class Cons)
-import Record as Record
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
-import Type.Proxy (Proxy(..))
-import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Generic.Protocol (InputChange(..), OutputChange(..))
+import Noodle.Id (InputR, OutputR)
+import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..))
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
 
 

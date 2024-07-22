@@ -26,70 +26,17 @@ import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Id (InputR, OutputR)
 import Noodle.Stateful (class StatefulM)
 
-
-
-data InputChange
-    = SingleInput InputR -- TODO: HoldsInput
-    | AllInputs
-    -- TODO: add Hot / Cold
-
-
-data OutputChange
-    = SingleOutput OutputR -- TODO: HoldsOutput
-    | AllOutputs
-
-
-data ChangeFocus
-    = Everything
-    | StateChange
-    | AllInputsChange
-    | InputChange InputR -- TODO: HoldsInput
-    | AllOutputsChange
-    | OutputChange OutputR -- TODO: HoldsOutput
-
-
-instance Show ChangeFocus where
-    show :: ChangeFocus -> String
-    show =
-        case _ of
-            Everything -> "all"
-            StateChange -> "state"
-            AllInputsChange -> "inputs"
-            InputChange inputR -> "input " <> show inputR -- reflect' inputR
-            AllOutputsChange -> "outputs"
-            OutputChange outputR -> "output " <> show outputR -- reflect' outputR
-
-
-inputChangeToMaybe :: InputChange -> Maybe InputR
-inputChangeToMaybe (SingleInput iid) = Just iid
-inputChangeToMaybe AllInputs = Nothing
-
-
-outputChangeToMaybe :: OutputChange -> Maybe OutputR
-outputChangeToMaybe (SingleOutput oid) = Just oid
-outputChangeToMaybe AllOutputs = Nothing
-
-
-type PreUpdatesRow state inputs outputs = (Boolean /\ state) /\ (Boolean /\ InputChange /\ inputs) /\ (Boolean /\ OutputChange /\ outputs)
-type PostUpdatesRow state inputs outputs = ChangeFocus /\ PreUpdatesRow state inputs outputs
-type FocusedUpdate state inputs outputs = ChangeFocus /\ state /\ inputs /\ outputs
+import Noodle.Fn.Generic.Tracker (Tracker)
+import Noodle.Fn.Generic.Updates as U
 
 
 type Protocol state inputs outputs =
-    { getInputs :: Unit -> Effect (InputChange /\ inputs)
-    , getOutputs :: Unit -> Effect (OutputChange /\ outputs)
+    { getInputs :: Unit -> Effect (U.InputChange /\ inputs)
+    , getOutputs :: Unit -> Effect (U.OutputChange /\ outputs)
     , getState :: Unit -> Effect state
-    , modifyInputs :: (inputs -> InputChange /\ inputs) -> Effect Unit
-    , modifyOutputs :: (outputs -> OutputChange /\ outputs) -> Effect Unit
+    , modifyInputs :: (inputs -> U.InputChange /\ inputs) -> Effect Unit
+    , modifyOutputs :: (outputs -> U.OutputChange /\ outputs) -> Effect Unit
     , modifyState :: (state -> state) -> Effect Unit
-    }
-
-
-type Tracker state inputs outputs =
-    { state :: Signal state
-    , inputs :: Signal (InputChange /\ inputs)
-    , outputs :: Signal (OutputChange /\ outputs)
-    , all :: Signal (FocusedUpdate state inputs outputs)
     }
 
 
@@ -107,10 +54,10 @@ make state inputs outputs =
 
         let
             stateInit = true /\ state
-            inputsInit = true /\ AllInputs /\ inputs
-            outputsInit = true /\ AllOutputs /\ outputs
+            inputsInit = true /\ U.AllInputs /\ inputs
+            outputsInit = true /\ U.AllOutputs /\ outputs
 
-            (initAll :: PostUpdatesRow state inputs outputs) = Everything /\ stateInit /\ inputsInit /\ outputsInit
+            (initAll :: U.PostUpdatesRow state inputs outputs) = U.Everything /\ stateInit /\ inputsInit /\ outputsInit
 
         stateCh <- channel stateInit
         inputsCh <- channel inputsInit
@@ -123,33 +70,33 @@ make state inputs outputs =
             outputsSig = Channel.subscribe outputsCh
             changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inputsSig <*> outputsSig)
 
-            foldUpdates :: PreUpdatesRow state inputs outputs -> PostUpdatesRow state inputs outputs -> PostUpdatesRow state inputs outputs
+            foldUpdates :: U.PreUpdatesRow state inputs outputs -> U.PostUpdatesRow state inputs outputs -> U.PostUpdatesRow state inputs outputs
             foldUpdates
                 lastChange@((bState /\ state) /\ (bInput /\ inputChange /\ is) /\ (bOutput /\ outputChange /\ os))
                 (_ /\ (bStatePrev /\ _) /\ (bInputPrev /\ _ /\ _) /\ (bOutputPrev /\ _))
                 =
                     if bState == not bStatePrev then
-                        StateChange /\ lastChange
+                        U.StateChange /\ lastChange
                     else if bInput == not bInputPrev then
                         case inputChange of
-                            AllInputs ->
-                                AllInputsChange /\ lastChange
-                            SingleInput inputR ->
-                                InputChange inputR /\ lastChange
+                            U.AllInputs ->
+                                U.AllInputsChange /\ lastChange
+                            U.SingleInput inputR ->
+                                U.InputChange inputR /\ lastChange
                     else if bOutput == not bOutputPrev then
                         case outputChange of
-                            AllOutputs ->
-                                AllOutputsChange /\ lastChange
-                            SingleOutput outputR ->
-                                OutputChange outputR /\ lastChange
-                    else Everything /\ lastChange
+                            U.AllOutputs ->
+                                U.AllOutputsChange /\ lastChange
+                            U.SingleOutput outputR ->
+                                U.OutputChange outputR /\ lastChange
+                    else U.Everything /\ lastChange
 
 
             toPreUpdateRow
                 :: (Boolean /\ state)
-                -> (Boolean /\ InputChange /\ inputs)
-                -> (Boolean /\ OutputChange /\ outputs)
-                -> PreUpdatesRow state inputs outputs
+                -> (Boolean /\ U.InputChange /\ inputs)
+                -> (Boolean /\ U.OutputChange /\ outputs)
+                -> U.PreUpdatesRow state inputs outputs
             toPreUpdateRow = (/\) >>> Tuple.curry
 
         let
@@ -173,23 +120,6 @@ make state inputs outputs =
                 }
 
         pure $ tracker /\ protocol
-
-
-inputs :: forall state inputs outputs. Tracker state inputs outputs -> Effect inputs
-inputs tracker = Signal.get tracker.inputs <#> Tuple.snd
-
-
-outputs :: forall state inputs outputs. Tracker state inputs outputs -> Effect outputs
-outputs tracker = Signal.get tracker.outputs <#> Tuple.snd
-
-
-lastInput :: forall state inputs outputs. Tracker state inputs outputs -> Effect (Maybe InputR)
-lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMaybe
-
-
-lastOutput :: forall state inputs outputs. Tracker state inputs outputs -> Effect (Maybe OutputR)
-lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
-
 
 {-
 onRefs
