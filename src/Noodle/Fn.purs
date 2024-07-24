@@ -3,7 +3,7 @@ module Noodle.Fn
   , class ToFn, toFn
   , Name, name
   , Orders
-  , make, run, run'
+  , make, run, run', runRec
   , shape
   --, with
 --   , _in, in_, _out, out_
@@ -33,10 +33,11 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
+import Data.Map (Map)
 import Data.SOrder (SOrder, class HasSymbolsOrder)
 import Data.SOrder (instantiate) as SOrder
 import Data.KeyHolder as KH
-import Data.Repr (class HasFallback)
+import Data.Repr (class HasFallback, class FromReprRow)
 
 import Type.Proxy (Proxy(..))
 
@@ -116,12 +117,27 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
-run :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
+run :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Map InputR repr /\ Map OutputR repr )
 run protocol (Fn _ _ process) = do
     _ <- Process.runM protocol process
-    nextState <- liftEffect $ protocol.getState unit
-    nextInputs <- liftEffect $ Tuple.snd <$> protocol.getInputs unit
-    nextOutputs <- liftEffect $ Tuple.snd <$> protocol.getOutputs unit
+    nextState <- liftEffect $ Protocol.getState protocol
+    nextInputs <- liftEffect $ Protocol.getInputs protocol
+    nextOutputs <- liftEffect $ Protocol.getOutputs protocol
+    pure $ nextState /\ nextInputs /\ nextOutputs
+
+
+runRec
+    :: forall state is os isrl osrl repr m
+    .  MonadRec m => MonadEffect m
+    => HasFallback repr
+    => RL.RowToList is isrl => FromReprRow isrl is repr
+    => RL.RowToList os osrl => FromReprRow osrl os repr
+    => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
+runRec protocol (Fn _ _ process) = do
+    _ <- Process.runM protocol process
+    nextState <- liftEffect $ Protocol.getState protocol
+    nextInputs <- liftEffect $ Protocol.getRecInputs protocol
+    nextOutputs <- liftEffect $ Protocol.getRecOutputs protocol
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 

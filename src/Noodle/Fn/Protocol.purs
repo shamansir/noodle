@@ -1,6 +1,9 @@
 module Noodle.Fn.Protocol
   ( Protocol
   , make
+  , getState
+  , getInputs, getOutputs
+  , getRecInputs, getRecOutputs
   )
   where
 
@@ -38,6 +41,18 @@ make
     -> Map OutputR repr
     -> m (Tracker state is os repr /\ Protocol state is os repr)
 make = Raw.make
+
+
+getState :: forall state is os repr. Protocol state is os repr -> Effect state
+getState = Raw.getState
+
+
+getInputs :: forall state is os repr. Protocol state is os repr -> Effect (Map InputR repr)
+getInputs = Raw.getInputs
+
+
+getOutputs :: forall state is os repr. Protocol state is os repr -> Effect (Map OutputR repr)
+getOutputs = Raw.getOutputs
 
 
 getRecInputs :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)

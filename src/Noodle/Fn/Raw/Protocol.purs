@@ -1,14 +1,18 @@
 module Noodle.Fn.Raw.Protocol
   ( Protocol
   , make
+  , getState
+  , getInputs, getOutputs
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
   )
   where
 
+import Prelude (unit, (<#>))
+
 import Data.Map (Map)
-import Data.Maybe (Maybe)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
@@ -31,3 +35,15 @@ make
     -> Map OutputR repr
     -> m (Tracker state repr /\ Protocol state repr)
 make = Generic.make
+
+
+getState :: forall state repr. Protocol state repr -> Effect state
+getState p = p.getState unit
+
+
+getInputs :: forall state repr. Protocol state repr -> Effect (Map InputR repr)
+getInputs p = p.getInputs unit <#> Tuple.snd
+
+
+getOutputs :: forall state repr. Protocol state repr -> Effect (Map OutputR repr)
+getOutputs p = p.getOutputs unit <#> Tuple.snd
