@@ -1,4 +1,11 @@
-module Noodle.Fn.Updates where
+module Noodle.Fn.Updates
+    ( module GenericUpdates
+    , PreUpdatesRow, PostUpdatesRow, FocusedUpdate
+    )
+    where
+
+
+import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..), ChangeFocus(..)) as GenericUpdates
 
 
 import Noodle.Fn.Raw.Updates as Raw

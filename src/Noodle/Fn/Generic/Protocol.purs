@@ -23,7 +23,7 @@ import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (InputR, OutputR)
+import Noodle.Id (class HasInput, class HasOutput, InputR, OutputR, Input, Input', Output, Output', inputR, inputR', outputR, outputR')
 import Noodle.Stateful (class StatefulM)
 
 import Noodle.Fn.Generic.Tracker (Tracker)
@@ -193,3 +193,56 @@ onSignals state inputs outputs = do
             }
 
 -}
+
+
+
+modifyOutput :: forall state inputs outputs o m. MonadEffect m => IsSymbol o => (outputs -> outputs) -> Output o -> Protocol state inputs outputs -> m Unit
+modifyOutput f output = liftEffect <<< modifyOutputE f output
+
+
+-- private?
+modifyOutputE :: forall state inputs outputs o. IsSymbol o => (outputs -> outputs) -> Output o -> Protocol state inputs outputs -> Effect Unit
+modifyOutputE f output protocol =
+    protocol.modifyOutputs
+        (\curOutputs ->
+            (U.SingleOutput $ outputR output) /\ f curOutputs
+        )
+
+
+modifyOutput' :: forall state inputs outputs o m. MonadEffect m => IsSymbol o => (outputs -> outputs) -> Output' o -> Protocol state inputs outputs -> m Unit
+modifyOutput' f output = liftEffect <<< modifyOutputE' f output
+
+
+-- private?
+modifyOutputE' :: forall state inputs outputs o. IsSymbol o => (outputs -> outputs) -> Output' o -> Protocol state inputs outputs -> Effect Unit
+modifyOutputE' f output protocol =
+    protocol.modifyOutputs
+        (\curOutputs ->
+            (U.SingleOutput $ outputR' output) /\ f curOutputs
+        )
+
+
+modifyInput :: forall state inputs outputs i m. MonadEffect m => IsSymbol i => (inputs -> inputs) -> Input i -> Protocol state inputs outputs -> m Unit
+modifyInput f input = liftEffect <<< modifyInputE f input
+
+
+-- private?
+modifyInputE :: forall state inputs outputs i. IsSymbol i => (inputs -> inputs) -> Input i -> Protocol state inputs outputs -> Effect Unit
+modifyInputE f input protocol =
+    protocol.modifyInputs
+        (\curInputs ->
+            (U.SingleInput $ inputR input) /\ f curInputs
+        )
+
+
+modifyInput' :: forall state inputs outputs i m. MonadEffect m => IsSymbol i => (inputs -> inputs) -> Input' i -> Protocol state inputs outputs -> m Unit
+modifyInput' f input = liftEffect <<< modifyInputE' f input
+
+
+-- private?
+modifyInputE' :: forall state inputs outputs i. IsSymbol i => (inputs -> inputs) -> Input' i -> Protocol state inputs outputs -> Effect Unit
+modifyInputE' f input protocol =
+    protocol.modifyInputs
+        (\curInputs ->
+            (U.SingleInput $ inputR' input) /\ f curInputs
+        )
