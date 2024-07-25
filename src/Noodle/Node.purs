@@ -55,7 +55,7 @@ import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (inputs, inputsRec, outputs, outputsRec) as Tracker
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
-import Noodle.Fn.RawToRec (toRec) as Updates
+import Noodle.Fn.RawToRec (fromRec, toRec) as ReprCnv
 import Noodle.Fn (Fn)
 import Noodle.Fn (inputsShape, outputsShape, inputsShapeHeld, outputsShapeHeld, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
 import Noodle.Stateful (class StatefulM)
@@ -141,7 +141,7 @@ make'
     -> m (Node f state is os repr m)
 make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
-    tracker /\ protocol <- Protocol.make state is os
+    tracker /\ protocol <- Protocol.make state (ReprCnv.fromRec ?wh is) (ReprCnv.fromRec ?wh os)
     pure $ Node nodeId tracker protocol fn
 
 
@@ -208,6 +208,7 @@ runOnStateUpdates node =
 listenUpdatesAndRun
   :: forall f state (is :: Row Type) (os :: Row Type) repr m
    . Wiring m
+  => HasFallback repr
   => Node f state is os repr m
   -> m Unit
 listenUpdatesAndRun node = do
@@ -252,75 +253,75 @@ state :: forall f state is os repr m. MonadEffect m => Node f state is os repr m
 state (Node _ _ protocol _) = liftEffect $ protocol.getState unit
 
 
-inputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record is)
-inputs node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecInputs)
+inputs :: forall f state is isrl os repr m. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m -> m (Record is)
+inputs node = liftEffect $ Protocol.getRecInputs $ _getProtocol node
 
 
-inputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record is)
-inputsM node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecInputs)
+inputsM :: forall f state is isrl os repr m m'. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m' -> m (Record is)
+inputsM node = liftEffect $ Protocol.getRecInputs $ _getProtocol node
 
 
-outputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record os)
-outputs node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecOutputs)
+outputs :: forall f state is os osrl repr m. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m -> m (Record os)
+outputs node = liftEffect $ Protocol.getRecInputs $ _getProtocol node
 
 
-outputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record os)
-outputsM node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecOutputs)
+outputsM :: forall f state is os osrl repr m m'. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m' -> m (Record os)
+outputsM node = liftEffect $ Protocol.getRecInputs $ _getProtocol node
 
 
-inputsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
+inputsRow :: forall f state is isrl os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
 inputsRow _ = Proxy :: _ is
 
 
-outputsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy os
+outputsRow :: forall f state is os osrl repr m. MonadEffect m => Node f state is os repr m -> Proxy os
 outputsRow _ = Proxy :: _ os
 
 
-atInput :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os repr m -> m din
+atInput :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Input i -> Node f state is os repr m -> m din
 atInput i node = inputs node <#> Record.get (proxify i)
 
 
-atInputM :: forall f i state is' is os repr m m' din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os repr m' -> m din
+atInputM :: forall f i state is is' isrl os repr m m' din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Input i -> Node f state is os repr m' -> m din
 atInputM i node = inputsM node <#> Record.get (proxify i)
 
 
-atInput' :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Input' i -> Node f state is os repr m -> m din
+atInput' :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Input' i -> Node f state is os repr m -> m din
 atInput' i node = inputs node <#> Record.get (proxify i)
 
 
-atOutput :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os repr m -> m dout
+atOutput :: forall f o state is isrl os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os' os => Output o -> Node f state is os repr m -> m dout
 atOutput o node = outputs node <#> Record.get (proxify o)
 
 
-atOutputM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os repr m' -> m dout
+atOutputM :: forall f o state is os os' osrl repr m m' dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os' os => Output o -> Node f state is os repr m' -> m dout
 atOutputM o node = outputsM node <#> Record.get (proxify o)
 
 
-atOutput' :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> Node f state is os repr m -> m dout
+atOutput' :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os' os => Output' o -> Node f state is os repr m -> m dout
 atOutput' o node = outputs node <#> Record.get (proxify o)
 
 
-atI :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input i -> m din
+atI :: forall f i state isrl is' is os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Node f state is os repr m -> Input i -> m din
 atI = flip atInput
 
 
-atIM :: forall f i state is' is os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input i -> m din
+atIM :: forall f i state isrl is' is os repr m m' din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Node f state is os repr m' -> Input i -> m din
 atIM = flip atInputM
 
 
-atI' :: forall f i state is' is os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input' i -> m din
+atI' :: forall f i state isrl is' is os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Node f state is os repr m -> Input' i -> m din
 atI' = flip atInput'
 
 
-atO :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output o -> m dout
+atO :: forall f o state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os os => Node f state is os repr m -> Output o -> m dout
 atO = flip atOutput
 
 
-atOM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> m dout
+atOM :: forall f o state is os osrl repr m m' dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os os => Node f state is os repr m' -> Output o -> m dout
 atOM = flip atOutputM
 
 
-atO' :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output' o -> m dout
+atO' :: forall f o state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutput o dout os os => Node f state is os repr m -> Output' o -> m dout
 atO' = flip atOutput'
 
 -- TODO: operator
@@ -330,11 +331,11 @@ _at node fn = inputs node <#> fn
 
 
 -- TODO: operator
-at_ ∷ forall f state is os repr m dout. MonadEffect m ⇒ Node f state is os repr m → (Record os -> dout) -> m dout
+at_ ∷ forall f state is os osrl repr m dout. MonadEffect m ⇒ FromReprRow osrl os repr => Node f state is os repr m → (Record os -> dout) -> m dout
 at_ node fn = outputs node <#> fn
 
 
-get :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m ( state /\ Record is /\ Record os )
+get :: forall f state is isrl os osrl repr m. MonadEffect m => FromReprRow isrl is repr => FromReprRow osrl os repr => Node f state is os repr m -> m ( state /\ Record is /\ Record os )
 get node = do
     state <- state node
     is <- inputs node
@@ -358,7 +359,7 @@ subscribeInputs (Node _ tracker _ _) = Tuple.snd <$> tracker.inputs
 
 
 subscribeInputsRec :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (Record is)
-subscribeInputsRec (Node _ tracker _ _) = Updates.toRec <$> Tuple.snd <$> tracker.inputs
+subscribeInputsRec (Node _ tracker _ _) = ReprCnv.toRec <$> Tuple.snd <$> tracker.inputs
 
 
 subscribeInputs' :: forall f state is os repr m. Node f state is os repr m -> Signal (InputChange /\ Map InputR repr)
@@ -366,7 +367,7 @@ subscribeInputs' (Node _ tracker _ _) = tracker.inputs
 
 
 subscribeInputsRec' :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (InputChange /\ Record is)
-subscribeInputsRec' (Node _ tracker _ _) = map Updates.toRec <$> tracker.inputs
+subscribeInputsRec' (Node _ tracker _ _) = map ReprCnv.toRec <$> tracker.inputs
 
 
 subscribeOutput :: forall f state is os repr m dout. OutputR -> Node f state is os repr m -> Signal (Maybe repr)
@@ -382,7 +383,7 @@ subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 
 
 subscribeOutputsRec :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (Record os)
-subscribeOutputsRec (Node _ tracker _ _) = Updates.toRec <$> Tuple.snd <$> tracker.outputs
+subscribeOutputsRec (Node _ tracker _ _) = ReprCnv.toRec <$> Tuple.snd <$> tracker.outputs
 
 
 subscribeOutputs' :: forall f state is os repr m. Node f state is os repr m -> Signal (OutputChange /\ Map OutputR repr)
@@ -390,7 +391,7 @@ subscribeOutputs' (Node _ tracker _ _) = tracker.outputs
 
 
 subscribeOutputsRec' :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (OutputChange /\ Record os)
-subscribeOutputsRec' (Node _ tracker _ _) = map Updates.toRec <$> tracker.outputs
+subscribeOutputsRec' (Node _ tracker _ _) = map ReprCnv.toRec <$> tracker.outputs
 
 
 subscribeState :: forall f state is os repr m. Node f state is os repr m -> Signal state
@@ -405,56 +406,56 @@ subscribeChangesRec :: forall f state is os repr m. Node f state is os repr m ->
 subscribeChangesRec (Node _ tracker _ _) = tracker.all <#> ?wh
 
 
-_getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protocol state is os repr m
+_getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protocol state is os repr
 _getProtocol (Node _ _ protocol _) = protocol
 
 
-sendOut :: forall f o state is os os' repr m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> m Unit
-sendOut node output dout = Protocol.sendOut (_getProtocol node) output dout
+sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> m Unit
+sendOut node output dout = Protocol._sendOut (_getProtocol node) output dout
 
 
 -- private?
-sendOutM :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> dout -> m Unit
-sendOutM node output dout = Protocol.sendOut (_getProtocol node) output dout
+sendOutM :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> dout -> m Unit
+sendOutM node output dout = Protocol._sendOut (_getProtocol node) output dout
 
 
 -- private?
-sendOutE :: forall f o state is os os' repr m dout. HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> Effect Unit
-sendOutE node output dout = Protocol.sendOutE (_getProtocol node) output dout
+sendOutE :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> Effect Unit
+sendOutE node output dout = Protocol._sendOutE (_getProtocol node) output dout
 
 
 -- private?
-sendOut' :: forall f o state is os os' repr m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os repr m' -> Output' o -> dout -> m Unit
-sendOut' node output dout = Protocol.sendOut' (_getProtocol node) output dout
+sendOut' :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m' -> Output' o -> dout -> m Unit
+sendOut' node output dout = Protocol._sendOut' (_getProtocol node) output dout
 
 
 -- private?
-sendOutE' :: forall f o state is os os' repr m dout. HasOutput o dout os' os => Node f state is os repr m -> Output' o -> dout -> Effect Unit
-sendOutE' node output dout = Protocol.sendOutE' (_getProtocol node) output dout
+sendOutE' :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output' o -> dout -> Effect Unit
+sendOutE' node output dout = Protocol._sendOutE' (_getProtocol node) output dout
 
 
 -- private?
-sendIn :: forall f i state is is' os repr m din. MonadEffect m => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> m Unit
-sendIn node input din = Protocol.sendIn (_getProtocol node) input din
+sendIn :: forall f i state is is' isrl os osrl repr m din. MonadEffect m => ToRepr din repr => HasInput i din is' is => ToRepr din repr => Node f state is os repr m -> Input i -> din -> m Unit
+sendIn node input din = Protocol._sendIn (_getProtocol node) input din
 
 
 -- private?
-sendInM :: forall f i state is is' os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input i -> din -> m Unit
-sendInM node input din = Protocol.sendIn (_getProtocol node) input din
+sendInM :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Node f state is os repr m' -> Input i -> din -> m Unit
+sendInM node input din = Protocol._sendIn (_getProtocol node) input din
 
 
 -- private?
-sendInE :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> Effect Unit
-sendInE node input din = Protocol.sendInE (_getProtocol node) input din
+sendInE :: forall f i state is is' os repr m din. IsSymbol i => ToRepr din repr => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> Effect Unit
+sendInE node input din = Protocol._sendInE (_getProtocol node) input din
 
 
-sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => HasInput i din is' is => Node f state is os repr m' -> Input' i -> din -> m Unit
-sendIn' node input din = Protocol.sendIn' (_getProtocol node) input din
+sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Node f state is os repr m' -> Input' i -> din -> m Unit
+sendIn' node input din = Protocol._sendIn' (_getProtocol node) input din
 
 
 -- private?
 sendInE' :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input' i -> din -> Effect Unit
-sendInE' node input din = Protocol.sendInE' (_getProtocol node) input din
+sendInE' node input din = Protocol._sendInE' (_getProtocol node) input din
 
 
 -- TODO: subscribeLastInput / subscribeLastOutput

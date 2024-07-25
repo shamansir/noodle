@@ -4,8 +4,8 @@ module Noodle.Fn.Protocol
   , getState
   , getInputs, getOutputs
   , getRecInputs, getRecOutputs
-  , sendOut, sendOut', sendOutE, sendOutE'
-  , sendIn, sendIn', sendInE, sendInE'
+  , _sendOut, _sendOut', _sendOutE, _sendOutE'
+  , _sendIn, _sendIn', _sendInE, _sendInE'
   )
   where
 
@@ -17,6 +17,7 @@ import Prim.RowList as RL
 import Data.Map (Map)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -56,48 +57,50 @@ getOutputs :: forall state is os repr. Protocol state is os repr -> Effect (Map 
 getOutputs = Raw.getOutputs
 
 
-getRecInputs :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)
+getRecInputs :: forall state is isrl os repr. FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)
 getRecInputs p = p.getInputs unit <#> Tuple.snd <#> toRec
 
 
-getRecOutputs :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
+getRecOutputs :: forall state is os osrl repr. FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
 getRecOutputs p = p.getOutputs unit <#> Tuple.snd <#> toRec
 
 
 
-sendOut :: forall o state  is os osrl m dout repr. MonadEffect m => HasOutput o dout osrl os =>  ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> m Unit
-sendOut = Raw.sendOut
+-- private: doesn't check if output is in `os`
+_sendOut :: forall o state  is os m dout repr. MonadEffect m => IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> m Unit
+_sendOut = Raw.sendOut
 
 
--- private?
-sendOutE :: forall o state is os osrl dout repr. HasOutput o dout osrl os => ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> Effect Unit
-sendOutE = Raw.sendOutE
+-- private: doesn't check if output is in `os`
+_sendOutE :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> Effect Unit
+_sendOutE = Raw.sendOutE
 
 
--- private?
-sendOut' :: forall o state is os osrl m dout repr. MonadEffect m => HasOutput o dout osrl os => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> m Unit
-sendOut' = Raw.sendOut'
+-- private: doesn't check if output is in `os`
+_sendOut' :: forall o state is os m dout repr. MonadEffect m => IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> m Unit
+_sendOut' = Raw.sendOut'
 
 
--- private?
-sendOutE' :: forall o state is os osrl dout repr. HasOutput o dout osrl os => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> Effect Unit
-sendOutE' = Raw.sendOutE'
+-- private: doesn't check if output is in `os`
+_sendOutE' :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> Effect Unit
+_sendOutE' = Raw.sendOutE'
 
 
--- private?
-sendIn :: forall i state is isrl os m din repr. MonadEffect m => HasInput i din isrl is => ToRepr din repr => Protocol state is os repr -> Input i -> din -> m Unit
-sendIn = Raw.sendIn
+-- private: doesn't check if input is in `is`
+_sendIn :: forall i state is os m din repr. MonadEffect m => IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input i -> din -> m Unit
+_sendIn = Raw.sendIn
 
 
--- private?
-sendInE :: forall i state is isrl os din repr. HasInput i din isrl is => ToRepr din repr => Protocol state is os repr -> Input i -> din -> Effect Unit
-sendInE = Raw.sendInE
+-- private: doesn't check if input is in `is`
+_sendInE :: forall i state is os din repr. IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input i -> din -> Effect Unit
+_sendInE = Raw.sendInE
 
 
-sendIn' :: forall i state is isrl os m din repr. MonadEffect m => HasInput i din isrl is => ToRepr din repr => Protocol state is os repr -> Input' i -> din -> m Unit
-sendIn' = Raw.sendIn'
+-- private: doesn't check if input is in `is`
+_sendIn' :: forall i state is os m din repr. MonadEffect m => IsSymbol i =>  ToRepr din repr => Protocol state is os repr -> Input' i -> din -> m Unit
+_sendIn' = Raw.sendIn'
 
 
--- private?
-sendInE' :: forall i state is isrl os din repr. HasInput i din isrl is => ToRepr din repr => Protocol state is os repr -> Input' i -> din -> Effect Unit
-sendInE' = Raw.sendInE'
+-- private: doesn't check if input is in `is`
+_sendInE' :: forall i state is os din repr. IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input' i -> din -> Effect Unit
+_sendInE' = Raw.sendInE'
