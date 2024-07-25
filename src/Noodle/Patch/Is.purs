@@ -1,7 +1,7 @@
 module Noodle.Patch.Is where
 
 
-import Data.Repr (class FromToReprRow)
+import Data.Repr (class DataFromToReprRow)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys) as Record
@@ -43,8 +43,8 @@ class
     , Id.HasOutputsAt os osrl
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     , HasCliBody (x f) (Node f state is os repr m) state m
@@ -61,8 +61,8 @@ instance
     , Id.HasOutputsAt os osrl
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     , HasCliBody (x f) (Node f state is os repr m) state m
@@ -76,8 +76,8 @@ class
     ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     , HasCliBody (x f) (Node f state is os repr m) state m
@@ -90,8 +90,8 @@ instance
     ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
     , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
     , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Id.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     , HasCliBody (x f) (Node f state is os repr m) state m

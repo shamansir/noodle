@@ -4,7 +4,7 @@ module Noodle.Toolkit.Has where
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Row as Row
 import Prim.RowList as RL
-import Data.Repr (class FromToReprRow, class ReadWriteRepr)
+import Data.Repr (class DataFromToReprRow, class ReadWriteRepr)
 
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
@@ -72,8 +72,8 @@ class
     , Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     --    => Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m x
     --    => Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m x
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     ) <= HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 instance
@@ -85,8 +85,8 @@ instance
     , Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     --    => Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m x
     --    => Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m x
-    , FromToReprRow isrl is repr
-    , FromToReprRow osrl os repr
+    , DataFromToReprRow isrl is repr
+    , DataFromToReprRow osrl os repr
     ) => HasReprableNodesOf families' families instances' instances repr f state isrl is osrl os repr_is repr_os m
 
 

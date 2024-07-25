@@ -55,8 +55,8 @@ component
     -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
     --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
     -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    -- => FromToReprRow rli is Hydra.WrapRepr
-    -- => FromToReprRow rlo os Hydra.WrapRepr
+    -- => DataFromToReprRow rli is Hydra.WrapRepr
+    -- => DataFromToReprRow rlo os Hydra.WrapRepr
     -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
      . {- HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect

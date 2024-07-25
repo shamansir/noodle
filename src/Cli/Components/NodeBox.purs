@@ -27,7 +27,7 @@ import Data.Array as Array
 import Data.Foldable (for_)
 import Data.List (length) as List
 import Data.KeyHolder as KH
-import Data.Repr (class FromToReprRow, class ToReprRow)
+import Data.Repr (class DataFromToReprRow, class ToReprRow)
 import Data.Symbol (class IsSymbol)
 import Data.String as String
 import Data.Mark (mark)

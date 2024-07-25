@@ -20,7 +20,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Map as Map
 import Data.Tuple.Nested ((/\))
-import Data.Repr (class FromToReprRow, class ToReprRow)
+import Data.Repr (class DataFromToReprRow, class ToReprRow)
 import Record.Extra as Record
 import Type.RowList as RL
 

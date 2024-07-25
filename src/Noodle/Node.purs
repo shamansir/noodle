@@ -33,7 +33,7 @@ import Data.List (List)
 import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
 import Data.KeyHolder as KH
-import Data.Repr (Repr, class HasFallback, class FromRepr, class ToRepr, class FromReprRow, class FromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+import Data.Repr (Repr, class HasFallback, class FromRepr, class ToRepr, class FromReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
 
 import Type.Proxy (Proxy(..))
 
@@ -186,6 +186,7 @@ makeRun' family state is os fn = do
 runOnInputUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
+    => HasFallback repr
     => Node f state is os repr m
     -> m Unit
 runOnInputUpdates node =
@@ -196,6 +197,7 @@ runOnInputUpdates node =
 runOnStateUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
+    => HasFallback repr
     => Node f state is os repr m
     -> m Unit
 runOnStateUpdates node =
@@ -239,7 +241,7 @@ imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process
 {- Running -}
 
 
-run :: forall f state is os repr m. MonadRec m => MonadEffect m => Node f state is os repr m -> m Unit
+run :: forall f state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Node f state is os repr m -> m Unit
 run (Node _ _ protocol fn) = Fn.run' protocol fn
 
 
@@ -251,19 +253,19 @@ state (Node _ _ protocol _) = liftEffect $ protocol.getState unit
 
 
 inputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record is)
-inputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
+inputs node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecInputs)
 
 
 inputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record is)
-inputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
+inputsM node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecInputs)
 
 
 outputs :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Record os)
-outputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
+outputs node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecOutputs)
 
 
 outputsM :: forall f state is os repr m m'. MonadEffect m => Node f state is os repr m' -> m (Record os)
-outputsM (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
+outputsM node = liftEffect $ Tuple.snd <$> (_getProtocol node # Protocol.getRecOutputs)
 
 
 inputsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
@@ -1205,7 +1207,7 @@ instance Reflect' (HoldsOutputInNodeM m) where
 
 
 
-class (IsSymbol f, ReadWriteRepr repr, FromToReprRow isrl is repr) <= HoldsInputsMRepr (is :: Row Type) (isrl :: RL.RowList Type) f state os m repr | is -> isrl where
+class (IsSymbol f, ReadWriteRepr repr, DataFromToReprRow isrl is repr) <= HoldsInputsMRepr (is :: Row Type) (isrl :: RL.RowList Type) f state os m repr | is -> isrl where
     holdInputsMRepr :: Proxy isrl -> Node f state is os repr m -> Array (Int /\ HoldsInputInNodeMRepr m repr)
 
 
@@ -1244,7 +1246,7 @@ instance Reflect' (HoldsInputInNodeMRepr m repr) where
     reflect' hiinr = withInputInNodeMRepr hiinr (const $ const reflect)
 
 
-class (IsSymbol f, ReadWriteRepr repr, FromToReprRow osrl os repr) <= HoldsOutputsMRepr (os :: Row Type) (osrl :: RL.RowList Type) f state is m repr | os -> osrl where
+class (IsSymbol f, ReadWriteRepr repr, DataFromToReprRow osrl os repr) <= HoldsOutputsMRepr (os :: Row Type) (osrl :: RL.RowList Type) f state is m repr | os -> osrl where
     holdOutputsMRepr :: Proxy osrl -> Node f state is os repr m -> Array (Int /\ HoldsOutputInNodeMRepr m repr)
 
 

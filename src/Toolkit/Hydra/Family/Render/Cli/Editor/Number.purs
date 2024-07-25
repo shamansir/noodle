@@ -78,7 +78,7 @@ import Cli.Keys (mainScreen, patchBox, numValueEditor, NumValueEditorKey) as Key
 
 import Toolkit.Hydra.Family.Render.Editor (EditorId(..), HasEditors)
 
-import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+import Data.Repr (Repr, class FromRepr, class ToRepr, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
 
 
 nveKey :: Key.NumValueEditorKey

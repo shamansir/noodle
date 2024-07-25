@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Data.SOrder (type (:::), T, SOrder)
 import Data.SOrder (Auto, auto) as SOrder
-import Data.Repr (class FromToReprRow)
+import Data.Repr (class DataFromToReprRow)
 import Data.SProxy (reflect)
 
 import Control.Applicative (class Applicative)

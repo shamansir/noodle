@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class FromToReprRow)
+import Data.Repr (class DataFromToReprRow)
 
 import Blessed ((>~))
 

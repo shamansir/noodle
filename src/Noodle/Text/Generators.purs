@@ -594,8 +594,8 @@ withFamily
     => (  forall f state fs iis is os
         .  HasNodesOf f state fs iis is os m
         => NMF.ToReprHelper m f is rli os rlo repr_is repr_os TkRepr state
-        => FromToReprRow rli is TkRepr
-        => FromToReprRow rlo os TkRepr
+        => DataFromToReprRow rli is TkRepr
+        => DataFromToReprRow rlo os TkRepr
         => Node.Family f
         -> Family.Def state is os m
         -> Toolkit m
