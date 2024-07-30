@@ -16,6 +16,7 @@ import Data.Newtype (class Newtype)
 import Data.UniqueHash as UniqueHash
 import Data.SOrder as SOrder
 import Data.SOrder (SOrder, class HasSymbolsOrder)
+import Data.SOrder (indexOf) as SOrder
 import Data.Symbol (reifySymbol)
 import Data.SProxy (proxify, class Reflect, class Reflect', reflect, reflect')
 
@@ -26,14 +27,15 @@ import Data.Functor.Invariant (class Invariant)
 import Data.Traversable as T
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
 import Data.KeyHolder as KH
-import Data.Repr (Repr, class HasFallback, class FromRepr, class ToRepr, class FromReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+import Data.Repr (Repr, class HasFallback, fallback, class FromRepr, class ToRepr, class FromReprRow, class ToReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+import Data.Repr (fallback, ensureFrom, ensureTo, wrap, unwrap) as Repr
 
 import Type.Proxy (Proxy(..))
 
@@ -52,7 +54,7 @@ import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Process as Process
 import Noodle.Fn.Updates (InputChange(..), OutputChange(..), ChangeFocus)
 import Noodle.Fn.Tracker (Tracker)
-import Noodle.Fn.Tracker (inputs, inputsRec, outputs, outputsRec) as Tracker
+import Noodle.Fn.Tracker (inputs, inputsRec, outputs, outputsRec, atInput, atOutput) as Tracker
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
 import Noodle.Fn.RawToRec (fromRec, toRec) as ReprCnv
@@ -112,11 +114,27 @@ instance StatefulM (Node f state is os repr m) Effect state where
   setM s node = setState s node *> pure node
 
 
+class ToReprRow isrl is InputR repr <= NodeInputs isrl is repr
+instance ToReprRow isrl is InputR repr => NodeInputs isrl is repr
+
+
+class ToReprRow osrl os OutputR repr <= NodeOutputs osrl os repr
+instance ToReprRow osrl os OutputR repr => NodeOutputs osrl os repr
+
+
+class (NodeInputs isrl is repr, HasSymbolsOrder iorder is) <= NodeOrderedInputs iorder isrl is repr
+instance (NodeInputs isrl is repr, HasSymbolsOrder iorder is) => NodeOrderedInputs iorder isrl is repr
+
+
+class (NodeOutputs osrl os repr, HasSymbolsOrder oorder os) <= NodeOrderedOutputs oorder osrl os repr
+instance (NodeOutputs osrl os repr, HasSymbolsOrder oorder os) => NodeOrderedOutputs oorder osrl os repr
+
+
 make
-    :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) repr m
+    :: forall f state (is :: Row Type) isrl (iorder :: SOrder) (os :: Row Type) osrl (oorder :: SOrder) repr m
      . IsSymbol f
-    => HasSymbolsOrder iorder is
-    => HasSymbolsOrder oorder os
+    => NodeOrderedInputs iorder isrl is repr
+    => NodeOrderedOutputs oorder osrl os repr
     => MonadEffect m
     => Family f
     -> state
@@ -131,8 +149,10 @@ make family state iorder oorder is os process =
 
 
 make'
-    :: forall f state (is :: Row Type) (os :: Row Type) repr m
+    :: forall f state (is :: Row Type) isrl (os :: Row Type) osrl repr m
      . MonadEffect m
+    => NodeInputs isrl is repr
+    => NodeOutputs osrl os repr
     => Family' f
     -> state
     -> Record is
@@ -141,7 +161,14 @@ make'
     -> m (Node f state is os repr m)
 make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
-    tracker /\ protocol <- Protocol.make state (ReprCnv.fromRec ?wh is) (ReprCnv.fromRec ?wh os)
+    let
+      inputsOrder = Fn.inputsOrder fn
+      outputsOrder = Fn.outputsOrder fn
+      toInputR :: forall s. IsSymbol s => Proxy s -> InputR
+      toInputR = inputR' <<< inputP' inputsOrder
+      toOutputR :: forall s. IsSymbol s => Proxy s -> OutputR
+      toOutputR = outputR' <<< outputP' outputsOrder
+    tracker /\ protocol <- Protocol.make state (ReprCnv.fromRec toInputR is) (ReprCnv.fromRec toOutputR os)
     pure $ Node nodeId tracker protocol fn
 
 
@@ -301,6 +328,14 @@ atOutput' :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromR
 atOutput' o node = outputs node <#> Record.get (proxify o)
 
 
+unsafeAtInput :: forall f state is os repr m. MonadEffect m => InputR -> Node f state is os repr m -> m (Maybe repr)
+unsafeAtInput input = liftEffect <<< Tracker.atInput input <<< _getTracker
+
+
+unsafeAtOutput :: forall f state is os repr m. MonadEffect m => OutputR -> Node f state is os repr m -> m (Maybe repr)
+unsafeAtOutput output = liftEffect <<< Tracker.atOutput output <<< _getTracker
+
+
 atI :: forall f i state isrl is' is os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInput i din is' is => Node f state is os repr m -> Input i -> m din
 atI = flip atInput
 
@@ -402,12 +437,21 @@ subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Si
 subscribeChanges (Node _ tracker _ _) = tracker.all
 
 
-subscribeChangesRec :: forall f state is os repr m. Node f state is os repr m -> Signal (ChangeFocus /\ state /\ Record is /\ Record os)
-subscribeChangesRec (Node _ tracker _ _) = tracker.all <#> ?wh
+subscribeChangesRec
+    :: forall f state is isrl os osrl repr m
+     . RL.RowToList is isrl => FromReprRow isrl is repr
+    => RL.RowToList os osrl => FromReprRow osrl os repr
+    => Node f state is os repr m
+    -> Signal (ChangeFocus /\ state /\ Record is /\ Record os)
+subscribeChangesRec (Node _ tracker _ _) = tracker.all <#> \(focus /\ state /\ inputsMap /\ outputsMap) -> focus /\ state /\ ReprCnv.toRec inputsMap /\ ReprCnv.toRec outputsMap
 
 
 _getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protocol state is os repr
 _getProtocol (Node _ _ protocol _) = protocol
+
+
+_getTracker :: forall f state is os repr m. Node f state is os repr m -> Tracker state is os repr
+_getTracker (Node _ tracker _ _) = tracker
 
 
 sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Output o -> dout -> Node f state is os repr m -> m Unit
@@ -446,7 +490,7 @@ sendInM input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 -- private?
 sendInE :: forall f i state is is' os repr m din. IsSymbol i => ToRepr din repr => HasInput i din is' is => Input i -> din -> Node f state is os repr m -> Effect Unit
-sendInE input din node = Protocol._sendIn input din (_getProtocol node)
+sendInE input din = Protocol._sendIn input din <<< _getProtocol
 
 
 sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Input' i -> din -> Node f state is os repr m' -> m Unit
@@ -572,8 +616,28 @@ connectByRepr2
     -> Node fA stateA isA osA reprA m
     -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
-connectByRepr2 =
-  ?wh
+connectByRepr2
+    outputA
+    inputB
+    convertRepr
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    do
+        flagRef <- liftEffect $ Ref.new true
+        let
+            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn reprB = do
+                -- Monad.whenM
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ unsafeSendIn (inputR inputB) reprB nodeB
+                  run nodeB
+                else pure unit
+        -- TODO: get current value at output and send it to input
+        SignalX.runSignal $ subscribeOutput (outputR outputA) nodeA ~> fromMaybe fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe reprA) <- unsafeAtOutput (outputR outputA) nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe fallback mbReprA
+        pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
 connectAlike

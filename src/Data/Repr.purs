@@ -30,6 +30,7 @@ import Prim.Row as Row
 import Prim.RowList as RL
 
 import Record (get) as R
+import Record.Extra (class Keys) as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
 
@@ -142,11 +143,11 @@ class ToReprRowBase xs row k repr | xs -> row, repr -> row where
   toReprRowBase :: Proxy repr -> Proxy xs -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (Repr repr) -> Map k (Repr repr)
 
 
-class (RL.RowToList row xs, FromReprRowBase xs row repr () row) <= FromReprRow xs row repr
-instance (RL.RowToList row xs, FromReprRowBase xs row repr () row) => FromReprRow xs row repr
+class (RL.RowToList row xs, Record.Keys xs, FromReprRowBase xs row repr () row) <= FromReprRow xs row repr
+instance (RL.RowToList row xs, Record.Keys xs, FromReprRowBase xs row repr () row) => FromReprRow xs row repr
 
-class (RL.RowToList row xs, ToReprRowBase xs row k repr) <= ToReprRow xs row k repr
-instance (RL.RowToList row xs, ToReprRowBase xs row k repr) => ToReprRow xs row k repr
+class (RL.RowToList row xs, Record.Keys xs, ToReprRowBase xs row k repr) <= ToReprRow xs row k repr
+instance (RL.RowToList row xs, Record.Keys xs, ToReprRowBase xs row k repr) => ToReprRow xs row k repr
 
 
 instance fromReprRowBaseNil :: FromReprRowBase RL.Nil row repr () () where

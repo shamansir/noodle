@@ -1,6 +1,9 @@
 module Noodle.Fn.Raw.Tracker where
 
+import Prelude ((<#>))
+
 import Data.Map (Map)
+import Data.Map (lookup) as Map
 
 import Effect (Effect)
 
@@ -27,3 +30,11 @@ lastInput = Generic.lastInput
 
 lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
 lastOutput = Generic.lastOutput
+
+
+atInput :: forall state repr. InputR -> Tracker state repr -> Effect (Maybe repr)
+atInput input tracker = inputs tracker <#> Map.lookup input
+
+
+atOutput :: forall state repr. OutputR -> Tracker state repr -> Effect (Maybe repr)
+atOutput output tracker = outputs tracker <#> Map.lookup output
