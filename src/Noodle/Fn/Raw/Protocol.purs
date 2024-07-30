@@ -3,8 +3,9 @@ module Noodle.Fn.Raw.Protocol
   , make
   , getState
   , getInputs, getOutputs
-  , sendOut, sendOut', sendOutE, sendOutE'
-  , sendIn, sendIn', sendInE, sendInE'
+  , sendOut
+  , sendIn
+  , modifyState
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
@@ -55,6 +56,19 @@ getOutputs :: forall state repr. Protocol state repr -> Effect (Map OutputR repr
 getOutputs p = p.getOutputs unit <#> Tuple.snd
 
 
+sendOut :: forall state repr. OutputR -> repr -> Protocol state repr -> Effect Unit
+sendOut output = flip Generic._modifyOutput output <<< Map.insert output
+
+
+sendIn :: forall state repr. InputR -> repr -> Protocol state repr -> Effect Unit
+sendIn input = flip Generic._modifyInput input <<< Map.insert input
+
+
+modifyState :: forall state repr. (state -> state) -> Protocol state repr -> Effect Unit
+modifyState = Generic._modifyState
+
+
+{-
 sendOut :: forall o state m dout repr. MonadEffect m => IsSymbol o => ToRepr dout repr => Protocol state repr -> Output o -> dout -> m Unit
 sendOut protocol otput =
     liftEffect <<< sendOutE protocol otput
@@ -98,3 +112,10 @@ sendIn' node i = liftEffect <<< sendInE' node i
 sendInE' :: forall i state din repr. IsSymbol i => ToRepr din repr => Protocol state repr -> Input' i -> din -> Effect Unit
 sendInE' protocol input din =
     Generic.modifyInputE' (Map.insert (inputR' input) $ Repr.unwrap $ Repr.ensureTo din) input protocol
+
+
+-- sendInReprE :: forall i state din repr. IsSymbol i => ToRepr din repr => Protocol state repr -> InputR -> repr -> Effect Unit
+-- sendInReprE protocol input repr =
+--     Generic.modifyInputE (Map.insert (inputR input) $ Repr.unwrap $ Repr.ensureTo din) input protocol
+
+-}

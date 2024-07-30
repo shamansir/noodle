@@ -326,12 +326,12 @@ atO' = flip atOutput'
 
 -- TODO: operator
 -- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node f state is os repr m → (Record is -> dout) -> m dout
-_at ∷ forall f state is os repr m din. MonadEffect m ⇒ Node f state is os repr m → (Record is -> din) -> m din
+_at ∷ forall f state is isrl os repr m din. MonadEffect m => RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m → (Record is -> din) -> m din
 _at node fn = inputs node <#> fn
 
 
 -- TODO: operator
-at_ ∷ forall f state is os osrl repr m dout. MonadEffect m ⇒ FromReprRow osrl os repr => Node f state is os repr m → (Record os -> dout) -> m dout
+at_ ∷ forall f state is os osrl repr m dout. MonadEffect m => RL.RowToList os osrl => FromReprRow osrl os repr => FromReprRow osrl os repr => Node f state is os repr m → (Record os -> dout) -> m dout
 at_ node fn = outputs node <#> fn
 
 
@@ -410,52 +410,60 @@ _getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protoc
 _getProtocol (Node _ _ protocol _) = protocol
 
 
-sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> m Unit
-sendOut node output dout = Protocol._sendOut (_getProtocol node) output dout
+sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Output o -> dout -> Node f state is os repr m -> m Unit
+sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
 
 
 -- private?
-sendOutM :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m' -> Output o -> dout -> m Unit
-sendOutM node output dout = Protocol._sendOut (_getProtocol node) output dout
+sendOutM :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Output o -> dout -> Node f state is os repr m' -> m Unit
+sendOutM output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
 
 
 -- private?
-sendOutE :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output o -> dout -> Effect Unit
-sendOutE node output dout = Protocol._sendOutE (_getProtocol node) output dout
+sendOutE :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Output o -> dout -> Node f state is os repr m -> Effect Unit
+sendOutE output dout = Protocol._sendOut output dout <<< _getProtocol
 
 
 -- private?
-sendOut' :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m' -> Output' o -> dout -> m Unit
-sendOut' node output dout = Protocol._sendOut' (_getProtocol node) output dout
+sendOut' :: forall f o state is os os' repr m m' dout. MonadEffect m => ToRepr dout repr => HasOutput o dout os' os => Output' o -> dout -> Node f state is os repr m' -> m Unit
+sendOut' output dout = liftEffect <<< Protocol._sendOut' output dout <<< _getProtocol
 
 
 -- private?
-sendOutE' :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Node f state is os repr m -> Output' o -> dout -> Effect Unit
-sendOutE' node output dout = Protocol._sendOutE' (_getProtocol node) output dout
+sendOutE' :: forall f o state is os os' repr m dout. ToRepr dout repr => HasOutput o dout os' os => Output' o -> dout -> Node f state is os repr m -> Effect Unit
+sendOutE' output dout = Protocol._sendOut' output dout <<< _getProtocol
 
 
 -- private?
-sendIn :: forall f i state is is' isrl os osrl repr m din. MonadEffect m => ToRepr din repr => HasInput i din is' is => ToRepr din repr => Node f state is os repr m -> Input i -> din -> m Unit
-sendIn node input din = Protocol._sendIn (_getProtocol node) input din
+sendIn :: forall f i state is is' isrl os osrl repr m din. MonadEffect m => ToRepr din repr => HasInput i din is' is => ToRepr din repr => Input i -> din -> Node f state is os repr m -> m Unit
+sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 
 -- private?
-sendInM :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Node f state is os repr m' -> Input i -> din -> m Unit
-sendInM node input din = Protocol._sendIn (_getProtocol node) input din
+sendInM :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Input i -> din -> Node f state is os repr m' -> m Unit
+sendInM input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 
 -- private?
-sendInE :: forall f i state is is' os repr m din. IsSymbol i => ToRepr din repr => HasInput i din is' is => Node f state is os repr m -> Input i -> din -> Effect Unit
-sendInE node input din = Protocol._sendInE (_getProtocol node) input din
+sendInE :: forall f i state is is' os repr m din. IsSymbol i => ToRepr din repr => HasInput i din is' is => Input i -> din -> Node f state is os repr m -> Effect Unit
+sendInE input din node = Protocol._sendIn input din (_getProtocol node)
 
 
-sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Node f state is os repr m' -> Input' i -> din -> m Unit
-sendIn' node input din = Protocol._sendIn' (_getProtocol node) input din
+sendIn' :: forall f i state is is' os repr m m' din. MonadEffect m => ToRepr din repr => HasInput i din is' is => Input' i -> din -> Node f state is os repr m' -> m Unit
+sendIn' input din = liftEffect <<< Protocol._sendIn' input din <<< _getProtocol
 
 
 -- private?
-sendInE' :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => Node f state is os repr m -> Input' i -> din -> Effect Unit
-sendInE' node input din = Protocol._sendInE' (_getProtocol node) input din
+sendInE' :: forall f i state is is' os repr m din. IsSymbol i => HasInput i din is' is => ToRepr din repr => Input' i -> din -> Node f state is os repr m -> Effect Unit
+sendInE' input din = Protocol._sendIn' input din <<< _getProtocol
+
+
+unsafeSendIn :: forall f state is os repr m. InputR -> repr -> Node f state is os repr m -> Effect Unit
+unsafeSendIn input repr = Protocol._unsafeSendIn input repr <<< _getProtocol
+
+
+unsafeSendOut :: forall f state is os repr m. OutputR -> repr -> Node f state is os repr m -> Effect Unit
+unsafeSendOut output repr = Protocol._unsafeSendOut output repr <<< _getProtocol
 
 
 -- TODO: subscribeLastInput / subscribeLastOutput
@@ -515,6 +523,8 @@ toFullId (Link nodeA outA inB nodeB _) =
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
+    => ToRepr doutA reprA
+    => FromRepr reprB dinB
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output oA
@@ -526,12 +536,14 @@ connect
 connect
     outputA
     inputB
-    convert
+    convertData
     nodeA@(Node nodeAId _ _ _)
     nodeB@(Node nodeBId _ _ _) =
     do
         flagRef <- liftEffect $ Ref.new true
         let
+            convert :: reprA -> reprB
+            convert = ?wh
             sendToBIfFlagIsOn :: dinB -> m Unit
             sendToBIfFlagIsOn din = do
                 -- Monad.whenM
@@ -545,6 +557,23 @@ connect
         (doutA :: doutA) <- atO nodeA outputA
         sendToBIfFlagIsOn $ convert doutA
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
+
+
+connectByRepr2
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => ToRepr doutA reprA
+    => FromRepr reprB dinB
+    => HasOutput oA doutA osA' osA
+    => HasInput iB dinB isB' isB
+    => Output oA
+    -> Input iB
+    -> (reprA -> reprB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m (Link fA fB oA iB)
+connectByRepr2 =
+  ?wh
 
 
 connectAlike
@@ -588,11 +617,11 @@ connect'
                 -- Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
-                  liftEffect $ sendInE' nodeB inputB din
+                  liftEffect $ sendInE' inputB din nodeB
                   run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
                             --        maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
                 else pure unit
-        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        SignalX.runSignal $ subscribeOutput (outputR' outputA) nodeA ~> ?wh ~> sendToBIfFlagIsOn
         (doutA :: doutA) <- atO' nodeA outputA
         sendToBIfFlagIsOn $ convert doutA
         -- TODO: get current value at output and send it to input
@@ -644,7 +673,7 @@ connectByRepr
                 -- Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
-                  liftEffect $ sendInE nodeB inputB din
+                  liftEffect $ sendInE inputB din nodeB
                   -- Could be fixed because previosly `SignalX.runSignal` didn't work
                   run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
                   --           maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
@@ -652,7 +681,7 @@ connectByRepr
             sendToBWhenConditionsMet Nothing =
                 pure unit
         -- TODO: get current value at output and send it to input
-        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        SignalX.runSignal $ subscribeOutput (outputR outputA) nodeA ~> ?wh ~> sendToBWhenConditionsMet
         (doutA :: doutA) <- atO nodeA outputA
         sendToBWhenConditionsMet $ convert doutA
         -- run nodeB -- TODO: running also works

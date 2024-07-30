@@ -195,54 +195,21 @@ onSignals state inputs outputs = do
 -}
 
 
-
-modifyOutput :: forall state inputs outputs o m. MonadEffect m => IsSymbol o => (outputs -> outputs) -> Output o -> Protocol state inputs outputs -> m Unit
-modifyOutput f output = liftEffect <<< modifyOutputE f output
-
-
--- private?
-modifyOutputE :: forall state inputs outputs o. IsSymbol o => (outputs -> outputs) -> Output o -> Protocol state inputs outputs -> Effect Unit
-modifyOutputE f output protocol =
-    protocol.modifyOutputs
-        (\curOutputs ->
-            (U.SingleOutput $ outputR output) /\ f curOutputs
-        )
-
-
-modifyOutput' :: forall state inputs outputs o m. MonadEffect m => IsSymbol o => (outputs -> outputs) -> Output' o -> Protocol state inputs outputs -> m Unit
-modifyOutput' f output = liftEffect <<< modifyOutputE' f output
-
-
--- private?
-modifyOutputE' :: forall state inputs outputs o. IsSymbol o => (outputs -> outputs) -> Output' o -> Protocol state inputs outputs -> Effect Unit
-modifyOutputE' f output protocol =
-    protocol.modifyOutputs
-        (\curOutputs ->
-            (U.SingleOutput $ outputR' output) /\ f curOutputs
-        )
-
-
-modifyInput :: forall state inputs outputs i m. MonadEffect m => IsSymbol i => (inputs -> inputs) -> Input i -> Protocol state inputs outputs -> m Unit
-modifyInput f input = liftEffect <<< modifyInputE f input
-
-
--- private?
-modifyInputE :: forall state inputs outputs i. IsSymbol i => (inputs -> inputs) -> Input i -> Protocol state inputs outputs -> Effect Unit
-modifyInputE f input protocol =
+_modifyInput :: forall state inputs outputs. (inputs -> inputs) -> InputR -> Protocol state inputs outputs -> Effect Unit
+_modifyInput f input protocol =
     protocol.modifyInputs
         (\curInputs ->
-            (U.SingleInput $ inputR input) /\ f curInputs
+            (U.SingleInput $ input) /\ f curInputs
         )
 
 
-modifyInput' :: forall state inputs outputs i m. MonadEffect m => IsSymbol i => (inputs -> inputs) -> Input' i -> Protocol state inputs outputs -> m Unit
-modifyInput' f input = liftEffect <<< modifyInputE' f input
-
-
--- private?
-modifyInputE' :: forall state inputs outputs i. IsSymbol i => (inputs -> inputs) -> Input' i -> Protocol state inputs outputs -> Effect Unit
-modifyInputE' f input protocol =
-    protocol.modifyInputs
-        (\curInputs ->
-            (U.SingleInput $ inputR' input) /\ f curInputs
+_modifyOutput :: forall state inputs outputs. (outputs -> outputs) -> OutputR -> Protocol state inputs outputs -> Effect Unit
+_modifyOutput f output protocol =
+    protocol.modifyOutputs
+        (\curOutputs ->
+            (U.SingleOutput output) /\ f curOutputs
         )
+
+
+_modifyState :: forall state inputs outputs. (state -> state) -> Protocol state inputs outputs -> Effect Unit
+_modifyState = flip _.modifyState

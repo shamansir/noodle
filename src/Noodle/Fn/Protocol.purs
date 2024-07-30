@@ -4,8 +4,8 @@ module Noodle.Fn.Protocol
   , getState
   , getInputs, getOutputs
   , getRecInputs, getRecOutputs
-  , _sendOut, _sendOut', _sendOutE, _sendOutE'
-  , _sendIn, _sendIn', _sendInE, _sendInE'
+  , _sendOut, _sendOut', _unsafeSendOut
+  , _sendIn, _sendIn', _unsafeSendIn
   )
   where
 
@@ -22,7 +22,7 @@ import Data.Symbol (class IsSymbol)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Noodle.Id (class HasInput, class HasOutput, InputR, OutputR, Input, Input', Output, Output')
+import Noodle.Id (class HasInput, class HasOutput, InputR, OutputR, Input, Input', Output, Output', outputR, outputR', inputR, inputR')
 
 import Noodle.Fn.Raw.Protocol as Raw
 -- TODO: import Noodle.Fn.Raw.Protocol as RawExports
@@ -30,6 +30,7 @@ import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.RawToRec (toRec)
 
 import Data.Repr (class ToRepr, class FromReprRow)
+import Data.Repr (ensureFrom, ensureTo, unwrap) as Repr
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) repr = Raw.Protocol state repr
@@ -67,40 +68,28 @@ getRecOutputs p = p.getOutputs unit <#> Tuple.snd <#> toRec
 
 
 -- private: doesn't check if output is in `os`
-_sendOut :: forall o state  is os m dout repr. MonadEffect m => IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> m Unit
-_sendOut = Raw.sendOut
+_sendOut :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Output o -> dout -> Protocol state is os repr -> Effect Unit
+_sendOut output = Raw.sendOut (outputR output) <<< Repr.unwrap <<< Repr.ensureTo
 
 
 -- private: doesn't check if output is in `os`
-_sendOutE :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output o -> dout -> Effect Unit
-_sendOutE = Raw.sendOutE
-
-
--- private: doesn't check if output is in `os`
-_sendOut' :: forall o state is os m dout repr. MonadEffect m => IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> m Unit
-_sendOut' = Raw.sendOut'
-
-
--- private: doesn't check if output is in `os`
-_sendOutE' :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Protocol state is os repr -> Output' o -> dout -> Effect Unit
-_sendOutE' = Raw.sendOutE'
+_sendOut' :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Output' o -> dout -> Protocol state is os repr -> Effect Unit
+_sendOut' output = Raw.sendOut (outputR' output) <<< Repr.unwrap <<< Repr.ensureTo
 
 
 -- private: doesn't check if input is in `is`
-_sendIn :: forall i state is os m din repr. MonadEffect m => IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input i -> din -> m Unit
-_sendIn = Raw.sendIn
+_sendIn :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Input i -> dout -> Protocol state is os repr -> Effect Unit
+_sendIn input = Raw.sendIn (inputR input) <<< Repr.unwrap <<< Repr.ensureTo
 
 
 -- private: doesn't check if input is in `is`
-_sendInE :: forall i state is os din repr. IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input i -> din -> Effect Unit
-_sendInE = Raw.sendInE
+_sendIn' :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Input' i -> dout -> Protocol state is os repr -> Effect Unit
+_sendIn' input = Raw.sendIn (inputR' input) <<< Repr.unwrap <<< Repr.ensureTo
 
 
--- private: doesn't check if input is in `is`
-_sendIn' :: forall i state is os m din repr. MonadEffect m => IsSymbol i =>  ToRepr din repr => Protocol state is os repr -> Input' i -> din -> m Unit
-_sendIn' = Raw.sendIn'
+_unsafeSendOut :: forall state is os repr. OutputR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendOut = Raw.sendOut
 
 
--- private: doesn't check if input is in `is`
-_sendInE' :: forall i state is os din repr. IsSymbol i => ToRepr din repr => Protocol state is os repr -> Input' i -> din -> Effect Unit
-_sendInE' = Raw.sendInE'
+_unsafeSendIn :: forall state is os repr. InputR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendIn = Raw.sendIn
