@@ -35,7 +35,7 @@ import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
 import Data.KeyHolder as KH
 import Data.Repr (Repr, class HasFallback, fallback, class FromRepr, class ToRepr, class FromReprRow, class ToReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
-import Data.Repr (fallback, ensureFrom, ensureTo, wrap, unwrap) as Repr
+import Data.Repr (fallback, ensureFrom, ensureTo, wrap, unwrap, inbetween) as Repr
 
 import Type.Proxy (Proxy(..))
 
@@ -517,6 +517,12 @@ data Link fo fi o i = Link (NodeId fo) (Output' o) (Input' i) (NodeId fi) (Effec
 -- FIXME: store links in a separate module
 
 
+
+data UnsafeLink =
+    --UnsafeLink { from :: NodeIdR, output :: OutputR, input :: InputR, to :: NodeIdR } (Effect Unit)
+    UnsafeLink NodeIdR OutputR InputR NodeIdR (Effect Unit)
+
+
 getCanceler :: forall fo fi o i. Link fo fi o i -> Effect Unit
 getCanceler (Link _ _ _ _ c) = c
 
@@ -568,6 +574,8 @@ connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => ToRepr doutA reprA
+    => ToRepr dinB reprB
+    => FromRepr reprA doutA
     => FromRepr reprB dinB
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
@@ -577,33 +585,12 @@ connect
     -> Node fA stateA isA osA reprA m
     -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
-connect
-    outputA
-    inputB
-    convertData
-    nodeA@(Node nodeAId _ _ _)
-    nodeB@(Node nodeBId _ _ _) =
-    do
-        flagRef <- liftEffect $ Ref.new true
-        let
-            convert :: reprA -> reprB
-            convert = ?wh
-            sendToBIfFlagIsOn :: dinB -> m Unit
-            sendToBIfFlagIsOn din = do
-                -- Monad.whenM
-                flagOn <- liftEffect $ Ref.read flagRef
-                if flagOn then do
-                  liftEffect $ sendInE nodeB inputB din
-                  run nodeB
-                else pure unit
-        -- TODO: get current value at output and send it to input
-        SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
-        (doutA :: doutA) <- atO nodeA outputA
-        sendToBIfFlagIsOn $ convert doutA
-        pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
+connect outputA inputB =
+    connect' (output' outputA) (input' inputB)
 
 
-connectByRepr2
+{-
+connectByDifferentRepr
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => ToRepr doutA reprA
@@ -616,7 +603,7 @@ connectByRepr2
     -> Node fA stateA isA osA reprA m
     -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
-connectByRepr2
+connectByDifferentRepr
     outputA
     inputB
     convertRepr
@@ -638,11 +625,108 @@ connectByRepr2
         (mbReprA :: Maybe reprA) <- unsafeAtOutput (outputR outputA) nodeA
         sendToBIfFlagIsOn $ convertRepr $ fromMaybe fallback mbReprA
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
+-}
+
+
+connectByDistinctRepr
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => ToRepr doutA reprA
+    => FromRepr reprB dinB
+    => HasOutput oA doutA osA' osA
+    => HasInput iB dinB isB' isB
+    => Output oA
+    -> Input iB
+    -> (reprA -> reprB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m (Link fA fB oA iB)
+connectByDistinctRepr outputA inputB =
+    connectByDistinctRepr' (output' outputA) (input' inputB)
+
+
+connectByDistinctRepr'
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => ToRepr doutA reprA
+    => FromRepr reprB dinB
+    => HasOutput oA doutA osA' osA
+    => HasInput iB dinB isB' isB
+    => Output' oA
+    -> Input' iB
+    -> (reprA -> reprB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m (Link fA fB oA iB)
+connectByDistinctRepr'
+    outputA
+    inputB
+    convertRepr
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    do
+        flagRef <- liftEffect $ Ref.new true
+        let
+            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn reprB = do
+                -- Monad.whenM
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ unsafeSendIn (inputR' inputB) reprB nodeB
+                  run nodeB
+                else pure unit
+        -- TODO: get current value at output and send it to input
+        SignalX.runSignal $ subscribeOutput (outputR' outputA) nodeA ~> fromMaybe fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe reprA) <- unsafeAtOutput (outputR' outputA) nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe fallback mbReprA
+        pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
+
+
+unsafeConnect
+      :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => HasFallback reprA
+    => HasFallback reprB
+    => OutputR
+    -> InputR
+    -> (reprA -> reprB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m UnsafeLink
+unsafeConnect
+    outputA
+    inputB
+    convertRepr
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    do
+        flagRef <- liftEffect $ Ref.new true
+        let
+            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn reprB = do
+                -- Monad.whenM
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  liftEffect $ unsafeSendIn inputB reprB nodeB
+                  run nodeB
+                else pure unit
+        -- TODO: get current value at output and send it to input
+        SignalX.runSignal $ subscribeOutput outputA nodeA ~> fromMaybe fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe reprA) <- unsafeAtOutput outputA nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe fallback mbReprA
+        pure $ UnsafeLink (nodeIdR nodeAId) outputA inputB (nodeIdR nodeBId) $ Ref.write false flagRef
+
 
 
 connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
+    => ToRepr d reprA
+    => ToRepr d reprB
+    => FromRepr reprA d
+    => FromRepr reprB d
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output oA
@@ -659,6 +743,10 @@ connectAlike
 connect'
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
+    => ToRepr doutA reprA
+    => ToRepr dinB reprB
+    => FromRepr reprA doutA
+    => FromRepr reprB dinB
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output' oA
@@ -667,34 +755,17 @@ connect'
     -> Node fA stateA isA osA reprA m
     -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
-connect'
-    outputA
-    inputB
-    convert
-    nodeA@(Node nodeAId _ _ _)
-    nodeB@(Node nodeBId _ _ _) =
-    do
-        flagRef <- liftEffect $ Ref.new true
-        let
-            sendToBIfFlagIsOn :: dinB -> m Unit
-            sendToBIfFlagIsOn din = do
-                -- Monad.whenM
-                flagOn <- liftEffect $ Ref.read flagRef
-                if flagOn then do
-                  liftEffect $ sendInE' inputB din nodeB
-                  run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
-                            --        maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
-                else pure unit
-        SignalX.runSignal $ subscribeOutput (outputR' outputA) nodeA ~> ?wh ~> sendToBIfFlagIsOn
-        (doutA :: doutA) <- atO' nodeA outputA
-        sendToBIfFlagIsOn $ convert doutA
-        -- TODO: get current value at output and send it to input
-        pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
+connect' outputA inputB convert =
+    connectByDistinctRepr' outputA inputB $ Repr.inbetween convert
 
 
 connectAlike'
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
+    => ToRepr d reprA
+    => ToRepr d reprB
+    => FromRepr reprA d
+    => FromRepr reprB d
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output' oA
@@ -715,41 +786,14 @@ connectByRepr
     => HasInput iB dinB isB' isB
     => ToRepr doutA repr
     => FromRepr repr dinB
-    => Proxy repr
+    => Proxy repr -- FIXME: Proxy is not needed anymore
     -> Output oA
     -> Input iB
     -> Node fA stateA isA osA repr m
     -> Node fB stateB isB osB repr m
     -> m (Link fA fB oA iB)
-connectByRepr
-    _
-    outputA
-    inputB
-    nodeA@(Node nodeAId _ _ _)
-    nodeB@(Node nodeBId _ _ _) =
-    do
-        flagRef <- liftEffect $ Ref.new true
-        let
-            convert :: doutA -> Maybe dinB
-            convert dout = (toRepr dout :: Maybe (Repr repr)) >>= fromRepr
-            sendToBWhenConditionsMet :: Maybe dinB -> m Unit
-            sendToBWhenConditionsMet (Just din) = do
-                -- Monad.whenM
-                flagOn <- liftEffect $ Ref.read flagRef
-                if flagOn then do
-                  liftEffect $ sendInE inputB din nodeB
-                  -- Could be fixed because previosly `SignalX.runSignal` didn't work
-                  run nodeB -- FIXME: why we should do the run manually, when the node is subscribed to input updates?
-                  --           maybe this way run is triggered before the value update? Since if we log these in `listenInputUpdates`, they are outdated on connection
-                else pure unit
-            sendToBWhenConditionsMet Nothing =
-                pure unit
-        -- TODO: get current value at output and send it to input
-        SignalX.runSignal $ subscribeOutput (outputR outputA) nodeA ~> ?wh ~> sendToBWhenConditionsMet
-        (doutA :: doutA) <- atO nodeA outputA
-        sendToBWhenConditionsMet $ convert doutA
-        -- run nodeB -- TODO: running also works
-        pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
+connectByRepr _ outputA inputB =
+    connectByDistinctRepr outputA inputB identity
 
 
 disconnect

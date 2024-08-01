@@ -13,6 +13,7 @@ module Data.Repr
     , class WriteRepr, writeRepr
     , class ReadWriteRepr
     , fromMap, toMap
+    , inbetween
     )
     where
 
@@ -250,6 +251,10 @@ toMap :: forall k xs row repr
     .  ToReprRow xs row k repr
     => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k (Repr repr)
 toMap toKey record = toReprRowBase (Proxy :: _ repr) (Proxy :: _ xs) toKey record Map.empty
+
+
+inbetween :: forall a b reprA reprB. ToRepr b reprB => FromRepr reprA a => (a -> b) -> (reprA -> reprB)
+inbetween f reprA = fromMaybe fallback $ unwrap <$> (toRepr =<< f <$> (fromRepr $ Repr reprA))
 
 
 {-
