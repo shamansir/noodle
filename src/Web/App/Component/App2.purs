@@ -165,7 +165,6 @@ renderNode node =
         ]
 
 
-
 render
     :: forall patch_action gstate nodes instances rlns rlins
      . Record.Keys rlns ⇒ RL.RowToList nodes rlns

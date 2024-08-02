@@ -34,7 +34,7 @@ import Data.List (List)
 import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
 import Data.KeyHolder as KH
-import Data.Repr (Repr, class HasFallback, fallback, class FromRepr, class ToRepr, class FromReprRow, class ToReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
+import Data.Repr (Repr, class HasFallback, fallback, class FromRepr, class ToRepr, class FromToRepr, class FromReprRow, class ToReprRow, class DataFromToReprRow, toRepr, fromRepr, class ReadWriteRepr)
 import Data.Repr (fallback, ensureFrom, ensureTo, wrap, unwrap, inbetween) as Repr
 
 import Type.Proxy (Proxy(..))
@@ -683,7 +683,7 @@ connectByDistinctRepr'
 
 
 unsafeConnect
-      :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+      :: forall fA fB stateA stateB isA isB osA osB reprA reprB m
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
@@ -719,14 +719,11 @@ unsafeConnect
         pure $ UnsafeLink (nodeIdR nodeAId) outputA inputB (nodeIdR nodeBId) $ Ref.write false flagRef
 
 
-
 connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
-    => ToRepr d reprA
-    => ToRepr d reprB
-    => FromRepr reprA d
-    => FromRepr reprB d
+    => FromToRepr d reprA
+    => FromToRepr d reprB
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output oA
@@ -743,10 +740,8 @@ connectAlike
 connect'
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
-    => ToRepr doutA reprA
-    => ToRepr dinB reprB
-    => FromRepr reprA doutA
-    => FromRepr reprB dinB
+    => FromToRepr doutA reprA
+    => FromToRepr dinB reprB
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Output' oA
@@ -762,10 +757,8 @@ connect' outputA inputB convert =
 connectAlike'
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
-    => ToRepr d reprA
-    => ToRepr d reprB
-    => FromRepr reprA d
-    => FromRepr reprB d
+    => FromToRepr d reprA
+    => FromToRepr d reprB
     => HasOutput oA d osA' osA
     => HasInput iB d isB' isB
     => Output' oA

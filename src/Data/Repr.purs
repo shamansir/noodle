@@ -4,6 +4,7 @@ module Data.Repr
     , class HasFallback, fallback, fallbackByRepr, fallbackBy
     , class ToRepr, toRepr
     , class FromRepr, fromRepr
+    , class FromToRepr
     , exists, wrap, unwrap
     , class DataToReprRow, dataToReprRow, dataToReprRowBuilder
     , class FromReprRow, class FromReprRowBase, fromReprRow, fromReprRowBuilder
@@ -79,9 +80,11 @@ instance Show repr => Show (Repr repr) where
 
 
 class (ReadRepr repr, WriteRepr repr) <= ReadWriteRepr repr
-
-
 instance (ReadRepr repr, WriteRepr repr) => ReadWriteRepr repr
+
+
+class (FromRepr repr a, ToRepr a repr) <= FromToRepr a repr
+instance (FromRepr repr a, ToRepr a repr) => FromToRepr a repr
 
 
 -- instance HasFallback x => FromRepr x x where fromRepr = unwrap >>> Just

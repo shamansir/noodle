@@ -38,7 +38,7 @@ import Noodle.Node.Path (InNode(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Fn.Protocol (ChangeFocus(..))
+import Noodle.Fn.Updates (ChangeFocus(..))
 
 
 -- TODO: move to a separate top-level `Repr` module, may be find a way to keep non-top constructors hidden
@@ -173,7 +173,7 @@ subscribeReprMapChanges' (ToReprTop repr) node =
             /\ toRepr (NodeP id) state
             /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
             /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
-    in toReprs <$> Node.subscribeChanges node
+    in toReprs <$> Node.subscribeChangesRec node
 
 
 subscribeReprMapChanges
