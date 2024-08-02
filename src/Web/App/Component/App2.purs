@@ -44,10 +44,9 @@ import Noodle.Node (Node)
 import Noodle.Id (Family) as Node
 import Noodle.Id (FamilyR) as Toolkit
 import Noodle.Node (dimensions, family) as Node
-import Noodle.Node.MapsFolds as Node
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
-import Noodle.Patch.MapsFolds as Patch
+-- import Noodle.Patch.MapsFolds as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit (name, nodeFamilies, spawn, unsafeSpawn) as Toolkit
 import Type.Proxy (Proxy(..))
@@ -132,12 +131,14 @@ initialState { network, toolkit, currentPatch, markings, getFlags, patchState } 
     }
 
 
+{-
 newtype NodeHtml p i = NodeHtml (HH.HTML p i)
 newtype NodeHtml' = NodeHtml' (HH.HTML (H.ComponentSlot () Aff Action) Action)
 
 
 unwrapNodeHtml (NodeHtml html) = html
 unwrapNodeHtml' (NodeHtml' html) = html
+-}
 
 
 -- instance Patch.ConvertNodeTo (NodeHtml p i) where
@@ -145,9 +146,12 @@ unwrapNodeHtml' (NodeHtml' html) = html
 --     convertNode = renderNode >>> NodeHtml
 
 
+{-
 instance Node.ConvertNodeTo NodeHtml' where
-    convertNode :: forall f state is os repr m g. {- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ -} Node f state is os repr m -> NodeHtml'
+    -- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒
+    convertNode :: forall f state is os repr m g. Node f state is os repr m -> NodeHtml'
     convertNode = renderNode >>> NodeHtml'
+-}
 
 
 -- NodeHtml (ComponentSlot () Aff Action) Action

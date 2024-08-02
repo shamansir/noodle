@@ -51,9 +51,9 @@ import Data.SOrder (instantiate) as SOrder
 -- import Heterogeneous.Mapping as H
 import Noodle.Family.Def as Family
 import Noodle.Toolkit.Has as THas
-import Noodle.Node.MapsFolds as NM
-import Noodle.Node.MapsFolds as NF
-import Noodle.Node.MapsFolds.Repr as NR
+-- import Noodle.Node.MapsFolds as NM
+-- import Noodle.Node.MapsFolds as NF
+-- import Noodle.Node.MapsFolds.Repr as NR
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 import Noodle.Toolkit.MapsFolds as TM
 import Noodle.Toolkit.MapsFolds as TF

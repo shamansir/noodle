@@ -15,8 +15,8 @@ import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
 import Noodle.Id (class ListsInstances)
-import Noodle.Node.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as NR
-import Noodle.Node.MapsFolds.Repr (ToReprTop) as NR
+-- import Noodle.Node.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as NR
+-- import Noodle.Node.MapsFolds.Repr (ToReprTop) as NR
 
 
 class FoldToReprsRec :: forall k. (Type -> Type) -> k -> RL.RowList Type -> Row Type -> Symbol -> Type -> Row Type -> Row Type -> Constraint

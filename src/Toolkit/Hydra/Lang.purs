@@ -27,7 +27,7 @@ import Data.Foldable (foldr)
 import Data.String as String
 
 import Noodle.Id as Id
-import Noodle.Node.MapsFolds.Flatten as R
+-- import Noodle.Node.MapsFolds.Flatten as R
 
 import Toolkit.Hydra.Types as H
 import Toolkit.Hydra.Lang.Fn as Fn

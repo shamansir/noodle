@@ -23,10 +23,8 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
-import Noodle.Node.MapsFolds.Flatten (NodeLineRec)
-import Noodle.Node.MapsFolds.Repr (class HasRepr)
-import Noodle.Node.MapsFolds.Repr (Repr(..)) as NMF
-import Noodle.Patch.MapsFolds.Repr as PMF
+-- import Noodle.Node.MapsFolds.Flatten (NodeLineRec)
+-- import Noodle.Patch.MapsFolds.Repr as PMF
 -- import Test.Repr.Patch4 (MyRepr)
 import Noodle.Node (Node)
 import Noodle.Node as Node

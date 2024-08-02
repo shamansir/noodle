@@ -12,7 +12,7 @@ import Data.String.CodePoints as String
 import Data.String.Read (class Read)
 import Data.Number as Number
 
-import Noodle.Node.MapsFolds.Repr as NMF
+-- import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
 import Toolkit.Hydra.Types as H

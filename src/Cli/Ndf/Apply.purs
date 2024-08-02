@@ -42,7 +42,6 @@ import Noodle.Patch.Has as PHas
 import Noodle.Patch.Is as PIs
 import Noodle.Node as Node
 import Noodle.Node (Node)
-import Noodle.Node.MapsFolds.Repr (class ToReprFoldToMapsHelper, class ToReprHelper) as R
 import Noodle.Toolkit (Toolkit)
 import Noodle.Node.HoldsNodeState (class IsNodeState, fromGlobal)
 import Noodle.Stateful (setM, get) as Stateful

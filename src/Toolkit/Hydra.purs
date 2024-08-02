@@ -35,7 +35,7 @@ import Noodle.Toolkit.Has (class HasFamilyDef, class HasReprableNodesOf) as THas
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKeysAt, class HasOrderedOutputKeysAt) as NHas
 import Noodle.Wiring (class Wiring)
-import Noodle.Node.MapsFolds.Repr as NMF
+-- import Noodle.Node.MapsFolds.Repr as NMF
 
 import Toolkit.Hydra.Family.Render.Cli (CliF) as Hydra
 import Toolkit.Hydra.Repr.Wrap (WrapRepr)

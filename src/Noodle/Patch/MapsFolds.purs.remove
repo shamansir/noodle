@@ -28,9 +28,9 @@ import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class Has
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Node.MapsFolds as NMF
-import Noodle.Node.MapsFolds.Flatten (NodeLineRec, NodeLineMap)
-import Noodle.Node.MapsFolds.Repr (Repr, ToReprTop(..))
-import Noodle.Patch.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap, class ExtractReprs)
+-- import Noodle.Node.MapsFolds.Flatten (NodeLineRec, NodeLineMap)
+-- import Noodle.Node.MapsFolds.Repr (Repr, ToReprTop(..))
+-- import Noodle.Patch.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap, class ExtractReprs)
 
 import Unsafe.Coerce (unsafeCoerce)
 

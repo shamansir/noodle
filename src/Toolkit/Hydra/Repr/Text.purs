@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 
 
-import Noodle.Node.MapsFolds.Repr as NMF
+-- import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.Path (InNode)
 
 import Toolkit.Hydra.Types as H

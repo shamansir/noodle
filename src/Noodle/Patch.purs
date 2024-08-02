@@ -29,16 +29,16 @@ import Noodle.Node as Node
 import Noodle.Toolkit.Has as THas
 import Noodle.Patch.Has as PHas
 import Noodle.Patch.Is as PIs
-import Noodle.Patch.MapsFolds as PF
-import Noodle.Patch.MapsFolds as PI
-import Noodle.Patch.MapsFolds as PM
-import Noodle.Patch.MapsFolds.Repr (class ExtractReprs) as R
+-- import Noodle.Patch.MapsFolds as PF
+-- import Noodle.Patch.MapsFolds as PI
+-- import Noodle.Patch.MapsFolds as PM
+-- import Noodle.Patch.MapsFolds.Repr (class ExtractReprs) as R
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Family.Def as Family
-import Noodle.Node.MapsFolds.Flatten (NodeLineMap) as R
-import Noodle.Node.MapsFolds.Repr (Repr) as R
-import Noodle.Patch.MapsFolds.Repr (class FoldToReprsMap)
+-- import Noodle.Node.MapsFolds.Flatten (NodeLineMap) as R
+-- import Noodle.Node.MapsFolds.Repr (Repr) as R
+-- import Noodle.Patch.MapsFolds.Repr (class FoldToReprsMap)
 import Noodle.Stateful (class Stateful)
 import Noodle.Wiring (class Wiring)
 

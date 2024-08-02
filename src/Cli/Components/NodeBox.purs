@@ -79,6 +79,7 @@ import Noodle.Patch.Is as PIs
 import Noodle.Node as Node
 import Noodle.Node (Node) as Noodle
 import Noodle.Family.Def as Family
+{-
 import Noodle.Node.MapsFolds.Repr
     ( class ToReprHelper, class ToReprFoldToMapsHelper
     , Repr(..)
@@ -86,6 +87,7 @@ import Noodle.Node.MapsFolds.Repr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
 import Noodle.Node.MapsFolds.Flatten as R
+-}
 import Noodle.Node.HoldsNodeState (HoldsNodeState, class IsNodeState, default, fromGlobal)
 import Noodle.Fn.Protocol (ChangeFocus(..))
 import Noodle.Stateful (get, getM, setM) as Stateful

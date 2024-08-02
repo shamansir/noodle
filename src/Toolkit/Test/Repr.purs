@@ -5,7 +5,7 @@ import Prelude
 import Data.Repr as R
 import Data.Maybe (Maybe(..))
 
-import Noodle.Node.MapsFolds.Repr (class HasRepr)
+-- import Noodle.Node.MapsFolds.Repr (class HasRepr)
 
 
 data AlwaysUnitRepr = Unit_

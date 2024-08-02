@@ -12,10 +12,11 @@ import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasOrderedInputKe
 import Noodle.Family.Def as Family
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
-import Noodle.Node.MapsFolds.Repr as NMF
+-- import Noodle.Node.MapsFolds.Repr as NMF
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
 import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: must be located somewhere in generic UI
+
 
 
 class HasFamilyDef :: forall k. Symbol -> Row k -> Row k -> k -> Constraint
@@ -66,8 +67,8 @@ instance
 class
     ( HasNodesOf families' families instances' instances f state isrl is osrl os repr m
     , ReadWriteRepr repr
-    , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
+    -- , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+    -- , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     --    => Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m x
@@ -79,8 +80,8 @@ class
 instance
     ( HasNodesOf families' families instances' instances f state isrl is osrl os repr m
     , ReadWriteRepr repr
-    , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
+    -- , NMF.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+    -- , NMF.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
     , Node.NodeBoundKeys Node.O osrl Node.Output f state is os repr m (Node.HoldsOutputInNodeMRepr m repr)
     --    => Node.NodeBoundKeys Node.I isrl Node.Input f state is os repr m x

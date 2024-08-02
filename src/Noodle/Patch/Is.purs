@@ -10,7 +10,6 @@ import Noodle.Id (Input, Output, class HasInput, class HasOutput, class HasInput
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Patch.Has (class HasInstancesOf) as PHas
-import Noodle.Node.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 import Noodle.Node.HoldsNodeState (class IsNodeState)
 
 import Cli.Components.NodeBox.HasBody (class HasCliBody, class HasCliCustomSize) -- FIXME: should not be located in the Cli module but instead some general Ui module
@@ -41,8 +40,6 @@ class
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
     , Id.HasOutputsAt os osrl
-    , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , DataFromToReprRow isrl is repr
     , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
@@ -59,8 +56,6 @@ instance
     , Record.Keys rlins
     , Id.HasInputsAt is isrl
     , Id.HasOutputsAt os osrl
-    , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , DataFromToReprRow isrl is repr
     , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
@@ -74,8 +69,6 @@ instance
 class IsReprableRenderableNodeInPatch :: (Symbol -> Type) -> Type -> Row Type -> Row Type -> RL.RowList Type -> Symbol -> Type -> Row Type -> Row Type -> RL.RowList Type -> RL.RowList Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Constraint
 class
     ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
-    , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , DataFromToReprRow isrl is repr
     , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
@@ -88,8 +81,6 @@ class
 
 instance
     ( PHas.HasInstancesOf f instances' instances (Array (Node f state is os repr m))
-    , R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
-    , R.ToReprFoldToMapsHelper f is isrl os osrl repr state
     , DataFromToReprRow isrl is repr
     , DataFromToReprRow osrl os repr
     , Node.NodeBoundKeys Node.I isrl Id.Input f state is os repr m (Node.HoldsInputInNodeMRepr m repr)
