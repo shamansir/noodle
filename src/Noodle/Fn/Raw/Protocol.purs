@@ -25,21 +25,21 @@ import Data.Symbol (class IsSymbol)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
-import Noodle.Id (Input, Input', InputR, Output, Output', OutputR, inputR, inputR', outputR, outputR')
+import Noodle.Id (Input, Input', InletR, Output, Output', OutletR, inputR, inputR', outputR, outputR')
 
 import Noodle.Fn.Raw.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 
 
-type Protocol state repr = Generic.Protocol state (Map InputR repr) (Map OutputR repr)
+type Protocol state repr = Generic.Protocol state (Map InletR repr) (Map OutletR repr)
 
 
 make
     :: forall state repr m
     .  MonadEffect m
     => state
-    -> Map InputR repr
-    -> Map OutputR repr
+    -> Map InletR repr
+    -> Map OutletR repr
     -> m (Tracker state repr /\ Protocol state repr)
 make = Generic.make
 
@@ -48,19 +48,19 @@ getState :: forall state repr. Protocol state repr -> Effect state
 getState p = p.getState unit
 
 
-getInputs :: forall state repr. Protocol state repr -> Effect (Map InputR repr)
+getInputs :: forall state repr. Protocol state repr -> Effect (Map InletR repr)
 getInputs p = p.getInputs unit <#> Tuple.snd
 
 
-getOutputs :: forall state repr. Protocol state repr -> Effect (Map OutputR repr)
+getOutputs :: forall state repr. Protocol state repr -> Effect (Map OutletR repr)
 getOutputs p = p.getOutputs unit <#> Tuple.snd
 
 
-sendOut :: forall state repr. OutputR -> repr -> Protocol state repr -> Effect Unit
+sendOut :: forall state repr. OutletR -> repr -> Protocol state repr -> Effect Unit
 sendOut output = flip Generic._modifyOutput output <<< Map.insert output
 
 
-sendIn :: forall state repr. InputR -> repr -> Protocol state repr -> Effect Unit
+sendIn :: forall state repr. InletR -> repr -> Protocol state repr -> Effect Unit
 sendIn input = flip Generic._modifyInput input <<< Map.insert input
 
 
@@ -114,7 +114,7 @@ sendInE' protocol input din =
     Generic.modifyInputE' (Map.insert (inputR' input) $ Repr.unwrap $ Repr.ensureTo din) input protocol
 
 
--- sendInReprE :: forall i state din repr. IsSymbol i => ToRepr din repr => Protocol state repr -> InputR -> repr -> Effect Unit
+-- sendInReprE :: forall i state din repr. IsSymbol i => ToRepr din repr => Protocol state repr -> InletR -> repr -> Effect Unit
 -- sendInReprE protocol input repr =
 --     Generic.modifyInputE (Map.insert (inputR input) $ Repr.unwrap $ Repr.ensureTo din) input protocol
 

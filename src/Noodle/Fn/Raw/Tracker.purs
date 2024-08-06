@@ -9,32 +9,32 @@ import Effect (Effect)
 
 import Data.Maybe (Maybe)
 
-import Noodle.Id (InputR, OutputR)
-import Noodle.Fn.Generic.Tracker (Tracker, inputs, outputs, lastInput, lastOutput) as Generic
+import Noodle.Id (InletR, OutletR)
+import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInput, lastOutput) as Generic
 
 
-type Tracker state repr = Generic.Tracker state (Map InputR repr) (Map OutputR repr)
+type Tracker state repr = Generic.Tracker state (Map InletR repr) (Map OutletR repr)
 
 
-inputs :: forall state repr. Tracker state repr -> Effect (Map InputR repr)
-inputs = Generic.inputs
+inlets :: forall state repr. Tracker state repr -> Effect (Map InletR repr)
+inlets = Generic.inlets
 
 
-outputs :: forall state repr. Tracker state repr -> Effect (Map OutputR repr)
-outputs = Generic.outputs
+outlets :: forall state repr. Tracker state repr -> Effect (Map OutletR repr)
+outlets = Generic.outlets
 
 
-lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InputR)
+lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InletR)
 lastInput = Generic.lastInput
 
 
-lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutputR)
+lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutletR)
 lastOutput = Generic.lastOutput
 
 
-atInput :: forall state repr. InputR -> Tracker state repr -> Effect (Maybe repr)
-atInput input tracker = inputs tracker <#> Map.lookup input
+atInput :: forall state repr. InletR -> Tracker state repr -> Effect (Maybe repr)
+atInput input tracker = inlets tracker <#> Map.lookup input
 
 
-atOutput :: forall state repr. OutputR -> Tracker state repr -> Effect (Maybe repr)
-atOutput output tracker = outputs tracker <#> Map.lookup output
+atOutput :: forall state repr. OutletR -> Tracker state repr -> Effect (Maybe repr)
+atOutput output tracker = outlets tracker <#> Map.lookup output

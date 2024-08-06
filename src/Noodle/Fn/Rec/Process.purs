@@ -11,8 +11,8 @@ module Noodle.Fn.Rec.Process
   , runM
   , send
   , sendIn
-  , inputsOf
-  , outputsOf
+  , inletsOf
+  , outletsOf
   )
   where
 
@@ -43,8 +43,8 @@ import Prim.Row (class Cons)
 import Record.Unsafe (unsafeGet, unsafeSet) as Record
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
-import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..))
+import Noodle.Id (Input, InletR, Output, OutletR, inputR, outputR)
+import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
 import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
 
@@ -56,9 +56,9 @@ data ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) ->
 data ProcessF state is os m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' OutputR (forall dout. dout) a
-    | SendIn InputR (forall din. din) a
-    | Receive' InputR (forall din. din -> a)
+    | Send' OutletR (forall dout. dout) a
+    | SendIn InletR (forall din. din) a
+    | Receive' InletR (forall din. din -> a)
     -- | RunEffect (Effect a)
     -- | ToEffect (m a -> Effect a)
     -- | FromEffect (Effect a -> m a)
@@ -140,12 +140,12 @@ lift :: forall state is os m. m Unit -> ProcessM state is os m Unit
 lift m = ProcessM $ Free.liftF $ Lift m
 
 
-inputsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
-inputsOf = keys
+inletsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
+inletsOf = keys
 
 
-outputsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
-outputsOf = keys
+outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
+outletsOf = keys
 
 
 {- Maps -}
@@ -202,7 +202,7 @@ runM protocol (ProcessM processFree) =
     runFreeM protocol processFree
 
 
--- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
+-- TODO: pass the inlets / outlets records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
 -- runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> Free (ProcessF state d m) ~> m
 -- runFreeM :: forall state is os d m. MonadEffect m => MonadRec m => Row is -> Row os -> d -> Ref state -> Free (ProcessF state d m) ~> m
 runFreeM
@@ -232,7 +232,7 @@ runFreeM protocol fn =
 
         go (Send' oid v next) = do
             -- markLastOutput oid
-            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
+            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutletRef
             sendToOutput oid v
             pure next
         go (SendIn iid v next) = do
@@ -260,20 +260,20 @@ runFreeM protocol fn =
         -- markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
         -- markLastOutput oid = protocol.storeLastOutput $ Just oid
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
-        -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        getInputAt :: forall din. InputR -> m din
+        -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inletsRef
+        getInputAt :: forall din. InletR -> m din
         getInputAt iid = liftEffect $ Record.unsafeGet (reflect' iid) <$> Tuple.snd <$> protocol.getInputs unit
         -- loadFromInputs :: forall din. (Record is -> din) -> m din
         -- loadFromInputs fn = fn <$> protocol.getInputs unit
         -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
-        -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        sendToOutput :: forall dout. OutputR -> dout -> m Unit
-        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
+        -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outletsRef
+        sendToOutput :: forall dout. OutletR -> dout -> m Unit
+        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
         -- modifyOutputs :: (Record os -> Record os) -> m Unit
         -- modifyOutputs fn = protocol.modifyOutputs fn
         -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
-        -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
-        sendToInput :: forall din. InputR -> din -> m Unit
-        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInput iid)
+        -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inletsRef
+        sendToInput :: forall din. InletR -> din -> m Unit
+        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInlet iid)
         -- modifyInputs :: (Record is -> Record is) -> m Unit
         -- modifyInputs fn = protocol.modifyInputs fn

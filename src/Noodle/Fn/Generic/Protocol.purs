@@ -23,54 +23,54 @@ import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (class HasInput, class HasOutput, InputR, OutputR, Input, Input', Output, Output', inputR, inputR', outputR, outputR')
+import Noodle.Id (class HasInput, class HasOutput, InletR, OutletR, Input, Input', Output, Output', inputR, inputR', outputR, outputR')
 import Noodle.Stateful (class StatefulM)
 
 import Noodle.Fn.Generic.Tracker (Tracker)
 import Noodle.Fn.Generic.Updates as U
 
 
-type Protocol state inputs outputs =
-    { getInputs :: Unit -> Effect (U.InputChange /\ inputs)
-    , getOutputs :: Unit -> Effect (U.OutputChange /\ outputs)
+type Protocol state inlets outlets =
+    { getInputs :: Unit -> Effect (U.InletsChange /\ inlets)
+    , getOutputs :: Unit -> Effect (U.OutletsChange /\ outlets)
     , getState :: Unit -> Effect state
-    , modifyInputs :: (inputs -> U.InputChange /\ inputs) -> Effect Unit
-    , modifyOutputs :: (outputs -> U.OutputChange /\ outputs) -> Effect Unit
+    , modifyInputs :: (inlets -> U.InletsChange /\ inlets) -> Effect Unit
+    , modifyOutputs :: (outlets -> U.OutletsChange /\ outlets) -> Effect Unit
     , modifyState :: (state -> state) -> Effect Unit
     }
 
 
 make
-    :: forall state inputs outputs m
+    :: forall state inlets outlets m
     .  MonadEffect m
     => state
-    -> inputs
-    -> outputs
-    -> m (Tracker state inputs outputs /\ Protocol state inputs outputs)
-make state inputs outputs =
+    -> inlets
+    -> outlets
+    -> m (Tracker state inlets outlets /\ Protocol state inlets outlets)
+make state inlets outlets =
     liftEffect $ do
 
          -- boolean flags help to find out which signal was updated the latest in the merged all changes by flipping them on modification
 
         let
             stateInit = true /\ state
-            inputsInit = true /\ U.AllInputs /\ inputs
-            outputsInit = true /\ U.AllOutputs /\ outputs
+            inletsInit = true /\ U.AllInlets /\ inlets
+            outletsInit = true /\ U.AllOutlets /\ outlets
 
-            (initAll :: U.PostUpdatesRow state inputs outputs) = U.Everything /\ stateInit /\ inputsInit /\ outputsInit
+            (initAll :: U.PostUpdatesRow state inlets outlets) = U.Everything /\ stateInit /\ inletsInit /\ outletsInit
 
         stateCh <- channel stateInit
-        inputsCh <- channel inputsInit
-        outputsCh <- channel outputsInit
+        inletsCh <- channel inletsInit
+        outletsCh <- channel outletsInit
         -- allChangesCh <- channel initAll
 
         let
             stateSig = Channel.subscribe stateCh
-            inputsSig = Channel.subscribe inputsCh
-            outputsSig = Channel.subscribe outputsCh
-            changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inputsSig <*> outputsSig)
+            inletsSig = Channel.subscribe inletsCh
+            outletsSig = Channel.subscribe outletsCh
+            changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inletsSig <*> outletsSig)
 
-            foldUpdates :: U.PreUpdatesRow state inputs outputs -> U.PostUpdatesRow state inputs outputs -> U.PostUpdatesRow state inputs outputs
+            foldUpdates :: U.PreUpdatesRow state inlets outlets -> U.PostUpdatesRow state inlets outlets -> U.PostUpdatesRow state inlets outlets
             foldUpdates
                 lastChange@((bState /\ state) /\ (bInput /\ inputChange /\ is) /\ (bOutput /\ outputChange /\ os))
                 (_ /\ (bStatePrev /\ _) /\ (bInputPrev /\ _ /\ _) /\ (bOutputPrev /\ _))
@@ -79,43 +79,43 @@ make state inputs outputs =
                         U.StateChange /\ lastChange
                     else if bInput == not bInputPrev then
                         case inputChange of
-                            U.AllInputs ->
-                                U.AllInputsChange /\ lastChange
-                            U.SingleInput inputR ->
-                                U.InputChange inputR /\ lastChange
+                            U.AllInlets ->
+                                U.AllInletsChange /\ lastChange
+                            U.SingleInlet inputR ->
+                                U.InletsChange inputR /\ lastChange
                     else if bOutput == not bOutputPrev then
                         case outputChange of
-                            U.AllOutputs ->
-                                U.AllOutputsChange /\ lastChange
-                            U.SingleOutput outputR ->
-                                U.OutputChange outputR /\ lastChange
+                            U.AllOutlets ->
+                                U.AllOutletsChange /\ lastChange
+                            U.SingleOutlet outputR ->
+                                U.OutletsChange outputR /\ lastChange
                     else U.Everything /\ lastChange
 
 
             toPreUpdateRow
                 :: (Boolean /\ state)
-                -> (Boolean /\ U.InputChange /\ inputs)
-                -> (Boolean /\ U.OutputChange /\ outputs)
-                -> U.PreUpdatesRow state inputs outputs
+                -> (Boolean /\ U.InletsChange /\ inlets)
+                -> (Boolean /\ U.OutletsChange /\ outlets)
+                -> U.PreUpdatesRow state inlets outlets
             toPreUpdateRow = (/\) >>> Tuple.curry
 
         let
-            tracker :: Tracker state inputs outputs
+            tracker :: Tracker state inlets outlets
             tracker =
                 { state : Tuple.snd <$> stateSig
-                , inputs : Tuple.snd <$>inputsSig
-                , outputs : Tuple.snd <$> outputsSig
+                , inlets : Tuple.snd <$>inletsSig
+                , outlets : Tuple.snd <$> outletsSig
                 , all : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
                 }
 
-            protocol :: Protocol state inputs outputs
+            protocol :: Protocol state inlets outlets
             protocol =
-                { getInputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> inputsSig
-                , getOutputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> outputsSig
+                { getInputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> inletsSig
+                , getOutputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> outletsSig
                 , getState : const $ liftEffect $ Signal.get $ Tuple.snd <$> stateSig
                 -- bwlow we flip the flags on every update in particular signal
-                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send inputsCh
-                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send outputsCh -- Tuple.snd >>> f >>> Channel.send outputsCh
+                , modifyInputs : \f -> liftEffect $ Signal.get inletsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send inletsCh
+                , modifyOutputs : \f -> liftEffect $ Signal.get outletsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send outletsCh -- Tuple.snd >>> f >>> Channel.send outletsCh
                 , modifyState : \f -> liftEffect $ Signal.get stateSig >>= bimap not f >>> Channel.send stateCh -- f >>> Channel.send stateCh
                 }
 
@@ -129,42 +129,42 @@ onRefs
     -> Record is
     -> Record os
     -> ProtocolW state is os Ref m
-onRefs state inputs outputs =
+onRefs state inlets outlets =
     liftEffect $ do
 
         stateRef <- Ref.new state
-        inputsRef <- Ref.new inputs
-        outputsRef <- Ref.new outputs
-        -- (lastInputRef  :: Ref (forall i. IsSymbol i => Maybe (Input i))) <- Ref.new $ unsafeCoerce Nothing
-        -- (lastOutputRef  :: Ref (forall o. IsSymbol o => Maybe (Output o))) <- Ref.new $ unsafeCoerce Nothing
-        (lastInputRef  :: Ref CurIVal) <- Ref.new $ unsafeCoerce Nothing
-        (lastOutputRef  :: Ref CurOVal) <- Ref.new $ unsafeCoerce Nothing
+        inletsRef <- Ref.new inlets
+        outletsRef <- Ref.new outlets
+        -- (lastInletRef  :: Ref (forall i. IsSymbol i => Maybe (Input i))) <- Ref.new $ unsafeCoerce Nothing
+        -- (lastOutletRef  :: Ref (forall o. IsSymbol o => Maybe (Output o))) <- Ref.new $ unsafeCoerce Nothing
+        (lastInletRef  :: Ref CurIVal) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutletRef  :: Ref CurOVal) <- Ref.new $ unsafeCoerce Nothing
 
         pure
             { state : stateRef
-            , inputs : inputsRef
-            , outputs : outputsRef
-            , lastInput : lastInputRef
-            , lastOutput : lastOutputRef
+            , inlets : inletsRef
+            , outlets : outletsRef
+            , lastInput : lastInletRef
+            , lastOutput : lastOutletRef
             , protocol :
-                { getInputs : const $ liftEffect $ Ref.read inputsRef
-                , getOutputs : const $ liftEffect $ Ref.read outputsRef
+                { getInputs : const $ liftEffect $ Ref.read inletsRef
+                , getOutputs : const $ liftEffect $ Ref.read outletsRef
                 , getState : const $ liftEffect $ Ref.read stateRef
-                , modifyInputs : \f -> liftEffect $ Ref.modify_ f inputsRef
-                , modifyOutputs : \f -> liftEffect $ Ref.modify_ f outputsRef
+                , modifyInputs : \f -> liftEffect $ Ref.modify_ f inletsRef
+                , modifyOutputs : \f -> liftEffect $ Ref.modify_ f outletsRef
                 , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
                 , storeLastInput :
                     (
-                        (\maybeInput -> liftEffect (Ref.write (unsafeCoerce maybeInput) lastInputRef))
-                        -- (\maybeInput -> liftEffect (Ref.write (unsafeCoerce <$> maybeInput) lastInputRef))
+                        (\maybeInput -> liftEffect (Ref.write (unsafeCoerce maybeInput) lastInletRef))
+                        -- (\maybeInput -> liftEffect (Ref.write (unsafeCoerce <$> maybeInput) lastInletRef))
                     -- :: (Maybe (forall i. IsSymbol i => Input i)) -> m Unit
                     -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
                     -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
-                        (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce maybeOutput) lastOutputRef)
-                        -- (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutputRef)
+                        (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce maybeOutput) lastOutletRef)
+                        -- (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutletRef)
                     -- :: (Maybe (forall o. IsSymbol o => Output o)) -> m Unit
                     )
                 }
@@ -179,14 +179,14 @@ onSignals
     -> Record is
     -> Record os
     -> ProtocolW state is os Signal m
-onSignals state inputs outputs = do
-    onChannelsI <- onChannels state inputs outputs
+onSignals state inlets outlets = do
+    onChannelsI <- onChannels state inlets outlets
     liftEffect $ do
 
         pure
             { state : Channel.subscribe onChannelsI.state
-            , inputs : Channel.subscribe onChannelsI.inputs
-            , outputs : Channel.subscribe onChannelsI.outputs
+            , inlets : Channel.subscribe onChannelsI.inlets
+            , outlets : Channel.subscribe onChannelsI.outlets
             , lastInput : Channel.subscribe onChannelsI.lastInput
             , lastOutput : Channel.subscribe onChannelsI.lastOutput
             , protocol : onChannelsI.protocol
@@ -195,21 +195,21 @@ onSignals state inputs outputs = do
 -}
 
 
-_modifyInput :: forall state inputs outputs. (inputs -> inputs) -> InputR -> Protocol state inputs outputs -> Effect Unit
+_modifyInput :: forall state inlets outlets. (inlets -> inlets) -> InletR -> Protocol state inlets outlets -> Effect Unit
 _modifyInput f input protocol =
     protocol.modifyInputs
         (\curInputs ->
-            (U.SingleInput $ input) /\ f curInputs
+            (U.SingleInlet $ input) /\ f curInputs
         )
 
 
-_modifyOutput :: forall state inputs outputs. (outputs -> outputs) -> OutputR -> Protocol state inputs outputs -> Effect Unit
+_modifyOutput :: forall state inlets outlets. (outlets -> outlets) -> OutletR -> Protocol state inlets outlets -> Effect Unit
 _modifyOutput f output protocol =
     protocol.modifyOutputs
         (\curOutputs ->
-            (U.SingleOutput output) /\ f curOutputs
+            (U.SingleOutlet output) /\ f curOutputs
         )
 
 
-_modifyState :: forall state inputs outputs. (state -> state) -> Protocol state inputs outputs -> Effect Unit
+_modifyState :: forall state inlets outlets. (state -> state) -> Protocol state inlets outlets -> Effect Unit
 _modifyState = flip _.modifyState

@@ -22,7 +22,7 @@ import Data.Symbol (class IsSymbol)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Noodle.Id (class HasInput, class HasOutput, InputR, OutputR, Input, Input', Output, Output', outputR, outputR', inputR, inputR')
+import Noodle.Id (class HasInput, class HasOutput, InletR, OutletR, Input, Input', Output, Output', outputR, outputR', inputR, inputR')
 
 import Noodle.Fn.Raw.Protocol as Raw
 -- TODO: import Noodle.Fn.Raw.Protocol as RawExports
@@ -40,8 +40,8 @@ make
     :: forall state (is :: Row Type) (os :: Row Type) repr m
     .  MonadEffect m
     => state
-    -> Map InputR repr
-    -> Map OutputR repr
+    -> Map InletR repr
+    -> Map OutletR repr
     -> m (Tracker state is os repr /\ Protocol state is os repr)
 make = Raw.make
 
@@ -50,11 +50,11 @@ getState :: forall state is os repr. Protocol state is os repr -> Effect state
 getState = Raw.getState
 
 
-getInputs :: forall state is os repr. Protocol state is os repr -> Effect (Map InputR repr)
+getInputs :: forall state is os repr. Protocol state is os repr -> Effect (Map InletR repr)
 getInputs = Raw.getInputs
 
 
-getOutputs :: forall state is os repr. Protocol state is os repr -> Effect (Map OutputR repr)
+getOutputs :: forall state is os repr. Protocol state is os repr -> Effect (Map OutletR repr)
 getOutputs = Raw.getOutputs
 
 
@@ -87,9 +87,9 @@ _sendIn' :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => In
 _sendIn' input = Raw.sendIn (inputR' input) <<< Repr.unwrap <<< Repr.ensureTo
 
 
-_unsafeSendOut :: forall state is os repr. OutputR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendOut :: forall state is os repr. OutletR -> repr -> Protocol state is os repr -> Effect Unit
 _unsafeSendOut = Raw.sendOut
 
 
-_unsafeSendIn :: forall state is os repr. InputR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendIn :: forall state is os repr. InletR -> repr -> Protocol state is os repr -> Effect Unit
 _unsafeSendIn = Raw.sendIn

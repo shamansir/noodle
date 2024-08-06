@@ -7,8 +7,8 @@ module Noodle.Fn.Process
   , receive
   , send
   , sendIn
-  , inputsOf
-  , outputsOf
+  , inletsOf
+  , outletsOf
   , runM
 --   , runFreeM
   , toRaw
@@ -39,7 +39,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Prim.Row (class Cons)
 
 import Noodle.Id (Input, Output, inputR, outputR)
--- import Noodle.Fn.Raw.Protocol (InputChange, OutputChange) as Raw
+-- import Noodle.Fn.Raw.Protocol (InletsChange, OutletsChange) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Fn.Raw.Process (RawProcessM(..), RawProcessF)
 import Noodle.Fn.Raw.Process (RawProcessF(..), imapFState, mapFM, runFreeM) as Raw
@@ -113,12 +113,12 @@ lift m =
     ProcessM $ Free.liftF $ wrap $ Raw.Lift m
 
 
-inputsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
-inputsOf = keys
+inletsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
+inletsOf = keys
 
 
-outputsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
-outputsOf = keys
+outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
+outletsOf = keys
 
 
 {- Maps -}

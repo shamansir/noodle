@@ -5,7 +5,7 @@ module Noodle.Fn.Updates
     where
 
 
-import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..), ChangeFocus(..)) as GenericUpdates
+import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..), ChangeFocus(..)) as GenericUpdates
 
 
 import Noodle.Fn.Raw.Updates as Raw

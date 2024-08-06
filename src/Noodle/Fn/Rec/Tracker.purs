@@ -11,32 +11,32 @@ import Data.Symbol (class IsSymbol)
 import Prim.Row (class Cons) as Row
 import Record (get) as Record
 
-import Noodle.Id (Input, InputR, Output, OutputR)
-import Noodle.Fn.Generic.Tracker (Tracker, inputs, outputs, lastInput, lastOutput) as Generic
+import Noodle.Id (Input, InletR, Output, OutletR)
+import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInput, lastOutput) as Generic
 
 
 type Tracker  state (is :: Row Type) (os :: Row Type) = Generic.Tracker  state (Record is) (Record os)
 
 
-inputs :: forall state is os. Tracker state is os -> Effect (Record is)
-inputs = Generic.inputs
+inlets :: forall state is os. Tracker state is os -> Effect (Record is)
+inlets = Generic.inlets
 
 
-outputs :: forall state is os. Tracker state is os -> Effect (Record os)
-outputs = Generic.outputs
+outlets :: forall state is os. Tracker state is os -> Effect (Record os)
+outlets = Generic.outlets
 
 
-lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputR)
+lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InletR)
 lastInput = Generic.lastInput
 
 
-lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputR)
+lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutletR)
 lastOutput = Generic.lastOutput
 
 
 atInput :: forall i is os state din. Row.Cons i din is is => IsSymbol i => Input i -> Tracker state is os -> Effect din
-atInput input tracker = inputs tracker <#> Record.get (proxify input)
+atInput input tracker = inlets tracker <#> Record.get (proxify input)
 
 
 atOutput :: forall o is os state dout. Row.Cons o dout os os => IsSymbol o => Output o -> Tracker state is os -> Effect dout
-atOutput output tracker = outputs tracker <#> Record.get (proxify output)
+atOutput output tracker = outlets tracker <#> Record.get (proxify output)

@@ -11,8 +11,8 @@ module Noodle.Fn.Raw.Process
   , runM
   , send
   , sendIn
-  , inputsOf
-  , outputsOf
+  , inletsOf
+  , outletsOf
   )
   where
 
@@ -40,8 +40,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 -- import Noodle.Fn.Protocol (Protocol)
 
 
-import Noodle.Id (InputR, OutputR)
-import Noodle.Fn.Generic.Updates (InputChange(..), OutputChange(..))
+import Noodle.Id (InletR, OutletR)
+import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
 
 
@@ -50,9 +50,9 @@ data RawProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
 data RawProcessF state repr m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send OutputR (Repr repr) a
-    | SendIn InputR (Repr repr) a
-    | Receive InputR (Repr repr -> a)
+    | Send OutletR (Repr repr) a
+    | SendIn InletR (Repr repr) a
+    | Receive InletR (Repr repr -> a)
 
 
 instance functorProcessF :: Functor m => Functor (RawProcessF state repr m) where
@@ -103,17 +103,17 @@ instance monadRecProcessM :: MonadRec (RawProcessM state repr m) where
 
 {- Processing -}
 
-receive :: forall state repr m. InputR -> RawProcessM state repr m (Repr repr)
+receive :: forall state repr m. InletR -> RawProcessM state repr m (Repr repr)
 receive inputR =
     RawProcessM $ Free.liftF $ Receive inputR $ identity
 
 
-send :: forall state repr m. OutputR -> Repr repr -> RawProcessM state repr m Unit
+send :: forall state repr m. OutletR -> Repr repr -> RawProcessM state repr m Unit
 send outputR orepr =
     RawProcessM $ Free.liftF $ Send outputR orepr unit
 
 
-sendIn ∷ forall state repr m. InputR → Repr repr → RawProcessM state repr m Unit
+sendIn ∷ forall state repr m. InletR → Repr repr → RawProcessM state repr m Unit
 sendIn inputR irepr =
     RawProcessM $ Free.liftF $ SendIn inputR irepr unit
 
@@ -122,12 +122,12 @@ lift :: forall state repr m. m Unit -> RawProcessM state repr m Unit
 lift m = RawProcessM $ Free.liftF $ Lift m
 
 
-inputsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
-inputsOf = keys
+inletsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
+inletsOf = keys
 
 
-outputsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
-outputsOf = keys
+outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
+outletsOf = keys
 
 
 {- Maps -}
@@ -206,7 +206,7 @@ runFreeM protocol fn =
 
         go (Send oid v next) = do
             -- markLastOutput oid
-            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
+            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutletRef
             sendToOutput oid v
             pure next
         go (SendIn iid v next) = do
@@ -216,9 +216,9 @@ runFreeM protocol fn =
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        getInputAt :: InputR -> m (Repr repr)
+        getInputAt :: InletR -> m (Repr repr)
         getInputAt iid = liftEffect $ fallbackByRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
-        sendToOutput :: OutputR -> Repr repr -> m Unit
-        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
-        sendToInput :: InputR -> Repr repr -> m Unit
-        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Map.insert iid (unwrap v) >>> (Tuple $ SingleInput iid)
+        sendToOutput :: OutletR -> Repr repr -> m Unit
+        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
+        sendToInput :: InletR -> Repr repr -> m Unit
+        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Map.insert iid (unwrap v) >>> (Tuple $ SingleInlet iid)

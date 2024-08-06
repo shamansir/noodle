@@ -6,27 +6,26 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\))
 
-import Noodle.Id (InputR, OutputR)
+import Noodle.Id (InletR, OutletR)
 
 
-data InputChange
-    = SingleInput InputR -- TODO: HoldsInput
-    | AllInputs
-    -- TODO: add Hot / Cold
+data InletsChange
+    = SingleInlet InletR
+    | AllInlets
 
 
-data OutputChange
-    = SingleOutput OutputR -- TODO: HoldsOutput
-    | AllOutputs
+data OutletsChange
+    = SingleOutlet OutletR
+    | AllOutlets
 
 
 data ChangeFocus
     = Everything
     | StateChange
-    | AllInputsChange
-    | InputChange InputR -- TODO: HoldsInput
-    | AllOutputsChange
-    | OutputChange OutputR -- TODO: HoldsOutput
+    | AllInletsChange
+    | InletChange InletR
+    | AllOutletsChange
+    | OutletChange OutletR
 
 
 instance Show ChangeFocus where
@@ -35,22 +34,22 @@ instance Show ChangeFocus where
         case _ of
             Everything -> "all"
             StateChange -> "state"
-            AllInputsChange -> "inputs"
-            InputChange inputR -> "input " <> show inputR -- reflect' inputR
-            AllOutputsChange -> "outputs"
-            OutputChange outputR -> "output " <> show outputR -- reflect' outputR
+            AllInletsChange -> "inlets"
+            InletChange inputR -> "input " <> show inputR
+            AllOutletsChange -> "outlets"
+            OutletChange outputR -> "output " <> show outputR
 
 
-inputChangeToMaybe :: InputChange -> Maybe InputR
-inputChangeToMaybe (SingleInput iid) = Just iid
-inputChangeToMaybe AllInputs = Nothing
+inputChangeToMaybe :: InletsChange -> Maybe InletR
+inputChangeToMaybe (SingleInlet iid) = Just iid
+inputChangeToMaybe AllInlets = Nothing
 
 
-outputChangeToMaybe :: OutputChange -> Maybe OutputR
-outputChangeToMaybe (SingleOutput oid) = Just oid
-outputChangeToMaybe AllOutputs = Nothing
+outputChangeToMaybe :: OutletsChange -> Maybe OutletR
+outputChangeToMaybe (SingleOutlet oid) = Just oid
+outputChangeToMaybe AllOutlets = Nothing
 
 
-type PreUpdatesRow state inputs outputs = (Boolean /\ state) /\ (Boolean /\ InputChange /\ inputs) /\ (Boolean /\ OutputChange /\ outputs)
-type PostUpdatesRow state inputs outputs = ChangeFocus /\ PreUpdatesRow state inputs outputs
-type FocusedUpdate state inputs outputs = ChangeFocus /\ state /\ inputs /\ outputs
+type PreUpdatesRow state inlets outlets = (Boolean /\ state) /\ (Boolean /\ InletsChange /\ inlets) /\ (Boolean /\ OutletsChange /\ outlets)
+type PostUpdatesRow state inlets outlets = ChangeFocus /\ PreUpdatesRow state inlets outlets
+type FocusedUpdate state inlets outlets = ChangeFocus /\ state /\ inlets /\ outlets
