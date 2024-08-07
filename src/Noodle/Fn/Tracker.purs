@@ -18,7 +18,7 @@ import Data.Maybe (Maybe)
 import Data.Repr (class FromReprRow, Repr(..))
 import Data.Repr (fromMap) as Repr
 
-import Noodle.Id (Input, InletR, Output, OutletR)
+import Noodle.Id (Inlet, InletR, Outlet, OutletR)
 import Noodle.Fn.RawToRec (toRec)
 import Noodle.Fn.Raw.Tracker as Raw
 
@@ -34,12 +34,12 @@ outlets :: forall state is os repr. Tracker state is os repr-> Effect (Map Outle
 outlets = Raw.outlets
 
 
-lastInput :: forall state is os repr. Tracker state is os repr -> Effect (Maybe InletR)
-lastInput = Raw.lastInput
+lastInlet :: forall state is os repr. Tracker state is os repr -> Effect (Maybe InletR)
+lastInlet = Raw.lastInlet
 
 
-lastOutput :: forall state is os repr. Tracker state is os repr -> Effect (Maybe OutletR)
-lastOutput = Raw.lastOutput
+lastOutlet :: forall state is os repr. Tracker state is os repr -> Effect (Maybe OutletR)
+lastOutlet = Raw.lastOutlet
 
 
 inletsRec :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Tracker state is os repr -> Effect (Record is)
@@ -50,17 +50,17 @@ outletsRec :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow 
 outletsRec tracker = Raw.outlets tracker <#> toRec
 
 
-atInput :: forall state is os repr. InletR -> Tracker state is os repr -> Effect (Maybe repr)
-atInput = Raw.atInput
+atInlet :: forall state is os repr. InletR -> Tracker state is os repr -> Effect (Maybe repr)
+atInlet = Raw.atInlet
 
 
-atOutput :: forall state is os repr. OutletR -> Tracker state is os repr -> Effect (Maybe repr)
-atOutput = Raw.atOutput
+atOutlet :: forall state is os repr. OutletR -> Tracker state is os repr -> Effect (Maybe repr)
+atOutlet = Raw.atOutlet
 
 
--- atInletRec :: forall i is os state repr din. Row.Cons i din is is => IsSymbol i => Input i -> Tracker state is os repr -> Effect din
--- atInletRec input tracker = inletsRec tracker <#> Record.get (proxify input)
+-- atInletRec :: forall i is os state repr din. Row.Cons i din is is => IsSymbol i => Inlet i -> Tracker state is os repr -> Effect din
+-- atInletRec inlet tracker = inletsRec tracker <#> Record.get (proxify inlet)
 
 
--- atOutletRec :: forall o is os osrl state repr dout. Row.Cons o dout os os => IsSymbol o => Output o -> Tracker state is os repr -> Effect dout
--- atOutletRec output tracker = outletsRec tracker <#> Record.get (proxify output)
+-- atOutletRec :: forall o is os osrl state repr dout. Row.Cons o dout os os => IsSymbol o => Outlet o -> Tracker state is os repr -> Effect dout
+-- atOutletRec outlet tracker = outletsRec tracker <#> Record.get (proxify outlet)

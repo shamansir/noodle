@@ -2,9 +2,8 @@ module Noodle.Fn.Rec.Protocol
   ( Protocol
   , make
   , getState
-  , getInputs, getOutputs
-  , sendOut, sendOut'
-  , sendIn, sendIn'
+  , getInlets, getOutlets
+  , sendOut, sendIn
   , modifyState
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
@@ -24,8 +23,8 @@ import Data.SProxy (proxify)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Noodle.Id (Input, Input', Output, Output', class HasInput, class HasOutput, inputR, inputR', outputR, outputR')
-
+import Noodle.Id (Inlet, Outlet, inletR, outletR)
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Fn.Rec.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 
@@ -47,33 +46,22 @@ getState :: forall state is os. Protocol state is os -> Effect state
 getState p = p.getState unit
 
 
-getInputs :: forall state is os. Protocol state is os -> Effect (Record is)
-getInputs p = p.getInputs unit <#> Tuple.snd
+getInlets :: forall state is os. Protocol state is os -> Effect (Record is)
+getInlets p = p.getInlets unit <#> Tuple.snd
 
 
-getOutputs :: forall state is os. Protocol state is os -> Effect (Record os)
-getOutputs p = p.getOutputs unit <#> Tuple.snd
+getOutlets :: forall state is os. Protocol state is os -> Effect (Record os)
+getOutlets p = p.getOutlets unit <#> Tuple.snd
 
 
-sendOut :: forall o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output o -> dout -> Protocol state is os -> Effect Unit
-sendOut output dout =
-    Generic._modifyOutput (Record.set (proxify output) dout) $ outputR output
+sendOut :: forall o state is os m dout. MonadEffect m => HasOutlet os o dout => Outlet o -> dout -> Protocol state is os -> Effect Unit
+sendOut outlet dout =
+    Generic._modifyOutlet (Record.set (proxify outlet) dout) $ outletR outlet
 
 
-sendOut' :: forall o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> dout -> Protocol state is os -> Effect Unit
-sendOut' output dout =
-    Generic._modifyOutput (Record.set (proxify output) dout) $ outputR' output
-
-
-sendIn :: forall i state is is' os m din. MonadEffect m => HasInput i din is' is => Input i -> din -> Protocol state is os -> Effect Unit
-sendIn input din =
-    Generic._modifyInput (Record.set (proxify input) din) $ inputR input
-
-
--- private?
-sendIn' :: forall i state is is' os din. IsSymbol i => HasInput i din is' is => Input' i -> din -> Protocol state is os -> Effect Unit
-sendIn' input din =
-    Generic._modifyInput (Record.set (proxify input) din) $ inputR' input
+sendIn :: forall i state is os m din. MonadEffect m => HasInlet is i din => Inlet i -> din -> Protocol state is os -> Effect Unit
+sendIn inlet din =
+    Generic._modifyInlet (Record.set (proxify inlet) din) $ inletR inlet
 
 
 modifyState :: forall state is os. (state -> state) -> Protocol state is os -> Effect Unit

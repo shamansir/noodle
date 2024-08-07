@@ -30,9 +30,9 @@ outlets :: forall state inlets outlets. Tracker state inlets outlets -> Effect o
 outlets tracker = Signal.get tracker.outlets <#> Tuple.snd
 
 
-lastInput :: forall state inlets outlets. Tracker state inlets outlets -> Effect (Maybe InletR)
-lastInput tracker = Signal.get tracker.inlets <#> Tuple.fst <#> U.inputChangeToMaybe
+lastInlet :: forall state inlets outlets. Tracker state inlets outlets -> Effect (Maybe InletR)
+lastInlet tracker = Signal.get tracker.inlets <#> Tuple.fst <#> U.inletChangeToMaybe
 
 
-lastOutput :: forall state inlets outlets. Tracker state inlets outlets -> Effect (Maybe OutletR)
-lastOutput tracker = Signal.get tracker.outlets <#> Tuple.fst <#> U.outputChangeToMaybe
+lastOutlet :: forall state inlets outlets. Tracker state inlets outlets -> Effect (Maybe OutletR)
+lastOutlet tracker = Signal.get tracker.outlets <#> Tuple.fst <#> U.outletChangeToMaybe

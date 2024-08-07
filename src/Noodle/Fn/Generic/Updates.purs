@@ -35,19 +35,19 @@ instance Show ChangeFocus where
             Everything -> "all"
             StateChange -> "state"
             AllInletsChange -> "inlets"
-            InletChange inputR -> "input " <> show inputR
+            InletChange inletR -> "inlet " <> show inletR
             AllOutletsChange -> "outlets"
-            OutletChange outputR -> "output " <> show outputR
+            OutletChange outletR -> "outlet " <> show outletR
 
 
-inputChangeToMaybe :: InletsChange -> Maybe InletR
-inputChangeToMaybe (SingleInlet iid) = Just iid
-inputChangeToMaybe AllInlets = Nothing
+inletChangeToMaybe :: InletsChange -> Maybe InletR
+inletChangeToMaybe (SingleInlet iid) = Just iid
+inletChangeToMaybe AllInlets = Nothing
 
 
-outputChangeToMaybe :: OutletsChange -> Maybe OutletR
-outputChangeToMaybe (SingleOutlet oid) = Just oid
-outputChangeToMaybe AllOutlets = Nothing
+outletChangeToMaybe :: OutletsChange -> Maybe OutletR
+outletChangeToMaybe (SingleOutlet oid) = Just oid
+outletChangeToMaybe AllOutlets = Nothing
 
 
 type PreUpdatesRow state inlets outlets = (Boolean /\ state) /\ (Boolean /\ InletsChange /\ inlets) /\ (Boolean /\ OutletsChange /\ outlets)

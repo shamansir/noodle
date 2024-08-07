@@ -38,7 +38,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Prim.Row (class Cons)
 
-import Noodle.Id (Input, Output, inputR, outputR)
+import Noodle.Id (Inlet, Outlet, inletR, outletR)
 -- import Noodle.Fn.Raw.Protocol (InletsChange, OutletsChange) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Fn.Raw.Process (RawProcessM(..), RawProcessF)
@@ -90,22 +90,22 @@ instance monadRecProcessM :: MonadRec (ProcessM state is os repr m) where
 {- Processing -}
 
 
-receive :: forall i state is is' os din repr m. FromRepr repr din => IsSymbol i => Cons i din is' is => Input i -> ProcessM state is os repr m din
+receive :: forall i state is is' os din repr m. FromRepr repr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os repr m din
 receive iid =
-    ProcessM $ Free.liftF $ wrap $ Raw.Receive (inputR iid) $ Repr.ensureFrom
+    ProcessM $ Free.liftF $ wrap $ Raw.Receive (inletR iid) $ Repr.ensureFrom
 
 
-send :: forall o state is os os' dout repr m. ToRepr dout repr => IsSymbol o => Cons o dout os' os => Output o -> dout -> ProcessM state is os repr m Unit
+send :: forall o state is os os' dout repr m. ToRepr dout repr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os repr m Unit
 send oid d =
-    ProcessM $ Free.liftF $ wrap $ Raw.Send (outputR oid) (Repr.ensureTo d) unit
+    ProcessM $ Free.liftF $ wrap $ Raw.Send (outletR oid) (Repr.ensureTo d) unit
 
 
--- sendIn :: forall i state d m. Input i -> d -> ProcessM state d m Unit
+-- sendIn :: forall i state d m. Inlet i -> d -> ProcessM state d m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
-sendIn ∷ ∀ i din state is is' os repr m. ToRepr din repr => IsSymbol i => Cons i din is' is => Input i → din → ProcessM state is os repr m Unit
+sendIn ∷ ∀ i din state is is' os repr m. ToRepr din repr => IsSymbol i => Cons i din is' is => Inlet i → din → ProcessM state is os repr m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn iid d =
-    ProcessM $ Free.liftF $ wrap $ Raw.SendIn (inputR iid) (Repr.ensureTo d) unit
+    ProcessM $ Free.liftF $ wrap $ Raw.SendIn (inletR iid) (Repr.ensureTo d) unit
 
 
 lift :: forall state is os repr m. m Unit -> ProcessM state is os repr m Unit

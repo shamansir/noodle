@@ -10,7 +10,7 @@ import Effect (Effect)
 import Data.Maybe (Maybe)
 
 import Noodle.Id (InletR, OutletR)
-import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInput, lastOutput) as Generic
+import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInlet, lastOutlet) as Generic
 
 
 type Tracker state repr = Generic.Tracker state (Map InletR repr) (Map OutletR repr)
@@ -24,17 +24,17 @@ outlets :: forall state repr. Tracker state repr -> Effect (Map OutletR repr)
 outlets = Generic.outlets
 
 
-lastInput :: forall state repr. Tracker state repr -> Effect (Maybe InletR)
-lastInput = Generic.lastInput
+lastInlet :: forall state repr. Tracker state repr -> Effect (Maybe InletR)
+lastInlet = Generic.lastInlet
 
 
-lastOutput :: forall state repr. Tracker state repr -> Effect (Maybe OutletR)
-lastOutput = Generic.lastOutput
+lastOutlet :: forall state repr. Tracker state repr -> Effect (Maybe OutletR)
+lastOutlet = Generic.lastOutlet
 
 
-atInput :: forall state repr. InletR -> Tracker state repr -> Effect (Maybe repr)
-atInput input tracker = inlets tracker <#> Map.lookup input
+atInlet :: forall state repr. InletR -> Tracker state repr -> Effect (Maybe repr)
+atInlet inlet tracker = inlets tracker <#> Map.lookup inlet
 
 
-atOutput :: forall state repr. OutletR -> Tracker state repr -> Effect (Maybe repr)
-atOutput output tracker = outlets tracker <#> Map.lookup output
+atOutlet :: forall state repr. OutletR -> Tracker state repr -> Effect (Maybe repr)
+atOutlet outlet tracker = outlets tracker <#> Map.lookup outlet

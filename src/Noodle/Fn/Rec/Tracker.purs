@@ -8,14 +8,14 @@ import Data.Maybe (Maybe)
 import Data.SProxy (proxify)
 import Data.Symbol (class IsSymbol)
 
-import Prim.Row (class Cons) as Row
 import Record (get) as Record
 
-import Noodle.Id (Input, InletR, Output, OutletR)
-import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInput, lastOutput) as Generic
+import Noodle.Id (Inlet, InletR, Outlet, OutletR)
+import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInlet, lastOutlet) as Generic
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
 
 
-type Tracker  state (is :: Row Type) (os :: Row Type) = Generic.Tracker  state (Record is) (Record os)
+type Tracker state (is :: Row Type) (os :: Row Type) = Generic.Tracker state (Record is) (Record os)
 
 
 inlets :: forall state is os. Tracker state is os -> Effect (Record is)
@@ -26,17 +26,17 @@ outlets :: forall state is os. Tracker state is os -> Effect (Record os)
 outlets = Generic.outlets
 
 
-lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InletR)
-lastInput = Generic.lastInput
+lastInlet :: forall state is os. Tracker state is os -> Effect (Maybe InletR)
+lastInlet = Generic.lastInlet
 
 
-lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutletR)
-lastOutput = Generic.lastOutput
+lastOutlet :: forall state is os. Tracker state is os -> Effect (Maybe OutletR)
+lastOutlet = Generic.lastOutlet
 
 
-atInput :: forall i is os state din. Row.Cons i din is is => IsSymbol i => Input i -> Tracker state is os -> Effect din
-atInput input tracker = inlets tracker <#> Record.get (proxify input)
+atInlet :: forall i is os state din. HasInlet is i din => IsSymbol i => Inlet i -> Tracker state is os -> Effect din
+atInlet inlet tracker = inlets tracker <#> Record.get (proxify inlet)
 
 
-atOutput :: forall o is os state dout. Row.Cons o dout os os => IsSymbol o => Output o -> Tracker state is os -> Effect dout
-atOutput output tracker = outlets tracker <#> Record.get (proxify output)
+atOutlet :: forall o is os state dout. HasOutlet os o dout => IsSymbol o => Outlet o -> Tracker state is os -> Effect dout
+atOutlet outlet tracker = outlets tracker <#> Record.get (proxify outlet)

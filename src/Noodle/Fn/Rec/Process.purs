@@ -43,7 +43,7 @@ import Prim.Row (class Cons)
 import Record.Unsafe (unsafeGet, unsafeSet) as Record
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (Input, InletR, Output, OutletR, inputR, outputR)
+import Noodle.Id (Inlet, InletR, Outlet, OutletR, inletR, outletR)
 import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
 import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
@@ -62,9 +62,9 @@ data ProcessF state is os m a
     -- | RunEffect (Effect a)
     -- | ToEffect (m a -> Effect a)
     -- | FromEffect (Effect a -> m a)
-    -- | LoadFromInputs (forall din. (Record is -> din) /\ (din -> a))
-    -- | ModifyInputs (Record is -> Record is)
-    -- | ModifyOutputs (Record os -> Record os)
+    -- | LoadFromInlets (forall din. (Record is -> din) /\ (din -> a))
+    -- | ModifyInlets (Record is -> Record is)
+    -- | ModifyOutlets (Record os -> Record os)
     -- | ReceiveFn (forall din. Record is -> a /\ din)
     -- Connect
     -- Disconnect etc
@@ -118,22 +118,22 @@ instance monadRecProcessM :: MonadRec (ProcessM state is os m) where
 
 {- Processing -}
 
-receive :: forall i state is is' os din m. IsSymbol i => Cons i din is' is => Input i -> ProcessM state is os m din
-receive iid = ProcessM $ Free.liftF $ Receive' (inputR iid) (unsafeCoerce {-identity-})
+receive :: forall i state is is' os din m. IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os m din
+receive iid = ProcessM $ Free.liftF $ Receive' (inletR iid) (unsafeCoerce {-identity-})
 
 
-send :: forall o state is os os' dout m. IsSymbol o => Cons o dout os' os => Output o -> dout -> ProcessM state is os m Unit
+send :: forall o state is os os' dout m. IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os m Unit
 -- send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid /\ unsafeCoerce d) unit
-send oid d = ProcessM $ Free.liftF $ Send' (outputR oid) (unsafeCoerce d) unit
+send oid d = ProcessM $ Free.liftF $ Send' (outletR oid) (unsafeCoerce d) unit
 
 
--- sendIn :: forall i state d m. Input i -> d -> ProcessM state d m Unit
+-- sendIn :: forall i state d m. Inlet i -> d -> ProcessM state d m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
-sendIn ∷ ∀ i din state is is' os m. IsSymbol i => Cons i din is' is => Input i → din → ProcessM state is os m Unit
+sendIn ∷ ∀ i din state is is' os m. IsSymbol i => Cons i din is' is => Inlet i → din → ProcessM state is os m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn iid d =
     -- ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid /\ unsafeCoerce d) unit
-    ProcessM $ Free.liftF $ SendIn (inputR iid) (unsafeCoerce d) unit
+    ProcessM $ Free.liftF $ SendIn (inletR iid) (unsafeCoerce d) unit
 
 
 lift :: forall state is os m. m Unit -> ProcessM state is os m Unit
@@ -225,55 +225,55 @@ runFreeM protocol fn =
                     pure next
         go (Lift m) = m
         go (Receive' iid getV) = do
-            valueAtInput <- getInputAt iid
+            valueAtInlet <- getInletAt iid
             pure
                 $ getV
-                $ valueAtInput
+                $ valueAtInlet
 
         go (Send' oid v next) = do
-            -- markLastOutput oid
+            -- markLastOutlet oid
             -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutletRef
-            sendToOutput oid v
+            sendToOutlet oid v
             pure next
         go (SendIn iid v next) = do
-            -- markLastInput iid
-            sendToInput iid v
+            -- markLastInlet iid
+            sendToInlet iid v
             pure next
         -- go (RunEffect eff) = do
         --     liftEffect eff
         -- go (ToEffect fn) = do
         --     liftEffect eff
         {-
-        go (LoadFromInputs (fn /\ getV)) = do
-            valueFromInputs <- loadFromInputs fn
+        go (LoadFromInlets (fn /\ getV)) = do
+            valueFromInlets <- loadFromInlets fn
             pure
                 $ getV
-                $ valueFromInputs
+                $ valueFromInlets
         -}
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        -- markLastInput :: InputId -> m Unit
-        -- -- markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
-        -- markLastInput iid = protocol.storeLastInput $ Just iid
-        -- markLastOutput :: OutputId -> m Unit
-        -- markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
-        -- markLastOutput oid = protocol.storeLastOutput $ Just oid
-        -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
-        -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inletsRef
-        getInputAt :: forall din. InletR -> m din
-        getInputAt iid = liftEffect $ Record.unsafeGet (reflect' iid) <$> Tuple.snd <$> protocol.getInputs unit
-        -- loadFromInputs :: forall din. (Record is -> din) -> m din
-        -- loadFromInputs fn = fn <$> protocol.getInputs unit
-        -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
-        -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outletsRef
-        sendToOutput :: forall dout. OutletR -> dout -> m Unit
-        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
-        -- modifyOutputs :: (Record os -> Record os) -> m Unit
-        -- modifyOutputs fn = protocol.modifyOutputs fn
-        -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
-        -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inletsRef
-        sendToInput :: forall din. InletR -> din -> m Unit
-        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInlet iid)
-        -- modifyInputs :: (Record is -> Record is) -> m Unit
-        -- modifyInputs fn = protocol.modifyInputs fn
+        -- markLastInlet :: InletId -> m Unit
+        -- -- markLastInlet iid = protocol.storeLastInlet $ Just $ reifySymbol iid (unsafeCoerce <<< toInlet)
+        -- markLastInlet iid = protocol.storeLastInlet $ Just iid
+        -- markLastOutlet :: OutletId -> m Unit
+        -- markLastOutlet oid = protocol.storeLastOutlet $ Just $ reifySymbol oid (unsafeCoerce <<< toOutlet)
+        -- markLastOutlet oid = protocol.storeLastOutlet $ Just oid
+        -- getInletAt :: forall i din. IsSymbol i => Cons i din is is => Inlet i -> m din
+        -- getInletAt iid = liftEffect $ Record.get iid <$> Ref.read inletsRef
+        getInletAt :: forall din. InletR -> m din
+        getInletAt iid = liftEffect $ Record.unsafeGet (reflect' iid) <$> Tuple.snd <$> protocol.getInlets unit
+        -- loadFromInlets :: forall din. (Record is -> din) -> m din
+        -- loadFromInlets fn = fn <$> protocol.getInlets unit
+        -- sendToOutlet :: forall o dout. IsSymbol o => Cons o dout os os => Outlet o -> dout -> m Unit
+        -- sendToOutlet oid v = liftEffect $ Ref.modify_ (Record.set oid v) outletsRef
+        sendToOutlet :: forall dout. OutletR -> dout -> m Unit
+        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
+        -- modifyOutlets :: (Record os -> Record os) -> m Unit
+        -- modifyOutlets fn = protocol.modifyOutlets fn
+        -- sendToInlet :: forall i din. IsSymbol i => Cons i din is is => Inlet i -> din -> m Unit
+        -- sendToInlet iid v = liftEffect $ Ref.modify_ (Record.set iid v) inletsRef
+        sendToInlet :: forall din. InletR -> din -> m Unit
+        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInlet iid)
+        -- modifyInlets :: (Record is -> Record is) -> m Unit
+        -- modifyInlets fn = protocol.modifyInlets fn

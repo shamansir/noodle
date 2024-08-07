@@ -104,18 +104,18 @@ instance monadRecProcessM :: MonadRec (RawProcessM state repr m) where
 {- Processing -}
 
 receive :: forall state repr m. InletR -> RawProcessM state repr m (Repr repr)
-receive inputR =
-    RawProcessM $ Free.liftF $ Receive inputR $ identity
+receive inletR =
+    RawProcessM $ Free.liftF $ Receive inletR $ identity
 
 
 send :: forall state repr m. OutletR -> Repr repr -> RawProcessM state repr m Unit
-send outputR orepr =
-    RawProcessM $ Free.liftF $ Send outputR orepr unit
+send outletR orepr =
+    RawProcessM $ Free.liftF $ Send outletR orepr unit
 
 
 sendIn ∷ forall state repr m. InletR → Repr repr → RawProcessM state repr m Unit
-sendIn inputR irepr =
-    RawProcessM $ Free.liftF $ SendIn inputR irepr unit
+sendIn inletR irepr =
+    RawProcessM $ Free.liftF $ SendIn inletR irepr unit
 
 
 lift :: forall state repr m. m Unit -> RawProcessM state repr m Unit
@@ -198,27 +198,27 @@ runFreeM protocol fn =
                     pure next
         go (Lift m) = m
         go (Receive iid getV) = do
-            valueAtInput <- getInputAt iid
+            valueAtInlet <- getInletAt iid
             -- if there's is no value, throwError ?wh
             pure
                 $ getV
-                $ valueAtInput
+                $ valueAtInlet
 
         go (Send oid v next) = do
-            -- markLastOutput oid
+            -- markLastOutlet oid
             -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutletRef
-            sendToOutput oid v
+            sendToOutlet oid v
             pure next
         go (SendIn iid v next) = do
-            -- markLastInput iid
-            sendToInput iid v
+            -- markLastInlet iid
+            sendToInlet iid v
             pure next
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        getInputAt :: InletR -> m (Repr repr)
-        getInputAt iid = liftEffect $ fallbackByRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInputs unit
-        sendToOutput :: OutletR -> Repr repr -> m Unit
-        sendToOutput oid v = liftEffect $ protocol.modifyOutputs $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
-        sendToInput :: InletR -> Repr repr -> m Unit
-        sendToInput iid v = liftEffect $ protocol.modifyInputs $ Map.insert iid (unwrap v) >>> (Tuple $ SingleInlet iid)
+        getInletAt :: InletR -> m (Repr repr)
+        getInletAt iid = liftEffect $ fallbackByRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInlets unit
+        sendToOutlet :: OutletR -> Repr repr -> m Unit
+        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutlet oid)
+        sendToInlet :: InletR -> Repr repr -> m Unit
+        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid (unwrap v) >>> (Tuple $ SingleInlet iid)

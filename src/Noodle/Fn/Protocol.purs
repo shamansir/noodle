@@ -2,8 +2,8 @@ module Noodle.Fn.Protocol
   ( Protocol
   , make
   , getState
-  , getInputs, getOutputs
-  , getRecInputs, getRecOutputs
+  , getInlets, getOutlets
+  , getRecInlets, getRecOutlets
   , _sendOut, _sendOut', _unsafeSendOut
   , _sendIn, _sendIn', _unsafeSendIn
   )
@@ -22,7 +22,7 @@ import Data.Symbol (class IsSymbol)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Noodle.Id (class HasInput, class HasOutput, InletR, OutletR, Input, Input', Output, Output', outputR, outputR', inputR, inputR')
+import Noodle.Id (class HasInlet, class HasOutlet, InletR, OutletR, Inlet, Inlet', Outlet, Outlet', outletR, outletR', inletR, inletR')
 
 import Noodle.Fn.Raw.Protocol as Raw
 -- TODO: import Noodle.Fn.Raw.Protocol as RawExports
@@ -50,41 +50,41 @@ getState :: forall state is os repr. Protocol state is os repr -> Effect state
 getState = Raw.getState
 
 
-getInputs :: forall state is os repr. Protocol state is os repr -> Effect (Map InletR repr)
-getInputs = Raw.getInputs
+getInlets :: forall state is os repr. Protocol state is os repr -> Effect (Map InletR repr)
+getInlets = Raw.getInlets
 
 
-getOutputs :: forall state is os repr. Protocol state is os repr -> Effect (Map OutletR repr)
-getOutputs = Raw.getOutputs
+getOutlets :: forall state is os repr. Protocol state is os repr -> Effect (Map OutletR repr)
+getOutlets = Raw.getOutlets
 
 
-getRecInputs :: forall state is isrl os repr. FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)
-getRecInputs p = p.getInputs unit <#> Tuple.snd <#> toRec
+getRecInlets :: forall state is isrl os repr. FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)
+getRecInlets p = p.getInlets unit <#> Tuple.snd <#> toRec
 
 
-getRecOutputs :: forall state is os osrl repr. FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
-getRecOutputs p = p.getOutputs unit <#> Tuple.snd <#> toRec
+getRecOutlets :: forall state is os osrl repr. FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
+getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec
 
 
 
--- private: doesn't check if output is in `os`
-_sendOut :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Output o -> dout -> Protocol state is os repr -> Effect Unit
-_sendOut output = Raw.sendOut (outputR output) <<< Repr.unwrap <<< Repr.ensureTo
+-- private: doesn't check if outlet is in `os`
+_sendOut :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Outlet o -> dout -> Protocol state is os repr -> Effect Unit
+_sendOut outlet = Raw.sendOut (outletR outlet) <<< Repr.unwrap <<< Repr.ensureTo
 
 
--- private: doesn't check if output is in `os`
-_sendOut' :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Output' o -> dout -> Protocol state is os repr -> Effect Unit
-_sendOut' output = Raw.sendOut (outputR' output) <<< Repr.unwrap <<< Repr.ensureTo
+-- private: doesn't check if outlet is in `os`
+_sendOut' :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Outlet' o -> dout -> Protocol state is os repr -> Effect Unit
+_sendOut' outlet = Raw.sendOut (outletR' outlet) <<< Repr.unwrap <<< Repr.ensureTo
 
 
--- private: doesn't check if input is in `is`
-_sendIn :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Input i -> dout -> Protocol state is os repr -> Effect Unit
-_sendIn input = Raw.sendIn (inputR input) <<< Repr.unwrap <<< Repr.ensureTo
+-- private: doesn't check if inlet is in `is`
+_sendIn :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Inlet i -> dout -> Protocol state is os repr -> Effect Unit
+_sendIn inlet = Raw.sendIn (inletR inlet) <<< Repr.unwrap <<< Repr.ensureTo
 
 
--- private: doesn't check if input is in `is`
-_sendIn' :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Input' i -> dout -> Protocol state is os repr -> Effect Unit
-_sendIn' input = Raw.sendIn (inputR' input) <<< Repr.unwrap <<< Repr.ensureTo
+-- private: doesn't check if inlet is in `is`
+_sendIn' :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Inlet' i -> dout -> Protocol state is os repr -> Effect Unit
+_sendIn' inlet = Raw.sendIn (inletR' inlet) <<< Repr.unwrap <<< Repr.ensureTo
 
 
 _unsafeSendOut :: forall state is os repr. OutletR -> repr -> Protocol state is os repr -> Effect Unit
