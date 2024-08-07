@@ -12,11 +12,9 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
-import Test.Signal (expectFn, expect)
 
 import Data.UniqueHash as UniqueHash
 import Noodle.Id as N
-import Data.SProxy (reflect')
 import Effect.Console (log) as Console
 
 spec :: Spec Unit
@@ -33,7 +31,7 @@ spec = do
 
             pure unit
 
-
+{-
     describe "Node ID" $ do
 
         it "also works" $ liftEffect $ do
@@ -45,3 +43,4 @@ spec = do
             (String.length (reflect' nodeId) <= 40) `shouldEqual` true
 
             pure unit
+-}

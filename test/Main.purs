@@ -10,8 +10,8 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 -- import Test.Nodes (spec) as Nodes
-import Test.Fn (spec) as Fn
-import Test.UniqueHash (spec) as UniqueHash
+import Test.Spec.Fn (spec) as Fn
+import Test.Spec.UniqueHash (spec) as UniqueHash
 
 
 main :: Effect Unit

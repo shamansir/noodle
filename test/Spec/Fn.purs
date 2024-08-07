@@ -6,7 +6,7 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.SOrder (type (:::), T)
+-- import Data.SOrder (type (:::), T)
 
 import Type.Proxy (Proxy(..))
 
@@ -23,7 +23,6 @@ import Effect.Aff (Aff, throwError, error)
 
 import Test.Spec (Spec, pending, describe, it, pending')
 import Test.Spec.Assertions (fail, shouldEqual)
-import Test.Signal (expectFn, expect)
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
@@ -34,7 +33,8 @@ import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
-import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Id (Inlet(..), Outlet(..)) as Fn
+import Noodle.Id (Temperament(..))
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -65,7 +65,7 @@ spec = do
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
-                    Fn.make "foo" sumOrders $ do
+                    Fn.make "foo" $ do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
@@ -77,7 +77,7 @@ spec = do
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
-                    Fn.make "foo" sumOrders $ do
+                    Fn.make "foo" $ do
                         Fn.sendIn a_in 6
                         Fn.sendIn b_in 7
                         a <- Fn.receive a_in
@@ -96,13 +96,15 @@ type SumFn m =
     Fn Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
 
 
-a_in = Fn.Input 0 :: _ "a"
-b_in = Fn.Input 1 :: _ "b"
-sum_out = Fn.Output 0 :: _ "sum"
+a_in = Fn.Inlet { order : 1, temp : Hot } :: _ "a"
+b_in = Fn.Inlet { order : 1, temp : Hot } :: _ "b"
+sum_out = Fn.Outlet { order : 0 } :: _ "sum"
 
 
+{-
 sumOrders :: Fn.Orders _ _
 sumOrders =
     { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
     , outputs : Proxy :: _ ( "sum" ::: T )
     }
+-}
