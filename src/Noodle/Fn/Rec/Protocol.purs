@@ -14,11 +14,11 @@ module Noodle.Fn.Rec.Protocol
 import Prelude
 
 import Record (set) as Record
+import Type.Proxy (Proxy(..))
 
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol)
-import Data.SProxy (proxify)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -56,12 +56,12 @@ getOutlets p = p.getOutlets unit <#> Tuple.snd
 
 sendOut :: forall o state is os m dout. MonadEffect m => HasOutlet os o dout => Outlet o -> dout -> Protocol state is os -> Effect Unit
 sendOut outlet dout =
-    Generic._modifyOutlet (Record.set (proxify outlet) dout) $ outletR outlet
+    Generic._modifyOutlet (Record.set (Proxy :: _ o) dout) $ outletR outlet
 
 
 sendIn :: forall i state is os m din. MonadEffect m => HasInlet is i din => Inlet i -> din -> Protocol state is os -> Effect Unit
 sendIn inlet din =
-    Generic._modifyInlet (Record.set (proxify inlet) din) $ inletR inlet
+    Generic._modifyInlet (Record.set (Proxy :: _ i) din) $ inletR inlet
 
 
 modifyState :: forall state is os. (state -> state) -> Protocol state is os -> Effect Unit

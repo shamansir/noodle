@@ -8,6 +8,7 @@ import Prelude
 import Type.Proxy (Proxy(..))
 import Data.UniqueHash (UniqueHash)
 import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Newtype (class Newtype, unwrap)
 
 
 
@@ -26,7 +27,7 @@ data Inlet name = Inlet { order :: Int, temp :: Temperament }
 
 
 -- | `InletR` stores rawified Inlet ID, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-data InletR = InletR { name :: String, order :: Int, temp :: Temperament }
+newtype InletR = InletR { name :: String, order :: Int, temp :: Temperament }
 
 
 -- | Outlet ID contains its name on a type-level and order inside it.
@@ -35,7 +36,7 @@ data Outlet name = Outlet { order :: Int }
 
 
 -- | `OutletR` stores rawified Outlet ID, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-data OutletR = OutletR { name :: String, order :: Int }
+newtype OutletR = OutletR { name :: String, order :: Int }
 
 
 -- | Node ID stores node Family name at type-level and Unique Hash of the node at value-level
@@ -45,7 +46,7 @@ data Node f = Node { hash :: UniqueHash }
 
 -- | `NodeR` stores rawified Node ID, moving all it's type-level data to value-level. As well, can be created right away when one wants to pass type checks when adding nodes.
 -- | (this technique is used when we create nodes from parsed files).
-data NodeR = NodeR { family :: String, hash :: UniqueHash }
+newtype NodeR = NodeR { family :: String, hash :: UniqueHash }
 
 
 instance IsSymbol name => Show (Inlet name) where
@@ -76,6 +77,30 @@ outletR (Outlet { order }) = OutletR { name : reflectSymbol (Proxy :: _ name), o
 
 nodeR :: forall family. IsSymbol family => Node family -> NodeR
 nodeR (Node { hash }) = NodeR { family : reflectSymbol (Proxy :: _ family), hash }
+
+
+inletName :: forall name. IsSymbol name => Inlet name -> String
+inletName = const $ reflectSymbol (Proxy :: _ name)
+
+
+outletName :: forall name. IsSymbol name => Outlet name -> String
+outletName = const $ reflectSymbol (Proxy :: _ name)
+
+
+nodeFamily :: forall f. IsSymbol f => Node f -> String
+nodeFamily = const $ reflectSymbol (Proxy :: _ f)
+
+
+inletRName :: InletR -> String
+inletRName = unwrap >>> _.name
+
+
+outletRName :: OutletR -> String
+outletRName = unwrap >>> _.name
+
+
+derive instance Newtype InletR _
+derive instance Newtype OutletR _
 
 
 derive instance Eq Temperament

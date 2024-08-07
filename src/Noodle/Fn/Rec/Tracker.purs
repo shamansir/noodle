@@ -4,8 +4,9 @@ import Prelude ((<#>))
 
 import Effect (Effect)
 
+import Type.Proxy (Proxy(..))
+
 import Data.Maybe (Maybe)
-import Data.SProxy (proxify)
 import Data.Symbol (class IsSymbol)
 
 import Record (get) as Record
@@ -35,8 +36,8 @@ lastOutlet = Generic.lastOutlet
 
 
 atInlet :: forall i is os state din. HasInlet is i din => IsSymbol i => Inlet i -> Tracker state is os -> Effect din
-atInlet inlet tracker = inlets tracker <#> Record.get (proxify inlet)
+atInlet _ tracker = inlets tracker <#> Record.get (Proxy :: _ i)
 
 
 atOutlet :: forall o is os state dout. HasOutlet os o dout => IsSymbol o => Outlet o -> Tracker state is os -> Effect dout
-atOutlet outlet tracker = outlets tracker <#> Record.get (proxify outlet)
+atOutlet _ tracker = outlets tracker <#> Record.get (Proxy :: _ o)

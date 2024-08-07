@@ -24,7 +24,6 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol)
 import Data.List (List)
-import Data.SProxy (reflect')
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -44,6 +43,7 @@ import Record.Unsafe (unsafeGet, unsafeSet) as Record
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Inlet, InletR, Outlet, OutletR, inletR, outletR)
+import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
 import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
@@ -262,18 +262,18 @@ runFreeM protocol fn =
         -- getInletAt :: forall i din. IsSymbol i => Cons i din is is => Inlet i -> m din
         -- getInletAt iid = liftEffect $ Record.get iid <$> Ref.read inletsRef
         getInletAt :: forall din. InletR -> m din
-        getInletAt iid = liftEffect $ Record.unsafeGet (reflect' iid) <$> Tuple.snd <$> protocol.getInlets unit
+        getInletAt iid = liftEffect $ Record.unsafeGet (Id.inletRName iid) <$> Tuple.snd <$> protocol.getInlets unit
         -- loadFromInlets :: forall din. (Record is -> din) -> m din
         -- loadFromInlets fn = fn <$> protocol.getInlets unit
         -- sendToOutlet :: forall o dout. IsSymbol o => Cons o dout os os => Outlet o -> dout -> m Unit
         -- sendToOutlet oid v = liftEffect $ Ref.modify_ (Record.set oid v) outletsRef
         sendToOutlet :: forall dout. OutletR -> dout -> m Unit
-        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Record.unsafeSet (reflect' oid) v >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
+        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Record.unsafeSet (Id.outletRName oid) v >>> (Tuple $ SingleOutlet oid) -- Ref.modify_ (Record.unsafeSet oid v) outletsRef
         -- modifyOutlets :: (Record os -> Record os) -> m Unit
         -- modifyOutlets fn = protocol.modifyOutlets fn
         -- sendToInlet :: forall i din. IsSymbol i => Cons i din is is => Inlet i -> din -> m Unit
         -- sendToInlet iid v = liftEffect $ Ref.modify_ (Record.set iid v) inletsRef
         sendToInlet :: forall din. InletR -> din -> m Unit
-        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Record.unsafeSet (reflect' iid) v >>> (Tuple $ SingleInlet iid)
+        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Record.unsafeSet (Id.inletRName iid) v >>> (Tuple $ SingleInlet iid)
         -- modifyInlets :: (Record is -> Record is) -> m Unit
         -- modifyInlets fn = protocol.modifyInlets fn

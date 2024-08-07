@@ -6,7 +6,6 @@ import Record (get) as Record
 
 import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
-import Data.SProxy (proxify, reflect')
 import Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
@@ -19,6 +18,7 @@ import Data.Repr (class FromReprRow, Repr(..))
 import Data.Repr (fromMap) as Repr
 
 import Noodle.Id (Inlet, InletR, Outlet, OutletR)
+import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.RawToRec (toRec)
 import Noodle.Fn.Raw.Tracker as Raw
 
@@ -43,11 +43,11 @@ lastOutlet = Raw.lastOutlet
 
 
 inletsRec :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Tracker state is os repr -> Effect (Record is)
-inletsRec tracker = Raw.inlets tracker <#> toRec
+inletsRec tracker = Raw.inlets tracker <#> toRec Id.inletRName
 
 
 outletsRec :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow osrl os repr => Tracker state is os repr -> Effect (Record os)
-outletsRec tracker = Raw.outlets tracker <#> toRec
+outletsRec tracker = Raw.outlets tracker <#> toRec Id.outletRName
 
 
 atInlet :: forall state is os repr. InletR -> Tracker state is os repr -> Effect (Maybe repr)
