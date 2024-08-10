@@ -61,12 +61,13 @@ instance Show OutletDefR where
     show (OutletDefR { name, order }) = name <> " (" <> show order <> ")"
 
 
-inletR :: forall name. IsSymbol name => Inlet name -> InletR
-inletR Inlet = InletR $ reflectSymbol (Proxy :: _ name)
+inletR :: forall proxy name. IsSymbol name => proxy name -> InletR
+inletR _ = InletR $ reflectSymbol (Proxy :: _ name)
 
 
-outletR :: forall name. IsSymbol name => Outlet name -> OutletR
-outletR Outlet = OutletR $ reflectSymbol (Proxy :: _ name)
+
+outletR :: forall proxy name. IsSymbol name => proxy name -> OutletR
+outletR _ = OutletR $ reflectSymbol (Proxy :: _ name)
 
 
 inletName :: forall name. IsSymbol name => Inlet name -> String

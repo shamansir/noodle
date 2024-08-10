@@ -7,6 +7,8 @@ import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
+import Data.Repr (class ToRepr, class FromRepr, class HasFallback, wrap, unwrap)
+import Data.Repr (wrap, unwrap) as Repr
 
 import Type.Proxy (Proxy(..))
 
@@ -54,6 +56,14 @@ shouldContain id val tracker = do
             throwError $ error $ "\"" <> id <> "\" was not found in tracker"
 -}
 
+data MyRepr
+    = MyRepr Int
+
+
+instance HasFallback MyRepr where fallback = MyRepr 0
+instance ToRepr Int MyRepr where toRepr = Just <<< Repr.wrap <<< MyRepr
+instance FromRepr MyRepr Int where fromRepr = Repr.unwrap >>> case _ of MyRepr n -> Just n
+
 
 spec :: Spec Unit
 spec = do
@@ -61,7 +71,7 @@ spec = do
     describe "foo" $ do
 
         it "summing works" $ do
-            (tracker /\ protocol) <- liftEffect $ Protocol.make unit { a : 5, b : 3 } { sum : 0 }
+            (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
@@ -69,11 +79,11 @@ spec = do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            (_ /\ _ /\ outputs) <- Fn.run protocol fn
+            (_ /\ _ /\ outputs) <- Fn.runRec protocol fn
             outputs.sum `shouldEqual` 8
 
         it "summing works with sendIn" $ do
-            (tracker /\ protocol) <- liftEffect $ Protocol.make unit { a : 0, b : 0 } { sum : 0 }
+            (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
@@ -83,7 +93,7 @@ spec = do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            (_ /\ inputs /\ outputs) <- Fn.run protocol fn
+            (_ /\ inputs /\ outputs) <- Fn.runRec protocol fn
             outputs.sum `shouldEqual` 13
             inputs.a `shouldEqual` 6
             inputs.b `shouldEqual` 7
@@ -93,12 +103,12 @@ spec = do
 
 
 type SumFn m =
-    Fn Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    Fn Unit ( a :: Int, b :: Int ) ( sum :: Int ) MyRepr m
 
 
-a_in = Fn.Inlet { order : 1, temp : Hot } :: _ "a"
-b_in = Fn.Inlet { order : 1, temp : Hot } :: _ "b"
-sum_out = Fn.Outlet { order : 0 } :: _ "sum"
+a_in = Fn.Inlet :: _ "a"
+b_in = Fn.Inlet :: _ "b"
+sum_out = Fn.Outlet :: _ "sum"
 
 
 {-

@@ -1,6 +1,6 @@
 module Noodle.Fn.Protocol
   ( Protocol
-  , make
+  , make, makeRec
   , getState
   , getInlets, getOutlets
   , getRecInlets, getRecOutlets
@@ -28,7 +28,7 @@ import Noodle.Fn.Raw.Protocol as Raw
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.RawToRec (toRec, fromRec)
 
-import Data.Repr (class ToRepr, class FromReprRow)
+import Data.Repr (class ToRepr, class ToReprRow, class FromReprRow)
 import Data.Repr (ensureTo, unwrap) as Repr
 
 
@@ -46,8 +46,10 @@ make = Raw.make
 
 
 makeRec
-    :: forall state (is :: Row Type) (os :: Row Type) repr m
+    :: forall state (is :: Row Type) isrl (os :: Row Type) osrl repr m
     .  MonadEffect m
+    => ToReprRow isrl is InletR repr
+    => ToReprRow osrl os OutletR repr
     => state
     -> Record is
     -> Record os

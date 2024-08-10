@@ -1,6 +1,12 @@
 -- | All the IDs are managed from here
 
-module Noodle.Id where
+module Noodle.Id
+    ( module FromShape
+    , Node, NodeR
+    , nodeR, nodeFamily
+    )
+    where
+
 
 
 import Prelude
@@ -13,10 +19,10 @@ import Data.Newtype (class Newtype, unwrap)
 
 
 import Noodle.Fn.Shape
-    ( Temperament(..)
-    , Inlet, InletR
-    , Outlet, OutletR
-    ) as Exports
+    ( Temperament(..)-- , TemperamentK, Hot, Cold
+    , Inlet(..), InletR, inletR, inletRName
+    , Outlet(..), OutletR, outletR, outletRName
+    ) as FromShape
 
 
 
