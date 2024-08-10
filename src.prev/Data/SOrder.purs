@@ -85,6 +85,9 @@ type Test :: SOrder
 type Test = ("foo" ::: "bar" ::: "lll" ::: T)
 
 
+type Test2 = ("foo" ::: "foo" ::: "bar" ::: "lll" ::: T)
+
+
 type Auto :: SOrder
 type Auto = T
 

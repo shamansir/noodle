@@ -26,7 +26,7 @@ import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.Raw.Protocol as Raw
 -- TODO: import Noodle.Fn.Raw.Protocol as RawExports
 import Noodle.Fn.Tracker (Tracker)
-import Noodle.Fn.RawToRec (toRec)
+import Noodle.Fn.RawToRec (toRec, fromRec)
 
 import Data.Repr (class ToRepr, class FromReprRow)
 import Data.Repr (ensureTo, unwrap) as Repr
@@ -43,6 +43,16 @@ make
     -> Map OutletR repr
     -> m (Tracker state is os repr /\ Protocol state is os repr)
 make = Raw.make
+
+
+makeRec
+    :: forall state (is :: Row Type) (os :: Row Type) repr m
+    .  MonadEffect m
+    => state
+    -> Record is
+    -> Record os
+    -> m (Tracker state is os repr /\ Protocol state is os repr)
+makeRec state is os = make state (fromRec inletR is) (fromRec outletR os)
 
 
 getState :: forall state is os repr. Protocol state is os repr -> Effect state
