@@ -12,11 +12,14 @@ import Test.Spec.Runner (runSpec)
 -- import Test.Nodes (spec) as Nodes
 import Test.Spec.Fn (spec) as Fn
 import Test.Spec.UniqueHash (spec) as UniqueHash
+import Test.Spec.Repr (spec) as Repr
 
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "UniqueHash"
     UniqueHash.spec
+  describe "Repr"
+    Repr.spec
   describe "Fn"
     Fn.spec

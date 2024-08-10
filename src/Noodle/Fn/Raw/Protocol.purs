@@ -11,6 +11,8 @@ module Noodle.Fn.Raw.Protocol
 
 import Prelude
 
+import Debug as Debug
+
 import Data.Map (Map)
 import Data.Map (insert) as Map
 import Data.Tuple (snd) as Tuple
@@ -35,7 +37,8 @@ make
     -> Map InletR repr
     -> Map OutletR repr
     -> m (Tracker state repr /\ Protocol state repr)
-make = Generic.make
+make state is os =
+  Generic.make state is os
 
 
 getState :: forall state repr. Protocol state repr -> Effect state

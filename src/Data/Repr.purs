@@ -20,6 +20,8 @@ module Data.Repr
 
 import Prelude
 
+import Debug as Debug
+
 import Type.Proxy (Proxy(..))
 
 import Data.Map (Map)
@@ -175,22 +177,24 @@ else instance fromReprRowBaseCons ::
 
 
 instance toReprRowBaseNil :: ToReprRowBase RL.Nil row k repr where
-    toReprRowBase _ _ _ _ = identity
+    toReprRowBase _ _ _ _ _ = Map.empty
 else instance toReprRowBaseCons ::
   ( Ord k
   , IsSymbol name
   , ToRepr a repr
   , FromRepr repr a
   , Row.Cons name a trash row
-  , DataFromToReprRow tail row repr
+  , ToReprRowBase tail row k repr
+  -- , DataFromToReprRow tail row repr
   -- , Row.Lacks name from'
   -- , Row.Cons name (Maybe (Repr repr)) from' to
   ) => ToReprRowBase (RL.Cons name a tail) row k repr where
-    toReprRowBase _ _ toKey rec =
-      Map.insert (toKey nameP) value
+    toReprRowBase prepr _ toKey rec prev =
+      Map.insert (toKey nameP) value rest
       where
         nameP = Proxy :: _ name
         value = ensureTo $ R.get nameP rec
+        rest = toReprRowBase prepr (Proxy :: _ tail) toKey rec prev
 
 
 instance dataFromToReprRowNil :: DataFromToReprRow RL.Nil row repr
@@ -211,9 +215,9 @@ else instance dataToReprRowCons ::
   ( IsSymbol name
   , ToRepr a repr
   , Row.Cons name a trash row
-  , DataToReprRow tail row repr from from'
   , Row.Lacks name from'
   , Row.Cons name (Maybe (Repr repr)) from' to
+  , DataToReprRow tail row repr from from'
   ) => DataToReprRow (RL.Cons name a tail) row repr from to where
   dataToReprRowBuilder _ _ rec =
     first <<< rest
