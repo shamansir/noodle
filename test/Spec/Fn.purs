@@ -71,7 +71,7 @@ spec = do
 
     describe "foo" $ do
 
-        it "summing works (records)" $ do
+        it "summing works on records" $ do
             (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
@@ -83,7 +83,7 @@ spec = do
             (_ /\ _ /\ outputs) <- Fn.runRec protocol fn
             outputs.sum `shouldEqual` 8
 
-        it "summing works with sendIn (records)" $ do
+        it "summing works with sendIn on records" $ do
             (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m

@@ -182,7 +182,6 @@ else instance toReprRowBaseCons ::
   ( Ord k
   , IsSymbol name
   , ToRepr a repr
-  , FromRepr repr a
   , Row.Cons name a trash row
   , ToReprRowBase tail row k repr
   -- , DataFromToReprRow tail row repr

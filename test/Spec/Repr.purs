@@ -59,16 +59,34 @@ shouldContain id val tracker = do
 -}
 
 data Refl
-    = Refl Int
+    = None
+    | Int Int
+    | Str String
 
 
 derive instance Eq Refl
 
 
-instance Show Refl where show = case _ of Refl n -> show n
-instance HasFallback Refl where fallback = Refl 0
-instance ToRepr Int Refl where toRepr = Just <<< Repr.wrap <<< Refl
-instance FromRepr Refl Int where fromRepr = Repr.unwrap >>> case _ of Refl n -> Just n
+instance Show Refl where
+    show =
+        case _ of
+            None -> "<None>"
+            Int n -> show n
+            Str str -> str
+instance HasFallback Refl where
+    fallback = None
+instance ToRepr Int Refl where toRepr = Just <<< Repr.wrap <<< Int
+instance ToRepr String Refl where toRepr = Just <<< Repr.wrap <<< Str
+instance FromRepr Refl Int where
+    fromRepr = Repr.unwrap >>>
+        case _ of
+            Int n -> Just n
+            _ -> Nothing
+instance FromRepr Refl String where
+    fromRepr = Repr.unwrap >>>
+        case _ of
+            Str str -> Just str
+            _ -> Nothing
 
 
 spec :: Spec Unit
@@ -77,16 +95,34 @@ spec = do
     describe "creating maps from reprs" $ do
 
         it "converting to repr works" $ do
-            let recMap = RR.fromRec reflectSymbol { a : 5, b : 3 }
-            Map.lookup "a" recMap `shouldEqual` (Just $ Refl 5)
-            Map.lookup "b" recMap `shouldEqual` (Just $ Refl 3)
+            let map = RR.fromRec reflectSymbol { a : 5, b : 3 }
+            Map.lookup "a" map `shouldEqual` (Just $ Int 5)
+            Map.lookup "b" map `shouldEqual` (Just $ Int 3)
 
-        {-
-        itOnly "converting from repr works" $ do
-            let recMap = RR.toRec reflectSymbol { a : 5, b : 3 }
-            Map.lookup "a" recMap `shouldEqual` (Just $ Refl 5)
-            Map.lookup "b" recMap `shouldEqual` (Just $ Refl 3)
-        -}
+        it "converting to repr works with different types" $ do
+            let map = RR.fromRec reflectSymbol { a : 5, b : "3" }
+            Map.lookup "a" map `shouldEqual` (Just $ Int 5)
+            Map.lookup "b" map `shouldEqual` (Just $ Str "3")
+
+        it "converting from repr works" $ do
+            let
+                (rec :: Record ( a :: Int, b :: Int )) =
+                    RR.toRec identity
+                        $ Map.insert "a" (Int 5)
+                        $ Map.insert "b" (Int 3)
+                        $ Map.empty
+            rec.a `shouldEqual` 5
+            rec.b `shouldEqual` 3
+
+        it "converting from repr works with different types" $ do
+            let
+                (rec :: Record ( a :: Int, b :: String )) =
+                    RR.toRec identity
+                        $ Map.insert "a" (Int 5)
+                        $ Map.insert "b" (Str "3")
+                        $ Map.empty
+            rec.a `shouldEqual` 5
+            rec.b `shouldEqual` "3"
 
 
 {-
