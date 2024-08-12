@@ -111,7 +111,13 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
-run :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Map InletR repr /\ Map OutletR repr )
+run
+    :: forall state is os repr m
+    .  MonadRec m => MonadEffect m
+    => HasFallback repr
+    => Protocol state is os repr
+    -> Fn state is os repr m
+    -> m ( state /\ Map InletR repr /\ Map OutletR repr )
 run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ Protocol.getState protocol
@@ -126,7 +132,9 @@ runRec
     => HasFallback repr
     => RL.RowToList is isrl => FromReprRow isrl is repr
     => RL.RowToList os osrl => FromReprRow osrl os repr
-    => Protocol state is os repr -> Fn state is os repr m -> m ( state /\ Record is /\ Record os )
+    => Protocol state is os repr
+    -> Fn state is os repr m
+    -> m ( state /\ Record is /\ Record os )
 runRec protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ Protocol.getState protocol

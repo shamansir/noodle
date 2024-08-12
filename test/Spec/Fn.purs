@@ -69,7 +69,7 @@ instance FromRepr MyRepr Int where fromRepr = Repr.unwrap >>> case _ of MyRepr n
 spec :: Spec Unit
 spec = do
 
-    describe "foo" $ do
+    describe "performing functions" $ do
 
         it "summing works on records" $ do
             (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
@@ -99,9 +99,6 @@ spec = do
             inputs.a `shouldEqual` 6
             inputs.b `shouldEqual` 7
 
-    describe "bar" $ do
-        pure unit
-
 
 type SumFn m =
     Fn Unit ( a :: Int, b :: Int ) ( sum :: Int ) MyRepr m
@@ -110,12 +107,3 @@ type SumFn m =
 a_in = Fn.Inlet :: _ "a"
 b_in = Fn.Inlet :: _ "b"
 sum_out = Fn.Outlet :: _ "sum"
-
-
-{-
-sumOrders :: Fn.Orders _ _
-sumOrders =
-    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
-    , outputs : Proxy :: _ ( "sum" ::: T )
-    }
--}

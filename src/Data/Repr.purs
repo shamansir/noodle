@@ -130,29 +130,29 @@ fallbackBy f = maybe (f fallback) f
 
 
 class DataToReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class DataToReprRow xs row repr from to | xs -> row from to, repr -> row from to where
-  dataToReprRowBuilder :: Proxy repr -> Proxy xs -> Record row -> Builder { | from } { | to }
+class DataToReprRow rl row repr from to | rl -> row from to, repr -> row from to where
+  dataToReprRowBuilder :: Proxy repr -> Proxy rl -> Record row -> Builder { | from } { | to }
 
 
 class DataFromToReprRow :: RL.RowList Type -> Row Type -> Type -> Constraint
-class DataFromToReprRow xs row repr | xs -> row, repr -> row
+class DataFromToReprRow rl row repr | rl -> row, repr -> row
 
 
 class FromReprRowBase :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class FromReprRowBase xs row repr from to | xs -> row from to, repr -> row from to where
-  fromReprRowBuilder :: Proxy repr -> Proxy xs -> Map String (Repr repr) -> Builder { | from } { | to }
+class FromReprRowBase rl row repr from to | rl -> row from to, repr -> row from to where
+  fromReprRowBuilder :: Proxy repr -> Proxy rl -> Map String (Repr repr) -> Builder { | from } { | to }
 
 
 class ToReprRowBase :: RL.RowList Type -> Row Type -> Type -> Type -> Constraint
-class ToReprRowBase xs row k repr | xs -> row, repr -> row where
-  toReprRowBase :: Proxy repr -> Proxy xs -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (Repr repr) -> Map k (Repr repr)
+class ToReprRowBase rl row k repr | rl -> row, repr -> row where
+  toReprRowBase :: Proxy repr -> Proxy rl -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (Repr repr) -> Map k (Repr repr)
 
 
-class (RL.RowToList row xs, Record.Keys xs, FromReprRowBase xs row repr () row) <= FromReprRow xs row repr
-instance (RL.RowToList row xs, Record.Keys xs, FromReprRowBase xs row repr () row) => FromReprRow xs row repr
+class (RL.RowToList row rl, Record.Keys rl, FromReprRowBase rl row repr () row) <= FromReprRow rl row repr
+instance (RL.RowToList row rl, Record.Keys rl, FromReprRowBase rl row repr () row) => FromReprRow rl row repr
 
-class (RL.RowToList row xs, Record.Keys xs, ToReprRowBase xs row k repr) <= ToReprRow xs row k repr
-instance (RL.RowToList row xs, Record.Keys xs, ToReprRowBase xs row k repr) => ToReprRow xs row k repr
+class (RL.RowToList row rl, Record.Keys rl, ToReprRowBase rl row k repr) <= ToReprRow rl row k repr
+instance (RL.RowToList row rl, Record.Keys rl, ToReprRowBase rl row k repr) => ToReprRow rl row k repr
 
 
 instance fromReprRowBaseNil :: FromReprRowBase RL.Nil row repr () () where
@@ -162,7 +162,6 @@ else instance fromReprRowBaseCons ::
   , HasFallback a
   , FromRepr repr a
   , Row.Cons name a trash row
-  -- , ToReprRow tail row repr from from'
   , Row.Lacks name from'
   , Row.Cons name a from' to
   , FromReprRowBase tail row repr from from'
@@ -184,9 +183,6 @@ else instance toReprRowBaseCons ::
   , ToRepr a repr
   , Row.Cons name a trash row
   , ToReprRowBase tail row k repr
-  -- , DataFromToReprRow tail row repr
-  -- , Row.Lacks name from'
-  -- , Row.Cons name (Maybe (Repr repr)) from' to
   ) => ToReprRowBase (RL.Cons name a tail) row k repr where
     toReprRowBase prepr _ toKey rec prev =
       Map.insert (toKey nameP) value rest
@@ -227,73 +223,36 @@ else instance dataToReprRowCons ::
       first = Builder.insert nameP val
 
 
-dataToReprRow :: forall row xs repr row'
-   . RL.RowToList row xs
-  => DataToReprRow xs row repr () row'
+dataToReprRow :: forall row rl repr row'
+   . RL.RowToList row rl
+  => DataToReprRow rl row repr () row'
   => Record row
   -> Record row'
 dataToReprRow r = Builder.build builder {}
   where
-    builder = dataToReprRowBuilder (Proxy :: _ repr) (Proxy :: _ xs) r
+    builder = dataToReprRowBuilder (Proxy :: _ repr) (Proxy :: _ rl) r
 
 
-fromReprRow :: forall row xs repr
-   . FromReprRow xs row repr
+fromReprRow :: forall row rl repr
+   . FromReprRow rl row repr
   => Map String (Repr repr) -> Record row
 fromReprRow map = Builder.build builder {}
   where
     builder :: Builder (Record ()) (Record row)
-    builder = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ xs) map
+    builder = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ rl) map
 
 
-fromMap :: forall row xs repr
-   . FromReprRow xs row repr
+fromMap :: forall row rl repr
+   . FromReprRow rl row repr
   => Map String (Repr repr) -> Record row
 fromMap = fromReprRow
 
 
-toMap :: forall k xs row repr
-    .  ToReprRow xs row k repr
+toMap :: forall k rl row repr
+    .  ToReprRow rl row k repr
     => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k (Repr repr)
-toMap toKey record = toReprRowBase (Proxy :: _ repr) (Proxy :: _ xs) toKey record Map.empty
+toMap toKey record = toReprRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
 
 
 inbetween :: forall a b reprA reprB. ToRepr b reprB => FromRepr reprA a => (a -> b) -> (reprA -> reprB)
 inbetween f reprA = fromMaybe fallback $ unwrap <$> (toRepr =<< f <$> (fromRepr $ Repr reprA))
-
-
-{-
-class FromReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class FromReprRow xs row repr from to | xs -> row from to, repr -> row from to where
-  fromReprRowBuilder :: Proxy repr -> Proxy xs -> Record row -> Builder { | from } { | to }
-
-
-instance fromReprRowNil :: FromReprRow RL.Nil row repr () () where
-  fromReprRowBuilder _ _ _ = identity
-
-else instance fromReprRowCons ::
-  ( IsSymbol name
-  , FromRepr repr a
-  , Row.Cons name (Maybe (Repr repr)) trash row
-  , FromReprRow tail row repr from from'
-  , Row.Lacks name from'
-  , Row.Cons name (Maybe a) from' to
-  ) => FromReprRow (RL.Cons name (Maybe (Repr repr)) tail) row repr from to where
-  fromReprRowBuilder _ _ rec =
-    first <<< rest
-    where
-      nameP = Proxy :: _ name
-      val = fromRepr =<< R.get nameP rec
-      rest = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) rec
-      first = Builder.insert nameP val
-
-
-fromReprRow :: forall row xs repr row'
-   . RL.RowToList row xs
-  => FromReprRow xs row repr () row'
-  => Record row
-  -> Record row'
-fromReprRow r = Builder.build builder {}
-  where
-    builder = fromReprRowBuilder (Proxy :: _ repr) (Proxy :: _ xs) r
--}

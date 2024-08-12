@@ -13,6 +13,7 @@ import Test.Spec.Runner (runSpec)
 import Test.Spec.Fn (spec) as Fn
 import Test.Spec.UniqueHash (spec) as UniqueHash
 import Test.Spec.Repr (spec) as Repr
+import Test.Spec.Node (spec) as Node
 
 
 main :: Effect Unit
@@ -23,3 +24,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Repr.spec
   describe "Fn"
     Fn.spec
+  describe "Node"
+    Node.spec

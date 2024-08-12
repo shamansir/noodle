@@ -42,20 +42,20 @@ make state inlets outlets =
          -- boolean flags help to find out which signal was updated the latest in the merged all changes by flipping them on modification
 
         let
-            stateInit = true /\ state
-            inletsInit = true /\ U.AllInlets /\ inlets
+            stateInit   = true /\ state
+            inletsInit  = true /\ U.AllInlets /\ inlets
             outletsInit = true /\ U.AllOutlets /\ outlets
 
             (initAll :: U.PostUpdatesRow state inlets outlets) = U.Everything /\ stateInit /\ inletsInit /\ outletsInit
 
-        stateCh <- channel stateInit
-        inletsCh <- channel inletsInit
+        stateCh   <- channel stateInit
+        inletsCh  <- channel inletsInit
         outletsCh <- channel outletsInit
         -- allChangesCh <- channel initAll
 
         let
-            stateSig = Channel.subscribe stateCh
-            inletsSig = Channel.subscribe inletsCh
+            stateSig   = Channel.subscribe stateCh
+            inletsSig  = Channel.subscribe inletsCh
             outletsSig = Channel.subscribe outletsCh
             changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inletsSig <*> outletsSig)
 
@@ -91,21 +91,21 @@ make state inlets outlets =
         let
             tracker :: Tracker state inlets outlets
             tracker =
-                { state : Tuple.snd <$> stateSig
-                , inlets : Tuple.snd <$>inletsSig
+                { state   : Tuple.snd <$> stateSig
+                , inlets  : Tuple.snd <$> inletsSig
                 , outlets : Tuple.snd <$> outletsSig
-                , all : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
+                , all     : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
                 }
 
             protocol :: Protocol state inlets outlets
             protocol =
-                { getInlets : const $ liftEffect $ Signal.get $ Tuple.snd <$> inletsSig
+                { getInlets  : const $ liftEffect $ Signal.get $ Tuple.snd <$> inletsSig
                 , getOutlets : const $ liftEffect $ Signal.get $ Tuple.snd <$> outletsSig
-                , getState : const $ liftEffect $ Signal.get $ Tuple.snd <$> stateSig
+                , getState   : const $ liftEffect $ Signal.get $ Tuple.snd <$> stateSig
                 -- below we flip the flags on every update in particular signal
-                , modifyInlets : \f -> liftEffect $ Signal.get inletsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send inletsCh
+                , modifyInlets  : \f -> liftEffect $ Signal.get inletsSig  >>= bimap not (Tuple.snd >>> f) >>> Channel.send inletsCh
                 , modifyOutlets : \f -> liftEffect $ Signal.get outletsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send outletsCh
-                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= bimap not f >>> Channel.send stateCh
+                , modifyState   : \f -> liftEffect $ Signal.get stateSig   >>= bimap not f >>> Channel.send stateCh
                 }
 
         pure $ tracker /\ protocol

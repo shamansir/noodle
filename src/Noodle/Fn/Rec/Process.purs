@@ -56,9 +56,9 @@ data ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) ->
 data ProcessF state is os m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' OutletR (forall dout. dout) a
+    | Send OutletR (forall dout. dout) a
     | SendIn InletR (forall din. din) a
-    | Receive' InletR (forall din. din -> a)
+    | Receive InletR (forall din. din -> a)
     -- | RunEffect (Effect a)
     -- | ToEffect (m a -> Effect a)
     -- | FromEffect (Effect a -> m a)
@@ -74,8 +74,8 @@ instance functorProcessF :: Functor m => Functor (ProcessF state is os m) where
     map f = case _ of
         State k -> State (lmap f <<< k)
         Lift m -> Lift (map f m)
-        Receive' iid k -> Receive' iid (map f k)
-        Send' oid d next -> Send' oid d $ f next
+        Receive iid k -> Receive iid (map f k)
+        Send oid d next -> Send oid d $ f next
         SendIn iid d next -> SendIn iid d $ f next
         -- RunEffect effA -> RunEffect $ map f effA
 
@@ -119,12 +119,12 @@ instance monadRecProcessM :: MonadRec (ProcessM state is os m) where
 {- Processing -}
 
 receive :: forall i state is is' os din m. IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os m din
-receive iid = ProcessM $ Free.liftF $ Receive' (inletR iid) (unsafeCoerce {-identity-})
+receive iid = ProcessM $ Free.liftF $ Receive (inletR iid) (unsafeCoerce {-identity-})
 
 
 send :: forall o state is os os' dout m. IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os m Unit
 -- send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid /\ unsafeCoerce d) unit
-send oid d = ProcessM $ Free.liftF $ Send' (outletR oid) (unsafeCoerce d) unit
+send oid d = ProcessM $ Free.liftF $ Send (outletR oid) (unsafeCoerce d) unit
 
 
 -- sendIn :: forall i state d m. Inlet i -> d -> ProcessM state d m Unit
@@ -156,8 +156,8 @@ imapFState f g =
     case _ of
         State k -> State (map f <<< k <<< g)
         Lift m -> Lift m
-        Receive' iid k -> Receive' iid k
-        Send' oid d next -> Send' oid d next
+        Receive iid k -> Receive iid k
+        Send oid d next -> Send oid d next
         SendIn iid d next -> SendIn iid d next
         -- RunEffect effA -> RunEffect effA
 
@@ -173,8 +173,8 @@ mapFM f =
     case _ of
         State k -> State k
         Lift m -> Lift $ f m
-        Receive' iid k -> Receive' iid k
-        Send' oid d next -> Send' oid d next
+        Receive iid k -> Receive iid k
+        Send oid d next -> Send oid d next
         SendIn iid d next -> SendIn iid d next
         -- RunEffect effA -> RunEffect effA
 
@@ -224,13 +224,13 @@ runFreeM protocol fn =
                     writeUserState state nextState
                     pure next
         go (Lift m) = m
-        go (Receive' iid getV) = do
+        go (Receive iid getV) = do
             valueAtInlet <- getInletAt iid
             pure
                 $ getV
                 $ valueAtInlet
 
-        go (Send' oid v next) = do
+        go (Send oid v next) = do
             -- markLastOutlet oid
             -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutletRef
             sendToOutlet oid v

@@ -3,9 +3,12 @@ module Noodle.Fn.Shape where
 
 import Prelude
 
+import Prim.Row as Row
+import Prim.RowList as RL
+
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Array ((:))
 
 
@@ -201,13 +204,13 @@ else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs
 --     reflectInlets _ = Inlets []
 
 
-class OutletsDef (outlets :: Outlets) where
+class OutletsDefs (outlets :: Outlets) where
     reflectOutlets :: Proxy outlets -> Int -> OutletsShape
 
 
-instance OutletsDef OS where
+instance OutletsDefs OS where
     reflectOutlets _ _ = Outlets []
-else instance (IsSymbol name, OutletsDef tail) => OutletsDef (OCons (O name) tail) where
+else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name) tail) where
     reflectOutlets _ n =
         Outlets
             $ (OutletDefR
@@ -215,9 +218,43 @@ else instance (IsSymbol name, OutletsDef tail) => OutletsDef (OCons (O name) tai
                 , order : n
                 })
             : unwrap (reflectOutlets (Proxy :: _ tail) $ n + 1)
--- else instance OutletsDef (OCons a tail) where
+-- else instance OutletsDefs (OCons a tail) where
 --     reflectOutlets _ = Outlets []
+
+
+class InletsMatch (inlets :: Inlets) (rl :: RL.RowList Type) (row :: Row Type)
+class OutletsMatch (outlets :: Outlets) (rl :: RL.RowList Type) (row :: Row Type)
+
+
+instance InletsMatch IS RL.Nil row
+else instance (InletsMatch itail rtail row) => InletsMatch (ICons (I name temp) itail) (RL.Cons name a rtail) row
+
+
+instance OutletsMatch OS RL.Nil row
+else instance (OutletsMatch otail rtail row) => OutletsMatch (OCons (O name) otail) (RL.Cons name a rtail) row
 
 
 derive instance Eq Temperament
 derive instance Ord Temperament
+
+
+data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
+newtype Raw = Raw { inlets :: InletsShape, outlets :: OutletsShape }
+
+
+derive instance Newtype Raw _
+
+
+reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw
+reflect _ = Raw { inlets : reflectInlets (Proxy :: _ inlets) 0, outlets : reflectOutlets (Proxy :: _ outlets) 0 }
+
+
+inlets :: Raw -> Array { name :: String, order :: Int, temp :: Temperament }
+inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
+
+
+outlets :: Raw -> Array { name :: String, order :: Int }
+outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
+
+
+-- inletsMap :: Raw -> Map String { name :: String, order :: Int }
