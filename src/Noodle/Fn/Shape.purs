@@ -220,14 +220,23 @@ instance HasInlet name din (ICons (I name temp din) tail)
 else instance (HasInlet name din tail) => HasInlet name din (ICons (I skipname skiptemp skipdin) tail)
 
 
-class ContainsInlet (name :: Symbol) (din :: Type) (rl :: RL.RowList Type) -- FIXME: same as Row.Cons
-instance ContainsInlet name din (RL.Cons name din tail)
-else instance (ContainsInlet name din tail) => ContainsInlet name din (RL.Cons skipname skipdin tail)
+class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
 
 
-class ContainsAllInlets (rl :: RL.RowList Type) (inlets :: Inlets)
-instance ContainsAllInlets RL.Nil IS
-else instance (ContainsInlet name din rl, ContainsAllInlets rl tail) => ContainsAllInlets rl (ICons (I name temp din) tail)
+instance ContainsAllInlets row IS
+else instance
+  ( Row.Cons name a rowtail row
+  , ContainsAllInlets rowtail itail
+  ) => ContainsAllInlets row (ICons (I name temp a) itail)
+
+
+
+-- class ContainsAllInlets (row :: Row Type) (inlets :: Inlets)
+-- instance ContainsAllInlets RL.Nil IS
+-- else instance
+--     ( ContainsInlet name din (RL.Cons rname rdin rtail)
+--     , ContainsAllInlets rtail tail
+--     ) => ContainsAllInlets (RL.Cons rname rdin rtail) (ICons (I name temp din) tail)
 
 
 class HasOutlet (name :: Symbol) (dout :: Type) (inlets :: Outlets)
@@ -235,14 +244,14 @@ instance HasOutlet name dout (OCons (O name dout) tail)
 else instance (HasOutlet name dout tail) => HasOutlet name dout (OCons (O skipname skipdout) tail)
 
 
-class ContainsOutlet (name :: Symbol) (dout :: Type) (rl :: RL.RowList Type) -- FIXME: same as Row.Cons
-instance ContainsOutlet name din (RL.Cons name dout tail)
-else instance (ContainsOutlet name din tail) => ContainsOutlet name din (RL.Cons skipname skipdout tail)
+class ContainsAllOutlets (row :: Row Type) (outlets :: Outlets) -- | inlets -> row, row -> inlets
 
 
-class ContainsAllOutlets (rl :: RL.RowList Type) (outlets :: Outlets)
-instance ContainsAllOutlets RL.Nil OS
-else instance (ContainsOutlet name dout rl, ContainsAllOutlets rl tail) => ContainsAllOutlets rl (OCons (O name dout) tail)
+instance ContainsAllOutlets row OS
+else instance
+  ( Row.Cons name a rowtail row
+  , ContainsAllOutlets rowtail otail
+  ) => ContainsAllOutlets row (OCons (O name a) otail)
 
 
 derive instance Eq Temperament

@@ -38,7 +38,7 @@ make
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
     => ToReprRow isrl is Id.InletR repr => ToReprRow osrl os Id.OutletR repr
-    -- => ContainsAllInlets isrl inlets => ContainsAllOutlets osrl outlets
+    => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => MonadEffect m
     => Id.Family f
     -> state
