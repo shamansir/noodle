@@ -3,7 +3,9 @@
 module Noodle.Id
     ( module FromShape
     , Node, NodeR
-    , nodeR, nodeFamily
+    , nodeR, nodeFamily, nodeRaw
+    , Family, FamilyR
+    , family, familyR
     )
     where
 
@@ -25,6 +27,12 @@ import Noodle.Fn.Shape
     ) as FromShape
 
 
+data Family :: Symbol -> Type
+data Family f = Family
+
+
+newtype FamilyR = FamilyR { family :: String }
+
 
 -- | Node ID stores node Family name at type-level and Unique Hash of the node at value-level
 data Node :: Symbol -> Type
@@ -40,5 +48,17 @@ nodeR :: forall family. IsSymbol family => Node family -> NodeR
 nodeR (Node { hash }) = NodeR { family : reflectSymbol (Proxy :: _ family), hash }
 
 
+family :: FamilyR -> String
+family (FamilyR { family }) = family
+
+
 nodeFamily :: forall f. IsSymbol f => Node f -> String
 nodeFamily = const $ reflectSymbol (Proxy :: _ f)
+
+
+familyR :: forall family. IsSymbol family => Family family -> FamilyR
+familyR Family = FamilyR { family : reflectSymbol (Proxy :: _ family) }
+
+
+nodeRaw :: FamilyR -> UniqueHash -> NodeR
+nodeRaw (FamilyR { family }) hash = NodeR { family, hash }

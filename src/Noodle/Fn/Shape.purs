@@ -3,6 +3,7 @@ module Noodle.Fn.Shape where
 
 import Prelude
 
+import Prim.Boolean (True, False)
 import Prim.Row as Row
 import Prim.RowList as RL
 
@@ -143,8 +144,8 @@ instance Show Temperament where
         Cold -> "cold"
 
 
-infixr 6 type ICons as /+\
-infixr 6 type OCons as \+/
+infixr 6 type ICons as +> -- /+\
+infixr 6 type OCons as :> -- <+ -- \+/
 
 
 infixr 6 type ICons as ⟘ -- ⟂ ˔ ≀ ˄ ⚬ ≀ « ‹ ⊶
@@ -152,7 +153,8 @@ infixr 6 type OCons as ⟙ -- ˕ -- ¤ ˅ ● » › ⊷
 
 
 data InletDef
-foreign import data I :: Symbol -> TemperamentK -> InletDef
+foreign import data I :: Symbol -> TemperamentK -> Type -> InletDef
+-- FIXME: don't include types of the inlet, we don't use it in any way, only to check conformance with default values
 -- foreign import data Inlet :: Symbol -> Temperament -> Type -> InletDef
 
 
@@ -162,20 +164,13 @@ foreign import data IS :: Inlets
 
 
 data OutletDef
-foreign import data O :: Symbol -> OutletDef
+foreign import data O :: Symbol -> Type -> OutletDef
+-- FIXME: don't include types of the outlet, we don't use it in any way, only to check conformance with default values
 
 
 data Outlets
 foreign import data OCons :: OutletDef -> Outlets -> Outlets
 foreign import data OS :: Outlets
-
-
-type TestI :: Inlets
-type TestI = I "foo" Hot ⟘ I "bar" Cold ⟘ IS
-
-
-type TestO :: Outlets
-type TestO = O "foo" ⟙ O "bar" ⟙ OS
 
 
 newtype InletsShape = Inlets (Array InletDefR)
@@ -191,7 +186,7 @@ class InletsDefs (inlets :: Inlets) where
 
 instance InletsDefs IS where
     reflectInlets _ _ = Inlets []
-else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (ICons (I name temp) tail) where
+else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (ICons (I name temp din) tail) where
     reflectInlets _ n =
         Inlets
             $ (InletDefR
@@ -210,7 +205,7 @@ class OutletsDefs (outlets :: Outlets) where
 
 instance OutletsDefs OS where
     reflectOutlets _ _ = Outlets []
-else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name) tail) where
+else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name dout) tail) where
     reflectOutlets _ n =
         Outlets
             $ (OutletDefR
@@ -218,20 +213,36 @@ else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name) t
                 , order : n
                 })
             : unwrap (reflectOutlets (Proxy :: _ tail) $ n + 1)
--- else instance OutletsDefs (OCons a tail) where
---     reflectOutlets _ = Outlets []
 
 
-class InletsMatch (inlets :: Inlets) (rl :: RL.RowList Type) (row :: Row Type)
-class OutletsMatch (outlets :: Outlets) (rl :: RL.RowList Type) (row :: Row Type)
+class HasInlet (name :: Symbol) (din :: Type) (inlets :: Inlets)
+instance HasInlet name din (ICons (I name temp din) tail)
+else instance (HasInlet name din tail) => HasInlet name din (ICons (I skipname skiptemp skipdin) tail)
 
 
-instance InletsMatch IS RL.Nil row
-else instance (InletsMatch itail rtail row) => InletsMatch (ICons (I name temp) itail) (RL.Cons name a rtail) row
+class ContainsInlet (name :: Symbol) (din :: Type) (rl :: RL.RowList Type) -- FIXME: same as Row.Cons
+instance ContainsInlet name din (RL.Cons name din tail)
+else instance (ContainsInlet name din tail) => ContainsInlet name din (RL.Cons skipname skipdin tail)
 
 
-instance OutletsMatch OS RL.Nil row
-else instance (OutletsMatch otail rtail row) => OutletsMatch (OCons (O name) otail) (RL.Cons name a rtail) row
+class ContainsAllInlets (rl :: RL.RowList Type) (inlets :: Inlets)
+instance ContainsAllInlets RL.Nil IS
+else instance (ContainsInlet name din rl, ContainsAllInlets rl tail) => ContainsAllInlets rl (ICons (I name temp din) tail)
+
+
+class HasOutlet (name :: Symbol) (dout :: Type) (inlets :: Outlets)
+instance HasOutlet name dout (OCons (O name dout) tail)
+else instance (HasOutlet name dout tail) => HasOutlet name dout (OCons (O skipname skipdout) tail)
+
+
+class ContainsOutlet (name :: Symbol) (dout :: Type) (rl :: RL.RowList Type) -- FIXME: same as Row.Cons
+instance ContainsOutlet name din (RL.Cons name dout tail)
+else instance (ContainsOutlet name din tail) => ContainsOutlet name din (RL.Cons skipname skipdout tail)
+
+
+class ContainsAllOutlets (rl :: RL.RowList Type) (outlets :: Outlets)
+instance ContainsAllOutlets RL.Nil OS
+else instance (ContainsOutlet name dout rl, ContainsAllOutlets rl tail) => ContainsAllOutlets rl (OCons (O name dout) tail)
 
 
 derive instance Eq Temperament
@@ -255,6 +266,22 @@ inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
 
 outlets :: Raw -> Array { name :: String, order :: Int }
 outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
+
+
+-- isInlet :: forall (inlet :: InletDef) (name :: Symbol) (din :: Type). IsInlet name din inlet => Proxy name -> Proxy din -> Proxy inlet -> Unit
+-- isInlet _ _ _ = unit
+
+
+-- hasInlet :: forall (name :: Symbol) (din :: Type) (inlets :: Inlets). HasInlet name din inlets => Proxy name -> Proxy din -> Proxy inlets -> Unit
+-- hasInlet _ _ _ = unit
+
+
+-- inletsMatch :: forall (inlets :: Inlets) irl irow. RL.RowToList irow irl => InletsMatch irl inlets => Proxy inlets -> Record irow -> Unit
+-- inletsMatch _ _ = unit
+
+
+-- outletsMatch :: forall (outlets :: Outlets) orl orow. RL.RowToList orow orl => OutletsMatch orl outlets => Proxy outlets -> Record orow -> Unit
+-- outletsMatch _ _ = unit
 
 
 -- inletsMap :: Raw -> Map String { name :: String, order :: Int }

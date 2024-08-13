@@ -67,8 +67,8 @@ class ToFn a state is os repr where
     toFn :: forall m. a -> Fn state is os repr m
 
 
-make :: forall state is iorder os oorder repr m. Name -> ProcessM state is os repr m Unit -> Fn state is os repr m
-make name = Fn name
+make :: forall state is os repr m. Name -> ProcessM state is os repr m Unit -> Fn state is os repr m
+make = Fn
 
 
 {- Creating -}
