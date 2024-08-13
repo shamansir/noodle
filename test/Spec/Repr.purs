@@ -45,6 +45,8 @@ import Signal as Signal
 import Signal.Channel as Ch
 import Signal.Time as SignalT
 
+import Test.Spec.Util.IntOrStringRepr (ISRepr(..))
+
 
 {-
 shouldContain :: forall state is os. String -> d -> Protocol.Tracker state is os -> Aff Unit
@@ -57,37 +59,6 @@ shouldContain id val tracker = do
         Nothing ->
             throwError $ error $ "\"" <> id <> "\" was not found in tracker"
 -}
-
-data Refl
-    = None
-    | Int Int
-    | Str String
-
-
-derive instance Eq Refl
-
-
-instance Show Refl where
-    show =
-        case _ of
-            None -> "<None>"
-            Int n -> show n
-            Str str -> str
-instance HasFallback Refl where
-    fallback = None
-instance ToRepr Int Refl where toRepr = Just <<< Repr.wrap <<< Int
-instance ToRepr String Refl where toRepr = Just <<< Repr.wrap <<< Str
-instance FromRepr Refl Int where
-    fromRepr = Repr.unwrap >>>
-        case _ of
-            Int n -> Just n
-            _ -> Nothing
-instance FromRepr Refl String where
-    fromRepr = Repr.unwrap >>>
-        case _ of
-            Str str -> Just str
-            _ -> Nothing
-
 
 spec :: Spec Unit
 spec = do

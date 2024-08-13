@@ -39,12 +39,17 @@ import Noodle.Fn.Protocol as Protocol
 import Noodle.Fn.Shape (Shape(..), type (⟘), type (⟙), IS, OS, I, O, Hot, Cold, Inlets, Outlets)
 import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
-import Noodle.Id (Temperament(..))
+import Noodle.Id (Family(..), Temperament(..))
+import Noodle.Node (Node)
+import Noodle.Node (make) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
 import Signal.Channel as Ch
 import Signal.Time as SignalT
+
+
+import Test.Spec.Util.IntOrStringRepr (ISRepr(..))
 
 
 {-
@@ -62,6 +67,10 @@ shouldContain id val tracker = do
 
 type TestInlets = (I "foo" Hot Int ⟘ I "c" Hot Int ⟘  I "bar" Cold String ⟘ IS) :: Inlets
 type TestOutlets = (O "foo" String ⟙ O "bar" Int ⟙ OS) :: Outlets
+
+
+type TestInletsRow = ( foo :: Int, c :: Int, bar :: String )
+type TestOutletsRow = ( foo :: String, bar :: Int )
 
 
 spec :: Spec Unit
@@ -82,6 +91,22 @@ spec = do
                 [ { name : "foo", order : 0 }
                 , { name : "bar", order : 1 }
                 ]
+
+    describe "creation" $ do
+
+        it "creating node" $ do
+            let
+                effNode :: Effect (Node "sum" Unit TestInletsRow TestOutletsRow ISRepr Effect)
+                effNode =
+                    Node.make
+                        (Family :: _ "sum")
+                        unit
+                        (Shape :: _ TestInlets TestOutlets)
+                        { foo : 1, c : 2, bar : "bar" }
+                        { foo : "1", bar : 12 }
+                        $ pure unit
+            node <- liftEffect effNode
+            pure unit
 
         {-
         it "is inlet" $

@@ -24,7 +24,7 @@ import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.RawToRec as ReprCnv
 
 
-data Node (f :: Symbol) state (is :: Row Type) (os :: Row Type) repr m
+data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
     = Node
         Id.NodeR
         Shape.Raw
@@ -38,7 +38,7 @@ make
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
     => ToReprRow isrl is Id.InletR repr => ToReprRow osrl os Id.OutletR repr
-    => ContainsAllInlets isrl inlets => ContainsAllOutlets osrl outlets
+    -- => ContainsAllInlets isrl inlets => ContainsAllOutlets osrl outlets
     => MonadEffect m
     => Id.Family f
     -> state

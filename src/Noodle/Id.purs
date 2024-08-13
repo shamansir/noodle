@@ -4,7 +4,7 @@ module Noodle.Id
     ( module FromShape
     , Node, NodeR
     , nodeR, nodeFamily, nodeRaw
-    , Family, FamilyR
+    , Family(..), FamilyR
     , family, familyR
     )
     where
