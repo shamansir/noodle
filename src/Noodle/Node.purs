@@ -33,6 +33,10 @@ data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr 
         (Fn state is os repr m)
 
 
+type Process :: Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Type
+type Process state is os repr m = ProcessM state is os repr m Unit
+
+
 make
     :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) repr m
      . IsSymbol f
@@ -45,7 +49,7 @@ make
     -> Shape inlets outlets
     -> Record is
     -> Record os
-    -> ProcessM state is os repr m Unit
+    -> Process state is os repr m
     -> m (Node f state is os repr m)
 make family state shape inletsRec outletsRec process =
     makeRaw
@@ -65,7 +69,7 @@ makeRaw
     -> Shape.Raw
     -> Map Id.InletR repr
     -> Map Id.OutletR repr
-    -> ProcessM state is os repr m Unit
+    -> Process state is os repr m
     -> m (Node f state is os repr m)
 makeRaw family state rawShape inletsMap outletsMap process = do
     uniqueHash <- liftEffect $ UH.generate

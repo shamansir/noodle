@@ -41,7 +41,7 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make) as Node
+import Noodle.Node (make, Process) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -60,6 +60,13 @@ type TestInletsRow = ( foo :: Int, c :: Int, bar :: String )
 type TestOutletsRow = ( foo :: String, bar :: Int )
 
 
+type MyNode = Node "sum" Unit TestInletsRow TestOutletsRow ISRepr Effect
+type MyNodeShape = Shape TestInlets TestOutlets
+
+
+type MyProcess = Node.Process Unit TestInletsRow TestOutletsRow ISRepr Effect
+
+
 spec :: Spec Unit
 spec = do
 
@@ -68,7 +75,7 @@ spec = do
         it "properly instantiates / reflects shape" $ do
             let
                 rawShape =
-                    Shape.reflect (Shape :: _ TestInlets TestOutlets)
+                    Shape.reflect (Shape :: MyNodeShape)
             Shape.inlets rawShape `shouldEqual`
                 [ { name : "foo", order : 0, temp : Hot }
                 , { name : "c"  , order : 1, temp : Hot }
@@ -82,15 +89,19 @@ spec = do
     describe "creation" $ do
 
         it "creating node" $ do
-            let
-                effNode :: Effect (Node "sum" Unit TestInletsRow TestOutletsRow ISRepr Effect)
-                effNode =
-                    Node.make
-                        (Family :: _ "sum")
-                        unit
-                        (Shape :: _ TestInlets TestOutlets)
-                        { foo : 1, bar : "5", c : 2 }
-                        { foo : "1", bar : 12 }
-                        $ pure unit
-            node <- liftEffect effNode
+            _ <- liftEffect $ myNode $ pure unit
             pure unit
+
+    describe "running" $ do
+
+        it "running node" $ do
+            pure unit
+
+
+myNode :: MyProcess -> Effect MyNode
+myNode = Node.make
+            (Family :: _ "sum")
+            unit
+            (Shape :: MyNodeShape)
+            { foo : 1, bar : "5", c : 2 }
+            { foo : "1", bar : 12 }
