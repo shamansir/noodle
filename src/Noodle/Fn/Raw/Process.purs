@@ -95,7 +95,7 @@ instance monadThrowRawProcessM :: MonadThrow e m => MonadThrow e (RawProcessM st
   throwError = RawProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecProcessM :: MonadRec (RawProcessM state repr m) where
+instance monadRecRawProcessM :: MonadRec (RawProcessM state repr m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
