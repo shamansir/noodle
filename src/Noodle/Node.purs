@@ -4,24 +4,35 @@ import Prelude
 
 import Prim.RowList as RL
 
+import Control.Monad.Rec.Class (class MonadRec)
+
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
+import Data.Map (lookup) as Map
+import Data.Maybe (Maybe(..))
 import Data.UniqueHash (generate) as UH
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class ToReprRow)
+import Data.Repr (class ToReprRow, class FromReprRow, class HasFallback)
+import Data.Tuple (snd) as Tuple
+
+import Signal (Signal, (~>))
+import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make) as Fn
+import Noodle.Fn (make, run, run') as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
-import Noodle.Fn.Shape (Raw, reflect) as Shape
+import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make) as Protocol
 import Noodle.Fn.Tracker (Tracker)
+import Noodle.Fn.Tracker (Tracker) as Tracker
+import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.RawToRec as ReprCnv
+import Noodle.Wiring (class Wiring)
 
 
 data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
@@ -35,6 +46,9 @@ data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr 
 
 type Process :: Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Type
 type Process state is os repr m = ProcessM state is os repr m Unit
+
+
+{- Making -}
 
 
 make
@@ -76,3 +90,111 @@ makeRaw family state rawShape inletsMap outletsMap process = do
     let nodeId = Id.nodeRaw family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
     pure $ Node nodeId rawShape tracker protocol $ Fn.make (Id.family family) process
+
+
+{- To Raw -}
+
+
+
+
+{- Running -}
+
+
+
+-- TODO: private
+runOnInletUpdates
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
+    .  Wiring m
+    => HasFallback repr
+    => Node f state is os repr m
+    -> m Unit
+runOnInletUpdates node =
+  SignalX.runSignal $ subscribeInlets node ~> const (run node)
+
+
+-- TODO: private
+runOnStateUpdates
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
+    .  Wiring m
+    => HasFallback repr
+    => Node f state is os repr m
+    -> m Unit
+runOnStateUpdates node =
+  SignalX.runSignal $ subscribeState node ~> const (run node)
+
+
+--- FIXME: find better name
+listenUpdatesAndRun
+  :: forall f state (is :: Row Type) (os :: Row Type) repr m
+   . Wiring m
+  => HasFallback repr
+  => Node f state is os repr m
+  -> m Unit
+listenUpdatesAndRun node = do
+  runOnInletUpdates node
+  runOnStateUpdates node -- may be running on state updates is not needed
+  run node
+  -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
+
+
+run :: forall f state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Node f state is os repr m -> m Unit
+run (Node _ _ _ protocol fn) = Fn.run' protocol fn
+
+
+
+{- Subscriptions -}
+
+-- ToDO: with HasInlet / HasOuput
+
+
+
+subscribeInlet :: forall f state is os repr m din. Id.InletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeInlet input node = Map.lookup input <$> subscribeInlets node
+
+
+subscribeInletRec :: forall f state is isrl os repr m din. RL.RowToList is isrl => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr m -> Signal din
+subscribeInletRec fn node = fn <$> subscribeInletsRec node
+
+
+subscribeInlets :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.InletR repr)
+subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
+
+
+subscribeInletsRec :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (Record is)
+subscribeInletsRec (Node _ _ tracker _ _) = ReprCnv.toRec Shape.inletRName <$> Tuple.snd <$> tracker.inlets
+
+
+subscribeOutlet :: forall f state is os repr m dout. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
+
+
+subscribeOutletRec :: forall f state is os osrl repr m dout. RL.RowToList os osrl => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> Signal dout
+subscribeOutletRec fn node = fn <$> subscribeOutletsRec node
+
+
+subscribeOutlets :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.OutletR repr)
+subscribeOutlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
+
+
+subscribeOutletsRec :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (Record os)
+subscribeOutletsRec (Node _ _ tracker _ _) = ReprCnv.toRec Shape.outletRName <$> Tuple.snd <$> tracker.outlets
+
+
+subscribeState :: forall f state is os repr m. Node f state is os repr m -> Signal state
+subscribeState (Node _ _ tracker _ _) = tracker.state
+
+
+subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.ChangeFocus /\ state /\ Map Id.InletR repr /\ Map Id.OutletR repr)
+subscribeChanges (Node _ _ tracker _ _) = tracker.all
+
+
+subscribeChangesRec
+    :: forall f state is isrl os osrl repr m
+     . RL.RowToList is isrl => FromReprRow isrl is repr
+    => RL.RowToList os osrl => FromReprRow osrl os repr
+    => Node f state is os repr m
+    -> Signal (Fn.ChangeFocus /\ state /\ Record is /\ Record os)
+subscribeChangesRec (Node _ _ tracker _ _) =
+    tracker.all <#>
+        \(focus /\ state /\ inputsMap /\ outputsMap) ->
+            focus /\ state /\ ReprCnv.toRec Shape.inletRName inputsMap /\ ReprCnv.toRec Shape.outletRName outputsMap

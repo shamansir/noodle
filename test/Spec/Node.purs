@@ -99,9 +99,10 @@ spec = do
 
 
 myNode :: MyProcess -> Effect MyNode
-myNode = Node.make
-            (Family :: _ "sum")
-            unit
-            (Shape :: MyNodeShape)
-            { foo : 1, bar : "5", c : 2 }
-            { foo : "1", bar : 12 }
+myNode =
+    Node.make
+        (Family :: _ "sum")
+        unit
+        (Shape :: MyNodeShape)
+        { foo : 1, bar : "5", c : 2 }
+        { foo : "1", bar : 12 }
