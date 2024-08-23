@@ -21,8 +21,8 @@ import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
-import Noodle.Fn (Fn)
-import Noodle.Fn (make, run, run') as Fn
+import Noodle.Fn (Fn, RawFn)
+import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Protocol (Protocol)
@@ -31,6 +31,10 @@ import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
 import Noodle.Fn.Process (ProcessM)
+import Noodle.Fn.Tracker (Tracker) as Tracker
+import Noodle.Fn.Raw.Protocol (Protocol) as Raw
+import Noodle.Fn.Raw.Tracker (Tracker) as Raw
+
 import Noodle.Fn.RawToRec as ReprCnv
 import Noodle.Wiring (class Wiring)
 
@@ -42,6 +46,16 @@ data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr 
         (Tracker state is os repr)
         (Protocol state is os repr)
         (Fn state is os repr m)
+
+
+data RawNode (state :: Type) (repr :: Type) (m :: Type -> Type)
+    = RawNode
+        Id.NodeR
+        Shape.Raw
+        (Raw.Tracker state repr)
+        (Raw.Protocol state repr)
+        (RawFn state repr m)
+
 
 
 type Process :: Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Type
@@ -144,11 +158,10 @@ run (Node _ _ _ protocol fn) = Fn.run' protocol fn
 
 {- Subscriptions -}
 
--- ToDO: with HasInlet / HasOuput
+-- ToDO: with HasInlet / HasOutlet
 
 
-
-subscribeInlet :: forall f state is os repr m din. Id.InletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeInlet :: forall f state is os repr m. Id.InletR -> Node f state is os repr m -> Signal (Maybe repr)
 subscribeInlet input node = Map.lookup input <$> subscribeInlets node
 
 
@@ -164,7 +177,7 @@ subscribeInletsRec :: forall f state is isrl os repr m. RL.RowToList is isrl => 
 subscribeInletsRec (Node _ _ tracker _ _) = ReprCnv.toRec Shape.inletRName <$> Tuple.snd <$> tracker.inlets
 
 
-subscribeOutlet :: forall f state is os repr m dout. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeOutlet :: forall f state is os repr m. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
 subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
 
 
@@ -198,3 +211,7 @@ subscribeChangesRec (Node _ _ tracker _ _) =
     tracker.all <#>
         \(focus /\ state /\ inputsMap /\ outputsMap) ->
             focus /\ state /\ ReprCnv.toRec Shape.inletRName inputsMap /\ ReprCnv.toRec Shape.outletRName outputsMap
+
+
+toRaw :: forall f state is os repr m. Node f state is os repr m -> RawNode state repr m
+toRaw (Node nodeR shape tracker protocol fn) = RawNode nodeR shape tracker protocol $ Fn.toRaw fn

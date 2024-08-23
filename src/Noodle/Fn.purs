@@ -14,6 +14,7 @@ module Noodle.Fn
 --   , inputsShape, outputsShape
 --   , inputsShapeHeld, outputsShapeHeld
 --   , inputsOrder, outputsOrder
+  , RawFn, toRaw
   )
   where
 
@@ -55,12 +56,20 @@ import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
+import Noodle.Fn.Raw.Process (RawProcessM)
 
 
 type Name = String
 
 
 data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn Name (ProcessM state is os repr m Unit)
+
+
+data RawFn state repr (m :: Type -> Type) = RawFn Name (RawProcessM state repr m Unit) -- TODO: move to separate module
+
+
+toRaw :: forall state is os repr m. Fn state is os repr m -> RawFn state repr m
+toRaw (Fn name processM) = RawFn name $ Process.toRaw processM
 
 
 class ToFn a state is os repr where
