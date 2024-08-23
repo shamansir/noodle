@@ -35,9 +35,9 @@ lastOutlet :: forall state is os. Tracker state is os -> Effect (Maybe OutletR)
 lastOutlet = Generic.lastOutlet
 
 
-atInlet :: forall i is os state din. HasInlet is i din => IsSymbol i => Inlet i -> Tracker state is os -> Effect din
+atInlet :: forall i is is' os state din. HasInlet is is' i din => IsSymbol i => Inlet i -> Tracker state is os -> Effect din
 atInlet _ tracker = inlets tracker <#> Record.get (Proxy :: _ i)
 
 
-atOutlet :: forall o is os state dout. HasOutlet os o dout => IsSymbol o => Outlet o -> Tracker state is os -> Effect dout
+atOutlet :: forall o is os os' state dout. HasOutlet os os' o dout => IsSymbol o => Outlet o -> Tracker state is os -> Effect dout
 atOutlet _ tracker = outlets tracker <#> Record.get (Proxy :: _ o)

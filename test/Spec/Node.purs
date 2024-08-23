@@ -41,7 +41,7 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make, Process) as Node
+import Noodle.Node (make, run, Process, atInlet, atOutlet) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -89,17 +89,42 @@ spec = do
     describe "creation" $ do
 
         it "creating node" $ do
-            _ <- liftEffect $ myNode $ pure unit
+            _ <- liftEffect $ makeMyNode $ pure unit
             pure unit
 
     describe "running" $ do
 
-        it "running node" $ do
-            pure unit
+        it "running node with empty process function" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode $ pure unit
+                Node.run myNode
+
+        it "running node with some function" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode $ do
+                    foo <- Fn.receive foo_in
+                    bar <- Fn.receive bar_in
+                    c <- Fn.receive c_in
+                    Fn.send foo_out $ show (foo + c) <> bar
+                    Fn.send bar_out $ foo - c
+                Node.run myNode
+                foo <- Node.atOutlet foo_out myNode
+                bar <- Node.atOutlet bar_out myNode
+                foo `shouldEqual` "35"
+                bar `shouldEqual` -1
 
 
-myNode :: MyProcess -> Effect MyNode
-myNode =
+
+foo_in = Fn.Inlet :: _ "foo"
+bar_in = Fn.Inlet :: _ "bar"
+c_in   = Fn.Inlet :: _ "c"
+foo_out = Fn.Outlet :: _ "foo"
+bar_out = Fn.Outlet :: _ "bar"
+
+
+
+makeMyNode :: MyProcess -> Effect MyNode
+makeMyNode =
     Node.make
         (Family :: _ "sum")
         unit

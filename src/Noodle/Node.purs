@@ -16,17 +16,22 @@ import Data.UniqueHash (generate) as UH
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class ToReprRow, class FromReprRow, class HasFallback)
 import Data.Tuple (snd) as Tuple
+import Type.Proxy (Proxy(..))
+import Record (get, set) as Record
+import Record.Extra (keys, class Keys) as Record
 
 import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
+
 import Noodle.Fn (Fn, RawFn)
 import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Protocol (Protocol)
-import Noodle.Fn.Protocol (make) as Protocol
+import Noodle.Fn.Protocol (make, getRecInlets, getRecOutlets) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
@@ -211,6 +216,44 @@ subscribeChangesRec (Node _ _ tracker _ _) =
     tracker.all <#>
         \(focus /\ state /\ inputsMap /\ outputsMap) ->
             focus /\ state /\ ReprCnv.toRec Shape.inletRName inputsMap /\ ReprCnv.toRec Shape.outletRName outputsMap
+
+
+{- Get Data -}
+
+
+inlets :: forall f state is isrl os repr m. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m -> m (Record is)
+inlets node = liftEffect $ Protocol.getRecInlets $ _getProtocol node
+
+
+outlets :: forall f state is os osrl repr m. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m -> m (Record os)
+outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
+
+
+inletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
+inletsRow _ = Proxy :: _ is
+
+
+outletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy os
+outletsRow _ = Proxy :: _ os
+
+
+atInlet :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> m din
+atInlet _ node = inlets node <#> Record.get (Proxy :: _ i)
+
+
+atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> m dout
+atOutlet _ node = outlets node <#> Record.get (Proxy :: _ o)
+
+
+_getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protocol state is os repr
+_getProtocol (Node _ _ _ protocol _) = protocol
+
+
+_getTracker :: forall f state is os repr m. Node f state is os repr m -> Tracker state is os repr
+_getTracker (Node _ _ tracker _ _) = tracker
+
+
+{- Rawify -}
 
 
 toRaw :: forall f state is os repr m. Node f state is os repr m -> RawNode state repr m

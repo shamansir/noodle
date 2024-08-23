@@ -54,12 +54,12 @@ getOutlets :: forall state is os. Protocol state is os -> Effect (Record os)
 getOutlets p = p.getOutlets unit <#> Tuple.snd
 
 
-sendOut :: forall o state is os m dout. MonadEffect m => HasOutlet os o dout => Outlet o -> dout -> Protocol state is os -> Effect Unit
+sendOut :: forall o state is os os' m dout. MonadEffect m => HasOutlet os os' o dout => Outlet o -> dout -> Protocol state is os -> Effect Unit
 sendOut outlet dout =
     Generic._modifyOutlet (Record.set (Proxy :: _ o) dout) $ outletR outlet
 
 
-sendIn :: forall i state is os m din. MonadEffect m => HasInlet is i din => Inlet i -> din -> Protocol state is os -> Effect Unit
+sendIn :: forall i state is is' os m din. MonadEffect m => HasInlet is is' i din => Inlet i -> din -> Protocol state is os -> Effect Unit
 sendIn inlet din =
     Generic._modifyInlet (Record.set (Proxy :: _ i) din) $ inletR inlet
 
