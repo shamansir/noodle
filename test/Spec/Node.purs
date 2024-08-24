@@ -41,7 +41,7 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make, run, Process, atInlet, atOutlet) as Node
+import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -99,19 +99,35 @@ spec = do
                 myNode <- liftEffect $ makeMyNode $ pure unit
                 Node.run myNode
 
+        let
+            combineAll :: MyProcess
+            combineAll = do
+                foo <- Fn.receive foo_in
+                bar <- Fn.receive bar_in
+                c <- Fn.receive c_in
+                Fn.send foo_out $ show (foo + c) <> bar
+                Fn.send bar_out $ foo - c
+
         it "running node with some function" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode $ do
-                    foo <- Fn.receive foo_in
-                    bar <- Fn.receive bar_in
-                    c <- Fn.receive c_in
-                    Fn.send foo_out $ show (foo + c) <> bar
-                    Fn.send bar_out $ foo - c
-                Node.run myNode
-                foo <- Node.atOutlet foo_out myNode
-                bar <- Node.atOutlet bar_out myNode
+                myNode <- liftEffect $ makeMyNode combineAll
+                myNode # Node.run
+                foo <- myNode # Node.atOutlet foo_out
+                bar <- myNode # Node.atOutlet bar_out
                 foo `shouldEqual` "35"
                 bar `shouldEqual` -1
+
+        it "running node with some function" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode combineAll
+                myNode # Node.sendIn foo_in 7
+                myNode # Node.sendIn bar_in "bar"
+                myNode # Node.sendIn c_in 15
+                myNode # Node.run
+                foo <- myNode # Node.atOutlet foo_out
+                bar <- myNode # Node.atOutlet bar_out
+                foo `shouldEqual` "22bar"
+                bar `shouldEqual` -8
 
 
 
@@ -120,7 +136,6 @@ bar_in = Fn.Inlet :: _ "bar"
 c_in   = Fn.Inlet :: _ "c"
 foo_out = Fn.Outlet :: _ "foo"
 bar_out = Fn.Outlet :: _ "bar"
-
 
 
 makeMyNode :: MyProcess -> Effect MyNode

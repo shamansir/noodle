@@ -14,7 +14,7 @@ import Data.Map (lookup) as Map
 import Data.Maybe (Maybe(..))
 import Data.UniqueHash (generate) as UH
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class ToReprRow, class FromReprRow, class HasFallback)
+import Data.Repr (class ToReprRow, class FromReprRow, class HasFallback, class ToRepr)
 import Data.Tuple (snd) as Tuple
 import Type.Proxy (Proxy(..))
 import Record (get, set) as Record
@@ -31,7 +31,7 @@ import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Protocol (Protocol)
-import Noodle.Fn.Protocol (make, getRecInlets, getRecOutlets) as Protocol
+import Noodle.Fn.Protocol (make, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
@@ -243,6 +243,28 @@ atInlet _ node = inlets node <#> Record.get (Proxy :: _ i)
 
 atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> m dout
 atOutlet _ node = outlets node <#> Record.get (Proxy :: _ o)
+
+
+{- Send data -}
+
+sendIn :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => ToRepr din repr => Id.Inlet i -> din -> Node f state is os repr m -> m Unit
+sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
+
+
+sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os repr m -> m Unit
+sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
+
+
+unsafeSendIn :: forall f state is os repr m. MonadEffect m => Id.InletR -> repr -> Node f state is os repr m -> m Unit
+unsafeSendIn input repr = liftEffect <<< Protocol._unsafeSendIn input repr <<< _getProtocol
+
+
+unsafeSendOut :: forall f state is os repr m. MonadEffect m => Id.OutletR -> repr -> Node f state is os repr m -> m Unit
+unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <<< _getProtocol
+
+
+
+{- Private accessors -}
 
 
 _getProtocol :: forall f state is os repr m. Node f state is os repr m -> Protocol state is os repr
