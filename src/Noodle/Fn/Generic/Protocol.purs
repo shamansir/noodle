@@ -5,6 +5,7 @@ import Prelude
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
+import Data.Newtype (unwrap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -46,7 +47,7 @@ make state inlets outlets =
             inletsInit  = true /\ U.AllInlets /\ inlets
             outletsInit = true /\ U.AllOutlets /\ outlets
 
-            (initAll :: U.PostUpdatesRow state inlets outlets) = U.Everything /\ stateInit /\ inletsInit /\ outletsInit
+            (initAll :: U.PostUpdatesRow state inlets outlets) = U.PostUpdatesRow $ U.Everything /\ (U.PreUpdatesRow $ stateInit /\ inletsInit /\ outletsInit)
 
         stateCh   <- channel stateInit
         inletsCh  <- channel inletsInit
@@ -61,9 +62,10 @@ make state inlets outlets =
 
             foldUpdates :: U.PreUpdatesRow state inlets outlets -> U.PostUpdatesRow state inlets outlets -> U.PostUpdatesRow state inlets outlets
             foldUpdates
-                lastChange@((bState /\ state) /\ (bInlet /\ inletChange /\ is) /\ (bOutlet /\ outletChange /\ os))
-                (_ /\ (bStatePrev /\ _) /\ (bInletPrev /\ _ /\ _) /\ (bOutletPrev /\ _))
+                lastChange@(U.PreUpdatesRow ((bState /\ state) /\ (bInlet /\ inletChange /\ is) /\ (bOutlet /\ outletChange /\ os)))
+                (U.PostUpdatesRow (_ /\ U.PreUpdatesRow ((bStatePrev /\ _) /\ (bInletPrev /\ _ /\ _) /\ (bOutletPrev /\ _))))
                 =
+                    U.PostUpdatesRow $
                     if bState == not bStatePrev then
                         U.StateChange /\ lastChange
                     else if bInlet == not bInletPrev then
@@ -86,7 +88,13 @@ make state inlets outlets =
                 -> (Boolean /\ U.InletsChange /\ inlets)
                 -> (Boolean /\ U.OutletsChange /\ outlets)
                 -> U.PreUpdatesRow state inlets outlets
-            toPreUpdateRow = (/\) >>> Tuple.curry
+            toPreUpdateRow s is os = U.PreUpdatesRow $ s /\ is /\ os
+
+            extractChanges
+                :: U.PostUpdatesRow state inlets outlets
+                -> U.FocusedUpdate state inlets outlets
+            extractChanges
+                = unwrap >>> map (unwrap >>> bimap Tuple.snd (bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd))) >>> U.FocusedUpdate
 
         let
             tracker :: Tracker state inlets outlets
@@ -94,7 +102,7 @@ make state inlets outlets =
                 { state   : Tuple.snd <$> stateSig
                 , inlets  : Tuple.snd <$> inletsSig
                 , outlets : Tuple.snd <$> outletsSig
-                , all     : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
+                , all     : unwrap <$> extractChanges <$> changesSig
                 }
 
             protocol :: Protocol state inlets outlets

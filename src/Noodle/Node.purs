@@ -8,6 +8,8 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Effect.Console as Console
+
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (lookup) as Map
@@ -31,7 +33,7 @@ import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Protocol (Protocol)
-import Noodle.Fn.Protocol (make, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
+import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
@@ -229,6 +231,14 @@ outlets :: forall f state is os osrl repr m. MonadEffect m => FromReprRow osrl o
 outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
 
 
+inletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Map Id.InletR repr)
+inletsRaw node = liftEffect $ Protocol.getInlets $ _getProtocol node
+
+
+outletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Map Id.OutletR repr)
+outletsRaw node = liftEffect $ Protocol.getOutlets $ _getProtocol node
+
+
 inletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
 inletsRow _ = Proxy :: _ is
 
@@ -245,7 +255,16 @@ atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromRe
 atOutlet _ node = outlets node <#> Record.get (Proxy :: _ o)
 
 
+atInletR :: forall f state is os repr m. MonadEffect m => Id.InletR -> Node f state is os repr m -> m (Maybe repr)
+atInletR iid node = inletsRaw node <#> Map.lookup iid
+
+
+atOutletR :: forall f state is os repr m. MonadEffect m => Id.OutletR -> Node f state is os repr m -> m (Maybe repr)
+atOutletR oid node = outletsRaw node <#> Map.lookup oid
+
+
 {- Send data -}
+
 
 sendIn :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => ToRepr din repr => Id.Inlet i -> din -> Node f state is os repr m -> m Unit
 sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
@@ -261,7 +280,6 @@ unsafeSendIn input repr = liftEffect <<< Protocol._unsafeSendIn input repr <<< _
 
 unsafeSendOut :: forall f state is os repr m. MonadEffect m => Id.OutletR -> repr -> Node f state is os repr m -> m Unit
 unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <<< _getProtocol
-
 
 
 {- Private accessors -}

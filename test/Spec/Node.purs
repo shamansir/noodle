@@ -41,7 +41,7 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut) as Node
+import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut, listenUpdatesAndRun, runOnInletUpdates) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -108,7 +108,7 @@ spec = do
                 Fn.send foo_out $ show (foo + c) <> bar
                 Fn.send bar_out $ foo - c
 
-        it "running node with some function" $ do
+        it "running node with some function (run with default values)" $ do
             liftEffect $ do
                 myNode <- liftEffect $ makeMyNode combineAll
                 myNode # Node.run
@@ -117,13 +117,38 @@ spec = do
                 foo `shouldEqual` "35"
                 bar `shouldEqual` -1
 
-        it "running node with some function" $ do
+        it "running node with some function (send new values to all inlets before running)" $ do
             liftEffect $ do
                 myNode <- liftEffect $ makeMyNode combineAll
                 myNode # Node.sendIn foo_in 7
                 myNode # Node.sendIn bar_in "bar"
                 myNode # Node.sendIn c_in 15
                 myNode # Node.run
+                foo <- myNode # Node.atOutlet foo_out
+                bar <- myNode # Node.atOutlet bar_out
+                foo `shouldEqual` "22bar"
+                bar `shouldEqual` -8
+
+        it "running node with some function (send new values to some inlets before running)" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode combineAll
+                myNode # Node.listenUpdatesAndRun
+                myNode # Node.sendIn foo_in 7
+                myNode # Node.sendIn bar_in "bar"
+                myNode # Node.run
+                foo <- myNode # Node.atOutlet foo_out
+                bar <- myNode # Node.atOutlet bar_out
+                foo `shouldEqual` "9bar"
+                bar `shouldEqual` 5
+
+        it "running node with some function (listen to updates and send values after that)" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode combineAll
+                myNode # Node.listenUpdatesAndRun
+                myNode # Node.sendIn foo_in 7
+                myNode # Node.sendIn bar_in "bar"
+                myNode # Node.sendIn c_in 15
+                -- myNode # Node.sendIn c_in 15
                 foo <- myNode # Node.atOutlet foo_out
                 bar <- myNode # Node.atOutlet bar_out
                 foo `shouldEqual` "22bar"

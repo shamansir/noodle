@@ -18,7 +18,7 @@ type Tracker state inlets outlets =
     { state :: Signal state
     , inlets :: Signal (U.InletsChange /\ inlets)
     , outlets :: Signal (U.OutletsChange /\ outlets)
-    , all :: Signal (U.FocusedUpdate state inlets outlets)
+    , all :: Signal (U.ChangeFocus /\ state /\ inlets /\ outlets)
     }
 
 

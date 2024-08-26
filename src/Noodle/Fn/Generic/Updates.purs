@@ -5,6 +5,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\))
+import Data.Newtype (class Newtype)
 
 import Noodle.Id (InletR, OutletR)
 
@@ -50,6 +51,11 @@ outletChangeToMaybe (SingleOutlet oid) = Just oid
 outletChangeToMaybe AllOutlets = Nothing
 
 
-type PreUpdatesRow state inlets outlets = (Boolean /\ state) /\ (Boolean /\ InletsChange /\ inlets) /\ (Boolean /\ OutletsChange /\ outlets)
-type PostUpdatesRow state inlets outlets = ChangeFocus /\ PreUpdatesRow state inlets outlets
-type FocusedUpdate state inlets outlets = ChangeFocus /\ state /\ inlets /\ outlets
+newtype PreUpdatesRow  state inlets outlets  = PreUpdatesRow  ((Boolean /\ state) /\ (Boolean /\ InletsChange /\ inlets) /\ (Boolean /\ OutletsChange /\ outlets))
+newtype PostUpdatesRow state inlets outlets  = PostUpdatesRow (ChangeFocus /\ PreUpdatesRow state inlets outlets)
+newtype FocusedUpdate  state inlets outlets  = FocusedUpdate  (ChangeFocus /\ state /\ inlets /\ outlets)
+
+
+derive instance Newtype (PreUpdatesRow state inlets outlets)  _
+derive instance Newtype (PostUpdatesRow state inlets outlets) _
+derive instance Newtype (FocusedUpdate state inlets outlets)  _
