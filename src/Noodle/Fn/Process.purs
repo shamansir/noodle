@@ -37,7 +37,7 @@ import Effect.Class (class MonadEffect)
 import Prim.Row (class Cons)
 
 import Noodle.Id (Inlet, Outlet, inletR, outletR)
--- import Noodle.Fn.Raw.Protocol (InletsChange, OutletsChange) as Raw
+-- import Noodle.Fn.Raw.Protocol (InletsUpdate, OutletsUpdate) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Fn.Raw.Process (RawProcessM(..), RawProcessF)
 import Noodle.Fn.Raw.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift) as Raw

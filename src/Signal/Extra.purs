@@ -7,10 +7,18 @@ import Effect.Aff (Aff, runAff_)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Tuple.Nested (type (/\), (/\))
+-- import Data.Semigroup.Foldable (class Foldable1)
+import Data.Maybe (fromMaybe)
+import Data.Foldable (class Foldable)
+import Data.NonEmpty (NonEmpty)
+import Data.NonEmpty (head) as NE
 
 import Signal (Signal)
-import Signal (runSignal, foldp, get) as Signal
+import Signal (runSignal, foldp, get, merge, mergeMany) as Signal
 -- import Data.Monoid (mempty)
+
+
+infixl 5 Signal.merge as >*<
 
 
 class RunInSignal :: forall k. (k -> Type) -> Constraint
@@ -39,3 +47,7 @@ indexedFromCurrent :: forall a m. MonadEffect m => Signal a -> m (Signal (Int /\
 indexedFromCurrent sig = do
     cur <- liftEffect $ Signal.get sig
     pure $ Signal.foldp (\a (prevIdx /\ _) -> prevIdx /\ a) (0 /\ cur) sig
+
+
+mergeManyNE :: forall f a. Functor f => Foldable f => NonEmpty f (Signal a) -> Signal a
+mergeManyNE fs = Signal.mergeMany fs # fromMaybe (NE.head fs)

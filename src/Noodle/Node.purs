@@ -36,7 +36,8 @@ import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
-import Noodle.Fn.Updates (ChangeFocus(..)) as Fn
+import Noodle.Fn.Updates (UpdateFocus(..)) as Fn
+import Noodle.Fn.Updates (toTuple) as Updates
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
@@ -204,8 +205,8 @@ subscribeState :: forall f state is os repr m. Node f state is os repr m -> Sign
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.ChangeFocus /\ state /\ Map Id.InletR repr /\ Map Id.OutletR repr)
-subscribeChanges (Node _ _ tracker _ _) = tracker.all
+subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.UpdateFocus /\ state /\ Map Id.InletR repr /\ Map Id.OutletR repr)
+subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
 
 
 subscribeChangesRec
@@ -213,9 +214,9 @@ subscribeChangesRec
      . RL.RowToList is isrl => FromReprRow isrl is repr
     => RL.RowToList os osrl => FromReprRow osrl os repr
     => Node f state is os repr m
-    -> Signal (Fn.ChangeFocus /\ state /\ Record is /\ Record os)
+    -> Signal (Fn.UpdateFocus /\ state /\ Record is /\ Record os)
 subscribeChangesRec (Node _ _ tracker _ _) =
-    tracker.all <#>
+    tracker.all <#> Updates.toTuple <#>
         \(focus /\ state /\ inputsMap /\ outputsMap) ->
             focus /\ state /\ ReprCnv.toRec Shape.inletRName inputsMap /\ ReprCnv.toRec Shape.outletRName outputsMap
 
@@ -298,3 +299,10 @@ _getTracker (Node _ _ tracker _ _) = tracker
 
 toRaw :: forall f state is os repr m. Node f state is os repr m -> RawNode state repr m
 toRaw (Node nodeR shape tracker protocol fn) = RawNode nodeR shape tracker protocol $ Fn.toRaw fn
+
+
+{- Utils -}
+
+
+logUpdates :: forall f state is os repr m. Show state => Show repr => Node f state is os repr m -> Signal String
+logUpdates (Node _ _ tracker _ _) = show <$> tracker.all

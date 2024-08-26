@@ -41,7 +41,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 
 import Noodle.Id (InletR, OutletR)
-import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
+import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
 
 

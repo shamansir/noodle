@@ -6,6 +6,5 @@ import Data.Map (Map)
 import Noodle.Id (InletR, OutletR)
 
 
-type PreUpdatesRow state repr = Generic.PreUpdatesRow state (Map InletR repr) (Map OutletR repr)
-type PostUpdatesRow state repr = Generic.PostUpdatesRow state (Map InletR repr) (Map OutletR repr)
-type FocusedUpdate state repr = Generic.FocusedUpdate state (Map InletR repr) (Map OutletR repr)
+type Update state repr = Generic.Update state (Map InletR repr) (Map OutletR repr)
+type MergedUpdate state repr = Generic.MergedUpdate state (Map InletR repr) (Map OutletR repr)

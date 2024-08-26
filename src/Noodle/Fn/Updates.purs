@@ -1,15 +1,14 @@
 module Noodle.Fn.Updates
     ( module GenericUpdates
-    , PreUpdatesRow, PostUpdatesRow, FocusedUpdate
+    , Update, MergedUpdate
     )
     where
 
 
-import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..), ChangeFocus(..)) as GenericUpdates
+import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..), UpdateFocus(..), toTuple) as GenericUpdates
 
 
 import Noodle.Fn.Raw.Updates as Raw
 
-type PreUpdatesRow  state (is :: Row Type) (os :: Row Type) repr = Raw.PreUpdatesRow  state repr
-type PostUpdatesRow state (is :: Row Type) (os :: Row Type) repr = Raw.PostUpdatesRow state repr
-type FocusedUpdate  state (is :: Row Type) (os :: Row Type) repr = Raw.FocusedUpdate  state repr
+type Update state (is :: Row Type) (os :: Row Type) repr = Raw.Update state repr
+type MergedUpdate state (is :: Row Type) (os :: Row Type) repr = Raw.MergedUpdate state repr

@@ -44,7 +44,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Id (Inlet, InletR, Outlet, OutletR, inletR, outletR)
 import Noodle.Id (inletRName, outletRName) as Id
-import Noodle.Fn.Generic.Updates (InletsChange(..), OutletsChange(..))
+import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Fn.Rec.Protocol (Protocol) as Rec
 
 

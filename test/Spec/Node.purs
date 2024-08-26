@@ -10,6 +10,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
 import Data.Repr (class ToRepr, class FromRepr, class HasFallback, wrap, unwrap)
 import Data.Repr (wrap, unwrap) as Repr
+import Data.Traversable (traverse)
 
 import Type.Proxy (Proxy(..))
 
@@ -24,7 +25,7 @@ import Effect.Ref as Ref
 import Effect.Exception (Error)
 import Effect.Aff (Aff, throwError, error)
 
-import Test.Spec (Spec, pending, describe, it, pending')
+import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
@@ -41,7 +42,7 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut, listenUpdatesAndRun, runOnInletUpdates) as Node
+import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut, listenUpdatesAndRun, runOnInletUpdates, logUpdates) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -105,6 +106,7 @@ spec = do
                 foo <- Fn.receive foo_in
                 bar <- Fn.receive bar_in
                 c <- Fn.receive c_in
+                -- liftEffect $ Console.log $ "run : <foo> " <> show foo <> " <bar> " <> show bar <> " <c> " <> show c
                 Fn.send foo_out $ show (foo + c) <> bar
                 Fn.send bar_out $ foo - c
 
@@ -145,10 +147,10 @@ spec = do
             liftEffect $ do
                 myNode <- liftEffect $ makeMyNode combineAll
                 myNode # Node.listenUpdatesAndRun
+                --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode # Node.sendIn foo_in 7
                 myNode # Node.sendIn bar_in "bar"
                 myNode # Node.sendIn c_in 15
-                -- myNode # Node.sendIn c_in 15
                 foo <- myNode # Node.atOutlet foo_out
                 bar <- myNode # Node.atOutlet bar_out
                 foo `shouldEqual` "22bar"
