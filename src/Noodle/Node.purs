@@ -114,13 +114,8 @@ makeRaw family state rawShape inletsMap outletsMap process = do
     pure $ Node nodeId rawShape tracker protocol $ Fn.make (Id.family family) process
 
 
-{- To Raw -}
-
-
-
 
 {- Running -}
-
 
 
 -- TODO: private
@@ -131,7 +126,7 @@ runOnInletUpdates
     => Node f state is os repr m
     -> m Unit
 runOnInletUpdates node =
-  SignalX.runSignal $ subscribeInlets node ~> const (run node)
+  SignalX.runSignal $ subscribeInletsRaw node ~> const (run node)
 
 
 -- TODO: private
@@ -166,39 +161,45 @@ run (Node _ _ _ protocol fn) = Fn.run' protocol fn
 
 {- Subscriptions -}
 
--- ToDO: with HasInlet / HasOutlet
+
+subscribeInletR :: forall f state is os repr m. Id.InletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeInletR input node = Map.lookup input <$> subscribeInletsRaw node
 
 
-subscribeInlet :: forall f state is os repr m. Id.InletR -> Node f state is os repr m -> Signal (Maybe repr)
-subscribeInlet input node = Map.lookup input <$> subscribeInlets node
+subscribeInlet :: forall f i state is is' isrl os repr m din. RL.RowToList is isrl => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> Signal din
+subscribeInlet _ = subscribeInlet_ $ Record.get (Proxy :: _ i)
 
 
-subscribeInletRec :: forall f state is isrl os repr m din. RL.RowToList is isrl => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr m -> Signal din
-subscribeInletRec fn node = fn <$> subscribeInletsRec node
+subscribeInlet_ :: forall f state is isrl os repr m din. RL.RowToList is isrl => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr m -> Signal din
+subscribeInlet_ fn node = fn <$> subscribeInlets node
 
 
-subscribeInlets :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.InletR repr)
-subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
+subscribeInletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.InletR repr)
+subscribeInletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
 
 
-subscribeInletsRec :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (Record is)
-subscribeInletsRec (Node _ _ tracker _ _) = ReprCnv.toRec Shape.inletRName <$> Tuple.snd <$> tracker.inlets
+subscribeInlets :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (Record is)
+subscribeInlets (Node _ _ tracker _ _) = ReprCnv.toRec Shape.inletRName <$> Tuple.snd <$> tracker.inlets
 
 
-subscribeOutlet :: forall f state is os repr m. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
-subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
+subscribeOutletR :: forall f state is os repr m. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
+subscribeOutletR output node = Map.lookup output <$> subscribeOutletsRaw node
 
 
-subscribeOutletRec :: forall f state is os osrl repr m dout. RL.RowToList os osrl => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> Signal dout
-subscribeOutletRec fn node = fn <$> subscribeOutletsRec node
+subscribeOutlet :: forall f o state is os os' osrl repr m dout. RL.RowToList os osrl => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> Signal dout
+subscribeOutlet _ = subscribeOutlet_ $ Record.get (Proxy :: _ o)
 
 
-subscribeOutlets :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.OutletR repr)
-subscribeOutlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
+subscribeOutlet_ :: forall f state is os osrl repr m dout. RL.RowToList os osrl => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> Signal dout
+subscribeOutlet_ fn node = fn <$> subscribeOutlets node
 
 
-subscribeOutletsRec :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (Record os)
-subscribeOutletsRec (Node _ _ tracker _ _) = ReprCnv.toRec Shape.outletRName <$> Tuple.snd <$> tracker.outlets
+subscribeOutletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.OutletR repr)
+subscribeOutletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
+
+
+subscribeOutlets :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (Record os)
+subscribeOutlets (Node _ _ tracker _ _) = ReprCnv.toRec Shape.outletRName <$> Tuple.snd <$> tracker.outlets
 
 
 subscribeState :: forall f state is os repr m. Node f state is os repr m -> Signal state

@@ -156,6 +156,18 @@ spec = do
                 foo `shouldEqual` "22bar"
                 bar `shouldEqual` -8
 
+        it "running node with some function (listen to updates and send some of the values)" $ do
+            liftEffect $ do
+                myNode <- liftEffect $ makeMyNode combineAll
+                myNode # Node.listenUpdatesAndRun
+                --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
+                myNode # Node.sendIn foo_in 7
+                myNode # Node.sendIn bar_in "bar"
+                foo <- myNode # Node.atOutlet foo_out
+                bar <- myNode # Node.atOutlet bar_out
+                foo `shouldEqual` "9bar"
+                bar `shouldEqual` 5
+
 
 
 foo_in = Fn.Inlet :: _ "foo"
