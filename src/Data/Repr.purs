@@ -254,5 +254,5 @@ toMap :: forall k rl row repr
 toMap toKey record = toReprRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
 
 
-inbetween :: forall a b reprA reprB. ToRepr b reprB => FromRepr reprA a => (a -> b) -> (reprA -> reprB)
+inbetween :: forall a b reprA reprB. FromRepr reprA a => ToRepr b reprB => (a -> b) -> (reprA -> reprB)
 inbetween f reprA = fromMaybe fallback $ unwrap <$> (toRepr =<< f <$> (fromRepr $ Repr reprA))

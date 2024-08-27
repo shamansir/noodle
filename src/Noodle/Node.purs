@@ -2,23 +2,26 @@ module Noodle.Node where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
+
 import Prim.RowList as RL
 
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Effect.Class (class MonadEffect, liftEffect)
-
+import Effect.Ref (new, read, write) as Ref
 import Effect.Console as Console
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.UniqueHash (generate) as UH
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class ToReprRow, class FromReprRow, class HasFallback, class ToRepr)
 import Data.Tuple (snd) as Tuple
-import Type.Proxy (Proxy(..))
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Repr (class ToReprRow, class FromRepr, class FromReprRow, class FromToRepr, class HasFallback, class ToRepr)
+import Data.Repr (fallback, inbetween) as Repr
+
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
 
@@ -26,8 +29,6 @@ import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
-import Noodle.Node.Has (class HasInlet, class HasOutlet)
-
 import Noodle.Fn (Fn, RawFn)
 import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
@@ -42,8 +43,10 @@ import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
 import Noodle.Fn.Raw.Tracker (Tracker) as Raw
-
 import Noodle.Fn.RawToRec as ReprCnv
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
+import Noodle.Link (Link, RawLink)
+import Noodle.Link (make, makeRaw, fromRaw, toRaw) as Link
 import Noodle.Wiring (class Wiring)
 
 
@@ -265,6 +268,7 @@ atOutletR :: forall f state is os repr m. MonadEffect m => Id.OutletR -> Node f 
 atOutletR oid node = outletsRaw node <#> Map.lookup oid
 
 
+
 {- Send data -}
 
 
@@ -282,6 +286,124 @@ unsafeSendIn input repr = liftEffect <<< Protocol._unsafeSendIn input repr <<< _
 
 unsafeSendOut :: forall f state is os repr m. MonadEffect m => Id.OutletR -> repr -> Node f state is os repr m -> m Unit
 unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <<< _getProtocol
+
+
+{- Connecting -}
+
+
+connect
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => FromRepr repr doutA
+    => ToRepr dinB repr
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => Id.Outlet oA
+    -> Id.Inlet iB
+    -> (doutA -> dinB)
+    -> Node fA stateA isA osA repr m
+    -> Node fB stateB isB osB repr m
+    -> m (Link fA fB oA iB)
+connect outletA inletB convertF nodeA nodeB =
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
+
+
+connectBySameRepr
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m repr
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => ToRepr doutA repr
+    => FromRepr repr dinB
+    => Proxy repr -- FIXME: Proxy is not needed anymore
+    -> Id.Outlet oA
+    -> Id.Inlet iB
+    -> Node fA stateA isA osA repr m
+    -> Node fB stateB isB osB repr m
+    -> m (Link fA fB oA iB)
+connectBySameRepr _ outletA inletB nodeA nodeB =
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
+
+
+connectByDistinctRepr
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => FromRepr reprA doutA
+    => ToRepr dinB reprB
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => Id.Outlet oA
+    -> Id.Inlet iB
+    -> (doutA -> dinB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m (Link fA fB oA iB)
+connectByDistinctRepr outletA inletB convertF nodeA nodeB =
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (Repr.inbetween convertF) nodeA nodeB <#> Link.fromRaw
+
+
+{-
+connectAlike
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => HasFallback reprB
+    => FromRepr d reprA
+    => ToRepr reprB d
+    => HasOutlet osA osA' oA d
+    => HasInlet isB isB' iB d
+    => Id.Outlet oA
+    -> Id.Inlet iB
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m (Link fA fB oA iB)
+connectAlike outletA inletB nodeA nodeB =
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) ?wh nodeA nodeB <#> Link.fromRaw
+-}
+
+
+unsafeConnect
+    :: forall fA fB stateA stateB isA isB osA osB reprA reprB m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => HasFallback reprA
+    => HasFallback reprB
+    => Id.OutletR
+    -> Id.InletR
+    -> (reprA -> reprB)
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m RawLink
+unsafeConnect
+    outletA
+    inletB
+    convertRepr
+    nodeA@(Node nodeAId _ _ _ _)
+    nodeB@(Node nodeBId _ _ _ _) =
+    do
+        flagRef <- liftEffect $ Ref.new true
+        let
+            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn reprB = do
+                -- Monad.whenM
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  unsafeSendIn inletB reprB nodeB
+                  run nodeB
+                else pure unit
+        -- TODO: get current value at output and send it to input
+        SignalX.runSignal $ subscribeOutletR outletA nodeA ~> fromMaybe Repr.fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe reprA) <- atOutletR outletA nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe Repr.fallback mbReprA
+        pure $ Link.makeRaw nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 
 {- Private accessors -}
