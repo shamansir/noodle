@@ -20,7 +20,7 @@ import Data.UniqueHash (generate) as UH
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class ToReprRow, class FromRepr, class FromReprRow, class FromToRepr, class HasFallback, class ToRepr)
-import Data.Repr (fallback, inbetween) as Repr
+import Data.Repr (fallback, inbetween, inbetween') as Repr
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -253,11 +253,11 @@ outletsRow _ = Proxy :: _ os
 
 
 atInlet :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> m din
-atInlet _ node = inlets node <#> Record.get (Proxy :: _ i)
+atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
 
 
 atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> m dout
-atOutlet _ node = outlets node <#> Record.get (Proxy :: _ o)
+atOutlet _ = getFromOutlets $ Record.get (Proxy :: _ o)
 
 
 atInletR :: forall f state is os repr m. MonadEffect m => Id.InletR -> Node f state is os repr m -> m (Maybe repr)
@@ -267,6 +267,13 @@ atInletR iid node = inletsRaw node <#> Map.lookup iid
 atOutletR :: forall f state is os repr m. MonadEffect m => Id.OutletR -> Node f state is os repr m -> m (Maybe repr)
 atOutletR oid node = outletsRaw node <#> Map.lookup oid
 
+
+getFromInlets :: forall f state is isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr m -> m din
+getFromInlets getter node = inlets node <#> getter
+
+
+getFromOutlets :: forall f state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> m dout
+getFromOutlets getter node = outlets node <#> getter
 
 
 {- Send data -}
@@ -302,11 +309,10 @@ connect
     => HasInlet isB isB' iB dinB
     => Id.Outlet oA
     -> Id.Inlet iB
-    -> (doutA -> dinB)
     -> Node fA stateA isA osA repr m
     -> Node fB stateB isB osB repr m
     -> m (Link fA fB oA iB)
-connect outletA inletB convertF nodeA nodeB =
+connect outletA inletB nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
 
 
@@ -348,15 +354,15 @@ connectByDistinctRepr outletA inletB convertF nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (Repr.inbetween convertF) nodeA nodeB <#> Link.fromRaw
 
 
-{-
+
 connectAlike
     :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
     => HasFallback reprB
-    => FromRepr d reprA
-    => ToRepr reprB d
+    => FromRepr reprA d
+    => ToRepr d reprB
     => HasOutlet osA osA' oA d
     => HasInlet isB isB' iB d
     => Id.Outlet oA
@@ -365,8 +371,7 @@ connectAlike
     -> Node fB stateB isB osB reprB m
     -> m (Link fA fB oA iB)
 connectAlike outletA inletB nodeA nodeB =
-    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) ?wh nodeA nodeB <#> Link.fromRaw
--}
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (Repr.inbetween' (Proxy :: _ d)) nodeA nodeB <#> Link.fromRaw
 
 
 unsafeConnect

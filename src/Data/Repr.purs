@@ -14,7 +14,7 @@ module Data.Repr
     , class WriteRepr, writeRepr
     , class ReadWriteRepr
     , fromMap, toMap
-    , inbetween
+    , inbetween, inbetween'
     )
     where
 
@@ -88,14 +88,20 @@ class (FromRepr repr a, ToRepr a repr) <= FromToRepr a repr
 instance (FromRepr repr a, ToRepr a repr) => FromToRepr a repr
 
 
--- instance HasFallback x => FromRepr x x where fromRepr = unwrap >>> Just
 -- instance HasFallback x => ToRepr x x where toRepr = wrap >>> Just
+-- instance HasFallback x => FromRepr x x where fromRepr = unwrap >>> Just
 --instance Monoid a => HasFallback a where fallback = mempty
 
 
-instance HasFallback Unit where fallback = unit
-instance HasFallback Int where fallback = 0
+instance HasFallback Unit   where fallback = unit
+instance HasFallback Int    where fallback = 0
 instance HasFallback String where fallback = ""
+instance ToRepr Unit Unit     where toRepr = wrap >>> Just
+instance ToRepr Int Int       where toRepr = wrap >>> Just
+instance ToRepr String String where toRepr = wrap >>> Just
+instance FromRepr Unit Unit     where fromRepr = unwrap >>> Just
+instance FromRepr Int Int       where fromRepr = unwrap >>> Just
+instance FromRepr String String where fromRepr = unwrap >>> Just
 
 
 -- wrap :: forall a. a -> Repr a
@@ -256,3 +262,7 @@ toMap toKey record = toReprRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey recor
 
 inbetween :: forall a b reprA reprB. FromRepr reprA a => ToRepr b reprB => (a -> b) -> (reprA -> reprB)
 inbetween f reprA = fromMaybe fallback $ unwrap <$> (toRepr =<< f <$> (fromRepr $ Repr reprA))
+
+
+inbetween' :: forall a reprA reprB. FromRepr reprA a => ToRepr a reprB => Proxy a -> (reprA -> reprB)
+inbetween' _ = inbetween (identity :: a -> a)

@@ -42,7 +42,13 @@ import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
-import Noodle.Node (make, run, Process, atInlet, atOutlet, sendIn, sendOut, listenUpdatesAndRun, runOnInletUpdates, logUpdates) as Node
+import Noodle.Node
+    ( make, run, Process
+    , atInlet, atOutlet, sendIn, sendOut
+    , listenUpdatesAndRun, runOnInletUpdates
+    , connect, connectAlike
+    , logUpdates
+    ) as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -53,19 +59,43 @@ import Signal.Time as SignalT
 import Test.Spec.Util.IntOrStringRepr (ISRepr(..))
 
 
-type TestInlets = (I "foo" Hot Int ⟘ I "c" Hot Int ⟘  I "bar" Cold String ⟘ IS) :: Inlets
-type TestOutlets = (O "foo" String ⟙ O "bar" Int ⟙ OS) :: Outlets
+type SumInlets  =
+    ( I "a" Hot Int
+    ⟘ I "b" Hot Int
+    ⟘ IS
+    ) :: Inlets
+type SumOutlets =
+    ( O "sum" Int
+    ⟙ OS
+    ) :: Outlets
+type SumNodeShape = Shape SumInlets SumOutlets
+type SumNode = Node "sum" Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
+type SumProcess = Node.Process Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
 
 
-type TestInletsRow = ( foo :: Int, c :: Int, bar :: String )
-type TestOutletsRow = ( foo :: String, bar :: Int )
-
-
-type MyNode = Node "sum" Unit TestInletsRow TestOutletsRow ISRepr Effect
-type MyNodeShape = Shape TestInlets TestOutlets
-
-
-type MyProcess = Node.Process Unit TestInletsRow TestOutletsRow ISRepr Effect
+type SampleInlets  =
+    ( I "foo" Hot Int
+    ⟘ I "c" Hot Int
+    ⟘ I "bar" Cold String
+    ⟘ IS
+    ) :: Inlets
+type SampleOutlets =
+    ( O "foo" String
+    ⟙ O "bar" Int
+    ⟙ OS
+    ) :: Outlets
+type SampleInletsRow =
+    ( foo :: Int
+    , c :: Int
+    , bar :: String
+    )
+type SampleOutletsRow =
+    ( foo :: String
+    , bar :: Int
+    )
+type SampleNodeShape = Shape SampleInlets SampleOutlets
+type SampleNode = Node "sample" Unit SampleInletsRow SampleOutletsRow ISRepr Effect
+type SampleProcess = Node.Process Unit SampleInletsRow SampleOutletsRow ISRepr Effect
 
 
 spec :: Spec Unit
@@ -76,7 +106,7 @@ spec = do
         it "properly instantiates / reflects shape" $ do
             let
                 rawShape =
-                    Shape.reflect (Shape :: MyNodeShape)
+                    Shape.reflect (Shape :: SampleNodeShape)
             Shape.inlets rawShape `shouldEqual`
                 [ { name : "foo", order : 0, temp : Hot }
                 , { name : "c"  , order : 1, temp : Hot }
@@ -90,18 +120,18 @@ spec = do
     describe "creation" $ do
 
         it "creating node" $ do
-            _ <- liftEffect $ makeMyNode $ pure unit
+            _ <- liftEffect $ makeSampleNode $ pure unit
             pure unit
 
     describe "running" $ do
 
         it "running node with empty process function" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode $ pure unit
+                myNode <- liftEffect $ makeSampleNode $ pure unit
                 Node.run myNode
 
         let
-            combineAll :: MyProcess
+            combineAll :: SampleProcess
             combineAll = do
                 foo <- Fn.receive foo_in
                 bar <- Fn.receive bar_in
@@ -112,7 +142,7 @@ spec = do
 
         it "running node with some function (run with default values)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode combineAll
+                myNode <- liftEffect $ makeSampleNode combineAll
                 myNode # Node.run
                 foo <- myNode # Node.atOutlet foo_out
                 bar <- myNode # Node.atOutlet bar_out
@@ -121,7 +151,7 @@ spec = do
 
         it "running node with some function (send new values to all inlets before running)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode combineAll
+                myNode <- liftEffect $ makeSampleNode combineAll
                 myNode # Node.sendIn foo_in 7
                 myNode # Node.sendIn bar_in "bar"
                 myNode # Node.sendIn c_in 15
@@ -133,7 +163,7 @@ spec = do
 
         it "running node with some function (send new values to some inlets before running)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode combineAll
+                myNode <- liftEffect $ makeSampleNode combineAll
                 myNode # Node.listenUpdatesAndRun
                 myNode # Node.sendIn foo_in 7
                 myNode # Node.sendIn bar_in "bar"
@@ -145,7 +175,7 @@ spec = do
 
         it "running node with some function (listen to updates and send values after that)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode combineAll
+                myNode <- liftEffect $ makeSampleNode combineAll
                 myNode # Node.listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode # Node.sendIn foo_in 7
@@ -156,9 +186,9 @@ spec = do
                 foo `shouldEqual` "22bar"
                 bar `shouldEqual` -8
 
-        it "running node with some function (listen to updates and send some of the values)" $ do
+        it "running node with some function (listen to updates and send some of the values)" $
             liftEffect $ do
-                myNode <- liftEffect $ makeMyNode combineAll
+                myNode <- liftEffect $ makeSampleNode combineAll
                 myNode # Node.listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode # Node.sendIn foo_in 7
@@ -168,20 +198,158 @@ spec = do
                 foo `shouldEqual` "9bar"
                 bar `shouldEqual` 5
 
+    describe "connecting & disconnecting" $ do
+
+        it "is possible to connect nodes" $ liftEffect $ do
+            (nodeA :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- Fn.receive a_in
+                        b <- Fn.receive b_in
+                        Fn.send sum_out $ a + b
+
+            (nodeB :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- Fn.receive a_in
+                        b <- Fn.receive b_in
+                        Fn.send sum_out $ a + b
+
+            nodeA # Node.sendIn a_in 4
+
+            _ <- Node.connect
+                    sum_out
+                    b_in
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB -- FIXME: optional: now `connect` runs the second node automatically
+
+            atSumB <- nodeB # Node.atOutlet sum_out
+            atSumB `shouldEqual` (4 + 3 + 2)
+
+            pure unit
+
+    {-
+        it "is possible to connect nodes and keep sending values" $ do
+            nodeA <-
+                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
+
+            nodeB <-
+                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
+
+            -- Node.with nodeA $ P.sendIn _aI 4
+            Node.sendIn nodeA _aI 4
+
+            _ <- Node.connect
+                    _sumO
+                    _bI
+                    identity
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+
+            atSumB <- nodeB `Node.at_` _.sum
+            atSumB `shouldEqual` (4 + 3 + 2)
+
+            -- Node.with nodeA $ P.sendIn _aI 7
+            Node.sendIn nodeA _aI 7
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+
+            atSumB' <- nodeB `Node.at_` _.sum
+            atSumB' `shouldEqual` (7 + 3 + 2)
+
+            pure unit
+
+        it "disconnecting works" $ do
+            nodeA <-
+                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
+
+            nodeB <-
+                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
+
+            -- Node.with nodeA $ P.sendIn _aI 4
+            Node.sendIn nodeA _aI 4
+
+            link <- Node.connect
+                    _sumO
+                    _bI
+                    identity
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+
+            atSumB <- nodeB `Node.at_` _.sum
+            atSumB `shouldEqual` (4 + 3 + 2)
+
+            success <- Node.disconnect link nodeA nodeB
+            success `shouldEqual` true
+
+            -- Node.with nodeA $ P.sendIn _aI 7
+            Node.sendIn nodeA _aI 7
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+
+            atSumB' <- nodeB `Node.at_` _.sum
+            atSumB' `shouldEqual` (4 + 3 + 2)
+
+            pure unit
+        -}
 
 
-foo_in = Fn.Inlet :: _ "foo"
-bar_in = Fn.Inlet :: _ "bar"
-c_in   = Fn.Inlet :: _ "c"
+foo_in  = Fn.Inlet :: _ "foo"
+bar_in  = Fn.Inlet :: _ "bar"
+c_in    = Fn.Inlet :: _ "c"
+a_in    = Fn.Inlet :: _ "a"
+b_in    = Fn.Inlet :: _ "b"
+
 foo_out = Fn.Outlet :: _ "foo"
 bar_out = Fn.Outlet :: _ "bar"
+sum_out = Fn.Outlet :: _ "sum"
+
+_sample = Family :: _ "sample"
+_sum    = Family :: _ "sum"
 
 
-makeMyNode :: MyProcess -> Effect MyNode
-makeMyNode =
+makeSampleNode :: SampleProcess -> Effect SampleNode
+makeSampleNode =
     Node.make
-        (Family :: _ "sum")
+        _sample
         unit
-        (Shape :: MyNodeShape)
+        (Shape :: SampleNodeShape)
         { foo : 1, bar : "5", c : 2 }
         { foo : "1", bar : 12 }
+
+
+makeSumNode :: SumProcess -> Effect SumNode
+makeSumNode =
+    Node.make
+        _sum
+        unit
+        (Shape :: SumNodeShape)
+        { a : 0, b : 0 }
+        { sum : 0 }
