@@ -46,7 +46,7 @@ import Noodle.Fn.Raw.Tracker (Tracker) as Raw
 import Noodle.Fn.RawToRec as ReprCnv
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link, RawLink)
-import Noodle.Link (make, makeRaw, fromRaw, toRaw) as Link
+import Noodle.Link (make, makeRaw, fromRaw, toRaw, fromNode, toNode, cancel) as Link
 import Noodle.Wiring (class Wiring)
 
 
@@ -252,6 +252,9 @@ outletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os r
 outletsRow _ = Proxy :: _ os
 
 
+-- TODO: useful operators for functions below (flipped)
+
+
 atInlet :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> m din
 atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
 
@@ -397,18 +400,34 @@ unsafeConnect
         flagRef <- liftEffect $ Ref.new true
         let
             sendToBIfFlagIsOn :: reprB -> m Unit
-            sendToBIfFlagIsOn reprB = do
-                -- Monad.whenM
+            sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
                   unsafeSendIn inletB reprB nodeB
-                  run nodeB
+                --   run nodeB
                 else pure unit
-        -- TODO: get current value at output and send it to input
         SignalX.runSignal $ subscribeOutletR outletA nodeA ~> fromMaybe Repr.fallback ~> convertRepr ~> sendToBIfFlagIsOn
         (mbReprA :: Maybe reprA) <- atOutletR outletA nodeA
         sendToBIfFlagIsOn $ convertRepr $ fromMaybe Repr.fallback mbReprA
         pure $ Link.makeRaw nodeAId outletA inletB nodeBId $ Ref.write false flagRef
+
+
+disconnect
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => Link fA fB oA iB
+    -> Node fA stateA isA osA reprA m
+    -> Node fB stateB isB osB reprB m
+    -> m Boolean
+disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
+    if (Link.fromNode link == nodeAId) && (Link.toNode link == nodeBId) then
+        liftEffect (Link.cancel link) >>= (const $ pure true)
+    else pure false
+
 
 
 {- Private accessors -}

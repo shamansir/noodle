@@ -44,6 +44,10 @@ data Node f = Node { hash :: UniqueHash }
 newtype NodeR = NodeR { family :: String, hash :: UniqueHash }
 
 
+instance Eq NodeR where
+    eq (NodeR nodeA) (NodeR nodeB) = nodeA.family == nodeB.family && nodeA.hash == nodeB.hash
+
+
 nodeR :: forall family. IsSymbol family => Node family -> NodeR
 nodeR (Node { hash }) = NodeR { family : reflectSymbol (Proxy :: _ family), hash }
 

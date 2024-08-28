@@ -7,6 +7,7 @@ import Effect (Effect)
 
 import Noodle.Id (Family, NodeR, Node, Inlet, Outlet, nodeR, familyR, inletR, outletR)
 
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id (NodeR, OutletR, InletR, Inlet, Outlet)
@@ -39,3 +40,31 @@ toRaw (Link { from, to } cancel) = RawLink { from, to } cancel
 
 fromRaw :: forall fA fB oA iB. RawLink -> Link fA fB oA iB
 fromRaw (RawLink { from, to } cancel) = Link { from, to } cancel
+
+
+from :: forall fA fB oA iB. Link fA fB oA iB -> NodeR /\ OutletR
+from (Link { from } _) = from
+
+
+to :: forall fA fB oA iB. Link fA fB oA iB -> NodeR /\ InletR
+to (Link { to } _) = to
+
+
+fromNode :: forall fA fB oA iB. Link fA fB oA iB -> NodeR
+fromNode = from >>> Tuple.fst
+
+
+toNode :: forall fA fB oA iB. Link fA fB oA iB -> NodeR
+toNode = to >>> Tuple.fst
+
+
+fromOutlet :: forall fA fB oA iB. Link fA fB oA iB -> OutletR
+fromOutlet = from >>> Tuple.snd
+
+
+toInlet :: forall fA fB oA iB. Link fA fB oA iB -> InletR
+toInlet = to >>> Tuple.snd
+
+
+cancel :: forall fA fB oA iB. Link fA fB oA iB -> Effect Unit
+cancel (Link _ canceller) = canceller

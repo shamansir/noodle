@@ -46,7 +46,7 @@ import Noodle.Node
     ( make, run, Process
     , atInlet, atOutlet, sendIn, sendOut
     , listenUpdatesAndRun, runOnInletUpdates
-    , connect, connectAlike
+    , connect, connectAlike, disconnect
     , logUpdates
     ) as Node
 
@@ -69,7 +69,7 @@ type SumOutlets =
     ⟙ OS
     ) :: Outlets
 type SumNodeShape = Shape SumInlets SumOutlets
-type SumNode = Node "sum" Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
+type SumNode    = Node "sum"   Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
 type SumProcess = Node.Process Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
 
 
@@ -94,8 +94,8 @@ type SampleOutletsRow =
     , bar :: Int
     )
 type SampleNodeShape = Shape SampleInlets SampleOutlets
-type SampleNode = Node "sample" Unit SampleInletsRow SampleOutletsRow ISRepr Effect
-type SampleProcess = Node.Process Unit SampleInletsRow SampleOutletsRow ISRepr Effect
+type SampleNode    = Node "sample" Unit SampleInletsRow SampleOutletsRow ISRepr Effect
+type SampleProcess = Node.Process  Unit SampleInletsRow SampleOutletsRow ISRepr Effect
 
 
 spec :: Spec Unit
@@ -200,20 +200,47 @@ spec = do
 
     describe "connecting & disconnecting" $ do
 
-        it "is possible to connect nodes" $ liftEffect $ do
+        let
+            sumBoth :: SumProcess
+            sumBoth = do
+                a <- Fn.receive a_in
+                b <- Fn.receive b_in
+                Fn.send sum_out $ a + b
+
+
+        it "is possible to connect nodes (case a)" $ liftEffect $ do
             (nodeA :: SumNode) <-
                 Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- Fn.receive a_in
-                        b <- Fn.receive b_in
-                        Fn.send sum_out $ a + b
+                    $ sumBoth
 
             (nodeB :: SumNode) <-
                 Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- Fn.receive a_in
-                        b <- Fn.receive b_in
-                        Fn.send sum_out $ a + b
+                    $ sumBoth
+
+            _ <- Node.connect
+                    sum_out
+                    b_in
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            atSumB <- nodeB # Node.atOutlet sum_out
+            -- `sum` outlet of `nodeA` is connected to the `b` inlet of `nodeB`,
+            -- so it's `a (2) + b (3)` from `nodeA` and `a (2) + b (2 + 3)` from `nodeB`
+            atSumB `shouldEqual` (2 + 2 + 3)
+
+            pure unit
+
+        it "is possible to connect nodes (case b)" $ liftEffect $ do
+            (nodeA :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
+
+            (nodeB :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
 
             nodeA # Node.sendIn a_in 4
 
@@ -224,101 +251,90 @@ spec = do
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB -- FIXME: optional: now `connect` runs the second node automatically
+            _ <- Node.run nodeB
 
             atSumB <- nodeB # Node.atOutlet sum_out
-            atSumB `shouldEqual` (4 + 3 + 2)
+            -- `sum` outlet of `nodeA` is connected to the `b` inlet of `nodeB`,
+            -- and just a few lines above we've sent a value of `4` to the `a` inlet of `nodeA`
+            -- so it's `a (4) + b (3)` from `nodeA` and `a (2) + b (4 + 3)` from `nodeB`
+            atSumB `shouldEqual` (2 + 4 + 3)
 
             pure unit
 
-    {-
-        it "is possible to connect nodes and keep sending values" $ do
-            nodeA <-
-                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- P.receive _aI
-                        b <- P.receive _bI
-                        P.send _sumO $ a + b
+        it "is possible to connect nodes and keep sending values" $ liftEffect $ do
+            (nodeA :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
 
-            nodeB <-
-                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- P.receive _aI
-                        b <- P.receive _bI
-                        P.send _sumO $ a + b
+            (nodeB :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
 
-            -- Node.with nodeA $ P.sendIn _aI 4
-            Node.sendIn nodeA _aI 4
+            nodeA # Node.sendIn a_in 4
 
             _ <- Node.connect
-                    _sumO
-                    _bI
-                    identity
+                    sum_out
+                    b_in
                     nodeA
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+            _ <- Node.run nodeB
 
-            atSumB <- nodeB `Node.at_` _.sum
-            atSumB `shouldEqual` (4 + 3 + 2)
+            -- atSumB <- nodeB # Node.atOutlet sum_out
+            -- atSumB `shouldEqual` (2 + 4 + 3)
 
-            -- Node.with nodeA $ P.sendIn _aI 7
-            Node.sendIn nodeA _aI 7
+            nodeA # Node.sendIn a_in 7
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+            _ <- Node.run nodeB
 
-            atSumB' <- nodeB `Node.at_` _.sum
-            atSumB' `shouldEqual` (7 + 3 + 2)
+            atSumB' <- nodeB # Node.atOutlet sum_out
+            -- `sum` outlet of `nodeA` is connected to the `b` inlet of `nodeB`,
+            -- and just a few lines above we've sent a value of `7` to the `a` inlet of `nodeA`
+            -- (..to replace the value of `4` which was sent before)
+            -- so it's `a (7) + b (3)` from `nodeA` and `a (2) + b (7 + 3)` from `nodeB`
+            atSumB' `shouldEqual` (2 + 7 + 3)
 
             pure unit
 
-        it "disconnecting works" $ do
-            nodeA <-
-                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- P.receive _aI
-                        b <- P.receive _bI
-                        P.send _sumO $ a + b
 
-            nodeB <-
-                Node.make _sum unit iso oso { a : 2, b : 3 } { sum : 0 }
-                    $ do
-                        a <- P.receive _aI
-                        b <- P.receive _bI
-                        P.send _sumO $ a + b
+        it "disconnecting works" $ liftEffect $ do
+            (nodeA :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
+
+            (nodeB :: SumNode) <-
+                Node.make _sum unit (Shape :: SumNodeShape) { a : 2, b : 3 } { sum : 0 }
+                    $ sumBoth
 
             -- Node.with nodeA $ P.sendIn _aI 4
-            Node.sendIn nodeA _aI 4
+            nodeA # Node.sendIn a_in 4
 
             link <- Node.connect
-                    _sumO
-                    _bI
-                    identity
+                    sum_out
+                    b_in
                     nodeA
                     nodeB
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+            _ <- Node.run nodeB
 
-            atSumB <- nodeB `Node.at_` _.sum
-            atSumB `shouldEqual` (4 + 3 + 2)
+            -- atSumB <- nodeB # Node.atOutlet sum_out
+            -- atSumB `shouldEqual` (2 + 4 + 3)
 
             success <- Node.disconnect link nodeA nodeB
             success `shouldEqual` true
 
-            -- Node.with nodeA $ P.sendIn _aI 7
-            Node.sendIn nodeA _aI 7
+            nodeA # Node.sendIn a_in 7
 
             _ <- Node.run nodeA
-            _ <- Node.run nodeB -- FIXME: now `connect` runs the second node automatically
+            _ <- Node.run nodeB
 
-            atSumB' <- nodeB `Node.at_` _.sum
-            atSumB' `shouldEqual` (4 + 3 + 2)
+            atSumB' <- nodeB # Node.atOutlet sum_out
+            atSumB' `shouldEqual` (2 + 4 + 3)
 
             pure unit
-        -}
 
 
 foo_in  = Fn.Inlet :: _ "foo"
