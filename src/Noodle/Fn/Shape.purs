@@ -152,24 +152,24 @@ infixr 6 type ICons as ⟘ -- ⟂ ˔ ≀ ˄ ⚬ ≀ « ‹ ⊶
 infixr 6 type OCons as ⟙ -- ˕ -- ¤ ˅ ● » › ⊷
 
 
-data InletDef
-foreign import data I :: Symbol -> TemperamentK -> Type -> InletDef
+data InletDef a = I { default :: a }
+foreign import data I :: forall (t :: Type). Symbol -> TemperamentK -> t -> InletDef t
 -- FIXME: don't include types of the inlet, we don't use it in any way, only to check conformance with default values
 -- foreign import data Inlet :: Symbol -> Temperament -> Type -> InletDef
 
 
 data Inlets
-foreign import data ICons :: InletDef -> Inlets -> Inlets
+foreign import data ICons :: forall (t :: Type). InletDef t -> Inlets -> Inlets
 foreign import data IS :: Inlets
 
 
-data OutletDef
-foreign import data O :: Symbol -> Type -> OutletDef
+data OutletDef a = O { default :: a }
+foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef t
 -- FIXME: don't include types of the outlet, we don't use it in any way, only to check conformance with default values
 
 
 data Outlets
-foreign import data OCons :: OutletDef -> Outlets -> Outlets
+foreign import data OCons :: forall (t :: Type). OutletDef t -> Outlets -> Outlets
 foreign import data OS :: Outlets
 
 

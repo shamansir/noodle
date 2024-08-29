@@ -332,6 +332,7 @@ spec = do
             _ <- Node.run nodeB
 
             atSumB' <- nodeB # Node.atOutlet sum_out
+            -- it should act like the value that was sent after disconnecting was never received
             atSumB' `shouldEqual` (2 + 4 + 3)
 
             pure unit
