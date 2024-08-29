@@ -6,6 +6,7 @@ module Noodle.Id
     , nodeR, nodeFamily, nodeRaw
     , Family(..), FamilyR
     , family, familyR
+    , PatchR
     )
     where
 
@@ -42,6 +43,9 @@ data Node f = Node { hash :: UniqueHash }
 -- | `NodeR` stores rawified Node ID, moving all it's type-level data to value-level. As well, can be created right away when one wants to pass type checks when adding nodes.
 -- | (this technique is used when we create nodes from parsed files).
 newtype NodeR = NodeR { family :: String, hash :: UniqueHash }
+
+
+newtype PatchR = PatchR { hash :: UniqueHash }
 
 
 instance Eq NodeR where
