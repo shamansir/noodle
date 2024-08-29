@@ -11,29 +11,8 @@ import Prim.RowList as RL
 
 import Noodle.Id (PatchR) as Id
 import Noodle.Node (Node, RawNode)
-import Noodle.Toolkit (Toolkit)
-
-
-newtype HoldsNode repr m = HoldsNode (forall r. (forall f state is os. IsSymbol f => Node f state is os repr m -> r) -> r)
-
-
-holdNode :: forall f state is os repr m. IsSymbol f => Node f state is os repr m -> HoldsNode repr m
-holdNode node = HoldsNode (_ $ node)
-
-
-withNode :: forall r repr m. HoldsNode repr m -> (forall f state is os. IsSymbol f => Node f state is os repr m -> r) -> r
-withNode (HoldsNode f) = f
-
-
-newtype HoldsRawNode repr m = HoldsRawNode (forall r. (forall state. RawNode state repr m -> r) -> r)
-
-
-holdRawNode :: forall state repr m. RawNode state repr m -> HoldsRawNode repr m
-holdRawNode node = HoldsRawNode (_ $ node)
-
-
-withRawNode :: forall r repr m. HoldsNode repr m -> (forall f state is os. IsSymbol f => Node f state is os repr m -> r) -> r
-withRawNode (HoldsNode f) = f
+import Noodle.Toolkit (Toolkit, Families)
+import Noodle.Node.HoldsNode (HoldsRawNode)
 
 
 {- type Links =
@@ -45,4 +24,4 @@ withRawNode (HoldsNode f) = f
   } -}
 
 
-data Patch state (tookit :: Toolkit) repr m = Patch String Id.PatchR state (Array (HoldsRawNode repr m)) {- Links -}
+data Patch state (families :: Families) repr m = Patch String Id.PatchR state (Array (HoldsRawNode repr m)) {- Links -}
