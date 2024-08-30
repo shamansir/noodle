@@ -144,8 +144,8 @@ instance Show Temperament where
         Cold -> "cold"
 
 
-infixr 6 type ICons as +> -- /+\
-infixr 6 type OCons as :> -- <+ -- \+/
+infixr 6 type ICons as /. -- /+\
+infixr 6 type OCons as \. -- <+ -- \+/
 
 
 infixr 6 type ICons as ⟘ -- ⟂ ˔ ≀ ˄ ⚬ ≀ « ‹ ⊶

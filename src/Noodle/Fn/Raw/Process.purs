@@ -1,6 +1,7 @@
 module Noodle.Fn.Raw.Process
   ( RawProcessF(..)  -- FIXME: close the constructor
   , RawProcessM(..) -- FIXME: close the constructor
+  , RawProcess
   , imapFState
   , imapMState
   , lift
@@ -67,6 +68,9 @@ instance functorProcessF :: Functor m => Functor (RawProcessF state repr m) wher
 
 newtype RawProcessM :: Type -> Type -> (Type -> Type) -> Type -> Type
 newtype RawProcessM state repr m a = RawProcessM (Free (RawProcessF state repr m) a)
+
+
+type RawProcess state repr m = RawProcessM state repr m Unit
 
 
 derive newtype instance functorRawProcessM :: Functor (RawProcessM state repr m)

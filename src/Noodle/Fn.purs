@@ -15,6 +15,7 @@ module Noodle.Fn
 --   , inputsShapeHeld, outputsShapeHeld
 --   , inputsOrder, outputsOrder
   , RawFn, toRaw
+  , Process
   )
   where
 
@@ -66,6 +67,9 @@ data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn Na
 
 
 data RawFn state repr (m :: Type -> Type) = RawFn Name (RawProcessM state repr m Unit) -- TODO: move to separate module
+
+
+type Process (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type) = ProcessM state is os repr m Unit
 
 
 toRaw :: forall state is os repr m. Fn state is os repr m -> RawFn state repr m

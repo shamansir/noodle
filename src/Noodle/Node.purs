@@ -29,7 +29,7 @@ import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
-import Noodle.Fn (Fn, RawFn)
+import Noodle.Fn (Fn, RawFn, Process)
 import Noodle.Fn (make, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
@@ -67,10 +67,6 @@ data RawNode (state :: Type) (repr :: Type) (m :: Type -> Type)
         (Raw.Protocol state repr)
         (RawFn state repr m)
 
-
-
-type Process :: Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> Type
-type Process state is os repr m = ProcessM state is os repr m Unit
 
 
 {- Making -}

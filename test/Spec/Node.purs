@@ -37,13 +37,13 @@ import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
-import Noodle.Fn.Shape (Shape(..), type (⟘), type (⟙), IS, OS, I, O, Hot, Cold, Inlets, Outlets)
+import Noodle.Fn.Shape (Shape(..), type (/.), type (\.), IS, OS, I, O, Hot, Cold, Inlets, Outlets)
 import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Family(..), Temperament(..))
 import Noodle.Node (Node)
 import Noodle.Node
-    ( make, run, Process
+    ( make, run
     , atInlet, atOutlet, sendIn, sendOut
     , listenUpdatesAndRun, runOnInletUpdates
     , connect, connectAlike, disconnect
@@ -60,29 +60,29 @@ import Test.Spec.Util.IntOrStringRepr (ISRepr(..))
 
 
 type SumInlets  =
-    ( I "a" Hot Int
-    ⟘ I "b" Hot Int
-    ⟘ IS
+    (  I "a" Hot Int
+    /. I "b" Hot Int
+    /. IS
     ) :: Inlets
 type SumOutlets =
-    ( O "sum" Int
-    ⟙ OS
+    (  O "sum" Int
+    \. OS
     ) :: Outlets
 type SumNodeShape = Shape SumInlets SumOutlets
 type SumNode    = Node "sum"   Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
-type SumProcess = Node.Process Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
+type SumProcess = Fn.Process   Unit ( a :: Int, b :: Int ) ( sum :: Int ) Int Effect
 
 
 type SampleInlets  =
-    ( I "foo" Hot Int
-    ⟘ I "c" Hot Int
-    ⟘ I "bar" Cold String
-    ⟘ IS
+    (  I "foo" Hot Int
+    /. I "c" Hot Int
+    /. I "bar" Cold String
+    /. IS
     ) :: Inlets
 type SampleOutlets =
-    ( O "foo" String
-    ⟙ O "bar" Int
-    ⟙ OS
+    (  O "foo" String
+    \. O "bar" Int
+    \. OS
     ) :: Outlets
 type SampleInletsRow =
     ( foo :: Int
@@ -95,7 +95,7 @@ type SampleOutletsRow =
     )
 type SampleNodeShape = Shape SampleInlets SampleOutlets
 type SampleNode    = Node "sample" Unit SampleInletsRow SampleOutletsRow ISRepr Effect
-type SampleProcess = Node.Process  Unit SampleInletsRow SampleOutletsRow ISRepr Effect
+type SampleProcess = Fn.Process    Unit SampleInletsRow SampleOutletsRow ISRepr Effect
 
 
 spec :: Spec Unit
