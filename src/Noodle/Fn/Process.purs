@@ -1,5 +1,6 @@
 module Noodle.Fn.Process
-  ( ProcessM(..)
+  ( Process
+  , ProcessM(..)
   , imapMState
   , lift
   , mapMM
@@ -64,6 +65,9 @@ derive newtype instance monadRecProcessM :: MonadRec (ProcessM state is os repr 
 
 type ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
 type ProcessF state is os repr m a = RawProcessF state repr m a
+
+
+type Process (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type) = ProcessM state is os repr m Unit
 
 
 {- Processing -}

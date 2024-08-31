@@ -29,20 +29,23 @@ import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
-import Noodle.Fn (Fn, RawFn, Process)
-import Noodle.Fn (make, run, run', toRaw) as Fn
+import Noodle.Fn (Fn, RawFn)
+import Noodle.Fn (make, makeRaw, run, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
+import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Updates (toTuple) as Updates
-import Noodle.Fn.Process (ProcessM)
+-- import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Raw.Protocol (Protocol) as Raw
+import Noodle.Fn.Raw.Protocol (make) as RawProtocol
 import Noodle.Fn.Raw.Tracker (Tracker) as Raw
+import Noodle.Fn.Raw.Process (RawProcess)
 import Noodle.Fn.RawToRec as ReprCnv
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link, RawLink)
@@ -87,7 +90,7 @@ make
     -> Process state is os repr m
     -> m (Node f state is os repr m)
 make family state shape inletsRec outletsRec process =
-    makeRaw
+    make_
         (Id.familyR family)
         state
         (Shape.reflect shape)
@@ -96,7 +99,7 @@ make family state shape inletsRec outletsRec process =
         process
 
 
-makeRaw
+make_ -- TODO: private
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
      . MonadEffect m
     => Id.FamilyR
@@ -106,11 +109,29 @@ makeRaw
     -> Map Id.OutletR repr
     -> Process state is os repr m
     -> m (Node f state is os repr m)
-makeRaw family state rawShape inletsMap outletsMap process = do
+make_ family state rawShape inletsMap outletsMap process = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeRaw family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
     pure $ Node nodeId rawShape tracker protocol $ Fn.make (Id.family family) process
+
+
+
+makeRaw
+    :: forall state repr m
+     . MonadEffect m
+    => Id.FamilyR
+    -> state
+    -> Shape.Raw
+    -> Map Id.InletR repr
+    -> Map Id.OutletR repr
+    -> RawProcess state repr m
+    -> m (RawNode state repr m)
+makeRaw family state rawShape inletsMap outletsMap process = do
+    uniqueHash <- liftEffect $ UH.generate
+    let nodeId = Id.nodeRaw family uniqueHash
+    tracker /\ protocol <- Protocol.make state inletsMap outletsMap
+    pure $ RawNode nodeId rawShape tracker protocol $ Fn.makeRaw (Id.family family) process
 
 
 

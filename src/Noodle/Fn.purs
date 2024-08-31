@@ -3,6 +3,7 @@ module Noodle.Fn
   , class ToFn, toFn
   , Name, name
   , make, run, run', runRec
+  , makeRaw
 --   , shape
   --, with
 --   , _in, in_, _out, out_
@@ -15,7 +16,6 @@ module Noodle.Fn
 --   , inputsShapeHeld, outputsShapeHeld
 --   , inputsOrder, outputsOrder
   , RawFn, toRaw
-  , Process
   )
   where
 
@@ -53,23 +53,20 @@ import Control.Monad.State as State
 
 import Noodle.Id (Inlet, Outlet, InletR, OutletR)
 -- import Noodle.Node.Has (class HasInletsAt, class HasOutletsAt)
-import Noodle.Fn.Process (ProcessM)
+import Noodle.Fn.Process (Process)
 import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
-import Noodle.Fn.Raw.Process (RawProcessM)
+import Noodle.Fn.Raw.Process (RawProcess)
 
 
 type Name = String
 
 
-data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn Name (ProcessM state is os repr m Unit)
+data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn Name (Process state is os repr m)
 
 
-data RawFn state repr (m :: Type -> Type) = RawFn Name (RawProcessM state repr m Unit) -- TODO: move to separate module
-
-
-type Process (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type) = ProcessM state is os repr m Unit
+data RawFn state repr (m :: Type -> Type) = RawFn Name (RawProcess state repr m) -- TODO: move to separate module
 
 
 toRaw :: forall state is os repr m. Fn state is os repr m -> RawFn state repr m
@@ -80,8 +77,12 @@ class ToFn a state is os repr where
     toFn :: forall m. a -> Fn state is os repr m
 
 
-make :: forall state is os repr m. Name -> ProcessM state is os repr m Unit -> Fn state is os repr m
+make :: forall state is os repr m. Name -> Process state is os repr m -> Fn state is os repr m
 make = Fn
+
+
+makeRaw :: forall state repr m. Name -> RawProcess state repr m -> RawFn state repr m
+makeRaw = RawFn
 
 
 {- Creating -}
@@ -238,7 +239,7 @@ findOutlet pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 -}
 
 
-cloneReplace :: forall state is os repr m. Fn state is os repr m -> ProcessM state is os repr m Unit -> Fn state is os repr m
+cloneReplace :: forall state is os repr m. Fn state is os repr m -> Process state is os repr m -> Fn state is os repr m
 cloneReplace (Fn name _) newProcessM =
     Fn name newProcessM
 
