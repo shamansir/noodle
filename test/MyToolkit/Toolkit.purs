@@ -11,6 +11,7 @@ import Noodle.Toolkit.Families (Families, F, FNil, type (//))
 
 import Test.MyToolkit.Node.Sample as Sample
 import Test.MyToolkit.Node.Sum as Sum
+import Test.MyToolkit.Node.Concat as Concat
 import Test.MyToolkit.Repr (ISRepr)
 
 
@@ -18,6 +19,7 @@ type MyFamilies :: Families
 type MyFamilies
     =  Sample.F
     // Sum.F
+    // Concat.F
     // FNil
 
 
@@ -28,6 +30,7 @@ type Toolkit = Noodle.Toolkit MyFamilies ISRepr Effect
 toolkit :: Toolkit
 toolkit =
     Toolkit.empty "my-toolkit"
+        # Toolkit.register (Concat.family :: Concat.Family)
         # Toolkit.register (Sum.family Sum.sumBoth :: Sum.Family)
         # Toolkit.register (Sample.family Sample.combineAll :: Sample.Family)
 -}
@@ -35,6 +38,7 @@ toolkit =
 
 toolkit :: Toolkit
 toolkit
-    = Toolkit.register (Sample.family Sample.combineAll :: Sample.Family)
-    $ Toolkit.register (Sum.family Sum.sumBoth :: Sum.Family)
+    = Toolkit.register (Sample.family Sample.combineAll)
+    $ Toolkit.register (Sum.family Sum.sumBoth)
+    $ Toolkit.register Concat.family
     $ Toolkit.empty "my-toolkit"
