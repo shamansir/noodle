@@ -110,10 +110,24 @@ make_ -- TODO: private
     -> Process state is os repr m
     -> m (Node f state is os repr m)
 make_ family state rawShape inletsMap outletsMap process = do
+    makeWithFn_ family state rawShape inletsMap outletsMap $ Fn.make (Id.family family) process
+
+
+makeWithFn_ -- TODO: private
+    :: forall f state (is :: Row Type) (os :: Row Type) repr m
+     . MonadEffect m
+    => Id.FamilyR
+    -> state
+    -> Shape.Raw
+    -> Map Id.InletR repr
+    -> Map Id.OutletR repr
+    -> Fn state is os repr m
+    -> m (Node f state is os repr m)
+makeWithFn_ family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeRaw family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
-    pure $ Node nodeId rawShape tracker protocol $ Fn.make (Id.family family) process
+    pure $ Node nodeId rawShape tracker protocol fn
 
 
 
@@ -128,11 +142,24 @@ makeRaw
     -> RawProcess state repr m
     -> m (RawNode state repr m)
 makeRaw family state rawShape inletsMap outletsMap process = do
+    makeRawWithFn family state rawShape inletsMap outletsMap $ Fn.makeRaw (Id.family family) process
+
+
+makeRawWithFn
+    :: forall state repr m
+     . MonadEffect m
+    => Id.FamilyR
+    -> state
+    -> Shape.Raw
+    -> Map Id.InletR repr
+    -> Map Id.OutletR repr
+    -> RawFn state repr m
+    -> m (RawNode state repr m)
+makeRawWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeRaw family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
-    pure $ RawNode nodeId rawShape tracker protocol $ Fn.makeRaw (Id.family family) process
-
+    pure $ RawNode nodeId rawShape tracker protocol fn
 
 
 {- Running -}

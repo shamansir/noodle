@@ -2,6 +2,7 @@ module Noodle.Toolkit.HoldsFamily where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 import Noodle.Toolkit.Families (Family, RawFamily)
@@ -25,5 +26,5 @@ holdRawFamily :: forall state repr m. RawFamily state repr m -> HoldsRawFamily r
 holdRawFamily family = HoldsRawFamily (_ $ family)
 
 
-withRawNode :: forall r repr m. HoldsRawFamily repr m -> (forall state. RawFamily state repr m -> r) -> r
-withRawNode (HoldsRawFamily f) = f
+withRawFamily :: forall r repr m. HoldsRawFamily repr m -> (forall state. RawFamily state repr m -> r) -> r
+withRawFamily (HoldsRawFamily f) = f

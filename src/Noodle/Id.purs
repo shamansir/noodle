@@ -35,6 +35,14 @@ data Family f = Family
 newtype FamilyR = FamilyR { family :: String }
 
 
+instance IsSymbol f => Show (Family f) where
+    show _ = reflectSymbol (Proxy :: _ f)
+
+
+derive instance Eq FamilyR
+derive instance Ord FamilyR
+
+
 -- | Node ID stores node Family name at type-level and Unique Hash of the node at value-level
 data Node :: Symbol -> Type
 data Node f = Node { hash :: UniqueHash }
