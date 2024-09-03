@@ -18,7 +18,7 @@ import Test.Spec.Assertions (shouldEqual)
 import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Temperament(..))
-import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@))
+import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run) as Node
 
 import Test.MyToolkit.Node.Sample as Sample
@@ -129,11 +129,9 @@ spec = do
                 Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
                     $ Sum.sumBoth
 
-            _ <- Node.connect
-                    Sum.sum_out
-                    Sum.b_in
-                    nodeA
-                    nodeB
+            _ <- (nodeA /\ Sum.sum_out)
+                 <~>
+                 (nodeB /\ Sum.b_in)
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -156,11 +154,9 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            _ <- Node.connect
-                    Sum.sum_out
-                    Sum.b_in
-                    nodeA
-                    nodeB
+            _ <- (nodeA /\ Sum.sum_out)
+                 <~>
+                 (nodeB /\ Sum.b_in)
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -184,11 +180,9 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            _ <- Node.connect
-                    Sum.sum_out
-                    Sum.b_in
-                    nodeA
-                    nodeB
+            _ <- (nodeA /\ Sum.sum_out)
+                 <~>
+                 (nodeB /\ Sum.b_in)
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -222,11 +216,9 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            link <- Node.connect
-                    Sum.sum_out
-                    Sum.b_in
-                    nodeA
-                    nodeB
+            link <- (nodeA /\ Sum.sum_out)
+                    <~>
+                    (nodeB /\ Sum.b_in)
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB

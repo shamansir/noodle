@@ -379,6 +379,9 @@ unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <
 {- Connecting -}
 
 
+infixr 6 connectOp as <~>
+
+
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr m
      . Wiring m
@@ -395,6 +398,22 @@ connect
     -> m (Link fA fB oA iB)
 connect outletA inletB nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
+
+
+connectOp
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr m
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => FromRepr repr doutA
+    => ToRepr dinB repr
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => Node fA stateA isA osA repr m /\ Id.Outlet oA
+    -> Node fB stateB isB osB repr m /\ Id.Inlet iB
+    -> m (Link fA fB oA iB)
+connectOp (nodeA /\ outletA) (nodeB /\ inletB) =
+    connect outletA inletB nodeA nodeB
 
 
 connectBySameRepr
