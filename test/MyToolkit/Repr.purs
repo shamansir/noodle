@@ -1,4 +1,4 @@
-module Test.Spec.Util.IntOrStringRepr where
+module Test.MyToolkit.Repr where
 
 import Prelude
 

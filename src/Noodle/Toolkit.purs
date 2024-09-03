@@ -19,11 +19,23 @@ import Data.Maybe (Maybe(..))
 import Noodle.Node (Node, RawNode)
 import Noodle.Id (Family, FamilyR, familyR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, HoldsRawFamily, holdFamily, holdRawFamily, withFamily, withRawFamily)
-import Noodle.Toolkit.Families (Families, Family, RawFamily, class FamilyExistsIn, class PutFamily, F)
+import Noodle.Toolkit.Families (Families, Family, RawFamily, class FamilyExistsIn, class PutFamily, F, FNil)
 import Noodle.Toolkit.Families (familyIdOf, familyRIdOf, spawn, spawnRaw) as F
 
 
-data Toolkit (families :: Families) repr m = Toolkit String (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (HoldsRawFamily repr m))
+type Name = String
+
+
+data Toolkit (families :: Families) repr m = Toolkit Name (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (HoldsRawFamily repr m))
+
+
+empty :: forall repr m. Name -> Toolkit FNil repr m
+empty name =
+    Toolkit
+        name
+        Map.empty
+        Map.empty
+
 
 
 register

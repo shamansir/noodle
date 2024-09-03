@@ -7,6 +7,7 @@ import Test.Spec.Assertions (fail, shouldEqual)
 
 
 import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (empty, spawn, register) as Toolkit
 
 
 spec :: Spec Unit
