@@ -298,13 +298,27 @@ outletsRow _ = Proxy :: _ os
 
 -- TODO: useful operators for functions below (flipped)
 
+infixr 6 atInletFlipped as <-#
+infixr 6 atOutletFlipped as <-@
+
+infixr 6 getFromInletsFlipped as <=#
+infixr 6 getFromOutletsFlipped as <=@
+
 
 atInlet :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> m din
 atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
 
 
+atInletFlipped :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Node f state is os repr m -> Id.Inlet i -> m din
+atInletFlipped = flip atInlet
+
+
 atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> m dout
 atOutlet _ = getFromOutlets $ Record.get (Proxy :: _ o)
+
+
+atOutletFlipped :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Node f state is os repr m -> Id.Outlet o -> m dout
+atOutletFlipped = flip atOutlet
 
 
 atInletR :: forall f state is os repr m. MonadEffect m => Id.InletR -> Node f state is os repr m -> m (Maybe repr)
@@ -319,19 +333,39 @@ getFromInlets :: forall f state is isrl os repr m din. MonadEffect m => FromRepr
 getFromInlets getter node = inlets node <#> getter
 
 
+getFromInletsFlipped :: forall f state is isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m -> (Record is -> din) -> m din
+getFromInletsFlipped = flip getFromInlets
+
+
 getFromOutlets :: forall f state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> m dout
 getFromOutlets getter node = outlets node <#> getter
+
+
+getFromOutletsFlipped :: forall f state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m -> (Record os -> dout) -> m dout
+getFromOutletsFlipped = flip getFromOutlets
 
 
 {- Send data -}
 
 
-sendIn :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => ToRepr din repr => Id.Inlet i -> din -> Node f state is os repr m -> m Unit
+infixr 6 sendInOp as #->
+infixr 6 sendOutOp as @->
+
+
+sendIn :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os repr m -> m Unit
 sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
+
+
+sendInOp :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => Node f state is os repr m -> Id.Inlet i /\ din -> m Unit
+sendInOp node (input /\ din) = sendIn input din node
 
 
 sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os repr m -> m Unit
 sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
+
+
+sendOutOp :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutlet os os' o dout => Node f state is os repr m -> Id.Outlet o /\ dout -> m Unit
+sendOutOp node (output /\ dout) = sendOut output dout node
 
 
 unsafeSendIn :: forall f state is os repr m. MonadEffect m => Id.InletR -> repr -> Node f state is os repr m -> m Unit
