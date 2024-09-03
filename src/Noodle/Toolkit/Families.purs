@@ -42,7 +42,7 @@ else instance (FamilyExistsIn family tail) => FamilyExistsIn family (FCons skipf
 
 
 
-class PutFamily (family :: FamilyDef) (families :: Families) (families' :: Families)
+class PutFamily (family :: FamilyDef) (families :: Families) (families' :: Families) | families -> families'
 
 
 instance PutFamily family FNil (FCons family FNil)

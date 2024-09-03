@@ -28,6 +28,13 @@ type Toolkit = Noodle.Toolkit MyFamilies ISRepr Effect
 toolkit :: Toolkit
 toolkit =
     Toolkit.empty "my-toolkit"
-        # Toolkit.register (Sample.family Sample.combineAll :: Sample.Family)
         # Toolkit.register (Sum.family Sum.sumBoth :: Sum.Family)
+        # Toolkit.register (Sample.family Sample.combineAll :: Sample.Family)
 -}
+
+
+toolkit :: Toolkit
+toolkit
+    = Toolkit.register (Sample.family Sample.combineAll :: Sample.Family)
+    $ Toolkit.register (Sum.family Sum.sumBoth :: Sum.Family)
+    $ Toolkit.empty "my-toolkit"
