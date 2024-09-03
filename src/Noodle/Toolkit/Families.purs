@@ -49,13 +49,6 @@ instance PutFamily family FNil (FCons family FNil)
 else instance PutFamily family (FCons some tail) (FCons family (FCons some tail))
 
 
-type MyFamilies :: Families
-type MyFamilies
-    =  F "a" Unit () () Int Effect
-    // F "foo" Unit ( a :: Int ) ( b :: String ) String Effect
-    // FNil
-
-
 data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
     = Family
         Shape.Raw

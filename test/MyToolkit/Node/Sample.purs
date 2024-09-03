@@ -11,7 +11,7 @@ import Noodle.Fn.Process (Process) as Noodle
 import Noodle.Fn.Process (receive, send) as Fn
 import Noodle.Node (Node) as Noodle
 import Noodle.Node (make) as Node
-import Noodle.Toolkit.Families (Family) as Noodle
+import Noodle.Toolkit.Families (Family, F) as Noodle
 import Noodle.Toolkit.Families (make) as Family
 
 import Test.MyToolkit.Repr (ISRepr)
@@ -47,9 +47,10 @@ type OutletsRow =
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Node    = Noodle.Node "sample" Unit InletsRow OutletsRow ISRepr Effect
 type Process = Noodle.Process Unit InletsRow OutletsRow ISRepr Effect
+type Node    = Noodle.Node   "sample" Unit InletsRow OutletsRow ISRepr Effect
 type Family  = Noodle.Family "sample" Unit InletsRow OutletsRow ISRepr Effect
+type F       = Noodle.F      "sample" Unit InletsRow OutletsRow ISRepr Effect
 
 
 defaultI :: Record InletsRow
