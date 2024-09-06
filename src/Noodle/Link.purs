@@ -13,6 +13,15 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Noodle.Id (NodeR, OutletR, InletR, Inlet, Outlet)
 
 
+type Id = String
+
+
+type FromId = NodeR /\ OutletR
+
+
+type ToId = NodeR /\ InletR
+
+
 data Link (fA :: Symbol) (fB :: Symbol) (oA :: Symbol) (iB :: Symbol) =
     Link
         { from :: NodeR /\ OutletR, to :: NodeR /\ InletR }
