@@ -196,7 +196,8 @@ listenUpdatesAndRun
   -> m Unit
 listenUpdatesAndRun node = do
   runOnInletUpdates node
-  runOnStateUpdates node -- may be running on state updates is not needed
+  -- this leading us into a loop when `modifyState` is inside the `Node`' process call
+  --runOnStateUpdates node -- may be running on state updates is not needed;
   run node
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 

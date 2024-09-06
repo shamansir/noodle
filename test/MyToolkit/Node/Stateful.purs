@@ -69,7 +69,7 @@ family :: Family
 family =
     Family.make
         _stateful
-        ":"
+        "x"
         (Noodle.Shape :: Shape)
         defaultI
         defaultO
@@ -85,5 +85,5 @@ sumAndStore :: Process
 sumAndStore = do
     a <- Fn.receive a_in
     b <- Fn.receive b_in
-    State.modify_ (\s -> s <> show (a + b))
+    State.modify_ (\s -> s <> "-" <> show (a + b))
     Fn.send sum_out $ a + b

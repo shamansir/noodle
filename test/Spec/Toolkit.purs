@@ -61,11 +61,10 @@ spec = do
         it "spawning node with a state from a family" $ liftEffect $ do
             (statefulNode :: Stateful.Node) <- Toolkit.spawn Stateful._stateful My.toolkit
             statefulNode # Node.listenUpdatesAndRun
-            stateA <- Node.state statefulNode
-            stateA `shouldEqual` ":"
             _ <- statefulNode #-> Stateful.a_in /\ 5
-            stateB <- Node.state statefulNode
-            stateB `shouldEqual` ":5"
+            _ <- statefulNode #-> Stateful.b_in /\ 7
+            state <- Node.state statefulNode
+            state `shouldEqual` "x-0-0-5-12"
 
 
     describe "registering & spawning" $ do

@@ -19,10 +19,11 @@ import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
-import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run) as Node
+import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run, state, modifyState) as Node
 
 import Test.MyToolkit.Node.Sample as Sample
 import Test.MyToolkit.Node.Sum as Sum
+import Test.MyToolkit.Node.Stateful as Stateful
 
 
 spec :: Spec Unit
@@ -239,3 +240,26 @@ spec = do
             atSumB' `shouldEqual` (2 + 4 + 3)
 
             pure unit
+
+        it "working with state" $ liftEffect $ do
+            (statefulNode :: Stateful.Node) <- Stateful.makeNode
+            stateA <- Node.state statefulNode
+            stateA `shouldEqual` "x"
+            statefulNode # Node.listenUpdatesAndRun
+            stateB <- Node.state statefulNode
+            stateB `shouldEqual` "x-0-0"
+            _ <- statefulNode #-> Stateful.a_in /\ 5
+            _ <- statefulNode #-> Stateful.b_in /\ 7
+            stateC <- Node.state statefulNode
+            stateC `shouldEqual` "x-0-0-5-12"
+
+        it "working with state" $ liftEffect $ do
+            (statefulNode :: Stateful.Node) <- Stateful.makeNode
+            statefulNode # Node.listenUpdatesAndRun
+            stateBefore <- Node.state statefulNode
+            stateBefore `shouldEqual` "x-0-0"
+            statefulNode # Node.modifyState ((<>) "***-")
+            _ <- statefulNode #-> Stateful.a_in /\ 5
+            _ <- statefulNode #-> Stateful.b_in /\ 7
+            stateC <- Node.state statefulNode
+            stateC `shouldEqual` "***-x-0-0-5-12"
