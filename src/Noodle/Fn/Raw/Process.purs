@@ -7,6 +7,7 @@ module Noodle.Fn.Raw.Process
   , lift
   , mapFM
   , mapMM
+  , toReprableState
   , receive
   , runFreeM
   , runM
@@ -25,7 +26,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
-import Data.Repr (class HasFallback, fallbackByRepr, Repr, unwrap)
+import Data.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -167,6 +168,14 @@ mapFM f =
 mapMM :: forall state repr m m'. (m ~> m') -> RawProcessM state repr m ~> RawProcessM state repr m'
 mapMM f (RawProcessM processFree) =
     RawProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
+
+
+toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => RawProcessM state repr m ~> RawProcessM repr repr m
+toReprableState =
+    imapMState (ensureTo >>> unwrap) (ensureFrom <<< wrap)
+
+
+{- Running -}
 
 
 runM

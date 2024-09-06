@@ -12,6 +12,7 @@ import Noodle.Toolkit.Families (Families, F, FNil, type (//))
 import Test.MyToolkit.Node.Sample as Sample
 import Test.MyToolkit.Node.Sum as Sum
 import Test.MyToolkit.Node.Concat as Concat
+import Test.MyToolkit.Node.Stateful as Stateful
 import Test.MyToolkit.Repr (ISRepr)
 
 
@@ -20,6 +21,7 @@ type MyFamilies
     =  Sample.F
     // Sum.F
     // Concat.F
+    // Stateful.F
     // FNil
 
 
@@ -41,4 +43,5 @@ toolkit
     = Toolkit.register (Sample.family Sample.combineAll)
     $ Toolkit.register (Sum.family Sum.sumBoth)
     $ Toolkit.register Concat.family
+    $ Toolkit.register Stateful.family
     $ Toolkit.empty "my-toolkit"

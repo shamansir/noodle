@@ -1,7 +1,7 @@
 module Noodle.Fn.Protocol
   ( Protocol
   , make, makeRec
-  , getState
+  , getState, modifyState
   , getInlets, getOutlets
   , getRecInlets, getRecOutlets
   , _sendOut, _unsafeSendOut
@@ -76,6 +76,9 @@ getRecInlets p = p.getInlets unit <#> Tuple.snd <#> toRec Id.inletRName
 getRecOutlets :: forall state is os osrl repr. FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
 getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec Id.outletRName
 
+
+modifyState :: forall state is os repr. (state -> state) -> Protocol state is os repr -> Effect Unit
+modifyState = Raw.modifyState
 
 
 -- private: doesn't check if outlet is in `os`

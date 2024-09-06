@@ -1,9 +1,10 @@
-module Test.MyToolkit.Node.Sum where
+module Test.MyToolkit.Node.Stateful where
 
 import Prelude
 
 
 import Effect (Effect)
+import Control.Monad.State.Class (modify_) as State
 
 import Noodle.Id (Family(..)) as NId
 import Noodle.Fn.Shape (I, O, type (/.), type (\.), Hot, Cold, IS, OS)
@@ -19,8 +20,8 @@ import Test.MyToolkit.Repr (ISRepr)
 
 
 
-_sum :: NId.Family "sum"
-_sum  = NId.Family
+_stateful :: NId.Family "stateful"
+_stateful  = NId.Family
 
 
 type Inlets =
@@ -41,11 +42,14 @@ type OutletsRow =
     ( sum :: Int )
 
 
+type State = String
+
+
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow ISRepr Effect
-type Node    = Noodle.Node   "sum" Unit InletsRow OutletsRow ISRepr Effect
-type Family  = Noodle.Family "sum" Unit InletsRow OutletsRow ISRepr Effect
-type F       = Noodle.F      "sum" Unit InletsRow OutletsRow ISRepr Effect
+type Process = Noodle.Process State InletsRow OutletsRow ISRepr Effect
+type Node    = Noodle.Node   "stateful" State InletsRow OutletsRow ISRepr Effect
+type Family  = Noodle.Family "stateful" State InletsRow OutletsRow ISRepr Effect
+type F       = Noodle.F      "stateful" State InletsRow OutletsRow ISRepr Effect
 
 
 defaultI :: Record InletsRow
@@ -61,23 +65,25 @@ c_in    = Noodle.Inlet :: _ "c"
 sum_out = Noodle.Outlet :: _ "sum"
 
 
-family :: Process -> Family
+family :: Family
 family =
     Family.make
-        _sum
-        unit
+        _stateful
+        ":"
         (Noodle.Shape :: Shape)
         defaultI
         defaultO
+        sumAndStore
 
 
-makeNode :: Process -> Effect Node
+makeNode :: Effect Node
 makeNode =
-    family >>> Family.spawn
+    Family.spawn family
 
 
-sumBoth :: Process
-sumBoth = do
+sumAndStore :: Process
+sumAndStore = do
     a <- Fn.receive a_in
     b <- Fn.receive b_in
+    State.modify_ (\s -> s <> show (a + b))
     Fn.send sum_out $ a + b

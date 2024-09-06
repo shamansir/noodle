@@ -12,7 +12,7 @@ import Noodle.Fn.Process (receive, send) as Fn
 import Noodle.Node (Node) as Noodle
 import Noodle.Node (make) as Node
 import Noodle.Toolkit.Families (Family, F) as Noodle
-import Noodle.Toolkit.Families (make) as Family
+import Noodle.Toolkit.Families (make, spawn) as Family
 
 import Test.MyToolkit.Repr (ISRepr)
 
@@ -79,12 +79,7 @@ family =
 
 makeNode :: Process -> Effect Node
 makeNode =
-    Node.make
-        _sample
-        unit
-        (Noodle.Shape :: Shape)
-        defaultI
-        defaultO
+    family >>> Family.spawn
 
 
 combineAll :: Process

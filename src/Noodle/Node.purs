@@ -35,7 +35,7 @@ import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class C
 import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
-import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut) as Protocol
+import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Tracker (Tracker) as Tracker
 import Noodle.Fn.Updates (UpdateFocus(..)) as Fn
@@ -296,6 +296,10 @@ outletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os r
 outletsRow _ = Proxy :: _ os
 
 
+state :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m state
+state node = liftEffect $ Protocol.getState $ _getProtocol node
+
+
 -- TODO: useful operators for functions below (flipped)
 
 infixr 6 atInletFlipped as <-#
@@ -374,6 +378,10 @@ unsafeSendIn input repr = liftEffect <<< Protocol._unsafeSendIn input repr <<< _
 
 unsafeSendOut :: forall f state is os repr m. MonadEffect m => Id.OutletR -> repr -> Node f state is os repr m -> m Unit
 unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <<< _getProtocol
+
+
+modifyState :: forall f state is os repr m. MonadEffect m => (state -> state) -> Node f state is os repr m -> m Unit
+modifyState f = liftEffect <<< Protocol.modifyState f <<< _getProtocol
 
 
 {- Connecting -}
