@@ -3,24 +3,28 @@ module Test.Spec.Node where
 import Prelude
 
 import Data.Tuple.Nested ((/\))
--- import Data.SOrder (type (:::), T)
 
+import Effect (Effect)
 import Effect.Class (liftEffect)
 
+import Data.Map (empty, insert) as Map
+import Data.Repr (Repr(..))
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
--- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
--- import Noodle.Node ((<~>), (+>), (<+))
--- import Noodle.Node (Node)
--- import Noodle.Node as Node
-import Noodle.Fn.Shape (Shape(..))
-import Noodle.Fn.Shape (reflect, inlets, outlets) as Shape
+import Noodle.Id as Id
+import Noodle.Fn.Shape (Shape(..), InletR(..), OutletR(..))
+import Noodle.Fn.Shape (reflect, inlets, outlets, makeRaw) as Shape
+import Noodle.Fn.Raw.Process (receive, send, sendIn) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
-import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run, state, modifyState) as Node
+import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run, state, modifyState, atOutletR) as Node
+import Noodle.RawNode (RawNode)
+import Noodle.RawNode (makeRaw) as Node
 
+import Test.MyToolkit.Repr (ISRepr)
+import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
 import Test.MyToolkit.Node.Sample as Sample
 import Test.MyToolkit.Node.Sum as Sum
 import Test.MyToolkit.Node.Stateful as Stateful
@@ -119,7 +123,6 @@ spec = do
                 bar `shouldEqual` 5
 
     describe "connecting & disconnecting" $ do
-
 
         it "is possible to connect nodes (case a)" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
@@ -241,7 +244,9 @@ spec = do
 
             pure unit
 
-        it "working with state" $ liftEffect $ do
+    describe "working with state" $ do
+
+        it "modifying state in the node processing function" $ liftEffect $ do
             (statefulNode :: Stateful.Node) <- Stateful.makeNode
             stateA <- Node.state statefulNode
             stateA `shouldEqual` "x"
@@ -253,7 +258,7 @@ spec = do
             stateC <- Node.state statefulNode
             stateC `shouldEqual` "x-0-0-5-12"
 
-        it "working with state" $ liftEffect $ do
+        it "modifying state from outside" $ liftEffect $ do
             (statefulNode :: Stateful.Node) <- Stateful.makeNode
             statefulNode # Node.listenUpdatesAndRun
             stateBefore <- Node.state statefulNode
@@ -263,3 +268,28 @@ spec = do
             _ <- statefulNode #-> Stateful.b_in /\ 7
             stateC <- Node.state statefulNode
             stateC `shouldEqual` "***-x-0-0-5-12"
+
+    describe "raw nodes" $ do
+
+        it "is possible to create raw node" $ liftEffect $ do
+            (rawNode :: RawNode ISRepr Effect) <-
+                Node.makeRaw (Id.FamilyR { family : "myRawNode" })
+                    ISRepr.None
+                    (Shape.makeRaw { inlets : [], outlets : [] }) -- TODO
+                    (Map.empty
+                        # Map.insert (InletR "a") (ISRepr.Int 5)
+                        # Map.insert (InletR "b") (ISRepr.Int 7)
+                    )
+                    (Map.empty
+                        # Map.insert (OutletR "sum") (ISRepr.Int 0)
+                    )
+                    $ do
+                        a <- RawFn.receive $ InletR "a"
+                        b <- RawFn.receive $ InletR "b"
+                        RawFn.send (OutletR "sum") $ Repr $ ISRepr.Int 7
+
+            -- sum <- Node.atOutletR (OutletR "sum") rawNode
+
+            let sum = ISRepr.Int 19
+
+            sum `shouldEqual` (ISRepr.Int 12)

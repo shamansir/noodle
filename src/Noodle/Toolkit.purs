@@ -16,7 +16,8 @@ import Data.Map (Map)
 import Data.Map (empty, lookup, insert) as Map
 import Data.Maybe (Maybe(..))
 
-import Noodle.Node (Node, RawNode)
+import Noodle.Node (Node)
+import Noodle.RawNode (RawNode)
 import Noodle.Id (Family, FamilyR, familyR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Families (Families, Family, RawFamily, class FamilyExistsIn, class PutFamily, F, FNil)

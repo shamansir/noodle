@@ -69,7 +69,6 @@ inletR :: forall proxy name. IsSymbol name => proxy name -> InletR
 inletR _ = InletR $ reflectSymbol (Proxy :: _ name)
 
 
-
 outletR :: forall proxy name. IsSymbol name => proxy name -> OutletR
 outletR _ = OutletR $ reflectSymbol (Proxy :: _ name)
 
@@ -275,6 +274,18 @@ inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
 
 outlets :: Raw -> Array { name :: String, order :: Int }
 outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
+
+
+makeRaw ::
+    { inlets :: Array { name :: String, order :: Int, temp :: Temperament }
+    , outlets :: Array { name :: String, order :: Int }
+    }
+    -> Raw
+makeRaw { inlets, outlets } =
+    Raw
+        { inlets : Inlets $ InletDefR <$> inlets
+        , outlets : Outlets $ OutletDefR <$> outlets
+        }
 
 
 -- isInlet :: forall (inlet :: InletDef) (name :: Symbol) (din :: Type). IsInlet name din inlet => Proxy name -> Proxy din -> Proxy inlet -> Unit

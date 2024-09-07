@@ -4,7 +4,7 @@ module Noodle.Id
     ( module FromShape
     , Node, NodeR
     , nodeR, nodeFamily, nodeRaw
-    , Family(..), FamilyR
+    , Family(..), FamilyR(..)
     , family, familyR
     , PatchR
     )
@@ -17,14 +17,13 @@ import Prelude
 import Type.Proxy (Proxy(..))
 import Data.UniqueHash (UniqueHash)
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Newtype (class Newtype, unwrap)
 
 
 
 import Noodle.Fn.Shape
     ( Temperament(..)-- , TemperamentK, Hot, Cold
-    , Inlet(..), InletR, inletR, inletRName
-    , Outlet(..), OutletR, outletR, outletRName
+    , Inlet(..), InletR(..), inletR, inletRName
+    , Outlet(..), OutletR(..), outletR, outletRName
     ) as FromShape
 
 

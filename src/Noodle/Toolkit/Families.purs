@@ -20,8 +20,10 @@ import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Raw.Process (RawProcess)
 import Noodle.Fn.RawToRec as ReprCnv
 
-import Noodle.Node (Node, RawNode)
-import Noodle.Node (make_, makeWithFn_, makeRawWithFn) as Node
+import Noodle.Node (Node)
+import Noodle.RawNode (RawNode)
+import Noodle.Node (make_, makeWithFn_) as Node
+import Noodle.RawNode (makeRawWithFn) as RawNode
 
 
 infixr 6 type FCons as //
@@ -147,7 +149,7 @@ spawnRaw ::
     => RawFamily repr m
     -> m (RawNode repr m)
 spawnRaw (RawFamily familyR rawShape state inletsMap outletsMap fn) =
-    Node.makeRawWithFn
+    RawNode.makeRawWithFn
         familyR
         state
         rawShape

@@ -12,7 +12,8 @@ import Prim.RowList as RL
 -- import Type.Row as R
 
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
-import Noodle.Node (RawNode)
+import Noodle.Node (Node)
+import Noodle.RawNode (RawNode)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
 import Noodle.Node.HoldsNode (HoldsNode)
