@@ -6,6 +6,7 @@ module Noodle.Fn.Raw.Protocol
   , sendOut
   , sendIn
   , modifyState
+  , toReprableState
   )
   where
 
@@ -17,6 +18,7 @@ import Data.Map (Map)
 import Data.Map (insert) as Map
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Repr (class FromRepr, class ToRepr, ensureTo, ensureFrom, wrap, unwrap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -63,3 +65,8 @@ sendIn inlet = flip Generic._modifyInlet inlet <<< Map.insert inlet
 
 modifyState :: forall state repr. (state -> state) -> Protocol state repr -> Effect Unit
 modifyState = Generic._modifyState
+
+
+toReprableState :: forall state repr. FromRepr repr state => ToRepr state repr => Protocol state repr -> Protocol repr repr
+toReprableState =
+    Generic.imapState (ensureTo >>> unwrap) (ensureFrom <<< wrap)

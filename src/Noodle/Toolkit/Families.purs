@@ -58,14 +58,14 @@ data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (rep
         (Fn state is os repr m)
 
 
-data RawFamily (state :: Type) (repr :: Type) (m :: Type -> Type)
+data RawFamily (repr :: Type) (m :: Type -> Type)
     = RawFamily
         Id.FamilyR
         Shape.Raw
-        state
+        repr
         (Map Id.InletR repr)
         (Map Id.OutletR repr)
-        (RawFn state repr m)
+        (RawFn repr repr m)
 
 
 make
@@ -91,14 +91,14 @@ make _ state shape inletsRec outletsRec process =
 
 
 makeRaw
-    :: forall state repr m
+    :: forall repr m
      . Id.FamilyR
-    -> state
+    -> repr
     -> Shape.Raw
     -> Map Id.InletR repr
     -> Map Id.OutletR repr
-    -> RawProcess state repr m
-    -> RawFamily state repr m
+    -> RawProcess repr repr m
+    -> RawFamily repr m
 makeRaw family state rawShape inletsMap outletsMap process = do
     RawFamily
         family
@@ -119,8 +119,8 @@ familyIdOf _ = Id.Family :: _ f
 
 
 familyRIdOf
-    :: forall state repr m
-     . RawFamily state repr m
+    :: forall repr m
+     . RawFamily repr m
     -> Id.FamilyR
 familyRIdOf (RawFamily rawId _ _ _ _ _) = rawId
 
@@ -142,10 +142,10 @@ spawn family@(Family rawShape state inletsMap outletsMap fn) =
 
 
 spawnRaw ::
-    forall state repr m
+    forall repr m
      . MonadEffect m
-    => RawFamily state repr m
-    -> m (RawNode state repr m)
+    => RawFamily repr m
+    -> m (RawNode repr m)
 spawnRaw (RawFamily familyR rawShape state inletsMap outletsMap fn) =
     Node.makeRawWithFn
         familyR

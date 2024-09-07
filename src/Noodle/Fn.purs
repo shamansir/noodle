@@ -15,7 +15,7 @@ module Noodle.Fn
 --   , inputsShape, outputsShape
 --   , inputsShapeHeld, outputsShapeHeld
 --   , inputsOrder, outputsOrder
-  , RawFn, toRaw
+  , RawFn, toRaw, toRawWithReprableState
   )
   where
 
@@ -37,7 +37,7 @@ import Data.List (length, filter) as List
 import Data.Map (Map)
 -- import Data.SOrder (SOrder, class HasSymbolsOrder)
 -- import Data.SOrder (instantiate) as SOrder
-import Data.Repr (class HasFallback, class FromReprRow)
+import Data.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
 
 import Type.Proxy (Proxy(..))
 
@@ -71,6 +71,10 @@ data RawFn state repr (m :: Type -> Type) = RawFn Name (RawProcess state repr m)
 
 toRaw :: forall state is os repr m. Fn state is os repr m -> RawFn state repr m
 toRaw (Fn name processM) = RawFn name $ Process.toRaw processM
+
+
+toRawWithReprableState :: forall state is os repr m. FromRepr repr state => ToRepr state repr => Fn state is os repr m -> RawFn repr repr m
+toRawWithReprableState (Fn name processM) = RawFn name $ Process.toRawWithReprableState processM
 
 
 class ToFn a state is os repr where

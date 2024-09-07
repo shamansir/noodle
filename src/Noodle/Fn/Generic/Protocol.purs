@@ -4,8 +4,6 @@ import Prelude
 
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Bifunctor (bimap)
-import Data.Newtype (unwrap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -104,3 +102,36 @@ _modifyOutlet f outlet protocol =
 
 _modifyState :: forall state inlets outlets. (state -> state) -> Protocol state inlets outlets -> Effect Unit
 _modifyState = flip _.modifyState
+
+
+imapState :: forall state state' inlets outlets. (state -> state') -> (state' -> state) -> Protocol state inlets outlets -> Protocol state' inlets outlets
+imapState f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { getInlets
+    , getOutlets
+    , getState : map f <$> getState
+    , modifyInlets
+    , modifyOutlets
+    , modifyState : \modifyF -> modifyState (g <<< modifyF <<< f)
+    }
+
+
+imapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> (inlets' -> inlets) -> Protocol state inlets outlets -> Protocol state inlets' outlets
+imapInlets f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { getInlets : map (map f) <$> getInlets
+    , getOutlets
+    , getState
+    , modifyInlets : \modifyF -> modifyInlets (map g <<< modifyF <<< f)
+    , modifyOutlets
+    , modifyState
+    }
+
+
+imapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> (outlets' -> outlets) -> Protocol state inlets outlets -> Protocol state inlets outlets'
+imapOutlets f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { getInlets
+    , getOutlets : map (map f) <$> getOutlets
+    , getState
+    , modifyInlets
+    , modifyOutlets : \modifyF -> modifyOutlets (map g <<< modifyF <<< f)
+    , modifyState
+    }

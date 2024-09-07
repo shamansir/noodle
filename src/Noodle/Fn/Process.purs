@@ -12,6 +12,7 @@ module Noodle.Fn.Process
   , runM
 --   , runFreeM
   , toRaw
+  , toRawWithReprableState
   )
   where
 
@@ -41,7 +42,7 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 -- import Noodle.Fn.Raw.Protocol (InletsUpdate, OutletsUpdate) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Fn.Raw.Process (RawProcessM(..), RawProcessF)
-import Noodle.Fn.Raw.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift) as Raw
+import Noodle.Fn.Raw.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState) as Raw
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
@@ -148,3 +149,7 @@ runFreeM protocol fn = Raw.runFreeM protocol fn
 
 toRaw :: forall state is os m a repr. ProcessM state is os repr m a -> RawProcessM state repr m a
 toRaw = unwrap
+
+
+toRawWithReprableState :: forall state is os m a repr. FromRepr repr state => ToRepr state repr => ProcessM state is os repr m a -> RawProcessM repr repr m a
+toRawWithReprableState = toRaw >>> Raw.toReprableState

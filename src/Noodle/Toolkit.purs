@@ -18,7 +18,7 @@ import Data.Maybe (Maybe(..))
 
 import Noodle.Node (Node, RawNode)
 import Noodle.Id (Family, FamilyR, familyR) as Id
-import Noodle.Toolkit.HoldsFamily (HoldsFamily, HoldsRawFamily, holdFamily, holdRawFamily, withFamily, withRawFamily)
+import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Families (Families, Family, RawFamily, class FamilyExistsIn, class PutFamily, F, FNil)
 import Noodle.Toolkit.Families (familyIdOf, familyRIdOf, spawn, spawnRaw) as F
 
@@ -26,7 +26,7 @@ import Noodle.Toolkit.Families (familyIdOf, familyRIdOf, spawn, spawnRaw) as F
 type Name = String
 
 
-data Toolkit (families :: Families) repr m = Toolkit Name (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (HoldsRawFamily repr m))
+data Toolkit (families :: Families) repr m = Toolkit Name (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (RawFamily repr m))
 
 
 empty :: forall repr m. Name -> Toolkit FNil repr m
@@ -50,12 +50,12 @@ register family (Toolkit name families rawFamilies) =
 
 
 registerRaw
-    :: forall state repr m families
-     . RawFamily state repr m
+    :: forall repr m families
+     . RawFamily repr m
     -> Toolkit families repr m
     -> Toolkit families repr m
 registerRaw rawFamily (Toolkit name families rawFamilies) =
-    Toolkit name families (Map.insert (F.familyRIdOf rawFamily) (holdRawFamily rawFamily) rawFamilies)
+    Toolkit name families (Map.insert (F.familyRIdOf rawFamily) rawFamily rawFamilies)
 
 
 spawn
@@ -77,25 +77,18 @@ spawn familyId (Toolkit _ families _) = do
         spawnNode = F.spawn
 
 
-{-
 spawnRaw
-    :: forall state repr m families
+    :: forall repr m families
      . MonadEffect m
-    => Proxy state
-    -> Id.FamilyR
+    => Id.FamilyR
     -> Toolkit families repr m
-    -> m (Maybe (RawNode state repr m))
-spawnRaw _ familyId (Toolkit _ _ rawFamilies) = do
+    -> m (Maybe (RawNode repr m))
+spawnRaw familyId (Toolkit _ _ rawFamilies) = do
     case Map.lookup familyId rawFamilies of
         -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
         -- and satisfy this constraint using method in `FamilyExistsIn (F f state is os repr m) families`
-        Just holdsRawFamily -> Just <$> withRawFamily holdsRawFamily spawnRawNode
+        Just rawFamily -> Just <$> F.spawnRaw rawFamily
         Nothing -> pure Nothing
-        -- Nothing -> liftEffect $ throw $ "Family is not in the registry: " <> show familyId
-    where
-        spawnRawNode :: RawFamily state repr m -> m (RawNode state repr m)
-        spawnRawNode = F.spawnRaw
--}
 
 
 -- spawnRaw

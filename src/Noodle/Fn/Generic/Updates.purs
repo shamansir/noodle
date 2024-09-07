@@ -116,3 +116,42 @@ fold lastUpdate (MergedUpdate { state, inlets, outlets }) =
 
 toTuple :: forall state inlets outlets. MergedUpdate state inlets outlets -> UpdateFocus /\ state /\ inlets /\ outlets
 toTuple (MergedUpdate { focus, state, inlets, outlets }) = focus /\ state /\ inlets /\ outlets
+
+
+mapState :: forall state state' inlets outlets. (state -> state') -> Update state inlets outlets -> Update state' inlets outlets
+mapState f = case _ of
+    UpdateEverything state inlets outlets -> UpdateEverything (f state) inlets outlets
+    UpdateState state -> UpdateState $ f state
+    UpdateInlets upd inlets -> UpdateInlets upd inlets
+    UpdateOutlets upd outlets -> UpdateOutlets upd outlets
+
+
+mapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> Update state inlets outlets -> Update state inlets' outlets
+mapInlets f = case _ of
+    UpdateEverything state inlets outlets -> UpdateEverything state (f inlets) outlets
+    UpdateState state -> UpdateState state
+    UpdateInlets upd inlets -> UpdateInlets upd $ f inlets
+    UpdateOutlets upd outlets -> UpdateOutlets upd outlets
+
+
+mapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> Update state inlets outlets -> Update state inlets outlets'
+mapOutlets f = case _ of
+    UpdateEverything state inlets outlets -> UpdateEverything state inlets $ f outlets
+    UpdateState state -> UpdateState state
+    UpdateInlets upd inlets -> UpdateInlets upd inlets
+    UpdateOutlets upd outlets -> UpdateOutlets upd $ f outlets
+
+
+mergedMapState :: forall state state' inlets outlets. (state -> state') -> MergedUpdate state inlets outlets -> MergedUpdate state' inlets outlets
+mergedMapState f (MergedUpdate { focus, state, inlets, outlets }) =
+    MergedUpdate { focus, state : f state, inlets, outlets }
+
+
+mergedMapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> MergedUpdate state inlets outlets -> MergedUpdate state inlets' outlets
+mergedMapInlets f (MergedUpdate { focus, state, inlets, outlets }) =
+    MergedUpdate { focus, state, inlets: f inlets, outlets }
+
+
+mergedMapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> MergedUpdate state inlets outlets -> MergedUpdate state inlets outlets'
+mergedMapOutlets f (MergedUpdate { focus, state, inlets, outlets }) =
+    MergedUpdate { focus, state, inlets, outlets : f outlets }
