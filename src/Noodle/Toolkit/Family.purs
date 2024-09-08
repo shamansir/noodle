@@ -17,7 +17,7 @@ import Noodle.Fn.Process (Process)
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
-import Noodle.Node (makeWithFn_) as Node
+import Noodle.Node (_makeWithFn) as Node
 
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.FromToRec as ReprCnv
@@ -70,7 +70,7 @@ spawn ::
     => Family f state is os repr m
     -> m (Node f state is os repr m)
 spawn family@(Family rawShape state inletsMap outletsMap fn) =
-    Node.makeWithFn_
+    Node._makeWithFn
         (Id.familyR $ familyIdOf family)
         state
         rawShape

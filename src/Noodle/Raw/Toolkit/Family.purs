@@ -8,7 +8,7 @@ import Effect.Class (class MonadEffect)
 
 import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (makeWithFn) as RawNode
+import Noodle.Raw.Node (_makeWithFn) as RawNode
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make) as RawFn
@@ -52,7 +52,7 @@ spawn ::
     => Family repr m
     -> m (Raw.Node repr m)
 spawn (Family familyR rawShape state inletsMap outletsMap fn) =
-    RawNode.makeWithFn
+    RawNode._makeWithFn
         familyR
         state
         rawShape

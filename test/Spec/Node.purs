@@ -2,6 +2,7 @@ module Test.Spec.Node where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
@@ -20,9 +21,9 @@ import Noodle.Raw.Fn.Shape (inlets, outlets, make) as RawShape
 import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
-import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run, state, modifyState, atOutletR) as Node
+import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR) as Node
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (make) as RawNode
+import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
 import Test.MyToolkit.Repr (ISRepr)
 import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
@@ -89,7 +90,7 @@ spec = do
         it "running node with some function (send new values to some inlets before running)" $ do
             liftEffect $ do
                 myNode <- liftEffect $ Sample.makeNode Sample.combineAll
-                myNode # Node.listenUpdatesAndRun
+                myNode # Node._listenUpdatesAndRun
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
                 myNode # Node.run
@@ -101,7 +102,7 @@ spec = do
         it "running node with some function (listen to updates and send values after that)" $ do
             liftEffect $ do
                 myNode <- liftEffect $ Sample.makeNode Sample.combineAll
-                myNode # Node.listenUpdatesAndRun
+                myNode # Node._listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
@@ -114,7 +115,7 @@ spec = do
         it "running node with some function (listen to updates and send some of the values)" $
             liftEffect $ do
                 myNode <- liftEffect $ Sample.makeNode Sample.combineAll
-                myNode # Node.listenUpdatesAndRun
+                myNode # Node._listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
@@ -251,7 +252,7 @@ spec = do
             (statefulNode :: Stateful.Node) <- Stateful.makeNode
             stateA <- Node.state statefulNode
             stateA `shouldEqual` "x"
-            statefulNode # Node.listenUpdatesAndRun
+            statefulNode # Node._listenUpdatesAndRun
             stateB <- Node.state statefulNode
             stateB `shouldEqual` "x-0-0"
             _ <- statefulNode #-> Stateful.a_in /\ 5
@@ -261,7 +262,7 @@ spec = do
 
         it "modifying state from outside" $ liftEffect $ do
             (statefulNode :: Stateful.Node) <- Stateful.makeNode
-            statefulNode # Node.listenUpdatesAndRun
+            statefulNode # Node._listenUpdatesAndRun
             stateBefore <- Node.state statefulNode
             stateBefore `shouldEqual` "x-0-0"
             statefulNode # Node.modifyState ((<>) "***-")
@@ -285,12 +286,14 @@ spec = do
                         # Map.insert (OutletR "sum") (ISRepr.Int 0)
                     )
                     $ do
-                        a <- RawFn.receive $ InletR "a"
-                        b <- RawFn.receive $ InletR "b"
-                        RawFn.send (OutletR "sum") $ Repr $ ISRepr.Int 7
+                        mbA <- RawFn.receive $ InletR "a"
+                        mbB <- RawFn.receive $ InletR "b"
+                        RawFn.send (OutletR "sum") $ Repr $ ISRepr.Int $ case mbA /\ mbB of
+                            (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> a + b
+                            _ -> 0
 
-            -- sum <- Node.atOutletR (OutletR "sum") rawNode
+            rawNode # RawNode.run
 
-            let sum = ISRepr.Int 19
+            mbSum <- RawNode.atOutlet (OutletR "sum") rawNode
 
-            sum `shouldEqual` (ISRepr.Int 12)
+            mbSum `shouldEqual` (Just $ ISRepr.Int 12)

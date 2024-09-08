@@ -10,50 +10,41 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write) as Ref
-import Effect.Console as Console
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.UniqueHash (generate) as UH
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class ToReprRow, class FromRepr, class FromReprRow, class FromToRepr, class HasFallback, class ToRepr)
+import Data.Repr (class ToReprRow, class FromRepr, class FromReprRow, class HasFallback, class ToRepr)
 import Data.Repr (fallback, inbetween, inbetween') as Repr
 
-import Record (get, set) as Record
-import Record.Extra (keys, class Keys) as Record
+import Record (get) as Record
 
 import Signal (Signal, (~>))
-import Signal.Extra (runInSignal, runSignal) as SignalX
+import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Id as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make, run, run', toRaw, toRawWithReprableState) as Fn
+import Noodle.Fn (make, run', toRawWithReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
 import Noodle.Fn.Tracker (Tracker)
-import Noodle.Fn.Tracker (Tracker) as Tracker
-import Noodle.Fn.Updates (UpdateFocus(..)) as Fn
+import Noodle.Fn.Updates (UpdateFocus) as Fn
 import Noodle.Fn.Updates (toTuple) as Updates
 -- import Noodle.Fn.Process (ProcessM)
-import Noodle.Fn.Tracker (Tracker) as Tracker
-import Noodle.Raw.Fn (Fn) as Raw
-import Noodle.Raw.Fn (make) as RawFn
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Protocol (Protocol) as Raw
-import Noodle.Raw.Fn.Protocol (make, toReprableState) as RawProtocol
-import Noodle.Raw.Fn.Tracker (Tracker) as Raw
+import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
-import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.FromToRec as ReprCnv
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
-import Noodle.Link (make, fromRaw, toRaw, fromNode, toNode, cancel) as Link
+import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
 import Noodle.Raw.Node (Node(..)) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
@@ -107,10 +98,10 @@ make_ -- TODO: private
     -> Process state is os repr m
     -> m (Node f state is os repr m)
 make_ family state rawShape inletsMap outletsMap process = do
-    makeWithFn_ family state rawShape inletsMap outletsMap $ Fn.make (Id.family family) process
+    _makeWithFn family state rawShape inletsMap outletsMap $ Fn.make (Id.family family) process
 
 
-makeWithFn_ -- TODO: private
+_makeWithFn -- TODO: private
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
      . MonadEffect m
     => Id.FamilyR
@@ -120,7 +111,7 @@ makeWithFn_ -- TODO: private
     -> Map Id.OutletR repr
     -> Fn state is os repr m
     -> m (Node f state is os repr m)
-makeWithFn_ family state rawShape inletsMap outletsMap fn = do
+_makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeRaw family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
@@ -131,36 +122,36 @@ makeWithFn_ family state rawShape inletsMap outletsMap fn = do
 
 
 -- TODO: private
-runOnInletUpdates
+_runOnInletUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
     => HasFallback repr
     => Node f state is os repr m
     -> m Unit
-runOnInletUpdates node =
+_runOnInletUpdates node =
   SignalX.runSignal $ subscribeInletsRaw node ~> const (run node)
 
 
 -- TODO: private
-runOnStateUpdates
+_runOnStateUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) repr m
     .  Wiring m
     => HasFallback repr
     => Node f state is os repr m
     -> m Unit
-runOnStateUpdates node =
+_runOnStateUpdates node =
   SignalX.runSignal $ subscribeState node ~> const (run node)
 
 
 --- FIXME: find better name
-listenUpdatesAndRun
+_listenUpdatesAndRun
   :: forall f state (is :: Row Type) (os :: Row Type) repr m
    . Wiring m
   => HasFallback repr
   => Node f state is os repr m
   -> m Unit
-listenUpdatesAndRun node = do
-  runOnInletUpdates node
+_listenUpdatesAndRun node = do
+  _runOnInletUpdates node
   -- this leading us into a loop when `modifyState` is inside the `Node`' process call
   --runOnStateUpdates node -- may be running on state updates is not needed;
   run node
