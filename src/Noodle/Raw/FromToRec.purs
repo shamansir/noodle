@@ -1,4 +1,4 @@
-module Noodle.Fn.RawToRec where
+module Noodle.Raw.FromToRec where
 
 import Prelude (map, (>>>))
 

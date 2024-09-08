@@ -1,4 +1,4 @@
-module Noodle.Fn.Raw.Updates where
+module Noodle.Raw.Fn.Updates where
 
 import Noodle.Fn.Generic.Updates as Generic
 

@@ -7,9 +7,9 @@ module Noodle.Id
     , Family(..), FamilyR(..)
     , family, familyR
     , PatchR
+    , FnName, Link
     )
     where
-
 
 
 import Prelude
@@ -21,9 +21,11 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 
 
 import Noodle.Fn.Shape
-    ( Temperament(..)-- , TemperamentK, Hot, Cold
-    , Inlet(..), InletR(..), inletR, inletRName
+    ( Inlet(..), InletR(..), inletR, inletRName
     , Outlet(..), OutletR(..), outletR, outletRName
+    ) as FromShape
+import Noodle.Fn.Shape.Temperament
+    ( Temperament(..)-- , TemperamentK, Hot, Cold)
     ) as FromShape
 
 
@@ -77,3 +79,9 @@ familyR Family = FamilyR { family : reflectSymbol (Proxy :: _ family) }
 
 nodeRaw :: FamilyR -> UniqueHash -> NodeR
 nodeRaw (FamilyR { family }) hash = NodeR { family, hash }
+
+
+type FnName = String
+
+
+type Link = String

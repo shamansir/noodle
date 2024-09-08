@@ -1,7 +1,7 @@
-module Noodle.Fn.Raw.Process
-  ( RawProcessF(..)  -- FIXME: close the constructor
-  , RawProcessM(..) -- FIXME: close the constructor
-  , RawProcess
+module Noodle.Raw.Fn.Process
+  ( ProcessF(..)  -- FIXME: close the constructor
+  , ProcessM(..) -- FIXME: close the constructor
+  , Process
   , imapFState
   , imapMState
   , lift
@@ -44,12 +44,12 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
-import Noodle.Fn.Raw.Protocol (Protocol) as Raw
+import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 
 
 
-data RawProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
-data RawProcessF state repr m a
+data ProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
+data ProcessF state repr m a
     = State (state -> a /\ state)
     | Lift (m a)
     | Send OutletR (Repr repr) a
@@ -57,7 +57,7 @@ data RawProcessF state repr m a
     | Receive InletR (Repr repr -> a)
 
 
-instance functorProcessF :: Functor m => Functor (RawProcessF state repr m) where
+instance functorProcessF :: Functor m => Functor (ProcessF state repr m) where
     map f = case _ of
         State k -> State (lmap f <<< k)
         Lift m -> Lift (map f m)
@@ -67,40 +67,40 @@ instance functorProcessF :: Functor m => Functor (RawProcessF state repr m) wher
         -- RunEffect effA -> RunEffect $ map f effA
 
 
-newtype RawProcessM :: Type -> Type -> (Type -> Type) -> Type -> Type
-newtype RawProcessM state repr m a = RawProcessM (Free (RawProcessF state repr m) a)
+newtype ProcessM :: Type -> Type -> (Type -> Type) -> Type -> Type
+newtype ProcessM state repr m a = ProcessM (Free (ProcessF state repr m) a)
 
 
-type RawProcess state repr m = RawProcessM state repr m Unit
+type Process state repr m = ProcessM state repr m Unit
 
 
-derive newtype instance functorRawProcessM :: Functor (RawProcessM state repr m)
-derive newtype instance applyRawProcessM :: Apply (RawProcessM state repr m)
-derive newtype instance applicativeRawProcessM :: Applicative (RawProcessM state repr m)
-derive newtype instance bindRawProcessM :: Bind (RawProcessM state repr m)
-derive newtype instance monadRawProcessM :: Monad (RawProcessM state repr m)
-derive newtype instance semigroupRawProcessM :: Semigroup a => Semigroup (RawProcessM state repr m a)
-derive newtype instance monoidRawProcessM :: Monoid a => Monoid (RawProcessM state repr m a)
---derive newtype instance bifunctorRawProcessM :: Bifunctor (RawProcessM state repr m a)
+derive newtype instance functorProcessM :: Functor (ProcessM state repr m)
+derive newtype instance applyProcessM :: Apply (ProcessM state repr m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM state repr m)
+derive newtype instance bindProcessM :: Bind (ProcessM state repr m)
+derive newtype instance monadProcessM :: Monad (ProcessM state repr m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state repr m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state repr m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state repr m a)
 
 
-instance monadEffectRawProcessM :: MonadEffect m => MonadEffect (RawProcessM state repr m) where
-  liftEffect = RawProcessM <<< Free.liftF <<< Lift <<< liftEffect
+instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state repr m) where
+  liftEffect = ProcessM <<< Free.liftF <<< Lift <<< liftEffect
 
 
-instance monadAffRawProcessM :: MonadAff m => MonadAff (RawProcessM state repr m) where
-  liftAff = RawProcessM <<< Free.liftF <<< Lift <<< liftAff
+instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state repr m) where
+  liftAff = ProcessM <<< Free.liftF <<< Lift <<< liftAff
 
 
-instance monadStateRawProcessM :: MonadState state (RawProcessM state repr m) where
-  state = RawProcessM <<< Free.liftF <<< State
+instance monadStateProcessM :: MonadState state (ProcessM state repr m) where
+  state = ProcessM <<< Free.liftF <<< State
 
 
-instance monadThrowRawProcessM :: MonadThrow e m => MonadThrow e (RawProcessM state repr m) where
-  throwError = RawProcessM <<< Free.liftF <<< Lift <<< throwError
+instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state repr m) where
+  throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecRawProcessM :: MonadRec (RawProcessM state repr m) where
+instance monadRecProcessM :: MonadRec (ProcessM state repr m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
@@ -108,23 +108,23 @@ instance monadRecRawProcessM :: MonadRec (RawProcessM state repr m) where
 
 {- Processing -}
 
-receive :: forall state repr m. InletR -> RawProcessM state repr m (Repr repr)
+receive :: forall state repr m. InletR -> ProcessM state repr m (Repr repr)
 receive inletR =
-    RawProcessM $ Free.liftF $ Receive inletR $ identity
+    ProcessM $ Free.liftF $ Receive inletR $ identity
 
 
-send :: forall state repr m. OutletR -> Repr repr -> RawProcessM state repr m Unit
+send :: forall state repr m. OutletR -> Repr repr -> ProcessM state repr m Unit
 send outletR orepr =
-    RawProcessM $ Free.liftF $ Send outletR orepr unit
+    ProcessM $ Free.liftF $ Send outletR orepr unit
 
 
-sendIn ∷ forall state repr m. InletR → Repr repr → RawProcessM state repr m Unit
+sendIn ∷ forall state repr m. InletR → Repr repr → ProcessM state repr m Unit
 sendIn inletR irepr =
-    RawProcessM $ Free.liftF $ SendIn inletR irepr unit
+    ProcessM $ Free.liftF $ SendIn inletR irepr unit
 
 
-lift :: forall state repr m. m Unit -> RawProcessM state repr m Unit
-lift m = RawProcessM $ Free.liftF $ Lift m
+lift :: forall state repr m. m Unit -> ProcessM state repr m Unit
+lift m = ProcessM $ Free.liftF $ Lift m
 
 
 inletsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
@@ -138,7 +138,7 @@ outletsOf = keys
 {- Maps -}
 
 
-imapFState :: forall state state' repr m. (state -> state') -> (state' -> state) -> RawProcessF state repr m ~> RawProcessF state' repr m
+imapFState :: forall state state' repr m. (state -> state') -> (state' -> state) -> ProcessF state repr m ~> ProcessF state' repr m
 imapFState f g =
     case _ of
         State k -> State (map f <<< k <<< g)
@@ -149,12 +149,12 @@ imapFState f g =
         -- RunEffect effA -> RunEffect effA
 
 
-imapMState :: forall state state' repr m. (state -> state') -> (state' -> state) -> RawProcessM state repr m ~> RawProcessM state' repr m
-imapMState f g (RawProcessM processFree) =
-    RawProcessM $ foldFree (Free.liftF <<< imapFState f g) processFree
+imapMState :: forall state state' repr m. (state -> state') -> (state' -> state) -> ProcessM state repr m ~> ProcessM state' repr m
+imapMState f g (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< imapFState f g) processFree
 
 
-mapFM :: forall state repr m m'. (m ~> m') -> RawProcessF state repr m ~> RawProcessF state repr m'
+mapFM :: forall state repr m m'. (m ~> m') -> ProcessF state repr m ~> ProcessF state repr m'
 mapFM f =
     case _ of
         State k -> State k
@@ -165,12 +165,12 @@ mapFM f =
         -- RunEffect effA -> RunEffect effA
 
 
-mapMM :: forall state repr m m'. (m ~> m') -> RawProcessM state repr m ~> RawProcessM state repr m'
-mapMM f (RawProcessM processFree) =
-    RawProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
+mapMM :: forall state repr m m'. (m ~> m') -> ProcessM state repr m ~> ProcessM state repr m'
+mapMM f (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
 
-toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => RawProcessM state repr m ~> RawProcessM repr repr m
+toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => ProcessM state repr m ~> ProcessM repr repr m
 toReprableState =
     imapMState (ensureTo >>> unwrap) (ensureFrom <<< wrap)
 
@@ -184,9 +184,9 @@ runM
     => MonadRec m
     => HasFallback repr
     => Raw.Protocol state repr
-    -> RawProcessM state repr m
+    -> ProcessM state repr m
     ~> m
-runM protocol (RawProcessM processFree) =
+runM protocol (ProcessM processFree) =
     runFreeM protocol processFree
 
 
@@ -196,13 +196,13 @@ runFreeM
     => MonadRec m
     => HasFallback repr
     => Raw.Protocol state repr
-    -> Free (RawProcessF state repr m)
+    -> Free (ProcessF state repr m)
     ~> m
 runFreeM protocol fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
-        go :: forall a. RawProcessF state repr m a -> m a
+        go :: forall a. ProcessF state repr m a -> m a
         go (State f) = do
             state <- getUserState
             case f state of

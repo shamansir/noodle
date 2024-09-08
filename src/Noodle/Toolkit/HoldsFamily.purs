@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Symbol (class IsSymbol)
 
-import Noodle.Toolkit.Families (Family)
+import Noodle.Toolkit.Family (Family)
 
 
 newtype HoldsFamily repr m = HoldsFamily (forall r. (forall f state is os. IsSymbol f => Family f state is os repr m -> r) -> r)

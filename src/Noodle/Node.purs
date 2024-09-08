@@ -29,10 +29,10 @@ import Signal (Signal, (~>))
 import Signal.Extra (runInSignal, runSignal) as SignalX
 
 import Noodle.Id as Id
-import Noodle.Fn (Fn, RawFn)
-import Noodle.Fn (make, makeRaw, run, run', toRaw, toRawWithReprableState) as Fn
+import Noodle.Fn (Fn)
+import Noodle.Fn (make, run, run', toRaw, toRawWithReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
-import Noodle.Fn.Shape (Raw, reflect, inletRName, outletRName) as Shape
+import Noodle.Fn.Shape (reflect, inletRName, outletRName) as Shape
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
@@ -42,22 +42,28 @@ import Noodle.Fn.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Updates (toTuple) as Updates
 -- import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Tracker (Tracker) as Tracker
-import Noodle.Fn.Raw.Protocol (Protocol) as Raw
-import Noodle.Fn.Raw.Protocol (make, toReprableState) as RawProtocol
-import Noodle.Fn.Raw.Tracker (Tracker) as Raw
-import Noodle.Fn.Raw.Tracker (toReprableState) as RawTracker
-import Noodle.Fn.Raw.Process (RawProcess)
-import Noodle.Fn.RawToRec as ReprCnv
+import Noodle.Raw.Fn (Fn) as Raw
+import Noodle.Raw.Fn (make) as RawFn
+import Noodle.Raw.Fn.Shape (Shape) as Raw
+import Noodle.Raw.Fn.Protocol (Protocol) as Raw
+import Noodle.Raw.Fn.Protocol (make, toReprableState) as RawProtocol
+import Noodle.Raw.Fn.Tracker (Tracker) as Raw
+import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
+import Noodle.Raw.Fn.Process (Process) as Raw
+import Noodle.Raw.FromToRec as ReprCnv
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
-import Noodle.Link (Link, RawLink)
-import Noodle.Link (make, makeRaw, fromRaw, toRaw, fromNode, toNode, cancel) as Link
+import Noodle.Link (Link)
+import Noodle.Link (make, fromRaw, toRaw, fromNode, toNode, cancel) as Link
+import Noodle.Raw.Node (Node(..)) as Raw
+import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
 
 
 data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
     = Node
         Id.NodeR
-        Shape.Raw
+        Raw.Shape
         (Tracker state is os repr)
         (Protocol state is os repr)
         (Fn state is os repr m)
@@ -95,7 +101,7 @@ make_ -- TODO: private
      . MonadEffect m
     => Id.FamilyR
     -> state
-    -> Shape.Raw
+    -> Raw.Shape
     -> Map Id.InletR repr
     -> Map Id.OutletR repr
     -> Process state is os repr m
@@ -109,7 +115,7 @@ makeWithFn_ -- TODO: private
      . MonadEffect m
     => Id.FamilyR
     -> state
-    -> Shape.Raw
+    -> Raw.Shape
     -> Map Id.InletR repr
     -> Map Id.OutletR repr
     -> Fn state is os repr m
@@ -454,7 +460,7 @@ unsafeConnect
     -> (reprA -> reprB)
     -> Node fA stateA isA osA reprA m
     -> Node fB stateB isB osB reprB m
-    -> m RawLink
+    -> m Raw.Link
 unsafeConnect
     outletA
     inletB
@@ -474,7 +480,7 @@ unsafeConnect
         SignalX.runSignal $ subscribeOutletR outletA nodeA ~> fromMaybe Repr.fallback ~> convertRepr ~> sendToBIfFlagIsOn
         (mbReprA :: Maybe reprA) <- atOutletR outletA nodeA
         sendToBIfFlagIsOn $ convertRepr $ fromMaybe Repr.fallback mbReprA
-        pure $ Link.makeRaw nodeAId outletA inletB nodeBId $ Ref.write false flagRef
+        pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 
 disconnect
@@ -511,3 +517,15 @@ _getTracker (Node _ _ tracker _ _) = tracker
 
 logUpdates :: forall f state is os repr m. Show state => Show repr => Node f state is os repr m -> Signal String
 logUpdates (Node _ _ tracker _ _) = show <$> tracker.all
+
+
+
+{- Rawify -}
+
+
+toRaw :: forall f state is os repr m. FromRepr repr state => ToRepr state repr => Node f state is os repr m -> Raw.Node repr m
+toRaw (Node nodeR shape tracker protocol fn) =
+    Raw.Node nodeR shape
+        (RawTracker.toReprableState tracker)
+        (RawProtocol.toReprableState protocol)
+        $ Fn.toRawWithReprableState fn

@@ -1,4 +1,4 @@
-module Noodle.Fn.Rec.Process
+module Noodle.Rec.Fn.Process
   ( ProcessF
   , ProcessM
   , imapFState
@@ -45,7 +45,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Id (Inlet, InletR, Outlet, OutletR, inletR, outletR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
-import Noodle.Fn.Rec.Protocol (Protocol) as Rec
+import Noodle.Rec.Fn.Protocol (Protocol) as Rec
 
 
 

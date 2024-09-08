@@ -23,10 +23,10 @@ import Effect.Class (class MonadEffect)
 import Noodle.Id (InletR, OutletR, Inlet, Outlet, outletR, inletR)
 import Noodle.Id (inletRName, outletRName) as Id
 
-import Noodle.Fn.Raw.Protocol as Raw
--- TODO: import Noodle.Fn.Raw.Protocol as RawExports
+import Noodle.Raw.Fn.Protocol as Raw
+-- TODO: import Noodle.Raw.Fn.Protocol as RawExports
 import Noodle.Fn.Tracker (Tracker)
-import Noodle.Fn.RawToRec (toRec, fromRec)
+import Noodle.Raw.FromToRec (toRec, fromRec)
 
 import Data.Repr (class ToRepr, class ToReprRow, class FromReprRow)
 import Data.Repr (ensureTo, unwrap) as Repr

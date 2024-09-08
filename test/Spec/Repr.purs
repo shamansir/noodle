@@ -9,7 +9,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Data.Symbol (reflectSymbol)
 
-import Noodle.Fn.RawToRec as RR
+import Noodle.Raw.FromToRec as RR
 
 import Test.MyToolkit.Repr (ISRepr(..))
 

@@ -11,14 +11,14 @@ import Prim.RowList as RL
 -- import Type.RowList as RL
 -- import Type.Row as R
 
-import Noodle.Id (PatchR, FamilyR, NodeR) as Id
+import Noodle.Id (PatchR, FamilyR, NodeR, Link) as Id
 import Noodle.Node (Node)
-import Noodle.RawNode (RawNode)
+import Noodle.Raw.Node (Node) as Raw
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
 import Noodle.Node.HoldsNode (HoldsNode)
-import Noodle.Link (RawLink)
-import Noodle.Link (Id, FromId, ToId) as Link
+import Noodle.Link (FromId, ToId) as Link
+import Noodle.Raw.Link (Link) as Raw
 
 
 data Patch state (families :: Families) repr m =
@@ -27,14 +27,14 @@ data Patch state (families :: Families) repr m =
     Id.PatchR
     state
     (Map Id.FamilyR (Array (HoldsNode repr m)))
-    (Map Id.FamilyR (Array (RawNode repr m)))
+    (Map Id.FamilyR (Array (Raw.Node repr m)))
     Links
 
 
 type Links =
-  { lastId :: Link.Id
-  , from :: Map Link.FromId RawLink
-  , to :: Map Link.ToId RawLink
+  { lastId :: Id.Link
+  , from :: Map Link.FromId Raw.Link
+  , to :: Map Link.ToId Raw.Link
   , byNode :: Map Id.NodeR (Array (Link.FromId /\ Link.ToId))
-  , byId :: Map Link.Id RawLink
+  , byId :: Map Id.Link Raw.Link
   }

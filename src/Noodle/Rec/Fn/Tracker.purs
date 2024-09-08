@@ -1,4 +1,4 @@
-module Noodle.Fn.Rec.Tracker where
+module Noodle.Rec.Fn.Tracker where
 
 import Prelude ((<#>))
 

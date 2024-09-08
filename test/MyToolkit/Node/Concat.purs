@@ -7,14 +7,15 @@ import Effect (Effect)
 import Data.String (length) as String
 
 import Noodle.Id (Family(..)) as NId
-import Noodle.Fn.Shape (I, O, type (/.), type (\.), Hot, Cold, IS, OS)
+import Noodle.Fn.Shape.Temperament (Hot, Cold)
+import Noodle.Fn.Shape (I, O, type (/.), type (\.), IS, OS)
 import Noodle.Fn.Shape (Shape(..), Inlets, Outlets, Inlet(..), Outlet(..)) as Noodle
 import Noodle.Fn.Process (Process) as Noodle
 import Noodle.Fn.Process (receive, send) as Fn
 import Noodle.Node (Node) as Noodle
-import Noodle.Node (make) as Node
-import Noodle.Toolkit.Families (Family, F) as Noodle
-import Noodle.Toolkit.Families (make, spawn) as Family
+import Noodle.Toolkit.Family (Family) as Noodle
+import Noodle.Toolkit.Family (make, spawn) as Family
+import Noodle.Toolkit.Families (F) as Noodle
 
 import Test.MyToolkit.Repr (ISRepr)
 

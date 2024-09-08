@@ -3,14 +3,15 @@ module Noodle.Fn.Shape where
 
 import Prelude
 
-import Prim.Boolean (True, False)
 import Prim.Row as Row
-import Prim.RowList as RL
 
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Array ((:))
+
+import Noodle.Raw.Fn.Shape (InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
+import Noodle.Fn.Shape.Temperament (TemperamentK, class IsTemperament, reflectTemperament)
 
 
 -- | Inlet ID is used to reference corresponding inlet on a type-level by its name (e.g. as a record key)
@@ -22,10 +23,6 @@ data Inlet name = Inlet
 newtype InletR = InletR String
 
 
--- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype InletDefR = InletDefR { name :: String, order :: Int, temp :: Temperament }
-
-
 -- | Outlet ID is used to reference corresponding outlet on a type-level by its name (e.g. as a record key)
 data Outlet :: Symbol -> Type
 data Outlet name = Outlet
@@ -33,10 +30,6 @@ data Outlet name = Outlet
 
 -- | `OutletR` stores rawified outlet name as String.
 newtype OutletR = OutletR String
-
-
--- | `OutletDefR` stores rawified outlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype OutletDefR = OutletDefR { name :: String, order :: Int }
 
 
 instance IsSymbol name => Show (Inlet name) where
@@ -55,14 +48,6 @@ instance Show InletR where
 
 instance Show OutletR where
     show (OutletR name) = name
-
-
-instance Show InletDefR where
-    show (InletDefR { name, order, temp }) = name <> " (" <> show order <> "," <> show temp <> " )"
-
-
-instance Show OutletDefR where
-    show (OutletDefR { name, order }) = name <> " (" <> show order <> ")"
 
 
 inletR :: forall proxy name. IsSymbol name => proxy name -> InletR
@@ -92,55 +77,11 @@ outletRName = unwrap
 derive instance Newtype InletR _
 derive instance Newtype OutletR _
 
-derive instance Newtype InletDefR _
-derive instance Newtype OutletDefR _
-
 derive instance Eq InletR
 derive instance Eq OutletR
 
-derive instance Eq InletDefR
-derive instance Eq OutletDefR
-
 derive instance Ord InletR
 derive instance Ord OutletR
-
-derive instance Ord InletDefR
-derive instance Ord OutletDefR
-
-
-
-data TemperamentK
-
-
-foreign import data Hot :: TemperamentK
-foreign import data Cold :: TemperamentK
-
-
--- | `Temperament` is stored in Inlet and so it can be `Hot` or `Cold`:
--- |
--- | * _Hot_ means that receiving any new data at it triggers the re-computation of the Node function;
--- | * _Cold_ means that receiving any new data just keeps it held there and node function waits for receiving a data from another hot inlet to trigger;
-data Temperament
-    = Hot
-    | Cold
-
-
-class IsTemperament :: TemperamentK -> Constraint
-class IsTemperament temp where
-  reflectTemperament :: Proxy temp -> Temperament
-
-
-instance IsTemperament Hot where
-    reflectTemperament _ = Hot
-
-instance IsTemperament Cold where
-    reflectTemperament _ = Cold
-
-
-instance Show Temperament where
-    show = case _ of
-        Hot -> "hot"
-        Cold -> "cold"
 
 
 infixr 6 type ICons as /. -- /+\
@@ -172,23 +113,15 @@ foreign import data OCons :: forall (t :: Type). OutletDef t -> Outlets -> Outle
 foreign import data OS :: Outlets
 
 
-newtype InletsShape = Inlets (Array InletDefR)
-newtype OutletsShape = Outlets (Array OutletDefR)
-
-
-derive instance Newtype InletsShape _
-derive instance Newtype OutletsShape _
-
-
 class InletsDefs (inlets :: Inlets) where
-    reflectInlets :: Proxy inlets -> Int -> InletsShape
+    reflectInlets :: Proxy inlets -> Int -> Raw.InletsShape
 
 instance InletsDefs IS where
-    reflectInlets _ _ = Inlets []
+    reflectInlets _ _ = Raw.Inlets []
 else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (ICons (I name temp din) tail) where
     reflectInlets _ n =
-        Inlets
-            $ (InletDefR
+        Raw.Inlets
+            $ (Raw.InletDefR
                 { name : reflectSymbol (Proxy :: _ name)
                 , order : n
                 , temp : reflectTemperament (Proxy :: _ temp)
@@ -199,15 +132,15 @@ else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs
 
 
 class OutletsDefs (outlets :: Outlets) where
-    reflectOutlets :: Proxy outlets -> Int -> OutletsShape
+    reflectOutlets :: Proxy outlets -> Int -> Raw.OutletsShape
 
 
 instance OutletsDefs OS where
-    reflectOutlets _ _ = Outlets []
+    reflectOutlets _ _ = Raw.Outlets []
 else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name dout) tail) where
     reflectOutlets _ n =
-        Outlets
-            $ (OutletDefR
+        Raw.Outlets
+            $ (Raw.OutletDefR
                 { name : reflectSymbol (Proxy :: _ name)
                 , order : n
                 })
@@ -253,39 +186,12 @@ else instance
   ) => ContainsAllOutlets row (OCons (O name a) otail)
 
 
-derive instance Eq Temperament
-derive instance Ord Temperament
-
-
 data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
-newtype Raw = Raw { inlets :: InletsShape, outlets :: OutletsShape }
 
 
-derive instance Newtype Raw _
+reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw.Shape
+reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets) 0, outlets : reflectOutlets (Proxy :: _ outlets) 0 }
 
-
-reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw
-reflect _ = Raw { inlets : reflectInlets (Proxy :: _ inlets) 0, outlets : reflectOutlets (Proxy :: _ outlets) 0 }
-
-
-inlets :: Raw -> Array { name :: String, order :: Int, temp :: Temperament }
-inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
-
-
-outlets :: Raw -> Array { name :: String, order :: Int }
-outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
-
-
-makeRaw ::
-    { inlets :: Array { name :: String, order :: Int, temp :: Temperament }
-    , outlets :: Array { name :: String, order :: Int }
-    }
-    -> Raw
-makeRaw { inlets, outlets } =
-    Raw
-        { inlets : Inlets $ InletDefR <$> inlets
-        , outlets : Outlets $ OutletDefR <$> outlets
-        }
 
 
 -- isInlet :: forall (inlet :: InletDef) (name :: Symbol) (din :: Type). IsInlet name din inlet => Proxy name -> Proxy din -> Proxy inlet -> Unit

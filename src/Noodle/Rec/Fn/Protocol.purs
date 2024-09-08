@@ -1,4 +1,4 @@
-module Noodle.Fn.Rec.Protocol
+module Noodle.Rec.Fn.Protocol
   ( Protocol
   , make
   , getState
@@ -25,7 +25,7 @@ import Effect.Class (class MonadEffect)
 
 import Noodle.Id (Inlet, Outlet, inletR, outletR)
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
-import Noodle.Fn.Rec.Tracker (Tracker)
+import Noodle.Rec.Fn.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 
 

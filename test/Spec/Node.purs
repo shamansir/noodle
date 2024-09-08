@@ -15,13 +15,14 @@ import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Id as Id
 import Noodle.Fn.Shape (Shape(..), InletR(..), OutletR(..))
-import Noodle.Fn.Shape (reflect, inlets, outlets, makeRaw) as Shape
-import Noodle.Fn.Raw.Process (receive, send, sendIn) as RawFn
+import Noodle.Fn.Shape (reflect) as Shape
+import Noodle.Raw.Fn.Shape (inlets, outlets, make) as RawShape
+import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, listenUpdatesAndRun, make, run, state, modifyState, atOutletR) as Node
-import Noodle.RawNode (RawNode)
-import Noodle.RawNode (makeRaw) as Node
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (make) as RawNode
 
 import Test.MyToolkit.Repr (ISRepr)
 import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
@@ -39,12 +40,12 @@ spec = do
             let
                 rawShape =
                     Shape.reflect (Shape :: Sample.Shape)
-            Shape.inlets rawShape `shouldEqual`
+            RawShape.inlets rawShape `shouldEqual`
                 [ { name : "foo", order : 0, temp : Hot }
                 , { name : "c"  , order : 1, temp : Hot }
                 , { name : "bar", order : 2, temp : Cold }
                 ]
-            Shape.outlets rawShape `shouldEqual`
+            RawShape.outlets rawShape `shouldEqual`
                 [ { name : "foo", order : 0 }
                 , { name : "bar", order : 1 }
                 ]
@@ -272,10 +273,10 @@ spec = do
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
-            (rawNode :: RawNode ISRepr Effect) <-
-                Node.makeRaw (Id.FamilyR { family : "myRawNode" })
+            (rawNode :: Raw.Node ISRepr Effect) <-
+                RawNode.make (Id.FamilyR { family : "myRawNode" })
                     ISRepr.None
-                    (Shape.makeRaw { inlets : [], outlets : [] }) -- TODO
+                    (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
                         # Map.insert (InletR "a") (ISRepr.Int 5)
                         # Map.insert (InletR "b") (ISRepr.Int 7)

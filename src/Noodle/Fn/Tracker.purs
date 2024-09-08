@@ -19,8 +19,8 @@ import Data.Repr (fromMap) as Repr
 
 import Noodle.Id (Inlet, InletR, Outlet, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id
-import Noodle.Fn.RawToRec (toRec)
-import Noodle.Fn.Raw.Tracker as Raw
+import Noodle.Raw.FromToRec (toRec)
+import Noodle.Raw.Fn.Tracker as Raw
 
 
 type Tracker state (is :: Row Type) (os :: Row Type) repr = Raw.Tracker state repr
