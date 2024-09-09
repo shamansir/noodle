@@ -78,8 +78,8 @@ nodeFamily :: forall f. IsSymbol f => Node f -> String
 nodeFamily = const $ reflectSymbol (Proxy :: _ f)
 
 
-familyR :: forall family. IsSymbol family => Family family -> FamilyR
-familyR Family = FamilyR { family : reflectSymbol (Proxy :: _ family) }
+familyR :: forall proxy family. IsSymbol family => proxy family -> FamilyR
+familyR _ = FamilyR { family : reflectSymbol (Proxy :: _ family) }
 
 
 nodeR_ :: FamilyR -> UniqueHash -> NodeR

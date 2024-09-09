@@ -12,6 +12,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Symbol (class IsSymbol)
 import Data.Array ((:))
+import Data.Array (catMaybes) as Array
 import Data.Map (Map)
 import Data.Map (empty, lookup, insert) as Map
 import Data.Maybe (Maybe(..))
@@ -24,7 +25,8 @@ import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
-import Noodle.Toolkit.Families (Families, class FamilyExistsIn, class PutFamily, F, FNil)
+import Noodle.Toolkit.Families (Families, class FamilyExistsIn, class PutFamily, F, FNil, class MapFamilies)
+import Noodle.Toolkit.Families (mapFamilies) as F
 
 
 type Name = String
@@ -39,7 +41,6 @@ empty name =
         name
         Map.empty
         Map.empty
-
 
 
 register
@@ -95,4 +96,10 @@ spawnRaw familyId (Toolkit _ _ rawFamilies) = do
         Nothing -> pure Nothing
 
 
--- spawnRaw
+mapFamilies :: forall x families repr m. MapFamilies families (Maybe x) => (forall f state is os. Family f state is os repr m -> x) -> Toolkit families repr m -> Array x
+mapFamilies f (Toolkit _ families _) =
+    F.mapFamilies (Proxy :: _ families) mapF # Array.catMaybes
+    where
+        mapF :: forall f state is os repr' m'. IsSymbol f => Proxy (F f state is os repr' m') -> Maybe x
+        mapF _ =
+            Map.lookup (Id.familyR (Proxy :: _ f)) families <#> \holdsFamily -> withFamily holdsFamily f

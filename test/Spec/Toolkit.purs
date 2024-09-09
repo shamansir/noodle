@@ -77,3 +77,12 @@ spec = do
             concatNode # Node.run
             atOut <- concatNode <=@ _.out
             atOut `shouldEqual` ""
+
+
+    describe "iterating through families" $ do
+
+        pending' "it is possible to iterate through all typed families" $ liftEffect $ do
+            pure unit
+
+        pending' "it is possible to iterate through all raw families" $ liftEffect $ do
+            pure unit
