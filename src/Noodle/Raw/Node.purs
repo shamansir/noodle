@@ -18,7 +18,7 @@ import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, nodeRaw) as Id
+import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus) as Fn
 import Noodle.Fn.Generic.Updates (toTuple) as Updates
 import Noodle.Raw.Fn (Fn) as Raw
@@ -37,6 +37,13 @@ data Node (repr :: Type) (m :: Type -> Type)
         (Raw.Tracker repr repr)
         (Raw.Protocol repr repr)
         (Raw.Fn repr repr m)
+
+
+{- Get info -}
+
+
+family :: forall repr m. Node repr m -> Id.FamilyR
+family (Node nodeR _ _ _ _) = Id.familyOf nodeR
 
 
 {- Making -}
@@ -68,7 +75,7 @@ _makeWithFn
     -> m (Node repr m)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
-    let nodeId = Id.nodeRaw family uniqueHash
+    let nodeId = Id.nodeR_ family uniqueHash
     tracker /\ protocol <- RawProtocol.make state inletsMap outletsMap
     pure $ Node nodeId rawShape tracker protocol fn
 
@@ -113,7 +120,7 @@ _listenUpdatesAndRun node = do
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 
 
-run :: forall f state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Node repr m -> m Unit
+run :: forall repr m. MonadRec m => MonadEffect m => HasFallback repr => Node repr m -> m Unit
 run (Node _ _ _ protocol fn) = RawFn.run' protocol fn
 
 

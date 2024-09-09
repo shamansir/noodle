@@ -3,11 +3,12 @@
 module Noodle.Id
     ( module FromShape
     , Node, NodeR
-    , nodeR, nodeFamily, nodeRaw
+    , nodeR, nodeFamily, nodeR_
     , Family(..), FamilyR(..)
-    , family, familyR
-    , PatchR
-    , FnName, Link
+    , family, familyR, familyOf
+    , PatchR, PatchName, patchR
+    , FnName
+    , Link
     )
     where
 
@@ -69,6 +70,10 @@ family :: FamilyR -> String
 family (FamilyR { family }) = family
 
 
+familyOf :: NodeR -> FamilyR
+familyOf (NodeR { family }) = FamilyR { family }
+
+
 nodeFamily :: forall f. IsSymbol f => Node f -> String
 nodeFamily = const $ reflectSymbol (Proxy :: _ f)
 
@@ -77,11 +82,18 @@ familyR :: forall family. IsSymbol family => Family family -> FamilyR
 familyR Family = FamilyR { family : reflectSymbol (Proxy :: _ family) }
 
 
-nodeRaw :: FamilyR -> UniqueHash -> NodeR
-nodeRaw (FamilyR { family }) hash = NodeR { family, hash }
+nodeR_ :: FamilyR -> UniqueHash -> NodeR
+nodeR_ (FamilyR { family }) hash = NodeR { family, hash }
 
 
 type FnName = String
 
 
 type Link = String
+
+
+type PatchName = String
+
+
+patchR :: UniqueHash -> PatchR
+patchR hash = PatchR { hash }

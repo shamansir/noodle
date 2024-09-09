@@ -69,5 +69,11 @@ spec = do
 
     describe "registering & spawning" $ do
 
-        it "it is possible to register family and immediately spawn the node that belongs to it" $ do
-            pure unit
+        it "it is possible to register family and immediately spawn the node that belongs to it" $ liftEffect $ do
+            (concatNode :: Concat.Node) <-
+                    Toolkit.empty "test"
+                        # Toolkit.register Concat.family
+                        # Toolkit.spawn Concat._concat
+            concatNode # Node.run
+            atOut <- concatNode <=@ _.out
+            atOut `shouldEqual` ""

@@ -15,6 +15,7 @@ import Test.Spec.UniqueHash (spec) as UniqueHash
 import Test.Spec.Repr (spec) as Repr
 import Test.Spec.Node (spec) as Node
 import Test.Spec.Toolkit (spec) as Toolkit
+import Test.Spec.Patch (spec) as Patch
 
 
 main :: Effect Unit
@@ -29,3 +30,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Node.spec
   describe "Toolkit"
     Toolkit.spec
+  describe "Patch"
+    Patch.spec

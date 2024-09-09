@@ -26,7 +26,7 @@ import Record (get) as Record
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
 
-import Noodle.Id as Id
+import Noodle.Id (Inlet, Outlet, Family(..), NodeR, InletR, OutletR, FamilyR, family, familyR, inletR, outletR, nodeR_) as Id
 import Noodle.Fn (Fn)
 import Noodle.Fn (make, run', toRawWithReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
@@ -58,6 +58,13 @@ data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr 
         (Tracker state is os repr)
         (Protocol state is os repr)
         (Fn state is os repr m)
+
+
+{- Get info -}
+
+
+family :: forall f state is os repr m. Node f state is os repr m -> Id.Family f
+family _ = (Id.Family :: _ f)
 
 
 {- Making -}
@@ -113,7 +120,7 @@ _makeWithFn -- TODO: private
     -> m (Node f state is os repr m)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
-    let nodeId = Id.nodeRaw family uniqueHash
+    let nodeId = Id.nodeR_ family uniqueHash
     tracker /\ protocol <- Protocol.make state inletsMap outletsMap
     pure $ Node nodeId rawShape tracker protocol fn
 
