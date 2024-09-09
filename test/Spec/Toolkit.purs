@@ -5,15 +5,18 @@ import Prelude
 import Effect.Class (liftEffect)
 
 import Data.Tuple.Nested ((/\))
+import Data.Symbol (class IsSymbol)
 
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
-
+import Noodle.Id (familyR, family) as Id
 import Noodle.Node (run, _listenUpdatesAndRun, state, modifyState) as Node
 import Noodle.Node ((#->), (@->), (<=@))
 import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit (empty, spawn, register) as Toolkit
+import Noodle.Toolkit (empty, spawn, register, mapFamilies) as Toolkit
+import Noodle.Toolkit.Family (Family)
+import Noodle.Toolkit.Family (familyIdOf) as Family
 import Noodle.Toolkit.Families (Families, F, FNil, type (//))
 
 import Test.MyToolkit.Node.Concat as Concat
@@ -81,8 +84,22 @@ spec = do
 
     describe "iterating through families" $ do
 
-        pending' "it is possible to iterate through all typed families" $ liftEffect $ do
-            pure unit
+        let
+            familyToString :: forall f state is os repr m. IsSymbol f => Family f state is os repr m -> String
+            familyToString = Family.familyIdOf >>> Id.familyR >>> Id.family
+
+        it "it is possible to iterate through all typed families" $ liftEffect $ do
+            let emptyTkArray =
+                    Toolkit.empty "test"
+                        # Toolkit.mapFamilies familyToString
+            emptyTkArray `shouldEqual` []
+            let nonEmptyTkArray =
+                    Toolkit.empty "test-2"
+                        # Toolkit.register Concat.family
+                        # Toolkit.register (Sum.family Sum.sumBoth)
+                        # Toolkit.register Stateful.family
+                        # Toolkit.mapFamilies familyToString
+            nonEmptyTkArray `shouldEqual` [ "stateful", "sum", "concat" ]
 
         pending' "it is possible to iterate through all raw families" $ liftEffect $ do
             pure unit

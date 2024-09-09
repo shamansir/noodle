@@ -96,7 +96,7 @@ spawnRaw familyId (Toolkit _ _ rawFamilies) = do
         Nothing -> pure Nothing
 
 
-mapFamilies :: forall x families repr m. MapFamilies families (Maybe x) => (forall f state is os. Family f state is os repr m -> x) -> Toolkit families repr m -> Array x
+mapFamilies :: forall x families repr m. MapFamilies families (Maybe x) => (forall f state is os. IsSymbol f => Family f state is os repr m -> x) -> Toolkit families repr m -> Array x
 mapFamilies f (Toolkit _ families _) =
     F.mapFamilies (Proxy :: _ families) mapF # Array.catMaybes
     where
