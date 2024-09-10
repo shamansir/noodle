@@ -4,22 +4,8 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
-import Data.Tuple.Nested ((/\))
-
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
-
-
-import Noodle.Node (run, _listenUpdatesAndRun, state, modifyState) as Node
-import Noodle.Node ((#->), (@->), (<=@))
-import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit (empty, spawn, register) as Toolkit
-import Noodle.Toolkit.Families (Families, F, FNil, type (//))
-
-import Test.MyToolkit.Node.Concat as Concat
-import Test.MyToolkit.Node.Sum as Sum
-import Test.MyToolkit.Node.Stateful as Stateful
-import Test.MyToolkit.Toolkit (Toolkit, toolkit) as My
 
 
 spec :: Spec Unit

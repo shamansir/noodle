@@ -6,9 +6,13 @@ import Prelude
 import Prim.Row as Row
 
 import Type.Proxy (Proxy(..))
+
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Array ((:))
+
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TList, TNil, TCons)
 
 import Noodle.Raw.Fn.Shape (InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
 import Noodle.Fn.Shape.Temperament (TemperamentK, class IsTemperament, reflectTemperament)
@@ -84,41 +88,33 @@ derive instance Ord InletR
 derive instance Ord OutletR
 
 
-infixr 6 type ICons as /. -- /+\
-infixr 6 type OCons as \. -- <+ -- \+/
-
-
-infixr 6 type ICons as ⟘ -- ⟂ ˔ ≀ ˄ ⚬ ≀ « ‹ ⊶
-infixr 6 type OCons as ⟙ -- ˕ -- ¤ ˅ ● » › ⊷
-
-
-data InletDef a = I { default :: a }
-foreign import data I :: forall (t :: Type). Symbol -> TemperamentK -> t -> InletDef t
+-- data InletDef t = I { default :: t }
+data InletDef
+-- foreign import data I :: forall (t :: Type). Symbol -> TemperamentK -> t -> InletDef t
+foreign import data I :: forall (t :: Type). Symbol -> TemperamentK -> t -> InletDef
 -- FIXME: don't include types of the inlet, we don't use it in any way, only to check conformance with default values
 -- foreign import data Inlet :: Symbol -> Temperament -> Type -> InletDef
 
 
-data Inlets
-foreign import data ICons :: forall (t :: Type). InletDef t -> Inlets -> Inlets
-foreign import data IS :: Inlets
+type Inlets = TList InletDef
 
 
-data OutletDef a = O { default :: a }
-foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef t
+-- data OutletDef t = O { default :: t }
+data OutletDef
+-- foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef t
+foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef
 -- FIXME: don't include types of the outlet, we don't use it in any way, only to check conformance with default values
 
 
-data Outlets
-foreign import data OCons :: forall (t :: Type). OutletDef t -> Outlets -> Outlets
-foreign import data OS :: Outlets
+type Outlets = TList OutletDef
 
 
 class InletsDefs (inlets :: Inlets) where
     reflectInlets :: Proxy inlets -> Int -> Raw.InletsShape
 
-instance InletsDefs IS where
+instance InletsDefs TNil where
     reflectInlets _ _ = Raw.Inlets []
-else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (ICons (I name temp din) tail) where
+else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (I name temp din :> tail) where
     reflectInlets _ n =
         Raw.Inlets
             $ (Raw.InletDefR
@@ -135,9 +131,9 @@ class OutletsDefs (outlets :: Outlets) where
     reflectOutlets :: Proxy outlets -> Int -> Raw.OutletsShape
 
 
-instance OutletsDefs OS where
+instance OutletsDefs TNil where
     reflectOutlets _ _ = Raw.Outlets []
-else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name dout) tail) where
+else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (O name dout :> tail) where
     reflectOutlets _ n =
         Raw.Outlets
             $ (Raw.OutletDefR
@@ -147,19 +143,19 @@ else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (OCons (O name do
             : unwrap (reflectOutlets (Proxy :: _ tail) $ n + 1)
 
 
-class HasInlet (name :: Symbol) (din :: Type) (inlets :: Inlets)
-instance HasInlet name din (ICons (I name temp din) tail)
-else instance (HasInlet name din tail) => HasInlet name din (ICons (I skipname skiptemp skipdin) tail)
+class HasInlet (name :: Symbol) (din :: Type) (inlets :: Inlets) -- FIXME: same as typelevel Membership test
+instance HasInlet name din (I name temp din :> tail)
+else instance (HasInlet name din tail) => HasInlet name din (I skipname skiptemp skipdin :> tail)
 
 
 class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
 
 
-instance ContainsAllInlets row IS
+instance ContainsAllInlets row TNil
 else instance
   ( Row.Cons name a rowtail row
   , ContainsAllInlets rowtail itail
-  ) => ContainsAllInlets row (ICons (I name temp a) itail)
+  ) => ContainsAllInlets row (I name temp a :> itail)
 
 
 
@@ -171,19 +167,19 @@ else instance
 --     ) => ContainsAllInlets (RL.Cons rname rdin rtail) (ICons (I name temp din) tail)
 
 
-class HasOutlet (name :: Symbol) (dout :: Type) (inlets :: Outlets)
-instance HasOutlet name dout (OCons (O name dout) tail)
-else instance (HasOutlet name dout tail) => HasOutlet name dout (OCons (O skipname skipdout) tail)
+class HasOutlet (name :: Symbol) (dout :: Type) (inlets :: Outlets) -- FIXME: same as typelevel Membership test
+instance HasOutlet name dout (O name dout :> tail)
+else instance (HasOutlet name dout tail) => HasOutlet name dout (O skipname skipdout :> tail)
 
 
 class ContainsAllOutlets (row :: Row Type) (outlets :: Outlets) -- | inlets -> row, row -> inlets
 
 
-instance ContainsAllOutlets row OS
+instance ContainsAllOutlets row TNil
 else instance
   ( Row.Cons name a rowtail row
   , ContainsAllOutlets rowtail otail
-  ) => ContainsAllOutlets row (OCons (O name a) otail)
+  ) => ContainsAllOutlets row (O name a :> otail)
 
 
 data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape

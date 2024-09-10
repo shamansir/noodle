@@ -3,15 +3,14 @@ module Noodle.Toolkit where
 import Prelude
 
 import Type.Proxy (Proxy(..))
+import Type.Data.List.Extra (TNil)
 
-import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throw)
 
 import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Symbol (class IsSymbol)
-import Data.Array ((:))
 import Data.Array (catMaybes) as Array
 import Data.Map (Map)
 import Data.Map (empty, lookup, insert) as Map
@@ -25,7 +24,7 @@ import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
-import Noodle.Toolkit.Families (Families, class FamilyExistsIn, class PutFamily, F, FNil, class MapFamilies)
+import Noodle.Toolkit.Families (Families, class FamilyExistsIn, class PutFamily, F, class MapFamilies)
 import Noodle.Toolkit.Families (mapFamilies) as F
 
 
@@ -35,7 +34,7 @@ type Name = String
 data Toolkit (families :: Families) repr m = Toolkit Name (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (Raw.Family repr m))
 
 
-empty :: forall repr m. Name -> Toolkit FNil repr m
+empty :: forall repr m. Name -> Toolkit TNil repr m
 empty name =
     Toolkit
         name

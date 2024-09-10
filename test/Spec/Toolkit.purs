@@ -4,6 +4,9 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TNil)
+
 import Data.Tuple.Nested ((/\))
 import Data.Symbol (class IsSymbol)
 
@@ -17,7 +20,7 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (empty, spawn, register, mapFamilies) as Toolkit
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf) as Family
-import Noodle.Toolkit.Families (Families, F, FNil, type (//))
+import Noodle.Toolkit.Families (Families, F)
 
 import Test.MyToolkit.Node.Concat as Concat
 import Test.MyToolkit.Node.Sum as Sum
@@ -32,10 +35,10 @@ spec = do
 
         it "registers family" $ do
             let
-                (_ :: Toolkit (Concat.F // FNil) _ _) =
+                (_ :: Toolkit (Concat.F :> TNil) _ _) =
                     Toolkit.empty "test"
                         # Toolkit.register Concat.family
-                (_ :: Toolkit (Sum.F // Concat.F // FNil) _ _) =
+                (_ :: Toolkit (Sum.F :> Concat.F :> TNil) _ _) =
                     Toolkit.empty "test"
                         # Toolkit.register Concat.family
                         # Toolkit.register (Sum.family Sum.sumBoth)

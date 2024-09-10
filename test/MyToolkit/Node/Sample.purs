@@ -4,9 +4,12 @@ import Prelude
 
 import Effect (Effect)
 
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TNil)
+
 import Noodle.Id (Family(..)) as NId
 import Noodle.Fn.Shape.Temperament (Hot, Cold)
-import Noodle.Fn.Shape (I, O, type (/.), type (\.), IS, OS)
+import Noodle.Fn.Shape (I, O)
 import Noodle.Fn.Shape (Shape(..), Inlets, Outlets, Inlet(..), Outlet(..)) as Noodle
 import Noodle.Fn.Process (Process) as Noodle
 import Noodle.Fn.Process (receive, send) as Fn
@@ -24,15 +27,15 @@ _sample  = NId.Family
 
 type Inlets =
     (  I "foo" Hot Int
-    /. I "c" Hot Int
-    /. I "bar" Cold String
-    /. IS
+    :> I "c" Hot Int
+    :> I "bar" Cold String
+    :> TNil
     ) :: Noodle.Inlets
 
 type Outlets =
     (  O "foo" String
-    \. O "bar" Int
-    \. OS
+    :> O "bar" Int
+    :> TNil
     ) :: Noodle.Outlets
 
 type InletsRow =

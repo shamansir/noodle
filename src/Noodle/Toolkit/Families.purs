@@ -2,33 +2,32 @@ module Noodle.Toolkit.Families where
 
 
 import Type.Proxy (Proxy(..))
+
 import Data.Symbol (class IsSymbol)
+
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TList, TNil)
 
 import Data.Array ((:))
 
-infixr 6 type FCons as //
-
-
-data Families
-foreign import data FCons :: FamilyDef -> Families -> Families
-foreign import data FNil :: Families
+type Families = TList FamilyDef
 
 
 data FamilyDef
 foreign import data F :: Symbol -> Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> FamilyDef
 
 
-class FamilyExistsIn (family :: FamilyDef) (families :: Families)
-instance FamilyExistsIn family (FCons family tail)
-else instance (FamilyExistsIn family tail) => FamilyExistsIn family (FCons skipfamily tail)
+class FamilyExistsIn (family :: FamilyDef) (families :: Families) -- FIXME: it is just `TList` membership test
+instance FamilyExistsIn family (family :> tail)
+else instance (FamilyExistsIn family tail) => FamilyExistsIn family (skipfamily :> tail)
 
 
 
 class PutFamily (family :: FamilyDef) (families :: Families) (families' :: Families) | families -> families'
 
 
-instance PutFamily family FNil (FCons family FNil)
-else instance PutFamily family (FCons some tail) (FCons family (FCons some tail))
+instance PutFamily family TNil (family :> TNil) -- FIXME: it is just `Cons` for `TList`
+else instance PutFamily family (some :> tail) (family :> some :> tail)
 
 
 class MapFamilies (families :: Families) x | families -> x where
@@ -36,9 +35,9 @@ class MapFamilies (families :: Families) x | families -> x where
     mapFamilies :: Proxy families -> (forall f state is os repr m. IsSymbol f => Proxy (F f state is os repr m) -> x) -> Array x
 
 
-instance MapFamilies FNil x where
-    mapFamilies :: Proxy FNil -> (forall f state is os repr m. IsSymbol f => Proxy (F f state is os repr m) -> x) -> Array x
+instance MapFamilies TNil x where  -- FIXME: it is just `Map` over `TList`
+    mapFamilies :: Proxy TNil -> (forall f state is os repr m. IsSymbol f => Proxy (F f state is os repr m) -> x) -> Array x
     mapFamilies _ _ = []
-else instance (IsSymbol f, MapFamilies tail x) => MapFamilies (FCons (F f state is os repr m) tail) x where
-    mapFamilies :: Proxy (FCons (F f state is os repr m) tail) -> (forall f state is os repr m. IsSymbol f => Proxy (F f state is os repr m) -> x) -> Array x
+else instance (IsSymbol f, MapFamilies tail x) => MapFamilies (F f state is os repr m :> tail) x where
+    mapFamilies :: Proxy (F f state is os repr m :> tail) -> (forall f state is os repr m. IsSymbol f => Proxy (F f state is os repr m) -> x) -> Array x
     mapFamilies _ f = f (Proxy :: _ (F f state is os repr m)) : mapFamilies (Proxy :: _ tail) f

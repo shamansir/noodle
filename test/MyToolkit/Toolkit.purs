@@ -2,11 +2,14 @@ module Test.MyToolkit.Toolkit where
 
 import Prelude
 
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TNil)
+
 import Effect (Effect)
 
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit (empty, register) as Toolkit
-import Noodle.Toolkit.Families (Families, F, FNil, type (//))
+import Noodle.Toolkit.Families (Families, F)
 
 
 import Test.MyToolkit.Node.Sample as Sample
@@ -19,10 +22,10 @@ import Test.MyToolkit.Repr (ISRepr)
 type MyFamilies :: Families
 type MyFamilies
     =  Sample.F
-    // Sum.F
-    // Concat.F
-    // Stateful.F
-    // FNil
+    :> Sum.F
+    :> Concat.F
+    :> Stateful.F
+    :> TNil
 
 
 type Toolkit = Noodle.Toolkit MyFamilies ISRepr Effect

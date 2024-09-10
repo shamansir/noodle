@@ -4,11 +4,15 @@ import Prelude
 
 
 import Effect (Effect)
+
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TNil)
+
 import Data.String (length) as String
 
 import Noodle.Id (Family(..)) as NId
 import Noodle.Fn.Shape.Temperament (Hot, Cold)
-import Noodle.Fn.Shape (I, O, type (/.), type (\.), IS, OS)
+import Noodle.Fn.Shape (I, O)
 import Noodle.Fn.Shape (Shape(..), Inlets, Outlets, Inlet(..), Outlet(..)) as Noodle
 import Noodle.Fn.Process (Process) as Noodle
 import Noodle.Fn.Process (receive, send) as Fn
@@ -27,14 +31,14 @@ _concat  = NId.Family
 
 type Inlets =
     (  I "left" Hot String
-    /. I "right" Hot String
-    /. IS
+    :> I "right" Hot String
+    :> TNil
     ) :: Noodle.Inlets
 
 type Outlets =
     (  O "out" String
-    \. O "len" Int
-    \. OS
+    :> O "len" Int
+    :> TNil
     ) :: Noodle.Outlets
 
 type InletsRow =
