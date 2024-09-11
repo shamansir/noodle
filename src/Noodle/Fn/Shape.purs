@@ -9,13 +9,16 @@ import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.Array ((:))
+import Data.Reflectable (class Reflectable, reflectType)
+import Data.Array ((:), mapWithIndex)
+-- import Data.FunctorWithIndex (mapWithIndex)
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Data.List (type (:>))
-import Type.Data.List.Extra (TList, TNil, TCons)
+import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown)
 
 import Noodle.Raw.Fn.Shape (InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
-import Noodle.Fn.Shape.Temperament (TemperamentK, class IsTemperament, reflectTemperament)
+import Noodle.Fn.Shape.Temperament (TemperamentK(..), Hot, Cold, Temperament(..), class IsTemperament, reflectTemperament)
 
 
 -- | Inlet ID is used to reference corresponding inlet on a type-level by its name (e.g. as a record key)
@@ -109,36 +112,34 @@ foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef
 type Outlets = TList OutletDef
 
 
-class InletsDefs (inlets :: Inlets) where -- Indexed fold?
-    reflectInlets :: Proxy inlets -> Int -> Raw.InletsShape
+instance (IsSymbol sym, IsTemperament temp) => Reflectable (I sym temp t) (Temperament /\ String) where
+    reflectType :: Proxy (I sym temp t) -> Temperament /\ String
+    reflectType _ = reflectTemperament (Proxy :: _ temp) /\ reflectSymbol (Proxy :: _ sym)
 
-instance InletsDefs TNil where
-    reflectInlets _ _ = Raw.Inlets []
-else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs (I name temp din :> tail) where
-    reflectInlets _ n =
-        Raw.Inlets
-            $ (Raw.InletDefR
-                { name : reflectSymbol (Proxy :: _ name)
-                , order : n
-                , temp : reflectTemperament (Proxy :: _ temp)
-                })
-            : unwrap (reflectInlets (Proxy :: _ tail) $ n + 1)
+
+instance IsSymbol sym => Reflectable (O sym t) String where
+    reflectType :: Proxy (O sym t) -> String
+    reflectType _ = reflectSymbol (Proxy :: _ sym)
+
+
+class InletsDefs (inlets :: Inlets) where
+    reflectInlets :: Proxy inlets -> Raw.InletsShape
+
+
+instance MapDown inlets Array (Temperament /\ String) => InletsDefs inlets where
+    reflectInlets :: Proxy inlets -> Raw.InletsShape
+    reflectInlets _ = Raw.Inlets $ mapWithIndex makeInletDef (mapDown (Proxy :: _ inlets) :: Array (Temperament /\ String))
+        where makeInletDef order (temp /\ name) = Raw.InletDefR { name, order, temp }
 
 
 class OutletsDefs (outlets :: Outlets) where
-    reflectOutlets :: Proxy outlets -> Int -> Raw.OutletsShape
+    reflectOutlets :: Proxy outlets -> Raw.OutletsShape
 
 
-instance OutletsDefs TNil where
-    reflectOutlets _ _ = Raw.Outlets []
-else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (O name dout :> tail) where
-    reflectOutlets _ n =
-        Raw.Outlets
-            $ (Raw.OutletDefR
-                { name : reflectSymbol (Proxy :: _ name)
-                , order : n
-                })
-            : unwrap (reflectOutlets (Proxy :: _ tail) $ n + 1)
+instance MapDown outlets Array String => OutletsDefs outlets where
+    reflectOutlets :: Proxy outlets -> Raw.OutletsShape
+    reflectOutlets _ = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown (Proxy :: _ outlets) :: Array String)
+        where makeOutletDef order name = Raw.OutletDefR { name, order }
 
 
 class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
@@ -166,4 +167,4 @@ data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
 
 
 reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw.Shape
-reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets) 0, outlets : reflectOutlets (Proxy :: _ outlets) 0 }
+reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets), outlets : reflectOutlets (Proxy :: _ outlets) }

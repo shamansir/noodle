@@ -3,6 +3,7 @@ module Noodle.Fn.Shape.Temperament where
 import Prelude
 
 import Type.Proxy (Proxy)
+import Data.Reflectable (class Reflectable)
 
 
 data TemperamentK
@@ -31,6 +32,16 @@ instance IsTemperament Hot where
 
 instance IsTemperament Cold where
     reflectTemperament _ = Cold
+
+
+instance Reflectable Hot Temperament where
+    reflectType :: Proxy Hot -> Temperament
+    reflectType = reflectTemperament
+
+
+instance Reflectable Cold Temperament where
+    reflectType :: Proxy Cold -> Temperament
+    reflectType = reflectTemperament
 
 
 instance Show Temperament where
