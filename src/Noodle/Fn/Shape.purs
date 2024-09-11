@@ -109,7 +109,7 @@ foreign import data O :: forall (t :: Type). Symbol -> t -> OutletDef
 type Outlets = TList OutletDef
 
 
-class InletsDefs (inlets :: Inlets) where
+class InletsDefs (inlets :: Inlets) where -- Indexed fold?
     reflectInlets :: Proxy inlets -> Int -> Raw.InletsShape
 
 instance InletsDefs TNil where
@@ -123,8 +123,6 @@ else instance (IsSymbol name, IsTemperament temp, InletsDefs tail) => InletsDefs
                 , temp : reflectTemperament (Proxy :: _ temp)
                 })
             : unwrap (reflectInlets (Proxy :: _ tail) $ n + 1)
--- else instance InletsDefs (ICons a tail) where
---     reflectInlets _ = Inlets []
 
 
 class OutletsDefs (outlets :: Outlets) where
@@ -143,33 +141,15 @@ else instance (IsSymbol name, OutletsDefs tail) => OutletsDefs (O name dout :> t
             : unwrap (reflectOutlets (Proxy :: _ tail) $ n + 1)
 
 
-class HasInlet (name :: Symbol) (din :: Type) (inlets :: Inlets) -- FIXME: same as typelevel Membership test
-instance HasInlet name din (I name temp din :> tail)
-else instance (HasInlet name din tail) => HasInlet name din (I skipname skiptemp skipdin :> tail)
-
-
 class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
 
 
 instance ContainsAllInlets row TNil
 else instance
-  ( Row.Cons name a rowtail row
+  ( Row.Cons name din rowtail row
   , ContainsAllInlets rowtail itail
-  ) => ContainsAllInlets row (I name temp a :> itail)
+  ) => ContainsAllInlets row (I name temp din :> itail)
 
-
-
--- class ContainsAllInlets (row :: Row Type) (inlets :: Inlets)
--- instance ContainsAllInlets RL.Nil IS
--- else instance
---     ( ContainsInlet name din (RL.Cons rname rdin rtail)
---     , ContainsAllInlets rtail tail
---     ) => ContainsAllInlets (RL.Cons rname rdin rtail) (ICons (I name temp din) tail)
-
-
-class HasOutlet (name :: Symbol) (dout :: Type) (inlets :: Outlets) -- FIXME: same as typelevel Membership test
-instance HasOutlet name dout (O name dout :> tail)
-else instance (HasOutlet name dout tail) => HasOutlet name dout (O skipname skipdout :> tail)
 
 
 class ContainsAllOutlets (row :: Row Type) (outlets :: Outlets) -- | inlets -> row, row -> inlets
@@ -187,23 +167,3 @@ data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
 
 reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw.Shape
 reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets) 0, outlets : reflectOutlets (Proxy :: _ outlets) 0 }
-
-
-
--- isInlet :: forall (inlet :: InletDef) (name :: Symbol) (din :: Type). IsInlet name din inlet => Proxy name -> Proxy din -> Proxy inlet -> Unit
--- isInlet _ _ _ = unit
-
-
--- hasInlet :: forall (name :: Symbol) (din :: Type) (inlets :: Inlets). HasInlet name din inlets => Proxy name -> Proxy din -> Proxy inlets -> Unit
--- hasInlet _ _ _ = unit
-
-
--- inletsMatch :: forall (inlets :: Inlets) irl irow. RL.RowToList irow irl => InletsMatch irl inlets => Proxy inlets -> Record irow -> Unit
--- inletsMatch _ _ = unit
-
-
--- outletsMatch :: forall (outlets :: Outlets) orl orow. RL.RowToList orow orl => OutletsMatch orl outlets => Proxy outlets -> Record orow -> Unit
--- outletsMatch _ _ = unit
-
-
--- inletsMap :: Raw -> Map String { name :: String, order :: Int }

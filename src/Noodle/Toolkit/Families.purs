@@ -17,18 +17,6 @@ data FamilyDef
 foreign import data F :: Symbol -> Type -> Row Type -> Row Type -> Type -> (Type -> Type) -> FamilyDef
 
 
-class FamilyExistsIn (family :: FamilyDef) (families :: Families) -- FIXME: it is just `TList` membership test
-instance FamilyExistsIn family (family :> tail)
-else instance (FamilyExistsIn family tail) => FamilyExistsIn family (skipfamily :> tail)
-
-
-
-class PutFamily (family :: FamilyDef) (families :: Families) (families' :: Families) | families -> families'
-
-
-instance PutFamily family TNil (family :> TNil) -- FIXME: it is just `Cons` for `TList`
-else instance PutFamily family (some :> tail) (family :> some :> tail)
-
 
 class MapFamilies (families :: Families) x | families -> x where
     -- mapFamily :: forall f state is os repr m x. Proxy families -> Proxy (F f state is os repr m) -> x

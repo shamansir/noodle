@@ -2,8 +2,11 @@ module Noodle.Toolkit where
 
 import Prelude
 
+import Prim.Boolean (True, False)
+
 import Type.Proxy (Proxy(..))
-import Type.Data.List.Extra (TNil)
+import Type.Data.List (class IsMember)
+import Type.Data.List.Extra (TNil, class Put)
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throw)
@@ -24,7 +27,7 @@ import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
-import Noodle.Toolkit.Families (Families, class FamilyExistsIn, class PutFamily, F, class MapFamilies)
+import Noodle.Toolkit.Families (Families, F, class MapFamilies)
 import Noodle.Toolkit.Families (mapFamilies) as F
 
 
@@ -44,7 +47,7 @@ empty name =
 
 register
     :: forall f state is os repr m families families'
-     . PutFamily (F f state is os repr m) families families'
+     . Put (F f state is os repr m) families families'
     => IsSymbol f
     => Family f state is os repr m
     -> Toolkit families repr m
@@ -66,7 +69,7 @@ spawn
     :: forall f state repr is os m families
      . IsSymbol f
     => MonadEffect m
-    => FamilyExistsIn (F f state is os repr m) families
+    => IsMember (F f state is os repr m) families True
     => Id.Family f
     -> Toolkit families repr m
     -> m (Node f state is os repr m)

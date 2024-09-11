@@ -7,6 +7,8 @@ import Signal.Channel (Channel, channel)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Type.Data.List (class IsMember)
+
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (empty, alter) as Map
@@ -15,6 +17,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons) as Array
 
+import Prim.Boolean (True, False)
 import Prim.Row as R
 import Prim.RowList as RL
 -- import Type.RowList as RL
@@ -26,7 +29,7 @@ import Noodle.Node (family) as Node
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (family) as RawNode
 import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit.Families (Families, F, class FamilyExistsIn)
+import Noodle.Toolkit.Families (Families, F)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Link (FromId, ToId) as Link
 import Noodle.Raw.Link (Link) as Raw
@@ -71,7 +74,7 @@ registerNode
     :: forall f state repr is os m families
      . IsSymbol f
     => MonadEffect m
-    => FamilyExistsIn (F f state is os repr m) families
+    => IsMember (F f state is os repr m) families True
     => Node f state is os repr m
     -> Patch state families repr m
     -> Patch state families repr m
