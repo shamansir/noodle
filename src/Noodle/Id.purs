@@ -18,6 +18,7 @@ import Prelude
 import Type.Proxy (Proxy(..))
 import Data.UniqueHash (UniqueHash)
 import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Reflectable (class Reflectable)
 
 
 
@@ -39,6 +40,13 @@ newtype FamilyR = FamilyR { family :: String }
 
 instance IsSymbol f => Show (Family f) where
     show _ = reflectSymbol (Proxy :: _ f)
+
+
+
+instance IsSymbol f => Reflectable (Family f) FamilyR
+    where
+        reflectType :: Proxy (Family f) -> FamilyR
+        reflectType _ = FamilyR { family : reflectSymbol (Proxy :: _ f) }
 
 
 derive instance Eq FamilyR

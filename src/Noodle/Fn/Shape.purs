@@ -15,7 +15,7 @@ import Data.Array ((:), mapWithIndex)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Data.List (type (:>))
-import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown)
+import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown, ByReflect(..))
 
 import Noodle.Raw.Fn.Shape (InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
 import Noodle.Fn.Shape.Temperament (TemperamentK(..), Hot, Cold, Temperament(..), class IsTemperament, reflectTemperament)
@@ -126,9 +126,9 @@ class InletsDefs (inlets :: Inlets) where
     reflectInlets :: Proxy inlets -> Raw.InletsShape
 
 
-instance MapDown inlets Array (Temperament /\ String) => InletsDefs inlets where
+instance MapDown ByReflect inlets Array (Temperament /\ String) => InletsDefs inlets where
     reflectInlets :: Proxy inlets -> Raw.InletsShape
-    reflectInlets _ = Raw.Inlets $ mapWithIndex makeInletDef (mapDown (Proxy :: _ inlets) :: Array (Temperament /\ String))
+    reflectInlets _ = Raw.Inlets $ mapWithIndex makeInletDef (mapDown ByReflect (Proxy :: _ inlets) :: Array (Temperament /\ String))
         where makeInletDef order (temp /\ name) = Raw.InletDefR { name, order, temp }
 
 
@@ -136,9 +136,9 @@ class OutletsDefs (outlets :: Outlets) where
     reflectOutlets :: Proxy outlets -> Raw.OutletsShape
 
 
-instance MapDown outlets Array String => OutletsDefs outlets where
+instance MapDown ByReflect outlets Array String => OutletsDefs outlets where
     reflectOutlets :: Proxy outlets -> Raw.OutletsShape
-    reflectOutlets _ = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown (Proxy :: _ outlets) :: Array String)
+    reflectOutlets _ = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown ByReflect (Proxy :: _ outlets) :: Array String)
         where makeOutletDef order name = Raw.OutletDefR { name, order }
 
 

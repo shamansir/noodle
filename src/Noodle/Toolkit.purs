@@ -6,7 +6,7 @@ import Prim.Boolean (True, False)
 
 import Type.Proxy (Proxy(..))
 import Type.Data.List (class IsMember)
-import Type.Data.List.Extra (TNil, class Put)
+import Type.Data.List.Extra (TNil, class Put, class MapDown, mapDown, class LMap)
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throw)
@@ -27,8 +27,7 @@ import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
-import Noodle.Toolkit.Families (Families, F, class MapFamilies)
-import Noodle.Toolkit.Families (mapFamilies) as F
+import Noodle.Toolkit.Families (Families, F)
 
 
 type Name = String
@@ -98,10 +97,21 @@ spawnRaw familyId (Toolkit _ _ rawFamilies) = do
         Nothing -> pure Nothing
 
 
-mapFamilies :: forall x families repr m. MapFamilies families (Maybe x) => (forall f state is os. IsSymbol f => Family f state is os repr m -> x) -> Toolkit families repr m -> Array x
+data MapFamilies repr m = MapFamilies (Map Id.FamilyR (HoldsFamily repr m))
+
+
+instance IsSymbol f => LMap (MapFamilies repr m) (F f state is os repr m) (Maybe (HoldsFamily repr m)) where
+    lmap :: MapFamilies repr m -> Proxy (F f state is os repr m) -> Maybe (HoldsFamily repr m)
+    lmap (MapFamilies families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
+
+
+mapFamilies
+    :: forall x families repr m
+    .  MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))
+    => (forall f state is os. IsSymbol f => Family f state is os repr m -> x)
+    -> Toolkit families repr m
+    -> Array x
 mapFamilies f (Toolkit _ families _) =
-    F.mapFamilies (Proxy :: _ families) mapF # Array.catMaybes
-    where
-        mapF :: forall f state is os repr' m'. IsSymbol f => Proxy (F f state is os repr' m') -> Maybe x
-        mapF _ =
-            Map.lookup (Id.familyR (Proxy :: _ f)) families <#> \holdsFamily -> withFamily holdsFamily f
+    (\hf -> withFamily hf f)
+        <$> Array.catMaybes
+            (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m)))
