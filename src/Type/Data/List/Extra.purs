@@ -56,4 +56,4 @@ instance Monoid (f r) => MapDown key TNil f r where
     mapDown _ = mempty
 instance (Applicative f, Semigroup (f r), LMap key x r, MapDown key tail f r) => MapDown key (x :> tail) f r where
     mapDown :: key -> Proxy (x :> tail) -> f r
-    mapDown key _ = mapDown key (Proxy :: _ tail) <> pure (lmap key (Proxy :: _ x))
+    mapDown key _ = pure (lmap key (Proxy :: _ x)) <> mapDown key (Proxy :: _ tail)

@@ -102,7 +102,7 @@ spec = do
                         # Toolkit.register (Sum.family Sum.sumBoth)
                         # Toolkit.register Stateful.family
                         # Toolkit.mapFamilies familyToString
-            nonEmptyTkArray `shouldEqual` [ "concat", "sum", "stateful" ]
+            nonEmptyTkArray `shouldEqual` [ "stateful", "sum", "concat" ] -- since we use `#` operator, `Put` typeclass pushes "stateful" before "sum" & s.o.
 
         pending' "it is possible to iterate through all raw families" $ liftEffect $ do
             pure unit

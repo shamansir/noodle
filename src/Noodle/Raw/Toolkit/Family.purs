@@ -7,6 +7,7 @@ import Data.Map (Map)
 import Effect.Class (class MonadEffect)
 
 import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
+import Noodle.Raw.Node (InletsValues, OutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode
 import Noodle.Raw.Fn.Shape (Shape) as Raw
@@ -21,10 +22,9 @@ data Family (repr :: Type) (m :: Type -> Type)
         Id.FamilyR
         Raw.Shape
         repr
-        (Map Id.InletR repr)
-        (Map Id.OutletR repr)
+        (InletsValues repr)
+        (OutletsValues repr)
         (Raw.Fn repr repr m)
-
 
 
 make
@@ -32,8 +32,8 @@ make
      . Id.FamilyR
     -> repr
     -> Raw.Shape
-    -> Map Id.InletR repr
-    -> Map Id.OutletR repr
+    -> InletsValues repr
+    -> OutletsValues repr
     -> Raw.Process repr repr m
     -> Family repr m
 make family state rawShape inletsMap outletsMap process = do

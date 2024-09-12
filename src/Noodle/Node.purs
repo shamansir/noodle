@@ -45,7 +45,7 @@ import Noodle.Raw.FromToRec as ReprCnv
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
-import Noodle.Raw.Node (Node(..)) as Raw
+import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
@@ -100,8 +100,8 @@ make_ -- TODO: private
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> Map Id.InletR repr
-    -> Map Id.OutletR repr
+    -> Raw.InletsValues repr
+    -> Raw.OutletsValues repr
     -> Process state is os repr m
     -> m (Node f state is os repr m)
 make_ family state rawShape inletsMap outletsMap process = do
@@ -114,8 +114,8 @@ _makeWithFn -- TODO: private
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> Map Id.InletR repr
-    -> Map Id.OutletR repr
+    -> Raw.InletsValues repr
+    -> Raw.OutletsValues repr
     -> Fn state is os repr m
     -> m (Node f state is os repr m)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
@@ -185,7 +185,7 @@ subscribeInlet_ :: forall f state is isrl os repr m din. RL.RowToList is isrl =>
 subscribeInlet_ fn node = fn <$> subscribeInlets node
 
 
-subscribeInletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.InletR repr)
+subscribeInletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Raw.InletsValues repr)
 subscribeInletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
 
 
@@ -205,7 +205,7 @@ subscribeOutlet_ :: forall f state is os osrl repr m dout. RL.RowToList os osrl 
 subscribeOutlet_ fn node = fn <$> subscribeOutlets node
 
 
-subscribeOutletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Map Id.OutletR repr)
+subscribeOutletsRaw :: forall f state is os repr m. Node f state is os repr m -> Signal (Raw.OutletsValues repr)
 subscribeOutletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
 
 
@@ -217,7 +217,7 @@ subscribeState :: forall f state is os repr m. Node f state is os repr m -> Sign
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.UpdateFocus /\ state /\ Map Id.InletR repr /\ Map Id.OutletR repr)
+subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.UpdateFocus /\ state /\ Raw.InletsValues repr /\ Raw.OutletsValues repr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
 
 
@@ -244,11 +244,11 @@ outlets :: forall f state is os osrl repr m. MonadEffect m => FromReprRow osrl o
 outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
 
 
-inletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Map Id.InletR repr)
+inletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Raw.InletsValues repr)
 inletsRaw node = liftEffect $ Protocol.getInlets $ _getProtocol node
 
 
-outletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Map Id.OutletR repr)
+outletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Raw.OutletsValues repr)
 outletsRaw node = liftEffect $ Protocol.getOutlets $ _getProtocol node
 
 

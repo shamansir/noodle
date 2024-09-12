@@ -19,6 +19,7 @@ import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
 
+import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.FromToRec as ReprCnv
 
@@ -27,8 +28,8 @@ data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (rep
     = Family
         Raw.Shape
         state
-        (Map Id.InletR repr)
-        (Map Id.OutletR repr)
+        (Raw.InletsValues repr)
+        (Raw.OutletsValues repr)
         (Fn state is os repr m)
 
 

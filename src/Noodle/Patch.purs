@@ -13,8 +13,9 @@ import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
-import Data.Map (empty, alter, lookup) as Map
+import Data.Map (empty, alter, lookup, toUnfoldable) as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
@@ -131,3 +132,12 @@ mapNodes f (Patch _ _ _ nodes _ _) =
         <$> Array.catMaybes
               (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
     where nodeToX hn = withNode hn f
+
+
+mapRawNodes
+    :: forall x pstate families repr m
+    .  (Raw.Node repr m -> x)
+    -> Patch pstate families repr m
+    -> Array x
+mapRawNodes f (Patch _ _ _ _ rawNodes _) =
+    Array.concat $ Map.toUnfoldable rawNodes <#> Tuple.snd <#> map f

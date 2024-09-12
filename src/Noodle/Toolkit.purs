@@ -16,8 +16,9 @@ import Unsafe.Coerce (unsafeCoerce)
 import Data.Symbol (class IsSymbol)
 import Data.Array (catMaybes) as Array
 import Data.Map (Map)
-import Data.Map (empty, lookup, insert) as Map
+import Data.Map (empty, lookup, insert, toUnfoldable) as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple (snd) as Tuple
 
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
@@ -50,7 +51,7 @@ register
     => IsSymbol f
     => Family f state is os repr m
     -> Toolkit families repr m
-    -> Toolkit families' repr m
+    -> Toolkit families' repr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
 register family (Toolkit name families rawFamilies) =
     Toolkit name (Map.insert (Id.familyR $ F.familyIdOf family) (holdFamily family) families) rawFamilies
 
@@ -115,3 +116,12 @@ mapFamilies f (Toolkit _ families _) =
     (\hf -> withFamily hf f)
         <$> Array.catMaybes
             (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m)))
+
+
+mapRawFamilies
+    :: forall x families repr m
+    .  (Raw.Family repr m -> x)
+    -> Toolkit families repr m
+    -> Array x
+mapRawFamilies f (Toolkit _ _ rawFamilies) =
+    Map.toUnfoldable rawFamilies <#> Tuple.snd <#> f
