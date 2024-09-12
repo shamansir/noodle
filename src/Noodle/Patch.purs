@@ -8,14 +8,16 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Type.Data.List (class IsMember)
+import Type.Data.List.Extra (class LMap, class MapDown, mapDown)
+import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
-import Data.Map (empty, alter) as Map
+import Data.Map (empty, alter, lookup) as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
-import Data.Array (singleton, cons) as Array
+import Data.Array (singleton, cons, concat, catMaybes) as Array
 
 import Prim.Boolean (True, False)
 import Prim.Row as R
@@ -30,7 +32,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (family) as RawNode
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F)
-import Noodle.Node.HoldsNode (HoldsNode, holdNode)
+import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
 import Noodle.Link (FromId, ToId) as Link
 import Noodle.Raw.Link (Link) as Raw
 
@@ -107,3 +109,25 @@ initLinks =
   , byNode : Map.empty
   , byId : Map.empty
   }
+
+
+data MapNodes repr m = MapNodes (Map Id.FamilyR (Array (HoldsNode repr m)))
+
+
+instance IsSymbol f => LMap (MapNodes repr m) (F f state is os repr m) (Maybe (Array (HoldsNode repr m))) where
+    lmap :: MapNodes repr m -> Proxy (F f state is os repr m) -> Maybe (Array (HoldsNode repr m))
+    lmap (MapNodes families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
+
+
+mapNodes
+    :: forall x pstate families repr m
+    .  MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))
+    => (forall f state is os. IsSymbol f => Node f state is os repr m -> x)
+    -> Patch pstate families repr m
+    -> Array x
+mapNodes f (Patch _ _ _ nodes _ _) =
+    Array.concat $
+      (map nodeToX)
+        <$> Array.catMaybes
+              (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
+    where nodeToX hn = withNode hn f
