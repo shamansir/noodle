@@ -58,7 +58,7 @@ type F       = Noodle.F      "sample" Unit InletsRow OutletsRow ISRepr Effect
 
 
 defaultI :: Record InletsRow
-defaultI = { foo : 1, bar : "5", c : 2 }
+defaultI = { foo : 1, c : 2, bar : "5" }
 defaultO :: Record OutletsRow
 defaultO = { foo : "1", bar : 12 }
 

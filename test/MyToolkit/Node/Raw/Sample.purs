@@ -1,4 +1,4 @@
-module Test.MyToolkit.Node.Raw.Concat where
+module Test.MyToolkit.Node.Raw.Sample where
 
 import Prelude
 
@@ -27,12 +27,13 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : "left", temp : Hot, order : 0 }
-            , { name : "right", temp : Hot, order : 1 }
+            [ { name : "foo", temp : Hot, order : 0 }
+            , { name : "c", temp : Hot, order : 1 }
+            , { name : "bar", temp : Cold, order : 1 }
             ] -- FIXME: order is not necessary here due to the fact we have index
         , outlets :
-            [ { name : "out", order : 0 }
-            , { name : "len", order : 1 }
+            [ { name : "foo", order : 0 }
+            , { name : "bar", order : 1 }
             ]
         } -- TODO
 
@@ -40,27 +41,27 @@ shape =
 defaultInlets :: Raw.InletsValues ISRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "left") (ISRepr.Str "")
-        # Map.insert (Id.InletR "right") (ISRepr.Str "")
+        # Map.insert (Id.InletR "foo") (ISRepr.Int 1)
+        # Map.insert (Id.InletR "bar") (ISRepr.Str "5")
+        # Map.insert (Id.InletR "c")   (ISRepr.Int 2)
 
 
 defaultOutlets :: Raw.OutletsValues ISRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "str") (ISRepr.Str "")
-        # Map.insert (Id.OutletR "len") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "foo") (ISRepr.Str "1")
+        # Map.insert (Id.OutletR "bar") (ISRepr.Int 12)
 
 
 process :: Raw.Process ISRepr ISRepr Effect
 process = do
-    mbLeft  <- RawFn.receive $ Id.InletR "left"
-    mbRight <- RawFn.receive $ Id.InletR "right"
-    case mbLeft /\ mbRight of
-        (Repr (ISRepr.Str left) /\ Repr (ISRepr.Str right)) ->
-            let combined = left <> right
-            in do
-                RawFn.send (Id.OutletR "str") $ Repr $ ISRepr.Str combined
-                RawFn.send (Id.OutletR "len") $ Repr $ ISRepr.Int $ String.length combined
+    mbFoo  <- RawFn.receive $ Id.InletR "foo"
+    mbBar  <- RawFn.receive $ Id.InletR "c"
+    mbC    <- RawFn.receive $ Id.InletR "bar"
+    case mbFoo /\ mbBar /\ mbC of
+        (Repr (ISRepr.Int foo) /\ Repr (ISRepr.Str bar) /\ Repr (ISRepr.Int c)) -> do
+            RawFn.send (Id.OutletR "foo") $ Repr $ ISRepr.Str $ show (foo + c) <> bar
+            RawFn.send (Id.OutletR "bar") $ Repr $ ISRepr.Int $ foo - c
         _ -> pure unit
 
 
@@ -72,7 +73,7 @@ node =
 family :: Raw.Family ISRepr Effect
 family =
     RawFamily.make
-        (Id.FamilyR { family : "concatR" })
+        (Id.FamilyR { family : "sampleR" })
         ISRepr.None
         shape
         defaultInlets

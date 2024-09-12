@@ -65,7 +65,6 @@ defaultO = { sum : 0 }
 
 a_in    = Noodle.Inlet :: _ "a"
 b_in    = Noodle.Inlet :: _ "b"
-c_in    = Noodle.Inlet :: _ "c"
 
 sum_out = Noodle.Outlet :: _ "sum"
 

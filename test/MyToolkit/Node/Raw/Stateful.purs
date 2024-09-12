@@ -1,8 +1,10 @@
-module Test.MyToolkit.Node.Raw.Concat where
+module Test.MyToolkit.Node.Raw.Stateful where
 
 import Prelude
 
 import Effect (Effect)
+
+import Control.Monad.State.Class (modify_) as State
 
 import Data.Map (empty, insert) as Map
 import Data.Repr (Repr(..))
@@ -27,12 +29,11 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : "left", temp : Hot, order : 0 }
-            , { name : "right", temp : Hot, order : 1 }
+            [ { name : "a", temp : Hot, order : 0 }
+            , { name : "b", temp : Hot, order : 1 }
             ] -- FIXME: order is not necessary here due to the fact we have index
         , outlets :
-            [ { name : "out", order : 0 }
-            , { name : "len", order : 1 }
+            [ { name : "sum", order : 0 }
             ]
         } -- TODO
 
@@ -40,27 +41,27 @@ shape =
 defaultInlets :: Raw.InletsValues ISRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "left") (ISRepr.Str "")
-        # Map.insert (Id.InletR "right") (ISRepr.Str "")
+        # Map.insert (Id.InletR "a") (ISRepr.Int 0)
+        # Map.insert (Id.InletR "b") (ISRepr.Int 0)
 
 
 defaultOutlets :: Raw.OutletsValues ISRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "str") (ISRepr.Str "")
-        # Map.insert (Id.OutletR "len") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "sum") (ISRepr.Int 0)
 
 
 process :: Raw.Process ISRepr ISRepr Effect
 process = do
-    mbLeft  <- RawFn.receive $ Id.InletR "left"
-    mbRight <- RawFn.receive $ Id.InletR "right"
-    case mbLeft /\ mbRight of
-        (Repr (ISRepr.Str left) /\ Repr (ISRepr.Str right)) ->
-            let combined = left <> right
-            in do
-                RawFn.send (Id.OutletR "str") $ Repr $ ISRepr.Str combined
-                RawFn.send (Id.OutletR "len") $ Repr $ ISRepr.Int $ String.length combined
+    mbA <- RawFn.receive $ Id.InletR "a"
+    mbB <- RawFn.receive $ Id.InletR "b"
+    case mbA /\ mbB of
+        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> do
+            State.modify_
+                \srepr -> case srepr of
+                    ISRepr.Str s -> ISRepr.Str $ s <> "-" <> show (a + b)
+                    _ -> srepr
+            RawFn.send (Id.OutletR "out") $ Repr $ ISRepr.Int $ a + b
         _ -> pure unit
 
 
@@ -72,7 +73,7 @@ node =
 family :: Raw.Family ISRepr Effect
 family =
     RawFamily.make
-        (Id.FamilyR { family : "concatR" })
+        (Id.FamilyR { family : "statefulR" })
         ISRepr.None
         shape
         defaultInlets

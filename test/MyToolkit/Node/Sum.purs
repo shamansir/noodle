@@ -22,7 +22,6 @@ import Noodle.Toolkit.Families (F) as Noodle
 import Test.MyToolkit.Repr (ISRepr)
 
 
-
 _sum :: NId.Family "sum"
 _sum  = NId.Family
 
@@ -60,7 +59,6 @@ defaultO = { sum : 0 }
 
 a_in    = Noodle.Inlet :: _ "a"
 b_in    = Noodle.Inlet :: _ "b"
-c_in    = Noodle.Inlet :: _ "c"
 
 sum_out = Noodle.Outlet :: _ "sum"
 

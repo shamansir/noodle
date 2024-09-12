@@ -25,12 +25,31 @@ type TNil :: forall k. TList k
 type TNil = Nil'
 
 
+{-
+-- | Adds an item to the end of `TList`, creating a new `TList`.
+foreign import data TSnoc :: forall k. TList k -> k -> TList k
+
+
+infixr 1 type TSnoc as <:
+-}
+
+
 class Put :: forall k. k -> TList k -> TList k -> Constraint
 class Put x xs ys | xs -> ys
 
 
 instance Put x TNil (x :> TNil)
 else instance Put x (some :> tail) (x :> some :> tail)
+
+
+{-
+class PutLast :: forall k. k -> TList k -> TList k -> Constraint
+class PutLast x xs ys | xs -> ys
+
+
+instance PutLast x TNil (x :> TNil)
+else instance PutLast x before (before <: x)
+-}
 
 
 data ByReflect = ByReflect
