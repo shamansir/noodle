@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Newtype (class Newtype, unwrap)
 
-import Noodle.Raw.Fn.Shape.Temperament (Temperament)
+import Noodle.Fn.Shape.Temperament (Temperament)
 
 -- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
 newtype InletDefR = InletDefR { name :: String, order :: Int, temp :: Temperament }

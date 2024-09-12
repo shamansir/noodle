@@ -1,6 +1,5 @@
 module Noodle.Fn.Shape where
 
-
 import Prelude
 
 import Prim.Row as Row

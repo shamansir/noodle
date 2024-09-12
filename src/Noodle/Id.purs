@@ -42,7 +42,6 @@ instance IsSymbol f => Show (Family f) where
     show _ = reflectSymbol (Proxy :: _ f)
 
 
-
 instance IsSymbol f => Reflectable (Family f) FamilyR
     where
         reflectType :: Proxy (Family f) -> FamilyR

@@ -6,7 +6,7 @@ import Prim.Boolean (True, False)
 
 import Type.Proxy (Proxy(..))
 import Type.Data.List (class IsMember)
-import Type.Data.List.Extra (TNil, class Put, class MapDown, mapDown, class LMap)
+import Type.Data.List.Extra (TNil, class Put, class MapDown, mapDown, class LMap, ByReflect(..))
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throw)

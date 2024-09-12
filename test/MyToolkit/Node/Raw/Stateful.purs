@@ -13,7 +13,7 @@ import Data.String (length) as String
 
 import Noodle.Id (FamilyR(..), InletR(..), OutletR(..)) as Id
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
-import Noodle.Raw.Fn.Shape.Temperament (Temperament(..))
+import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape (make) as RawShape
 import Noodle.Raw.Fn.Process (Process) as Raw
