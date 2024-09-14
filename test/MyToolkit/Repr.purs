@@ -11,6 +11,7 @@ import Data.Repr (wrap, unwrap) as Repr
 
 data ISRepr
     = None
+    | UnitV
     | Int Int
     | Str String
 
@@ -24,10 +25,12 @@ instance Show ISRepr where
             None -> "<None>"
             Int n -> show n
             Str str -> str
+            UnitV -> "<Unit>"
 instance HasFallback ISRepr where
     fallback = None
 instance ToRepr Int ISRepr where toRepr = Just <<< Repr.wrap <<< Int
 instance ToRepr String ISRepr where toRepr = Just <<< Repr.wrap <<< Str
+instance ToRepr Unit ISRepr where toRepr = Just <<< Repr.wrap <<< const UnitV
 instance FromRepr ISRepr Int where
     fromRepr = Repr.unwrap >>>
         case _ of
@@ -37,4 +40,9 @@ instance FromRepr ISRepr String where
     fromRepr = Repr.unwrap >>>
         case _ of
             Str str -> Just str
+            _ -> Nothing
+instance FromRepr ISRepr Unit where
+    fromRepr = Repr.unwrap >>>
+        case _ of
+            UnitV -> Just unit
             _ -> Nothing

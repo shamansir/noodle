@@ -7,14 +7,32 @@ import Effect.Class (liftEffect)
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
+import Noodle.Patch (make, registerNodeNotFromToolkit, registerNode, registerRawNode, mapAllNodes) as Patch
+import Noodle.Raw.Node (family) as Node
+
+import Test.MyToolkit.Node.Concat as Concat
+
 
 spec :: Spec Unit
 spec = do
 
     describe "registering nodes inside the patch" $ do
 
+        it "registering a node not from a toolkit" $ liftEffect $ do
+            emptyPatch <- Patch.make "test" unit
+            concatNode <- Concat.makeNode
+            let
+                patchWithNodes =
+                    emptyPatch
+                        # Patch.registerNodeNotFromToolkit concatNode
+                nodesInPatch =
+                    Patch.mapAllNodes Node.family patchWithNodes
+            (show <$> nodesInPatch) `shouldEqual` [ "concat" ]
+
+
         pending' "registering a node from toolkit by family" $ liftEffect $ do
             pure unit
+
 
         pending' "registering a raw node from toolkit by family" $ liftEffect $ do
             pure unit

@@ -38,6 +38,10 @@ data Family f = Family
 newtype FamilyR = FamilyR { family :: String }
 
 
+instance Show FamilyR where
+    show (FamilyR { family }) = family
+
+
 instance IsSymbol f => Show (Family f) where
     show _ = reflectSymbol (Proxy :: _ f)
 
@@ -60,6 +64,10 @@ data Node f = Node { hash :: UniqueHash }
 -- | `NodeR` stores rawified Node ID, moving all it's type-level data to value-level. As well, can be created right away when one wants to pass type checks when adding nodes.
 -- | (this technique is used when we create nodes from parsed files).
 newtype NodeR = NodeR { family :: String, hash :: UniqueHash }
+
+
+instance Show NodeR where
+    show (NodeR { family, hash }) = "<" <> show family <> ":" <> show hash <> ">"
 
 
 newtype PatchR = PatchR { hash :: UniqueHash }

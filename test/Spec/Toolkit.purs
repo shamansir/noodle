@@ -122,4 +122,4 @@ spec = do
                         # Toolkit.registerRaw RawSum.family
                         # Toolkit.registerRaw RawStateful.family
                         # Toolkit.mapRawFamilies rawFamilyToString
-            nonEmptyTkArray `shouldEqual` [ "concatR", "statefulR", "sumR" ] -- families are sorted alphabetically
+            nonEmptyTkArray `shouldEqual` [ "concatR", "statefulR", "sumR" ] -- raw families are sorted alphabetically

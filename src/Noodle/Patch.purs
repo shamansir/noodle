@@ -19,6 +19,7 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
+import Data.Repr (class ToRepr, class FromRepr)
 
 import Prim.Boolean (True, False)
 import Prim.Row as R
@@ -28,7 +29,7 @@ import Prim.RowList as RL
 
 import Noodle.Id (PatchR, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR) as Id
 import Noodle.Node (Node)
-import Noodle.Node (family) as Node
+import Noodle.Node (family, toRaw) as Node
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (family) as RawNode
 import Noodle.Toolkit (Toolkit)
@@ -44,7 +45,7 @@ data Patch state (families :: Families) repr m =
     Id.PatchR
     -- Toolkit families repr m
     (Channel state)
-    (Map Id.FamilyR (Array (HoldsNode repr m)))
+    (Map Id.FamilyR (Array (HoldsNode repr m))) -- FIXME: consider storing all the nodes in Raw format
     (Map Id.FamilyR (Array (Raw.Node repr m)))
     Links
 
@@ -77,11 +78,24 @@ registerNode
     :: forall f state repr is os m families
      . IsSymbol f
     => MonadEffect m
+    => FromRepr repr state => ToRepr state repr
     => IsMember (F f state is os repr m) families True
     => Node f state is os repr m
     -> Patch state families repr m
     -> Patch state families repr m
-registerNode node (Patch name id chState nodes rawNodes links) =
+registerNode =
+    registerNodeNotFromToolkit -- it just has no `IsMember` constraint
+
+
+registerNodeNotFromToolkit
+    :: forall f state repr is os m families
+     . IsSymbol f
+    => MonadEffect m
+    => FromRepr repr state => ToRepr state repr
+    => Node f state is os repr m
+    -> Patch state families repr m
+    -> Patch state families repr m
+registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
     Patch name id chState (Map.alter (insertOrInit $ holdNode node) (Id.familyR $ Node.family node) nodes) rawNodes links
     where
       insertOrInit :: HoldsNode repr m -> Maybe (Array (HoldsNode repr m)) -> Maybe (Array (HoldsNode repr m))
@@ -141,3 +155,15 @@ mapRawNodes
     -> Array x
 mapRawNodes f (Patch _ _ _ _ rawNodes _) =
     Array.concat $ Map.toUnfoldable rawNodes <#> Tuple.snd <#> map f
+
+
+
+mapAllNodes
+    :: forall x pstate families repr m
+    .  (Raw.Node repr m -> x)
+    -> Patch pstate families repr m
+    -> Array x
+mapAllNodes f (Patch _ _ _ nodes _ _) =
+    Array.concat (map (toRawCnv >>> f) <$> Tuple.snd <$> Map.toUnfoldable nodes)
+    where
+      toRawCnv hn = withNode hn Node.toRaw

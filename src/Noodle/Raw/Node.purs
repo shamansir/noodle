@@ -47,7 +47,11 @@ data Node (repr :: Type) (m :: Type -> Type)
 
 
 family :: forall repr m. Node repr m -> Id.FamilyR
-family (Node nodeR _ _ _ _) = Id.familyOf nodeR
+family = id >>> Id.familyOf
+
+
+id :: forall repr m. Node repr m -> Id.NodeR
+id (Node nodeR _ _ _ _) = nodeR
 
 
 {- Making -}
