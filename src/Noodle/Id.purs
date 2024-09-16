@@ -17,6 +17,7 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 import Data.UniqueHash (UniqueHash)
+import Data.UniqueHash (toString) as UH
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Reflectable (class Reflectable)
 
@@ -75,6 +76,8 @@ newtype PatchR = PatchR { hash :: UniqueHash }
 
 instance Eq NodeR where
     eq (NodeR nodeA) (NodeR nodeB) = nodeA.family == nodeB.family && nodeA.hash == nodeB.hash
+instance Ord NodeR where
+    compare (NodeR nodeA) (NodeR nodeB) = compare (nodeA.family <> UH.toString nodeA.hash) (nodeB.family <> UH.toString nodeB.hash)
 
 
 nodeR :: forall family. IsSymbol family => Node family -> NodeR
@@ -104,7 +107,7 @@ nodeR_ (FamilyR { family }) hash = NodeR { family, hash }
 type FnName = String
 
 
-type Link = String
+type Link = Int
 
 
 type PatchName = String

@@ -38,6 +38,8 @@ import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
 import Noodle.Link (Link)
 import Noodle.Link (FromId, ToId) as Link
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Patch.Links (Links)
+import Noodle.Patch.Links (init, track) as Links
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Wiring (class Wiring)
 
@@ -49,17 +51,8 @@ data Patch state (families :: Families) repr m =
     -- Toolkit families repr m
     (Channel state)
     (Map Id.FamilyR (Array (HoldsNode repr m))) -- FIXME: consider storing all the nodes in Raw format
-    (Map Id.FamilyR (Array (Raw.Node repr m)))
-    Links
-
-
-type Links = -- TODO: separate module
-  { lastId :: Maybe Id.Link
-  , from :: Map Link.FromId Raw.Link
-  , to :: Map Link.ToId Raw.Link
-  , byNode :: Map Id.NodeR (Array (Link.FromId /\ Link.ToId))
-  , byId :: Map Id.Link Raw.Link
-  }
+    (Map Id.FamilyR (Array (Raw.Node repr m))) -- use `Channel` as well?
+    Links -- use `Channel` as well?
 
 
 make :: forall state families repr m. MonadEffect m => Id.PatchName -> state -> m (Patch state families repr m)
@@ -74,7 +67,7 @@ make patchName state = liftEffect $ do
       stateCh
       Map.empty
       Map.empty
-      initLinks
+      Links.init
 
 
 fromToolkit :: forall state families repr m. MonadEffect m => Toolkit families repr m -> Id.PatchName -> state -> m (Patch state families repr m)
@@ -119,7 +112,7 @@ registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
     Patch name id chState nodes (Map.alter (insertOrInit rawNode) (RawNode.family rawNode) rawNodes) links
     where
       insertOrInit :: Raw.Node repr m -> Maybe (Array (Raw.Node repr m)) -> Maybe (Array (Raw.Node repr m))
-      insertOrInit holdsNode Nothing      = Just $ Array.singleton holdsNode
+      insertOrInit holdsNode Nothing        = Just $ Array.singleton holdsNode
       insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
 
 
@@ -140,18 +133,11 @@ connect
     -> Node fB stateB isB osB repr m
     -> Patch state families repr m
     -> m (Patch state families repr m /\ Link fA fB oA iB)
-connect outletA inletB nodeA nodeB patch =
-    ((/\) patch) <$> Node.connect outletA inletB nodeA nodeB
-
-
-initLinks :: Links
-initLinks =
-  { lastId : Nothing
-  , from : Map.empty
-  , to : Map.empty
-  , byNode : Map.empty
-  , byId : Map.empty
-  }
+connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) = do
+    link <- Node.connect outletA inletB nodeA nodeB
+    let nextLinks = links # Links.track link
+    let nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ link)
 
 
 data MapNodes repr m = MapNodes (Map Id.FamilyR (Array (HoldsNode repr m)))
