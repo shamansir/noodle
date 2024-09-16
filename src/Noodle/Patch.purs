@@ -27,16 +27,19 @@ import Prim.RowList as RL
 -- import Type.RowList as RL
 -- import Type.Row as R
 
-import Noodle.Id (PatchR, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR) as Id
+import Noodle.Id (PatchR, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet) as Id
 import Noodle.Node (Node)
-import Noodle.Node (family, toRaw) as Node
+import Noodle.Node (family, toRaw, connect) as Node
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (family) as RawNode
 import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit.Families (Families, F)
+import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
+import Noodle.Link (Link)
 import Noodle.Link (FromId, ToId) as Link
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
+import Noodle.Wiring (class Wiring)
 
 
 data Patch state (families :: Families) repr m =
@@ -74,12 +77,16 @@ make patchName state = liftEffect $ do
       initLinks
 
 
+fromToolkit :: forall state families repr m. MonadEffect m => Toolkit families repr m -> Id.PatchName -> state -> m (Patch state families repr m)
+fromToolkit _ = make
+
+
 registerNode
     :: forall f state repr is os m families
      . IsSymbol f
     => MonadEffect m
     => FromRepr repr state => ToRepr state repr
-    => IsMember (F f state is os repr m) families True
+    => RegisteredFamily (F f state is os repr m) families
     => Node f state is os repr m
     -> Patch state families repr m
     -> Patch state families repr m
@@ -114,6 +121,27 @@ registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
       insertOrInit :: Raw.Node repr m -> Maybe (Array (Raw.Node repr m)) -> Maybe (Array (Raw.Node repr m))
       insertOrInit holdsNode Nothing      = Just $ Array.singleton holdsNode
       insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
+
+
+connect
+    :: forall state repr m families fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
+     . Wiring m
+    => IsSymbol fA
+    => IsSymbol fB
+    => FromRepr repr doutA
+    => ToRepr dinB repr
+    => HasOutlet osA osA' oA doutA
+    => HasInlet isB isB' iB dinB
+    => RegisteredFamily (F fA stateA isA osA repr m) families
+    => RegisteredFamily (F fB stateB isB osB repr m) families
+    => Id.Outlet oA
+    -> Id.Inlet iB
+    -> Node fA stateA isA osA repr m
+    -> Node fB stateB isB osB repr m
+    -> Patch state families repr m
+    -> m (Patch state families repr m /\ Link fA fB oA iB)
+connect outletA inletB nodeA nodeB patch =
+    ((/\) patch) <$> Node.connect outletA inletB nodeA nodeB
 
 
 initLinks :: Links
@@ -163,7 +191,7 @@ mapAllNodes
     .  (Raw.Node repr m -> x)
     -> Patch pstate families repr m
     -> Array x
-mapAllNodes f (Patch _ _ _ nodes _ _) =
-    Array.concat (map (toRawCnv >>> f) <$> Tuple.snd <$> Map.toUnfoldable nodes)
+mapAllNodes f patch@(Patch _ _ _ nodes _ _) =
+    Array.concat (map (toRawCnv >>> f) <$> Tuple.snd <$> Map.toUnfoldable nodes) <> mapRawNodes f patch
     where
       toRawCnv hn = withNode hn Node.toRaw

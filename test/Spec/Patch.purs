@@ -7,10 +7,12 @@ import Effect.Class (liftEffect)
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
-import Noodle.Patch (make, registerNodeNotFromToolkit, registerNode, registerRawNode, mapAllNodes) as Patch
+import Noodle.Patch (make, fromToolkit, registerNodeNotFromToolkit, registerNode, registerRawNode, mapAllNodes) as Patch
 import Noodle.Raw.Node (family) as Node
 
+import Test.MyToolkit.Toolkit as MyToolkit
 import Test.MyToolkit.Node.Concat as Concat
+import Test.MyToolkit.Node.Raw.Concat as RawConcat
 
 
 spec :: Spec Unit
@@ -30,11 +32,30 @@ spec = do
             (show <$> nodesInPatch) `shouldEqual` [ "concat" ]
 
 
-        pending' "registering a node from toolkit by family" $ liftEffect $ do
-            pure unit
+        it "registering a node from toolkit by family" $ liftEffect $ do
+            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            concatNode <- Concat.makeNode
+            let
+                patchWithNodes =
+                    emptyPatch
+                        # Patch.registerNode concatNode
+                nodesInPatch =
+                    Patch.mapAllNodes Node.family patchWithNodes
+            (show <$> nodesInPatch) `shouldEqual` [ "concat" ]
 
 
-        pending' "registering a raw node from toolkit by family" $ liftEffect $ do
+        it "registering a raw node from toolkit by family" $ liftEffect $ do
+            emptyPatch <- Patch.make "test" unit
+            concatNode <- RawConcat.makeNode
+            let
+                patchWithNodes =
+                    emptyPatch
+                        # Patch.registerRawNode concatNode
+                nodesInPatch =
+                    Patch.mapAllNodes Node.family patchWithNodes
+            (show <$> nodesInPatch) `shouldEqual` [ "concatR" ]
+
+        pending' "nodes are properly grouped by family" $ liftEffect $ do
             pure unit
 
     describe "connecting & disconnecting nodes inside the patch" $ do

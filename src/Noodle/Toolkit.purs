@@ -5,7 +5,6 @@ import Prelude
 import Prim.Boolean (True, False)
 
 import Type.Proxy (Proxy(..))
-import Type.Data.List (class IsMember)
 import Type.Data.List.Extra (TNil, class Put, class MapDown, mapDown, class LMap, ByReflect(..))
 
 import Effect.Class (class MonadEffect, liftEffect)
@@ -28,7 +27,7 @@ import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
-import Noodle.Toolkit.Families (Families, F)
+import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 
 
 type Name = String
@@ -69,7 +68,7 @@ spawn
     :: forall f state repr is os m families
      . IsSymbol f
     => MonadEffect m
-    => IsMember (F f state is os repr m) families True
+    => RegisteredFamily (F f state is os repr m) families
     => Id.Family f
     -> Toolkit families repr m
     -> m (Node f state is os repr m)

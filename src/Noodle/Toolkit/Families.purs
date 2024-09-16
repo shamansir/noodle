@@ -1,12 +1,14 @@
 module Noodle.Toolkit.Families where
 
 
+import Prim.Boolean (True, False)
+
 import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Reflectable (class Reflectable)
 
-import Type.Data.List (type (:>))
+import Type.Data.List (type (:>), class IsMember)
 import Type.Data.List.Extra (TList, TNil)
 
 import Data.Array ((:))
@@ -26,6 +28,12 @@ instance IsSymbol f => Reflectable (F f state is os repr m) FamilyR where
     reflectType :: Proxy (F f state is os repr m) -> FamilyR
     reflectType _ = familyR (Proxy :: _ f)
 
+
+class RegisteredFamily :: FamilyDef -> Families -> Constraint
+class RegisteredFamily family families
+
+
+instance IsMember family families True => RegisteredFamily family families
 
 
 {-

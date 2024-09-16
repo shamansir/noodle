@@ -57,8 +57,8 @@ process = do
         _ -> 0
 
 
-node :: Effect (Raw.Node ISRepr Effect)
-node =
+makeNode :: Effect (Raw.Node ISRepr Effect)
+makeNode =
     RawFamily.spawn family
 
 
