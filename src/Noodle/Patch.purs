@@ -36,10 +36,10 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
 import Noodle.Link (Link)
-import Noodle.Link (FromId, ToId) as Link
+import Noodle.Link (FromId, ToId, setId) as Link
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track) as Links
+import Noodle.Patch.Links (init, track, nextId) as Links
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Wiring (class Wiring)
 
@@ -135,9 +135,11 @@ connect
     -> m (Patch state families repr m /\ Link fA fB oA iB)
 connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) = do
     link <- Node.connect outletA inletB nodeA nodeB
-    let nextLinks = links # Links.track link
-    let nextPatch = Patch name id chState nodes rawNodes nextLinks
-    pure (nextPatch /\ link)
+    let
+      linkWithId = link # Link.setId (Links.nextId links)
+      nextLinks = links # Links.track linkWithId
+      nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ linkWithId)
 
 
 data MapNodes repr m = MapNodes (Map Id.FamilyR (Array (HoldsNode repr m)))
@@ -169,7 +171,6 @@ mapRawNodes
     -> Array x
 mapRawNodes f (Patch _ _ _ _ rawNodes _) =
     Array.concat $ Map.toUnfoldable rawNodes <#> Tuple.snd <#> map f
-
 
 
 mapAllNodes

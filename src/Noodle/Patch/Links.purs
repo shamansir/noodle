@@ -4,17 +4,18 @@ import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map (Map)
-import Data.Map (empty, insert, alter) as Map
+import Data.Map (empty, insert, alter, delete) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (singleton, cons) as Array
 
-import Noodle.Id (Link, NodeR) as Id
-import Noodle.Link (FromId, ToId, toRaw, from, to, fromNode, toNode) as Link
+import Noodle.Id (Link(..), NodeR) as Id
+import Noodle.Link (FromId, ToId, toRaw) as Link
 import Noodle.Link (Link)
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Link (from, to, fromNode, toNode) as RawLink
 
 
-type Links = -- TODO: separate module
+type Links =
   { lastId :: Maybe Id.Link
   , from :: Map Link.FromId Raw.Link
   , to :: Map Link.ToId Raw.Link
@@ -34,25 +35,52 @@ init =
 
 
 track :: forall fA fB oA iB. Link fA fB oA iB -> Links -> Links
-track link { lastId, from, to, byNode, byId } =
+track = trackRaw <<< Link.toRaw
+
+
+trackRaw :: Raw.Link -> Links -> Links
+trackRaw rawLink { lastId, from, to, byNode, byId } =
   let
-    rawLink = Link.toRaw link
-    nextId = maybe 0 ((+) 1) lastId
+    linkId = _nextId lastId
     alterF tpl = maybe (Just $ Array.singleton tpl) (Array.cons tpl >>> Just)
   in
-    { lastId : Just nextId
-    , from : from # Map.insert (Link.from link) rawLink
-    , to : to # Map.insert (Link.to link) rawLink
+    { lastId : Just linkId
+    , from : from # Map.insert (RawLink.from rawLink) rawLink
+    , to : to # Map.insert (RawLink.to rawLink) rawLink
     , byNode :
         byNode
-          # Map.alter (alterF (Link.from link /\ Link.to link)) (Link.fromNode link)
-          # Map.alter (alterF (Link.from link /\ Link.to link)) (Link.toNode link)
+          # Map.alter (alterF (RawLink.from rawLink /\ RawLink.to rawLink)) (RawLink.fromNode rawLink)
+          # Map.alter (alterF (RawLink.from rawLink /\ RawLink.to rawLink)) (RawLink.toNode rawLink)
     , byId :
         byId #
-          Map.insert nextId rawLink
+          Map.insert linkId rawLink
     }
 
 
--- TODO: trackRaw :: Raw.Link -> Links -> Links
--- TODO: forget :: forall fA fB oA iB. Link fA fB oA iB -> Links -> Links
--- TODO: forgetRaw :: Raw.Link -> Links -> Links
+_nextId :: Maybe Id.Link -> Id.Link
+_nextId =
+  case _ of
+    Just (Id.Link n) -> Id.Link $ n + 1
+    Nothing -> Id.Link 0
+
+
+nextId :: Links -> Id.Link
+nextId = _.lastId >>> _nextId
+
+
+forget :: forall fA fB oA iB. Link fA fB oA iB -> Links -> Links
+forget = forgetRaw <<< Link.toRaw
+
+
+forgetRaw :: Raw.Link -> Links -> Links
+forgetRaw rawLink { lastId, from, to, byNode, byId } =
+    { lastId -- we don't need to change it so increasing it later won't break previous IDs
+    , from : from # Map.delete (RawLink.from rawLink)
+    , to : to # Map.delete (RawLink.to rawLink)
+    , byNode :
+        byNode
+          # Map.delete (RawLink.fromNode rawLink)
+          # Map.delete (RawLink.toNode rawLink)
+    , byId :
+        byId -- FIXME: we don't know ID, store (Maybe ID) in the Link
+    }

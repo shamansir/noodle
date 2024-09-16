@@ -8,7 +8,7 @@ module Noodle.Id
     , family, familyR, familyOf
     , PatchR, PatchName, patchR
     , FnName
-    , Link
+    , Link(..)
     )
     where
 
@@ -107,7 +107,11 @@ nodeR_ (FamilyR { family }) hash = NodeR { family, hash }
 type FnName = String
 
 
-type Link = Int
+newtype Link = Link Int
+
+
+derive instance Eq Link
+derive instance Ord Link
 
 
 type PatchName = String

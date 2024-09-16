@@ -167,3 +167,6 @@ data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
 
 reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw.Shape
 reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets), outlets : reflectOutlets (Proxy :: _ outlets) }
+
+
+newtype Link = Link Int
