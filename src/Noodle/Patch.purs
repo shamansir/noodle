@@ -142,6 +142,23 @@ connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) 
     pure (nextPatch /\ linkWithId)
 
 
+disconnect
+    :: forall state repr m families fA fB oA iB
+     . Wiring m
+    => Link fA fB oA iB
+    -> Patch state families repr m
+    -> m Boolean
+disconnect link patch = do
+    pure true
+    {-
+    link <- Node.connect outletA inletB nodeA nodeB
+    let
+      linkWithId = link # Link.setId (Links.nextId links)
+      nextLinks = links # Links.track linkWithId
+      nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ linkWithId) -}
+
+
 data MapNodes repr m = MapNodes (Map Id.FamilyR (Array (HoldsNode repr m)))
 
 
