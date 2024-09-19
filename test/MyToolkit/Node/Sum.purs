@@ -63,19 +63,43 @@ b_in    = Noodle.Inlet :: _ "b"
 sum_out = Noodle.Outlet :: _ "sum"
 
 
-family :: Process -> Family
+family :: Family
 family =
+    family_
+        defaultI
+        defaultO
+        sumBoth
+
+
+
+family_ :: Record InletsRow -> Record OutletsRow -> Process -> Family
+family_ =
     Family.make
         _sum
         unit
         (Noodle.Shape :: Shape)
+
+
+family' :: Process -> Family
+family' =
+    family_
         defaultI
         defaultO
 
 
-makeNode :: Process -> Effect Node
+makeNode :: Effect Node
 makeNode =
-    family >>> Family.spawn
+    Family.spawn family
+
+
+makeNode_ :: Record InletsRow -> Record OutletsRow -> Process -> Effect Node
+makeNode_ defaultI defaultO =
+    family_ defaultI defaultO >>> Family.spawn
+
+
+makeNode' :: Process -> Effect Node
+makeNode' =
+    family' >>> Family.spawn
 
 
 sumBoth :: Process

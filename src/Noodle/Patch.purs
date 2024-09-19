@@ -36,10 +36,10 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
 import Noodle.Link (Link)
-import Noodle.Link (FromId, ToId, setId) as Link
+import Noodle.Link (FromId, ToId, setId, cancel) as Link
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId) as Links
+import Noodle.Patch.Links (init, track, nextId, forget) as Links
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Wiring (class Wiring)
 
@@ -147,9 +147,13 @@ disconnect
      . Wiring m
     => Link fA fB oA iB
     -> Patch state families repr m
-    -> m Boolean
-disconnect link patch = do
-    pure true
+    -> m (Patch state families repr m /\ Boolean)
+disconnect link (Patch name id chState nodes rawNodes links) = do
+    _ <- liftEffect $ Link.cancel link
+    let
+        nextLinks = links # Links.forget link
+        nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ true)
     {-
     link <- Node.connect outletA inletB nodeA nodeB
     let

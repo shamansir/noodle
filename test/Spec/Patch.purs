@@ -72,8 +72,8 @@ spec = do
             pure unit
 
         it "is possible to connect nodes (case a)" $ liftEffect $ do
-            (nodeA :: Sum.Node) <- Sum.makeNode Sum.sumBoth
-            (nodeB :: Sum.Node) <- Sum.makeNode Sum.sumBoth
+            (nodeA :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
+            (nodeB :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
             let patchWithNodes = emptyPatch # Patch.registerNode nodeA # Patch.registerNode nodeB
@@ -91,15 +91,18 @@ spec = do
             pure unit
 
         it "is possible to connect nodes (case b)" $ liftEffect $ do
-            (nodeA :: Sum.Node) <- Sum.makeNode Sum.sumBoth
-            (nodeB :: Sum.Node) <- Sum.makeNode Sum.sumBoth
+            (nodeA :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
+            (nodeB :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
             emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
-            let patchWithNodes = emptyPatch # Patch.registerNode nodeA # Patch.registerNode nodeB
+            let patchWithNodes =
+                    emptyPatch
+                    # Patch.registerNode nodeA
+                    # Patch.registerNode nodeB
 
-            _ <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB emptyPatch
+            _ <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB patchWithNodes
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -113,15 +116,17 @@ spec = do
             pure unit
 
         it "is possible to connect nodes and keep sending values" $ liftEffect $ do
-            (nodeA :: Sum.Node) <- Sum.makeNode Sum.sumBoth
-            (nodeB :: Sum.Node) <- Sum.makeNode Sum.sumBoth
+            (nodeA :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
+            (nodeB :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
-            emptyPatch <- Patch.make "test" unit
-
             emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
-            let patchWithNodes = emptyPatch # Patch.registerNode nodeA # Patch.registerNode nodeB
+            let patchWithNodes = emptyPatch
+                    # Patch.registerNode nodeA
+                    # Patch.registerNode nodeB
+
+            _ <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB patchWithNodes
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -145,15 +150,18 @@ spec = do
 
 
         it "disconnecting works" $ liftEffect $ do
-            (nodeA :: Sum.Node) <- Sum.makeNode Sum.sumBoth
-            (nodeB :: Sum.Node) <- Sum.makeNode Sum.sumBoth
+            (nodeA :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
+            (nodeB :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
             emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
-            let patchWithNodes = emptyPatch # Patch.registerNode nodeA # Patch.registerNode nodeB
+            let patchWithNodes =
+                    emptyPatch
+                    # Patch.registerNode nodeA
+                    # Patch.registerNode nodeB
 
-            nextPatch /\ link <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB emptyPatch
+            nextPatch /\ link <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB patchWithNodes
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -161,7 +169,7 @@ spec = do
             -- atSumB <- nodeB <-@ sum_out
             -- atSumB `shouldEqual` (2 + 4 + 3)
 
-            success <- Patch.disconnect link nextPatch -- nodeA nodeB
+            _ /\ success <- Patch.disconnect link nextPatch -- nodeA nodeB
             success `shouldEqual` true
 
             nodeA #-> Sum.a_in /\ 7

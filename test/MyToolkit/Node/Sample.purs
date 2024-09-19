@@ -71,8 +71,13 @@ foo_out = Noodle.Outlet :: _ "foo"
 bar_out = Noodle.Outlet :: _ "bar"
 
 
-family :: Process -> Family
+family :: Family
 family =
+    family' combineAll
+
+
+family' :: Process -> Family
+family' =
     Family.make
         _sample
         unit
@@ -81,9 +86,14 @@ family =
         defaultO
 
 
-makeNode :: Process -> Effect Node
+makeNode :: Effect Node
 makeNode =
-    family >>> Family.spawn
+    Family.spawn family
+
+
+makeNode' :: Process -> Effect Node
+makeNode' =
+    family' >>> Family.spawn
 
 
 combineAll :: Process

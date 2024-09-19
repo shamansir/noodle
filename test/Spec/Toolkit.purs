@@ -46,7 +46,7 @@ spec = do
                 (_ :: Toolkit (Sum.F :> Concat.F :> TNil) _ _) =
                     Toolkit.empty "test"
                         # Toolkit.register Concat.family
-                        # Toolkit.register (Sum.family Sum.sumBoth)
+                        # Toolkit.register Sum.family
             pure unit
 
 
@@ -106,7 +106,7 @@ spec = do
             let nonEmptyTkArray =
                     Toolkit.empty "test-2"
                         # Toolkit.register Concat.family
-                        # Toolkit.register (Sum.family Sum.sumBoth)
+                        # Toolkit.register Sum.family
                         # Toolkit.register Stateful.family
                         # Toolkit.mapFamilies familyToString
             nonEmptyTkArray `shouldEqual` [ "stateful", "sum", "concat" ] -- since we use `#` operator, `Put` typeclass pushes "stateful" before "sum" & s.o.

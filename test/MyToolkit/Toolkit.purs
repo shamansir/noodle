@@ -43,8 +43,8 @@ toolkit =
 
 toolkit :: Toolkit
 toolkit
-    = Toolkit.register (Sample.family Sample.combineAll)
-    $ Toolkit.register (Sum.family Sum.sumBoth)
+    = Toolkit.register Sample.family
+    $ Toolkit.register Sum.family
     $ Toolkit.register Concat.family
     $ Toolkit.register Stateful.family
     $ Toolkit.empty "my-toolkit"

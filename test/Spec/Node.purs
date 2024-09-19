@@ -54,19 +54,19 @@ spec = do
     describe "creation" $ do
 
         it "creating node" $ do
-            _ <- liftEffect $ Sample.makeNode $ pure unit
+            _ <- liftEffect $ Sample.makeNode' $ pure unit
             pure unit
 
     describe "running" $ do
 
         it "running node with empty process function" $ do
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode $ pure unit
+                myNode <- liftEffect $ Sample.makeNode' $ pure unit
                 Node.run myNode
 
         it "running node with some function (run with default values)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode Sample.combineAll
+                myNode <- liftEffect Sample.makeNode
                 myNode # Node.run
                 foo <- myNode <-@ Sample.foo_out
                 bar <- myNode <-@ Sample.bar_out
@@ -77,7 +77,7 @@ spec = do
 
         it "running node with some function (send new values to all inlets before running)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode Sample.combineAll
+                myNode <- liftEffect Sample.makeNode
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
                 myNode #-> Sample.c_in   /\ 15
@@ -89,7 +89,7 @@ spec = do
 
         it "running node with some function (send new values to some inlets before running)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode Sample.combineAll
+                myNode <- liftEffect Sample.makeNode
                 myNode # Node._listenUpdatesAndRun
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
@@ -101,7 +101,7 @@ spec = do
 
         it "running node with some function (listen to updates and send values after that)" $ do
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode Sample.combineAll
+                myNode <- liftEffect Sample.makeNode
                 myNode # Node._listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode #-> Sample.foo_in /\ 7
@@ -114,7 +114,7 @@ spec = do
 
         it "running node with some function (listen to updates and send some of the values)" $
             liftEffect $ do
-                myNode <- liftEffect $ Sample.makeNode Sample.combineAll
+                myNode <- liftEffect Sample.makeNode
                 myNode # Node._listenUpdatesAndRun
                 --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode #-> Sample.foo_in /\ 7
@@ -128,12 +128,10 @@ spec = do
 
         it "is possible to connect nodes (case a)" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             (nodeB :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             _ <- (nodeA /\ Sum.sum_out)
                  <~>
@@ -151,12 +149,10 @@ spec = do
 
         it "is possible to connect nodes (case b)" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             (nodeB :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
@@ -177,12 +173,10 @@ spec = do
 
         it "is possible to connect nodes and keep sending values" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             (nodeB :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
@@ -213,12 +207,10 @@ spec = do
 
         it "disconnecting works" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             (nodeB :: Sum.Node) <-
-                Node.make Sum._sum unit (Shape :: Sum.Shape) { a : 2, b : 3 } { sum : 0 }
-                    $ Sum.sumBoth
+                Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
             nodeA #-> Sum.a_in /\ 4
 
