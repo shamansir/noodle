@@ -9,6 +9,7 @@ module Noodle.Id
     , PatchR, PatchName, patchR
     , FnName
     , Link(..)
+    , class FamilyGroup, groupOf, groupOfR, groupName
     )
     where
 
@@ -119,3 +120,9 @@ type PatchName = String
 
 patchR :: UniqueHash -> PatchR
 patchR hash = PatchR { hash }
+
+
+class FamilyGroup x where
+    groupOf :: forall f. IsSymbol f => Family f -> x
+    groupOfR :: FamilyR -> x
+    groupName :: x -> String
