@@ -40,13 +40,13 @@ expected_0_1_Ndf =
         , C.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-0")
         , C.MakeNode (C.family "number") (C.coord 40) (C.coord 40) (C.nodeId "num-0")
         , C.Comment "connect pi to osc"
-        , C.Connect (C.nodeId "pi-0") (C.outputIndex 0) (C.nodeId "osc-0") (C.inputIndex 0)
-        , C.Connect (C.nodeId "num-0") (C.outputIndex 0) (C.nodeId "osc-0") (C.inputIndex 1)
-        , C.Send (C.nodeId "osc-0") (C.inputIndex 0) (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outputIndex 0) (C.encodedValue "N 40.0")
-        , C.Connect (C.nodeId "pi-0") (C.outputAlias "foo") (C.nodeId "osc-0") (C.inputAlias "bar")
-        , C.Send (C.nodeId "osc-0") (C.inputAlias "foo") (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outputAlias "bar") (C.encodedValue "N 40.0")
+        , C.Connect (C.nodeId "pi-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 0)
+        , C.Connect (C.nodeId "num-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 1)
+        , C.Send (C.nodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
+        , C.Connect (C.nodeId "pi-0") (C.outletAlias "foo") (C.nodeId "osc-0") (C.inletAlias "bar")
+        , C.Send (C.nodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
         , C.Move (C.nodeId "pi-0") (C.coord 20) (C.coord 30)
         ]
 

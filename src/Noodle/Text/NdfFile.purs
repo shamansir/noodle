@@ -8,13 +8,11 @@ import Data.Array ((:))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
 
--- import Data.Text.Format as T
--- import Cli.Tagging as T
+import Data.Text.Format as T
 
-import Noodle.Text.NdfFile.Command (Command, commandsToNdf)
-
+import Noodle.Text.NdfFile.Command (Command, commandsToNdf, commandsToTaggedNdf)
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, ndf)
-
+import Noodle.Ui.Cli.Tagging as T
 
 newtype Header = Header (String /\ Number)
 
@@ -38,11 +36,9 @@ instance ToCode NDF NdfFile where
     toCode = const toNdfCode
 
 
-{- FIXME: Bring Back
 instance ToTaggedCode NDF NdfFile where
     toTaggedCode :: Proxy NDF -> NdfFile -> T.Tag
     toTaggedCode = const toTaggedNdfCode
--}
 
 
 init :: String -> Number -> NdfFile
@@ -63,12 +59,10 @@ toNdfCode (NdfFile (Header (tk /\ version)) commands) =
     commandsToNdf commands
 
 
-{- FIXME: Bring Back
 toTaggedNdfCode :: NdfFile -> T.Tag
 toTaggedNdfCode (NdfFile (Header (tk /\ version)) commands) =
     T.toolkit tk <> T.s " " <> T.version version <> T.nl <>
     commandsToTaggedNdf commands
- -}
 
 
 extractCommands :: NdfFile -> Array Command
