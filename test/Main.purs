@@ -16,6 +16,7 @@ import Test.Spec.Repr (spec) as Repr
 import Test.Spec.Node (spec) as Node
 import Test.Spec.Toolkit (spec) as Toolkit
 import Test.Spec.Patch (spec) as Patch
+import Test.Spec.NdfFile (spec) as NdfFile
 
 
 main :: Effect Unit
@@ -32,3 +33,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Toolkit.spec
   describe "Patch"
     Patch.spec
+  describe "NDF File"
+    NdfFile.spec
