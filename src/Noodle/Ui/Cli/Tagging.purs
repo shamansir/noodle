@@ -2,18 +2,24 @@ module Noodle.Ui.Cli.Tagging where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
+
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Symbol (class IsSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 -- import Data.SProxy (reflect)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
 
-import Noodle.Id as Id
+
 
 
 import Data.Text.Format (Tag)
 import Data.Text.Format as T
+
+import Noodle.Id as Id
+import Noodle.Fn.ToFn (Fn, class ToFn, class PossiblyToFn, possiblyToFn, toFn, KnownFn(..), FnS)
+import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
@@ -21,7 +27,6 @@ import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
-
 import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, statusLine, channelLabel, documentation) as At
 
@@ -87,16 +92,26 @@ nodeLabel family =
     T.bgc (C.crepr Palette.nodeBg) $ T.fgc (mark family) $ T.s $ Id.family $ Id.familyR family
 
 
-{- TODO
-nodeMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
+nodeMouseOver
+    :: forall f grp arg out
+     . IsSymbol f
+    => FamilyHasDocs arg out grp f
+    => Proxy grp -> Proxy arg -> Proxy out
+    -> Id.Family f
+    -> Tag
 nodeMouseOver =
     familyShortInfo
 
 
-familyMouseOver :: forall f. IsSymbol f => Id.Family f -> Tag
+familyMouseOver
+    :: forall f grp arg out
+     . IsSymbol f
+    => FamilyHasDocs arg out grp f
+    => Proxy grp -> Proxy arg -> Proxy out
+    -> Id.Family f
+    -> Tag
 familyMouseOver =
     familyShortInfo
--}
 
 
 {- T.fgcs (C.crepr Palette.familyName) (reflect family)
@@ -227,25 +242,61 @@ selected :: String -> Tag
 selected = T.fgc (C.crepr Palette.positive) <<< T.s
 
 
-{- TODO
-familyDocs :: forall f. IsSymbol f => Id.Family f -> Tag
-familyDocs family =
-    let familyGroup = Id.groupOf family
+
+familyDocs
+    :: forall f grp arg out
+     . IsSymbol f
+    => FamilyHasDocs arg out grp f
+    => Proxy grp -> Proxy arg -> Proxy out
+    -> Id.Family f
+    -> Tag
+familyDocs pgrp parg pout family =
+    let (familyGroup :: grp) = Id.groupOf family
     in T.fgcs (mark familyGroup) (show familyGroup)
-        <> T.s " " <> familySignature (HFn.KnownFn $ reflect family)
+        <> T.s " " <> familySignature pgrp parg pout family
 
 
-familyShortInfo :: forall f grp. IsSymbol f => Mark grp => Id.FamilyGroup grp => Id.Family f -> Tag
-familyShortInfo family =
-    let familyGroup = Id.groupOf family
+class
+    ( PossiblyToFn arg out (Id.Family f)
+    , Tagged.At At.Documentation (Id.Family f)
+    , Mark arg, Tagged.At At.Documentation arg
+    , Mark out, Tagged.At At.Documentation out
+    , Mark grp, Show grp, Id.FamilyGroup grp, Tagged.At At.StatusLine grp
+    ) <= FamilyHasDocs arg out grp f
+
+
+instance
+    ( PossiblyToFn arg out (Id.Family f)
+    , Tagged.At At.Documentation (Id.Family f)
+    , Mark arg, Tagged.At At.Documentation arg
+    , Mark out, Tagged.At At.Documentation out
+    , Mark grp, Show grp, Id.FamilyGroup grp, Tagged.At At.StatusLine grp
+    ) => FamilyHasDocs arg out grp f
+
+
+
+familyShortInfo
+    :: forall f grp arg out
+     . IsSymbol f
+    => FamilyHasDocs arg out grp f
+    => Proxy grp -> Proxy arg -> Proxy out
+    -> Id.Family f
+    -> Tag
+familyShortInfo pgrp parg pout family =
+    let (familyGroup :: grp) = Id.groupOf family
     -- in T.bgc (C.crepr Palette.groupBg) (T.fgcs (mark familyGroup) (Info.statusLine familyGroup))
-    in T.s "/" <> T.fgcs (mark familyGroup) (At.statusLine familyGroup) <> T.s "/"
-        <> T.s " " <> familySignature (HFn.KnownFn $ reflect family)
+    in T.s "/" <> T.fgc (mark familyGroup) (At.statusLine familyGroup) <> T.s "/"
+        <> T.s " " <> familySignature pgrp parg pout family
 
 
-familySignature :: HFn.KnownFn -> Tag
-familySignature knownFn =
-    case (HFn.possiblyToFn knownFn :: Maybe (HFn.FnS H.FnArg H.FnOut)) of
+familySignature
+    :: forall grp arg out f
+     . FamilyHasDocs arg out grp f
+    => Proxy grp -> Proxy arg -> Proxy out
+    -> Id.Family f
+    -> Tag
+familySignature _ _ _ family =
+    case (possiblyToFn family :: Maybe (FnS arg out)) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
@@ -254,29 +305,28 @@ familySignature knownFn =
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> T.s " // "
-            <> T.fgcs (C.crepr Pico.lavender) (Info.docs knownFn)
+            <> T.fgc (C.crepr Pico.lavender) (At.documentation family)
         Nothing -> T.s "?"
     where
-        tagArgument :: HFn.Argument H.FnArg -> Tag
+        tagArgument :: Fn.Argument arg -> Tag
         tagArgument arg = T.s "<" <>
-            case HFn.argValue arg of
+            case Fn.argValue arg of
                 _ ->
-                    T.fgcs (C.crepr Pico.darkGreen) (HFn.argName arg)
+                    T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg)
                     <> T.s "::"
-                    <> tagArgValue (HFn.argValue arg)
+                    <> tagArgValue (Fn.argValue arg)
             <> T.s "> "
-        tagOut :: HFn.Output H.FnOut -> Tag
+        tagOut :: Fn.Output out -> Tag
         tagOut out = T.s "(" <>
-            case HFn.outValue out of
+            case Fn.outValue out of
                 _ ->
-                    T.fgcs (C.crepr Pico.darkGreen) (HFn.outName out)
+                    T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out)
                     <> T.s "::"
-                    <> tagOutValue (HFn.outValue out)
+                    <> tagOutValue (Fn.outValue out)
             <> T.s ") "
-        tagArgValue :: H.FnArg -> Tag
+        tagArgValue :: arg -> Tag
         tagArgValue val =
-            T.fgc (mark val) $ T.s $ Info.docs val
-        tagOutValue :: H.FnOut -> Tag
+            T.fgc (mark val) $ At.documentation val
+        tagOutValue :: out -> Tag
         tagOutValue val =
-            T.fgc (mark val) $ T.s $ Info.docs val
--}
+            T.fgc (mark val) $ At.documentation val

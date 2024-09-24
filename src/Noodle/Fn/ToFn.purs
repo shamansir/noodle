@@ -2,269 +2,217 @@ module Noodle.Fn.ToFn where -- TODO: ensure it is a right location
 
 import Prelude
 
-import Data.Array as Array
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (fst, snd)
-import Data.String as String
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.Tuple (snd, uncurry) as Tuple
+import Data.Maybe (Maybe(..))
+import Data.Array ((:))
+import Data.Array (length) as Array
 
-import Data.Vec (Vec, (!!), (+>))
-import Data.Vec (fromArray, toArray, zipWithE, singleton, empty) as Vec
-import Data.Typelevel.Num.Reps (D0, D1, D2, D3, D4, D5, D6, d0, d1, d2, d3, d4, d5, d6)
+import Data.Bifunctor (bimap)
 
 
-import Data.Tuple.Nested ((/\), type (/\))
+-- import Toolkit.Hydra.Types
+-- import Toolkit.Hydra.Repr.Wrap (WrapRepr)
 
 
--- x defines the type of the function argument
--- newtype Fn x = Fn { name :: String, args :: Array (String /\ x), out :: String /\ x }
 
-data Args x
-    = Arg0 (Vec D0 x)
-    | Arg1 (Vec D1 x)
-    | Arg2 (Vec D2 x)
-    | Arg3 (Vec D3 x)
-    | Arg4 (Vec D4 x)
-    | Arg5 (Vec D5 x)
-    | Arg6 (Vec D6 x)
-    | Unknown
+-- TODO: use typelevel arguments counts like in https://pursuit.purescript.org/packages/purescript-fast-vect/1.1.0
+--       or in example/Hydra/Fn
 
 
-instance functorArgs :: Functor Args where
-    map f (Arg0 v) = Arg0 $ map f v
-    map f (Arg1 v) = Arg1 $ map f v
-    map f (Arg2 v) = Arg2 $ map f v
-    map f (Arg3 v) = Arg3 $ map f v
-    map f (Arg4 v) = Arg4 $ map f v
-    map f (Arg5 v) = Arg5 $ map f v
-    map f (Arg6 v) = Arg6 $ map f v
-    map _ Unknown = Unknown
+data Argument x = Argument ArgumentName x
 
 
-newtype Fn x = Fn { name :: String, args :: Args (String /\ x) }
+data Output x = Output OutputName x
 
-class ToFn a x where
-    toFn :: a -> Fn x
 
+instance Show x => Show (Argument x) where
+    show (Argument name v) = name <> ":" <> show v
 
--- instance argsShow :: Show x => Show (Args x) where
---     show args = String.joinWith " " $ show <$> argsToArray args
 
+instance Show x => Show (Output x) where
+    show (Output name v) = name <> ":" <> show v
 
-showToFn :: forall x a. Show x => ToFn a x => a -> String
-showToFn a = show (toFn a :: Fn x)
 
+type ArgumentName = String
 
-instance argsShowTpl :: Show x => Show (Args (String /\ x)) where
-    show args = String.joinWith " " $ showArg <$> argsToArray args
-        where showArg (name /\ value) = "(" <> name <> " " <> show value <> ")"
 
+type OutputName = String
 
-instance fnShow :: Show x => Show (Fn x) where
-    show (Fn { name, args }) =
-        name <> " " <> show args
 
+-- TODO: use in `ToFn` & PossinlyToFn
+-- TODO: add output type
+newtype Fn arg out = Fn (String /\ Array (Argument arg) /\ Array (Output out))
 
-instance fnFunctor :: Functor Fn where
-    map f (Fn { name, args }) =
-        Fn { name, args : map (map f) args }
-    {- map f (Fn { name, args, out }) =
-        Fn { name, args : map (map f) args, out : map f out } -}
 
+type FnU arg = Fn arg Unit
 
-fn :: forall x. String -> Array (String /\ x) -> Fn x
-fn name args = Fn { name, args : arrayToArgs args }
 
+type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
-addNames :: forall x. Fn x -> Fn (String /\ x)
-addNames (Fn { name, args }) =
-    Fn { name, args : arrayToArgs $ h1 <$> argsToArray args }
-    where h1 (arg /\ val) = (arg /\ arg /\ val)
 
+class ToFn arg out a where
+    toFn :: a -> String /\ Array (Argument arg) /\ Array (Output out)
 
-{-
-fn :: forall x. String -> Array (String /\ x) -> String /\ x -> Fn x
-fn name args out = Fn { name, args, out } -}
 
+class PossiblyToFn arg out a where
+    possiblyToFn :: a -> Maybe (String /\ Array (Argument arg) /\ Array (Output out))
 
-getName :: forall x. Fn x -> String
-getName (Fn { name }) = name
 
+instance Functor Argument where
+    map :: forall a b. (a -> b) -> Argument a -> Argument b
+    map f (Argument name v) = Argument name $ f v
 
-getArgs :: forall x. Fn x -> Array (String /\ x)
-getArgs (Fn { args }) = argsToArray args
 
+instance Functor Output where
+    map :: forall a b. (a -> b) -> Output a -> Output b
+    map f (Output name v) = Output name $ f v
 
-argsToArray :: forall x. Args x -> Array x
-argsToArray (Arg0 v) = Vec.toArray v
-argsToArray (Arg1 v) = Vec.toArray v
-argsToArray (Arg2 v) = Vec.toArray v
-argsToArray (Arg3 v) = Vec.toArray v
-argsToArray (Arg4 v) = Vec.toArray v
-argsToArray (Arg5 v) = Vec.toArray v
-argsToArray (Arg6 v) = Vec.toArray v
-argsToArray Unknown  = []
 
+empty :: forall arg out. String -> Fn arg out
+empty n = Fn $ n /\ [] /\ []
 
-arrayToArgs :: forall x. Array x -> Args x
-arrayToArgs arr =
-    helper (Array.length arr)
-    where
-        --helper :: forall x. Int -> Array x -> Args x
-        helper 0 = fromMaybe Unknown (Arg0 <$> Vec.fromArray arr)
-        helper 1 = fromMaybe Unknown (Arg1 <$> Vec.fromArray arr)
-        helper 2 = fromMaybe Unknown (Arg2 <$> Vec.fromArray arr)
-        helper 3 = fromMaybe Unknown (Arg3 <$> Vec.fromArray arr)
-        helper 4 = fromMaybe Unknown (Arg4 <$> Vec.fromArray arr)
-        helper 5 = fromMaybe Unknown (Arg5 <$> Vec.fromArray arr)
-        helper 6 = fromMaybe Unknown (Arg6 <$> Vec.fromArray arr)
-        helper _ = Unknown
 
+fnOf :: forall arg out. String -> Array (String /\ arg) -> Fn arg out
+fnOf n args =
+    Fn $ n /\ (Tuple.uncurry Argument <$> args) /\ []
 
-        --helper' f arr = fromMaybe Unknown (f <$> Vec.fromArray arr)
 
--- TODO: check if we can use `Foldable` / `Unfoldable`
+singleton :: forall arg out. String -> (String /\ arg) -> Fn arg out
+singleton = fn1
 
 
-applyVec0 :: forall x z. z -> Vec D0 x -> z
-applyVec0 z _ = z
+fn1 :: forall arg out. String -> (String /\ arg) -> Fn arg out
+fn1 n a1 =
+    fnOf n [ a1 ]
 
 
-applyVec1 :: forall x z.  (x -> z) -> Vec D1 x -> z
-applyVec1 f v = f (v !! d0)
+fn2 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn2 n a1 a2 =
+    fnOf n [ a1, a2 ]
 
 
-applyVec2 :: forall x z.  (x -> x -> z) -> Vec D2 x -> z
-applyVec2 f v = f (v !! d0) (v !! d1)
+fn3 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn3 n a1 a2 a3 =
+    fnOf n [ a1, a2, a3 ]
 
 
-applyVec3 :: forall x z.  (x -> x -> x -> z) -> Vec D3 x -> z
-applyVec3 f v = f (v !! d0) (v !! d1) (v !! d2)
+fn4 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn4 n a1 a2 a3 a4 =
+    fnOf n [ a1, a2, a3, a4 ]
 
 
-applyVec4 :: forall x z.  (x -> x -> x -> x -> z) -> Vec D4 x -> z
-applyVec4 f v = f (v !! d0) (v !! d1) (v !! d2) (v !! d3)
+fn5 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn5 n a1 a2 a3 a4 a5 =
+    fnOf n [ a1, a2, a3, a4, a5 ]
 
 
-applyVec5 :: forall x z.  (x -> x -> x -> x -> x -> z) -> Vec D5 x -> z
-applyVec5 f v = f (v !! d0) (v !! d1) (v !! d2) (v !! d3) (v !! d4)
+fn6 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn6 n a1 a2 a3 a4 a5 a6 =
+    fnOf n [ a1, a2, a3, a4, a5, a6 ]
 
 
-applyVec6 :: forall x z.  (x -> x -> x -> x -> x -> x -> z) -> Vec D6 x -> z
-applyVec6 f v = f (v !! d0) (v !! d1) (v !! d2) (v !! d3) (v !! d4) (v !! d5)
+fn7 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn7 n a1 a2 a3 a4 a5 a6 a7 =
+    fnOf n [ a1, a2, a3, a4, a5, a6, a7 ]
 
 
-applyArgs0 :: forall x z. z -> Args x -> Maybe z
-applyArgs0 z (Arg0 v) = Just $ applyVec0 z v
-applyArgs0 _ _ = Nothing
+fn8 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Fn arg out
+fn8 n a1 a2 a3 a4 a5 a6 a7 a8 =
+    fnOf n [ a1, a2, a3, a4, a5, a6, a7, a8 ]
 
 
-applyArgs1 :: forall x z. (x -> z) -> Args x -> Maybe z
-applyArgs1 f (Arg1 v) = Just $ applyVec1 f v
-applyArgs1 _ _ = Nothing
+addOuts :: forall arg out. Array (String /\ out) -> Fn arg out -> Fn arg out
+addOuts next_outs (Fn (name /\ args /\ cur_outs)) =
+    Fn $ name /\ args /\ (cur_outs <> (Tuple.uncurry Output <$> next_outs))
 
 
-applyArgs2 :: forall x z. (x -> x -> z) -> Args x -> Maybe z
-applyArgs2 f (Arg2 v) = Just $ applyVec2 f v
-applyArgs2 _ _ = Nothing
+out1 :: forall arg out. (String /\ out) -> Fn arg out -> Fn arg out
+out1 o1 =
+    addOuts [ o1 ]
 
 
-applyArgs3 :: forall x z. (x -> x -> x -> z) -> Args x -> Maybe z
-applyArgs3 f (Arg3 v) = Just $ applyVec3 f v
-applyArgs3 _ _ = Nothing
+out2 :: forall arg out. (String /\ out) -> (String /\ out) -> Fn arg out -> Fn arg out
+out2 o1 o2 =
+    addOuts [ o1, o2 ]
 
 
-applyArgs4 :: forall x z. (x -> x -> x -> x -> z) -> Args x -> Maybe z
-applyArgs4 f (Arg4 v) = Just $ applyVec4 f v
-applyArgs4 _ _ = Nothing
+out3 :: forall arg out. (String /\ out) -> (String /\ out) -> (String /\ out) -> Fn arg out -> Fn arg out
+out3 o1 o2 o3 =
+    addOuts [ o1, o2, o3 ]
 
 
-applyArgs5 :: forall x z. (x -> x -> x -> x -> x -> z) -> Args x -> Maybe z
-applyArgs5 f (Arg5 v) = Just $ applyVec5 f v
-applyArgs5 _ _ = Nothing
+arg :: forall x. ArgumentName -> x -> Argument x
+arg = Argument
 
 
-applyArgs6 :: forall x z. (x -> x -> x -> x -> x -> x -> z) -> Args x -> Maybe z
-applyArgs6 f (Arg6 v) = Just $ applyVec6 f v
-applyArgs6 _ _ = Nothing
+out :: forall x. OutputName -> x -> Output x
+out = Output
 
 
-applyFn0 :: forall x z. z -> Fn x -> Maybe z
-applyFn0 v (Fn { args }) = applyArgs0 v $ snd <$> args
+args :: forall arg out. Fn arg out -> Array (String /\ arg)
+args (Fn (_ /\ as /\ _)) = dearg <$> as
 
 
-applyFn1 :: forall x z. (x -> z) -> Fn x -> Maybe z
-applyFn1 f (Fn { args }) = applyArgs1 f $ snd <$> args
+outs :: forall arg out. Fn arg out -> Array (String /\ out)
+outs (Fn (_ /\ _ /\ os)) = deout <$> os
 
 
-applyFn2 :: forall x z. (x -> x -> z) -> Fn x -> Maybe z
-applyFn2 f (Fn { args }) = applyArgs2 f $ snd <$> args
+q :: forall x. ArgumentName -> x -> Argument x
+q = Argument -- TODO: private
 
 
-applyFn3 :: forall x z. (x -> x -> x -> z) -> Fn x -> Maybe z
-applyFn3 f (Fn { args }) = applyArgs3 f $ snd <$> args
+o :: forall x. OutputName -> x -> Output x
+o = Output -- TODO: private
 
 
-applyFn4 :: forall x z. (x -> x -> x -> x -> z) -> Fn x -> Maybe z
-applyFn4 f (Fn { args }) = applyArgs4 f $ snd <$> args
+argValue :: forall x. Argument x -> x
+argValue (Argument _ x) = x
 
 
-applyFn5 :: forall x z. (x -> x -> x -> x -> x -> z) -> Fn x -> Maybe z
-applyFn5 f (Fn { args }) = applyArgs5 f $ snd <$> args
+outValue :: forall x. Output x -> x
+outValue (Output _ x) = x
 
 
-applyFn6 :: forall x z. (x -> x -> x -> x -> x -> x -> z) -> Fn x -> Maybe z
-applyFn6 f (Fn { args }) = applyArgs6 f $ snd <$> args
+argName :: forall x. Argument x -> ArgumentName
+argName (Argument name _) = name
 
 
-tryFn1 :: forall x z. (z -> Maybe x) -> x -> (x -> z) -> (z -> z)
-tryFn1 toX v1 fnToZ = tryFn1' toX (Vec.singleton v1) $ applyVec1 fnToZ
+outName :: forall x. Output x -> OutputName
+outName (Output name _) = name
 
 
-tryFn2 :: forall x z. (z -> Maybe x) -> x /\ x -> (x -> x -> z) -> (z -> z -> z)
-tryFn2 toX (v1 /\ v2) fnToZ = tryFn2' toX (v1 +> v2 +> Vec.empty) $ applyVec2 fnToZ
+argsCount :: forall i o. Fn i o -> Int
+argsCount (Fn (_ /\ args /\ _)) = Array.length args
 
 
-tryFn3 :: forall x z. (z -> Maybe x) -> x /\ x /\ x -> (x -> x -> x -> z) -> (z -> z -> z -> z)
-tryFn3 toX (v1 /\ v2 /\ v3) fnToZ = tryFn3' toX (v1 +> v2 +> v3 +> Vec.empty) $ applyVec3 fnToZ
+outsCount :: forall i o. Fn i o -> Int
+outsCount (Fn (_ /\ _ /\ outs)) = Array.length outs
 
 
-tryFn4 :: forall x z. (z -> Maybe x) -> x /\ x /\ x /\ x -> (x -> x -> x -> x -> z) -> (z -> z -> z -> z -> z)
-tryFn4 toX (v1 /\ v2 /\ v3 /\ v4) fnToZ = tryFn4' toX (v1 +> v2 +> v3 +> v4 +> Vec.empty) $ applyVec4 fnToZ
+dearg :: forall x. Argument x -> ArgumentName /\ x
+dearg (Argument name x) = name /\ x
 
 
-tryFn5 :: forall x z. (z -> Maybe x) -> x /\ x /\ x /\ x /\ x -> (x -> x -> x -> x -> x -> z) -> (z -> z -> z -> z -> z -> z)
-tryFn5 toX (v1 /\ v2 /\ v3 /\ v4 /\ v5 ) fnToZ = tryFn5' toX (v1 +> v2 +> v3 +> v4 +> v5 +> Vec.empty) $ applyVec5 fnToZ
+deout :: forall x. Output x -> OutputName /\ x
+deout (Output name x) = name /\ x
 
 
-tryFn6 :: forall x z. (z -> Maybe x) -> x /\ x /\ x /\ x /\ x /\ x -> (x -> x -> x -> x -> x -> x -> z) -> (z -> z -> z -> z -> z -> z -> z)
-tryFn6 toX (v1 /\ v2 /\ v3 /\ v4 /\ v5 /\ v6 ) fnToZ = tryFn6' toX (v1 +> v2 +> v3 +> v4 +> v5 +> v6 +> Vec.empty) $ applyVec6 fnToZ
+name :: forall i o. Fn i o -> String
+name (Fn (name /\ _)) = name
 
 
-tryFn1' :: forall x z. (z -> Maybe x) -> Vec D1 x -> (Vec D1 x -> z) -> (z -> z)
-tryFn1' toX defaults fnToZ p1 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> Vec.singleton p1) defaults
+toFnX :: forall a arg out. ToFn arg out a => a -> String /\ Array arg /\ Array out
+toFnX a = bimap (map argValue) (map outValue) <$> (toFn a :: String /\ Array (Argument arg) /\ Array (Output out))
 
 
-tryFn2' :: forall x z. (z -> Maybe x) -> Vec D2 x -> (Vec D2 x -> z) -> (z -> z -> z)
-tryFn2' toX defaults fnToZ p1 p2 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> p1 +> p2 +> Vec.empty) defaults
+instance ToFn arg out (Fn arg out) where
+    toFn :: Fn arg out -> String /\ Array (Argument arg) /\ Array (Output out)
+    toFn (Fn fn) = fn
 
 
-tryFn3' :: forall x z. (z -> Maybe x) -> Vec D3 x -> (Vec D3 x -> z) -> (z -> z -> z -> z)
-tryFn3' toX defaults fnToZ p1 p2 p3 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> p1 +> p2 +> p3 +> Vec.empty) defaults
+newtype KnownFn = KnownFn String
 
 
-tryFn4' :: forall x z. (z -> Maybe x) -> Vec D4 x -> (Vec D4 x -> z) -> (z -> z -> z -> z -> z)
-tryFn4' toX defaults fnToZ p1 p2 p3 p4 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> p1 +> p2 +> p3 +> p4 +> Vec.empty) defaults
-
-
-tryFn5' :: forall x z. (z -> Maybe x) -> Vec D5 x -> (Vec D5 x -> z) -> (z -> z -> z -> z -> z -> z)
-tryFn5' toX defaults fnToZ p1 p2 p3 p4 p5 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> p1 +> p2 +> p3 +> p4 +> p5 +> Vec.empty) defaults
-
-
-tryFn6' :: forall x z. (z -> Maybe x) -> Vec D6 x -> (Vec D6 x -> z) -> (z -> z -> z -> z -> z -> z -> z)
-tryFn6' toX defaults fnToZ p1 p2 p3 p4 p5 p6 =
-    fnToZ $ Vec.zipWithE (flip fromMaybe) (toX <$> p1 +> p2 +> p3 +> p4 +> p5 +> p6 +> Vec.empty) defaults
+nameOf :: KnownFn -> String
+nameOf (KnownFn name) = name
