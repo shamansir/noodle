@@ -27,6 +27,7 @@ inletId = X11.bisque3 :: Item
 outletId = X11.cadetblue2 :: Item
 inletIdx = X11.greenyellow :: Item
 outletIdx = X11.green3 :: Item
+someGroup = Pico.green :: Item -- FIXME: use `mark`
 familyName = Pico.blue :: Item -- FIXME: use `mark`
 operator = Pico.blueGreen :: Item -- FIXME: use `mark`
 comment = Pico.darkGrey :: Item -- FIXME: use `mark`
@@ -41,6 +42,7 @@ neutral = Pico.lightGrey :: Item
 negative = Pico.darkRed :: Item
 nodeHlBg = Pico.mauve :: Item
 groupBg = Pico.blue :: Item
+type_ = Pico.pink :: Item
 
 
 networkBg' = repr networkBg :: String

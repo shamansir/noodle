@@ -178,6 +178,10 @@ family :: String -> Tag
 family = T.fgc (C.crepr Palette.familyName) <<< T.s
 
 
+someGroup :: String -> Tag
+someGroup = T.fgc (C.crepr Palette.someGroup) <<< T.s
+
+
 nodeId :: String -> Tag
 nodeId = T.fgc (C.crepr Palette.nodeId) <<< T.s
 
@@ -212,6 +216,10 @@ inletId = T.fgc (C.crepr Palette.inletId) <<< T.s
 
 outletId :: String -> Tag
 outletId = T.fgc (C.crepr Palette.outletId) <<< T.s
+
+
+type_ :: String -> Tag
+type_ = T.fgc (C.crepr Palette.type_) <<< T.s
 
 
 buttonToggle ::String -> Boolean -> Tag

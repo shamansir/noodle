@@ -51,6 +51,11 @@ type FnU arg = Fn arg Unit
 type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
 
+derive instance (Eq arg) => Eq (Argument arg)
+derive instance (Eq out) => Eq (Output out)
+derive newtype instance (Eq arg, Eq out) => Eq (Fn arg out)
+
+
 class ToFn arg out a where
     toFn :: a -> String /\ Array (Argument arg) /\ Array (Output out)
 
