@@ -4,6 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 
+import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
@@ -14,7 +15,16 @@ import Noodle.Text.NdfFile.Command (Command, commandsToNdf, commandsToTaggedNdf)
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, ndf)
 import Noodle.Ui.Cli.Tagging as T
 
-newtype Header = Header (String /\ Number)
+
+currentVersion = 0.2
+
+
+newtype Header =
+    Header
+        { toolkit :: String
+        , toolkitVersion :: Number
+        , ndfVersion :: Number
+        }
 
 
 data NdfFile = NdfFile Header (Array Command)
@@ -26,9 +36,7 @@ derive instance Eq NdfFile
 
 instance Show NdfFile where
   show :: NdfFile -> String
-  show (NdfFile (Header (tk /\ version)) commands) =
-    tk <> " " <> show version <> "\n" <>
-    (String.joinWith "\n" $ toCode ndf <$> commands)
+  show = toNdfCode
 
 
 instance ToCode NDF NdfFile where
@@ -42,11 +50,25 @@ instance ToTaggedCode NDF NdfFile where
 
 
 init :: String -> Number -> NdfFile
-init tk version = NdfFile (Header $ tk /\ version) []
+init tk version = init_ { toolkit : tk, toolkitVersion : version, ndfVersion : currentVersion }
+
+
+init_ :: { toolkit :: String
+         , toolkitVersion :: Number
+         , ndfVersion :: Number
+         } -> NdfFile
+init_ header = from_ header []
 
 
 from :: String -> Number -> Array Command -> NdfFile
-from tk version = NdfFile $ Header (tk /\ version)
+from tk version = from_ { toolkit : tk, toolkitVersion : version, ndfVersion : currentVersion }
+
+
+from_ :: { toolkit :: String
+         , toolkitVersion :: Number
+         , ndfVersion :: Number
+         } -> Array Command -> NdfFile
+from_ header = NdfFile (Header header)
 
 
 append :: Command -> NdfFile -> NdfFile
@@ -54,15 +76,20 @@ append cmd (NdfFile header cmds) = NdfFile header $ cmd : cmds
 
 
 toNdfCode :: NdfFile -> String
-toNdfCode (NdfFile (Header (tk /\ version)) commands) =
-    tk <> " " <> show version <> "\n" <>
-    commandsToNdf commands
+toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) commands) =
+    toolkit <> " "
+    <> show toolkitVersion
+    <> (if ndfVersion == 0.1 then "\n" else " " <> show ndfVersion <> "\n")
+    <> commandsToNdf commands
 
 
 toTaggedNdfCode :: NdfFile -> T.Tag
-toTaggedNdfCode (NdfFile (Header (tk /\ version)) commands) =
-    T.toolkit tk <> T.s " " <> T.version version <> T.nl <>
-    commandsToTaggedNdf commands
+toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) commands) =
+    T.toolkit toolkit <> T.s " "
+    <> T.tkVersion toolkitVersion <> T.s " "
+    <> T.ndfVersion ndfVersion <> T.nl
+    <> (if ndfVersion == 0.1 then T.nl else T.s " " <> T.ndfVersion ndfVersion <> T.nl)
+    <> commandsToTaggedNdf commands
 
 
 extractCommands :: NdfFile -> Array Command

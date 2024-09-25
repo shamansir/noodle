@@ -34,7 +34,8 @@ nodeId = Pico.lavender :: Item -- FIXME: use `mark`
 coord = Pico.green :: Item -- FIXME: use `mark`
 value = Pico.brown :: Item -- FIXME: use `mark`
 toolkit = Pico.orange :: Item -- FIXME: use `mark`
-version = Pico.darkPeach :: Item -- FIXME: use `mark`
+tkVersion = Pico.darkPeach :: Item -- FIXME: use `mark`
+ndfVersion = Pico.mediumGreen :: Item -- FIXME: use `mark`
 positive = Pico.lightYellow :: Item
 neutral = Pico.lightGrey :: Item
 negative = Pico.darkRed :: Item
@@ -80,4 +81,5 @@ asArray =
     , focusedBorder
     , fg
     , patchBg
+    -- FIXME: add all
     ]

@@ -166,8 +166,12 @@ toolkit :: String -> Tag
 toolkit = T.fgc (C.crepr Palette.toolkit) <<< T.s
 
 
-version :: Number -> Tag
-version = T.fgc (C.crepr Palette.version) <<< T.s <<< show
+tkVersion :: Number -> Tag
+tkVersion = T.fgc (C.crepr Palette.tkVersion) <<< T.s <<< show
+
+
+ndfVersion :: Number -> Tag
+ndfVersion = T.fgc (C.crepr Palette.ndfVersion) <<< T.s <<< show
 
 
 family :: String -> Tag

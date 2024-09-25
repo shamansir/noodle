@@ -7,7 +7,7 @@ import Test.Spec.Util.Parsing (parses)
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command as C
-import Noodle.Text.NdfFile (from) as NdfFile
+import Noodle.Text.NdfFile (from, from_, toNdfCode) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 
 
@@ -33,7 +33,7 @@ number 40 40 num-0
 
 expected_0_1_Ndf :: NdfFile
 expected_0_1_Ndf =
-    NdfFile.from "hydra" 0.1
+    NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.1 }
         [ C.Comment "test example"
         , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-0")
         , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
@@ -57,4 +57,4 @@ spec = do
   describe "Parses NDF File properly" $ do
 
     it "parsing works for version 0.1" $
-      parses sampleNdf_0_1_Text expected_0_1_Ndf NdfFile.parser
+      parses NdfFile.toNdfCode sampleNdf_0_1_Text expected_0_1_Ndf NdfFile.parser

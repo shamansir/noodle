@@ -12,7 +12,7 @@ import Data.Either (Either(..))
 import Parsing (Parser)
 import Parsing.String (char, string, anyTill)
 import Parsing.String.Basic (alphaNum, space, number, intDecimal)
-import Parsing.Combinators (many1, many1Till, try)
+import Parsing.Combinators (many1, many1Till, try, option)
 import Control.Alt ((<|>))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
@@ -21,7 +21,7 @@ import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..)) as Cmd
 import Noodle.Text.NdfFile.Command (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
-import Noodle.Text.NdfFile (NdfFile(..), Header(..))
+import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion)
 
 
 createCommand :: Parser String Command
@@ -181,10 +181,11 @@ command =
 parser :: Parser String NdfFile
 parser = do
   toolkit <- tokenTill space
-  version <- number
+  toolkitVersion <- number
+  ndfVersion <- option 0.1 $ try $ many1 space *> number
   eol
   cmds <- many1 command
-  pure $ NdfFile (Header $ toolkit /\ version) $ NEL.toUnfoldable cmds
+  pure $ NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) $ NEL.toUnfoldable cmds
 
 
 tokenChar :: Parser String Char
