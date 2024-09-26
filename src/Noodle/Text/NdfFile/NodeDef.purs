@@ -50,8 +50,7 @@ instance ToCode NDF NodeFnDef where
                         inletsList inlets <>
                         " => " <>
                         case outlets of
-                            [ singleOutput ] ->
-                                if outName singleOutput == "out" then outletDefToCode singleOutput else outletsList outlets
+                            [ singleOutput ] -> outletDefToCode singleOutput
                             _ -> outletsList outlets
         where
             inletsList inlets = "<" <> String.joinWith " -> " (inletDefToCode <$> inlets) <> ">"
@@ -74,8 +73,7 @@ instance ToTaggedCode NDF NodeFnDef where
                         inletsList inlets <>
                         T.s " " <> F.operator "=>" <> T.s " " <>
                         case outlets of
-                            [ singleOutput ] ->
-                                if outName singleOutput == "out" then outletDefToTaggedCode singleOutput else outletsList outlets
+                            [ singleOutput ] -> outletDefToTaggedCode singleOutput
                             _ -> outletsList outlets
         where
             inletsList inlets = F.operator "<" <> T.joinWith (T.s " " <> F.operator "->" <> T.s " ") (inletDefToTaggedCode <$> inlets) <> F.operator ">"
@@ -207,3 +205,8 @@ qdefp { group, family, inputs, outputs, process } =
         , fn : wrap $ fn family inputs outputs
         , process : Just $ wrap process
         }
+
+
+qassign :: String -> String -> ProcessAssign
+qassign family pcode =
+    wrap $ wrap family /\ wrap pcode

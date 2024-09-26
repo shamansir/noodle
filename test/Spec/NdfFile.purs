@@ -58,8 +58,18 @@ number 40 40 num-0
 sampleNdf_0_2_Text_OnlyDefs :: String
 sampleNdf_0_2_Text_OnlyDefs =
     """hydra 0.1 0.2
-: color : colorama :: <what:Texture {Empty} -> amount:Value {Number 0.005}> => Texture {Empty}
-: test : family :: <> => <>"""
+: color : colorama :: <what:Texture {Empty} -> amount:Value {Number 0.005}> => tex:Texture {Empty}
+: source : prev :: <todo:TODO {TODO}> => tex:Texture {Empty} /-| H.Empty |-/
+: source : solid :: <r:Value -> g:Value -> b:Value -> a:Value {Number 1.0}> => tex:Texture {Empty} /-| H.Start $ H.Solid { r, g, b, a } |-/
+: feed : number :: <in:Value {Number 0.0}> => num:Value {Number 0.0}
+: test : family :: <> => <>
+: synth : pi :: <> => out:Value {Pi}
+: synth : mouse :: <> => <x:Value {MouseX} -> y:Value {MouseY}>
+: extsource : initVideo :: <src:Source {defaultSource} -> url:String {None}> => <>
+$ mouse :: /-| do
+  foo
+|-/
+: test2 : family2 :: <> => <>"""
 
 
 expected_0_1_Ndf :: NdfFile
@@ -112,10 +122,67 @@ expected_0_2_Ndf_OnlyDefs =
               , ND.i $ ND.chtv "amount" "Value" "Number 0.005"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "out" "Texture" "Empty"
+              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              ]
+            }
+        , C.DefineNode $ ND.qdefp
+            { group : "source", family : "prev"
+            , inputs :
+              [ ND.i $ ND.chtv "todo" "TODO" "TODO"
+              ]
+            , outputs :
+              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              ]
+            , process : " H.Empty "
+            }
+        , C.DefineNode $ ND.qdefp
+            { group : "source", family : "solid"
+            , inputs :
+              [ ND.i $ ND.cht "r" "Value"
+              , ND.i $ ND.cht "g" "Value"
+              , ND.i $ ND.cht "b" "Value"
+              , ND.i $ ND.chtv "a" "Value" "Number 1.0"
+              ]
+            , outputs :
+              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              ]
+            , process : " H.Start $ H.Solid { r, g, b, a } "
+            }
+        , C.DefineNode $ ND.qdef
+            { group : "feed", family : "number"
+            , inputs :
+              [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
+              ]
+            , outputs :
+              [ ND.o $ ND.chtv "num" "Value" "Number 0.0"
               ]
             }
         , C.DefineNode $ ND.qdef { group : "test", family : "family", inputs : [], outputs : [] }
+        , C.DefineNode $ ND.qdef
+            { group : "synth", family : "pi"
+            , inputs : []
+            , outputs :
+              [ ND.o $ ND.chtv "out" "Value" "Pi"
+              ]
+            }
+        , C.DefineNode $ ND.qdef
+            { group : "synth", family : "mouse"
+            , inputs : []
+            , outputs :
+              [ ND.o $ ND.chtv "x" "Value" "MouseX"
+              , ND.o $ ND.chtv "y" "Value" "MouseY"
+              ]
+            }
+        , C.DefineNode $ ND.qdef
+            { group : "extsource", family : "initVideo"
+            , inputs :
+              [ ND.i $ ND.chtv "src" "Source" "defaultSource"
+              , ND.i $ ND.chtv "url" "String" "None"
+              ]
+            , outputs : [ ]
+            }
+        , C.AssignProcess $ ND.qassign "mouse" " do\n  foo\n"
+        , C.DefineNode $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
         ]
 
 

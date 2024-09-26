@@ -48,7 +48,8 @@ parser = do
 results :: P.Parser String (Array (Maybe (String /\ ChannelDef)))
 results =
   P.choice
-      [ Array.singleton <$> do
+      [ Array.singleton <$> Just <$> channel
+      , Array.singleton <$> do
           type_ <- alphaNumToken
           _ <- Array.many P.space
           maybeDefault <- P.optionMaybe $ P.between
@@ -84,25 +85,28 @@ alphaNumToken = StringCU.fromCharArray <$> Array.some P.alphaNum
 defaultValue :: P.Parser String String
 defaultValue = StringCU.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.', P.char ' ', P.char '_' ])
 
+channel :: P.Parser String (String /\ ChannelDef)
+channel = do
+  name <- alphaNumToken
+  maybeType <- P.optionMaybe $ P.char ':' *> alphaNumToken
+  _ <- Array.many P.space
+  maybeDefault <- P.optionMaybe
+                    -- $ Array.many P.space *>
+                    $ P.between
+                      (P.char '{')
+                      (P.char '}')
+                      defaultValue
+  pure (name /\
+      { dataType : EncodedType <$> maybeType
+      , defaultValue : EncodedValue <$> maybeDefault
+      }
+  )
+
 maybeChannel :: P.Parser String (Maybe (String /\ ChannelDef))
 maybeChannel =
   P.choice
         [ P.char '?' *> pure Nothing
-        , Just <$> do
-            name <- alphaNumToken
-            maybeType <- P.optionMaybe $ P.char ':' *> alphaNumToken
-            _ <- Array.many P.space
-            maybeDefault <- P.optionMaybe
-                              -- $ Array.many P.space *>
-                              $ P.between
-                                (P.char '{')
-                                (P.char '}')
-                                defaultValue
-            pure (name /\
-                { dataType : EncodedType <$> maybeType
-                , defaultValue : EncodedValue <$> maybeDefault
-                }
-            )
+        , Just <$> channel
         ]
 
 
