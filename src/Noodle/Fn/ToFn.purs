@@ -78,6 +78,16 @@ empty :: forall arg out. String -> Fn arg out
 empty n = Fn $ n /\ [] /\ []
 
 
+fn :: forall arg out. String -> Array (Argument arg) -> Array (Output out) -> Fn arg out
+fn n args outs =
+    Fn $ n /\ args /\ outs
+
+
+fn' :: forall arg out. String -> Array (String /\ arg) -> Array (String /\ out) -> Fn arg out
+fn' n args outs =
+    fn n (Tuple.uncurry Argument <$> args) (Tuple.uncurry Output <$> outs)
+
+
 fnOf :: forall arg out. String -> Array (String /\ arg) -> Fn arg out
 fnOf n args =
     Fn $ n /\ (Tuple.uncurry Argument <$> args) /\ []

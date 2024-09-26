@@ -2,12 +2,16 @@ module Test.Spec.NdfFile where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
+
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Util.Parsing (parses)
 
 import Noodle.Text.NdfFile (NdfFile)
-import Noodle.Text.NdfFile.Command as C
+import Noodle.Text.NdfFile.Command (Command(..)) as C
+import Noodle.Text.NdfFile.Newtypes as C
 import Noodle.Text.NdfFile (from, from_, init_, toNdfCode) as NdfFile
+import Noodle.Text.NdfFile.NodeDef as ND
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 
 
@@ -53,7 +57,9 @@ number 40 40 num-0
 
 sampleNdf_0_2_Text_OnlyDefs :: String
 sampleNdf_0_2_Text_OnlyDefs =
-    """: color : colorama :: <what:Texture {Empty} -> amount:Value {Number 0.005}> => Texture {Empty}"""
+    """hydra 0.1 0.2
+: color : colorama :: <what:Texture {Empty} -> amount:Value {Number 0.005}> => Texture {Empty}
+: test : family :: <> => <>"""
 
 
 expected_0_1_Ndf :: NdfFile
@@ -99,7 +105,18 @@ expected_0_2_Ndf_OnlyCmds =
 expected_0_2_Ndf_OnlyDefs :: NdfFile
 expected_0_2_Ndf_OnlyDefs =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
-        [ ]
+        [ C.DefineNode $ ND.qdef
+            { group : "color", family : "colorama"
+            , inputs :
+              [ ND.i $ ND.chtv "what" "Texture" "Empty"
+              , ND.i $ ND.chtv "amount" "Value" "Number 0.005"
+              ]
+            , outputs :
+              [ ND.o $ ND.chtv "out" "Texture" "Empty"
+              ]
+            }
+        , C.DefineNode $ ND.qdef { group : "test", family : "family", inputs : [], outputs : [] }
+        ]
 
 
 spec :: Spec Unit

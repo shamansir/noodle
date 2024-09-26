@@ -12,16 +12,17 @@ import Data.Either (Either(..))
 import Parsing (Parser)
 import Parsing.String (char, string, anyTill)
 import Parsing.String.Basic (alphaNum, space, number, intDecimal)
-import Parsing.Combinators (many1, many1Till, try, option)
+import Parsing.Combinators (many1, many1Till, try, option, (<?>))
 import Control.Alt ((<|>))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..)) as Cmd
-import Noodle.Text.NdfFile.Command (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
+import Noodle.Text.NdfFile.Newtypes (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion)
+import Noodle.Text.NdfFile.NodeDef.Parser (parser, assignmentParser) as NodeDef
 
 
 createCommand :: Parser String Command
@@ -164,18 +165,19 @@ comment = do
 
 command :: Parser String Command
 command =
-  -- FIXME: just make a separate parser for InputId / OutputId
-  try connectCommandII
-  <|> try connectCommandSS
-  <|> try connectCommandIS
-  <|> try connectCommandSI
-  <|> try sendCommandI
-  <|> try sendCommandS
-  <|> try sendOCommandI
-  <|> try sendOCommandS
-  <|> try createCommand
-  <|> try moveCommand
-  <|> try comment
+  try (NodeDef.parser <#> Cmd.DefineNode) <?> "node definition"
+  <|> try (NodeDef.assignmentParser <#> Cmd.AssignProcess) <?> "process assign"
+  <|> try connectCommandII <?> "connect command"
+  <|> try connectCommandSS <?> "connect command"
+  <|> try connectCommandIS <?> "connect command"
+  <|> try connectCommandSI <?> "connect command"
+  <|> try sendCommandI <?> "send command"
+  <|> try sendCommandS <?> "send command"
+  <|> try sendOCommandI <?> "send command"
+  <|> try sendOCommandS <?> "send command"
+  <|> try createCommand <?> "create command"
+  <|> try moveCommand <?> "move command"
+  <|> try comment <?> "comment"
 
 
 parser :: Parser String NdfFile
