@@ -20,3 +20,4 @@ hydra.v2.toolkit.tpurs
 /src/Toolkit/HydraGen
 src/Noodle/Text/SketchParser.pgpurs
 *.gen.purs
+test/Files/Output

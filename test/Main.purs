@@ -17,6 +17,7 @@ import Test.Spec.Node (spec) as Node
 import Test.Spec.Toolkit (spec) as Toolkit
 import Test.Spec.Patch (spec) as Patch
 import Test.Spec.NdfFile (spec) as NdfFile
+import Test.Spec.NdfCodegen (spec) as NdfCodegen
 
 
 main :: Effect Unit
@@ -35,3 +36,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Patch.spec
   describe "NDF File"
     NdfFile.spec
+  describe "Codegen from NDF Definitions"
+    NdfCodegen.spec

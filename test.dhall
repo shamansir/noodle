@@ -14,5 +14,6 @@ in conf // {
     , "newtype"
     , "refs"
     , "expect-inferred"
+    , "partial"
     ]
 }
