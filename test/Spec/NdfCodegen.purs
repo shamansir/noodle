@@ -2,14 +2,20 @@ module Test.Spec.NdfCodegen where
 
 import Prelude
 
+import Partial.Unsafe (unsafePartial)
+
+import Type.Proxy (Proxy(..))
+
 import Effect.Class (liftEffect)
+
+import Test.Spec (Spec, describe, it, itOnly)
+import Test.Spec.Assertions (shouldEqual)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
 import Node.Path (FilePath, extname, basenameWithoutExt)
 
-import Test.Spec (Spec, describe, it, itOnly)
-import Test.Spec.Assertions (shouldEqual)
+import Tidy.Codegen
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
@@ -18,9 +24,7 @@ import Noodle.Text.NdfFile.NodeDef as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Newtypes
 
-
-import Tidy.Codegen
-import Partial.Unsafe (unsafePartial)
+import Test.MyToolkit.Repr (ISRepr)
 
 spec :: Spec Unit
 spec = do
@@ -43,20 +47,7 @@ spec = do
           genOptions =
             { temperamentAlgorithm : Temperament.defaultAlgorithm
             , monadModule : "Effect", monadType : "Effect"
-            , reprModule : "Test.MyToolkit.Repr", reprType : "ISRepr"
-            , defaultType : EncodedType "ISRepr", defaultValue : EncodedValue "None"
-            , typeFor :
-                unsafePartial $ \(EncodedType typeStr) ->
-                  case typeStr of
-                    "Int" -> typeCtor "Int"
-                    "String" -> typeCtor "String"
-                    _ -> typeCtor "ISRepr"
-            , defaultFor :
-                unsafePartial $ \(EncodedType typeStr) (EncodedValue valueStr) ->
-                  case valueStr of
-                    "" -> exprString ""
-                    "0" -> exprInt 0
-                    str -> exprString str
+            , prepr : (Proxy :: _ ISRepr)
             }
           psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
 

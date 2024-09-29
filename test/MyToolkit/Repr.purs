@@ -3,10 +3,20 @@ module Test.MyToolkit.Repr where
 import Prelude
 
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Repr (class ToRepr, class FromRepr, class HasFallback)
 import Data.Repr (wrap, unwrap) as Repr
+import Data.Newtype (unwrap) as NT
+-- import Data.String.Read (read)
+import Data.Int (fromString) as Int
 
+import Tidy.Codegen hiding (importType, importTypeOp, importValue, importTypeAll)
+import Tidy.Codegen.Monad
+
+import Partial.Unsafe (unsafePartial)
+
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
+import Noodle.Text.NdfFile.Newtypes
 
 
 data ISRepr
@@ -46,3 +56,20 @@ instance FromRepr ISRepr Unit where
         case _ of
             UnitV -> Just unit
             _ -> Nothing
+
+
+instance CodegenRepr ISRepr where
+    reprModule = const "Test.MyToolkit.Repr"
+    reprTypeName = const "ISRepr"
+    reprType = const $ unsafePartial $ typeCtor "ISRepr"
+    reprDefault = const $ unsafePartial $ exprCtor "None"
+    typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
+                  case typeStr of
+                    "Int" -> typeCtor "Int"
+                    "String" -> typeCtor "String"
+                    _ -> typeCtor "ISRepr"
+    defaultFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
+                  case NT.unwrap <$> mbType of
+                     Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
+                     Just "String" -> exprString valueStr
+                     _ -> exprCtor "None"

@@ -3,9 +3,11 @@ module Noodle.Text.NdfFile.NodeDef.Codegen where
 import Prelude
 
 import Data.Array (head, tail, uncons, mapWithIndex) as Array
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap)
+
+import Type.Proxy (Proxy(..))
 
 import Control.Monad.Writer (tell)
 import Partial.Unsafe (unsafePartial)
@@ -26,24 +28,36 @@ import Noodle.Text.NdfFile.Newtypes
 
 
 
-newtype Options = Options
+class CodegenRepr :: forall k. k -> Constraint
+class CodegenRepr repr where
+  reprModule :: Proxy repr -> String
+  reprTypeName :: Proxy repr -> String
+  reprType :: Proxy repr -> CST.Type Void
+  reprDefault :: Proxy repr -> CST.Expr Void
+  typeFor :: Proxy repr -> EncodedType -> CST.Type Void
+  defaultFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
+
+
+data GenMonad
+  = MEffect
+  | MAff
+
+
+newtype Options repr = Options
     { temperamentAlgorithm :: Temperament.Algorithm
     , monadModule :: String, monadType :: String
-    , reprModule :: String, reprType :: String
-    , defaultType :: EncodedType, defaultValue :: EncodedValue
-    , typeFor :: EncodedType -> CST.Type Void
-    , defaultFor :: EncodedType -> EncodedValue -> CST.Expr Void
+    , prepr :: Proxy repr
     }
 
 
 type Channel = String /\ ChannelDef
 
 
-generate :: Options -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> String
+generate :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> String
 generate opts fg fn = printModule <<< generateModule opts fg fn
 
 
-generateModule :: Options -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> Module Void
+generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> Module Void
 generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
   importOpen "Prelude"
   nodeMonad <- importFrom opts.monadModule $ importType opts.monadType -- FIXME: use forall
@@ -78,19 +92,19 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
     , spawn : importValue "Family.spawn"
     }
   tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
-  reprC <- importFrom opts.reprModule $ importType opts.reprType -- FIXME: use forall
+  reprC <- importFrom (reprModule opts.prepr) $ importType $ reprTypeName opts.prepr -- FIXME: use forall?
 
   let
     familyName = Fn.name fn
 
     nameOf :: Channel -> String
     nameOf (name /\ _) = name
-    typeOf :: Channel -> EncodedType
+    typeOf :: Channel -> CST.Type Void
     typeOf (_ /\ ChannelDef { dataType }) =
-        fromMaybe opts.defaultType dataType
-    defaultOf :: Channel -> EncodedValue
-    defaultOf (_ /\ ChannelDef { defaultValue }) =
-        fromMaybe opts.defaultValue defaultValue
+        maybe (reprType opts.prepr :: CST.Type Void) (typeFor opts.prepr) dataType
+    defaultOf :: Channel -> CST.Expr Void
+    defaultOf (_ /\ ChannelDef { dataType, defaultValue }) =
+        maybe (reprDefault opts.prepr) (defaultFor opts.prepr dataType) defaultValue
 
     inletTypeApp :: Int -> Channel-> CST.Type Void
     inletTypeApp idx chan =
@@ -99,13 +113,13 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
             , typeCtor $ case Temperament.byIndex opts.temperamentAlgorithm idx of
                 T.Hot -> temper.hot
                 T.Cold -> temper.cold
-            , opts.typeFor $ typeOf chan
+            , typeOf chan
             ]
     outletTypeApp :: Channel -> CST.Type Void
     outletTypeApp chan =
         typeApp (typeCtor shape.o)
             [ typeString $ nameOf chan
-            , opts.typeFor $ typeOf chan
+            , typeOf chan
             ]
 
     generateInletsType :: CST.Type Void
@@ -122,10 +136,10 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
             Nothing -> typeCtor listTnil
 
     channelRow :: Channel -> String /\ CST.Type Void
-    channelRow chan = nameOf chan /\ opts.typeFor (typeOf chan)
+    channelRow chan = nameOf chan /\ typeOf chan
 
     channelDefault :: Channel -> String /\ CST.Expr Void
-    channelDefault chan = nameOf chan /\ (opts.defaultFor (typeOf chan) $ defaultOf chan)
+    channelDefault chan = nameOf chan /\ defaultOf chan
 
     inletDeclr :: Channel -> CST.Declaration Void
     inletDeclr chan =

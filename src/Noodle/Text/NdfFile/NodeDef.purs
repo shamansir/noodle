@@ -14,6 +14,7 @@ import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCod
 import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily, ProcessCode, ChannelDef(..))
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
 
@@ -126,8 +127,8 @@ instance ToTaggedCode NDF opts ProcessAssign where
                 <> T.s " " <> F.operator "/-|" <> T.s (unwrap process) <> F.operator "|-/"
 
 
-instance ToCode PS CodeGen.Options NodeDef where
-    toCode :: Proxy PS -> CodeGen.Options -> NodeDef -> String
+instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
+    toCode :: Proxy PS -> CodeGen.Options repr -> NodeDef -> String
     toCode _ opts (NodeDef ndef) =
         CodeGen.generate opts ndef.group (unwrap ndef.fn)
             $ fromMaybe (wrap "pure unit")
