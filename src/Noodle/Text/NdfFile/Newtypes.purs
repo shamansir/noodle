@@ -3,8 +3,10 @@ module Noodle.Text.NdfFile.Newtypes where
 import Prelude
 
 
+import Data.Maybe (Maybe)
 import Data.Either (Either(..))
 import Data.Newtype (class Newtype)
+
 
 newtype FamilyGroup = FamilyGroup String
 newtype NodeFamily = NodeFamily String
@@ -15,6 +17,9 @@ newtype OutletId = OutletId (Either String Int)
 newtype EncodedType = EncodedType String
 newtype EncodedValue = EncodedValue String
 newtype ProcessCode = ProcessCode String
+newtype ChannelName = ChannelName String
+newtype ChannelDef = ChannelDef { dataType :: Maybe EncodedType, defaultValue :: Maybe EncodedValue }
+
 
 
 derive instance Newtype FamilyGroup _
@@ -26,6 +31,8 @@ derive instance Newtype OutletId _
 derive instance Newtype EncodedType _
 derive instance Newtype EncodedValue _
 derive instance Newtype ProcessCode _
+derive instance Newtype ChannelName _
+derive instance Newtype ChannelDef _
 
 
 derive newtype instance Eq FamilyGroup
@@ -37,6 +44,8 @@ derive newtype instance Eq OutletId
 derive newtype instance Eq EncodedType
 derive newtype instance Eq EncodedValue
 derive newtype instance Eq ProcessCode
+derive newtype instance Eq ChannelName
+derive newtype instance Eq ChannelDef
 
 
 family :: String -> NodeFamily

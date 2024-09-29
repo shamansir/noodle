@@ -52,3 +52,24 @@ instance Show Temperament where
 
 derive instance Eq Temperament
 derive instance Ord Temperament
+
+
+data Algorithm
+    = AllHot
+    | HotHeadColdTail
+    | AllCold
+
+
+
+defaultAlgorithm :: Algorithm
+defaultAlgorithm = AllHot
+
+
+infixr 6 byIndex as <+->
+
+
+byIndex :: Algorithm -> Int -> Temperament
+byIndex AllHot _ = Hot
+byIndex AllCold _ = Cold
+byIndex HotHeadColdTail 0 = Hot
+byIndex HotHeadColdTail _ = Cold

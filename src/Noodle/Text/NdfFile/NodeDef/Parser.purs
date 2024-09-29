@@ -21,8 +21,8 @@ import Parsing.Combinators (between, choice, option, optionMaybe, sepBy) as P
 import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
-import Noodle.Text.NdfFile.NodeDef (ChannelDef, NodeDef(..), NodeFnDef(..), ProcessAssign(..))
-import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ProcessCode(..))
+import Noodle.Text.NdfFile.NodeDef (NodeDef(..), NodeFnDef(..), ProcessAssign(..))
+import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ProcessCode(..), ChannelDef(..))
 
 
 parser :: P.Parser String NodeDef
@@ -39,7 +39,7 @@ parser = do
   maybeImpl <- P.optionMaybe processCode
   pure $ NodeDef
     { group : FamilyGroup tag
-    , family : NodeFamily family
+    -- , family : NodeFamily family
     , fn : NodeFnDef $ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : maybeImpl
     }
@@ -56,7 +56,7 @@ results =
                         (P.char '{')
                         (P.char '}')
                         defaultValue
-          pure $ Just $ "out" /\
+          pure $ Just $ "out" /\ ChannelDef
             { dataType : Just $ EncodedType type_
             , defaultValue : EncodedValue <$> maybeDefault
             }
@@ -96,7 +96,7 @@ channel = do
                       (P.char '{')
                       (P.char '}')
                       defaultValue
-  pure (name /\
+  pure (name /\ ChannelDef
       { dataType : EncodedType <$> maybeType
       , defaultValue : EncodedValue <$> maybeDefault
       }

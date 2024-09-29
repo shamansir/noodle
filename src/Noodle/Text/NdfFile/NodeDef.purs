@@ -4,24 +4,22 @@ import Prelude
 
 import Type.Proxy (Proxy)
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith) as String
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Text.Format as T
 
-import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF)
+import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, PS)
 import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
-import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily, ProcessCode)
+import Noodle.Fn.ToFn (name) as Fn
+import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily, ProcessCode, ChannelDef(..))
+import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
-
-
-type ChannelDef = { dataType :: Maybe EncodedType, defaultValue :: Maybe EncodedValue }
 
 
 newtype NodeDef = NodeDef
     { group :: FamilyGroup
-    , family :: NodeFamily -- FIXME: family stored both in function definition and here
     , fn :: NodeFnDef
     , process :: Maybe ProcessCode
     }
@@ -90,8 +88,8 @@ instance ToCode NDF opts NodeDef where
     toCode :: Proxy NDF -> opts -> NodeDef -> String
     toCode pndf opts (NodeDef ndef) =
         case ndef of
-            { group, family, fn, process } ->
-                ": " <> unwrap group <> " : " <> unwrap family <> " :: " <> toCode pndf opts fn <> case process of
+            { group, fn, process } ->
+                ": " <> unwrap group <> " : " <> (Fn.name $ unwrap fn) <> " :: " <> toCode pndf opts fn <> case process of
                     Just processCode -> " /-|" <> unwrap processCode <> "|-/"
                     Nothing -> ""
 
@@ -100,10 +98,10 @@ instance ToTaggedCode NDF opts NodeDef where
     toTaggedCode :: Proxy NDF -> opts -> NodeDef -> T.Tag
     toTaggedCode pndf opts (NodeDef ndef) =
         case ndef of
-            { group, family, fn, process } ->
+            { group, fn, process } ->
                 F.operator ":"
                 <> T.s " " <> F.someGroup (unwrap group) <> T.s " " <> F.operator ":"
-                <> T.s " " <> F.family (unwrap family) <> T.s " " <> F.operator "::"
+                <> T.s " " <> F.family (Fn.name $ unwrap fn) <> T.s " " <> F.operator "::"
                 <> T.s " " <> toTaggedCode pndf opts fn
                 <> case process of
                     Just processCode -> T.s " " <> F.operator "/-|" <> T.s (unwrap processCode) <> F.operator "|-/"
@@ -128,8 +126,16 @@ instance ToTaggedCode NDF opts ProcessAssign where
                 <> T.s " " <> F.operator "/-|" <> T.s (unwrap process) <> F.operator "|-/"
 
 
+instance ToCode PS CodeGen.Options NodeDef where
+    toCode :: Proxy PS -> CodeGen.Options -> NodeDef -> String
+    toCode _ opts (NodeDef ndef) =
+        CodeGen.generate opts ndef.group (unwrap ndef.fn)
+            $ fromMaybe (wrap "pure unit")
+            $ ndef.process
+
+
 channelToCode_ :: String -> ChannelDef -> String
-channelToCode_ chName { dataType, defaultValue } =
+channelToCode_ chName (ChannelDef { dataType, defaultValue }) =
     case (dataType /\ defaultValue) of
         Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
             chName <> ":" <> dataTypeStr <> " " <> "{" <> valueStr <> "}"
@@ -142,7 +148,7 @@ channelToCode_ chName { dataType, defaultValue } =
 
 
 channelToTaggedCode_ :: (String -> T.Tag) -> String -> ChannelDef -> T.Tag
-channelToTaggedCode_ nameToTag chName { dataType, defaultValue } =
+channelToTaggedCode_ nameToTag chName (ChannelDef { dataType, defaultValue }) =
     case (dataType /\ defaultValue) of
         Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
             nameToTag chName <> F.operator ":" <> F.type_ dataTypeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}"
@@ -164,11 +170,11 @@ channelToOut = out
 
 
 i :: { name :: String, type_ :: Maybe String, value :: Maybe String } -> Argument ChannelDef
-i { name, type_, value } = channelToArg name { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
+i { name, type_, value } = channelToArg name $ ChannelDef { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
 
 
 o :: { name :: String, type_ :: Maybe String, value :: Maybe String } -> Output ChannelDef
-o { name, type_, value } = channelToOut name { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
+o { name, type_, value } = channelToOut name $ ChannelDef { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
 
 
 ch :: String -> { name :: String, type_ :: Maybe String, value :: Maybe String }
@@ -191,7 +197,6 @@ qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDe
 qdef { group, family, inputs, outputs } =
     NodeDef
         { group : wrap group
-        , family : wrap family
         , fn : wrap $ fn family inputs outputs
         , process : Nothing
         }
@@ -201,7 +206,6 @@ qdefp :: { group :: String, family :: String, inputs :: Array (Argument ChannelD
 qdefp { group, family, inputs, outputs, process } =
     NodeDef
         { group : wrap group
-        , family : wrap family
         , fn : wrap $ fn family inputs outputs
         , process : Just $ wrap process
         }
