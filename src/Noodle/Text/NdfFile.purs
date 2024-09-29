@@ -39,14 +39,14 @@ instance Show NdfFile where
   show = toNdfCode
 
 
-instance ToCode NDF NdfFile where
-    toCode :: Proxy NDF -> NdfFile -> String
-    toCode = const toNdfCode
+instance ToCode NDF opts NdfFile where
+    toCode :: Proxy NDF -> opts -> NdfFile -> String
+    toCode = const $ const toNdfCode
 
 
-instance ToTaggedCode NDF NdfFile where
-    toTaggedCode :: Proxy NDF -> NdfFile -> T.Tag
-    toTaggedCode = const toTaggedNdfCode
+instance ToTaggedCode NDF opts NdfFile where
+    toTaggedCode :: Proxy NDF -> opts -> NdfFile -> T.Tag
+    toTaggedCode = const $ const toTaggedNdfCode
 
 
 init :: String -> Number -> NdfFile

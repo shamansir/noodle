@@ -232,6 +232,6 @@ spec = do
 
     describe "NDF Codegen" $ do
 
-      itOnly "should compile to the expected code" $ do
+      it "should compile to the expected code" $ do
         liftEffect $ writeTextFile UTF8 "./test/Files/Output/Temp.purs" $ printModule exampleModule
         printModule exampleModule `shouldEqual` ""

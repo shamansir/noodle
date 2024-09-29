@@ -40,9 +40,9 @@ derive instance Newtype ProcessAssign _
 derive newtype instance Eq ProcessAssign
 
 
-instance ToCode NDF NodeFnDef where
-    toCode :: Proxy NDF -> NodeFnDef -> String
-    toCode _ =
+instance ToCode NDF opts NodeFnDef where
+    toCode :: Proxy NDF -> opts -> NodeFnDef -> String
+    toCode _ _ =
         case _ of
             NodeFnDef fn ->
                 case (toFn fn :: String /\ Array (Argument ChannelDef) /\ Array (Output ChannelDef)) of
@@ -63,9 +63,9 @@ instance ToCode NDF NodeFnDef where
                 channelToCode_ (outName out) (outValue out)
 
 
-instance ToTaggedCode NDF NodeFnDef where
-    toTaggedCode :: Proxy NDF -> NodeFnDef -> T.Tag
-    toTaggedCode _ =
+instance ToTaggedCode NDF opts NodeFnDef where
+    toTaggedCode :: Proxy NDF -> opts -> NodeFnDef -> T.Tag
+    toTaggedCode _ _ =
         case _ of
             NodeFnDef fn ->
                 case (toFn fn :: String /\ Array (Argument ChannelDef) /\ Array (Output ChannelDef)) of
@@ -86,41 +86,41 @@ instance ToTaggedCode NDF NodeFnDef where
                 channelToTaggedCode_ F.outletId (outName out) (outValue out)
 
 
-instance ToCode NDF NodeDef where
-    toCode :: Proxy NDF -> NodeDef -> String
-    toCode pndf (NodeDef ndef) =
+instance ToCode NDF opts NodeDef where
+    toCode :: Proxy NDF -> opts -> NodeDef -> String
+    toCode pndf opts (NodeDef ndef) =
         case ndef of
             { group, family, fn, process } ->
-                ": " <> unwrap group <> " : " <> unwrap family <> " :: " <> toCode pndf fn <> case process of
+                ": " <> unwrap group <> " : " <> unwrap family <> " :: " <> toCode pndf opts fn <> case process of
                     Just processCode -> " /-|" <> unwrap processCode <> "|-/"
                     Nothing -> ""
 
 
-instance ToTaggedCode NDF NodeDef where
-    toTaggedCode :: Proxy NDF -> NodeDef -> T.Tag
-    toTaggedCode pndf (NodeDef ndef) =
+instance ToTaggedCode NDF opts NodeDef where
+    toTaggedCode :: Proxy NDF -> opts -> NodeDef -> T.Tag
+    toTaggedCode pndf opts (NodeDef ndef) =
         case ndef of
             { group, family, fn, process } ->
                 F.operator ":"
                 <> T.s " " <> F.someGroup (unwrap group) <> T.s " " <> F.operator ":"
                 <> T.s " " <> F.family (unwrap family) <> T.s " " <> F.operator "::"
-                <> T.s " " <> toTaggedCode pndf fn
+                <> T.s " " <> toTaggedCode pndf opts fn
                 <> case process of
                     Just processCode -> T.s " " <> F.operator "/-|" <> T.s (unwrap processCode) <> F.operator "|-/"
                     Nothing -> T.s ""
 
 
-instance ToCode NDF ProcessAssign where
-    toCode :: Proxy NDF -> ProcessAssign -> String
-    toCode _ (ProcessAssign padef) =
+instance ToCode NDF opts ProcessAssign where
+    toCode :: Proxy NDF -> opts -> ProcessAssign -> String
+    toCode _ _ (ProcessAssign padef) =
         case padef of
             family /\ process ->
                 "$ " <> unwrap family <> " :: " <> "/-|" <> unwrap process <> "|-/"
 
 
-instance ToTaggedCode NDF ProcessAssign where
-    toTaggedCode :: Proxy NDF -> ProcessAssign -> T.Tag
-    toTaggedCode _ (ProcessAssign padef) =
+instance ToTaggedCode NDF opts ProcessAssign where
+    toTaggedCode :: Proxy NDF -> opts -> ProcessAssign -> T.Tag
+    toTaggedCode _ _ (ProcessAssign padef) =
         case padef of
             family /\ process ->
                 F.operator ":"

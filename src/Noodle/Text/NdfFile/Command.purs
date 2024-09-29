@@ -31,14 +31,14 @@ data Command
 derive instance Eq Command
 
 
-instance ToCode NDF Command where
-    toCode :: Proxy NDF -> Command -> String
-    toCode pndf =
+instance ToCode NDF opts Command where
+    toCode :: Proxy NDF -> opts -> Command -> String
+    toCode pndf opts =
         case _ of
             DefineNode nodeDef ->
-                toCode pndf nodeDef
+                toCode pndf opts nodeDef
             AssignProcess processAssign ->
-                toCode pndf processAssign
+                toCode pndf opts processAssign
             MakeNode (NodeFamily family) (Coord top) (Coord left) (NodeId nodeId) -> family <> " " <> show top <> " " <> show left <> " " <> nodeId
             Move  (NodeId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
             Send  (NodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
@@ -52,14 +52,14 @@ instance ToCode NDF Command where
             Comment content -> "# " <> content
 
 
-instance ToTaggedCode NDF Command where
-    toTaggedCode :: Proxy NDF -> Command -> T.Tag
-    toTaggedCode pndf =
+instance ToTaggedCode NDF opts Command where
+    toTaggedCode :: Proxy NDF -> opts -> Command -> T.Tag
+    toTaggedCode pndf opts =
         case _ of
             DefineNode nodeDef ->
-                toTaggedCode pndf nodeDef
+                toTaggedCode pndf opts nodeDef
             AssignProcess processAssign ->
-                toTaggedCode pndf processAssign
+                toTaggedCode pndf opts processAssign
             MakeNode (NodeFamily family) (Coord top) (Coord left) (NodeId nodeId) -> F.family family <> T.s " " <> F.coord top <> T.s " " <> F.coord left <> T.s " " <> F.nodeId nodeId
             Move  (NodeId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.s " " <> F.coord top <> T.s " " <> F.coord left <> T.s " " <> F.nodeId nodeId
             Send  (NodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.s " " <> F.nodeId nodeId <> T.s " " <> F.inletIdx iindex  <> T.s " " <> F.value value
@@ -75,12 +75,12 @@ instance ToTaggedCode NDF Command where
 
 -- instance ToCode NDF (Array Command) where
 commandsToNdf :: Array Command -> String
-commandsToNdf cmds = String.joinWith "\n" $ toCode ndf <$> (optimize $ Array.reverse cmds)
+commandsToNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize $ Array.reverse cmds)
 
 
 -- instance ToCode NDF (Array Command) where
 commandsToTaggedNdf :: Array Command -> T.Tag
-commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf <$> (optimize $ Array.reverse cmds)
+commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize $ Array.reverse cmds)
 
 
 optimize :: Array Command -> Array Command

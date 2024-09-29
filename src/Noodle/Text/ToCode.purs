@@ -28,12 +28,12 @@ foreign import data PS :: Target
 foreign import data NDF :: Target
 
 
-class ToCode (target :: Target) a where
-    toCode :: Proxy target -> a -> String
+class ToCode (target :: Target) opts a where
+    toCode :: Proxy target -> opts -> a -> String
 
 
-class ToTaggedCode (target :: Target) a where
-    toTaggedCode :: Proxy target -> a -> T.Tag
+class ToTaggedCode (target :: Target) opts a where
+    toTaggedCode :: Proxy target -> opts -> a -> T.Tag
 
 
 pureScript :: _ PS
@@ -52,6 +52,7 @@ ndf :: _ NDF
 ndf = Proxy
 
 
+{-
 nodes :: _ NDF
 nodes = Proxy
 
@@ -78,3 +79,4 @@ fnsJs name vals = name <> "( " <> (String.joinWith ", " vals) <> " )"
 
 fneJs :: String -> String
 fneJs name = name <> "()"
+-}
