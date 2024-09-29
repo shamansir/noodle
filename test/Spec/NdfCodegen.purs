@@ -9,7 +9,7 @@ import Effect.Class (liftEffect)
 
 import PureScript.CST.Types
 
-import Tidy.Codegen
+import Tidy.Codegen hiding (importType, importTypeOp, importValue, importTypeAll)
 import Tidy.Codegen.Monad
 
 import Data.Maybe (Maybe(..))
@@ -25,29 +25,63 @@ import Test.Spec.Assertions (shouldEqual)
 exampleModule :: Module Void
 exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
   importOpen "Prelude"
+  effect <- importFrom "Effect" $ importType "Effect"
+  listOp <- importFrom "Type.Data.List" $ importTypeOp ":>"
+  listTnil <- importFrom "Type.Data.List.Extra" $ importType "TNil"
+  stringLen <- importFrom "Data.String" $ importValue "String.length"
+  familyIdCtor <- importFrom "Noodle.Id" $ importTypeAll "NId.Family"
+  temper <- importFrom "Noodle.Fn.Shape.Temperament" $
+    { hot : importType "Hot"
+    , cold : importType "Cold"
+    }
+  shape <- importFrom "Noodle.Fn.Shape" $
+    { i : importType "I"
+    , o : importType "O"
+    }
+  shapeN <- importFrom "Noodle.Fn.Shape" $
+    { shape : importTypeAll "Noodle.Shape"
+    , inlets : importType "Noodle.Inlets"
+    , outlets : importType "Noodle.Outlets"
+    , inlet : importTypeAll "Noodle.Inlet"
+    , outlet : importTypeAll "Noodle.Outlet"
+    }
+  processN <- importFrom "Noodle.Fn.Process" $ importType "Noodle.Process"
+  processFn <- importFrom "Noodle.Fn.Process" $
+    { receive : importValue "Fn.receive"
+    , send : importValue "Fn.send"
+    }
+  nodeCtor <- importFrom "Noodle.Node" $ importType "Noodle.Node"
+  tkFamilyN <- importFrom "Noodle.Toolkit.Family" $ importType "Noodle.Family"
+  tkFamilyF <- importFrom "Noodle.Toolkit.Family" $
+    { make : importValue "Family.make"
+    , spawn : importValue "Family.spawn"
+    }
+  tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
+  reprC <- importFrom "Test.MyToolkit.Repr" $ importType "ISRepr"
+
   tell
-    [ declSignature "_concat" $ typeApp (typeCtor "NId.Family") [ typeString "concat" ]
-    , declValue "_concat" [] $ exprCtor "NId.Family"
+    [ declSignature "_concat" $ typeApp (typeCtor familyIdCtor) [ typeString "concat" ]
+    , declValue "_concat" [] $ exprCtor familyIdCtor
 
     , declType "Inlets" []
         $ typeKinded
           (typeParens $ typeOp
-            (typeApp (typeCtor "I") [ typeString "left", typeCtor "Hot", typeCtor "String" ])
-            [ binaryOp ":>" (typeApp (typeCtor "I") [ typeString "right", typeCtor "Hot", typeCtor "String" ])
-            , binaryOp ":>" (typeCtor "TNil")
+            (typeApp (typeCtor shape.i) [ typeString "left", typeCtor temper.hot, typeCtor "String" ])
+            [ binaryOp listOp (typeApp (typeCtor shape.i) [ typeString "right", typeCtor temper.hot, typeCtor "String" ])
+            , binaryOp listOp (typeCtor listTnil)
             ]
           )
-        $ typeCtor "Noodle.Inlets"
+        $ typeCtor shapeN.inlets
 
     , declType "Outlets" []
         $ typeKinded
         ( typeParens $ typeOp
-          (typeApp (typeCtor "O") [ typeString "out", typeCtor "String" ])
-          [ binaryOp ":>" (typeApp (typeCtor "O") [ typeString "len", typeCtor "Int" ])
-          , binaryOp ":>" (typeCtor "TNil")
+          (typeApp (typeCtor shape.o) [ typeString "out", typeCtor "String" ])
+          [ binaryOp listOp (typeApp (typeCtor shape.o) [ typeString "len", typeCtor "Int" ])
+          , binaryOp listOp (typeCtor listTnil)
           ]
         )
-        $ typeCtor "Noodle.Outlets"
+        $ typeCtor shapeN.outlets
 
     , declType "InletsRow" []
         $ typeRow
@@ -64,36 +98,46 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
         Nothing
 
     , declType "Shape" []
-        $ typeApp (typeCtor "Noodle.Shape")
+        $ typeApp (typeCtor shapeN.shape)
             [ typeCtor "Inlets", typeCtor "Outlets" ]
 
     , declType "Process" []
-        $ typeApp (typeCtor "Noodle.Process")
+        $ typeApp (typeCtor processN)
             [ typeCtor "Unit"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
-            , typeCtor "ISRepr"
-            , typeCtor "Effect"
+            , typeCtor reprC
+            , typeCtor effect
             ]
 
     , declType "Node" []
-        $ typeApp (typeCtor "Noodle.Node")
+        $ typeApp (typeCtor nodeCtor)
             [ typeString "concat"
             , typeCtor "Unit"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
-            , typeCtor "ISRepr"
-            , typeCtor "Effect"
+            , typeCtor reprC
+            , typeCtor effect
             ]
 
     , declType "Family" []
-        $ typeApp (typeCtor "Noodle.F")
+        $ typeApp (typeCtor tkFamilyN)
             [ typeString "concat"
             , typeCtor "Unit"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
-            , typeCtor "ISRepr"
-            , typeCtor "Effect"
+            , typeCtor reprC
+            , typeCtor effect
+            ]
+
+    , declType "F" []
+        $ typeApp (typeCtor tkF)
+            [ typeString "concat"
+            , typeCtor "Unit"
+            , typeCtor "InletsRow"
+            , typeCtor "OutletsRow"
+            , typeCtor reprC
+            , typeCtor effect
             ]
 
     , declSignature "defaultI" $ typeApp (typeCtor "Record") [ typeCtor "InletsRow" ]
@@ -103,7 +147,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
           , "right" /\ exprString ""
           ]
 
-    , declSignature "defaultO" $ typeApp (typeCtor "Record") [ typeCtor "InletsRow" ]
+    , declSignature "defaultO" $ typeApp (typeCtor "Record") [ typeCtor "OutletsRow" ]
     , declValue "defaultO" []
         $ exprRecord
           [ "out" /\ exprString ""
@@ -112,7 +156,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
 
     , declValue "left_in" []
         $ exprTyped
-          (exprCtor "Noodle.Inlet")
+          (exprCtor shapeN.inlet)
           (typeApp
             typeWildcard
             [ typeString "left" ]
@@ -120,7 +164,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
 
     , declValue "right_in" []
         $ exprTyped
-          (exprCtor "Noodle.Inlet")
+          (exprCtor shapeN.inlet)
           (typeApp
             typeWildcard
             [ typeString "right" ]
@@ -128,7 +172,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
 
     , declValue "out_out" []
         $ exprTyped
-          (exprCtor "Noodle.Outlet")
+          (exprCtor shapeN.outlet)
           (typeApp
             typeWildcard
             [ typeString "out" ]
@@ -136,7 +180,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
 
     , declValue "len_out" []
         $ exprTyped
-          (exprCtor "Noodle.Outlet")
+          (exprCtor shapeN.outlet)
           (typeApp
             typeWildcard
             [ typeString "len" ]
@@ -145,7 +189,7 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
     , declSignature "family" $ typeCtor "Family"
     , declValue "family" []
         $ exprApp
-          (exprIdent "Family.make")
+          (exprIdent tkFamilyF.make)
           [ exprIdent "_concat"
           , exprIdent "unit"
           , exprParens (exprTyped (exprCtor "Noodle.Shape") (typeCtor "Shape"))
@@ -154,18 +198,18 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
           , exprIdent "concatP"
           ]
 
-    , declSignature "makeNode" $ typeApp (typeCtor "Effect") [ typeCtor "Node" ]
+    , declSignature "makeNode" $ typeApp (typeCtor effect) [ typeCtor "Node" ]
     , declValue "makeNode" []
         $ exprApp
-          (exprIdent "Family.spawn")
+          (exprIdent tkFamilyF.spawn)
           [ exprIdent "family"
           ]
 
     , declSignature "concatP" $ typeCtor "Process"
     , declValue "concatP" []
         $ exprDo
-          [ doBind (binderVar "left") $ exprApp (exprIdent "Fn.receive") [ exprIdent "left_in" ]
-          , doBind (binderVar "right") $ exprApp (exprIdent "Fn.receive") [ exprIdent "right_in" ]
+          [ doBind (binderVar "left") $ exprApp (exprIdent processFn.receive) [ exprIdent "left_in" ]
+          , doBind (binderVar "right") $ exprApp (exprIdent processFn.receive) [ exprIdent "right_in" ]
           , doLet
             [ letBinder
                 (binderVar "concatenated")
@@ -173,10 +217,10 @@ exampleModule = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
                   [ binaryOp "<>" $ exprIdent "right" ]
                 )
             ]
-          , doDiscard $ exprApp (exprIdent "Fn.send") [ exprIdent "out_out", exprIdent "concatenated" ]
+          , doDiscard $ exprApp (exprIdent processFn.send) [ exprIdent "out_out", exprIdent "concatenated" ]
           , doDiscard $ exprOp
-                (exprApp (exprIdent "Fn.send") [ exprIdent "len_out" ])
-                [ binaryOp "$" $ exprApp (exprIdent "String.length") [ exprIdent "concatenated" ] ]
+                (exprApp (exprIdent processFn.send) [ exprIdent "len_out" ])
+                [ binaryOp "$" $ exprApp (exprIdent stringLen) [ exprIdent "concatenated" ] ]
           ]
           (exprApp (exprIdent "pure") [ exprIdent "unit" ])
 
