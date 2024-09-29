@@ -16,8 +16,11 @@ import Noodle.Text.ToCode (toCode)
 import Noodle.Text.ToCode (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
+import Noodle.Text.NdfFile.Newtypes
 
 
+import Tidy.Codegen
+import Partial.Unsafe (unsafePartial)
 
 spec :: Spec Unit
 spec = do
@@ -41,7 +44,19 @@ spec = do
             { temperamentAlgorithm : Temperament.defaultAlgorithm
             , monadModule : "Effect", monadType : "Effect"
             , reprModule : "Test.MyToolkit.Repr", reprType : "ISRepr"
-            , defaultType : "ISRepr", defaultValue : "None"
+            , defaultType : EncodedType "ISRepr", defaultValue : EncodedValue "None"
+            , typeFor :
+                unsafePartial $ \(EncodedType typeStr) ->
+                  case typeStr of
+                    "Int" -> typeCtor "Int"
+                    "String" -> typeCtor "String"
+                    _ -> typeCtor "ISRepr"
+            , defaultFor :
+                unsafePartial $ \(EncodedType typeStr) (EncodedValue valueStr) ->
+                  case valueStr of
+                    "" -> exprString ""
+                    "0" -> exprInt 0
+                    str -> exprString str
             }
           psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
 

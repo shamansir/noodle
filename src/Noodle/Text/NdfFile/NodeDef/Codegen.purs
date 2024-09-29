@@ -5,6 +5,7 @@ import Prelude
 import Data.Array (head, tail, uncons, mapWithIndex) as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (unwrap)
 
 import Control.Monad.Writer (tell)
 import Partial.Unsafe (unsafePartial)
@@ -24,11 +25,14 @@ import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, name, argName, argValue, 
 import Noodle.Text.NdfFile.Newtypes
 
 
+
 newtype Options = Options
     { temperamentAlgorithm :: Temperament.Algorithm
     , monadModule :: String, monadType :: String
     , reprModule :: String, reprType :: String
-    , defaultType :: String, defaultValue :: String
+    , defaultType :: EncodedType, defaultValue :: EncodedValue
+    , typeFor :: EncodedType -> CST.Type Void
+    , defaultFor :: EncodedType -> EncodedValue -> CST.Expr Void
     }
 
 
@@ -81,54 +85,49 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
 
     nameOf :: Channel -> String
     nameOf (name /\ _) = name
-    typeOf :: Channel -> String
+    typeOf :: Channel -> EncodedType
     typeOf (_ /\ ChannelDef { dataType }) =
-        case dataType of
-            Just (EncodedType typeStr) -> typeStr
-            Nothing -> opts.defaultType
-    defaultOf :: Channel -> String
+        fromMaybe opts.defaultType dataType
+    defaultOf :: Channel -> EncodedValue
     defaultOf (_ /\ ChannelDef { defaultValue }) =
-        case defaultValue of
-            Just (EncodedValue valueStr) -> valueStr
-            Nothing -> opts.defaultValue
+        fromMaybe opts.defaultValue defaultValue
 
-    inletTypeApp :: forall e. Int -> Channel-> CST.Type e
+    inletTypeApp :: Int -> Channel-> CST.Type Void
     inletTypeApp idx chan =
         typeApp (typeCtor shape.i)
             [ typeString $ nameOf chan
             , typeCtor $ case Temperament.byIndex opts.temperamentAlgorithm idx of
                 T.Hot -> temper.hot
                 T.Cold -> temper.cold
-            , typeCtor $ typeOf chan
+            , opts.typeFor $ typeOf chan
             ]
-    outletTypeApp :: forall e. Channel -> CST.Type e
+    outletTypeApp :: Channel -> CST.Type Void
     outletTypeApp chan =
         typeApp (typeCtor shape.o)
             [ typeString $ nameOf chan
-            , typeCtor $ typeOf chan
+            , opts.typeFor $ typeOf chan
             ]
 
-    generateInletsType :: forall e. CST.Type e
+    generateInletsType :: CST.Type Void
     generateInletsType =
         case Array.uncons $ Array.mapWithIndex inletTypeApp $ Fn.args fn of
             Just { head, tail } ->
                 typeParens $ typeOp head $ (binaryOp listOp <$> tail) <> [ binaryOp listOp (typeCtor listTnil) ]
             Nothing -> typeCtor listTnil
-
-    generateOuletsType :: forall e. CST.Type e
+    generateOuletsType :: CST.Type Void
     generateOuletsType =
         case Array.uncons $ outletTypeApp <$> Fn.outs fn of
             Just { head, tail } ->
                 typeParens $ typeOp head $ (binaryOp listOp <$> tail) <> [ binaryOp listOp (typeCtor listTnil) ]
             Nothing -> typeCtor listTnil
 
-    channelRow :: forall e. Channel -> String /\ CST.Type e
-    channelRow chan = nameOf chan /\ typeCtor (typeOf chan)
+    channelRow :: Channel -> String /\ CST.Type Void
+    channelRow chan = nameOf chan /\ opts.typeFor (typeOf chan)
 
-    channelDefault :: forall e. Channel -> String /\ CST.Expr e
-    channelDefault chan = nameOf chan /\ exprString (defaultOf chan)
+    channelDefault :: Channel -> String /\ CST.Expr Void
+    channelDefault chan = nameOf chan /\ (opts.defaultFor (typeOf chan) $ defaultOf chan)
 
-    inletDeclr :: forall e. Channel -> CST.Declaration e
+    inletDeclr :: Channel -> CST.Declaration Void
     inletDeclr chan =
       declValue (nameOf chan <> "_in") []
         $ exprTyped
@@ -138,7 +137,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
             [ typeString $ nameOf chan ]
           )
 
-    outletDeclr :: forall e. Channel -> CST.Declaration e
+    outletDeclr :: Channel -> CST.Declaration Void
     outletDeclr chan =
       declValue (nameOf chan <> "_out") []
         $ exprTyped
