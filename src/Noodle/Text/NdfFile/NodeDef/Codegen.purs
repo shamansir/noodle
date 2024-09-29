@@ -27,7 +27,6 @@ import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, name, argName, argValue, 
 import Noodle.Text.NdfFile.Newtypes
 
 
-
 class CodegenRepr :: forall k. k -> Constraint
 class CodegenRepr repr where
   reprModule :: Proxy repr -> String
@@ -35,17 +34,19 @@ class CodegenRepr repr where
   reprType :: Proxy repr -> CST.Type Void
   reprDefault :: Proxy repr -> CST.Expr Void
   typeFor :: Proxy repr -> EncodedType -> CST.Type Void
-  defaultFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
+  valueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
 
 
-data GenMonad
+{- data GenMonad
   = MEffect
-  | MAff
+  | MAff -}
 
 
+newtype Options :: forall k. k -> Prim.Type
 newtype Options repr = Options
     { temperamentAlgorithm :: Temperament.Algorithm
-    , monadModule :: String, monadType :: String
+    , monadAt :: { module_ :: String, type_ :: String }
+    , nodeModuleName :: NodeFamily -> String
     , prepr :: Proxy repr
     }
 
@@ -53,14 +54,16 @@ newtype Options repr = Options
 type Channel = String /\ ChannelDef
 
 
-generate :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> String
-generate opts fg fn = printModule <<< generateModule opts fg fn
+generate :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> ProcessCode -> String
+generate opts fg state fn = printModule <<< generateModule opts fg state fn
 
 
-generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> Fn ChannelDef ChannelDef -> ProcessCode -> Module Void
-generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsafePartial $ codegenModule "MyModule.UsingCodegen" do
+generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> ProcessCode -> Module Void
+generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn (ProcessCode pcode) = unsafePartial
+  $ codegenModule (opts.nodeModuleName $ NodeFamily $ Fn.name fn) do
+
   importOpen "Prelude"
-  nodeMonad <- importFrom opts.monadModule $ importType opts.monadType -- FIXME: use forall
+  nodeMonad <- importFrom opts.monadAt.module_ $ importType opts.monadAt.type_ -- FIXME: use forall
   listOp <- importFrom "Type.Data.List" $ importTypeOp ":>"
   listTnil <- importFrom "Type.Data.List.Extra" $ importType "TNil"
   stringLen <- importFrom "Data.String" $ importValue "String.length"
@@ -99,12 +102,14 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
 
     nameOf :: Channel -> String
     nameOf (name /\ _) = name
+    qtype :: Maybe EncodedType -> CST.Type Void
+    qtype = maybe (reprType opts.prepr :: CST.Type Void) (typeFor opts.prepr)
+    qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+    qvalue mbDataType = maybe (reprDefault opts.prepr) (valueFor opts.prepr mbDataType)
     typeOf :: Channel -> CST.Type Void
-    typeOf (_ /\ ChannelDef { dataType }) =
-        maybe (reprType opts.prepr :: CST.Type Void) (typeFor opts.prepr) dataType
+    typeOf (_ /\ ChannelDef { mbType }) = qtype mbType
     defaultOf :: Channel -> CST.Expr Void
-    defaultOf (_ /\ ChannelDef { dataType, defaultValue }) =
-        maybe (reprDefault opts.prepr) (defaultFor opts.prepr dataType) defaultValue
+    defaultOf (_ /\ ChannelDef { mbType, mbDefault }) = qvalue mbType mbDefault
 
     inletTypeApp :: Int -> Channel-> CST.Type Void
     inletTypeApp idx chan =
@@ -188,7 +193,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
 
     , declType "Process" []
         $ typeApp (typeCtor processN)
-            [ typeCtor "Unit"
+            [ qtype state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -198,7 +203,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
     , declType "Node" []
         $ typeApp (typeCtor nodeCtor)
             [ typeString familyName
-            , typeCtor "Unit"
+            , qtype state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -208,7 +213,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
     , declType "Family" []
         $ typeApp (typeCtor tkFamilyN)
             [ typeString familyName
-            , typeCtor "Unit"
+            , qtype state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -218,7 +223,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
     , declType "F" []
         $ typeApp (typeCtor tkF)
             [ typeString familyName
-            , typeCtor "Unit"
+            , qtype state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -242,7 +247,7 @@ generateModule (Options opts) (FamilyGroup fGroup) fn (ProcessCode pcode) = unsa
         $ exprApp
           (exprIdent tkFamilyF.make)
           [ exprIdent $ "_" <> familyName
-          , exprIdent "unit"
+          , qvalue state.mbType state.mbDefault
           , exprParens (exprTyped (exprCtor "Noodle.Shape") (typeCtor "Shape"))
           , exprIdent "defaultI"
           , exprIdent "defaultO"

@@ -67,9 +67,13 @@ instance CodegenRepr ISRepr where
                   case typeStr of
                     "Int" -> typeCtor "Int"
                     "String" -> typeCtor "String"
+                    "Unit" -> typeCtor "Unit"
                     _ -> typeCtor "ISRepr"
-    defaultFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
+    valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
                      Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
                      Just "String" -> exprString valueStr
-                     _ -> exprCtor "None"
+                     Just "Unit" -> exprIdent "unit"
+                     _ -> if (valueStr == "unit")
+                                then exprIdent "unit"
+                                else exprCtor "None"

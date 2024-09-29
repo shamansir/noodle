@@ -2,6 +2,8 @@ module Test.Spec.NdfCodegen where
 
 import Prelude
 
+import Data.String as String
+
 import Partial.Unsafe (unsafePartial)
 
 import Type.Proxy (Proxy(..))
@@ -33,7 +35,7 @@ spec = do
 
       it "should compile to the expected code" $ do
         let
-          testNodeDef = ND.qdef
+          testNodeDef = ND.qdefs
             { group : "all", family : "concat"
             , inputs :
               [ ND.i $ ND.chtv "left" "String" ""
@@ -43,13 +45,22 @@ spec = do
               [ ND.o $ ND.chtv "out" "String" ""
               , ND.o $ ND.chtv "len" "Int" "0"
               ]
+            , state : ND.st "Unit" "unit"
             }
+          familyUp (NodeFamily family) = String.toUpper (String.take 1 family) <> String.drop 1 family
+          nodeModuleName family =
+            "Test.Files.CodeGenTest." <> familyUp family
           genOptions =
             { temperamentAlgorithm : Temperament.defaultAlgorithm
-            , monadModule : "Effect", monadType : "Effect"
+            , monadAt : { module_ : "Effect", type_ : "Effect" }
+            , nodeModuleName
             , prepr : (Proxy :: _ ISRepr)
             }
           psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
+          samplePath = "./test/Files/Input/"  <> familyUp (NodeFamily "concat") <> ".purs"
+          targetPath = "./test/Files/Output/" <> familyUp (NodeFamily "concat") <> ".purs"
 
-        liftEffect $ writeTextFile UTF8 "./test/Files/Output/Temp.purs" psModuleCode
-        psModuleCode `shouldEqual` ""
+        sample <- liftEffect $ readTextFile UTF8 samplePath
+
+        liftEffect $ writeTextFile UTF8 targetPath psModuleCode
+        psModuleCode `shouldEqual` sample

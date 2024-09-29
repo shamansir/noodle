@@ -13,7 +13,7 @@ import Data.Text.Format as T
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, PS)
 import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
-import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily, ProcessCode, ChannelDef(..))
+import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily, ProcessCode, ChannelDef(..), StateDef(..), emptyStateDef)
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
@@ -22,6 +22,7 @@ import Noodle.Ui.Cli.Tagging as F
 newtype NodeDef = NodeDef
     { group :: FamilyGroup
     , fn :: NodeFnDef
+    , state :: StateDef
     , process :: Maybe ProcessCode
     }
 derive instance Newtype NodeDef _
@@ -130,14 +131,14 @@ instance ToTaggedCode NDF opts ProcessAssign where
 instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
     toCode :: Proxy PS -> CodeGen.Options repr -> NodeDef -> String
     toCode _ opts (NodeDef ndef) =
-        CodeGen.generate opts ndef.group (unwrap ndef.fn)
+        CodeGen.generate opts ndef.group ndef.state (unwrap ndef.fn)
             $ fromMaybe (wrap "pure unit")
             $ ndef.process
 
 
 channelToCode_ :: String -> ChannelDef -> String
-channelToCode_ chName (ChannelDef { dataType, defaultValue }) =
-    case (dataType /\ defaultValue) of
+channelToCode_ chName (ChannelDef { mbType, mbDefault }) =
+    case (mbType /\ mbDefault) of
         Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
             chName <> ":" <> dataTypeStr <> " " <> "{" <> valueStr <> "}"
         Just (EncodedType dataTypeStr) /\ Nothing ->
@@ -149,8 +150,8 @@ channelToCode_ chName (ChannelDef { dataType, defaultValue }) =
 
 
 channelToTaggedCode_ :: (String -> T.Tag) -> String -> ChannelDef -> T.Tag
-channelToTaggedCode_ nameToTag chName (ChannelDef { dataType, defaultValue }) =
-    case (dataType /\ defaultValue) of
+channelToTaggedCode_ nameToTag chName (ChannelDef { mbType, mbDefault }) =
+    case (mbType /\ mbDefault) of
         Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
             nameToTag chName <> F.operator ":" <> F.type_ dataTypeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}"
         Just (EncodedType dataTypeStr) /\ Nothing ->
@@ -171,11 +172,11 @@ channelToOut = out
 
 
 i :: { name :: String, type_ :: Maybe String, value :: Maybe String } -> Argument ChannelDef
-i { name, type_, value } = channelToArg name $ ChannelDef { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
+i { name, type_, value } = channelToArg name $ ChannelDef { mbType : EncodedType <$> type_, mbDefault : EncodedValue <$> value }
 
 
 o :: { name :: String, type_ :: Maybe String, value :: Maybe String } -> Output ChannelDef
-o { name, type_, value } = channelToOut name $ ChannelDef { dataType : EncodedType <$> type_, defaultValue : EncodedValue <$> value }
+o { name, type_, value } = channelToOut name $ ChannelDef { mbType : EncodedType <$> type_, mbDefault : EncodedValue <$> value }
 
 
 ch :: String -> { name :: String, type_ :: Maybe String, value :: Maybe String }
@@ -194,11 +195,36 @@ chv :: String -> String -> { name :: String, type_ :: Maybe String, value :: May
 chv name value = { name, type_ : Nothing, value : Just value }
 
 
+st :: String -> String -> StateDef
+st type_ value =
+    StateDef
+        { mbType : Just $ EncodedType type_
+        , mbDefault : Just $ EncodedValue value
+        }
+
+
+stt :: String -> StateDef
+stt type_ =
+    StateDef
+        { mbType : Just $ EncodedType type_
+        , mbDefault : Nothing
+        }
+
+
+stv :: String -> StateDef
+stv value =
+    StateDef
+        { mbType : Nothing
+        , mbDefault : Just $ EncodedValue value
+        }
+
+
 qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef) } -> NodeDef
 qdef { group, family, inputs, outputs } =
     NodeDef
         { group : wrap group
         , fn : wrap $ fn family inputs outputs
+        , state : emptyStateDef
         , process : Nothing
         }
 
@@ -208,6 +234,27 @@ qdefp { group, family, inputs, outputs, process } =
     NodeDef
         { group : wrap group
         , fn : wrap $ fn family inputs outputs
+        , state : emptyStateDef
+        , process : Just $ wrap process
+        }
+
+
+qdefs :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef } -> NodeDef
+qdefs { group, family, inputs, outputs, state } =
+    NodeDef
+        { group : wrap group
+        , fn : wrap $ fn family inputs outputs
+        , state
+        , process : Nothing
+        }
+
+
+qdefps :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef, process :: String } -> NodeDef
+qdefps { group, family, inputs, outputs, state, process } =
+    NodeDef
+        { group : wrap group
+        , fn : wrap $ fn family inputs outputs
+        , state
         , process : Just $ wrap process
         }
 

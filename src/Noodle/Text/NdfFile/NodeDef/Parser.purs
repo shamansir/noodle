@@ -6,7 +6,7 @@ import Prelude
 import Data.List (List)
 import Data.String.CodeUnits as StringCU
 import Data.Array as Array
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
 import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -22,7 +22,7 @@ import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
 import Noodle.Text.NdfFile.NodeDef (NodeDef(..), NodeFnDef(..), ProcessAssign(..))
-import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ProcessCode(..), ChannelDef(..))
+import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ProcessCode(..), ChannelDef(..), StateDef(..), emptyStateDef)
 
 
 parser :: P.Parser String NodeDef
@@ -32,6 +32,12 @@ parser = do
   _ <- sep $ P.char ':'
   family <- alphaNumToken <?> "family"
   _ <- sep $ P.string "::"
+  mbState <- P.option Nothing $ typeAndMbDefault
+            (\type_ mbDefault -> Just $ StateDef
+              { mbType : Just $ EncodedType type_
+              , mbDefault : EncodedValue <$> mbDefault
+              }
+            )
   inputs <- P.option [] channels <?> "inputs"
   _ <- sep $ P.string "=>"
   outputs <- results
@@ -39,27 +45,34 @@ parser = do
   maybeImpl <- P.optionMaybe processCode
   pure $ NodeDef
     { group : FamilyGroup tag
-    -- , family : NodeFamily family
+    , state : fromMaybe emptyStateDef mbState
     , fn : NodeFnDef $ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : maybeImpl
     }
+
+
+typeAndMbDefault :: forall a. (String -> Maybe String -> a) -> P.Parser String a
+typeAndMbDefault f = do
+    type_ <- alphaNumToken
+    _ <- Array.many P.space
+    maybeDefault <- P.optionMaybe $ P.between
+                  (P.char '{')
+                  (P.char '}')
+                  defaultValue
+    pure $ f type_ maybeDefault
 
 
 results :: P.Parser String (Array (Maybe (String /\ ChannelDef)))
 results =
   P.choice
       [ Array.singleton <$> Just <$> channel
-      , Array.singleton <$> do
-          type_ <- alphaNumToken
-          _ <- Array.many P.space
-          maybeDefault <- P.optionMaybe $ P.between
-                        (P.char '{')
-                        (P.char '}')
-                        defaultValue
-          pure $ Just $ "out" /\ ChannelDef
-            { dataType : Just $ EncodedType type_
-            , defaultValue : EncodedValue <$> maybeDefault
-            }
+      , Array.singleton <$>
+          typeAndMbDefault
+            (\type_ mbDefault -> Just $ "out" /\ ChannelDef
+              { mbType : Just $ EncodedType type_
+              , mbDefault : EncodedValue <$> mbDefault
+              }
+            )
       , P.option [] channels
       ] <?> "outputs"
 
@@ -97,8 +110,8 @@ channel = do
                       (P.char '}')
                       defaultValue
   pure (name /\ ChannelDef
-      { dataType : EncodedType <$> maybeType
-      , defaultValue : EncodedValue <$> maybeDefault
+      { mbType : EncodedType <$> maybeType
+      , mbDefault : EncodedValue <$> maybeDefault
       }
   )
 
