@@ -69,6 +69,8 @@ sampleNdf_0_2_Text_OnlyDefs =
 $ mouse :: /-| do
   foo
 |-/
+: stated : stated :: [Unit] <in:Value {Number 0.0}> => num:Value {Number 1.0}
+: stated : stated2 :: [Unit{unit}] <> => <>
 : test2 : family2 :: <> => <>"""
 
 
@@ -179,9 +181,25 @@ expected_0_2_Ndf_OnlyDefs =
               [ ND.i $ ND.chtv "src" "Source" "defaultSource"
               , ND.i $ ND.chtv "url" "String" "None"
               ]
-            , outputs : [ ]
+            , outputs : []
             }
         , C.AssignProcess $ ND.qassign "mouse" " do\n  foo\n"
+        , C.DefineNode $ ND.qdefs
+            { group : "stated", family : "stated"
+            , inputs :
+              [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
+              ]
+            , outputs :
+              [ ND.o $ ND.chtv "num" "Value" "Number 1.0"
+              ]
+            , state : ND.stt "Unit"
+            }
+        , C.DefineNode $ ND.qdefs
+            { group : "stated", family : "stated2"
+            , inputs : []
+            , outputs : []
+            , state : ND.st "Unit" "unit"
+            }
         , C.DefineNode $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
         ]
 

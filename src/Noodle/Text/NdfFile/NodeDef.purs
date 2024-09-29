@@ -4,7 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy)
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.String (joinWith) as String
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype, unwrap, wrap)
@@ -90,21 +90,24 @@ instance ToCode NDF opts NodeDef where
     toCode :: Proxy NDF -> opts -> NodeDef -> String
     toCode pndf opts (NodeDef ndef) =
         case ndef of
-            { group, fn, process } ->
-                ": " <> unwrap group <> " : " <> (Fn.name $ unwrap fn) <> " :: " <> toCode pndf opts fn <> case process of
-                    Just processCode -> " /-|" <> unwrap processCode <> "|-/"
-                    Nothing -> ""
+            { group, fn, process, state } ->
+                ": " <> unwrap group <> " : " <> (Fn.name $ unwrap fn) <> " :: "
+                     <> (if hasStateDef_ state then stateToCode_ state <> " " else "")
+                     <> toCode pndf opts fn <> case process of
+                        Just processCode -> " /-|" <> unwrap processCode <> "|-/"
+                        Nothing -> ""
 
 
 instance ToTaggedCode NDF opts NodeDef where
     toTaggedCode :: Proxy NDF -> opts -> NodeDef -> T.Tag
     toTaggedCode pndf opts (NodeDef ndef) =
         case ndef of
-            { group, fn, process } ->
+            { group, fn, process, state } ->
                 F.operator ":"
                 <> T.s " " <> F.someGroup (unwrap group) <> T.s " " <> F.operator ":"
                 <> T.s " " <> F.family (Fn.name $ unwrap fn) <> T.s " " <> F.operator "::"
-                <> T.s " " <> toTaggedCode pndf opts fn
+                <> (if hasStateDef_ state then T.s " " <> stateToTaggedCode_ state else T.s " ")
+                <> toTaggedCode pndf opts fn
                 <> case process of
                     Just processCode -> T.s " " <> F.operator "/-|" <> T.s (unwrap processCode) <> F.operator "|-/"
                     Nothing -> T.s ""
@@ -136,13 +139,43 @@ instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
             $ ndef.process
 
 
+hasStateDef_ :: StateDef -> Boolean
+hasStateDef_ (StateDef { mbType, mbDefault }) = isJust mbType || isJust mbDefault
+
+
+stateToCode_ :: StateDef -> String
+stateToCode_ (StateDef { mbType, mbDefault }) =
+    case (mbType /\ mbDefault) of
+        Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
+            "[" <> typeStr <> " " <> "{" <> valueStr <> "}" <> "]"
+        Just (EncodedType typeStr) /\ Nothing ->
+            "[" <> typeStr <> "]"
+        Nothing /\ Just (EncodedValue valueStr) ->
+            "[" <> "{" <> valueStr <> "}" <> "]"
+        Nothing /\ Nothing ->
+            ""
+
+
+stateToTaggedCode_ :: StateDef -> T.Tag
+stateToTaggedCode_ (StateDef { mbType, mbDefault }) =
+    case (mbType /\ mbDefault) of
+        Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
+            F.operator "[" <> F.type_ typeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}" <> F.operator "]"
+        Just (EncodedType typeStr) /\ Nothing ->
+            F.operator "[" <> F.type_ typeStr <> F.operator "]"
+        Nothing /\ Just (EncodedValue valueStr) ->
+            F.operator "[" <> F.operator "{" <> F.value valueStr <> F.operator "}" <> F.operator "]"
+        Nothing /\ Nothing ->
+            T.s ""
+
+
 channelToCode_ :: String -> ChannelDef -> String
 channelToCode_ chName (ChannelDef { mbType, mbDefault }) =
     case (mbType /\ mbDefault) of
-        Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
-            chName <> ":" <> dataTypeStr <> " " <> "{" <> valueStr <> "}"
-        Just (EncodedType dataTypeStr) /\ Nothing ->
-            chName <> ":" <> dataTypeStr
+        Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
+            chName <> ":" <> typeStr <> " " <> "{" <> valueStr <> "}"
+        Just (EncodedType typeStr) /\ Nothing ->
+            chName <> ":" <> typeStr
         Nothing /\ Just (EncodedValue valueStr) ->
             chName <> ":" <> "{" <> valueStr <> "}"
         Nothing /\ Nothing ->
@@ -152,10 +185,10 @@ channelToCode_ chName (ChannelDef { mbType, mbDefault }) =
 channelToTaggedCode_ :: (String -> T.Tag) -> String -> ChannelDef -> T.Tag
 channelToTaggedCode_ nameToTag chName (ChannelDef { mbType, mbDefault }) =
     case (mbType /\ mbDefault) of
-        Just (EncodedType dataTypeStr) /\ Just (EncodedValue valueStr) ->
-            nameToTag chName <> F.operator ":" <> F.type_ dataTypeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}"
-        Just (EncodedType dataTypeStr) /\ Nothing ->
-            nameToTag chName <> F.operator ":" <> F.type_ dataTypeStr
+        Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
+            nameToTag chName <> F.operator ":" <> F.type_ typeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}"
+        Just (EncodedType typeStr) /\ Nothing ->
+            nameToTag chName <> F.operator ":" <> F.type_ typeStr
         Nothing /\ Just (EncodedValue valueStr) ->
             nameToTag chName <> F.operator ":" <> F.operator "{" <> F.value valueStr <> F.operator "}"
         Nothing /\ Nothing ->

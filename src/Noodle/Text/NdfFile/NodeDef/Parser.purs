@@ -17,7 +17,7 @@ import Parsing (Parser, runParser, ParseError) as P
 import Parsing.String (char, string)  as P
 import Parsing.String.Basic (noneOf) as P
 import Parsing.Token (alphaNum, space) as P
-import Parsing.Combinators (between, choice, option, optionMaybe, sepBy) as P
+import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
 import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
@@ -32,12 +32,8 @@ parser = do
   _ <- sep $ P.char ':'
   family <- alphaNumToken <?> "family"
   _ <- sep $ P.string "::"
-  mbState <- P.option Nothing $ typeAndMbDefault
-            (\type_ mbDefault -> Just $ StateDef
-              { mbType : Just $ EncodedType type_
-              , mbDefault : EncodedValue <$> mbDefault
-              }
-            )
+  mbState <- P.try maybeState
+  _ <- Array.many P.space
   inputs <- P.option [] channels <?> "inputs"
   _ <- sep $ P.string "=>"
   outputs <- results
@@ -49,6 +45,18 @@ parser = do
     , fn : NodeFnDef $ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : maybeImpl
     }
+
+
+maybeState :: P.Parser String (Maybe StateDef)
+maybeState = do
+  P.option Nothing
+      $ P.between (P.char '[') (P.char ']')
+      $ typeAndMbDefault
+            (\type_ mbDefault -> Just $ StateDef
+              { mbType : Just $ EncodedType type_
+              , mbDefault : EncodedValue <$> mbDefault
+              }
+            )
 
 
 typeAndMbDefault :: forall a. (String -> Maybe String -> a) -> P.Parser String a
