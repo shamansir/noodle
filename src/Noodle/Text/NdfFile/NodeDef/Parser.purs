@@ -73,14 +73,14 @@ typeAndMbDefault f = do
 results :: P.Parser String (Array (Maybe (String /\ ChannelDef)))
 results =
   P.choice
-      [ Array.singleton <$> Just <$> channel
-      , Array.singleton <$>
+      [ {- Array.singleton <$>
           typeAndMbDefault
             (\type_ mbDefault -> Just $ "out" /\ ChannelDef
               { mbType : Just $ EncodedType type_
               , mbDefault : EncodedValue <$> mbDefault
               }
             )
+      ,  -} Array.singleton <$> Just <$> channel
       , P.option [] channels
       ] <?> "outputs"
 
