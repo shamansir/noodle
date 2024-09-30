@@ -2,10 +2,20 @@ module Test.Spec.NdfFile where
 
 import Prelude
 
+import Effect.Class (liftEffect)
+
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+
+import Node.Encoding (Encoding(..))
+import Node.FS.Sync (readTextFile, writeTextFile)
 
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Util.Parsing (parses)
+import Test.Spec.Assertions (fail)
+import Test.Spec.Util.Assertions (shouldEqual) as U
+
+import Parsing (runParser) as P
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
@@ -226,3 +236,13 @@ spec = do
 
     it "parsing works for version 0.2 (only definitions)" $
       parses NdfFile.toNdfCode sampleNdf_0_2_Text_OnlyDefs expected_0_2_Ndf_OnlyDefs NdfFile.parser
+
+    it "parsing works for version 0.2 (hydra toolkit v0.2)" $ do
+      hydraToolkitText <- liftEffect $ readTextFile UTF8 "./test/MyToolkit/hydra.v0.2.ndf"
+      let eParsedCode = NdfFile.toNdfCode <$> P.runParser hydraToolkitText NdfFile.parser
+      case eParsedCode of
+        Right parsedCode ->
+          parsedCode `U.shouldEqual` hydraToolkitText
+          -- liftEffect $ writeTextFile UTF8 "./test/MyToolkit/hydra.v0.2.sample.ndf" result
+        Left error ->
+          fail $ "failed to parse hydra.v0.2.ndf: " <> show error

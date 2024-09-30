@@ -6,29 +6,24 @@ import Data.String as String
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Partial.Unsafe (unsafePartial)
-import Unsafe.Coerce (unsafeCoerce)
 
 import Type.Proxy (Proxy(..))
 
 import Effect.Class (liftEffect)
 
 import Test.Spec (Spec, describe, it, itOnly)
-import Test.Spec.Assertions (shouldEqual)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
-import Node.Path (FilePath, extname, basenameWithoutExt)
 
-import Tidy.Codegen
-import Tidy.Codegen.Monad (Codegen, importFrom, class ToImportFrom)
-import Tidy.Codegen.Class (class ToModuleName)
+import Tidy.Codegen (declImportAs, importValue)
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.ToCode (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
-import Noodle.Text.NdfFile.Newtypes
+import Noodle.Text.NdfFile.Newtypes (NodeFamily(..))
 
 import Test.MyToolkit.Repr (ISRepr)
 

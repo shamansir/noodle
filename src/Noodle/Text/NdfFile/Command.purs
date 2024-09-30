@@ -75,12 +75,12 @@ instance ToTaggedCode NDF opts Command where
 
 -- instance ToCode NDF (Array Command) where
 commandsToNdf :: Array Command -> String
-commandsToNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize $ Array.reverse cmds)
+commandsToNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize cmds)
 
 
 -- instance ToCode NDF (Array Command) where
 commandsToTaggedNdf :: Array Command -> T.Tag
-commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize $ Array.reverse cmds)
+commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
 
 
 optimize :: Array Command -> Array Command

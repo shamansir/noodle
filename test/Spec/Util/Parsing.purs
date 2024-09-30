@@ -23,7 +23,7 @@ parses' =
 parses :: forall (x :: Type) (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Eq x => U.PrettyPrint x => (a -> x) -> s -> a -> P.ParserT s Identity a -> m Unit
 parses atostr string expected parser =
   case P.runParser string parser of
-    Right result ->
+    Right result -> do
       (atostr result) `U.shouldEqual` (atostr expected)
     Left error ->
       fail $ show error
