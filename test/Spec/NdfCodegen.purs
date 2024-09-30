@@ -6,6 +6,7 @@ import Data.String as String
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Partial.Unsafe (unsafePartial)
+import Unsafe.Coerce (unsafeCoerce)
 
 import Type.Proxy (Proxy(..))
 
@@ -19,7 +20,8 @@ import Node.FS.Sync (readTextFile, writeTextFile)
 import Node.Path (FilePath, extname, basenameWithoutExt)
 
 import Tidy.Codegen
-import Tidy.Codegen.Monad (Codegen, importFrom)
+import Tidy.Codegen.Monad (Codegen, importFrom, class ToImportFrom)
+import Tidy.Codegen.Class (class ToModuleName)
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
@@ -70,7 +72,9 @@ spec = do
             , monadAt : { module_ : "Effect", type_ : "Effect" }
             , nodeModuleName
             , prepr : (Proxy :: _ ISRepr)
-            -- , imports : myImports
+            , imports : unsafePartial $
+              [ declImportAs "Data.String" [ importValue "length" ] "String"
+              ]
             }
           psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
           samplePath = "./test/Files/Input/"  <> familyUp (NodeFamily "concat") <> ".purs"

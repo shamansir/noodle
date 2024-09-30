@@ -5,7 +5,7 @@ import Prelude
 import Data.Array (head, tail, uncons, mapWithIndex) as Array
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Newtype (unwrap)
+import Data.Newtype (unwrap, wrap)
 import Data.String (Pattern(..), Replacement(..), replace) as String
 
 import Type.Proxy (Proxy(..))
@@ -49,6 +49,7 @@ newtype Options repr = Options
     , monadAt :: { module_ :: String, type_ :: String }
     , nodeModuleName :: NodeFamily -> String
     , prepr :: Proxy repr
+    , imports :: Array (ImportDecl Void)
     }
 
 
@@ -65,17 +66,16 @@ generate opts fg state fn process = injectProcess process $ printModule $ genera
     injectProcess (ProcessCode processStr) = String.replace (String.Pattern __process_pattern) (String.Replacement processStr)
 
 
-
-
 generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> Module Void
-generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn = unsafePartial
+generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn
+  = addUserImports_ opts.imports
+  $ unsafePartial
   $ codegenModule (opts.nodeModuleName $ NodeFamily $ Fn.name fn) do
 
   importOpen "Prelude"
   nodeMonad <- importFrom opts.monadAt.module_ $ importType opts.monadAt.type_ -- FIXME: use forall
   listOp <- importFrom "Type.Data.List" $ importTypeOp ":>"
   listTnil <- importFrom "Type.Data.List.Extra" $ importType "TNil"
-  stringLen <- importFrom "Data.String" $ importValue "String.length"
   familyIdCtor <- importFrom "Noodle.Id" $ importTypeAll "NId.Family"
   temper <- importFrom "Noodle.Fn.Shape.Temperament" $
     { hot : importType "Hot"
@@ -105,7 +105,6 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn = unsafeP
     }
   tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
   reprC <- importFrom (reprModule opts.prepr) $ importType $ reprTypeName opts.prepr -- FIXME: use forall?
-  -- _ <- opts.imports
 
   let
     familyName = Fn.name fn
@@ -277,3 +276,14 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn = unsafeP
           [ ]
           (leading (lineBreaks 1 <> blockComment __process_stub <> lineBreaks 1) $ exprApp (exprIdent "pure") [ exprIdent "unit" ])
     ]
+
+
+addUserImports_ :: Array (ImportDecl Void) -> Module Void -> Module Void
+addUserImports_ uimports (Module { header, body }) =
+  Module
+    { header :
+        unwrap header
+          # \rec -> rec { imports = rec.imports <> uimports }
+          # wrap
+    , body
+    }

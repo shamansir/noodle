@@ -2,7 +2,6 @@ module Test.Files.CodeGenTest.Concat where
 
 import Prelude
 
-import Data.String as String
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -17,6 +16,7 @@ import Noodle.Toolkit.Family as Noodle
 import Test.MyToolkit.Repr (ISRepr)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
+import Data.String (length) as String
 
 _concat :: NId.Family "concat"
 _concat = NId.Family
