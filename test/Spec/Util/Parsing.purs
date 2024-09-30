@@ -11,18 +11,19 @@ import Data.Identity (Identity)
 
 import Parsing as P
 
-import Test.Spec.Assertions (shouldEqual, fail)
+import Test.Spec.Assertions (fail)
+import Test.Spec.Util.Assertions (shouldEqual, class PrettyPrint) as U
 
 
-parses' :: forall (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Show a => Eq a => s -> a -> P.ParserT s Identity a -> m Unit
+parses' :: forall (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Eq a => U.PrettyPrint a => s -> a -> P.ParserT s Identity a -> m Unit
 parses' =
   parses identity
 
 
-parses :: forall (x :: Type) (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Eq x => Show x => (a -> x) -> s -> a -> P.ParserT s Identity a -> m Unit
+parses :: forall (x :: Type) (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Eq x => U.PrettyPrint x => (a -> x) -> s -> a -> P.ParserT s Identity a -> m Unit
 parses atostr string expected parser =
   case P.runParser string parser of
     Right result ->
-      (atostr result) `shouldEqual` (atostr expected)
+      (atostr result) `U.shouldEqual` (atostr expected)
     Left error ->
       fail $ show error

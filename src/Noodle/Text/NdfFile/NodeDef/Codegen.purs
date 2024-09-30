@@ -6,6 +6,7 @@ import Data.Array (head, tail, uncons, mapWithIndex) as Array
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap)
+import Data.String (Pattern(..), Replacement(..), replace) as String
 
 import Type.Proxy (Proxy(..))
 
@@ -54,12 +55,20 @@ newtype Options repr = Options
 type Channel = String /\ ChannelDef
 
 
+__process_stub = "PROCESS GOES HERE" :: String
+__process_pattern = "do\n  {- " <> __process_stub <> " -}\n  pure unit" :: String
+
+
 generate :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> ProcessCode -> String
-generate opts fg state fn = printModule <<< generateModule opts fg state fn
+generate opts fg state fn process = injectProcess process $ printModule $ generateModule opts fg state fn
+  where
+    injectProcess (ProcessCode processStr) = String.replace (String.Pattern __process_pattern) (String.Replacement processStr)
 
 
-generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> ProcessCode -> Module Void
-generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn (ProcessCode pcode) = unsafePartial
+
+
+generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> Module Void
+generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn = unsafePartial
   $ codegenModule (opts.nodeModuleName $ NodeFamily $ Fn.name fn) do
 
   importOpen "Prelude"
@@ -84,7 +93,7 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn (ProcessC
     , outlet : importTypeAll "Noodle.Outlet"
     }
   processN <- importFrom "Noodle.Fn.Process" $ importType "Noodle.Process"
-  processFn <- importFrom "Noodle.Fn.Process" $
+  _ <- importFrom "Noodle.Fn.Process" $
     { receive : importValue "Fn.receive"
     , send : importValue "Fn.send"
     }
@@ -96,6 +105,7 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn (ProcessC
     }
   tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
   reprC <- importFrom (reprModule opts.prepr) $ importType $ reprTypeName opts.prepr -- FIXME: use forall?
+  -- _ <- opts.imports
 
   let
     familyName = Fn.name fn
@@ -264,20 +274,6 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn (ProcessC
     , declSignature (familyName <> "P") $ typeCtor "Process"
     , declValue (familyName <> "P") []
         $ exprDo
-          [ doBind (binderVar "left") $ exprApp (exprIdent processFn.receive) [ exprIdent "left_in" ]
-          , doBind (binderVar "right") $ exprApp (exprIdent processFn.receive) [ exprIdent "right_in" ]
-          , doLet
-            [ letBinder
-                (binderVar "concatenated")
-                (exprOp (exprIdent "left")
-                  [ binaryOp "<>" $ exprIdent "right" ]
-                )
-            ]
-          , doDiscard $ exprApp (exprIdent processFn.send) [ exprIdent "out_out", exprIdent "concatenated" ]
-          , doDiscard $ exprOp
-                (exprApp (exprIdent processFn.send) [ exprIdent "len_out" ])
-                [ binaryOp "$" $ exprApp (exprIdent stringLen) [ exprIdent "concatenated" ] ]
-          ]
-          (exprApp (exprIdent "pure") [ exprIdent "unit" ])
-
+          [ ]
+          (leading (lineBreaks 1 <> blockComment __process_stub <> lineBreaks 1) $ exprApp (exprIdent "pure") [ exprIdent "unit" ])
     ]

@@ -15,5 +15,6 @@ in conf // {
     , "refs"
     , "expect-inferred"
     , "partial"
+    , "these"
     ]
 }

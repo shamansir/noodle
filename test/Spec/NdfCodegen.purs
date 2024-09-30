@@ -3,6 +3,7 @@ module Test.Spec.NdfCodegen where
 import Prelude
 
 import Data.String as String
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Partial.Unsafe (unsafePartial)
 
@@ -18,6 +19,7 @@ import Node.FS.Sync (readTextFile, writeTextFile)
 import Node.Path (FilePath, extname, basenameWithoutExt)
 
 import Tidy.Codegen
+import Tidy.Codegen.Monad (Codegen, importFrom)
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
@@ -28,6 +30,13 @@ import Noodle.Text.NdfFile.Newtypes
 
 import Test.MyToolkit.Repr (ISRepr)
 
+import Test.Spec.Util.Assertions (shouldEqual) as U
+
+
+samples :: Array (String /\ ND.NodeDef)
+samples = []
+
+
 spec :: Spec Unit
 spec = do
 
@@ -35,7 +44,7 @@ spec = do
 
       it "should compile to the expected code" $ do
         let
-          testNodeDef = ND.qdefs
+          testNodeDef = ND.qdefps
             { group : "all", family : "concat"
             , inputs :
               [ ND.i $ ND.chtv "left" "String" ""
@@ -46,6 +55,12 @@ spec = do
               , ND.o $ ND.chtv "len" "Int" "0"
               ]
             , state : ND.st "Unit" "unit"
+            , process : """do
+  left <- Fn.receive left_in
+  right <- Fn.receive right_in
+  let concatenated = left <> right
+  Fn.send out_out concatenated
+  Fn.send len_out $ String.length concatenated"""
             }
           familyUp (NodeFamily family) = String.toUpper (String.take 1 family) <> String.drop 1 family
           nodeModuleName family =
@@ -55,6 +70,7 @@ spec = do
             , monadAt : { module_ : "Effect", type_ : "Effect" }
             , nodeModuleName
             , prepr : (Proxy :: _ ISRepr)
+            -- , imports : myImports
             }
           psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
           samplePath = "./test/Files/Input/"  <> familyUp (NodeFamily "concat") <> ".purs"
@@ -63,4 +79,4 @@ spec = do
         sample <- liftEffect $ readTextFile UTF8 samplePath
 
         liftEffect $ writeTextFile UTF8 targetPath psModuleCode
-        psModuleCode `shouldEqual` sample
+        psModuleCode `U.shouldEqual` sample

@@ -55,4 +55,3 @@ concatP = do
   let concatenated = left <> right
   Fn.send out_out concatenated
   Fn.send len_out $ String.length concatenated
-  pure unit
