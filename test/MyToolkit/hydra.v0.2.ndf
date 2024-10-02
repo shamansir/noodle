@@ -75,7 +75,7 @@ hydra 0.1 0.2
 : array : ease :: <arr:Values {noValues} -> ease:Ease {Linear}> => arr:Value {None} /-| H.VArray arr ease |-/
 : array : offset :: <arr:Values {noValues} -> offset:Value {Number 0.5}> => arr:Value {None} /-| H.VArray arr $ H.Offset offset |-/
 : array : fit :: <arr:Values {noValues} -> low:Value {Number 0.0} -> high:Value {Number 1.0}> => arr:Value {None} /-| H.VArray arr $ H.Fit { low, high } |-/
-: audio : fft :: <audio:Audio {Silence} -> h:AudioBin {H0}> => fft:Value {None} /-| H.Audio audio h |-/
+: audio : fft :: <bin:AudioBin {H0}> => fft:Value {None} /-| H.Fft bin |-/
 : audio : setSmooth :: <audio:Audio {Silence} -> smooth:Value {Number 0.4}> => <>
 : audio : setCutoff :: <audio:Audio {Silence} -> cutoff:Value {Number 2.0}> => <>
 : audio : setBins :: <audio:Audio {Silence} -> numBins:Value {Number 4.0}> => <>

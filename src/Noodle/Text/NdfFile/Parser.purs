@@ -19,7 +19,7 @@ import Data.Tuple.Nested ((/\))
 
 import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..)) as Cmd
-import Noodle.Text.NdfFile.Newtypes (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
+import Noodle.Text.NdfFile.Types (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion)
 import Noodle.Text.NdfFile.NodeDef.Parser (parser, assignmentParser) as NodeDef

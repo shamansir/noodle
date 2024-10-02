@@ -22,8 +22,9 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.ToCode (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef as ND
+import Noodle.Text.NdfFile.NodeDef.ProcessCode as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
-import Noodle.Text.NdfFile.Newtypes (NodeFamily(..))
+import Noodle.Text.NdfFile.Types (NodeFamily(..))
 
 import Test.MyToolkit.Repr (ISRepr)
 
@@ -52,7 +53,7 @@ spec = do
               , ND.o $ ND.chtv "len" "Int" "0"
               ]
             , state : ND.st "Unit" "unit"
-            , process : """do
+            , process : ND.Raw """do
   left <- Fn.receive left_in
   right <- Fn.receive right_in
   let concatenated = left <> right

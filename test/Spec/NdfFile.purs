@@ -19,9 +19,10 @@ import Parsing (runParser) as P
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
-import Noodle.Text.NdfFile.Newtypes as C
+import Noodle.Text.NdfFile.Types as C
 import Noodle.Text.NdfFile (from, from_, init_, toNdfCode) as NdfFile
 import Noodle.Text.NdfFile.NodeDef as ND
+import Noodle.Text.NdfFile.NodeDef.ProcessCode as ND
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 
 
@@ -76,9 +77,9 @@ sampleNdf_0_2_Text_OnlyDefs =
 : synth : pi :: <> => out:Value {Pi}
 : synth : mouse :: <> => <x:Value {MouseX} -> y:Value {MouseY}>
 : extsource : initVideo :: <src:Source {defaultSource} -> url:String {None}> => <>
-$ mouse :: /-| do
+$ mouse :: #-| do
   foo
-|-/
+|-#
 : stated : stated :: [Unit] <in:Value {Number 0.0}> => num:Value {Number 1.0}
 : stated : stated2 :: [Unit {unit}] <> => <>
 : test2 : family2 :: <> => <>"""
@@ -145,7 +146,7 @@ expected_0_2_Ndf_OnlyDefs =
             , outputs :
               [ ND.o $ ND.chtv "tex" "Texture" "Empty"
               ]
-            , process : " H.Empty "
+            , process : ND.Auto " H.Empty "
             }
         , C.DefineNode $ ND.qdefp
             { group : "source", family : "solid"
@@ -158,7 +159,7 @@ expected_0_2_Ndf_OnlyDefs =
             , outputs :
               [ ND.o $ ND.chtv "tex" "Texture" "Empty"
               ]
-            , process : " H.Start $ H.Solid { r, g, b, a } "
+            , process : ND.Auto " H.Start $ H.Solid { r, g, b, a } "
             }
         , C.DefineNode $ ND.qdef
             { group : "feed", family : "number"
@@ -193,7 +194,7 @@ expected_0_2_Ndf_OnlyDefs =
               ]
             , outputs : []
             }
-        , C.AssignProcess $ ND.qassign "mouse" " do\n  foo\n"
+        , C.AssignProcess $ ND.qassign "mouse" $ ND.Raw " do\n  foo\n"
         , C.DefineNode $ ND.qdefs
             { group : "stated", family : "stated"
             , inputs :

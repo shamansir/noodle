@@ -13,7 +13,7 @@ import Type.Proxy (Proxy)
 
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode, NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
-import Noodle.Text.NdfFile.Newtypes
+import Noodle.Text.NdfFile.Types
 import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)
 
 

@@ -16,7 +16,7 @@ import Tidy.Codegen.Monad
 import Partial.Unsafe (unsafePartial)
 
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
-import Noodle.Text.NdfFile.Newtypes
+import Noodle.Text.NdfFile.Types
 
 
 data ISRepr

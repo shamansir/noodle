@@ -2,6 +2,7 @@ module Noodle.Text.NdfFile.NodeDef.Parser where
 
 import Prelude
 
+import Control.Alt ((<|>))
 
 import Data.List (List)
 import Data.String.CodeUnits as StringCU
@@ -22,7 +23,8 @@ import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
 import Noodle.Text.NdfFile.NodeDef (NodeDef(..), NodeFnDef(..), ProcessAssign(..))
-import Noodle.Text.NdfFile.Newtypes (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ProcessCode(..), ChannelDef(..), StateDef(..), emptyStateDef)
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
+import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
 
 
 parser :: P.Parser String NodeDef
@@ -43,7 +45,7 @@ parser = do
     { group : FamilyGroup tag
     , state : fromMaybe emptyStateDef mbState
     , fn : NodeFnDef $ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
-    , process : maybeImpl
+    , process : fromMaybe NoneSpecified maybeImpl
     }
 
 
@@ -132,12 +134,23 @@ maybeChannel =
 
 
 processCode :: P.Parser String ProcessCode
-processCode =
-  P.between
-      (P.string "/-|")
-      (P.string "|-/")
-      anything
-  <#> ProcessCode
+processCode
+  =   (P.try $ Auto <$> P.between
+          (P.string "/-|")
+          (P.string "|-/")
+          anything
+      )
+  <|> (P.try $ Raw <$> P.between
+          (P.string "#-|")
+          (P.string "|-#")
+          anything
+      )
+  <|> (P.try $ JS <$> P.between
+          (P.string "$-|")
+          (P.string "|-$")
+          anything
+      )
+  <|> (eol *> pure NoneSpecified)
 
 
 channels :: P.Parser String (Array (Maybe (String /\ ChannelDef)))
@@ -174,3 +187,7 @@ toolkitList' lines =
   case toolkitList lines of
     Left _ -> []
     Right items -> items
+
+
+eol :: P.Parser String Unit
+eol = P.char '\n' *> pure unit

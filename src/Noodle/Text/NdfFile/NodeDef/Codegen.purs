@@ -25,7 +25,9 @@ import Noodle.Fn.Shape.Temperament (Temperament(..)) as T
 import Noodle.Fn.Shape.Temperament (Algorithm, defaultAlgorithm, byIndex) as Temperament
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (fn, Fn, toFn, Argument, Output, name, argName, argValue, outName, outValue, arg, out, args, outs) as Fn
-import Noodle.Text.NdfFile.Newtypes
+import Noodle.Text.NdfFile.Types
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (process) as PC
 
 
 class CodegenRepr :: forall k. k -> Constraint
@@ -63,7 +65,7 @@ __process_pattern = "do\n  {- " <> __process_stub <> " -}\n  pure unit" :: Strin
 generate :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> ProcessCode -> String
 generate opts fg state fn process = injectProcess process $ printModule $ generateModule opts fg state fn
   where
-    injectProcess (ProcessCode processStr) = String.replace (String.Pattern __process_pattern) (String.Replacement processStr)
+    injectProcess processCode = String.replace (String.Pattern __process_pattern) (String.Replacement $ PC.process processCode)
 
 
 generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -> StateDef -> Fn ChannelDef ChannelDef -> Module Void
