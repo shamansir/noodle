@@ -18,7 +18,7 @@ import Data.Map (Map)
 import Data.Map (insert) as Map
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class FromRepr, class ToRepr, ensureTo, ensureFrom, wrap, unwrap)
+import Noodle.Repr (class FromRepr, class ToRepr, ensureTo, ensureFrom, wrap, unwrap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)

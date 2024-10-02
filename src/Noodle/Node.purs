@@ -18,8 +18,8 @@ import Data.Maybe (Maybe, fromMaybe)
 import Data.UniqueHash (generate) as UH
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class ToReprRow, class FromRepr, class FromReprRow, class HasFallback, class ToRepr)
-import Data.Repr (fallback, inbetween, inbetween') as Repr
+import Noodle.Repr (class ToReprRow, class FromRepr, class FromReprRow, class HasFallback, class ToRepr)
+import Noodle.Repr (fallback, inbetween, inbetween') as Repr
 
 import Record (get) as Record
 

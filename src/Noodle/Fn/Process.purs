@@ -20,8 +20,8 @@ import Prelude
 
 import Data.Symbol (class IsSymbol)
 import Data.List (List)
-import Data.Repr (class FromRepr, class HasFallback, class ToRepr)
-import Data.Repr (ensureTo, ensureFrom) as Repr
+import Noodle.Repr (class FromRepr, class HasFallback, class ToRepr)
+import Noodle.Repr (ensureTo, ensureFrom) as Repr
 import Data.Newtype (class Newtype, wrap, unwrap)
 
 import Prim.RowList as RL

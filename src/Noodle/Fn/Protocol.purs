@@ -28,8 +28,8 @@ import Noodle.Raw.Fn.Protocol as Raw
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Raw.FromToRec (toRec, fromRec)
 
-import Data.Repr (class ToRepr, class ToReprRow, class FromReprRow)
-import Data.Repr (ensureTo, unwrap) as Repr
+import Noodle.Repr (class ToRepr, class ToReprRow, class FromReprRow)
+import Noodle.Repr (ensureTo, unwrap) as Repr
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) repr = Raw.Protocol state repr

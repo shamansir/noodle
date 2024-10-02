@@ -6,7 +6,7 @@ import Effect.Class (class MonadEffect)
 
 import Data.Map (Map)
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Repr (class ToReprRow)
+import Noodle.Repr (class ToReprRow)
 
 import Type.Proxy (Proxy(..))
 

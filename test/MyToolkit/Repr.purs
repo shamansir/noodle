@@ -4,8 +4,8 @@ import Prelude
 
 
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Repr (class ToRepr, class FromRepr, class HasFallback)
-import Data.Repr (wrap, unwrap) as Repr
+import Noodle.Repr (class ToRepr, class FromRepr, class HasFallback)
+import Noodle.Repr (wrap, unwrap) as Repr
 import Data.Newtype (unwrap) as NT
 -- import Data.String.Read (read)
 import Data.Int (fromString) as Int

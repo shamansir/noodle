@@ -3,7 +3,7 @@ module Noodle.Node.HoldsNode where
 import Prelude
 
 import Data.Symbol (class IsSymbol)
-import Data.Repr (class ToRepr, class FromRepr)
+import Noodle.Repr (class ToRepr, class FromRepr)
 
 import Noodle.Node (Node)
 

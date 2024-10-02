@@ -28,7 +28,7 @@ import Data.List (length, filter) as List
 import Data.Map (Map)
 -- import Data.SOrder (SOrder, class HasSymbolsOrder)
 -- import Data.SOrder (instantiate) as SOrder
-import Data.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
+import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
 
 import Type.Proxy (Proxy(..))
 

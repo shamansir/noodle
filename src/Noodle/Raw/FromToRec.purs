@@ -6,8 +6,8 @@ import Type.Proxy (Proxy)
 
 import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
-import Data.Repr (Repr(..), class ToReprRow, class FromReprRow)
-import Data.Repr (fromMap, toMap, unwrap) as Repr
+import Noodle.Repr (Repr(..), class ToReprRow, class FromReprRow)
+import Noodle.Repr (fromMap, toMap, unwrap) as Repr
 import Data.Symbol (class IsSymbol)
 
 

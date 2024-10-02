@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Data.Repr (Repr(..))
+import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Id (FamilyR(..), InletR(..), OutletR(..)) as Id

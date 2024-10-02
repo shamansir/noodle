@@ -12,7 +12,7 @@ import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class HasFallback)
+import Noodle.Repr (class HasFallback)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX

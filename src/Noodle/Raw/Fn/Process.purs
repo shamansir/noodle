@@ -26,7 +26,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
-import Data.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
+import Noodle.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)

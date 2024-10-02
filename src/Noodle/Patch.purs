@@ -19,7 +19,7 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
-import Data.Repr (class ToRepr, class FromRepr)
+import Noodle.Repr (class ToRepr, class FromRepr)
 
 import Prim.Boolean (True, False)
 import Prim.Row as R

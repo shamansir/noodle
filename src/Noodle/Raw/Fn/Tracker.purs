@@ -4,7 +4,7 @@ import Prelude ((<#>), (>>>), ($))
 
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Data.Repr (class ToRepr, ensureTo, unwrap)
+import Noodle.Repr (class ToRepr, ensureTo, unwrap)
 
 import Effect (Effect)
 

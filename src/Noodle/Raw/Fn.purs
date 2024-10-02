@@ -7,7 +7,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class HasFallback)
+import Noodle.Repr (class HasFallback)
 
 import Noodle.Id (FnName, InletR, OutletR)
 

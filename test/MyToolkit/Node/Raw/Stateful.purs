@@ -7,7 +7,7 @@ import Effect (Effect)
 import Control.Monad.State.Class (modify_) as State
 
 import Data.Map (empty, insert) as Map
-import Data.Repr (Repr(..))
+import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 

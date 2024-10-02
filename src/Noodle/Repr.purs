@@ -1,4 +1,4 @@
-module Data.Repr
+module Noodle.Repr
     ( Repr(..)
     , ensureTo, ensureFrom
     , class HasFallback, fallback, fallbackByRepr, fallbackBy
@@ -19,8 +19,6 @@ module Data.Repr
     where
 
 import Prelude
-
-import Debug as Debug
 
 import Type.Proxy (Proxy(..))
 

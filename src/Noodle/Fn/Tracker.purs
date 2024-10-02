@@ -14,8 +14,8 @@ import Prim.Row as Row
 import Prim.RowList as RL
 
 import Data.Maybe (Maybe)
-import Data.Repr (class FromReprRow, Repr(..))
-import Data.Repr (fromMap) as Repr
+import Noodle.Repr (class FromReprRow, Repr(..))
+import Noodle.Repr (fromMap) as Repr
 
 import Noodle.Id (Inlet, InletR, Outlet, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id

@@ -9,7 +9,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import Data.Map (empty, insert) as Map
-import Data.Repr (Repr(..))
+import Noodle.Repr (Repr(..))
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)

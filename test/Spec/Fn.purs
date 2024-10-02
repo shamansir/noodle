@@ -7,8 +7,8 @@ import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
-import Data.Repr (class ToRepr, class FromRepr, class HasFallback, wrap, unwrap)
-import Data.Repr (wrap, unwrap) as Repr
+import Noodle.Repr (class ToRepr, class FromRepr, class HasFallback, wrap, unwrap)
+import Noodle.Repr (wrap, unwrap) as Repr
 import Data.Newtype (wrap) as NT
 
 import Type.Proxy (Proxy(..))
