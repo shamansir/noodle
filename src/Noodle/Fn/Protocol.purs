@@ -27,7 +27,6 @@ import Noodle.Raw.Fn.Protocol as Raw
 -- TODO: import Noodle.Raw.Fn.Protocol as RawExports
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Raw.FromToRec (toRec, fromRec)
-
 import Noodle.Repr (class ToRepr, class ToReprRow, class FromReprRow)
 import Noodle.Repr (ensureTo, unwrap) as Repr
 

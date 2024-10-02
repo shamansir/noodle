@@ -20,8 +20,6 @@ import Prelude
 
 import Data.Symbol (class IsSymbol)
 import Data.List (List)
-import Noodle.Repr (class FromRepr, class HasFallback, class ToRepr)
-import Noodle.Repr (ensureTo, ensureFrom) as Repr
 import Data.Newtype (class Newtype, wrap, unwrap)
 
 import Prim.RowList as RL
@@ -43,6 +41,9 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
 import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState) as Raw
+import Noodle.Repr (class FromRepr, class HasFallback, class ToRepr)
+import Noodle.Repr (ensureTo, ensureFrom) as Repr
+
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type

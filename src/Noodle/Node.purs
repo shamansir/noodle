@@ -18,8 +18,6 @@ import Data.Maybe (Maybe, fromMaybe)
 import Data.UniqueHash (generate) as UH
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Noodle.Repr (class ToReprRow, class FromRepr, class FromReprRow, class HasFallback, class ToRepr)
-import Noodle.Repr (fallback, inbetween, inbetween') as Repr
 
 import Record (get) as Record
 
@@ -42,6 +40,8 @@ import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.FromToRec as ReprCnv
+import Noodle.Repr (class ToReprRow, class FromRepr, class FromReprRow, class HasFallback, class ToRepr)
+import Noodle.Repr (fallback, inbetween, inbetween') as Repr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link

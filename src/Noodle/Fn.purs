@@ -28,7 +28,6 @@ import Data.List (length, filter) as List
 import Data.Map (Map)
 -- import Data.SOrder (SOrder, class HasSymbolsOrder)
 -- import Data.SOrder (instantiate) as SOrder
-import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
 
 import Type.Proxy (Proxy(..))
 
@@ -49,6 +48,7 @@ import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
 import Noodle.Raw.Fn (Fn(..)) as Raw
+import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
 
 
 data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn FnName (Process state is os repr m)

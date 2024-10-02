@@ -6,7 +6,6 @@ import Effect.Class (class MonadEffect)
 
 import Data.Map (Map)
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Noodle.Repr (class ToReprRow)
 
 import Type.Proxy (Proxy(..))
 
@@ -18,6 +17,7 @@ import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class C
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
+import Noodle.Repr (class ToReprRow)
 
 import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw

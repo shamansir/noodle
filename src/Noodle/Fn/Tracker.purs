@@ -1,26 +1,20 @@
 module Noodle.Fn.Tracker where
 
-import Prelude ((<#>), map)
-
-import Record (get) as Record
+import Prelude ((<#>))
 
 import Data.Map (Map)
-import Data.Map.Extra (stringifyKeys) as Map
-import Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
 
-import Prim.Row as Row
 import Prim.RowList as RL
 
 import Data.Maybe (Maybe)
-import Noodle.Repr (class FromReprRow, Repr(..))
-import Noodle.Repr (fromMap) as Repr
 
-import Noodle.Id (Inlet, InletR, Outlet, OutletR)
+import Noodle.Id (InletR, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.FromToRec (toRec)
 import Noodle.Raw.Fn.Tracker as Raw
+import Noodle.Repr (class FromReprRow)
 
 
 type Tracker state (is :: Row Type) (os :: Row Type) repr = Raw.Tracker state repr

@@ -7,7 +7,6 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
 import Data.Tuple.Nested ((/\), type (/\))
-import Noodle.Repr (class HasFallback)
 
 import Noodle.Id (FnName, InletR, OutletR)
 
@@ -15,6 +14,7 @@ import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Process (runM) as RawProcess
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets) as RawProtocol
+import Noodle.Repr (class HasFallback)
 
 
 data Fn state repr (m :: Type -> Type) = Fn FnName (Raw.Process state repr m) -- TODO: move to separate module
@@ -22,7 +22,6 @@ data Fn state repr (m :: Type -> Type) = Fn FnName (Raw.Process state repr m) --
 
 make :: forall state repr m. FnName -> Raw.Process state repr m -> Fn state repr m
 make = Fn
-
 
 
 run

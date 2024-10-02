@@ -26,7 +26,6 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
-import Noodle.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -45,6 +44,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
+import Noodle.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
 
 
 

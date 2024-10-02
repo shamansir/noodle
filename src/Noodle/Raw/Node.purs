@@ -12,7 +12,6 @@ import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Noodle.Repr (class HasFallback)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
@@ -28,6 +27,7 @@ import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
+import Noodle.Repr (class HasFallback)
 
 
 type InletsValues repr = Map Id.InletR repr

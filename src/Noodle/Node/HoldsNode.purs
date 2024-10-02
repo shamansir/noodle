@@ -3,9 +3,9 @@ module Noodle.Node.HoldsNode where
 import Prelude
 
 import Data.Symbol (class IsSymbol)
-import Noodle.Repr (class ToRepr, class FromRepr)
 
 import Noodle.Node (Node)
+import Noodle.Repr (class ToRepr, class FromRepr)
 
 
 newtype HoldsNode repr m = HoldsNode (forall r. (forall f state is os. IsSymbol f => FromRepr repr state => ToRepr state repr => Node f state is os repr m -> r) -> r)

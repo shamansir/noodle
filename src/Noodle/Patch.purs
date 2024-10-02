@@ -19,7 +19,6 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
-import Noodle.Repr (class ToRepr, class FromRepr)
 
 import Prim.Boolean (True, False)
 import Prim.Row as R
@@ -38,6 +37,7 @@ import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
 import Noodle.Link (Link)
 import Noodle.Link (FromId, ToId, setId, cancel) as Link
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Repr (class ToRepr, class FromRepr)
 import Noodle.Patch.Links (Links)
 import Noodle.Patch.Links (init, track, nextId, forget) as Links
 import Noodle.Node.Has (class HasInlet, class HasOutlet)

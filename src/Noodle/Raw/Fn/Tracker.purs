@@ -4,7 +4,6 @@ import Prelude ((<#>), (>>>), ($))
 
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Noodle.Repr (class ToRepr, ensureTo, unwrap)
 
 import Effect (Effect)
 
@@ -12,6 +11,7 @@ import Data.Maybe (Maybe)
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInlet, lastOutlet, state, mapState) as Generic
+import Noodle.Repr (class ToRepr, ensureTo, unwrap)
 
 
 type Tracker state repr = Generic.Tracker state (Map InletR repr) (Map OutletR repr)

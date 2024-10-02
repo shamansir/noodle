@@ -6,9 +6,10 @@ import Type.Proxy (Proxy)
 
 import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
+import Data.Symbol (class IsSymbol)
+
 import Noodle.Repr (Repr(..), class ToReprRow, class FromReprRow)
 import Noodle.Repr (fromMap, toMap, unwrap) as Repr
-import Data.Symbol (class IsSymbol)
 
 
 fromRec :: forall k repr rowl row. ToReprRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k repr
