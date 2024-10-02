@@ -2,8 +2,6 @@ module Noodle.Text.NdfFile.NodeDef.Parser where
 
 import Prelude
 
-import Control.Alt ((<|>))
-
 import Data.List (List)
 import Data.String.CodeUnits as StringCU
 import Data.Array as Array
@@ -18,21 +16,23 @@ import Parsing (Parser, runParser, ParseError) as P
 import Parsing.String (char, string)  as P
 import Parsing.String.Basic (noneOf) as P
 import Parsing.Token (alphaNum, space) as P
+import Parsing.String.Extra (eol, asArray, alphaNumToken, anythingBut) as P
 import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
 import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
 import Noodle.Text.NdfFile.NodeDef (NodeDef(..), NodeFnDef(..), ProcessAssign(..))
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (parser) as PC
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
 
 
 parser :: P.Parser String NodeDef
 parser = do
   _ <- sep $ P.char ':'
-  tag <- alphaNumToken <?> "tag"
+  tag <- P.alphaNumToken <?> "tag"
   _ <- sep $ P.char ':'
-  family <- alphaNumToken <?> "family"
+  family <- P.alphaNumToken <?> "family"
   _ <- sep $ P.string "::"
   mbState <- P.try maybeState
   _ <- Array.many P.space
@@ -40,7 +40,7 @@ parser = do
   _ <- sep $ P.string "=>"
   outputs <- results
   _ <- Array.many P.space
-  maybeImpl <- P.optionMaybe processCode
+  maybeImpl <- P.optionMaybe PC.parser
   pure $ NodeDef
     { group : FamilyGroup tag
     , state : fromMaybe emptyStateDef mbState
@@ -63,7 +63,7 @@ maybeState = do
 
 typeAndMbDefault :: forall a. (String -> Maybe String -> a) -> P.Parser String a
 typeAndMbDefault f = do
-    type_ <- alphaNumToken
+    type_ <- P.alphaNumToken
     _ <- Array.many P.space
     maybeDefault <- P.optionMaybe $ P.between
                   (P.char '{')
@@ -99,19 +99,14 @@ sep sep_ = do
     pure unit
 
 
-anythingBut :: Char -> P.Parser String String
-anythingBut char = StringCU.fromCharArray <$> Array.some (P.noneOf [ char ])
-
-alphaNumToken :: P.Parser String String
-alphaNumToken = StringCU.fromCharArray <$> Array.some P.alphaNum
-
 defaultValue :: P.Parser String String
 defaultValue = StringCU.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.', P.char ' ', P.char '_' ])
 
+
 channel :: P.Parser String (String /\ ChannelDef)
 channel = do
-  name <- alphaNumToken
-  maybeType <- P.optionMaybe $ P.char ':' *> alphaNumToken
+  name <- P.alphaNumToken
+  maybeType <- P.optionMaybe $ P.char ':' *> P.alphaNumToken
   _ <- Array.many P.space
   maybeDefault <- P.optionMaybe
                     -- $ Array.many P.space *>
@@ -133,62 +128,22 @@ maybeChannel =
         ]
 
 
-processCode :: P.Parser String ProcessCode
-processCode
-  =   (P.try $ Raw <$> P.between
-          (P.string "#-|")
-          (P.string "|-#")
-          (anythingBut '|')
-      )
-  <|> (P.try $ Auto <$> P.between
-          (P.string "/-|")
-          (P.string "|-/")
-          (anythingBut '|')
-      )
-  <|> (P.try $ JS <$> P.between
-          (P.string "$-|")
-          (P.string "|-$")
-          (anythingBut '|')
-      )
-  <|> (P.try $ Raw <$> P.between
-          (P.string "%┤")
-          (P.string "├%")
-          (anythingBut '├')
-      )
-  <|> (P.try $ Auto <$> P.between
-          (P.string "{┤")
-          (P.string "├}")
-          (anythingBut '├')
-      )
-  <|> (P.try $ JS <$> P.between
-          (P.string "$┤")
-          (P.string "├}")
-          (anythingBut '├')
-      )
-  <|> (eol *> pure NoneSpecified)
-
-
 channels :: P.Parser String (Array (Maybe (String /\ ChannelDef)))
 channels =
   P.between
         (P.char '<')
         (P.char '>')
-        $ asArray
+        $ P.asArray
         $ P.sepBy maybeChannel arrowSep
 
 
 assignmentParser :: P.Parser String ProcessAssign
 assignmentParser = do
   _ <- sep $ P.char '$'
-  family <- alphaNumToken <?> "family"
+  family <- P.alphaNumToken <?> "family"
   _ <- sep $ P.string "::"
-  processCode <- processCode
+  processCode <- PC.parser
   pure $ ProcessAssign $ NodeFamily family /\ processCode
-
-
-
-asArray :: forall s a. P.Parser s (List a) -> P.Parser s (Array a)
-asArray = map Array.fromFoldable
 
 
 -- TODO: return friendlier parsing errors
@@ -202,7 +157,3 @@ toolkitList' lines =
   case toolkitList lines of
     Left _ -> []
     Right items -> items
-
-
-eol :: P.Parser String Unit
-eol = P.char '\n' *> pure unit
