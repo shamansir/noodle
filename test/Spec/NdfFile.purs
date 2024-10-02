@@ -77,9 +77,9 @@ sampleNdf_0_2_Text_OnlyDefs =
 : synth : pi :: <> => out:Value {Pi}
 : synth : mouse :: <> => <x:Value {MouseX} -> y:Value {MouseY}>
 : extsource : initVideo :: <src:Source {defaultSource} -> url:String {None}> => <>
-$ mouse :: #-| do
-  foo
-|-#
+$ mouse :: %┤ do
+  # foo % test # {-} %% $
+├%
 : stated : stated :: [Unit] <in:Value {Number 0.0}> => num:Value {Number 1.0}
 : stated : stated2 :: [Unit {unit}] <> => <>
 : test2 : family2 :: <> => <>"""
@@ -194,7 +194,7 @@ expected_0_2_Ndf_OnlyDefs =
               ]
             , outputs : []
             }
-        , C.AssignProcess $ ND.qassign "mouse" $ ND.Raw " do\n  foo\n"
+        , C.AssignProcess $ ND.qassign "mouse" $ ND.Raw " do\n  # foo % test # {-} %% $\n"
         , C.DefineNode $ ND.qdefs
             { group : "stated", family : "stated"
             , inputs :

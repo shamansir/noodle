@@ -99,8 +99,8 @@ sep sep_ = do
     pure unit
 
 
-anything :: P.Parser String String
-anything = StringCU.fromCharArray <$> Array.some (P.noneOf [ '|' ])
+anythingBut :: Char -> P.Parser String String
+anythingBut char = StringCU.fromCharArray <$> Array.some (P.noneOf [ char ])
 
 alphaNumToken :: P.Parser String String
 alphaNumToken = StringCU.fromCharArray <$> Array.some P.alphaNum
@@ -135,20 +135,35 @@ maybeChannel =
 
 processCode :: P.Parser String ProcessCode
 processCode
-  =   (P.try $ Auto <$> P.between
-          (P.string "/-|")
-          (P.string "|-/")
-          anything
-      )
-  <|> (P.try $ Raw <$> P.between
+  =   (P.try $ Raw <$> P.between
           (P.string "#-|")
           (P.string "|-#")
-          anything
+          (anythingBut '|')
+      )
+  <|> (P.try $ Auto <$> P.between
+          (P.string "/-|")
+          (P.string "|-/")
+          (anythingBut '|')
       )
   <|> (P.try $ JS <$> P.between
           (P.string "$-|")
           (P.string "|-$")
-          anything
+          (anythingBut '|')
+      )
+  <|> (P.try $ Raw <$> P.between
+          (P.string "%┤")
+          (P.string "├%")
+          (anythingBut '├')
+      )
+  <|> (P.try $ Auto <$> P.between
+          (P.string "{┤")
+          (P.string "├}")
+          (anythingBut '├')
+      )
+  <|> (P.try $ JS <$> P.between
+          (P.string "$┤")
+          (P.string "├}")
+          (anythingBut '├')
       )
   <|> (eol *> pure NoneSpecified)
 

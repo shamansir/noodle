@@ -30,21 +30,36 @@ contents = case _ of
     JS jsContents -> jsContents
 
 
-
 startMarker :: ProcessCode -> String
 startMarker = case _ of
     NoneSpecified -> ""
-    Raw _ -> "#-|"
+    Raw _  -> "#-|"
     Auto _ -> "/-|"
-    JS _ -> "$-|"
+    JS _   -> "$-|"
 
 
 endMarker :: ProcessCode -> String
 endMarker = case _ of
     NoneSpecified -> ""
-    Raw _ -> "|-#"
+    Raw _  -> "|-#"
     Auto _ -> "|-/"
-    JS _ -> "|-$"
+    JS _   -> "|-$"
+
+
+startAltMarker :: ProcessCode -> String
+startAltMarker = case _ of
+    NoneSpecified -> ""
+    Raw _  -> "%┤"
+    Auto _ -> "{┤"
+    JS _   -> "$┤"
+
+
+endAltMarker :: ProcessCode -> String
+endAltMarker = case _ of
+    NoneSpecified -> ""
+    Raw _  -> "├%"
+    Auto _ -> "├}"
+    JS _   -> "├$"
 
 
 markersFor :: ProcessCode -> { start :: String, end :: String }
