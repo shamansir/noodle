@@ -2,26 +2,24 @@ module Noodle.Text.NdfFile.NodeDef.ProcessCode where
 
 import Prelude
 
+import Debug as Debug
+
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
-import Data.Newtype (class Newtype)
 import Data.Text.Format as T
-import Data.String (contains, split, trim, indexOf, splitAt, drop, joinWith, Pattern(..)) as String
-import Data.String.CodeUnits (singleton) as String
-import Data.String.Regex as RGX
-import Data.String.Regex.Flags as RGX
+import Data.String (contains, split, trim, indexOf, splitAt, take, drop, joinWith, Pattern(..)) as String
+import Data.String.CodeUnits (singleton, dropRight) as String
+import Data.String.Regex (Regex, match, regex, replace, search) as RGX
+import Data.String.Regex.Flags (global, noFlags) as RGX
 import Data.Foldable (foldr)
 import Data.Array ((:))
-import Data.Array (catMaybes) as Array
+import Data.Array (catMaybes, length) as Array
 import Data.Array.NonEmpty (toArray) as NEA
 
 import Parsing (Parser) as P
-import Parsing.String (char, string)  as P
-import Parsing.String.Basic (noneOf) as P
-import Parsing.String.Extra as P
-import Parsing.Token (alphaNum, space) as P
-import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
-import Parsing.Combinators ((<?>))
+import Parsing.String (string)  as P
+import Parsing.String.Extra (anythingBut, eol) as P
+import Parsing.Combinators (between, choice) as P
 
 import Type.Proxy (Proxy)
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, PS)
@@ -90,11 +88,11 @@ markersFor :: ProcessCode -> { start :: String, end :: String }
 markersFor pc = { start : startMarker pc, end : endMarker pc }
 
 
-type AutoData_ = { allInlets :: Array String, sends :: Array { out :: Maybe String, expr :: String } }
+type AutoData_ = { allInlets :: Array String, sends :: Array { mbOut :: Maybe String, expr :: String } }
 
 
 _processAutoCode :: String -> String
-_processAutoCode =
+_processAutoCode src =
     let
         eOutNameRegex = RGX.regex "^([\\w\\d-]+)::" RGX.noFlags
         eInletsRegex = RGX.regex "<([\\w\\d-]+)>" RGX.global
@@ -103,9 +101,10 @@ _processAutoCode =
         searchFunc inletsRegex outNameRegex test collectedData =
             let
                 trimmed = String.trim test
+                toInletName str = String.dropRight 1 $ String.drop 1 str
                 findInlets definition =
                     case RGX.match inletsRegex definition of
-                        Just matches -> Array.catMaybes $ NEA.toArray matches
+                        Just matches -> Array.catMaybes $ map toInletName <$> NEA.toArray matches
                         Nothing -> []
                 replaceInlets definition =
                     RGX.replace inletsRegex "$1" definition
@@ -118,19 +117,19 @@ _processAutoCode =
                                 { before, after } ->
                                     { allInlets : collectedData.allInlets <> (findInlets $ String.drop 2 after)
                                     , sends :
-                                        { out : Just before, expr : (replaceInlets $ String.drop 2 after) }
+                                        { mbOut : Just before, expr : (replaceInlets $ String.drop 2 after) }
                                         : collectedData.sends
                                     }
                         Nothing ->
                                 { allInlets : collectedData.allInlets <> findInlets trimmed
                                 , sends :
-                                    { out : Nothing, expr : replaceInlets trimmed }
+                                    { mbOut : Nothing, expr : replaceInlets trimmed }
                                     : collectedData.sends
                                 }
                 else
                     { allInlets : collectedData.allInlets <> findInlets trimmed
                     , sends :
-                        { out : Nothing, expr : replaceInlets trimmed }
+                        { mbOut : Nothing, expr : replaceInlets trimmed }
                         : collectedData.sends
                     }
 
@@ -140,13 +139,27 @@ _processAutoCode =
                 Right f -> f test collectedData
                 Left _ -> collectedData
 
+        inletStr inlet = inlet <> " <- " <> "Fn.receive in_" <> inlet
+        sendStr { mbOut, expr } =
+            case mbOut of
+                Just out -> "Fn.send out_" <> out <> " $ " <> expr
+                Nothing -> expr
+
         toExpression :: AutoData_ -> String
         toExpression { allInlets, sends } =
-            String.joinWith "\n" allInlets <> String.joinWith "\n" (_.expr <$> sends)
+            if (Array.length allInlets > 0) then
+                (String.joinWith "\n" $ inletStr <$> allInlets) <> "\n" <> (String.joinWith "\n" (sendStr <$> sends))
+            else
+                if (Array.length sends > 0) then
+                    (String.joinWith "\n" $ sendStr <$> sends)
+                else
+                    src
+
     in
-        String.split (String.Pattern ";")
-            >>> foldr collectInfo { allInlets : [], sends : [ ] }
-            >>> toExpression
+        src
+            # String.split (String.Pattern ";")
+            # foldr collectInfo { allInlets : [], sends : [ ] }
+            # toExpression
 
 
 process :: ProcessCode -> String
@@ -178,6 +191,11 @@ instance ToTaggedCode NDF opts ProcessCode where
                     F.operator (startMarker pc) <> T.s (contents pc) <> F.operator (endMarker pc)
                 else
                     F.operator (startAltMarker pc) <> T.s (contents pc) <> F.operator (endAltMarker pc)
+
+
+instance ToCode PS opts ProcessCode where
+    toCode :: Proxy PS -> opts -> ProcessCode -> String
+    toCode _ _ = process
 
 
 parser :: P.Parser String ProcessCode

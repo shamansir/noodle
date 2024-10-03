@@ -40,6 +40,11 @@ spec = do
 
     describe "NDF Codegen" $ do
 
+      it "auto code definitions:" $ do
+        --(toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
+        (toCode (ToCode.pureScript) unit $ ND.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """inlet1 <- Fn.receive in_inlet1
+inlet2 <- Fn.receive in_inlet2
+Fn.send out_outlet $ inlet1 + inlet2"""
       it "should compile to the expected code" $ do
         let
           testNodeDef = ND.qdefps
