@@ -2,12 +2,18 @@ module Noodle.Text.NdfFile.NodeDef.ProcessCode where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Newtype (class Newtype)
 import Data.Text.Format as T
-import Data.String (contains, Pattern(..)) as String
+import Data.String (contains, split, trim, indexOf, splitAt, drop, joinWith, Pattern(..)) as String
 import Data.String.CodeUnits (singleton) as String
+import Data.String.Regex as RGX
+import Data.String.Regex.Flags as RGX
+import Data.Foldable (foldr)
+import Data.Array ((:))
+import Data.Array (catMaybes) as Array
+import Data.Array.NonEmpty (toArray) as NEA
 
 import Parsing (Parser) as P
 import Parsing.String (char, string)  as P
@@ -24,9 +30,9 @@ import Noodle.Ui.Cli.Tagging as F
 
 data ProcessCode
     = NoneSpecified
-    | Raw String
-    | Auto String
-    | JS String
+    | Raw String -- Copy the contents as it is
+    | Auto String -- Split with ';'. Replace every `<inlet-name>` with `Fn.receive`, send the result(-s) to given outlet(-s)
+    | JS String -- Call given JS function (not yet implemented)
 
 
 derive instance Eq ProcessCode
@@ -84,8 +90,71 @@ markersFor :: ProcessCode -> { start :: String, end :: String }
 markersFor pc = { start : startMarker pc, end : endMarker pc }
 
 
+type AutoData_ = { allInlets :: Array String, sends :: Array { out :: Maybe String, expr :: String } }
+
+
+_processAutoCode :: String -> String
+_processAutoCode =
+    let
+        eOutNameRegex = RGX.regex "^([\\w\\d-]+)::" RGX.noFlags
+        eInletsRegex = RGX.regex "<([\\w\\d-]+)>" RGX.global
+
+        searchFunc :: RGX.Regex -> RGX.Regex -> String -> AutoData_ -> AutoData_
+        searchFunc inletsRegex outNameRegex test collectedData =
+            let
+                trimmed = String.trim test
+                findInlets definition =
+                    case RGX.match inletsRegex definition of
+                        Just matches -> Array.catMaybes $ NEA.toArray matches
+                        Nothing -> []
+                replaceInlets definition =
+                    RGX.replace inletsRegex "$1" definition
+                outletNamePos = fromMaybe (-1) $ RGX.search outNameRegex trimmed
+            in
+                if outletNamePos == 0 then
+                    case String.indexOf (String.Pattern "::") trimmed of
+                        Just doubleColonIdx ->
+                            case String.splitAt doubleColonIdx trimmed of
+                                { before, after } ->
+                                    { allInlets : collectedData.allInlets <> (findInlets $ String.drop 2 after)
+                                    , sends :
+                                        { out : Just before, expr : (replaceInlets $ String.drop 2 after) }
+                                        : collectedData.sends
+                                    }
+                        Nothing ->
+                                { allInlets : collectedData.allInlets <> findInlets trimmed
+                                , sends :
+                                    { out : Nothing, expr : replaceInlets trimmed }
+                                    : collectedData.sends
+                                }
+                else
+                    { allInlets : collectedData.allInlets <> findInlets trimmed
+                    , sends :
+                        { out : Nothing, expr : replaceInlets trimmed }
+                        : collectedData.sends
+                    }
+
+        collectInfo :: String -> AutoData_ -> AutoData_
+        collectInfo test collectedData =
+            case (searchFunc <$> eInletsRegex <*> eOutNameRegex) of
+                Right f -> f test collectedData
+                Left _ -> collectedData
+
+        toExpression :: AutoData_ -> String
+        toExpression { allInlets, sends } =
+            String.joinWith "\n" allInlets <> String.joinWith "\n" (_.expr <$> sends)
+    in
+        String.split (String.Pattern ";")
+            >>> foldr collectInfo { allInlets : [], sends : [ ] }
+            >>> toExpression
+
+
 process :: ProcessCode -> String
-process = contents -- FIXME
+process = case _ of
+    NoneSpecified -> ""
+    Raw str -> str
+    Auto str -> _processAutoCode str
+    JS code -> code -- TODO
 
 
 instance ToCode NDF opts ProcessCode where

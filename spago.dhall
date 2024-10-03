@@ -72,6 +72,7 @@ to generate this file without the comments in this block.
   , "ordered-collections"
   , "ordered-set"
   , "parsing"
+  , "partial"
   , "prelude"
   , "profunctor"
   , "profunctor-lenses"
