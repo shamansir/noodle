@@ -2,18 +2,16 @@ module Noodle.Text.NdfFile.NodeDef.ProcessCode where
 
 import Prelude
 
-import Debug as Debug
-
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Text.Format as T
-import Data.String (contains, split, trim, indexOf, splitAt, take, drop, joinWith, Pattern(..)) as String
+import Data.String (contains, split, trim, indexOf, splitAt, drop, joinWith, Pattern(..)) as String
 import Data.String.CodeUnits (singleton, dropRight) as String
 import Data.String.Regex (Regex, match, regex, replace, search) as RGX
 import Data.String.Regex.Flags (global, noFlags) as RGX
-import Data.Foldable (foldr)
-import Data.Array ((:))
-import Data.Array (catMaybes, length) as Array
+import Data.Foldable (foldl)
+import Data.Array (snoc)
+import Data.Array (catMaybes, length, nub) as Array
 import Data.Array.NonEmpty (toArray) as NEA
 
 import Parsing (Parser) as P
@@ -22,7 +20,7 @@ import Parsing.String.Extra (anythingBut, eol) as P
 import Parsing.Combinators (between, choice) as P
 
 import Type.Proxy (Proxy)
-import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, PS)
+import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, NDF, PS)
 import Noodle.Ui.Cli.Tagging as F
 
 
@@ -117,20 +115,20 @@ _processAutoCode src =
                                 { before, after } ->
                                     { allInlets : collectedData.allInlets <> (findInlets $ String.drop 2 after)
                                     , sends :
-                                        { mbOut : Just before, expr : (replaceInlets $ String.drop 2 after) }
-                                        : collectedData.sends
+                                        collectedData.sends
+                                        `snoc` { mbOut : Just before, expr : (replaceInlets $ String.drop 2 after) }
                                     }
                         Nothing ->
                                 { allInlets : collectedData.allInlets <> findInlets trimmed
                                 , sends :
-                                    { mbOut : Nothing, expr : replaceInlets trimmed }
-                                    : collectedData.sends
+                                    collectedData.sends
+                                    `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
                                 }
                 else
                     { allInlets : collectedData.allInlets <> findInlets trimmed
                     , sends :
-                        { mbOut : Nothing, expr : replaceInlets trimmed }
-                        : collectedData.sends
+                        collectedData.sends
+                        `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
                     }
 
         collectInfo :: String -> AutoData_ -> AutoData_
@@ -148,7 +146,7 @@ _processAutoCode src =
         toExpression :: AutoData_ -> String
         toExpression { allInlets, sends } =
             if (Array.length allInlets > 0) then
-                (String.joinWith "\n" $ inletStr <$> allInlets) <> "\n" <> (String.joinWith "\n" (sendStr <$> sends))
+                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets) <> "\n" <> (String.joinWith "\n" (sendStr <$> sends))
             else
                 if (Array.length sends > 0) then
                     (String.joinWith "\n" $ sendStr <$> sends)
@@ -158,7 +156,7 @@ _processAutoCode src =
     in
         src
             # String.split (String.Pattern ";")
-            # foldr collectInfo { allInlets : [], sends : [ ] }
+            # foldl (flip collectInfo) { allInlets : [], sends : [ ] }
             # toExpression
 
 
