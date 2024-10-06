@@ -8,11 +8,19 @@ import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
+import Data.Map (Map)
+import Data.Map (empty, insert, update) as Map
+import Data.Foldable (foldr)
 
 import Data.Text.Format as T
 
-import Noodle.Text.NdfFile.Command (Command, commandsToNdf, commandsToTaggedNdf)
+import Noodle.Id (FamilyR) as Id
+import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf)
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, ndf)
+import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
+import Noodle.Text.NdfFile.NodeDef (forceAssign) as ND
+import Noodle.Text.NdfFile.Types (NodeFamily)
+import Noodle.Text.NdfFile.NodeDef (group, fnDef, family) as ND
 import Noodle.Ui.Cli.Tagging as T
 
 
@@ -94,3 +102,16 @@ toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) comman
 
 extractCommands :: NdfFile -> Array Command
 extractCommands (NdfFile _ commands) = commands
+
+
+loadDefinitions :: NdfFile -> Map NodeFamily NodeDef
+loadDefinitions = extractCommands >>> foldr applyCommand Map.empty
+    where
+        applyCommand :: Command -> Map NodeFamily NodeDef -> Map NodeFamily NodeDef
+        applyCommand cmd theMap =
+            case cmd of
+                DefineNode nodeDef ->
+                    Map.insert (ND.family nodeDef) nodeDef theMap
+                AssignProcess (ProcessAssign (family /\ processCode)) ->
+                    Map.update (ND.forceAssign processCode >>> Just) family theMap
+                _ -> theMap

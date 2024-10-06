@@ -4,11 +4,10 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
-import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile, writeTextFile)
+import Node.FS.Sync (readTextFile)
 
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Util.Parsing (parses)
@@ -19,10 +18,10 @@ import Parsing (runParser) as P
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
-import Noodle.Text.NdfFile.Types as C
-import Noodle.Text.NdfFile (from, from_, init_, toNdfCode) as NdfFile
+import Noodle.Text.NdfFile.Types (coord, encodedValue, family, inletAlias, inletIndex, nodeId, outletAlias, outletIndex) as C
+import Noodle.Text.NdfFile (from_, init_, toNdfCode) as NdfFile
 import Noodle.Text.NdfFile.NodeDef as ND
-import Noodle.Text.NdfFile.NodeDef.ProcessCode as ND
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 
 
@@ -243,6 +242,8 @@ spec = do
       let eParsedCode = NdfFile.toNdfCode <$> P.runParser hydraToolkitText NdfFile.parser
       case eParsedCode of
         Right parsedCode ->
+          -- We test that parsing, creating the NDF structure from file, and encoding it back,
+          -- produces the same output text as it was originally in the source file
           parsedCode `U.shouldEqual` hydraToolkitText
           -- liftEffect $ writeTextFile UTF8 "./test/MyToolkit/hydra.v0.2.sample.ndf" result
         Left error ->

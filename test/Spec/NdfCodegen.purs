@@ -3,15 +3,21 @@ module Test.Spec.NdfCodegen where
 import Prelude
 
 import Data.String as String
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Either (Either(..))
+import Data.Traversable (traverse_)
+
+import Control.Monad.Error.Class (class MonadThrow)
 
 import Partial.Unsafe (unsafePartial)
 
 import Type.Proxy (Proxy(..))
 
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
-import Test.Spec (Spec, describe, it, itOnly)
+import Parsing (runParser) as P
+
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (fail)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
@@ -21,8 +27,11 @@ import Tidy.Codegen (declImportAs, importValue)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.ToCode (pureScript) as ToCode
-import Noodle.Text.NdfFile.NodeDef as ND
-import Noodle.Text.NdfFile.NodeDef.ProcessCode as ND
+import Noodle.Text.NdfFile.NodeDef (family) as NodeDef
+import Noodle.Text.NdfFile (loadDefinitions) as NdfFile
+import Noodle.Text.NdfFile.Parser (parser) as NdfFile
+import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..))
 
@@ -31,8 +40,16 @@ import Test.MyToolkit.Repr (ISRepr)
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
-samples :: Array (String /\ ND.NodeDef)
-samples = []
+genOptions :: CG.Options ISRepr
+genOptions = CG.Options
+  { temperamentAlgorithm : Temperament.defaultAlgorithm
+  , monadAt : { module_ : "Effect", type_ : "Effect" }
+  , nodeModuleName
+  , prepr : (Proxy :: _ ISRepr)
+  , imports : unsafePartial $
+    [ declImportAs "Data.String" [ importValue "length" ] "String"
+    ]
+  }
 
 
 spec :: Spec Unit
@@ -60,6 +77,7 @@ Fn.send out_r $ r
 Fn.send out_g $ g
 Fn.send out_b $ b
 Fn.send out_a $ a"""
+
       it "should compile to the expected code" $ do
         let
           testNodeDef = ND.qdefps
@@ -80,23 +98,34 @@ Fn.send out_a $ a"""
   Fn.send out_out concatenated
   Fn.send len_out $ String.length concatenated"""
             }
-          familyUp (NodeFamily family) = String.toUpper (String.take 1 family) <> String.drop 1 family
-          nodeModuleName family =
-            "Test.Files.CodeGenTest." <> familyUp family
-          genOptions =
-            { temperamentAlgorithm : Temperament.defaultAlgorithm
-            , monadAt : { module_ : "Effect", type_ : "Effect" }
-            , nodeModuleName
-            , prepr : (Proxy :: _ ISRepr)
-            , imports : unsafePartial $
-              [ declImportAs "Data.String" [ importValue "length" ] "String"
-              ]
-            }
-          psModuleCode = toCode (ToCode.pureScript) (CG.Options genOptions) testNodeDef
-          samplePath = "./test/Files/Input/"  <> familyUp (NodeFamily "concat") <> ".purs"
-          targetPath = "./test/Files/Output/" <> familyUp (NodeFamily "concat") <> ".purs"
 
-        sample <- liftEffect $ readTextFile UTF8 samplePath
+        testNodeDefCodegen (familyUp <<< NodeDef.family) testNodeDef
 
-        liftEffect $ writeTextFile UTF8 targetPath psModuleCode
-        psModuleCode `U.shouldEqual` sample
+      it "properly generates Hydra Toolkit" $ do
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./test/MyToolkit/hydra.v0.2.ndf"
+        let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
+        case eParsedNdf of
+          Left error -> fail $ show error
+          Right parsedNdf -> do
+            let definitions = NdfFile.loadDefinitions parsedNdf
+            traverse_ ( testNodeDefCodegen $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
+
+
+familyUp :: NodeFamily -> String
+familyUp (NodeFamily family) = String.toUpper (String.take 1 family) <> String.drop 1 family
+
+
+nodeModuleName :: NodeFamily -> String
+nodeModuleName family =
+  "Test.Files.CodeGenTest." <> familyUp family
+
+
+testNodeDefCodegen :: forall m. Bind m => MonadEffect m => MonadThrow _ m => (ND.NodeDef -> String) -> ND.NodeDef -> m Unit
+testNodeDefCodegen toFileName nodeDef = do
+  let
+    psModuleCode = toCode (ToCode.pureScript) genOptions nodeDef
+    samplePath = "./test/Files/Input/"  <> toFileName nodeDef <> ".purs"
+    targetPath = "./test/Files/Output/" <> toFileName nodeDef <> ".purs"
+  liftEffect $ writeTextFile UTF8 targetPath psModuleCode
+  sample <- liftEffect $ readTextFile UTF8 samplePath
+  psModuleCode `U.shouldEqual` sample

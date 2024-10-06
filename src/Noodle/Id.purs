@@ -98,7 +98,11 @@ nodeFamily = const $ reflectSymbol (Proxy :: _ f)
 
 
 familyR :: forall proxy family. IsSymbol family => proxy family -> FamilyR
-familyR _ = FamilyR { family : reflectSymbol (Proxy :: _ family) }
+familyR _ = unsafeFamilyR $ reflectSymbol (Proxy :: _ family)
+
+
+unsafeFamilyR :: String -> FamilyR
+unsafeFamilyR family = FamilyR { family }
 
 
 nodeR_ :: FamilyR -> UniqueHash -> NodeR

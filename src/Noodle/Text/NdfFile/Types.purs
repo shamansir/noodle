@@ -46,6 +46,10 @@ derive newtype instance Eq ChannelName
 derive newtype instance Eq ChannelDef
 derive newtype instance Eq StateDef
 
+derive newtype instance Ord FamilyGroup
+derive newtype instance Ord NodeFamily
+
+
 
 family :: String -> NodeFamily
 family = NodeFamily
