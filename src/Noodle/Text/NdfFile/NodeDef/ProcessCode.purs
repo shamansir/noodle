@@ -2,6 +2,8 @@ module Noodle.Text.NdfFile.NodeDef.ProcessCode where
 
 import Prelude
 
+import Debug as Debug
+
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Text.Format as T
@@ -92,6 +94,8 @@ type AutoData_ = { allInlets :: Array String, sends :: Array { mbOut :: Maybe St
 _processAutoCode :: String -> String
 _processAutoCode src =
     let
+        indent = "  "
+
         eOutNameRegex = RGX.regex "^([\\w\\d-]+)::" RGX.noFlags
         eInletsRegex = RGX.regex "<([\\w\\d-]+)>" RGX.global
 
@@ -125,7 +129,9 @@ _processAutoCode src =
                                     `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
                                 }
                 else
-                    { allInlets : collectedData.allInlets <> findInlets trimmed
+                    { allInlets :
+                        collectedData.allInlets
+                        <> findInlets trimmed
                     , sends :
                         collectedData.sends
                         `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
@@ -137,19 +143,23 @@ _processAutoCode src =
                 Right f -> f test collectedData
                 Left _ -> collectedData
 
-        inletStr inlet = inlet <> " <- " <> "Fn.receive in_" <> inlet
+        inletStr inlet = indent <> inlet <> " <- " <> "Fn.receive _in_" <> inlet
         sendStr { mbOut, expr } =
             case mbOut of
-                Just out -> "Fn.send out_" <> out <> " $ " <> expr
-                Nothing -> expr
+                Just out -> indent <> "Fn.send _out_" <> out <> " $ " <> expr
+                Nothing -> indent <> expr
 
         toExpression :: AutoData_ -> String
-        toExpression { allInlets, sends } =
+        toExpression { allInlets, sends } = "do\n" <>
             if (Array.length allInlets > 0) then
-                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets) <> "\n" <> (String.joinWith "\n" (sendStr <$> sends))
+                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets) <>
+                    (if Array.length sends > 0
+                        then "\n" <> String.joinWith "\n" (sendStr <$> sends)
+                        else ""
+                    )
             else
                 if (Array.length sends > 0) then
-                    (String.joinWith "\n" $ sendStr <$> sends)
+                    String.joinWith "\n" $ sendStr <$> sends
                 else
                     src
 

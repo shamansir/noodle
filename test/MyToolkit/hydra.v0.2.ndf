@@ -1,5 +1,5 @@
 hydra 0.1 0.2
-: source : voronoi :: <scale:Value {Number 5.0} -> speed:Value {Number 0.3} -> blending:Value {Number 0.3}> => out:Texture {Empty} /-| H.Start $ H.Voronoi { scale, speed, blending } |-/
+: source : voronoi :: <scale:Value {Number 5.0} -> speed:Value {Number 0.3} -> blending:Value {Number 0.3}> => out:Texture {Empty} /-| out::H.Start $ H.Voronoi { <scale>, <speed>, <blending> } |-/
 : source : osc :: <frequency:Value {Number 60.0} -> sync:Value {Number 0.1} -> offset:Value> => out:Texture {Empty} /-| H.Start $ H.Osc { frequency, sync, offset } |-/
 : source : shape :: <sides:Value {Number 60.0} -> radius:Value {Number 0.3} -> smoothing:Value {Number 0.01}> => out:Texture {Empty} /-| H.Start $ H.Shape { sides, radius, smoothing } |-/
 : source : gradient :: <speed:Value> => out:Texture {Empty} /-| H.Start $ H.Gradient { speed } |-/
@@ -33,7 +33,7 @@ hydra 0.1 0.2
 : color : r :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.R { scale, offset } |-/
 : color : g :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.G { scale, offset } |-/
 : color : b :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.B { scale, offset } |-/
-: color : a :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.A { scale, offset } |-/
+: color : a :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| out::H.Filter what $ H.A { <scale>, <offset> } |-/
 : blend : add :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Add amount |-/
 : blend : sub :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Sub amount |-/
 : blend : layer :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Layer amount |-/

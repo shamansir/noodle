@@ -159,7 +159,7 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn
 
     inletDeclr :: Channel -> CST.Declaration Void
     inletDeclr chan =
-      declValue (nameOf chan <> "_in") []
+      declValue ("_in_" <> nameOf chan) []
         $ exprTyped
           (exprCtor shapeN.inlet)
           (typeApp
@@ -169,7 +169,7 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn
 
     outletDeclr :: Channel -> CST.Declaration Void
     outletDeclr chan =
-      declValue (nameOf chan <> "_out") []
+      declValue ("_out_" <> nameOf chan) []
         $ exprTyped
           (exprCtor shapeN.outlet)
           (typeApp

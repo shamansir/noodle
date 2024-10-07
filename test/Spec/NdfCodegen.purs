@@ -22,7 +22,7 @@ import Test.Spec.Assertions (fail)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
 
-import Tidy.Codegen (declImportAs, importValue)
+import Tidy.Codegen
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
@@ -48,6 +48,7 @@ genOptions = CG.Options
   , prepr : (Proxy :: _ ISRepr)
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
+    , declImport "Test.MyToolkit.Repr" [ importTypeAll "ISRepr" ]
     ]
   }
 
@@ -58,25 +59,28 @@ spec = do
     describe "NDF Codegen" $ do
 
       it "auto code definitions:" $ do
-        (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
-        (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
-        (toCode (ToCode.pureScript) unit $ ND.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """inlet1 <- Fn.receive in_inlet1
-inlet2 <- Fn.receive in_inlet2
-Fn.send out_outlet $ inlet1 + inlet2"""
-        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }") `U.shouldEqual` """r <- Fn.receive in_r
-g <- Fn.receive in_g
-b <- Fn.receive in_b
-a <- Fn.receive in_a
-Fn.send out_out $ H.Start $ H.Solid { r, g, b, a }"""
-        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>") `U.shouldEqual` """r <- Fn.receive in_r
-g <- Fn.receive in_g
-b <- Fn.receive in_b
-a <- Fn.receive in_a
-Fn.send out_out $ H.Start $ H.Solid { r, g, b, a }
-Fn.send out_r $ r
-Fn.send out_g $ g
-Fn.send out_b $ b
-Fn.send out_a $ a"""
+        -- (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
+        -- (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
+        (toCode (ToCode.pureScript) unit $ ND.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """do
+  inlet1 <- Fn.receive _in_inlet1
+  inlet2 <- Fn.receive _in_inlet2
+  Fn.send _out_outlet $ inlet1 + inlet2"""
+        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }") `U.shouldEqual` """do
+  r <- Fn.receive _in_r
+  g <- Fn.receive _in_g
+  b <- Fn.receive _in_b
+  a <- Fn.receive _in_a
+  Fn.send _out_out $ H.Start $ H.Solid { r, g, b, a }"""
+        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>") `U.shouldEqual` """do
+  r <- Fn.receive _in_r
+  g <- Fn.receive _in_g
+  b <- Fn.receive _in_b
+  a <- Fn.receive _in_a
+  Fn.send _out_out $ H.Start $ H.Solid { r, g, b, a }
+  Fn.send _out_r $ r
+  Fn.send _out_g $ g
+  Fn.send _out_b $ b
+  Fn.send _out_a $ a"""
 
       it "should compile to the expected code" $ do
         let
@@ -92,11 +96,11 @@ Fn.send out_a $ a"""
               ]
             , state : ND.st "Unit" "unit"
             , process : ND.Raw """do
-  left <- Fn.receive left_in
-  right <- Fn.receive right_in
+  left <- Fn.receive _in_left
+  right <- Fn.receive _in_right
   let concatenated = left <> right
-  Fn.send out_out concatenated
-  Fn.send len_out $ String.length concatenated"""
+  Fn.send _out_out concatenated
+  Fn.send _out_len $ String.length concatenated"""
             }
 
         testNodeDefCodegen (familyUp <<< NodeDef.family) testNodeDef

@@ -17,6 +17,7 @@ import Test.MyToolkit.Repr (ISRepr)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Data.String (length) as String
+import Test.MyToolkit.Repr (ISRepr(..))
 
 _concat :: NId.Family "concat"
 _concat = NId.Family
@@ -37,10 +38,10 @@ defaultI = { left: "", right: "" }
 defaultO :: Record OutletsRow
 defaultO = { out: "", len: 0 }
 
-left_in = Noodle.Inlet :: _ "left"
-right_in = Noodle.Inlet :: _ "right"
-out_out = Noodle.Outlet :: _ "out"
-len_out = Noodle.Outlet :: _ "len"
+_in_left = Noodle.Inlet :: _ "left"
+_in_right = Noodle.Inlet :: _ "right"
+_out_out = Noodle.Outlet :: _ "out"
+_out_len = Noodle.Outlet :: _ "len"
 
 family :: Family
 family = Family.make _concat unit (Noodle.Shape :: Shape) defaultI defaultO concatP
@@ -50,8 +51,8 @@ makeNode = Family.spawn family
 
 concatP :: Process
 concatP = do
-  left <- Fn.receive left_in
-  right <- Fn.receive right_in
+  left <- Fn.receive _in_left
+  right <- Fn.receive _in_right
   let concatenated = left <> right
-  Fn.send out_out concatenated
-  Fn.send len_out $ String.length concatenated
+  Fn.send _out_out concatenated
+  Fn.send _out_len $ String.length concatenated
