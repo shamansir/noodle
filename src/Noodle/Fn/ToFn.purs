@@ -224,10 +224,3 @@ toFnX a = bimap (map argValue) (map outValue) <$> (toFn a :: String /\ Array (Ar
 instance ToFn arg out (Fn arg out) where
     toFn :: Fn arg out -> String /\ Array (Argument arg) /\ Array (Output out)
     toFn (Fn fn) = fn
-
-
-newtype KnownFn = KnownFn String
-
-
-nameOf :: KnownFn -> String
-nameOf (KnownFn name) = name
