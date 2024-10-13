@@ -13,11 +13,11 @@ import Noodle.Node as Noodle
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
-import Test.MyToolkit.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Data.String (length) as String
-import Test.MyToolkit.Repr (ISRepr(..))
+import Example.Toolkit.Minimal.Repr (ISRepr(..))
 
 _concat :: NId.Family "concat"
 _concat = NId.Family

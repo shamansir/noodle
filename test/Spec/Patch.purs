@@ -14,10 +14,10 @@ import Noodle.Node (run) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
 
-import Test.MyToolkit.Toolkit as MyToolkit
-import Test.MyToolkit.Node.Sum as Sum
-import Test.MyToolkit.Node.Concat as Concat
-import Test.MyToolkit.Node.Raw.Concat as RawConcat
+import Example.Toolkit.Minimal.Toolkit as MyToolkit
+import Example.Toolkit.Minimal.Node.Sum as Sum
+import Example.Toolkit.Minimal.Node.Concat as Concat
+import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 
 
 spec :: Spec Unit

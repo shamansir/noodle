@@ -1,15 +1,12 @@
-module Test.MyToolkit.Node.Raw.Stateful where
+module Example.Toolkit.Minimal.Node.Raw.Sum where
 
 import Prelude
 
 import Effect (Effect)
 
-import Control.Monad.State.Class (modify_) as State
-
 import Data.Map (empty, insert) as Map
 import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
-import Data.String (length) as String
 
 import Noodle.Id (FamilyR(..), InletR(..), OutletR(..)) as Id
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
@@ -21,8 +18,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Test.MyToolkit.Repr (ISRepr)
-import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
 
 
 shape :: Raw.Shape
@@ -55,14 +52,9 @@ process :: Raw.Process ISRepr ISRepr Effect
 process = do
     mbA <- RawFn.receive $ Id.InletR "a"
     mbB <- RawFn.receive $ Id.InletR "b"
-    case mbA /\ mbB of
-        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> do
-            State.modify_
-                \srepr -> case srepr of
-                    ISRepr.Str s -> ISRepr.Str $ s <> "-" <> show (a + b)
-                    _ -> srepr
-            RawFn.send (Id.OutletR "out") $ Repr $ ISRepr.Int $ a + b
-        _ -> pure unit
+    RawFn.send (Id.OutletR "sum") $ Repr $ ISRepr.Int $ case mbA /\ mbB of
+        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> a + b
+        _ -> 0
 
 
 makeNode :: Effect (Raw.Node ISRepr Effect)
@@ -73,7 +65,7 @@ makeNode =
 family :: Raw.Family ISRepr Effect
 family =
     RawFamily.make
-        (Id.FamilyR { family : "statefulR" })
+        (Id.FamilyR { family : "sumR" })
         ISRepr.None
         shape
         defaultInlets

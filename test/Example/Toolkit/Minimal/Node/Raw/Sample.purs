@@ -1,4 +1,4 @@
-module Test.MyToolkit.Node.Raw.Sum where
+module Example.Toolkit.Minimal.Node.Raw.Sample where
 
 import Prelude
 
@@ -7,6 +7,7 @@ import Effect (Effect)
 import Data.Map (empty, insert) as Map
 import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
+import Data.String (length) as String
 
 import Noodle.Id (FamilyR(..), InletR(..), OutletR(..)) as Id
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
@@ -18,19 +19,21 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Test.MyToolkit.Repr (ISRepr)
-import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
 
 
 shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : "a", temp : Hot, order : 0 }
-            , { name : "b", temp : Hot, order : 1 }
+            [ { name : "foo", temp : Hot, order : 0 }
+            , { name : "c", temp : Hot, order : 1 }
+            , { name : "bar", temp : Cold, order : 1 }
             ] -- FIXME: order is not necessary here due to the fact we have index
         , outlets :
-            [ { name : "sum", order : 0 }
+            [ { name : "foo", order : 0 }
+            , { name : "bar", order : 1 }
             ]
         } -- TODO
 
@@ -38,23 +41,28 @@ shape =
 defaultInlets :: Raw.InletsValues ISRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "a") (ISRepr.Int 0)
-        # Map.insert (Id.InletR "b") (ISRepr.Int 0)
+        # Map.insert (Id.InletR "foo") (ISRepr.Int 1)
+        # Map.insert (Id.InletR "bar") (ISRepr.Str "5")
+        # Map.insert (Id.InletR "c")   (ISRepr.Int 2)
 
 
 defaultOutlets :: Raw.OutletsValues ISRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "sum") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "foo") (ISRepr.Str "1")
+        # Map.insert (Id.OutletR "bar") (ISRepr.Int 12)
 
 
 process :: Raw.Process ISRepr ISRepr Effect
 process = do
-    mbA <- RawFn.receive $ Id.InletR "a"
-    mbB <- RawFn.receive $ Id.InletR "b"
-    RawFn.send (Id.OutletR "sum") $ Repr $ ISRepr.Int $ case mbA /\ mbB of
-        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> a + b
-        _ -> 0
+    mbFoo  <- RawFn.receive $ Id.InletR "foo"
+    mbBar  <- RawFn.receive $ Id.InletR "c"
+    mbC    <- RawFn.receive $ Id.InletR "bar"
+    case mbFoo /\ mbBar /\ mbC of
+        (Repr (ISRepr.Int foo) /\ Repr (ISRepr.Str bar) /\ Repr (ISRepr.Int c)) -> do
+            RawFn.send (Id.OutletR "foo") $ Repr $ ISRepr.Str $ show (foo + c) <> bar
+            RawFn.send (Id.OutletR "bar") $ Repr $ ISRepr.Int $ foo - c
+        _ -> pure unit
 
 
 makeNode :: Effect (Raw.Node ISRepr Effect)
@@ -65,7 +73,7 @@ makeNode =
 family :: Raw.Family ISRepr Effect
 family =
     RawFamily.make
-        (Id.FamilyR { family : "sumR" })
+        (Id.FamilyR { family : "sampleR" })
         ISRepr.None
         shape
         defaultInlets

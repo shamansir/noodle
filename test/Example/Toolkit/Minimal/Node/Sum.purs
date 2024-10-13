@@ -1,4 +1,4 @@
-module Test.MyToolkit.Node.Stateful where
+module Example.Toolkit.Minimal.Node.Sum where
 
 import Prelude
 
@@ -7,8 +7,6 @@ import Effect (Effect)
 
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-
-import Control.Monad.State.Class (modify_) as State
 
 import Noodle.Id (Family(..)) as NId
 import Noodle.Fn.Shape.Temperament (Hot, Cold)
@@ -21,12 +19,11 @@ import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
-import Test.MyToolkit.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr)
 
 
-
-_stateful :: NId.Family "stateful"
-_stateful  = NId.Family
+_sum :: NId.Family "sum"
+_sum  = NId.Family
 
 
 type Inlets =
@@ -47,14 +44,11 @@ type OutletsRow =
     ( sum :: Int )
 
 
-type State = String
-
-
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process State InletsRow OutletsRow ISRepr Effect
-type Node    = Noodle.Node   "stateful" State InletsRow OutletsRow ISRepr Effect
-type Family  = Noodle.Family "stateful" State InletsRow OutletsRow ISRepr Effect
-type F       = Noodle.F      "stateful" State InletsRow OutletsRow ISRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ISRepr Effect
+type Node    = Noodle.Node   "sum" Unit InletsRow OutletsRow ISRepr Effect
+type Family  = Noodle.Family "sum" Unit InletsRow OutletsRow ISRepr Effect
+type F       = Noodle.F      "sum" Unit InletsRow OutletsRow ISRepr Effect
 
 
 defaultI :: Record InletsRow
@@ -71,13 +65,26 @@ sum_out = Noodle.Outlet :: _ "sum"
 
 family :: Family
 family =
-    Family.make
-        _stateful
-        "x"
-        (Noodle.Shape :: Shape)
+    family_
         defaultI
         defaultO
-        sumAndStore
+        sumBoth
+
+
+
+family_ :: Record InletsRow -> Record OutletsRow -> Process -> Family
+family_ =
+    Family.make
+        _sum
+        unit
+        (Noodle.Shape :: Shape)
+
+
+family' :: Process -> Family
+family' =
+    family_
+        defaultI
+        defaultO
 
 
 makeNode :: Effect Node
@@ -85,9 +92,18 @@ makeNode =
     Family.spawn family
 
 
-sumAndStore :: Process
-sumAndStore = do
+makeNode_ :: Record InletsRow -> Record OutletsRow -> Process -> Effect Node
+makeNode_ defaultI defaultO =
+    family_ defaultI defaultO >>> Family.spawn
+
+
+makeNode' :: Process -> Effect Node
+makeNode' =
+    family' >>> Family.spawn
+
+
+sumBoth :: Process
+sumBoth = do
     a <- Fn.receive a_in
     b <- Fn.receive b_in
-    State.modify_ (\s -> s <> "-" <> show (a + b))
     Fn.send sum_out $ a + b

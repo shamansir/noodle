@@ -1,4 +1,4 @@
-module Test.MyToolkit.Repr where
+module Example.Toolkit.Minimal.Repr where
 
 import Prelude
 
@@ -59,7 +59,7 @@ instance FromRepr ISRepr Unit where
 
 
 instance CodegenRepr ISRepr where
-    reprModule = const "Test.MyToolkit.Repr"
+    reprModule = const "Example.Toolkit.Minimal.Repr"
     reprTypeName = const "ISRepr"
     reprType = const $ unsafePartial $ typeCtor "ISRepr"
     reprDefault = const $ unsafePartial $ exprCtor "None"

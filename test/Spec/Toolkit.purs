@@ -24,13 +24,13 @@ import Noodle.Toolkit.Families (Families, F)
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (familyIdOf) as RawFamily
 
-import Test.MyToolkit.Node.Concat as Concat
-import Test.MyToolkit.Node.Sum as Sum
-import Test.MyToolkit.Node.Stateful as Stateful
-import Test.MyToolkit.Node.Raw.Concat as RawConcat
-import Test.MyToolkit.Node.Raw.Sum as RawSum
-import Test.MyToolkit.Node.Raw.Stateful as RawStateful
-import Test.MyToolkit.Toolkit (Toolkit, toolkit) as My
+import Example.Toolkit.Minimal.Node.Concat as Concat
+import Example.Toolkit.Minimal.Node.Sum as Sum
+import Example.Toolkit.Minimal.Node.Stateful as Stateful
+import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
+import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
+import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
+import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit) as My
 
 
 spec :: Spec Unit

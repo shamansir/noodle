@@ -1,4 +1,4 @@
-module Test.MyToolkit.Node.Sample where
+module Example.Toolkit.Minimal.Node.Sample where
 
 import Prelude
 
@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
-import Test.MyToolkit.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr)
 
 
 _sample :: NId.Family "sample"

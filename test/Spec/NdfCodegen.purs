@@ -35,21 +35,36 @@ import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..))
 
-import Test.MyToolkit.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr)
+
+import Hydra.Types (FnArg(..))
+import Hydra.Repr.Wrap (WrapRepr)
 
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
-genOptions :: CG.Options ISRepr
-genOptions = CG.Options
+minimalGenOptions :: CG.Options ISRepr
+minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , nodeModuleName
   , prepr : (Proxy :: _ ISRepr)
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
-    , declImport "Test.MyToolkit.Repr" [ importTypeAll "ISRepr" ]
-    , declImportAs "Hydra.Types" [ ] "H"
+    , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "ISRepr" ]
+    ]
+  }
+
+
+hydraGenOptions :: CG.Options WrapRepr
+hydraGenOptions = CG.Options
+  { temperamentAlgorithm : Temperament.defaultAlgorithm
+  , monadAt : { module_ : "Effect", type_ : "Effect" }
+  , nodeModuleName
+  , prepr : (Proxy :: _ WrapRepr)
+  , imports : unsafePartial $
+    [ declImportAs "Hydra.Types" [ ] "H"
+    , declImport "Hydra.WrapRepr" [ ]
     ]
   }
 
@@ -104,7 +119,7 @@ spec = do
   Fn.send _out_len $ String.length concatenated"""
             }
 
-        testNodeDefCodegen (familyUp <<< NodeDef.family) testNodeDef
+        testNodeDefCodegen minimalGenOptions (familyUp <<< NodeDef.family) testNodeDef
 
       it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./test/MyToolkit/hydra.v0.2.ndf"
@@ -113,7 +128,7 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf -> do
             let definitions = NdfFile.loadDefinitions parsedNdf
-            traverse_ ( testNodeDefCodegen $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
+            traverse_ ( testNodeDefCodegen hydraGenOptions $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
 
 
 familyUp :: NodeFamily -> String
@@ -125,8 +140,8 @@ nodeModuleName family =
   "Test.Files.CodeGenTest." <> familyUp family
 
 
-testNodeDefCodegen :: forall m. Bind m => MonadEffect m => MonadThrow _ m => (ND.NodeDef -> String) -> ND.NodeDef -> m Unit
-testNodeDefCodegen toFileName nodeDef = do
+testNodeDefCodegen :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => CG.Options repr -> (ND.NodeDef -> String) -> ND.NodeDef -> m Unit
+testNodeDefCodegen genOptions toFileName  nodeDef = do
   let
     psModuleCode = toCode (ToCode.pureScript) genOptions nodeDef
     samplePath = "./test/Files/Input/"  <> toFileName nodeDef <> ".purs"

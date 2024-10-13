@@ -25,11 +25,11 @@ import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state,
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
-import Test.MyToolkit.Repr (ISRepr)
-import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
-import Test.MyToolkit.Node.Sample as Sample
-import Test.MyToolkit.Node.Sum as Sum
-import Test.MyToolkit.Node.Stateful as Stateful
+import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Node.Sample as Sample
+import Example.Toolkit.Minimal.Node.Sum as Sum
+import Example.Toolkit.Minimal.Node.Stateful as Stateful
 
 
 spec :: Spec Unit

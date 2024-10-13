@@ -1,4 +1,4 @@
-module Test.MyToolkit.Node.Raw.Concat where
+module Example.Toolkit.Minimal.Node.Raw.Concat where
 
 import Prelude
 
@@ -19,8 +19,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Test.MyToolkit.Repr (ISRepr)
-import Test.MyToolkit.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
 
 
 shape :: Raw.Shape

@@ -1,4 +1,4 @@
-module Test.MyToolkit.Toolkit where
+module Example.Toolkit.Minimal.Toolkit where
 
 import Prelude
 
@@ -12,11 +12,11 @@ import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F)
 
 
-import Test.MyToolkit.Node.Sample as Sample
-import Test.MyToolkit.Node.Sum as Sum
-import Test.MyToolkit.Node.Concat as Concat
-import Test.MyToolkit.Node.Stateful as Stateful
-import Test.MyToolkit.Repr (ISRepr)
+import Example.Toolkit.Minimal.Node.Sample as Sample
+import Example.Toolkit.Minimal.Node.Sum as Sum
+import Example.Toolkit.Minimal.Node.Concat as Concat
+import Example.Toolkit.Minimal.Node.Stateful as Stateful
+import Example.Toolkit.Minimal.Repr (ISRepr)
 
 
 type MyFamilies :: Families
