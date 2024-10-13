@@ -25,8 +25,8 @@ import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state,
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
-import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
 import Example.Toolkit.Minimal.Node.Sample as Sample
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
@@ -266,26 +266,26 @@ spec = do
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
-            (rawNode :: Raw.Node ISRepr Effect) <-
+            (rawNode :: Raw.Node MinimalRepr Effect) <-
                 RawNode.make (Id.FamilyR { family : "myRawNode" })
-                    ISRepr.None
+                    MinimalRepr.None
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
-                        # Map.insert (InletR "a") (ISRepr.Int 5)
-                        # Map.insert (InletR "b") (ISRepr.Int 7)
+                        # Map.insert (InletR "a") (MinimalRepr.Int 5)
+                        # Map.insert (InletR "b") (MinimalRepr.Int 7)
                     )
                     (Map.empty
-                        # Map.insert (OutletR "sum") (ISRepr.Int 0)
+                        # Map.insert (OutletR "sum") (MinimalRepr.Int 0)
                     )
                     $ do
                         mbA <- RawFn.receive $ InletR "a"
                         mbB <- RawFn.receive $ InletR "b"
-                        RawFn.send (OutletR "sum") $ Repr $ ISRepr.Int $ case mbA /\ mbB of
-                            (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> a + b
+                        RawFn.send (OutletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
+                            (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> a + b
                             _ -> 0
 
             rawNode # RawNode.run
 
             mbSum <- RawNode.atOutlet (OutletR "sum") rawNode
 
-            mbSum `shouldEqual` (Just $ ISRepr.Int 12)
+            mbSum `shouldEqual` (Just $ MinimalRepr.Int 12)

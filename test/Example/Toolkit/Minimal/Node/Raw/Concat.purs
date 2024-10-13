@@ -19,8 +19,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
-import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
@@ -37,43 +37,43 @@ shape =
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues ISRepr
+defaultInlets :: Raw.InletsValues MinimalRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "left") (ISRepr.Str "")
-        # Map.insert (Id.InletR "right") (ISRepr.Str "")
+        # Map.insert (Id.InletR "left") (MinimalRepr.Str "")
+        # Map.insert (Id.InletR "right") (MinimalRepr.Str "")
 
 
-defaultOutlets :: Raw.OutletsValues ISRepr
+defaultOutlets :: Raw.OutletsValues MinimalRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "str") (ISRepr.Str "")
-        # Map.insert (Id.OutletR "len") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "str") (MinimalRepr.Str "")
+        # Map.insert (Id.OutletR "len") (MinimalRepr.Int 0)
 
 
-process :: Raw.Process ISRepr ISRepr Effect
+process :: Raw.Process MinimalRepr MinimalRepr Effect
 process = do
     mbLeft  <- RawFn.receive $ Id.InletR "left"
     mbRight <- RawFn.receive $ Id.InletR "right"
     case mbLeft /\ mbRight of
-        (Repr (ISRepr.Str left) /\ Repr (ISRepr.Str right)) ->
+        (Repr (MinimalRepr.Str left) /\ Repr (MinimalRepr.Str right)) ->
             let combined = left <> right
             in do
-                RawFn.send (Id.OutletR "str") $ Repr $ ISRepr.Str combined
-                RawFn.send (Id.OutletR "len") $ Repr $ ISRepr.Int $ String.length combined
+                RawFn.send (Id.OutletR "str") $ Repr $ MinimalRepr.Str combined
+                RawFn.send (Id.OutletR "len") $ Repr $ MinimalRepr.Int $ String.length combined
         _ -> pure unit
 
 
-makeNode :: Effect (Raw.Node ISRepr Effect)
+makeNode :: Effect (Raw.Node MinimalRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family ISRepr Effect
+family :: Raw.Family MinimalRepr Effect
 family =
     RawFamily.make
         (Id.FamilyR { family : "concatR" })
-        ISRepr.None
+        MinimalRepr.None
         shape
         defaultInlets
         defaultOutlets

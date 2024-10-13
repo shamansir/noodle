@@ -1,7 +1,7 @@
 let conf = ./spago.dhall
 
 in conf // {
-  sources = conf.sources # [ "test/Main.purs", "test/Spec/**/*.purs", "test/MyToolkit/**/*.purs" ],
+  sources = conf.sources # [ "test/Main.purs", "test/Spec/**/*.purs", "test/Example/**/*.purs" ],
   dependencies =
     conf.dependencies #
     [ "spec"

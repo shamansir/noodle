@@ -18,8 +18,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
-import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
@@ -35,38 +35,38 @@ shape =
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues ISRepr
+defaultInlets :: Raw.InletsValues MinimalRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "a") (ISRepr.Int 0)
-        # Map.insert (Id.InletR "b") (ISRepr.Int 0)
+        # Map.insert (Id.InletR "a") (MinimalRepr.Int 0)
+        # Map.insert (Id.InletR "b") (MinimalRepr.Int 0)
 
 
-defaultOutlets :: Raw.OutletsValues ISRepr
+defaultOutlets :: Raw.OutletsValues MinimalRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "sum") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "sum") (MinimalRepr.Int 0)
 
 
-process :: Raw.Process ISRepr ISRepr Effect
+process :: Raw.Process MinimalRepr MinimalRepr Effect
 process = do
     mbA <- RawFn.receive $ Id.InletR "a"
     mbB <- RawFn.receive $ Id.InletR "b"
-    RawFn.send (Id.OutletR "sum") $ Repr $ ISRepr.Int $ case mbA /\ mbB of
-        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> a + b
+    RawFn.send (Id.OutletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
+        (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> a + b
         _ -> 0
 
 
-makeNode :: Effect (Raw.Node ISRepr Effect)
+makeNode :: Effect (Raw.Node MinimalRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family ISRepr Effect
+family :: Raw.Family MinimalRepr Effect
 family =
     RawFamily.make
         (Id.FamilyR { family : "sumR" })
-        ISRepr.None
+        MinimalRepr.None
         shape
         defaultInlets
         defaultOutlets

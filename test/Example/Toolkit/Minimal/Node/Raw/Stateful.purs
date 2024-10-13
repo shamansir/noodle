@@ -21,8 +21,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
-import Example.Toolkit.Minimal.Repr (ISRepr(..)) as ISRepr
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
@@ -38,43 +38,43 @@ shape =
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues ISRepr
+defaultInlets :: Raw.InletsValues MinimalRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "a") (ISRepr.Int 0)
-        # Map.insert (Id.InletR "b") (ISRepr.Int 0)
+        # Map.insert (Id.InletR "a") (MinimalRepr.Int 0)
+        # Map.insert (Id.InletR "b") (MinimalRepr.Int 0)
 
 
-defaultOutlets :: Raw.OutletsValues ISRepr
+defaultOutlets :: Raw.OutletsValues MinimalRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "sum") (ISRepr.Int 0)
+        # Map.insert (Id.OutletR "sum") (MinimalRepr.Int 0)
 
 
-process :: Raw.Process ISRepr ISRepr Effect
+process :: Raw.Process MinimalRepr MinimalRepr Effect
 process = do
     mbA <- RawFn.receive $ Id.InletR "a"
     mbB <- RawFn.receive $ Id.InletR "b"
     case mbA /\ mbB of
-        (Repr (ISRepr.Int a) /\ Repr (ISRepr.Int b)) -> do
+        (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> do
             State.modify_
                 \srepr -> case srepr of
-                    ISRepr.Str s -> ISRepr.Str $ s <> "-" <> show (a + b)
+                    MinimalRepr.Str s -> MinimalRepr.Str $ s <> "-" <> show (a + b)
                     _ -> srepr
-            RawFn.send (Id.OutletR "out") $ Repr $ ISRepr.Int $ a + b
+            RawFn.send (Id.OutletR "out") $ Repr $ MinimalRepr.Int $ a + b
         _ -> pure unit
 
 
-makeNode :: Effect (Raw.Node ISRepr Effect)
+makeNode :: Effect (Raw.Node MinimalRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family ISRepr Effect
+family :: Raw.Family MinimalRepr Effect
 family =
     RawFamily.make
         (Id.FamilyR { family : "statefulR" })
-        ISRepr.None
+        MinimalRepr.None
         shape
         defaultInlets
         defaultOutlets

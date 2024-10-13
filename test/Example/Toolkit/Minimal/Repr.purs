@@ -10,65 +10,64 @@ import Data.Newtype (unwrap) as NT
 -- import Data.String.Read (read)
 import Data.Int (fromString) as Int
 
-import Tidy.Codegen hiding (importType, importTypeOp, importValue, importTypeAll)
-import Tidy.Codegen.Monad
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
 
 import Partial.Unsafe (unsafePartial)
 
+import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
-import Noodle.Text.NdfFile.Types
 
 
-data ISRepr
+data MinimalRepr
     = None
     | UnitV
     | Int Int
     | Str String
 
 
-derive instance Eq ISRepr
+derive instance Eq MinimalRepr
 
 
-instance Show ISRepr where
+instance Show MinimalRepr where
     show =
         case _ of
             None -> "<None>"
             Int n -> show n
             Str str -> str
             UnitV -> "<Unit>"
-instance HasFallback ISRepr where
+instance HasFallback MinimalRepr where
     fallback = None
-instance ToRepr Int ISRepr where toRepr = Just <<< Repr.wrap <<< Int
-instance ToRepr String ISRepr where toRepr = Just <<< Repr.wrap <<< Str
-instance ToRepr Unit ISRepr where toRepr = Just <<< Repr.wrap <<< const UnitV
-instance FromRepr ISRepr Int where
+instance ToRepr Int MinimalRepr where toRepr = Just <<< Repr.wrap <<< Int
+instance ToRepr String MinimalRepr where toRepr = Just <<< Repr.wrap <<< Str
+instance ToRepr Unit MinimalRepr where toRepr = Just <<< Repr.wrap <<< const UnitV
+instance FromRepr MinimalRepr Int where
     fromRepr = Repr.unwrap >>>
         case _ of
             Int n -> Just n
             _ -> Nothing
-instance FromRepr ISRepr String where
+instance FromRepr MinimalRepr String where
     fromRepr = Repr.unwrap >>>
         case _ of
             Str str -> Just str
             _ -> Nothing
-instance FromRepr ISRepr Unit where
+instance FromRepr MinimalRepr Unit where
     fromRepr = Repr.unwrap >>>
         case _ of
             UnitV -> Just unit
             _ -> Nothing
 
 
-instance CodegenRepr ISRepr where
+instance CodegenRepr MinimalRepr where
     reprModule = const "Example.Toolkit.Minimal.Repr"
-    reprTypeName = const "ISRepr"
-    reprType = const $ unsafePartial $ typeCtor "ISRepr"
+    reprTypeName = const "MinimalRepr"
+    reprType = const $ unsafePartial $ typeCtor "MinimalRepr"
     reprDefault = const $ unsafePartial $ exprCtor "None"
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
                     "Int" -> typeCtor "Int"
                     "String" -> typeCtor "String"
                     "Unit" -> typeCtor "Unit"
-                    _ -> typeCtor "ISRepr"
+                    _ -> typeCtor "MinimalRepr"
     valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
                      Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr

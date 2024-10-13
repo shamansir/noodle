@@ -35,7 +35,7 @@ import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..))
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
 
 import Hydra.Types (FnArg(..))
 import Hydra.Repr.Wrap (WrapRepr)
@@ -43,15 +43,15 @@ import Hydra.Repr.Wrap (WrapRepr)
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
-minimalGenOptions :: CG.Options ISRepr
+minimalGenOptions :: CG.Options MinimalRepr
 minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , nodeModuleName
-  , prepr : (Proxy :: _ ISRepr)
+  , prepr : (Proxy :: _ MinimalRepr)
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
-    , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "ISRepr" ]
+    , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalRepr" ]
     ]
   }
 
@@ -122,7 +122,7 @@ spec = do
         testNodeDefCodegen minimalGenOptions (familyUp <<< NodeDef.family) testNodeDef
 
       it "properly generates Hydra Toolkit" $ do
-        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./test/MyToolkit/hydra.v0.2.ndf"
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.2.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error

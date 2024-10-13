@@ -238,13 +238,13 @@ spec = do
       parses NdfFile.toNdfCode sampleNdf_0_2_Text_OnlyDefs expected_0_2_Ndf_OnlyDefs NdfFile.parser
 
     it "parsing works for version 0.2 (hydra toolkit v0.2)" $ do
-      hydraToolkitText <- liftEffect $ readTextFile UTF8 "./test/MyToolkit/hydra.v0.2.ndf"
+      hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.2.ndf"
       let eParsedCode = NdfFile.toNdfCode <$> P.runParser hydraToolkitText NdfFile.parser
       case eParsedCode of
         Right parsedCode ->
           -- We test that parsing, creating the NDF structure from file, and encoding it back,
           -- produces the same output text as it was originally in the source file
           parsedCode `U.shouldEqual` hydraToolkitText
-          -- liftEffect $ writeTextFile UTF8 "./test/MyToolkit/hydra.v0.2.sample.ndf" result
+          -- liftEffect $ writeTextFile UTF8 "./src/Hydra/hydra.v0.2.ndf" result
         Left error ->
           fail $ "failed to parse hydra.v0.2.ndf: " <> show error

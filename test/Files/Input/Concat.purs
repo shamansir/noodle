@@ -3,6 +3,7 @@ module Test.Files.CodeGenTest.Concat where
 import Prelude
 
 import Effect (Effect)
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
 import Noodle.Fn.Shape (I, O)
@@ -13,11 +14,10 @@ import Noodle.Node as Noodle
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
-import Example.Toolkit.Minimal.Repr (ISRepr)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Data.String (length) as String
-import Example.Toolkit.Minimal.Repr (ISRepr(..))
+import Example.Toolkit.Minimal.Repr (MinimalRepr(..))
 
 _concat :: NId.Family "concat"
 _concat = NId.Family
@@ -27,10 +27,10 @@ type Outlets = (O "out" String :> O "len" Int :> TNil) :: Noodle.Outlets
 type InletsRow = (left :: String, right :: String)
 type OutletsRow = (out :: String, len :: Int)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow ISRepr Effect
-type Node = Noodle.Node "concat" Unit InletsRow OutletsRow ISRepr Effect
-type Family = Noodle.Family "concat" Unit InletsRow OutletsRow ISRepr Effect
-type F = Noodle.F "concat" Unit InletsRow OutletsRow ISRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow MinimalRepr Effect
+type Node = Noodle.Node "concat" Unit InletsRow OutletsRow MinimalRepr Effect
+type Family = Noodle.Family "concat" Unit InletsRow OutletsRow MinimalRepr Effect
+type F = Noodle.F "concat" Unit InletsRow OutletsRow MinimalRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { left: "", right: "" }

@@ -2,20 +2,29 @@ module Hydra.Repr.Wrap where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
-import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
-import Data.String as String
-import Data.String.Read (read)
+import Type.Proxy (Proxy)
+
+import Partial.Unsafe (unsafePartial)
+
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodePoints as String
-import Data.String.Read (class Read)
 import Data.Number as Number
+import Data.Newtype (unwrap) as NT
+import Data.Int (fromString) as Int
+
+import Noodle.Repr as R
 
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
 
 import Hydra.Types as H
 
+import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+
+import PureScript.CST.Types as CST
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
 
 
 -- import CompArts.Product as CAI
@@ -185,6 +194,8 @@ instance NMF.HasRepr WrapRepr WrapRepr where
     toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
     toRepr _ = identity
 -}
+
+
 
 
 {- R.ToRepr -}
@@ -584,3 +595,30 @@ instance R.ReadRepr WrapRepr where
 instance R.WriteRepr WrapRepr where
     writeRepr :: R.Repr WrapRepr -> String
     writeRepr = R.unwrap >>> H.encode
+
+
+instance CodegenRepr WrapRepr where
+    reprModule :: Proxy WrapRepr -> String
+    reprModule = const "Example.Toolkit.Minimal.Repr"
+    reprTypeName :: Proxy WrapRepr -> String
+    reprTypeName = const "MinimalRepr"
+    reprType :: Proxy WrapRepr -> CST.Type Void
+    reprType = const $ unsafePartial $ typeCtor "MinimalRepr"
+    reprDefault :: Proxy WrapRepr -> CST.Expr Void
+    reprDefault = const $ unsafePartial $ exprCtor "None"
+    typeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
+    typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
+                  case typeStr of
+                    "Int" -> typeCtor "Int"
+                    "String" -> typeCtor "String"
+                    "Unit" -> typeCtor "Unit"
+                    _ -> typeCtor "MinimalRepr"
+    valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
+    valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
+                  case NT.unwrap <$> mbType of
+                     Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
+                     Just "String" -> exprString valueStr
+                     Just "Unit" -> exprIdent "unit"
+                     _ -> if (valueStr == "unit")
+                                then exprIdent "unit"
+                                else exprCtor "None"

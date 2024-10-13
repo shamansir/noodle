@@ -14,7 +14,7 @@ import Noodle.Node (run) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
 
-import Example.Toolkit.Minimal.Toolkit as MyToolkit
+import Example.Toolkit.Minimal.Toolkit as MinimalToolkit
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
@@ -38,7 +38,7 @@ spec = do
 
 
         it "registering a node from toolkit by family" $ liftEffect $ do
-            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" unit
             concatNode <- Concat.makeNode
             let
                 patchWithNodes =
@@ -75,7 +75,7 @@ spec = do
             (nodeA :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
             (nodeB :: Sum.Node) <- Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
 
-            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" unit
             let patchWithNodes = emptyPatch # Patch.registerNode nodeA # Patch.registerNode nodeB
 
             _ <- Patch.connect Sum.sum_out Sum.b_in nodeA nodeB emptyPatch
@@ -96,7 +96,7 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" unit
             let patchWithNodes =
                     emptyPatch
                     # Patch.registerNode nodeA
@@ -121,7 +121,7 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" unit
             let patchWithNodes = emptyPatch
                     # Patch.registerNode nodeA
                     # Patch.registerNode nodeB
@@ -155,7 +155,7 @@ spec = do
 
             nodeA #-> Sum.a_in /\ 4
 
-            emptyPatch <- Patch.fromToolkit MyToolkit.toolkit "test" unit
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" unit
             let patchWithNodes =
                     emptyPatch
                     # Patch.registerNode nodeA

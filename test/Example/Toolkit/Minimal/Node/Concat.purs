@@ -21,7 +21,7 @@ import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
-import Example.Toolkit.Minimal.Repr (ISRepr)
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
 
 
 
@@ -49,10 +49,10 @@ type OutletsRow =
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow ISRepr Effect
-type Node    = Noodle.Node   "concat" Unit InletsRow OutletsRow ISRepr Effect
-type Family  = Noodle.Family "concat" Unit InletsRow OutletsRow ISRepr Effect
-type F       = Noodle.F      "concat" Unit InletsRow OutletsRow ISRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow MinimalRepr Effect
+type Node    = Noodle.Node   "concat" Unit InletsRow OutletsRow MinimalRepr Effect
+type Family  = Noodle.Family "concat" Unit InletsRow OutletsRow MinimalRepr Effect
+type F       = Noodle.F      "concat" Unit InletsRow OutletsRow MinimalRepr Effect
 
 
 defaultI :: Record InletsRow
