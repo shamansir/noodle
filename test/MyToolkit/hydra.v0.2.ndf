@@ -33,7 +33,7 @@ hydra 0.1 0.2
 : color : r :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.R { scale, offset } |-/
 : color : g :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.G { scale, offset } |-/
 : color : b :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| H.Filter what $ H.B { scale, offset } |-/
-: color : a :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| out::H.Filter what $ H.A { <scale>, <offset> } |-/
+: color : a :: <what:Texture {Empty} -> scale:Value {Number 1.0} -> offset:Value {Number 0.0}> => out:Texture {Empty} /-| out::H.Filter <what> $ H.A { <scale>, <offset> } |-/
 : blend : add :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Add amount |-/
 : blend : sub :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Sub amount |-/
 : blend : layer :: <what:Texture {Empty} -> with:Texture {Empty} -> amount:Value {Number 1.0}> => out:Texture {Empty} /-| H.BlendOf { what, with } $ H.Layer amount |-/

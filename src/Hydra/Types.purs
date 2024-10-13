@@ -23,9 +23,9 @@ import Data.String.Extra as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Monoid (mempty)
-import Data.Repr (class HasFallback)
-import Data.Repr (fallback) as R
 
+import Noodle.Repr (class HasFallback)
+import Noodle.Repr (fallback) as R
 import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 import Noodle.Fn.ToFn (Fn)

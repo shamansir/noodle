@@ -18,7 +18,7 @@ import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
 import Noodle.Id as Id
-import Noodle.Fn.ToFn (Fn, class ToFn, class PossiblyToFn, possiblyToFn, toFn, KnownFn(..), FnS)
+import Noodle.Fn.ToFn (Fn, class ToFn, class PossiblyToFn, possiblyToFn, toFn, FnS)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
 
 import Noodle.Ui.Cli.Palette as Palette

@@ -49,6 +49,7 @@ genOptions = CG.Options
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
     , declImport "Test.MyToolkit.Repr" [ importTypeAll "ISRepr" ]
+    , declImportAs "Hydra.Types" [ ] "H"
     ]
   }
 
