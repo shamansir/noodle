@@ -30,6 +30,10 @@ import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (process) as PC
 
 
+class Codegen a where
+  mkExpression :: a -> CST.Expr Void
+
+
 class CodegenRepr :: forall k. k -> Constraint
 class CodegenRepr repr where
   reprModule :: Proxy repr -> String
