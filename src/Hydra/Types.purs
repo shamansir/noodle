@@ -20,44 +20,30 @@ import Data.Maybe (Maybe(..))
 import Data.Maybe (fromMaybe)
 import Data.String as String
 import Data.String.Extra as String
+import Data.String.Read (class Read)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Monoid (mempty)
+
+import PureScript.CST.Types as CST
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
 
 import Noodle.Repr (class HasFallback)
 import Noodle.Repr (fallback) as R
 import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 import Noodle.Fn.ToFn (Fn)
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 
 
-
-class Encode a where
-    encode :: a -> String
-
-
-class Decode a where
-    decode :: String -> Maybe a
-
-
-instance Encode Number where
-    encode = show
-
-
-instance Encode Int where
-    encode = show
 
 
 {-
 instance Read a => Decode a where
     decode = read
 -}
-
-
-instance Encode String where
-    encode = identity
 
 
 data TODO = TODO
@@ -781,231 +767,6 @@ instance Show RenderTarget where
     show (Output oN) = show oN
 
 
-instance Encode Value where
-    encode :: Value -> String
-    encode = case _ of
-        None -> "0 V"
-        Undefined -> "U V"
-        Number n -> "N " <> encode n
-        VArray vals ease -> "VA " <> encode vals <> " $$ " <> encode ease <> ""
-        Dep fn -> "D " <> encode fn
-        Time -> "T V"
-        MouseX -> "MX V"
-        MouseY -> "MY V"
-        Width -> "W V"
-        Height -> "H V"
-        Pi -> "PI V"
-        Fft bin -> "A " <> encode bin
-
-
-instance Encode Texture where
-    encode :: Texture -> String
-    encode = case _ of
-        Empty -> "EMP T"
-        Start src -> "S " <> encode src
-        BlendOf { what, with } blend -> "B " <> encode what <> texSep <> encode with <> texSep <> encode blend <> texsEnd
-        Filter texture op -> "F " <> encode op <> texSep <> encode texture <> texsEnd
-        ModulateWith { what, with } mod -> "M " <> encode what <> texSep <> encode with <> texSep <> encode mod <> texsEnd
-        Geometry texture gmt -> "G " <> encode texture <> texSep <> encode gmt <> texsEnd
-        CallGlslFn { over, mbWith } fn ->
-            "CALL " <> encode over <> texSep
-                <> (
-                    case mbWith of
-                        Just with -> encode with <> texSep
-                        Nothing -> mempty
-                )
-                <> encode fn <> texsEnd
-
-
-instance Encode Blend where
-    encode :: Blend -> String
-    encode = encodeUsingFn
-
-
-instance Encode ColorOp where
-    encode :: ColorOp -> String
-    encode = encodeUsingFn
-
-
-instance Encode Modulate where
-    encode :: Modulate -> String
-    encode = encodeUsingFn
-
-
-instance Encode Geometry where
-    encode :: Geometry -> String
-    encode = encodeUsingFn
-
-
-instance Encode TODO where
-    encode :: TODO -> String
-    encode = const "TODO"
-
-
-instance Encode Context where
-    encode :: Context -> String
-    encode (Context { time }) = "{ " <> encode time <> " }"
-
-
-instance Encode UpdateFn where
-    encode :: UpdateFn -> String
-    encode = const "UF" -- TODO
-
-
-instance Encode ExtSource where
-    encode :: ExtSource -> String
-    encode = case _ of
-        Camera n -> "C " <> show n
-        Sketch name -> "SK " <> name
-        Video -> "V X"
-        Unclear -> "U X"
-
-
-instance Encode Source where
-    encode :: Source -> String
-    encode = case _ of
-        Load outputN -> "O " <> encode outputN
-        External sourceN def -> "X " <> encode sourceN <> argSep <> encode def <> argsEnd
-        Gradient { speed } -> "G " <> encode speed <> argsEnd
-        Noise { scale, offset } -> "N " <> encode scale <> argSep <> encode offset <> argsEnd
-        Osc { frequency, sync, offset } -> "OSC " <> encode frequency <> argSep <> encode sync <> argSep <> encode offset <> argsEnd
-        Shape { sides, radius, smoothing } -> "SHP " <> encode sides <> argSep <> encode radius <> argSep <> encode smoothing <> argsEnd
-        Solid { r, g, b, a } -> "S " <> encode r <> argSep <> encode g <> argSep <> encode b <> argSep <> encode a <> argsEnd
-        Voronoi { scale, speed, blending } -> "V " <> encode scale <> argSep <> encode speed <> argSep <> encode blending <> argsEnd
-
-
-instance Encode RenderTarget where
-    encode :: RenderTarget -> String
-    encode Four = "ALL"
-    encode (Output on) = show on
-
-
-instance Encode Url where
-    encode :: Url -> String
-    encode (Url url) = encode url
-
-
-instance Encode GlslFnKind where
-    encode :: GlslFnKind -> String
-    encode = case _ of
-        FnSrc -> "SRC"
-        FnCoord -> "CRD"
-        FnCombineCoord -> "CCR"
-        FnCombine -> "CMB"
-        FnColor -> "CLR"
-
-
-instance Encode TOrV where
-    encode :: TOrV -> String
-    encode = case _ of
-        T tex -> "TT " <> encode tex
-        V val -> "VV " <> encode val
-
-
-instance Encode GlslFn where
-    encode :: GlslFn -> String
-    encode (GlslFn (kind /\ GlslFnCode code /\ fn))
-        = encode kind <> " "
-            <> glslStart <> encode code <> glslEnd
-            <> " " <> encodeFnWithArgNames fn
-
-
-instance Encode GlslFnRef where
-    encode :: GlslFnRef -> String
-    encode (GlslFnRef fn)
-        = encodeFnWithArgNames fn
-
-
-{- instance Encode (Lang.Fn TOrV) where
-    encode :: Lang.Fn TOrV -> String
-    encode _ = "" -}
-
-
-instance Encode CanBeSource where
-    encode :: CanBeSource -> String
-    encode (CanBeSource cbs) =
-        case cbs of
-            Left sourceN -> "L " <> encode sourceN
-            Right outputN -> "R " <> encode outputN
-
-
-instance Encode SourceOptions where
-    encode :: SourceOptions -> String
-    encode (SourceOptions { src }) = "SO " -- TODO: <> encode src
-
-
-instance Encode Values where
-    encode :: Values -> String
-    encode (Values array) = "%% " <> String.joinWith " <> " (encode <$> array) <> " %%"
-
-
-instance Encode Ease where
-    encode :: Ease -> String
-    encode = case _ of
-        Linear -> "LIN E"
-        Fast v -> "FST " <> encode v
-        Smooth v -> "SMT " <> encode v
-        Fit { low, high } -> "FIT " <> encode low <> " < " <> encode high
-        Offset v -> "OFF " <> encode v
-        InOutCubic -> "IOC E"
-
-
-instance Encode AudioSource where
-    encode :: AudioSource -> String
-    encode = case _ of
-        Silence -> "SIL"
-        Mic -> "MIC"
-        File -> "FIL"
-
-
-instance Encode AudioBin where
-    encode :: AudioBin -> String
-    encode (AudioBin n) = "@" <> show n
-
-
-instance Encode OutputN where
-    encode :: OutputN -> String
-    encode = case _ of
-        Output0 -> "O0"
-        Output1 -> "O1"
-        Output2 -> "O2"
-        Output3 -> "O3"
-        Output4 -> "O4"
-
-
-instance Encode SourceN where
-    encode :: SourceN -> String
-    encode = case _ of
-        Source0 -> "S0"
-
-
-instance Encode JsExpr where
-    encode :: JsExpr -> String
-    encode = case _ of
-        Val value -> show value -- FIXME: for sure, not `encode`?
-        AddE v1 v2 -> show v1 <> " + " <> show v2 -- FIXME: for sure, not `encode`?
-        SubE v1 v2 -> show v1 <> " - " <> show v2 -- FIXME: for sure, not `encode`?
-        MulE v1 v2 -> show v1 <> " * " <> show v2 -- FIXME: for sure, not `encode`?
-        DivE v1 v2 -> show v1 <> " / " <> show v2 -- FIXME: for sure, not `encode`?
-        ModE v1 v2 -> show v1 <> " % " <> show v2 -- FIXME: for sure, not `encode`?
-        Math meth maybeExpr ->
-            "Math." <> show meth <>
-                (case maybeExpr of
-                    Just expr -> "(" <> show expr <> ")"
-                    Nothing -> ""
-                )
-        Brackets expr -> "( " <> show expr <> " )"
-
-
-instance Encode DepFn where
-    encode :: DepFn -> String
-    encode = case _ of
-        UserExpr jsexpr -> encode jsexpr
-        DepFn _ -> "[[CODE]]"
-        Unparsed str -> unparsedFnStart <> str <> unparsedFnEnd -- "<<<< " <> str <> " >>>>"
-        NoAction -> "/----/"
-
-
 data TOrV
     = T Texture
     | V Value
@@ -1148,20 +909,6 @@ instance PossiblyToFn TOrV OTOrV Texture where
 instance PossiblyToFn Value Unit HydraFnId where
     possiblyToFn :: HydraFnId -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
     possiblyToFn = unwrap >>> fromKnownFn
-
-
-encodeFnWithArgNames :: forall arg out. Encode arg => Fn arg out -> String
-encodeFnWithArgNames fn =
-    case (toFn fn :: String /\ Array (Fn.Argument arg) /\ Array (Fn.Output out)) of
-        name /\ args /\ _ ->
-            if Array.length args > 0 then
-                name <> " " <> show (Array.length args) <> " " <> String.joinWith argSep (encodeArg <$> args) <> argsEnd
-            else
-                name <> " " <> show (Array.length args) <> " " <> argsEnd
-    where
-        encodeArg arg =
-            Fn.argName arg <> "::" <> encode (Fn.argValue arg)
-    -- Fn.name fn
 
 
 data FnArg
@@ -1627,11 +1374,6 @@ glslEnd :: String
 glslEnd = "■¤¤¤¤"
 
 
-encodeUsingFn :: forall a. ToFn Value Unit a => a -> String
-encodeUsingFn a =
-    case toFn a :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit) of
-        name /\ args /\ _ ->
-            if Array.length args > 0 then
-                String.toUpper name <> " " <> String.joinWith argSep (encode <$> Fn.argValue <$> args) <> argsEnd
-            else
-                String.toUpper name <> " " <> argsEnd
+instance Partial => Codegen Value where
+    mkExpression :: Value -> CST.Expr Void
+    mkExpression = const $ exprCtor "None"

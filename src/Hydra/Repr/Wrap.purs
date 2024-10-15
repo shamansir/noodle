@@ -13,15 +13,16 @@ import Data.Newtype (unwrap) as NT
 import Data.Int (fromString) as Int
 
 import Noodle.Repr as R
-
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
-
-import Hydra.Types as H
-
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Noodle.Text.ToCode (class ToCode, toCode)
+
+import Hydra.Types as H
+import Hydra.Repr.Target (HYDRA_V, hydraV)
+import Hydra.Repr.Target (_encode) as H
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
@@ -549,32 +550,32 @@ wrapParser =
     string "U" *> pure unit -}
 
 
-instance H.Encode WrapRepr where
-    encode = case _ of
-        Value v -> "V " <> H.encode v
+instance ToCode HYDRA_V opts WrapRepr where
+    toCode _ _ = case _ of
+        Value v -> "V " <> H._encode v
         Unit _ -> "U U"
-        Texture t -> "T " <> H.encode t
-        TOrV (H.T t) -> "TT " <> H.encode t
-        TOrV (H.V v) -> "VV" <> H.encode v
-        OutputN outN -> "ON " <> H.encode outN
-        SourceN srcN -> "SN " <> H.encode srcN
+        Texture t -> "T " <> H._encode t
+        TOrV (H.T t) -> "TT " <> H._encode t
+        TOrV (H.V v) -> "VV" <> H._encode v
+        OutputN outN -> "ON " <> H._encode outN
+        SourceN srcN -> "SN " <> H._encode srcN
         TODO _ -> "TODO TODO"
-        Context ctx -> "CTX " <> H.encode ctx
-        UpdateFn fn -> "UFN " <> H.encode fn
-        Source src -> "SRC " <> H.encode src
-        Url url -> "URL " <> H.encode url
-        GlslFn fn -> "GLSL " <> H.encode fn
-        SourceOptions so -> "SO " <> H.encode so
-        Values vs -> "VS " <> H.encode vs
-        Ease e -> "E " <> H.encode e
-        Audio a -> "A " <> H.encode a
-        AudioBin ab -> "AB " <> H.encode ab
-        ExtSource ext -> "EXT " <> H.encode ext
-        Target trg -> "TRG " <> H.encode trg
-        DepFn depFn -> "FN " <> H.encode depFn
+        Context ctx -> "CTX " <> H._encode ctx
+        UpdateFn fn -> "UFN " <> H._encode fn
+        Source src -> "SRC " <> H._encode src
+        Url url -> "URL " <> H._encode url
+        GlslFn fn -> "GLSL " <> H._encode fn
+        SourceOptions so -> "SO " <> H._encode so
+        Values vs -> "VS " <> H._encode vs
+        Ease e -> "E " <> H._encode e
+        Audio a -> "A " <> H._encode a
+        AudioBin ab -> "AB " <> H._encode ab
+        ExtSource ext -> "EXT " <> H._encode ext
+        Target trg -> "TRG " <> H._encode trg
+        DepFn depFn -> "FN " <> H._encode depFn
         -- Products _ -> "PRS P"
         -- Product (CAI.Product' ix p) -> "PRD " <> show ix <> " " <> CAI.toUniqueId p
-        CBS cbs -> "CBS " <> H.encode cbs
+        CBS cbs -> "CBS " <> H._encode cbs
 
 
 maybeEq :: WrapRepr -> WrapRepr -> Maybe Boolean
@@ -594,7 +595,7 @@ instance R.ReadRepr WrapRepr where
 
 instance R.WriteRepr WrapRepr where
     writeRepr :: R.Repr WrapRepr -> String
-    writeRepr = R.unwrap >>> H.encode
+    writeRepr = R.unwrap >>> H._encode
 
 
 instance CodegenRepr WrapRepr where
@@ -618,16 +619,16 @@ instance CodegenRepr WrapRepr where
                     "GlslFn" -> typeCtor "GlslFn"
                     _ -> typeCtor "WrapRepr"
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
-    valueFor = const $ unsafePartial $ \mbType encodedVal ->
+    valueFor = const $ unsafePartial $ \mbType ->
                   case NT.unwrap <$> mbType of
-                     Just "Value" -> tryMkExpression (Proxy :: _ H.Value) encodedVal
-                     Just "Texture" -> tryMkExpression (Proxy :: _ H.Texture) encodedVal
-                     Just "TODO" -> tryMkExpression (Proxy :: _ H.TODO) encodedVal
-                     Just "Values" -> tryMkExpression (Proxy :: _ H.Values) encodedVal
-                     Just "Source" -> tryMkExpression (Proxy :: _ H.Source) encodedVal
-                     Just "Audio" -> tryMkExpression (Proxy :: _ H.AudioSource) encodedVal
-                     Just "GlslFn" -> tryMkExpression (Proxy :: _ H.GlslFn) encodedVal
-                     _ -> exprCtor "None"
+                     Just "Value" -> tryMkExpression (Proxy :: _ H.Value)
+                     Just "Texture" -> tryMkExpression (Proxy :: _ H.Texture)
+                     Just "TODO" -> tryMkExpression (Proxy :: _ H.TODO)
+                     Just "Values" -> tryMkExpression (Proxy :: _ H.Values)
+                     Just "Source" -> tryMkExpression (Proxy :: _ H.Source)
+                     Just "Audio" -> tryMkExpression (Proxy :: _ H.AudioSource)
+                     Just "GlslFn" -> tryMkExpression (Proxy :: _ H.GlslFn)
+                     _ -> const $ exprCtor "None"
         where
             tryMkExpression :: forall res. Partial => Codegen res => H.Decode res => Proxy res -> EncodedValue -> CST.Expr Void
             tryMkExpression _ (EncodedValue valueStr) = fromMaybe (exprCtor "None") $ mkExpression <$> (H.decode valueStr :: Maybe res)

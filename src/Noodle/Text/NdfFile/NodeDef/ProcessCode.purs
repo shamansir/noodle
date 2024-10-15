@@ -2,7 +2,7 @@ module Noodle.Text.NdfFile.NodeDef.ProcessCode where
 
 import Prelude
 
-import Debug as Debug
+import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
@@ -21,8 +21,8 @@ import Parsing.String (string)  as P
 import Parsing.String.Extra (anythingBut, eol) as P
 import Parsing.Combinators (between, choice) as P
 
-import Type.Proxy (Proxy)
-import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, NDF, PS)
+import Noodle.Text.Code.Target (NDF, PS)
+import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Ui.Cli.Tagging as F
 
 

@@ -10,7 +10,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Text.Format as T
 
-import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, PS)
+import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
+import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Fn.ToFn (Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make

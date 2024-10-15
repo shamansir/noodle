@@ -11,7 +11,8 @@ import Data.Text.Format as T
 
 import Type.Proxy (Proxy)
 
-import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode, NDF, ndf)
+import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
+import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
 import Noodle.Text.NdfFile.Types
 import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)

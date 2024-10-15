@@ -16,7 +16,8 @@ import Data.Text.Format as T
 
 import Noodle.Id (FamilyR) as Id
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf)
-import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, ndf)
+import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
+import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
 import Noodle.Text.NdfFile.NodeDef (forceAssign) as ND
 import Noodle.Text.NdfFile.Types (NodeFamily)
