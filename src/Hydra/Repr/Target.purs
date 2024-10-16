@@ -32,7 +32,7 @@ hydraV = Proxy
 
 instance ToCode HYDRA_V opts Int where toCode _ = const show
 instance ToCode HYDRA_V opts Number where toCode _ = const show
-instance ToCode HYDRA_V opts String where toCode _ = const show
+instance ToCode HYDRA_V opts String where toCode _ = const identity
 
 
 _encode :: forall a. ToCode HYDRA_V Unit a => a -> String

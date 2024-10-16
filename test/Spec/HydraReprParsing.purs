@@ -40,6 +40,7 @@ textureSamples =
     , Start $ Gradient { speed : Number 2.0 }
     , Start $ Load Output3
     , Filter Empty $ Invert Width
+    , Filter Empty $ Contrast Height
     ]
 
 
@@ -73,9 +74,16 @@ wrapReprSamples =
     , Texture $ Start $ External Source0 Video
     , Texture $ Start $ External Source0 $ Sketch "foobar"
     , Texture $ Filter Empty $ Invert Width
+    , Texture $ Filter Empty $ Contrast Height
     , Texture $ Filter Empty $ Posterize { bins : Time, gamma : Height }
     , Texture $ Filter (Start $ Load Output2) $ Shift { r : Number 1.5, g : Pi, b : Width, a : Time }
     , Texture $ Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
+    , Texture
+        $ ModulateWith
+            { what : Empty
+            , with : Empty
+            }
+        $ ModHue Pi
     , Texture
         $ ModulateWith
             { what : Empty

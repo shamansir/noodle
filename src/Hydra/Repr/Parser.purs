@@ -226,20 +226,20 @@ colorOp =
         , marker $ "COLOR" /\ HT.Color /\ parseArgs4V \r g b a -> { r, g, b, a }
         , marker $ "LUMA" /\ HT.Luma /\ parseArgs2V \threshold tolerance -> { threshold, tolerance }
         , marker $ "TRESH" /\ HT.Thresh /\ parseArgs2V \threshold tolerance -> { threshold, tolerance }
-        , marker $ "INVERT" /\ HT.Invert /\ defer \_ -> value
-        , marker $ "CONTRAST" /\ HT.Contrast /\ defer \_ -> value
-        , marker $ "BRIGHTNESS" /\ HT.Brightness /\ defer \_ -> value
-        , marker $ "SATURATE" /\ HT.Saturate /\ defer \_ -> value
-        , marker $ "HUE" /\ HT.Brightness /\ defer \_ -> value
-        , marker $ "COLORAMA" /\ HT.Saturate /\ defer \_ -> value
+        , marker $ "INVERT" /\ HT.Invert /\ parseArgs1V identity
+        , marker $ "CONTRAST" /\ HT.Contrast /\ parseArgs1V identity
+        , marker $ "BRIGHTNESS" /\ HT.Brightness /\ parseArgs1V identity
+        , marker $ "SATURATE" /\ HT.Saturate /\ parseArgs1V identity
+        , marker $ "HUE" /\ HT.Brightness /\ parseArgs1V identity
+        , marker $ "COLORAMA" /\ HT.Saturate /\ parseArgs1V identity
         ]
 
 
 modulate :: Parser String HT.Modulate
 modulate =
     foldMarkers
-        [ marker $ "MODHUE" /\ HT.ModHue /\ defer \_ -> value
-        , marker $ "MODULATE" /\ HT.Modulate /\ defer \_ -> value
+        [ marker $ "MODHUE" /\ HT.ModHue /\ parseArgs1V identity
+        , marker $ "MODULATE" /\ HT.Modulate /\ parseArgs1V identity
         , marker $ "MODKALEID" /\ HT.ModKaleid /\ parseArgs1V \nSides -> { nSides }
         , marker $ "MODPIXELATE" /\ HT.ModPixelate /\ parseArgs2V \multiple offset -> { multiple, offset }
         , marker $ "MODREPEATX" /\ HT.ModRepeatX /\ parseArgs2V \reps offset -> { reps, offset }
