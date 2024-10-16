@@ -39,6 +39,10 @@ _encode :: forall a. ToCode HYDRA_V Unit a => a -> String
 _encode = toCode hydraV unit
 
 
+_decode :: forall a. FromCode HYDRA_V Unit a => String -> Maybe a
+_decode = fromCode hydraV unit
+
+
 instance ToCode HYDRA_V opts HT.Value where
     toCode :: Proxy HYDRA_V -> opts -> HT.Value -> String
     toCode _ _ = case _ of

@@ -24,7 +24,7 @@ import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Text.ToCode (class ToCode, toCode)
-import Noodle.Text.FromCode (class FromCode, fromCode)
+import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser)
 
 import Hydra.Types as HT
 import Hydra.Repr.Parser as RP
@@ -617,6 +617,10 @@ instance ToCode HYDRA_V opts WrapRepr where
         -- Products _ -> "PRS P"
         -- Product (CAI.Product' ix p) -> "PRD " <> show ix <> " " <> CAI.toUniqueId p
         CBS cbs -> "CBS " <> H._encode cbs
+
+
+instance CanParse HYDRA_V WrapRepr where parser = const wrapParser
+instance FromCode HYDRA_V opts WrapRepr where fromCode = fromParser
 
 
 maybeEq :: WrapRepr -> WrapRepr -> Maybe Boolean
