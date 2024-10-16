@@ -108,9 +108,9 @@ texture =
         [ marker $ "EMP" /\ const HT.Empty /\ string "T"
         , marker $ "S" /\ HT.Start /\ source
         , marker $ "F" /\ uncurry HT.Filter /\ do
-            cop <- colorOp
-            _ <- string PM._texSep
             tex <- defer \_ -> texture
+            _ <- string PM._texSep
+            cop <- colorOp
             _ <- string PM._texsEnd
             pure $ tex /\ cop
         , marker $ "M" /\ uncurry HT.ModulateWith /\ do

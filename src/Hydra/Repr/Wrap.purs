@@ -623,10 +623,6 @@ instance CanParse HYDRA_V WrapRepr where parser = const wrapParser
 instance FromCode HYDRA_V opts WrapRepr where fromCode = fromParser
 
 
-maybeEq :: WrapRepr -> WrapRepr -> Maybe Boolean
-maybeEq a b = Just false
-
-
 instance R.ReadRepr WrapRepr where
     readRepr :: String -> Maybe (R.Repr WrapRepr)
     readRepr s =

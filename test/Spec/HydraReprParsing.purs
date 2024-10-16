@@ -34,9 +34,18 @@ import Hydra.Repr.Target (_encode, _decode) as Hydra
 -- import Toolkit.Hydra.Repr.Wrap.Parser
 
 
+textureSamples :: Array Texture
+textureSamples =
+    [ Empty
+    , Start $ Gradient { speed : Number 2.0 }
+    , Start $ Load Output3
+    , Filter Empty $ Invert Width
+    ]
+
+
 -- TODO: use fuzzy generator
-samples :: Array WrapRepr
-samples =
+wrapReprSamples :: Array WrapRepr
+wrapReprSamples =
     [ Unit unit
     , Value $ Number 2.0
     , Value None
@@ -63,6 +72,7 @@ samples =
     , Texture $ Start $ External Source0 $ Camera 2
     , Texture $ Start $ External Source0 Video
     , Texture $ Start $ External Source0 $ Sketch "foobar"
+    , Texture $ Filter Empty $ Invert Width
     , Texture $ Filter Empty $ Posterize { bins : Time, gamma : Height }
     , Texture $ Filter (Start $ Load Output2) $ Shift { r : Number 1.5, g : Pi, b : Width, a : Time }
     , Texture $ Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
@@ -179,31 +189,34 @@ code
 spec :: Spec Unit
 spec = do
 
-  describe "Works for all samples" $ do
+  describe "Works for all Wrap Repr samples" $ do
 
     foldlWithIndex
         (\idx prev sample -> do
             prev
             *>
-            (it ("works for sample " <> show idx <> " : " <> show sample) $
+            (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
                 case (Hydra._decode $ Hydra._encode sample :: Maybe WrapRepr) of
-                    Just decoded -> do
-                        {-case decoded `maybeEq` sample of
-                            Just false -> fail $ encode sample <> " doesn't decode to " <> show sample
-                            Just true -> pure unit
-                            Nothing -> -}
-                            -- liftEffect $ Console.log $ encode sample
-                            (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
+                    Just decoded ->
+                        (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
                     Nothing -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample
             )
         )
         (pure unit)
-        samples
+        wrapReprSamples
 
-    -- TODO:
---   describe "All merged" $ do
---         case runParser (encode <$> samples)
+  describe "Works for all textures" $ do
 
-
-    {- it "parsing works" $
-      parses sampleNdfText expectedNdf NdfFile.parser -}
+    foldlWithIndex
+        (\idx prev sample -> do
+            prev
+            *>
+            (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
+                case (Hydra._decode $ Hydra._encode sample :: Maybe Texture) of
+                    Just decoded ->
+                        (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
+                    Nothing -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample
+            )
+        )
+        (pure unit)
+        textureSamples

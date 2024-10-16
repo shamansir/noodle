@@ -578,7 +578,7 @@ instance Show Value where
 instance Show Texture where
     show :: Texture -> String
     show = case _ of
-        Empty -> "?"
+        Empty -> "∅" -- "?"
         Start src -> "• " <> show src
         BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~  ░ " <> show blend
         Filter texture op -> show texture <> " >~ ƒ " <> show op

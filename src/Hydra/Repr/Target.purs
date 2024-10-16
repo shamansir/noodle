@@ -65,15 +65,15 @@ instance ToCode HYDRA_V opts HT.Texture where
     toCode _ _ = case _ of
         HT.Empty -> "EMP T"
         HT.Start src -> "S " <> _encode src
-        HT.BlendOf { what, with } blend -> "B " <> _encode what <> PM._argsEnd <> _encode with <> PM._argsEnd <> _encode blend <> PM._texsEnd
-        HT.Filter texture op -> "F " <> _encode op <> PM._argsEnd <> _encode texture <> PM._texsEnd
-        HT.ModulateWith { what, with } mod -> "M " <> _encode what <> PM._argsEnd <> _encode with <> PM._argsEnd <> _encode mod <> PM._texsEnd
-        HT.Geometry texture gmt -> "G " <> _encode texture <> PM._argsEnd <> _encode gmt <> PM._texsEnd
+        HT.BlendOf { what, with } blend -> "B " <> _encode what <> PM._texSep <> _encode with <> PM._texSep <> _encode blend <> PM._texsEnd
+        HT.Filter texture op -> "F " <> _encode texture <> PM._texSep <> _encode op <> PM._texsEnd
+        HT.ModulateWith { what, with } mod -> "M " <> _encode what <> PM._texSep <> _encode with <> PM._texSep <> _encode mod <> PM._texsEnd
+        HT.Geometry texture gmt -> "G " <> _encode texture <> PM._texSep <> _encode gmt <> PM._texsEnd
         HT.CallGlslFn { over, mbWith } fn ->
-            "CALL " <> _encode over <> PM._argsEnd
+            "CALL " <> _encode over <> PM._texSep
                 <> (
                     case mbWith of
-                        Just with -> _encode with <> PM._argsEnd
+                        Just with -> _encode with <> PM._texSep
                         Nothing -> mempty
                 )
                 <> _encode fn <> PM._texsEnd
