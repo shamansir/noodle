@@ -26,7 +26,7 @@ import Tidy.Codegen
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
-import Noodle.Text.ToCode (pureScript) as ToCode
+import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef (family) as NodeDef
 import Noodle.Text.NdfFile (loadDefinitions) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
@@ -56,6 +56,8 @@ minimalGenOptions = CG.Options
   }
 
 
+
+-- FIXME: move to WrapRepr
 hydraGenOptions :: CG.Options WrapRepr
 hydraGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
@@ -63,8 +65,8 @@ hydraGenOptions = CG.Options
   , nodeModuleName
   , prepr : (Proxy :: _ WrapRepr)
   , imports : unsafePartial $
-    [ declImportAs "Hydra.Types" [ ] "H"
-    , declImport "Hydra.WrapRepr" [ ]
+    [ declImportAs "Hydra.Types" [ ] "HT"
+    , declImport "Hydra.Repr.Wrap" [ ]
     ]
   }
 

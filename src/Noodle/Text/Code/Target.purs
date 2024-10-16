@@ -11,6 +11,7 @@ foreign import data JS_DISPLAY :: Target -- TODO: replace with `ToTaggedCode JS`
 foreign import data PS :: Target
 foreign import data NDF :: Target
 
+
 pureScript :: _ PS
 pureScript = Proxy
 

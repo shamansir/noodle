@@ -12,10 +12,13 @@ import Type.Proxy (Proxy(..))
 
 import Noodle.Text.Code.Target (Target)
 import Noodle.Text.ToCode (class ToCode, toCode)
+import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser)
 import Noodle.Fn.ToFn (Fn, class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 
-import Hydra.Types
+import Hydra.Types as HT
+import Hydra.Repr.Parser as RP
+import Hydra.Repr.Markers as PM
 
 
 foreign import data HYDRA_V :: Target
@@ -36,138 +39,138 @@ _encode :: forall a. ToCode HYDRA_V Unit a => a -> String
 _encode = toCode hydraV unit
 
 
-instance ToCode HYDRA_V opts Value where
-    toCode :: Proxy HYDRA_V -> opts -> Value -> String
+instance ToCode HYDRA_V opts HT.Value where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Value -> String
     toCode _ _ = case _ of
-        None -> "0 V"
-        Undefined -> "U V"
-        Number n -> "N " <> _encode n
-        VArray vals ease -> "VA " <> _encode vals <> " $$ " <> _encode ease <> ""
-        Dep fn -> "D " <> _encode fn
-        Time -> "T V"
-        MouseX -> "MX V"
-        MouseY -> "MY V"
-        Width -> "W V"
-        Height -> "H V"
-        Pi -> "PI V"
-        Fft bin -> "A " <> _encode bin
+        HT.None -> "0 V"
+        HT.Undefined -> "U V"
+        HT.Number n -> "N " <> _encode n
+        HT.VArray vals ease -> "VA " <> _encode vals <> " $$ " <> _encode ease <> ""
+        HT.Dep fn -> "D " <> _encode fn
+        HT.Time -> "T V"
+        HT.MouseX -> "MX V"
+        HT.MouseY -> "MY V"
+        HT.Width -> "W V"
+        HT.Height -> "H V"
+        HT.Pi -> "PI V"
+        HT.Fft bin -> "A " <> _encode bin
 
 
-instance ToCode HYDRA_V opts Texture where
-    toCode :: Proxy HYDRA_V -> opts -> Texture -> String
+instance ToCode HYDRA_V opts HT.Texture where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Texture -> String
     toCode _ _ = case _ of
-        Empty -> "EMP T"
-        Start src -> "S " <> _encode src
-        BlendOf { what, with } blend -> "B " <> _encode what <> texSep <> _encode with <> texSep <> _encode blend <> texsEnd
-        Filter texture op -> "F " <> _encode op <> texSep <> _encode texture <> texsEnd
-        ModulateWith { what, with } mod -> "M " <> _encode what <> texSep <> _encode with <> texSep <> _encode mod <> texsEnd
-        Geometry texture gmt -> "G " <> _encode texture <> texSep <> _encode gmt <> texsEnd
-        CallGlslFn { over, mbWith } fn ->
-            "CALL " <> _encode over <> texSep
+        HT.Empty -> "EMP T"
+        HT.Start src -> "S " <> _encode src
+        HT.BlendOf { what, with } blend -> "B " <> _encode what <> PM._argsEnd <> _encode with <> PM._argsEnd <> _encode blend <> PM._texsEnd
+        HT.Filter texture op -> "F " <> _encode op <> PM._argsEnd <> _encode texture <> PM._texsEnd
+        HT.ModulateWith { what, with } mod -> "M " <> _encode what <> PM._argsEnd <> _encode with <> PM._argsEnd <> _encode mod <> PM._texsEnd
+        HT.Geometry texture gmt -> "G " <> _encode texture <> PM._argsEnd <> _encode gmt <> PM._texsEnd
+        HT.CallGlslFn { over, mbWith } fn ->
+            "CALL " <> _encode over <> PM._argsEnd
                 <> (
                     case mbWith of
-                        Just with -> _encode with <> texSep
+                        Just with -> _encode with <> PM._argsEnd
                         Nothing -> mempty
                 )
-                <> _encode fn <> texsEnd
+                <> _encode fn <> PM._texsEnd
 
 
-instance ToCode HYDRA_V opts Blend where
-    toCode :: Proxy HYDRA_V -> opts -> Blend -> String
+instance ToCode HYDRA_V opts HT.Blend where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Blend -> String
     toCode _ _ = _encodeUsingFn
 
 
-instance ToCode HYDRA_V opts ColorOp where
-    toCode :: Proxy HYDRA_V -> opts -> ColorOp -> String
+instance ToCode HYDRA_V opts HT.ColorOp where
+    toCode :: Proxy HYDRA_V -> opts -> HT.ColorOp -> String
     toCode _ _ = _encodeUsingFn
 
 
-instance ToCode HYDRA_V opts Modulate where
-    toCode :: Proxy HYDRA_V -> opts -> Modulate -> String
+instance ToCode HYDRA_V opts HT.Modulate where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Modulate -> String
     toCode _ _ = _encodeUsingFn
 
 
-instance ToCode HYDRA_V opts Geometry where
-    toCode :: Proxy HYDRA_V -> opts -> Geometry -> String
+instance ToCode HYDRA_V opts HT.Geometry where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Geometry -> String
     toCode _ _ = _encodeUsingFn
 
 
-instance ToCode HYDRA_V opts TODO where
-    toCode :: Proxy HYDRA_V -> opts -> TODO -> String
+instance ToCode HYDRA_V opts HT.TODO where
+    toCode :: Proxy HYDRA_V -> opts -> HT.TODO -> String
     toCode _ _ = const "TODO"
 
 
-instance ToCode HYDRA_V opts Context where
-    toCode :: Proxy HYDRA_V -> opts -> Context -> String
-    toCode _ _ (Context { time }) = "{ " <> _encode time <> " }"
+instance ToCode HYDRA_V opts HT.Context where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Context -> String
+    toCode _ _ (HT.Context { time }) = "{ " <> _encode time <> " }"
 
 
-instance ToCode HYDRA_V opts UpdateFn where
-    toCode :: Proxy HYDRA_V -> opts -> UpdateFn -> String
+instance ToCode HYDRA_V opts HT.UpdateFn where
+    toCode :: Proxy HYDRA_V -> opts -> HT.UpdateFn -> String
     toCode _ _ = const "UF" -- TODO
 
 
-instance ToCode HYDRA_V opts ExtSource where
-    toCode :: Proxy HYDRA_V -> opts -> ExtSource -> String
+instance ToCode HYDRA_V opts HT.ExtSource where
+    toCode :: Proxy HYDRA_V -> opts -> HT.ExtSource -> String
     toCode _ _ = case _ of
-        Camera n -> "C " <> show n
-        Sketch name -> "SK " <> name
-        Video -> "V X"
-        Unclear -> "U X"
+        HT.Camera n -> "C " <> show n
+        HT.Sketch name -> "SK " <> name
+        HT.Video -> "V X"
+        HT.Unclear -> "U X"
 
 
-instance ToCode HYDRA_V opts Source where
-    toCode :: Proxy HYDRA_V -> opts -> Source -> String
+instance ToCode HYDRA_V opts HT.Source where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Source -> String
     toCode _ _ = case _ of
-        Load outputN -> "O " <> _encode outputN
-        External sourceN def -> "X " <> _encode sourceN <> argSep <> _encode def <> argsEnd
-        Gradient { speed } -> "G " <> _encode speed <> argsEnd
-        Noise { scale, offset } -> "N " <> _encode scale <> argSep <> _encode offset <> argsEnd
-        Osc { frequency, sync, offset } -> "OSC " <> _encode frequency <> argSep <> _encode sync <> argSep <> _encode offset <> argsEnd
-        Shape { sides, radius, smoothing } -> "SHP " <> _encode sides <> argSep <> _encode radius <> argSep <> _encode smoothing <> argsEnd
-        Solid { r, g, b, a } -> "S " <> _encode r <> argSep <> _encode g <> argSep <> _encode b <> argSep <> _encode a <> argsEnd
-        Voronoi { scale, speed, blending } -> "V " <> _encode scale <> argSep <> _encode speed <> argSep <> _encode blending <> argsEnd
+        HT.Load outputN -> "O " <> _encode outputN
+        HT.External sourceN def -> "X " <> _encode sourceN <> PM._argSep <> _encode def <> PM._argsEnd
+        HT.Gradient { speed } -> "G " <> _encode speed <> PM._argsEnd
+        HT.Noise { scale, offset } -> "N " <> _encode scale <> PM._argSep <> _encode offset <> PM._argsEnd
+        HT.Osc { frequency, sync, offset } -> "OSC " <> _encode frequency <> PM._argSep <> _encode sync <> PM._argSep <> _encode offset <> PM._argsEnd
+        HT.Shape { sides, radius, smoothing } -> "SHP " <> _encode sides <> PM._argSep <> _encode radius <> PM._argSep <> _encode smoothing <> PM._argsEnd
+        HT.Solid { r, g, b, a } -> "S " <> _encode r <> PM._argSep <> _encode g <> PM._argSep <> _encode b <> PM._argSep <> _encode a <> PM._argsEnd
+        HT.Voronoi { scale, speed, blending } -> "V " <> _encode scale <> PM._argSep <> _encode speed <> PM._argSep <> _encode blending <> PM._argsEnd
 
 
-instance ToCode HYDRA_V opts RenderTarget where
-    toCode :: Proxy HYDRA_V -> opts -> RenderTarget -> String
-    toCode _ _ Four = "ALL"
-    toCode _ _ (Output on) = show on
+instance ToCode HYDRA_V opts HT.RenderTarget where
+    toCode :: Proxy HYDRA_V -> opts -> HT.RenderTarget -> String
+    toCode _ _ HT.Four = "ALL"
+    toCode _ _ (HT.Output on) = show on
 
 
-instance ToCode HYDRA_V opts Url where
-    toCode :: Proxy HYDRA_V -> opts -> Url -> String
-    toCode _ _ (Url url) = _encode url
+instance ToCode HYDRA_V opts HT.Url where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Url -> String
+    toCode _ _ (HT.Url url) = _encode url
 
 
-instance ToCode HYDRA_V opts GlslFnKind where
-    toCode :: Proxy HYDRA_V -> opts -> GlslFnKind -> String
+instance ToCode HYDRA_V opts HT.GlslFnKind where
+    toCode :: Proxy HYDRA_V -> opts -> HT.GlslFnKind -> String
     toCode _ _ = case _ of
-        FnSrc -> "SRC"
-        FnCoord -> "CRD"
-        FnCombineCoord -> "CCR"
-        FnCombine -> "CMB"
-        FnColor -> "CLR"
+        HT.FnSrc -> "SRC"
+        HT.FnCoord -> "CRD"
+        HT.FnCombineCoord -> "CCR"
+        HT.FnCombine -> "CMB"
+        HT.FnColor -> "CLR"
 
 
-instance ToCode HYDRA_V opts TOrV where
-    toCode :: Proxy HYDRA_V -> opts -> TOrV -> String
+instance ToCode HYDRA_V opts HT.TOrV where
+    toCode :: Proxy HYDRA_V -> opts -> HT.TOrV -> String
     toCode _ _ = case _ of
-        T tex -> "TT " <> _encode tex
-        V val -> "VV " <> _encode val
+        HT.T tex -> "TT " <> _encode tex
+        HT.V val -> "VV " <> _encode val
 
 
-instance ToCode HYDRA_V opts GlslFn where
-    toCode :: Proxy HYDRA_V -> opts -> GlslFn -> String
-    toCode _ _ (GlslFn (kind /\ GlslFnCode code /\ fn))
+instance ToCode HYDRA_V opts HT.GlslFn where
+    toCode :: Proxy HYDRA_V -> opts -> HT.GlslFn -> String
+    toCode _ _ (HT.GlslFn (kind /\ HT.GlslFnCode code /\ fn))
         = _encode kind <> " "
-            <> glslStart <> _encode code <> glslEnd
+            <> PM._glslStart <> _encode code <> PM._glslEnd
             <> " " <> _encodeFnWithArgNames fn
 
 
-instance ToCode HYDRA_V opts GlslFnRef where
-    toCode :: Proxy HYDRA_V -> opts -> GlslFnRef -> String
-    toCode _ _ (GlslFnRef fn)
+instance ToCode HYDRA_V opts HT.GlslFnRef where
+    toCode :: Proxy HYDRA_V -> opts -> HT.GlslFnRef -> String
+    toCode _ _ (HT.GlslFnRef fn)
         = _encodeFnWithArgNames fn
 
 
@@ -176,110 +179,156 @@ instance ToCode HYDRA_V opts GlslFnRef where
     _encode _ = "" -}
 
 
-instance ToCode HYDRA_V opts CanBeSource where
-    toCode :: Proxy HYDRA_V -> opts -> CanBeSource -> String
-    toCode _ _ (CanBeSource cbs) =
+instance ToCode HYDRA_V opts HT.CanBeSource where
+    toCode :: Proxy HYDRA_V -> opts -> HT.CanBeSource -> String
+    toCode _ _ (HT.CanBeSource cbs) =
         case cbs of
             Left sourceN -> "L " <> _encode sourceN
             Right outputN -> "R " <> _encode outputN
 
 
-instance ToCode HYDRA_V opts SourceOptions where
-    toCode :: Proxy HYDRA_V -> opts -> SourceOptions -> String
-    toCode _ _ (SourceOptions { src }) = "SO " -- TODO: <> _encode src
+instance ToCode HYDRA_V opts HT.SourceOptions where
+    toCode :: Proxy HYDRA_V -> opts -> HT.SourceOptions -> String
+    toCode _ _ (HT.SourceOptions { src }) = "SO " -- TODO: <> _encode src
 
 
-instance ToCode HYDRA_V opts Values where
-    toCode :: Proxy HYDRA_V -> opts -> Values -> String
-    toCode _ _ (Values array) = "%% " <> String.joinWith " <> " (_encode <$> array) <> " %%"
+instance ToCode HYDRA_V opts HT.Values where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Values -> String
+    toCode _ _ (HT.Values array) = "%% " <> String.joinWith " <> " (_encode <$> array) <> " %%"
 
 
-instance ToCode HYDRA_V opts Ease where
-    toCode :: Proxy HYDRA_V -> opts -> Ease -> String
+instance ToCode HYDRA_V opts HT.Ease where
+    toCode :: Proxy HYDRA_V -> opts -> HT.Ease -> String
     toCode _ _ = case _ of
-        Linear -> "LIN E"
-        Fast v -> "FST " <> _encode v
-        Smooth v -> "SMT " <> _encode v
-        Fit { low, high } -> "FIT " <> _encode low <> " < " <> _encode high
-        Offset v -> "OFF " <> _encode v
-        InOutCubic -> "IOC E"
+        HT.Linear -> "LIN E"
+        HT.Fast v -> "FST " <> _encode v
+        HT.Smooth v -> "SMT " <> _encode v
+        HT.Fit { low, high } -> "FIT " <> _encode low <> " < " <> _encode high
+        HT.Offset v -> "OFF " <> _encode v
+        HT.InOutCubic -> "IOC E"
 
 
-instance ToCode HYDRA_V opts AudioSource where
-    toCode :: Proxy HYDRA_V -> opts -> AudioSource -> String
+instance ToCode HYDRA_V opts HT.AudioSource where
+    toCode :: Proxy HYDRA_V -> opts -> HT.AudioSource -> String
     toCode _ _ = case _ of
-        Silence -> "SIL"
-        Mic -> "MIC"
-        File -> "FIL"
+        HT.Silence -> "SIL"
+        HT.Mic -> "MIC"
+        HT.File -> "FIL"
 
 
-instance ToCode HYDRA_V opts AudioBin where
-    toCode :: Proxy HYDRA_V -> opts -> AudioBin -> String
-    toCode _ _ (AudioBin n) = "@" <> show n
+instance ToCode HYDRA_V opts HT.AudioBin where
+    toCode :: Proxy HYDRA_V -> opts -> HT.AudioBin -> String
+    toCode _ _ (HT.AudioBin n) = "@" <> show n
 
 
-instance ToCode HYDRA_V opts OutputN where
-    toCode :: Proxy HYDRA_V -> opts -> OutputN -> String
+instance ToCode HYDRA_V opts HT.OutputN where
+    toCode :: Proxy HYDRA_V -> opts -> HT.OutputN -> String
     toCode _ _ = case _ of
-        Output0 -> "O0"
-        Output1 -> "O1"
-        Output2 -> "O2"
-        Output3 -> "O3"
-        Output4 -> "O4"
+        HT.Output0 -> "O0"
+        HT.Output1 -> "O1"
+        HT.Output2 -> "O2"
+        HT.Output3 -> "O3"
+        HT.Output4 -> "O4"
 
 
-instance ToCode HYDRA_V opts SourceN where
-    toCode :: Proxy HYDRA_V -> opts -> SourceN -> String
+instance ToCode HYDRA_V opts HT.SourceN where
+    toCode :: Proxy HYDRA_V -> opts -> HT.SourceN -> String
     toCode _ _ = case _ of
-        Source0 -> "S0"
+        HT.Source0 -> "S0"
 
 
-instance ToCode HYDRA_V opts JsExpr where
-    toCode :: Proxy HYDRA_V -> opts -> JsExpr -> String
+instance ToCode HYDRA_V opts HT.JsExpr where
+    toCode :: Proxy HYDRA_V -> opts -> HT.JsExpr -> String
     toCode _ _ = case _ of
-        Val value -> show value -- FIXME: for sure, not `encode`?
-        AddE v1 v2 -> show v1 <> " + " <> show v2 -- FIXME: for sure, not `encode`?
-        SubE v1 v2 -> show v1 <> " - " <> show v2 -- FIXME: for sure, not `encode`?
-        MulE v1 v2 -> show v1 <> " * " <> show v2 -- FIXME: for sure, not `encode`?
-        DivE v1 v2 -> show v1 <> " / " <> show v2 -- FIXME: for sure, not `encode`?
-        ModE v1 v2 -> show v1 <> " % " <> show v2 -- FIXME: for sure, not `encode`?
-        Math meth maybeExpr ->
+        HT.Val value -> show value -- FIXME: for sure, not `encode`?
+        HT.AddE v1 v2 -> show v1 <> " + " <> show v2 -- FIXME: for sure, not `encode`?
+        HT.SubE v1 v2 -> show v1 <> " - " <> show v2 -- FIXME: for sure, not `encode`?
+        HT.MulE v1 v2 -> show v1 <> " * " <> show v2 -- FIXME: for sure, not `encode`?
+        HT.DivE v1 v2 -> show v1 <> " / " <> show v2 -- FIXME: for sure, not `encode`?
+        HT.ModE v1 v2 -> show v1 <> " % " <> show v2 -- FIXME: for sure, not `encode`?
+        HT.Math meth maybeExpr ->
             "Math." <> show meth <>
                 (case maybeExpr of
                     Just expr -> "(" <> show expr <> ")"
                     Nothing -> ""
                 )
-        Brackets expr -> "( " <> show expr <> " )"
+        HT.Brackets expr -> "( " <> show expr <> " )"
 
 
-instance ToCode HYDRA_V opts DepFn where
-    toCode :: Proxy HYDRA_V -> opts -> DepFn -> String
+instance ToCode HYDRA_V opts HT.DepFn where
+    toCode :: Proxy HYDRA_V -> opts -> HT.DepFn -> String
     toCode _ _ = case _ of
-        UserExpr jsexpr -> _encode jsexpr
-        DepFn _ -> "[[CODE]]"
-        Unparsed str -> unparsedFnStart <> str <> unparsedFnEnd -- "<<<< " <> str <> " >>>>"
-        NoAction -> "/----/"
+        HT.UserExpr jsexpr -> _encode jsexpr
+        HT.DepFn _ -> "[[CODE]]"
+        HT.Unparsed str -> PM._unparsedFnStart <> str <> PM._unparsedFnEnd -- "<<<< " <> str <> " >>>>"
+        HT.NoAction -> "/----/"
 
 
-_encodeUsingFn :: forall a. ToFn Value Unit a => a -> String
+_encodeUsingFn :: forall a. ToFn HT.Value Unit a => a -> String
 _encodeUsingFn a =
-    case toFn a :: String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit) of
+    case toFn a :: String /\ Array (Fn.Argument HT.Value) /\ Array (Fn.Output Unit) of
         name /\ args /\ _ ->
             if Array.length args > 0 then
-                String.toUpper name <> " " <> String.joinWith argSep (_encode <$> Fn.argValue <$> args) <> argsEnd
+                String.toUpper name <> " " <> String.joinWith PM._argSep (_encode <$> Fn.argValue <$> args) <> PM._argsEnd
             else
-                String.toUpper name <> " " <> argsEnd
+                String.toUpper name <> " " <> PM._argsEnd
 
 
-_encodeFnWithArgNames :: forall target opts arg out. ToCode HYDRA_V Unit arg => Fn arg out -> String
+_encodeFnWithArgNames :: forall arg out. ToCode HYDRA_V Unit arg => Fn arg out -> String
 _encodeFnWithArgNames fn =
     case (toFn fn :: String /\ Array (Fn.Argument arg) /\ Array (Fn.Output out)) of
         name /\ args /\ _ ->
             if Array.length args > 0 then
-                name <> " " <> show (Array.length args) <> " " <> String.joinWith argSep (_encodeArg <$> args) <> argsEnd
+                name <> " " <> show (Array.length args) <> " " <> String.joinWith PM._argSep (_encodeArg <$> args) <> PM._argsEnd
             else
-                name <> " " <> show (Array.length args) <> " " <> argsEnd
+                name <> " " <> show (Array.length args) <> " " <> PM._argsEnd
     where
         _encodeArg arg =
             Fn.argName arg <> "::" <> _encode (Fn.argValue arg)
     -- Fn.name fn
+
+
+{- instance HasParser WrapRepr where
+    parser = wrap -}
+
+
+instance CanParse HYDRA_V HT.Value where
+    parser = const RP.value
+
+
+instance CanParse HYDRA_V HT.Texture where
+    parser = const RP.texture
+
+
+instance CanParse HYDRA_V HT.Source where
+    parser = const RP.source
+
+
+instance CanParse HYDRA_V HT.OutputN where
+    parser = const RP.outputN
+
+
+instance CanParse HYDRA_V HT.AudioBin where
+    parser = const RP.audioBin
+
+
+instance CanParse HYDRA_V HT.TODO where
+    parser = const RP.todo
+
+
+instance CanParse HYDRA_V HT.Values where
+    parser = const RP.values
+
+
+instance CanParse HYDRA_V HT.GlslFn where
+    parser = const RP.glsl
+
+
+instance FromCode HYDRA_V opts HT.Value    where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.Texture  where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.Source   where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.OutputN  where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.AudioBin where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.TODO     where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.Values   where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.GlslFn   where fromCode = fromParser

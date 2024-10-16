@@ -519,27 +519,6 @@ instance Mark CanBeSource where
         Right _ -> Color.rgb 250 250 205
 
 
-
-    {-
-    mark = case _ of
-        Value _ -> X11.lightyellow -- X11.seagreen-- mark HG.Synth
-        Unit _ -> X11.lightgray
-        Texture _ -> X11.darkorange
-        From _ -> X11.limegreen
-        TODO _ -> X11.burlywood
-        Context _ -> X11.papayawhip
-        UpdateFn _ -> X11.salmon
-        Source _ -> X11.cornsilk
-        Url _ -> X11.cornflowerblue
-        GlslFn _ -> X11.crimson
-        SourceOptions _ -> X11.palevioletred
-        Values _ -> mark HG.Array
-        Ease _ -> X11.darkgoldenrod
-        Audio _ -> mark HG.Audio
-        AudioBin _ -> X11.aqua
-        Output _ -> X11.blue
-    -}
-
 instance Show TOrV where
     show = case _ of
         T tex -> show tex
@@ -1327,53 +1306,36 @@ showUsingPossiblyFnV :: forall x. PossiblyToFn Value Unit x  => (x -> String) ->
 showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) (Proxy :: _ Unit) fallback a
 
 
-argSep :: String
-argSep = ";"
-
-argsEnd :: String
-argsEnd = ";" -- FIXME: try different values here and run tests, seems parsing functions works only with this option and also doesn't consume all the output
-
-
-texSep :: String
-texSep = " % "
-
-texsEnd :: String
-texsEnd = " %"
-
-
-unparsedFnStart :: String
-unparsedFnStart = "¤■"
-
-unparsedFnTerminals :: Array Char
-unparsedFnTerminals = [ '¤', '■' ]
-
-unparsedFnEnd :: String
-unparsedFnEnd = "■¤"
-
-
-jsexprStart :: String
-jsexprStart = "```"
-
-jsexprTerminals :: Array Char
-jsexprTerminals = [ '`' ]
-
-jsexprEnd :: String
-jsexprEnd = "```"
-
-
-glslMarker :: String
-glslMarker = "<GLSL>"
-
-glslStart :: String
-glslStart = "¤¤¤¤■"
-
-glslTerminals :: Array Char
-glslTerminals = [ '¤', '■' ]
-
-glslEnd :: String
-glslEnd = "■¤¤¤¤"
-
-
 instance Partial => Codegen Value where
     mkExpression :: Value -> CST.Expr Void
-    mkExpression = const $ exprCtor "None"
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen Texture where
+    mkExpression :: Texture -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen TODO where
+    mkExpression :: TODO -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen Values where
+    mkExpression :: Values -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen Source where
+    mkExpression :: Source -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen AudioSource where
+    mkExpression :: AudioSource -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen GlslFn where
+    mkExpression :: GlslFn -> CST.Expr Void
+    mkExpression = const $ exprCtor "None" -- FIXME: implement
