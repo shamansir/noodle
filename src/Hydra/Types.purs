@@ -26,7 +26,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Monoid (mempty)
 
 import PureScript.CST.Types as CST
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
+import Tidy.Codegen
 
 import Noodle.Repr (class HasFallback)
 import Noodle.Repr (fallback) as R
@@ -36,8 +36,6 @@ import Noodle.Fn.ToFn (Fn)
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
-
-
 
 
 {-
@@ -139,14 +137,17 @@ data Texture
 --       See also: src/Toolkit/Hydra2/glsl-functions.js
 --       Maybe `From` is rather this `Layer`?
 
-
-data Source
+data From
     = Gradient { speed :: Value }
     | Noise { scale :: Value, offset :: Value }
     | Osc { frequency :: Value, sync :: Value, offset :: Value }
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
     | Voronoi { scale :: Value, speed :: Value, blending :: Value }
+
+
+data Source
+    = From From
     | Load OutputN
     | External SourceN ExtSource
     -- | ..
@@ -230,7 +231,7 @@ data Geometry
     | GScrollY { scrollY :: Value, speed :: Value } -- TODO: join with `Scroll`
 
 
-data OutputN
+data OutputN -- FIXME: Replace with newtype over Int? Bounded, for example
     = Output0
     | Output1
     | Output2
@@ -282,6 +283,7 @@ type GlslFnOut = Unit
 newtype GlslFnCode = GlslFnCode String
 
 
+-- FIXME: use `ToFn`
 newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Fn GlslFnArg GlslFnOut) -- holds default value in every argument
 
 
@@ -636,15 +638,22 @@ instance Show UpdateFn where
     show = const "Update Function" -- TODO
 
 
+instance Show From where
+    show :: From -> String
+    show = -- showUsingFnV
+        case _ of
+            Gradient { speed } -> "Gradient " <> show speed
+            Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
+            Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset
+            Shape { sides, radius, smoothing } -> "Shape " <> show sides <> " " <> show radius <> " " <> show smoothing
+            Solid { r, g, b, a } -> "Solid " <> show r <> " " <> show g <> " " <> show b <> " " <> show a
+            Voronoi { scale, speed, blending } -> "Voronoi " <> show scale <> " " <> show speed <> " " <> show blending
+
+
 instance Show Source where
     show :: Source -> String
-    show = showUsingPossiblyFnV $ \s -> case s of
-        Gradient { speed } -> "Gradient " <> show speed
-        Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
-        Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset
-        Shape { sides, radius, smoothing } -> "Shape " <> show sides <> " " <> show radius <> " " <> show smoothing
-        Solid { r, g, b, a } -> "Solid " <> show r <> " " <> show g <> " " <> show b <> " " <> show a
-        Voronoi { scale, speed, blending } -> "Voronoi " <> show scale <> " " <> show speed <> " " <> show blending
+    show = case _ of
+        From from -> show from
         Load outputN -> "Load " <> show outputN
         External sourceN ext -> "External " <> show sourceN <> " " <> show ext
 
@@ -843,17 +852,23 @@ instance ToFn GlslFnArg GlslFnOut GlslFnRef where
     toFn (GlslFnRef fn) = toFn fn
 
 
+instance ToFn Value Unit From where
+    toFn :: From -> String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit)
+    toFn = case _ of
+        Gradient { speed } -> "gradient" /\ [ q "speed" speed ] /\ [ o "out" unit ]
+        Noise { scale, offset } -> "noise" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
+        Osc { frequency, sync, offset } -> "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ] /\ [ o "out" unit ]
+        Shape { sides, radius, smoothing } -> "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ] /\ [ o "out" unit ]
+        Solid { r, g, b, a } -> "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
+        Voronoi { scale, speed, blending } -> "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ] /\ [ o "out" unit ]
+
+
 instance PossiblyToFn Value Unit Source where
     possiblyToFn :: Source -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
     possiblyToFn = case _ of
         Load outputN -> Nothing -- TODO: could be converted to `src()`
         External sourceN ext -> Nothing -- TODO: could be converted to `src()` ?
-        Gradient { speed } -> Just $ "gradient" /\ [ q "speed" speed ] /\ [ o "out" unit ]
-        Noise { scale, offset } -> Just $ "noise" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        Osc { frequency, sync, offset } -> Just $ "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ] /\ [ o "out" unit ]
-        Shape { sides, radius, smoothing } -> Just $ "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ] /\ [ o "out" unit ]
-        Solid { r, g, b, a } -> Just $ "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
-        Voronoi { scale, speed, blending } -> Just $ "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ] /\ [ o "out" unit ]
+        From from -> Just $ toFn from
 
 
 instance PossiblyToFn TOrV OTOrV Texture where
@@ -1035,6 +1050,7 @@ instance PossiblyToFn FnArg FnOut HydraFnId where
     possiblyToFn = unwrap >>> defaultsFor
 
 
+-- TODO: generate from NDF
 defaultsFor :: String -> Maybe (String /\ Array (Fn.Argument FnArg) /\ Array (Fn.Output FnOut)) -- TODO: output of Fn!
 -- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
 defaultsFor = case _ of
@@ -1151,6 +1167,7 @@ defaultsFor = case _ of
 
 -- TODO: probably duplicates something, is it used? replace with above instance of `defaultsFor`?`
 -- TODO: private
+-- TODO: generate from NDF
 fromKnownFn :: String -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
 fromKnownFn = case _ of
     -- "number" -> Feed
@@ -1306,36 +1323,279 @@ showUsingPossiblyFnV :: forall x. PossiblyToFn Value Unit x  => (x -> String) ->
 showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) (Proxy :: _ Unit) fallback a
 
 
+data ApplyArgs_
+    = Zero
+    | One Value
+    | Rec (Array (String /\ Value))
+
+
+-- FIMXE: generate from NDF
+class CodegenApply_ a where
+    codegenApply :: a -> String /\ ApplyArgs_ -- TODO: intersects with `ToFn` ?
+
+
+instance CodegenApply_ From where
+    codegenApply = case _ of
+        Gradient { speed } -> "Gradient" /\ Rec [ "speed" /\ speed ]
+        Noise { scale, offset } -> "Noise" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        Osc { frequency, sync, offset } -> "Osc" /\ Rec [ "frequency" /\ frequency, "frequency" /\ frequency, "offset" /\ offset ]
+        Shape { sides, radius, smoothing } -> "Shape" /\ Rec [ "sides" /\ sides, "radius" /\ radius, "smoothing" /\ smoothing ]
+        Solid { r, g, b, a } -> "Solid" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Voronoi { scale, speed, blending } -> "Voronoi" /\ Rec [ "scale" /\ scale, "speed" /\ speed, "blending" /\ blending ]
+
+
+instance CodegenApply_ Blend where
+    codegenApply = case _ of
+        Blend value -> "Blend" /\ One value
+        Add value -> "Add" /\ One value
+        Diff -> "Diff" /\ Zero
+        Layer value -> "Layer" /\ One value
+        Mask -> "Mask" /\ Zero
+        Mult value -> "Mult" /\ One value
+        Sub value -> "Sub" /\ One value
+
+
+instance CodegenApply_ ColorOp where
+    codegenApply = case _ of
+        R { scale, offset } -> "R" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        G { scale, offset } -> "G" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        B { scale, offset } -> "B" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        A { scale, offset } -> "A" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        Posterize { bins, gamma } -> "Posterize" /\ Rec [ "bins" /\ bins, "gamma" /\ gamma ]
+        Shift { r, g, b, a } -> "Shift" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Color { r, g, b, a } -> "Color" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Luma { threshold, tolerance } -> "Luma" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
+        Thresh { threshold, tolerance } -> "Thresh" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
+        Invert value -> "Invert" /\ One value
+        Contrast value -> "Contrast" /\ One value
+        Saturate value -> "Saturate" /\ One value
+        Hue value -> "Hue" /\ One value
+        Colorama value -> "Colorama" /\ One value
+        Brightness value -> "Brightness" /\ One value
+
+
+instance CodegenApply_ Modulate where
+    codegenApply = case _ of
+        Modulate value -> "Modulate" /\ One value
+        ModHue value -> "ModHue" /\ One value
+        ModKaleid { nSides } -> "ModKaleid" /\ Rec [ "nSides" /\ nSides ]
+        ModPixelate { multiple, offset } -> "ModPixelate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModRepeat { repeatX, repeatY, offsetX, offsetY } ->
+            "ModRepeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        ModRepeatX { reps, offset } -> "ModRepeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        ModRepeatY { reps, offset } -> "ModRepeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        ModRotate { multiple, offset } -> "ModRotate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModScale { multiple, offset } -> "ModScale" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModScroll { scrollX, scrollY, speedX, speedY } -> "ModScroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
+        ModScrollX { scrollX, speed } -> "ModScrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
+        ModScrollY { scrollY, speed } -> "ModScrollY" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
+
+
+instance CodegenApply_ Geometry where
+    codegenApply = case _ of
+        GKaleid { nSides } -> "GKaleid" /\ Rec [ "nSides" /\ nSides ]
+        GPixelate { pixelX, pixelY } -> "GPixelate" /\ Rec [ "pixelX" /\ pixelX, "pixelY" /\ pixelY ]
+        GRepeat { repeatX, repeatY, offsetX, offsetY } ->
+            "GRepeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        GRepeatX { reps, offset } -> "GRepeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        GRepeatY { reps, offset } -> "GRepeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        GRotate { angle, speed } -> "GRotate" /\ Rec [ "angle" /\ angle, "speed" /\ speed ]
+        GScale { amount, xMult, yMult, offsetX, offsetY } ->
+            "GScale" /\ Rec [ "amount" /\ amount, "xMult" /\ xMult, "yMult" /\ yMult, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        GScroll { scrollX, scrollY, speedX, speedY } -> "GScroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
+        GScrollX { scrollX, speed } -> "GScrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
+        GScrollY { scrollY, speed } -> "GScrollY" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
+
+
+instance CodegenApply_ Ease where
+    codegenApply = case _ of
+        Linear -> "Linear" /\ Zero
+        InOutCubic -> "InOutCubic" /\ Zero
+        Fast value -> "Fast" /\ One value
+        Smooth value -> "Smooth" /\ One value
+        Fit { low, high } ->
+            "Fit" /\ Rec [ "low" /\ low, "high" /\ high ]
+        Offset value ->
+            "Offset" /\ One value
+
+
+withCodegenApply :: forall a. Partial => CodegenApply_ a => a -> CST.Expr Void
+withCodegenApply a =
+    case codegenApply a of
+        ctor /\ Zero -> exprCtor ctor
+        ctor /\ One val -> exprApp (exprCtor ctor) [ mkExpression val ]
+        ctor /\ Rec fields ->
+            exprApp
+                (exprCtor ctor)
+                [ exprRecord (map mkExpression <$> fields)
+                ]
+
+
 instance Partial => Codegen Value where
     mkExpression :: Value -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = case _ of
+        None -> exprCtor "None"
+        Undefined -> exprCtor "Undefined"
+        Number num -> exprApp (exprCtor "Number") [ exprNumber num ]
+        VArray (Values vals) ease ->
+            exprApp
+                (exprCtor "VArray")
+                [ exprArray $ mkExpression <$> vals
+                , mkExpression ease
+                ]
+        Dep depFn ->
+            exprApp (exprCtor "Dep") [ mkExpression depFn ]
+        Time -> exprCtor "Time"
+        MouseX -> exprCtor "MouseX"
+        MouseY -> exprCtor "MouseY"
+        Width -> exprCtor "Width"
+        Height -> exprCtor "Height"
+        Pi -> exprCtor "Pi"
+        Fft audioBin -> exprApp (exprCtor "Fft") [ mkExpression audioBin ]
 
 
-instance Partial => Codegen Texture where
-    mkExpression :: Texture -> CST.Expr Void
+instance Partial => Codegen Ease where
+    mkExpression :: Ease -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen DepFn where
+    mkExpression :: DepFn -> CST.Expr Void
+    mkExpression = const $ exprCtor "NoAction" -- FIXME: TODO
+
+
+instance Partial => Codegen AudioBin where
+    mkExpression :: AudioBin -> CST.Expr Void
+    mkExpression (AudioBin n) =
+        exprApp (exprCtor "AudioBin") [ exprInt n ]
+
+
+instance Partial => Codegen From where
+    mkExpression :: From -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen Blend where
+    mkExpression :: Blend -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen ColorOp where
+    mkExpression :: ColorOp -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen Modulate where
+    mkExpression :: Modulate -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen Geometry where
+    mkExpression :: Geometry -> CST.Expr Void
+    mkExpression = withCodegenApply
+
+
+instance Partial => Codegen GlslFnRef where
+    mkExpression :: GlslFnRef -> CST.Expr Void
     mkExpression = const $ exprCtor "None" -- FIXME: implement
 
 
 instance Partial => Codegen TODO where
     mkExpression :: TODO -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = const $ exprCtor "TODO"
 
 
 instance Partial => Codegen Values where
     mkExpression :: Values -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression (Values values) =
+        exprApp (exprCtor "Values") [ exprArray $ mkExpression <$> values ]
 
 
 instance Partial => Codegen Source where
     mkExpression :: Source -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = case _ of
+        From from ->
+            exprApp (exprCtor "From") [ mkExpression from ]
+        Load outputN ->
+            exprApp (exprCtor "Load") [ mkExpression outputN ]
+        External sourceN extSource ->
+            exprApp (exprCtor "External")
+                [ mkExpression sourceN
+                , mkExpression extSource
+                ]
+
+instance Partial => Codegen OutputN where
+    mkExpression :: OutputN -> CST.Expr Void
+    mkExpression = exprCtor <<< case _ of
+        Output0 -> "Output0"
+        Output1 -> "Output1"
+        Output2 -> "Output2"
+        Output3 -> "Output3"
+        Output4 -> "Output4"
+
+
+instance Partial => Codegen SourceN where
+    mkExpression :: SourceN -> CST.Expr Void
+    mkExpression = exprCtor <<< case _ of
+        Source0 -> "Source0"
 
 
 instance Partial => Codegen AudioSource where
     mkExpression :: AudioSource -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = exprCtor <<< case _ of
+        Silence -> "Silence"
+        Mic -> "Mic"
+        File -> "File"
+
+
+instance Partial => Codegen ExtSource where
+    mkExpression :: ExtSource -> CST.Expr Void
+    mkExpression = case _ of
+        Sketch from ->
+            exprApp (exprCtor "Sketch") [ exprString from ]
+        Video ->
+            exprCtor "Video"
+        Camera num ->
+            exprApp (exprCtor "Camera") [ exprInt num ]
+        Unclear ->
+            exprCtor "Unclear"
 
 
 instance Partial => Codegen GlslFn where
     mkExpression :: GlslFn -> CST.Expr Void
     mkExpression = const $ exprCtor "None" -- FIXME: implement
+
+
+instance Partial => Codegen Texture where
+    mkExpression :: Texture -> CST.Expr Void
+    mkExpression = case _ of
+        Empty -> exprCtor "Texture"
+        Start source -> exprApp (exprCtor "Start") [ mkExpression source ]
+        BlendOf { what, with } blend ->
+            exprApp (exprCtor "BlendOf")
+            [ exprRecord
+                [ "what" /\ mkExpression what, "with" /\ mkExpression with ]
+            , mkExpression blend
+            ]
+        Filter texture colorOp ->
+            exprApp (exprCtor "Filter")
+            [ mkExpression texture
+            , mkExpression colorOp
+            ]
+        ModulateWith { what, with } modulate ->
+            exprApp (exprCtor "Modulate")
+            [ exprRecord
+                [ "what" /\ mkExpression what, "with" /\ mkExpression with ]
+            , mkExpression modulate
+            ]
+        Geometry texture geometry ->
+            exprApp (exprCtor "Geometry")
+            [ mkExpression texture
+            , mkExpression geometry
+            ]
+        CallGlslFn { over, mbWith } glslFnRef ->
+            exprApp (exprCtor "CallGlslFn")
+            [ exprRecord
+                [ "over" /\ mkExpression over, "mbWith" /\ mkExpression mbWith ]
+            , mkExpression glslFnRef
+            ]

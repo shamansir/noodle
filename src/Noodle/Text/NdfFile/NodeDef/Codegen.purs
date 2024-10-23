@@ -34,6 +34,12 @@ class Codegen a where
   mkExpression :: a -> CST.Expr Void
 
 
+instance (Partial, Codegen a) => Codegen (Maybe a) where
+  mkExpression = case _ of
+    Just a -> exprApp (exprCtor "Just") [ mkExpression a ]
+    Nothing -> exprCtor "Nothing"
+
+
 class CodegenRepr :: forall k. k -> Constraint
 class CodegenRepr repr where
   reprModule :: Proxy repr -> String
