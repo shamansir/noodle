@@ -37,7 +37,7 @@ import Hydra.Repr.Target (_encode, _decode) as Hydra
 textureSamples :: Array Texture
 textureSamples =
     [ Empty
-    , Start $ Gradient { speed : Number 2.0 }
+    , Start $ From $ Gradient { speed : Number 2.0 }
     , Start $ Load Output3
     , Filter Empty $ Invert Width
     , Filter Empty $ Contrast Height
@@ -64,11 +64,11 @@ wrapReprSamples =
     , Value $ VArray (T.Values []) $ Fit { low : Number 1.0, high : Number 2.5 }
     -- , Value $ Dep $ JsExpr $ Val $ Number 3.0
     , Texture Empty
-    , Texture $ Start $ Gradient { speed : Number 2.0 }
-    , Texture $ Start $ Noise { scale : Number 1.5, offset : MouseX }
-    , Texture $ Start $ Solid { r : Number 1.5, g : Pi, b : Width, a : Time }
-    , Texture $ Start $ Voronoi { scale : Width, speed : Pi, blending : MouseX }
-    , Texture $ Start $ Osc { frequency : Number 60.0, offset : Pi, sync : Width }
+    , Texture $ Start $ From $ Gradient { speed : Number 2.0 }
+    , Texture $ Start $ From $ Noise { scale : Number 1.5, offset : MouseX }
+    , Texture $ Start $ From $ Solid { r : Number 1.5, g : Pi, b : Width, a : Time }
+    , Texture $ Start $ From $ Voronoi { scale : Width, speed : Pi, blending : MouseX }
+    , Texture $ Start $ From $ Osc { frequency : Number 60.0, offset : Pi, sync : Width }
     , Texture $ Start $ Load Output3
     , Texture $ Start $ External Source0 $ Camera 2
     , Texture $ Start $ External Source0 Video
@@ -77,7 +77,7 @@ wrapReprSamples =
     , Texture $ Filter Empty $ Contrast Height
     , Texture $ Filter Empty $ Posterize { bins : Time, gamma : Height }
     , Texture $ Filter (Start $ Load Output2) $ Shift { r : Number 1.5, g : Pi, b : Width, a : Time }
-    , Texture $ Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
+    , Texture $ Filter (Start $ From $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
     , Texture
         $ ModulateWith
             { what : Empty
@@ -93,13 +93,13 @@ wrapReprSamples =
     , Texture
         $ ModulateWith
             { what : Empty
-            , with : Start $ Osc { frequency : Number 60.0, offset : Number 0.0, sync : Number 1.0 }
+            , with : Start $ From $ Osc { frequency : Number 60.0, offset : Number 0.0, sync : Number 1.0 }
             }
         $ ModKaleid { nSides : Number 7.0 }
     , Texture
         $ ModulateWith
-            { what : Start $ Osc { frequency : Number 60.0, offset : Pi, sync : Number 1.0 }
-            , with : Filter (Start $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
+            { what : Start $ From $ Osc { frequency : Number 60.0, offset : Pi, sync : Number 1.0 }
+            , with : Filter (Start $ From $ Noise { scale : Number 1.5, offset : MouseX }) $ B { scale : Width, offset : Number 0.0 }
             }
         $ ModScroll { scrollX : Number 2.0, speedX : Number 1.0, scrollY : Number 0.5, speedY : Pi }
     , Texture

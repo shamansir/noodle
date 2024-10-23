@@ -128,12 +128,12 @@ instance ToCode HYDRA_V opts HT.Source where
     toCode _ _ = case _ of
         HT.Load outputN -> "O " <> _encode outputN
         HT.External sourceN def -> "X " <> _encode sourceN <> PM._argSep <> _encode def <> PM._argsEnd
-        HT.Gradient { speed } -> "G " <> _encode speed <> PM._argsEnd
-        HT.Noise { scale, offset } -> "N " <> _encode scale <> PM._argSep <> _encode offset <> PM._argsEnd
-        HT.Osc { frequency, sync, offset } -> "OSC " <> _encode frequency <> PM._argSep <> _encode sync <> PM._argSep <> _encode offset <> PM._argsEnd
-        HT.Shape { sides, radius, smoothing } -> "SHP " <> _encode sides <> PM._argSep <> _encode radius <> PM._argSep <> _encode smoothing <> PM._argsEnd
-        HT.Solid { r, g, b, a } -> "S " <> _encode r <> PM._argSep <> _encode g <> PM._argSep <> _encode b <> PM._argSep <> _encode a <> PM._argsEnd
-        HT.Voronoi { scale, speed, blending } -> "V " <> _encode scale <> PM._argSep <> _encode speed <> PM._argSep <> _encode blending <> PM._argsEnd
+        HT.From (HT.Gradient { speed }) -> "G " <> _encode speed <> PM._argsEnd
+        HT.From (HT.Noise { scale, offset }) -> "N " <> _encode scale <> PM._argSep <> _encode offset <> PM._argsEnd
+        HT.From (HT.Osc { frequency, sync, offset }) -> "OSC " <> _encode frequency <> PM._argSep <> _encode sync <> PM._argSep <> _encode offset <> PM._argsEnd
+        HT.From (HT.Shape { sides, radius, smoothing }) -> "SHP " <> _encode sides <> PM._argSep <> _encode radius <> PM._argSep <> _encode smoothing <> PM._argsEnd
+        HT.From (HT.Solid { r, g, b, a }) -> "S " <> _encode r <> PM._argSep <> _encode g <> PM._argSep <> _encode b <> PM._argSep <> _encode a <> PM._argsEnd
+        HT.From (HT.Voronoi { scale, speed, blending }) -> "V " <> _encode scale <> PM._argSep <> _encode speed <> PM._argSep <> _encode blending <> PM._argsEnd
 
 
 instance ToCode HYDRA_V opts HT.RenderTarget where

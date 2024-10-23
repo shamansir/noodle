@@ -155,12 +155,12 @@ texture =
 source :: Parser String HT.Source
 source =
     foldMarkers
-        [ marker $ "S" /\ HT.Solid /\ parseArgs4V \r g b a -> { r, g, b, a }
-        , marker $ "G" /\ HT.Gradient /\ parseArgs1V \speed -> { speed }
-        , marker $ "N" /\ HT.Noise /\ parseArgs2V \scale offset -> { scale, offset }
-        , marker $ "OSC" /\ HT.Osc /\ parseArgs3V \frequency sync offset -> { frequency, sync, offset }
-        , marker $ "SCP" /\ HT.Shape /\ parseArgs3V \sides radius smoothing -> { sides, radius, smoothing }
-        , marker $ "V" /\ HT.Voronoi /\ parseArgs3V \scale speed blending -> { scale, speed, blending }
+        [ marker $ "S" /\ (HT.From <<< HT.Solid) /\ parseArgs4V \r g b a -> { r, g, b, a }
+        , marker $ "G" /\ (HT.From <<< HT.Gradient) /\ parseArgs1V \speed -> { speed }
+        , marker $ "N" /\ (HT.From <<< HT.Noise) /\ parseArgs2V \scale offset -> { scale, offset }
+        , marker $ "OSC" /\ (HT.From <<< HT.Osc) /\ parseArgs3V \frequency sync offset -> { frequency, sync, offset }
+        , marker $ "SCP" /\ (HT.From <<< HT.Shape) /\ parseArgs3V \sides radius smoothing -> { sides, radius, smoothing }
+        , marker $ "V" /\ (HT.From <<< HT.Voronoi) /\ parseArgs3V \scale speed blending -> { scale, speed, blending }
         , marker $ "O" /\ HT.Load /\ outputN
         , marker $ "X" /\ uncurry HT.External /\ do
             src <- sourceN
