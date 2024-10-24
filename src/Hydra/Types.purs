@@ -33,7 +33,7 @@ import Noodle.Repr (fallback) as R
 import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 import Noodle.Fn.ToFn (Fn)
-import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 
@@ -1323,6 +1323,18 @@ showUsingPossiblyFnV :: forall x. PossiblyToFn Value Unit x  => (x -> String) ->
 showUsingPossiblyFnV fallback a = showUsingPossiblyFn (Proxy :: _ Value) (Proxy :: _ Unit) fallback a
 
 
+hydraAlias_ = "HT" :: String
+hydraPrefix_ = hydraAlias_ <> "." :: String
+
+
+hydraCtor_ :: forall a. Partial => String -> CST.Expr a
+hydraCtor_ ctor = exprCtor $ hydraPrefix_ <> ctor
+
+
+hydraType_ :: forall a. Partial => String -> CST.Type a
+hydraType_ ctor = typeCtor $ hydraPrefix_ <> ctor
+
+
 data ApplyArgs_
     = Zero
     | One Value
@@ -1422,111 +1434,111 @@ instance CodegenApply_ Ease where
 withCodegenApply :: forall a. Partial => CodegenApply_ a => a -> CST.Expr Void
 withCodegenApply a =
     case codegenApply a of
-        ctor /\ Zero -> exprCtor ctor
-        ctor /\ One val -> exprApp (exprCtor ctor) [ mkExpression val ]
+        ctor /\ Zero -> hydraCtor_ ctor
+        ctor /\ One val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
         ctor /\ Rec fields ->
             exprApp
-                (exprCtor ctor)
+                (hydraCtor_ ctor)
                 [ exprRecord (map mkExpression <$> fields)
                 ]
 
 
-instance Partial => Codegen Value where
+instance Partial => ValueCodegen Value where
     mkExpression :: Value -> CST.Expr Void
     mkExpression = case _ of
-        None -> exprCtor "None"
-        Undefined -> exprCtor "Undefined"
-        Number num -> exprApp (exprCtor "Number") [ exprNumber num ]
+        None -> hydraCtor_ "None"
+        Undefined -> hydraCtor_ "Undefined"
+        Number num -> exprApp (hydraCtor_ "Number") [ exprNumber num ]
         VArray (Values vals) ease ->
             exprApp
-                (exprCtor "VArray")
+                (hydraCtor_ "VArray")
                 [ exprArray $ mkExpression <$> vals
                 , mkExpression ease
                 ]
         Dep depFn ->
-            exprApp (exprCtor "Dep") [ mkExpression depFn ]
-        Time -> exprCtor "Time"
-        MouseX -> exprCtor "MouseX"
-        MouseY -> exprCtor "MouseY"
-        Width -> exprCtor "Width"
-        Height -> exprCtor "Height"
-        Pi -> exprCtor "Pi"
-        Fft audioBin -> exprApp (exprCtor "Fft") [ mkExpression audioBin ]
+            exprApp (hydraCtor_ "Dep") [ mkExpression depFn ]
+        Time -> hydraCtor_ "Time"
+        MouseX -> hydraCtor_ "MouseX"
+        MouseY -> hydraCtor_ "MouseY"
+        Width -> hydraCtor_ "Width"
+        Height -> hydraCtor_ "Height"
+        Pi -> hydraCtor_ "Pi"
+        Fft audioBin -> exprApp (hydraCtor_ "Fft") [ mkExpression audioBin ]
 
 
-instance Partial => Codegen Ease where
+instance Partial => ValueCodegen Ease where
     mkExpression :: Ease -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen DepFn where
+instance Partial => ValueCodegen DepFn where
     mkExpression :: DepFn -> CST.Expr Void
-    mkExpression = const $ exprCtor "NoAction" -- FIXME: TODO
+    mkExpression = const $ hydraCtor_ "NoAction" -- FIXME: TODO
 
 
-instance Partial => Codegen AudioBin where
+instance Partial => ValueCodegen AudioBin where
     mkExpression :: AudioBin -> CST.Expr Void
     mkExpression (AudioBin n) =
-        exprApp (exprCtor "AudioBin") [ exprInt n ]
+        exprApp (hydraCtor_ "AudioBin") [ exprInt n ]
 
 
-instance Partial => Codegen From where
+instance Partial => ValueCodegen From where
     mkExpression :: From -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen Blend where
+instance Partial => ValueCodegen Blend where
     mkExpression :: Blend -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen ColorOp where
+instance Partial => ValueCodegen ColorOp where
     mkExpression :: ColorOp -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen Modulate where
+instance Partial => ValueCodegen Modulate where
     mkExpression :: Modulate -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen Geometry where
+instance Partial => ValueCodegen Geometry where
     mkExpression :: Geometry -> CST.Expr Void
     mkExpression = withCodegenApply
 
 
-instance Partial => Codegen GlslFnRef where
+instance Partial => ValueCodegen GlslFnRef where
     mkExpression :: GlslFnRef -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = const $ hydraCtor_ "None" -- FIXME: implement
 
 
-instance Partial => Codegen TODO where
+instance Partial => ValueCodegen TODO where
     mkExpression :: TODO -> CST.Expr Void
-    mkExpression = const $ exprCtor "TODO"
+    mkExpression = const $ hydraCtor_ "TODO"
 
 
-instance Partial => Codegen Values where
+instance Partial => ValueCodegen Values where
     mkExpression :: Values -> CST.Expr Void
     mkExpression (Values values) =
-        exprApp (exprCtor "Values") [ exprArray $ mkExpression <$> values ]
+        exprApp (hydraCtor_ "Values") [ exprArray $ mkExpression <$> values ]
 
 
-instance Partial => Codegen Source where
+instance Partial => ValueCodegen Source where
     mkExpression :: Source -> CST.Expr Void
     mkExpression = case _ of
         From from ->
-            exprApp (exprCtor "From") [ mkExpression from ]
+            exprApp (hydraCtor_ "From") [ mkExpression from ]
         Load outputN ->
-            exprApp (exprCtor "Load") [ mkExpression outputN ]
+            exprApp (hydraCtor_ "Load") [ mkExpression outputN ]
         External sourceN extSource ->
-            exprApp (exprCtor "External")
+            exprApp (hydraCtor_ "External")
                 [ mkExpression sourceN
                 , mkExpression extSource
                 ]
 
-instance Partial => Codegen OutputN where
+instance Partial => ValueCodegen OutputN where
     mkExpression :: OutputN -> CST.Expr Void
-    mkExpression = exprCtor <<< case _ of
+    mkExpression = hydraCtor_ <<< case _ of
         Output0 -> "Output0"
         Output1 -> "Output1"
         Output2 -> "Output2"
@@ -1534,67 +1546,67 @@ instance Partial => Codegen OutputN where
         Output4 -> "Output4"
 
 
-instance Partial => Codegen SourceN where
+instance Partial => ValueCodegen SourceN where
     mkExpression :: SourceN -> CST.Expr Void
-    mkExpression = exprCtor <<< case _ of
+    mkExpression = hydraCtor_ <<< case _ of
         Source0 -> "Source0"
 
 
-instance Partial => Codegen AudioSource where
+instance Partial => ValueCodegen AudioSource where
     mkExpression :: AudioSource -> CST.Expr Void
-    mkExpression = exprCtor <<< case _ of
+    mkExpression = hydraCtor_ <<< case _ of
         Silence -> "Silence"
         Mic -> "Mic"
         File -> "File"
 
 
-instance Partial => Codegen ExtSource where
+instance Partial => ValueCodegen ExtSource where
     mkExpression :: ExtSource -> CST.Expr Void
     mkExpression = case _ of
         Sketch from ->
-            exprApp (exprCtor "Sketch") [ exprString from ]
+            exprApp (hydraCtor_ "Sketch") [ exprString from ]
         Video ->
-            exprCtor "Video"
+            hydraCtor_ "Video"
         Camera num ->
-            exprApp (exprCtor "Camera") [ exprInt num ]
+            exprApp (hydraCtor_ "Camera") [ exprInt num ]
         Unclear ->
-            exprCtor "Unclear"
+            hydraCtor_ "Unclear"
 
 
-instance Partial => Codegen GlslFn where
+instance Partial => ValueCodegen GlslFn where
     mkExpression :: GlslFn -> CST.Expr Void
-    mkExpression = const $ exprCtor "None" -- FIXME: implement
+    mkExpression = const $ hydraCtor_ "None" -- FIXME: implement
 
 
-instance Partial => Codegen Texture where
+instance Partial => ValueCodegen Texture where
     mkExpression :: Texture -> CST.Expr Void
     mkExpression = case _ of
-        Empty -> exprCtor "Texture"
-        Start source -> exprApp (exprCtor "Start") [ mkExpression source ]
+        Empty -> hydraCtor_ "Texture"
+        Start source -> exprApp (hydraCtor_ "Start") [ mkExpression source ]
         BlendOf { what, with } blend ->
-            exprApp (exprCtor "BlendOf")
+            exprApp (hydraCtor_ "BlendOf")
             [ exprRecord
                 [ "what" /\ mkExpression what, "with" /\ mkExpression with ]
             , mkExpression blend
             ]
         Filter texture colorOp ->
-            exprApp (exprCtor "Filter")
+            exprApp (hydraCtor_ "Filter")
             [ mkExpression texture
             , mkExpression colorOp
             ]
         ModulateWith { what, with } modulate ->
-            exprApp (exprCtor "Modulate")
+            exprApp (hydraCtor_ "Modulate")
             [ exprRecord
                 [ "what" /\ mkExpression what, "with" /\ mkExpression with ]
             , mkExpression modulate
             ]
         Geometry texture geometry ->
-            exprApp (exprCtor "Geometry")
+            exprApp (hydraCtor_ "Geometry")
             [ mkExpression texture
             , mkExpression geometry
             ]
         CallGlslFn { over, mbWith } glslFnRef ->
-            exprApp (exprCtor "CallGlslFn")
+            exprApp (hydraCtor_ "CallGlslFn")
             [ exprRecord
                 [ "over" /\ mkExpression over, "mbWith" /\ mkExpression mbWith ]
             , mkExpression glslFnRef

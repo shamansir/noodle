@@ -30,11 +30,15 @@ import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (process) as PC
 
 
-class Codegen a where
+class ValueCodegen a where
   mkExpression :: a -> CST.Expr Void
 
 
-instance (Partial, Codegen a) => Codegen (Maybe a) where
+class TypeCodegen a where
+  mkType :: a -> CST.Type Void
+
+
+instance (Partial, ValueCodegen a) => ValueCodegen (Maybe a) where
   mkExpression = case _ of
     Just a -> exprApp (exprCtor "Just") [ mkExpression a ]
     Nothing -> exprCtor "Nothing"

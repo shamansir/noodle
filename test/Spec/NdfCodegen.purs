@@ -38,7 +38,7 @@ import Noodle.Text.NdfFile.Types (NodeFamily(..))
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
 
 import Hydra.Types (FnArg(..))
-import Hydra.Repr.Wrap (WrapRepr)
+import Hydra.Repr.Wrap (WrapRepr, hydraGenOptions)
 
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
@@ -52,21 +52,6 @@ minimalGenOptions = CG.Options
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
     , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalRepr" ]
-    ]
-  }
-
-
-
--- FIXME: move to WrapRepr
-hydraGenOptions :: CG.Options WrapRepr
-hydraGenOptions = CG.Options
-  { temperamentAlgorithm : Temperament.defaultAlgorithm
-  , monadAt : { module_ : "Effect", type_ : "Effect" }
-  , nodeModuleName
-  , prepr : (Proxy :: _ WrapRepr)
-  , imports : unsafePartial $
-    [ declImportAs "Hydra.Types" [ ] "HT"
-    , declImport "Hydra.Repr.Wrap" [ ]
     ]
   }
 
@@ -130,7 +115,7 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf -> do
             let definitions = NdfFile.loadDefinitions parsedNdf
-            traverse_ ( testNodeDefCodegen hydraGenOptions $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
+            traverse_ ( testNodeDefCodegen (hydraGenOptions nodeModuleName) $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
 
 
 familyUp :: NodeFamily -> String

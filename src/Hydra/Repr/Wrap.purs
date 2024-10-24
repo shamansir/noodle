@@ -20,8 +20,11 @@ import Parsing.Extra (marker, foldMarkers, parseBy)
 import Noodle.Repr as R
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
+import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
-import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class Codegen, mkExpression)
+import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression)
+import Noodle.Text.NdfFile.NodeDef.Codegen (Options(..)) as CG
+import Noodle.Text.NdfFile.Types (NodeFamily(..))
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser)
@@ -32,7 +35,7 @@ import Hydra.Repr.Target (HYDRA_V, hydraV)
 import Hydra.Repr.Target (_encode) as H
 
 import PureScript.CST.Types as CST
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs)
 
 
 -- import CompArts.Product as CAI
@@ -639,6 +642,19 @@ instance R.WriteRepr WrapRepr where
     writeRepr = R.unwrap >>> H._encode
 
 
+hydraGenOptions :: (NodeFamily -> String) -> CG.Options WrapRepr
+hydraGenOptions toModuleName = CG.Options
+  { temperamentAlgorithm : Temperament.defaultAlgorithm
+  , monadAt : { module_ : "Effect", type_ : "Effect" }
+  , nodeModuleName : toModuleName
+  , prepr : (Proxy :: _ WrapRepr)
+  , imports : unsafePartial $
+    [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
+    , declImport "Hydra.Repr.Wrap" [ ]
+    ]
+  }
+
+
 instance CodegenRepr WrapRepr where
     reprModule :: Proxy WrapRepr -> String
     reprModule = const "Hydra.Repr.Wrap"
@@ -647,31 +663,31 @@ instance CodegenRepr WrapRepr where
     reprType :: Proxy WrapRepr -> CST.Type Void
     reprType = const $ unsafePartial $ typeCtor "WrapRepr"
     reprDefault :: Proxy WrapRepr -> CST.Expr Void
-    reprDefault = const $ unsafePartial $ exprCtor "None"
+    reprDefault = const $ unsafePartial $ HT.hydraCtor_ "None"
     typeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
-                    "Value" -> typeCtor "Value"
-                    "Texture" -> typeCtor "Texture"
-                    "TODO" -> typeCtor "TODO"
-                    "Values" -> typeCtor "Values"
-                    "Source" -> typeCtor "Source"
-                    "Audio" -> typeCtor "Audio"
-                    "GlslFn" -> typeCtor "GlslFn"
+                    "Value" -> HT.hydraType_ "Value"
+                    "Texture" -> HT.hydraType_ "Texture"
+                    "TODO" -> HT.hydraType_ "TODO"
+                    "Values" -> HT.hydraType_ "Values"
+                    "Source" -> HT.hydraType_ "Source"
+                    "Audio" -> HT.hydraType_ "Audio"
+                    "GlslFn" -> HT.hydraType_ "GlslFn"
                     -- FIXME: implement further
-                    _ -> typeCtor "WrapRepr"
+                    _ -> HT.hydraType_ "WrapRepr"
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
     valueFor = const $ unsafePartial $ \mbType ->
-                  case NT.unwrap <$> mbType of
+                  case NT.unwrap <$> mbType of -- FIXME: contains hydraPrefix_
                      Just "Value" -> tryMkExpression (Proxy :: _ HT.Value)
                      Just "Texture" -> tryMkExpression (Proxy :: _ HT.Texture)
                      Just "TODO" -> tryMkExpression (Proxy :: _ HT.TODO)
                      Just "Values" -> tryMkExpression (Proxy :: _ HT.Values)
                      Just "Source" -> tryMkExpression (Proxy :: _ HT.Source)
-                     -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource) -- FIXME: TODO
+                     -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
                      Just "GlslFn" -> tryMkExpression (Proxy :: _ HT.GlslFn)
                      -- FIXME: implement further
-                     _ -> const $ exprCtor "None"
+                     _ -> const $ HT.hydraCtor_ "Error"
         where
-            tryMkExpression :: forall res. Partial => Codegen res => FromCode HYDRA_V Unit res => Proxy res -> EncodedValue -> CST.Expr Void
-            tryMkExpression _ (EncodedValue valueStr) = fromMaybe (exprCtor "None") $ mkExpression <$> (fromCode hydraV unit valueStr :: Maybe res)
+            tryMkExpression :: forall res. Partial => ValueCodegen res => FromCode HYDRA_V Unit res => Proxy res -> EncodedValue -> CST.Expr Void
+            tryMkExpression _ (EncodedValue valueStr) = fromMaybe (exprCtor "Error") $ mkExpression <$> (fromCode hydraV unit valueStr :: Maybe res)
