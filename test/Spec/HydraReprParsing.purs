@@ -206,7 +206,8 @@ spec = do
             *>
             (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
                 case (Hydra._decode $ Hydra._encode sample :: Either SourceError WrapRepr) of
-                    Right decoded ->
+                    Right decoded -> do
+                        -- liftEffect $ Console.log $ Hydra._encode sample
                         (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
                     Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample <> "\n\n\t" <> srcErrorToString srcError
             )

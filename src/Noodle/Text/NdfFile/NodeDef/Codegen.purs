@@ -63,7 +63,7 @@ newtype Options :: forall k. k -> Prim.Type
 newtype Options repr = Options
     { temperamentAlgorithm :: Temperament.Algorithm
     , monadAt :: { module_ :: String, type_ :: String }
-    , nodeModuleName :: NodeFamily -> String
+    , nodeModuleName :: FamilyGroup -> NodeFamily -> String
     , prepr :: Proxy repr
     , imports :: Array (ImportDecl Void)
     }
@@ -86,7 +86,7 @@ generateModule :: forall repr. CodegenRepr repr => Options repr -> FamilyGroup -
 generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn
   = addUserImports_ opts.imports
   $ unsafePartial
-  $ codegenModule (opts.nodeModuleName $ NodeFamily $ Fn.name fn) do
+  $ codegenModule (opts.nodeModuleName (FamilyGroup fGroup) $ NodeFamily $ Fn.name fn) do
 
   importOpen "Prelude"
   nodeMonad <- importFrom opts.monadAt.module_ $ importType opts.monadAt.type_ -- FIXME: use forall

@@ -28,7 +28,7 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression)
 import Noodle.Text.NdfFile.NodeDef.Codegen (Options(..)) as CG
-import Noodle.Text.NdfFile.Types (NodeFamily(..))
+import Noodle.Text.NdfFile.Types (NodeFamily(..), FamilyGroup(..))
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 (red2) as X11
 import Noodle.Text.ToCode (class ToCode, toCode)
@@ -659,7 +659,7 @@ wrapCtor_ :: Partial => String -> CST.Expr Void
 wrapCtor_ s = exprCtor (wrapPrefix_ <> s)
 
 
-hydraGenOptions :: (NodeFamily -> String) -> CG.Options WrapRepr
+hydraGenOptions :: (FamilyGroup -> NodeFamily -> String) -> CG.Options WrapRepr
 hydraGenOptions toModuleName = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }

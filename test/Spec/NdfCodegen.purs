@@ -20,20 +20,21 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail)
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile, writeTextFile)
+import Node.FS.Sync (readTextFile, writeTextFile, mkdir, exists)
 
 import Tidy.Codegen
 
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
-import Noodle.Text.NdfFile.NodeDef (family) as NodeDef
+import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
 import Noodle.Text.NdfFile (loadDefinitions) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
-import Noodle.Text.NdfFile.Types (NodeFamily(..))
+import Noodle.Text.NdfFile.Types (NodeFamily(..), FamilyGroup(..))
+import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
 
@@ -47,7 +48,7 @@ minimalGenOptions :: CG.Options MinimalRepr
 minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
-  , nodeModuleName
+  , nodeModuleName : moduleName "Test"
   , prepr : (Proxy :: _ MinimalRepr)
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
@@ -106,7 +107,7 @@ spec = do
   Fn.send _out_len $ String.length concatenated"""
             }
 
-        testNodeDefCodegen minimalGenOptions (familyUp <<< NodeDef.family) testNodeDef
+        testNodeDefCodegen "Test" minimalGenOptions testNodeDef
 
       it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.3.ndf"
@@ -115,24 +116,53 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf -> do
             let definitions = NdfFile.loadDefinitions parsedNdf
-            traverse_ ( testNodeDefCodegen (hydraGenOptions nodeModuleName) $ \nodeDef -> "Hydra/" <> (familyUp $ NodeDef.family nodeDef)) definitions
+            traverse_ ( testNodeDefCodegen "Hydra" $ hydraGenOptions $ moduleName "Hydra") definitions
 
 
 familyUp :: NodeFamily -> String
 familyUp (NodeFamily family) = String.toUpper (String.take 1 family) <> String.drop 1 family
 
 
-nodeModuleName :: NodeFamily -> String
-nodeModuleName family =
-  "Test.Files.CodeGenTest." <> familyUp family
+groupUp :: FamilyGroup -> String
+groupUp (FamilyGroup family) = String.toUpper (String.take 1 family) <> String.drop 1 family
 
 
-testNodeDefCodegen :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => CG.Options repr -> (ND.NodeDef -> String) -> ND.NodeDef -> m Unit
-testNodeDefCodegen genOptions toFileName  nodeDef = do
+moduleName :: Toolkit.Name -> FamilyGroup -> NodeFamily -> String
+moduleName tkName group family =
+  "Test.Files.CodeGenTest." <> tkName <> "." <> groupUp group <> "." <> familyUp family
+
+
+toolkitPath :: Toolkit.Name -> String
+toolkitPath = identity
+
+
+modulePath :: Toolkit.Name -> ND.NodeDef -> String
+modulePath tkName nodeDef =
+  tkName <> "/" <> (groupUp $ NodeDef.group nodeDef)
+
+
+moduleFile :: Toolkit.Name -> ND.NodeDef -> String
+moduleFile tkName nodeDef =
+  modulePath tkName nodeDef <> "/" <> (familyUp $ NodeDef.family nodeDef) <> ".purs"
+
+
+inputDir = "./test/Files/Input/" :: String
+outputDir = "./test/Files/Output/" :: String
+
+
+testNodeDefCodegen :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> ND.NodeDef -> m Unit
+testNodeDefCodegen tkName genOptions nodeDef = do
   let
     psModuleCode = toCode (ToCode.pureScript) genOptions nodeDef
-    samplePath = "./test/Files/Input/"  <> toFileName nodeDef <> ".purs"
-    targetPath = "./test/Files/Output/" <> toFileName nodeDef <> ".purs"
-  liftEffect $ writeTextFile UTF8 targetPath psModuleCode
-  sample <- liftEffect $ readTextFile UTF8 samplePath
-  psModuleCode `U.shouldEqual` sample
+    moduleSampleFile = inputDir <> moduleFile tkName nodeDef
+    moduleTargetPath = outputDir <> modulePath tkName nodeDef
+    moduleTargetFile = outputDir <> moduleFile tkName nodeDef
+    toolkitTargetPath = outputDir <> toolkitPath tkName
+  liftEffect $ do
+    tkDirExists <- exists toolkitTargetPath
+    when (not tkDirExists) $ mkdir toolkitTargetPath
+    moduleDirExists <- exists moduleTargetPath
+    when (not moduleDirExists) $ mkdir moduleTargetPath
+    writeTextFile UTF8 moduleTargetFile psModuleCode
+    sample <- readTextFile UTF8 moduleSampleFile
+    psModuleCode `U.shouldEqual` sample
