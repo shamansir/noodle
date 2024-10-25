@@ -172,7 +172,7 @@ _processAutoCode src =
 
 process :: ProcessCode -> String
 process = case _ of
-    NoneSpecified -> ""
+    NoneSpecified -> "pure unit"
     Raw str -> str
     Auto str -> _processAutoCode str
     JS code -> code -- TODO

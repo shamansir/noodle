@@ -3,6 +3,7 @@ module Test.Spec.NdfCodegen where
 import Prelude
 
 import Data.String as String
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Traversable (traverse_)
 
@@ -50,6 +51,7 @@ minimalGenOptions = CG.Options
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , nodeModuleName : moduleName "Test"
   , prepr : (Proxy :: _ MinimalRepr)
+  , infoComment : Nothing
   , imports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
     , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalRepr" ]
