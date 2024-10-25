@@ -109,7 +109,7 @@ spec = do
         testNodeDefCodegen minimalGenOptions (familyUp <<< NodeDef.family) testNodeDef
 
       it "properly generates Hydra Toolkit" $ do
-        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.2.ndf"
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.3.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error

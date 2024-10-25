@@ -1350,7 +1350,7 @@ instance CodegenApply_ From where
     codegenApply = case _ of
         Gradient { speed } -> "Gradient" /\ Rec [ "speed" /\ speed ]
         Noise { scale, offset } -> "Noise" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        Osc { frequency, sync, offset } -> "Osc" /\ Rec [ "frequency" /\ frequency, "frequency" /\ frequency, "offset" /\ offset ]
+        Osc { frequency, sync, offset } -> "Osc" /\ Rec [ "frequency" /\ frequency, "sync" /\ sync, "offset" /\ offset ]
         Shape { sides, radius, smoothing } -> "Shape" /\ Rec [ "sides" /\ sides, "radius" /\ radius, "smoothing" /\ smoothing ]
         Solid { r, g, b, a } -> "Solid" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
         Voronoi { scale, speed, blending } -> "Voronoi" /\ Rec [ "scale" /\ scale, "speed" /\ speed, "blending" /\ blending ]
@@ -1581,7 +1581,7 @@ instance Partial => ValueCodegen GlslFn where
 instance Partial => ValueCodegen Texture where
     mkExpression :: Texture -> CST.Expr Void
     mkExpression = case _ of
-        Empty -> hydraCtor_ "Texture"
+        Empty -> hydraCtor_ "Empty"
         Start source -> exprApp (hydraCtor_ "Start") [ mkExpression source ]
         BlendOf { what, with } blend ->
             exprApp (hydraCtor_ "BlendOf")

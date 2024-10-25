@@ -651,6 +651,14 @@ instance R.WriteRepr WrapRepr where
     writeRepr = R.unwrap >>> H._encode
 
 
+wrapAlias_ = "HW" :: String
+wrapPrefix_ = wrapAlias_ <> "." :: String
+wrapTypeCtor_ :: Partial => String -> CST.Type Void
+wrapTypeCtor_ s = typeCtor (wrapPrefix_ <> s)
+wrapCtor_ :: Partial => String -> CST.Expr Void
+wrapCtor_ s = exprCtor (wrapPrefix_ <> s)
+
+
 hydraGenOptions :: (NodeFamily -> String) -> CG.Options WrapRepr
 hydraGenOptions toModuleName = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
@@ -659,7 +667,7 @@ hydraGenOptions toModuleName = CG.Options
   , prepr : (Proxy :: _ WrapRepr)
   , imports : unsafePartial $
     [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
-    , declImport "Hydra.Repr.Wrap" [ ]
+    , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_
     ]
   }
 
@@ -670,9 +678,9 @@ instance CodegenRepr WrapRepr where
     reprTypeName :: Proxy WrapRepr -> String
     reprTypeName = const "WrapRepr"
     reprType :: Proxy WrapRepr -> CST.Type Void
-    reprType = const $ unsafePartial $ typeCtor "WrapRepr"
+    reprType = const $ unsafePartial $ wrapTypeCtor_ "WrapRepr"
     reprDefault :: Proxy WrapRepr -> CST.Expr Void
-    reprDefault = const $ unsafePartial $ HT.hydraCtor_ "None"
+    reprDefault = const $ unsafePartial $ exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     typeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
@@ -684,7 +692,7 @@ instance CodegenRepr WrapRepr where
                     "Audio" -> HT.hydraType_ "Audio"
                     "GlslFn" -> HT.hydraType_ "GlslFn"
                     -- FIXME: implement further
-                    _ -> HT.hydraType_ "WrapRepr"
+                    _ -> wrapTypeCtor_ "WrapRepr"
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
     valueFor = const $ unsafePartial $ \mbType ->
                   case NT.unwrap <$> mbType of -- FIXME: contains hydraPrefix_
@@ -696,7 +704,7 @@ instance CodegenRepr WrapRepr where
                      -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
                      Just "GlslFn" -> tryMkExpression (Proxy :: _ HT.GlslFn)
                      -- FIXME: implement further
-                     _ -> const $ HT.hydraCtor_ "Error"
+                     _ -> const $ wrapCtor_ "Error"
         where
             genError :: Partial => Source -> SourceError -> CST.Expr Void
             genError src srcError =
