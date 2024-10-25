@@ -12,7 +12,7 @@ import Type.Proxy (Proxy(..))
 
 import Noodle.Text.Code.Target (Target)
 import Noodle.Text.ToCode (class ToCode, toCode)
-import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser)
+import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError)
 import Noodle.Fn.ToFn (Fn, class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 
@@ -39,7 +39,7 @@ _encode :: forall a. ToCode HYDRA_V Unit a => a -> String
 _encode = toCode hydraV unit
 
 
-_decode :: forall a. FromCode HYDRA_V Unit a => String -> Maybe a
+_decode :: forall a. FromCode HYDRA_V Unit a => String -> Either SourceError a
 _decode = fromCode hydraV unit
 
 

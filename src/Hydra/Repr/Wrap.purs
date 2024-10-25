@@ -12,6 +12,10 @@ import Data.Number as Number
 import Data.Newtype (unwrap) as NT
 import Data.Int (fromString) as Int
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Either (Either(..), either)
+import Data.Bifunctor (bimap)
+
+import Color as Color
 
 import Parsing (Parser)
 import Parsing.String as P
@@ -26,8 +30,9 @@ import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class ValueCodege
 import Noodle.Text.NdfFile.NodeDef.Codegen (Options(..)) as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..))
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Cli.Palette.Set.X11 (red2) as X11
 import Noodle.Text.ToCode (class ToCode, toCode)
-import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser)
+import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError(..), Source, srcErrorToString)
 
 import Hydra.Types as HT
 import Hydra.Repr.Parser as RP
@@ -35,7 +40,7 @@ import Hydra.Repr.Target (HYDRA_V, hydraV)
 import Hydra.Repr.Target (_encode) as H
 
 import PureScript.CST.Types as CST
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs)
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs, exprApp, exprRecord)
 
 
 -- import CompArts.Product as CAI
@@ -66,6 +71,7 @@ data WrapRepr
     | Target HT.RenderTarget
     | DepFn HT.DepFn -- for example this one seems not to be needed (we wrap Fn-s into values)
     | CBS HT.CanBeSource
+    | WRError { source :: Source, error :: String }
 
 
 -- instance NMF.HasRepr a WrapRepr where
@@ -503,6 +509,7 @@ instance Mark WrapRepr where
         -- Products products -> mark unit -- FIXME: doesn't require Mark instance for node state wraps?
         -- Product product -> mark product
         CBS cbs -> mark cbs
+        WRError _ -> Color.rgb 255 0 0
 
 
     {-
@@ -552,6 +559,7 @@ instance Show WrapRepr where
         -- Products products -> show products
         -- Product product -> show product
         CBS cbs -> show cbs
+        WRError { source, error } -> "Error: \"" <> source <> "\" " <> error
 
     {-
     mark = case _ of
@@ -620,6 +628,7 @@ instance ToCode HYDRA_V opts WrapRepr where
         -- Products _ -> "PRS P"
         -- Product (CAI.Product' ix p) -> "PRD " <> show ix <> " " <> CAI.toUniqueId p
         CBS cbs -> "CBS " <> H._encode cbs
+        WRError { source, error } -> "ERR \"" <> source <> "\" \"" <> error <> "\""
 
 
 instance CanParse HYDRA_V WrapRepr where parser = const wrapParser
@@ -689,5 +698,11 @@ instance CodegenRepr WrapRepr where
                      -- FIXME: implement further
                      _ -> const $ HT.hydraCtor_ "Error"
         where
+            genError :: Partial => Source -> SourceError -> CST.Expr Void
+            genError src srcError =
+                exprApp (exprCtor "Error")
+                    [ exprRecord [ "source" /\ exprString src
+                    , "error" /\ (exprString $ srcErrorToString srcError) ]
+                    ]
             tryMkExpression :: forall res. Partial => ValueCodegen res => FromCode HYDRA_V Unit res => Proxy res -> EncodedValue -> CST.Expr Void
-            tryMkExpression _ (EncodedValue valueStr) = fromMaybe (exprCtor "Error") $ mkExpression <$> (fromCode hydraV unit valueStr :: Maybe res)
+            tryMkExpression _ (EncodedValue valueStr) = either (genError valueStr) mkExpression (fromCode hydraV unit valueStr :: Either SourceError res)

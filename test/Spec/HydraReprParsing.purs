@@ -7,6 +7,7 @@ import Effect.Class (liftEffect)
 
 import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..), either)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, describe, it)
@@ -20,7 +21,7 @@ import Test.Spec.Util.Assertions (shouldEqual) as U
 import Noodle.Fn.ToFn (Fn(..))
 import Noodle.Fn.ToFn (q) as Fn
 import Noodle.Text.ToCode (toCode)
-import Noodle.Text.FromCode (fromCode)
+import Noodle.Text.FromCode (fromCode, SourceError, srcErrorToString)
 
 import Hydra.Types
 import Hydra.Repr.Wrap
@@ -204,10 +205,10 @@ spec = do
             prev
             *>
             (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
-                case (Hydra._decode $ Hydra._encode sample :: Maybe WrapRepr) of
-                    Just decoded ->
+                case (Hydra._decode $ Hydra._encode sample :: Either SourceError WrapRepr) of
+                    Right decoded ->
                         (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
-                    Nothing -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample
+                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample <> "\n\n\t" <> srcErrorToString srcError
             )
         )
         (pure unit)
@@ -220,10 +221,10 @@ spec = do
             prev
             *>
             (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
-                case (Hydra._decode $ Hydra._encode sample :: Maybe Texture) of
-                    Just decoded ->
+                case (Hydra._decode $ Hydra._encode sample :: Either SourceError Texture) of
+                    Right decoded ->
                         (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
-                    Nothing -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample
+                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample <> "\n\n\t" <> srcErrorToString srcError
             )
         )
         (pure unit)
