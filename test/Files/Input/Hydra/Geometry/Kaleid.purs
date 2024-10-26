@@ -54,4 +54,4 @@ kaleidP :: Process
 kaleidP = do
   what <- Fn.receive _in_what
   nSides <- Fn.receive _in_nSides
-  HT.Geometry what $ HT.GKaleid { nSides }
+  Fn.send _out_out $ HT.Geometry what $ HT.GKaleid { nSides }

@@ -59,4 +59,4 @@ scrollYP = do
   what <- Fn.receive _in_what
   scrollY <- Fn.receive _in_scrollY
   speed <- Fn.receive _in_speed
-  HT.Geometry what $ HT.GScrollY { scrollY, speed }
+  Fn.send _out_out $ HT.Geometry what $ HT.GScrollY { scrollY, speed }

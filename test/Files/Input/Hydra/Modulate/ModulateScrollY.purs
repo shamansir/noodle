@@ -64,4 +64,4 @@ modulateScrollYP = do
   with <- Fn.receive _in_with
   scrollY <- Fn.receive _in_scrollY
   speed <- Fn.receive _in_speed
-  Fn.send _out_out $ HT.ModulateWith { what, with } $ $ HT.ModScrollY { scrollY, speed }
+  Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.ModScrollY { scrollY, speed }

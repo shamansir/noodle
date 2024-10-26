@@ -38,7 +38,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { time: Error { source: "Time", error: "Expected space" } }
+defaultO = { time: HT.Time }
 
 _out_time = Noodle.Outlet :: _ "time"
 

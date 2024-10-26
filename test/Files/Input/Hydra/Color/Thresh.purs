@@ -57,4 +57,6 @@ makeNode = Family.spawn family
 threshP :: Process
 threshP = do
   what <- Fn.receive _in_what
+  threshold <- Fn.receive _in_threshold
+  tolerance <- Fn.receive _in_tolerance
   Fn.send _out_out $ HT.Filter what $ HT.Thresh { threshold, tolerance }

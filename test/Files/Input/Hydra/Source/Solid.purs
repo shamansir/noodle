@@ -61,4 +61,4 @@ solidP = do
   g <- Fn.receive _in_g
   b <- Fn.receive _in_b
   a <- Fn.receive _in_a
-  Fn.send _out_out $ HT.Start $ HT.Solid { r, g, b, a }
+  Fn.send _out_out $ HT.Start $ HT.From $ HT.Solid { r, g, b, a }

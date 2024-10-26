@@ -204,7 +204,7 @@ spec = do
         (\idx prev sample -> do
             prev
             *>
-            (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
+            (it ("works for sample " <> show idx <> " : " <> show sample <> " : " <> Hydra._encode sample) $
                 case (Hydra._decode $ Hydra._encode sample :: Either SourceError WrapRepr) of
                     Right decoded -> do
                         -- liftEffect $ Console.log $ Hydra._encode sample

@@ -59,4 +59,4 @@ shapeP = do
   sides <- Fn.receive _in_sides
   radius <- Fn.receive _in_radius
   smoothing <- Fn.receive _in_smoothing
-  Fn.send _out_out $ HT.Start $ HT.Shape { sides, radius, smoothing }
+  Fn.send _out_out $ HT.Start $ HT.From $ HT.Shape { sides, radius, smoothing }

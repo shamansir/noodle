@@ -35,10 +35,7 @@ type Family = Noodle.Family "setResolution" HW.WrapRepr InletsRow OutletsRow Wra
 type F = Noodle.F "setResolution" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI =
-  { width: Error { source: "None", error: "Expected space" }
-  , height: Error { source: "None", error: "Expected space" }
-  }
+defaultI = { width: HT.Number 100.0, height: HT.Number 100.0 }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.TODO }

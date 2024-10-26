@@ -58,4 +58,6 @@ makeNode = Family.spawn family
 posterizeP :: Process
 posterizeP = do
   what <- Fn.receive _in_what
+  bins <- Fn.receive _in_bins
+  gamma <- Fn.receive _in_gamma
   Fn.send _out_out $ HT.Filter what $ HT.Posterize { bins, gamma }

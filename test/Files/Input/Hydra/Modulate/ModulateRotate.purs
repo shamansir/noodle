@@ -64,4 +64,4 @@ modulateRotateP = do
   with <- Fn.receive _in_with
   multiple <- Fn.receive _in_multiple
   offset <- Fn.receive _in_offset
-  Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.ModPixelate { multiple, offset }
+  Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.ModRotate { multiple, offset }

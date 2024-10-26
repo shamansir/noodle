@@ -75,4 +75,8 @@ makeNode = Family.spawn family
 repeatP :: Process
 repeatP = do
   what <- Fn.receive _in_what
-  HT.Geometry what $ HT.GRepeat { repeatX, repeatY, offsetX, offsetY }
+  repeatX <- Fn.receive _in_repeatX
+  repeatY <- Fn.receive _in_repeatY
+  offsetX <- Fn.receive _in_offsetX
+  offsetY <- Fn.receive _in_offsetY
+  Fn.send _out_out $ HT.Geometry what $ HT.GRepeat { repeatX, repeatY, offsetX, offsetY }

@@ -62,5 +62,6 @@ modulatePixelateP :: Process
 modulatePixelateP = do
   what <- Fn.receive _in_what
   with <- Fn.receive _in_with
-  amount <- Fn.receive _in_amount
-  Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.Modulate amount
+  multiple <- Fn.receive _in_multiple
+  offset <- Fn.receive _in_offset
+  Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.ModPixelate { multiple, offset }

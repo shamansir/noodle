@@ -53,4 +53,4 @@ makeNode = Family.spawn family
 gradientP :: Process
 gradientP = do
   speed <- Fn.receive _in_speed
-  Fn.send _out_out $ HT.Start $ HT.Gradient { speed }
+  Fn.send _out_out $ HT.Start $ HT.From $ HT.Gradient { speed }

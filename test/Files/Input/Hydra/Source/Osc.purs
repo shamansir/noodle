@@ -59,4 +59,4 @@ oscP = do
   frequency <- Fn.receive _in_frequency
   sync <- Fn.receive _in_sync
   offset <- Fn.receive _in_offset
-  Fn.send _out_out $ HT.Start $ HT.Osc { frequency, sync, offset }
+  Fn.send _out_out $ HT.Start $ HT.From $ HT.Osc { frequency, sync, offset }

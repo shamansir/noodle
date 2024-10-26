@@ -59,4 +59,4 @@ repeatYP = do
   what <- Fn.receive _in_what
   reps <- Fn.receive _in_reps
   offset <- Fn.receive _in_offset
-  HT.Geometry what $ HT.GRepeatY { reps, offset }
+  Fn.send _out_out $ HT.Geometry what $ HT.GRepeatY { reps, offset }

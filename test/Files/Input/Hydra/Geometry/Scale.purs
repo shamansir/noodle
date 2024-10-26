@@ -78,5 +78,10 @@ makeNode = Family.spawn family
 
 scaleP :: Process
 scaleP = do
-  wha <- Fn.receive _in_wha
-  HT.Geometry what $ HT.GScale { amount, xMult, yMult, offsetX, offsetY }
+  what <- Fn.receive _in_what
+  amount <- Fn.receive _in_amount
+  xMult <- Fn.receive _in_xMult
+  yMult <- Fn.receive _in_yMult
+  offsetX <- Fn.receive _in_offsetX
+  offsetY <- Fn.receive _in_offsetY
+  Fn.send _out_out $ HT.Geometry what $ HT.GScale { amount, xMult, yMult, offsetX, offsetY }

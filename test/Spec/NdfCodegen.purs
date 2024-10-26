@@ -165,4 +165,5 @@ testNodeDefCodegen tkName genOptions nodeDef = do
     when (not moduleDirExists) $ mkdir moduleTargetPath
     writeTextFile UTF8 moduleTargetFile psModuleCode
     sample <- readTextFile UTF8 moduleSampleFile
+    -- pure unit
     psModuleCode `U.shouldEqual` sample

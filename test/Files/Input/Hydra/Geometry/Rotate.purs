@@ -59,4 +59,4 @@ rotateP = do
   what <- Fn.receive _in_what
   angle <- Fn.receive _in_angle
   speed <- Fn.receive _in_speed
-  HT.Geometry what $ HT.GRotate { angle, speed }
+  Fn.send _out_out $ HT.Geometry what $ HT.GRotate { angle, speed }

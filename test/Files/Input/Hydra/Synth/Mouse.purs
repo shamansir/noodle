@@ -38,10 +38,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO =
-  { x: Error { source: "MouseX", error: "No alternative" }
-  , y: Error { source: "MouseY", error: "No alternative" }
-  }
+defaultO = { x: HT.MouseX, y: HT.MouseY }
 
 _out_x = Noodle.Outlet :: _ "x"
 _out_y = Noodle.Outlet :: _ "y"

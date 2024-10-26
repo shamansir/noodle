@@ -75,4 +75,8 @@ makeNode = Family.spawn family
 scrollP :: Process
 scrollP = do
   what <- Fn.receive _in_what
-  HT.Geometry what $ HT.GScroll { scrollX, scrollY, speedX, speedY }
+  scrollX <- Fn.receive _in_scrollX
+  scrollY <- Fn.receive _in_scrollY
+  speedX <- Fn.receive _in_speedX
+  speedY <- Fn.receive _in_speedY
+  Fn.send _out_out $ HT.Geometry what $ HT.GScroll { scrollX, scrollY, speedX, speedY }

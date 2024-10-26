@@ -38,7 +38,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { h: Error { source: "Height", error: "Expected space" } }
+defaultO = { h: HT.Height }
 
 _out_h = Noodle.Outlet :: _ "h"
 

@@ -38,7 +38,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { pi: Error { source: "Pi", error: "No alternative" } }
+defaultO = { pi: HT.Pi }
 
 _out_pi = Noodle.Outlet :: _ "pi"
 

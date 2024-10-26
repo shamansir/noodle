@@ -38,11 +38,7 @@ type Family = Noodle.Family "voronoi" HW.WrapRepr InletsRow OutletsRow WrapRepr 
 type F = Noodle.F "voronoi" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI =
-  { scale: Error { source: "5.0", error: "No alternative" }
-  , speed: HT.Number 0.3
-  , blending: HT.Number 0.3
-  }
+defaultI = { scale: HT.Number 5.0, speed: HT.Number 0.3, blending: HT.Number 0.3 }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
@@ -63,4 +59,4 @@ voronoiP = do
   scale <- Fn.receive _in_scale
   speed <- Fn.receive _in_speed
   blending <- Fn.receive _in_blending
-  Fn.send _out_out $ HT.Start $ HT.Voronoi { scale, speed, blending }
+  Fn.send _out_out $ HT.Start $ HT.From $ HT.Voronoi { scale, speed, blending }

@@ -58,4 +58,6 @@ makeNode = Family.spawn family
 pixelateP :: Process
 pixelateP = do
   what <- Fn.receive _in_what
-  HT.Geometry what $ HT.GPixelate { pixelX, pixelY }
+  pixelX <- Fn.receive _in_pixelX
+  pixelY <- Fn.receive _in_pixelY
+  Fn.send _out_out $ HT.Geometry what $ HT.GPixelate { pixelX, pixelY }
