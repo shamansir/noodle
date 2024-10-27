@@ -40,7 +40,7 @@ type Family = Noodle.Family "modulateRotate" HW.WrapRepr InletsRow OutletsRow Wr
 type F = Noodle.F "modulateRotate" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { what: HT.Empty, with: HT.Empty, multiple: HT.Number 1.0, offset: HW.Value HT.None }
+defaultI = { what: HT.Empty, with: HT.Empty, multiple: HT.Number 1.0, offset: HT.None }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }

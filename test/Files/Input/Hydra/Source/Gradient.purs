@@ -35,7 +35,7 @@ type Family = Noodle.Family "gradient" HW.WrapRepr InletsRow OutletsRow WrapRepr
 type F = Noodle.F "gradient" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { speed: HW.Value HT.None }
+defaultI = { speed: HT.None }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }

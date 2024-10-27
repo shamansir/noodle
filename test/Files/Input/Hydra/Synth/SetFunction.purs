@@ -35,7 +35,7 @@ type Family = Noodle.Family "setFunction" HW.WrapRepr InletsRow OutletsRow WrapR
 type F = Noodle.F "setFunction" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { fn: HW.Value HT.None }
+defaultI = { fn: HT.None }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.TODO }

@@ -38,7 +38,7 @@ type Family = Noodle.Family "osc" HW.WrapRepr InletsRow OutletsRow WrapRepr Effe
 type F = Noodle.F "osc" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { frequency: HT.Number 60.0, sync: HT.Number 0.1, offset: HW.Value HT.None }
+defaultI = { frequency: HT.Number 60.0, sync: HT.Number 0.1, offset: HT.None }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }

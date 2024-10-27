@@ -61,7 +61,12 @@ instance CodegenRepr MinimalRepr where
     reprModule = const "Example.Toolkit.Minimal.Repr"
     reprTypeName = const "MinimalRepr"
     reprType = const $ unsafePartial $ typeCtor "MinimalRepr"
-    reprDefault = const $ unsafePartial $ exprCtor "None"
+    defaultFor = const $ unsafePartial $ \mbType ->
+        case NT.unwrap <$> mbType of
+            Just "Int" -> exprInt 0
+            Just "String" -> exprString ""
+            Just "Unit" -> exprIdent "unit"
+            _ -> exprCtor "None"
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
                     "Int" -> typeCtor "Int"

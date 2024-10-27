@@ -47,12 +47,12 @@ instance (Partial, ValueCodegen a) => ValueCodegen (Maybe a) where
 
 class CodegenRepr :: forall k. k -> Constraint
 class CodegenRepr repr where
-  reprModule :: Proxy repr -> String
-  reprTypeName :: Proxy repr -> String
-  reprType :: Proxy repr -> CST.Type Void
-  reprDefault :: Proxy repr -> CST.Expr Void
-  typeFor :: Proxy repr -> EncodedType -> CST.Type Void
-  valueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
+  reprModule :: Proxy repr -> String -- a full path to the module where repr wrapper is located
+  reprTypeName :: Proxy repr -> String -- a name of the type of the repr wrapper itself
+  reprType :: Proxy repr -> CST.Type Void -- a CST type represntation of the repr wrapper itself
+  typeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for diven encoded type
+  defaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code
+  valueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value
 
 
 {- data GenMonad
@@ -133,7 +133,7 @@ generateModule (Options opts) (FamilyGroup fGroup) (StateDef state) fn
     qtype :: Maybe EncodedType -> CST.Type Void
     qtype = maybe (reprType opts.prepr :: CST.Type Void) (typeFor opts.prepr)
     qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-    qvalue mbDataType = maybe (reprDefault opts.prepr) (valueFor opts.prepr mbDataType)
+    qvalue mbDataType = maybe (defaultFor opts.prepr mbDataType) (valueFor opts.prepr mbDataType)
     typeOf :: Channel -> CST.Type Void
     typeOf (_ /\ ChannelDef { mbType }) = qtype mbType
     defaultOf :: Channel -> CST.Expr Void

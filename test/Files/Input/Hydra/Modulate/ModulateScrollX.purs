@@ -40,7 +40,7 @@ type Family = Noodle.Family "modulateScrollX" HW.WrapRepr InletsRow OutletsRow W
 type F = Noodle.F "modulateScrollX" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { what: HT.Empty, with: HT.Empty, scrollX: HT.Number 0.5, speed: HW.Value HT.None }
+defaultI = { what: HT.Empty, with: HT.Empty, scrollX: HT.Number 0.5, speed: HT.None }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }

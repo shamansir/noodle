@@ -38,7 +38,7 @@ type Family = Noodle.Family "solid" HW.WrapRepr InletsRow OutletsRow WrapRepr Ef
 type F = Noodle.F "solid" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { r: HW.Value HT.None, g: HW.Value HT.None, b: HW.Value HT.None, a: HT.Number 1.0 }
+defaultI = { r: HT.None, g: HT.None, b: HT.None, a: HT.Number 1.0 }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }

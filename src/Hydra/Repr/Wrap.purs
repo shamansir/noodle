@@ -40,7 +40,7 @@ import Hydra.Repr.Target (HYDRA_V, hydraV)
 import Hydra.Repr.Target (_encode) as H
 
 import PureScript.CST.Types as CST
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs, exprApp, exprRecord)
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs, exprApp, exprRecord, exprArray)
 
 
 -- import CompArts.Product as CAI
@@ -691,8 +691,6 @@ instance CodegenRepr WrapRepr where
     reprTypeName = const "WrapRepr"
     reprType :: Proxy WrapRepr -> CST.Type Void
     reprType = const $ unsafePartial $ wrapTypeCtor_ "WrapRepr"
-    reprDefault :: Proxy WrapRepr -> CST.Expr Void
-    reprDefault = const $ unsafePartial $ exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     typeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
@@ -705,18 +703,29 @@ instance CodegenRepr WrapRepr where
                     "GlslFn" -> HT.hydraType_ "GlslFn"
                     -- FIXME: implement further
                     _ -> wrapTypeCtor_ "WrapRepr"
+    defaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void
+    defaultFor = const $ unsafePartial $ \mbType ->
+        case NT.unwrap <$> mbType of -- FIXME: use `HasFallback` from the repr somehow
+            Just "Value" -> mkExpression (R.fallback :: HT.Value)
+            Just "Texture" -> mkExpression (R.fallback :: HT.Texture)
+            Just "TODO" -> mkExpression (R.fallback :: HT.TODO)
+            Just "Values" -> mkExpression (R.fallback :: HT.Values)
+            Just "Source" -> mkExpression (R.fallback :: HT.Source)
+            Just "GlslFn" -> mkExpression (R.fallback :: HT.GlslFn)
+            -- FIXME: implement further
+            _ -> exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
     valueFor = const $ unsafePartial $ \mbType ->
-                  case NT.unwrap <$> mbType of -- FIXME: contains hydraPrefix_
-                     Just "Value" -> tryMkExpression (Proxy :: _ HT.Value)
-                     Just "Texture" -> tryMkExpression (Proxy :: _ HT.Texture)
-                     Just "TODO" -> tryMkExpression (Proxy :: _ HT.TODO)
-                     Just "Values" -> tryMkExpression (Proxy :: _ HT.Values)
-                     Just "Source" -> tryMkExpression (Proxy :: _ HT.Source)
-                     -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
-                     Just "GlslFn" -> tryMkExpression (Proxy :: _ HT.GlslFn)
-                     -- FIXME: implement further
-                     _ -> const $ wrapCtor_ "Error"
+        case NT.unwrap <$> mbType of
+            Just "Value" -> tryMkExpression (Proxy :: _ HT.Value)
+            Just "Texture" -> tryMkExpression (Proxy :: _ HT.Texture)
+            Just "TODO" -> tryMkExpression (Proxy :: _ HT.TODO)
+            Just "Values" -> tryMkExpression (Proxy :: _ HT.Values)
+            Just "Source" -> tryMkExpression (Proxy :: _ HT.Source)
+            -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
+            Just "GlslFn" -> tryMkExpression (Proxy :: _ HT.GlslFn)
+            -- FIXME: implement further
+            _ -> const $ wrapCtor_ "Error"
         where
             genError :: Partial => Source -> SourceError -> CST.Expr Void
             genError src srcError =

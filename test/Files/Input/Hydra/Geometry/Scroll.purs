@@ -52,8 +52,8 @@ defaultI =
   { what: HT.Empty
   , scrollX: HT.Number 0.5
   , scrollY: HT.Number 0.5
-  , speedX: HW.Value HT.None
-  , speedY: HW.Value HT.None
+  , speedX: HT.None
+  , speedY: HT.None
   }
 
 defaultO :: Record OutletsRow
