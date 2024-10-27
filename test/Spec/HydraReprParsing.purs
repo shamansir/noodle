@@ -163,14 +163,15 @@ wrapReprSamples =
         """
     , W.GlslFn
         $ T.GlslFn
-        $ FnSrc
-            /\ GlslFnCode
+        $ { kind : FnSrc
+          , code : GlslFnCode
             """
 test
 multiline
 code
             """
-            /\ Fn ("abc" /\ [] /\ [])
+          , fn : Fn ("abc" /\ [] /\ [])
+          }
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
         $ GlslFnRef $ Fn ("aaa" /\ [] /\ [])
@@ -179,9 +180,10 @@ code
         $ GlslFnRef $ Fn ("aaa" /\ [ Fn.q "arg1" $ T $ Empty ] /\ [])
     , W.GlslFn
         $ T.GlslFn
-        $ FnSrc
-            /\ GlslFnCode "foo\nbar\nbzz"
-            /\ Fn ("axz" /\ [ Fn.q "arg1" $ T $ Empty, Fn.q "arg2" $ V $ Number 2.0 ] /\ [])
+        $ { kind : FnSrc
+          , code : GlslFnCode "foo\nbar\nbzz"
+          , fn : Fn ("axz" /\ [ Fn.q "arg1" $ T $ Empty, Fn.q "arg2" $ V $ Number 2.0 ] /\ [])
+          }
     , Texture
         $ CallGlslFn { over : Filter Empty $ Posterize { bins : Time, gamma : Height }, mbWith : Nothing }
         $ GlslFnRef $ Fn

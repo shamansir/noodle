@@ -164,11 +164,18 @@ instance ToCode HYDRA_V opts HT.TOrV where
         HT.V val -> "VV " <> _encode val
 
 
+instance ToCode HYDRA_V opts HT.GlslFnCode where
+    toCode :: Proxy HYDRA_V -> opts -> HT.GlslFnCode -> String
+    toCode _ _ = case _ of
+        HT.GlslFnCode str ->
+            PM._glslStart <> _encode str <> PM._glslEnd
+
+
 instance ToCode HYDRA_V opts HT.GlslFn where
     toCode :: Proxy HYDRA_V -> opts -> HT.GlslFn -> String
-    toCode _ _ (HT.GlslFn (kind /\ HT.GlslFnCode code /\ fn))
+    toCode _ _ (HT.GlslFn { kind, code, fn })
         = _encode kind <> " "
-            <> PM._glslStart <> _encode code <> PM._glslEnd
+            <> _encode code
             <> " " <> _encodeFnWithArgNames fn
 
 

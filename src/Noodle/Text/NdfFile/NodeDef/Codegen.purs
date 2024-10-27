@@ -22,8 +22,8 @@ import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, im
 
 import Noodle.Fn.Shape.Temperament (Temperament(..)) as T
 import Noodle.Fn.Shape.Temperament (Algorithm, byIndex) as Temperament
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (args, name, outs) as Fn
+import Noodle.Fn.ToFn (Fn(..))
+import Noodle.Fn.ToFn (Argument, Output, args, name, outs, argName, argValue, outName, outValue) as Fn
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.Types (NodeDefRec, ChannelDef(..), EncodedType, EncodedValue, FamilyGroup(..), NodeFamily(..), StateDef(..), familyOf)
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
@@ -38,10 +38,35 @@ class TypeCodegen a where
   mkType :: a -> CST.Type Void
 
 
+instance Partial => ValueCodegen Unit where
+  mkExpression = const $ exprIdent "unit"
+
+
 instance (Partial, ValueCodegen a) => ValueCodegen (Maybe a) where
   mkExpression = case _ of
     Just a -> exprApp (exprCtor "Just") [ mkExpression a ]
     Nothing -> exprCtor "Nothing"
+
+
+instance (Partial, ValueCodegen val) => ValueCodegen (Fn.Argument val) where
+  mkExpression arg =
+    exprApp (exprIdent "Fn.arg") [ exprString $ Fn.argName arg, mkExpression $ Fn.argValue arg ]
+
+
+instance (Partial, ValueCodegen val) => ValueCodegen (Fn.Output val) where
+  mkExpression arg =
+    exprApp (exprIdent "Fn.out") [ exprString $ Fn.outName arg, mkExpression $ Fn.outValue arg ]
+
+
+instance (Partial, ValueCodegen arg, ValueCodegen out) => ValueCodegen (Fn arg out) where
+  mkExpression = case _ of
+    Fn (name /\ args /\ outs) ->
+      exprApp (exprCtor "Fn")
+        [ exprOp (exprString name)
+          [ binaryOp "/\\" (exprArray $ mkExpression <$> args)
+          , binaryOp "/\\" (exprArray $ mkExpression <$> outs)
+          ]
+        ]
 
 
 class CodegenRepr :: forall k. k -> Constraint

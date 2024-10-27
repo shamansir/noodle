@@ -293,14 +293,21 @@ glslKind =
     <|> string "CLR" $> HT.FnColor
 
 
+glslCode :: Parser String HT.GlslFnCode
+glslCode =
+    between (string PM._glslStart) (string PM._glslEnd) (many1 $ noneOf PM._glslTerminals)
+        <#> U.f1ts
+        <#> HT.GlslFnCode
+
+
 glsl :: Parser String HT.GlslFn
 glsl = do
     kind <- glslKind
     _ <- space
-    code <- between (string PM._glslStart) (string PM._glslEnd) (many1 $ noneOf PM._glslTerminals)
+    code <- glslCode
     _ <- space
-    fd <- langFn tOrV
-    pure $ HT.GlslFn $ kind /\ HT.GlslFnCode (U.f1ts code) /\ fd
+    gfn <- langFn tOrV
+    pure $ HT.GlslFn  { kind, code, fn : gfn }
 
 
 langFn ::forall x. Parser String x -> Parser String (Lang.Fn x Unit)

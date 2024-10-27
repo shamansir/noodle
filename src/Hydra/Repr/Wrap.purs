@@ -41,7 +41,7 @@ import Hydra.Repr.Target (HYDRA_V, hydraV)
 import Hydra.Repr.Target (_encode) as H
 
 import PureScript.CST.Types as CST
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor, declImport, declImportAs, exprApp, exprRecord, exprArray)
+import Tidy.Codegen
 
 
 -- import CompArts.Product as CAI
@@ -673,6 +673,8 @@ hydraGenOptions = CG.Options
     , imports : unsafePartial $
         [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
         , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_
+        , declImport "Noodle.Fn.ToFn" [ importTypeAll "Fn"]
+        , declImport "Data.Tuple.Nested" [ importOp "/\\"]
         ]
     }
 
@@ -699,6 +701,7 @@ instance CodegenRepr WrapRepr where
                     "SourceN" -> HT.hydraType_ "SourceN"
                     "SourceOptions" -> HT.hydraType_ "SourceOptions"
                     "Url" -> HT.hydraType_ "Url"
+                    "UpdateFn" -> HT.hydraType_ "UpdateFn"
                     -- FIXME: implement further
                     _ -> wrapTypeCtor_ "WrapRepr"
     defaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void
@@ -716,6 +719,7 @@ instance CodegenRepr WrapRepr where
             Just "SourceN" -> mkExpression (R.fallback :: HT.SourceN)
             Just "SourceOptions" -> mkExpression (R.fallback :: HT.SourceOptions)
             Just "Url" -> mkExpression (R.fallback :: HT.Url)
+            Just "UpdateFn" -> mkExpression (R.fallback :: HT.UpdateFn)
             -- FIXME: implement further
             _ -> exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
@@ -731,6 +735,7 @@ instance CodegenRepr WrapRepr where
             Just "OutputN" -> tryMkExpression (Proxy :: _ HT.OutputN)
             Just "RenderTarget" -> tryMkExpression (Proxy :: _ HT.RenderTarget)
             Just "SourceN" -> tryMkExpression (Proxy :: _ HT.SourceN)
+            -- Just "UpdateFn" -> tryMkExpression (Proxy :: _ HT.UpdateFn)
             -- Just "SourceOptions" -> tryMkExpression (Proxy :: _ HT.SourceOptions)
             -- Just "Url" -> tryMkExpression (Proxy :: _ HT.Url)
             -- FIXME: implement further

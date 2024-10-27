@@ -284,10 +284,14 @@ newtype GlslFnCode = GlslFnCode String
 
 
 -- FIXME: use `ToFn`
-newtype GlslFn = GlslFn (GlslFnKind /\ GlslFnCode /\ Fn GlslFnArg GlslFnOut) -- holds default value in every argument
+newtype GlslFn = GlslFn
+    { kind :: GlslFnKind
+    , code :: GlslFnCode
+    , fn :: Fn GlslFnArg GlslFnOut  -- holds default value in every argument
+    }
 
 
-newtype GlslFnRef = GlslFnRef (Fn GlslFnArg GlslFnOut) -- should the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Fn GlslFnArg GlslFnOut) -- should be the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -335,7 +339,7 @@ defaultTOrV = T Empty
 
 
 defaultGlslFn :: GlslFn
-defaultGlslFn = GlslFn $ FnSrc /\ GlslFnCode "" /\ Fn.empty ""
+defaultGlslFn = GlslFn { kind : FnSrc, code : GlslFnCode "", fn : Fn.empty "" }
 
 
 defaultGlslFnRef :: GlslFnRef
@@ -675,7 +679,7 @@ instance Show GlslFnKind where
 
 instance Show GlslFn where
     show :: GlslFn -> String
-    show (GlslFn (kind /\ _ /\ fn)) = "Define {" <> show kind <> "} " <> showUsingFnTOrV' fn
+    show (GlslFn { kind, fn }) = "Define {" <> show kind <> "} " <> showUsingFnTOrV' fn
 
 
 instance Show GlslFnRef where
@@ -844,7 +848,7 @@ instance ToFn Value Unit Ease where
 
 instance ToFn GlslFnArg GlslFnOut GlslFn where
     toFn :: GlslFn -> String /\ Array (Fn.Argument GlslFnArg) /\ Array (Fn.Output GlslFnOut)
-    toFn (GlslFn (name /\ _ /\ fn)) = toFn fn
+    toFn (GlslFn { fn }) = toFn fn
 
 
 instance ToFn GlslFnArg GlslFnOut GlslFnRef where
@@ -1466,6 +1470,13 @@ instance Partial => ValueCodegen Value where
         Fft audioBin -> exprApp (hydraCtor_ "Fft") [ mkExpression audioBin ]
 
 
+instance Partial => ValueCodegen TOrV where
+    mkExpression :: TOrV -> CST.Expr Void
+    mkExpression = case _ of
+        T tex -> exprApp (hydraCtor_ "T") [ mkExpression tex ]
+        V val -> exprApp (hydraCtor_ "V") [ mkExpression val ]
+
+
 instance Partial => ValueCodegen Ease where
     mkExpression :: Ease -> CST.Expr Void
     mkExpression = withCodegenApply
@@ -1573,9 +1584,36 @@ instance Partial => ValueCodegen ExtSource where
             hydraCtor_ "Unclear"
 
 
+instance Partial => ValueCodegen GlslFnKind where
+    mkExpression :: GlslFnKind -> CST.Expr Void
+    mkExpression = case _ of
+        FnSrc -> hydraCtor_ "FnSrc"
+        FnCoord -> hydraCtor_ "FnCoord"
+        FnCombineCoord -> hydraCtor_ "FnCombineCoord"
+        FnCombine -> hydraCtor_ "FnCombine"
+        FnColor -> hydraCtor_ "FnColor"
+
+
+instance Partial => ValueCodegen GlslFnCode where
+    mkExpression :: GlslFnCode -> CST.Expr Void
+    mkExpression = case _ of
+        GlslFnCode codeStr ->
+            exprApp (hydraCtor_ "GlslFnCode")
+                [ exprString codeStr ]
+
+
 instance Partial => ValueCodegen GlslFn where
     mkExpression :: GlslFn -> CST.Expr Void
-    mkExpression = const $ hydraCtor_ "None" -- FIXME: implement
+    mkExpression = case _ of
+        GlslFn { kind, code, fn } ->
+            exprApp (hydraCtor_ "GlslFn")
+                [ exprRecord
+                    [ "kind" /\ mkExpression kind
+                    , "code" /\ mkExpression code
+                    , "fn" /\ mkExpression fn
+                    ]
+                ]
+
 
 
 instance Partial => ValueCodegen Texture where
@@ -1636,3 +1674,9 @@ instance Partial => ValueCodegen SourceOptions where
     mkExpression :: SourceOptions -> CST.Expr Void
     mkExpression = case _ of
         SourceOptions { src } -> exprApp (hydraCtor_ "SourceOptions") [ exprRecord [ "src" /\ mkExpression src ] ]
+
+
+instance Partial => ValueCodegen UpdateFn where
+    mkExpression :: UpdateFn -> CST.Expr Void
+    mkExpression = case _ of
+        UpdateFn _ -> exprApp (hydraCtor_ "UpdateFn") [ exprLambda [ binderVar "ctx" ] $ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
