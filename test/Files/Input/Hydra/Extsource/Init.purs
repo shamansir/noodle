@@ -28,9 +28,9 @@ Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf -}
 _init :: NId.Family "init"
 _init = NId.Family
 
-type Inlets = (I "options" Hot HW.WrapRepr :> TNil) :: Noodle.Inlets
+type Inlets = (I "options" Hot HT.SourceOptions :> TNil) :: Noodle.Inlets
 type Outlets = TNil :: Noodle.Outlets
-type InletsRow = (options :: HW.WrapRepr)
+type InletsRow = (options :: HT.SourceOptions)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
 type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
@@ -39,7 +39,7 @@ type Family = Noodle.Family "init" HW.WrapRepr InletsRow OutletsRow WrapRepr Eff
 type F = Noodle.F "init" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { options: HW.Value HT.None }
+defaultI = { options: HT.SourceOptions { src: HT.Canvas } }
 
 defaultO :: Record OutletsRow
 defaultO = {}

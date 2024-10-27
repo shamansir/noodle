@@ -3,9 +3,8 @@ hydra 0.1 0.3
 : source : osc :: <frequency:Value {N 60.0} -> sync:Value {N 0.1} -> offset:Value> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Osc { <frequency>, <sync>, <offset> } |-/
 : source : shape :: <sides:Value {N 60.0} -> radius:Value {N 0.3} -> smoothing:Value {N 0.01}> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Shape { <sides>, <radius>, <smoothing> } |-/
 : source : gradient :: <speed:Value> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Gradient { <speed> } |-/
-: source : srctex :: <tex:Texture {EMP T}> => out:Texture {EMP T} /-| out::HT.Start $ HT.Source <src> |-/
 : source : solid :: <r:Value -> g:Value -> b:Value -> a:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Solid { <r>, <g>, <b>, <a> } |-/
-: source : src :: <src:Source> => out:Texture {EMP T} /-| out::HT.Start $ HT.Source <src> |-/
+: source : src :: <load:OutputN> => out:Texture {EMP T} /-| out::HT.Start $ HT.Load <load> |-/
 : source : prev :: <todo:TODO {TODO}> => out:Texture {EMP T} /-| out::HT.Empty |-/
 : geometry : rotate :: <what:Texture {EMP T} -> angle:Value {N 10.0} -> speed:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.Geometry <what> $ HT.GRotate { <angle>, <speed> } |-/
 : geometry : scale :: <what:Texture {EMP T} -> amount:Value {N 1.5} -> xMult:Value {N 1.0} -> yMult:Value {N 1.0} -> offsetX:Value {N 0.5} -> offsetY:Value {N 0.5}> => out:Texture {EMP T} /-| out::HT.Geometry <what> $ HT.GScale { <amount>, <xMult>, <yMult>, <offsetX>, <offsetY> } |-/
@@ -52,7 +51,7 @@ hydra 0.1 0.3
 : modulate : modulatePixelate :: <what:Texture {EMP T} -> with:Texture {EMP T} -> multiple:Value {N 10.0} -> offset:Value {N 3.0}> => out:Texture {EMP T} /-| out::HT.ModulateWith { <what>, <with> } $ HT.ModPixelate { <multiple>, <offset> } |-/
 : modulate : modulateRotate :: <what:Texture {EMP T} -> with:Texture {EMP T} -> multiple:Value {N 1.0} -> offset:Value> => out:Texture {EMP T} /-| out::HT.ModulateWith { <what>, <with> } $ HT.ModRotate { <multiple>, <offset> } |-/
 : modulate : modulateHue :: <what:Texture {EMP T} -> with:Texture {EMP T} -> amount:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.ModulateWith { <what>, <with> } $ HT.ModHue <amount> |-/
-: synth : render :: <from:From {All}> => out:TODO {TODO}
+: synth : render :: <what:RenderTarget {ALL 4}> => <>
 : synth : update :: <fn:UpdateFn> => out:TODO {TODO}
 : synth : setResolution :: <width:Value {N 100.0} -> height:Value {N 100.0}> => out:TODO {TODO}
 : synth : hush :: <todo:TODO {TODO}> => out:TODO {TODO}
@@ -64,12 +63,12 @@ hydra 0.1 0.3
 : synth : pi :: <> => pi:Value {PI V}
 : synth : time :: <> => time:Value {T V}
 : synth : mouse :: <> => <x:Value {MX V} -> y:Value {MY V}>
-: extsource : initCam :: <src:Source {defaultSource} -> index:Value {None}> => <>
-: extsource : initImage :: <src:Source {defaultSource} -> url:String {None}> => <>
-: extsource : initVideo :: <src:Source {defaultSource} -> url:String {None}> => <>
+: extsource : initCam :: <src:SourceN -> index:Value {0 V}> => <>
+: extsource : initImage :: <src:SourceN -> url:Url> => <>
+: extsource : initVideo :: <src:SourceN -> url:Url> => <>
 : extsource : init :: <options:SourceOptions> => <>
-: extsource : initStream :: <src:Source {defaultSource} -> todo:TODO {TODO}> => <>
-: extsource : initScreen :: <src:Source {defaultSource}> => <>
+: extsource : initStream :: <src:SourceN -> todo:TODO {TODO}> => <>
+: extsource : initScreen :: <> => <>
 : array : fast :: <arr:Values {VA %%  %%} -> speed:Value {N 1.0}> => arr:Value {None} /-| HT.VArray arr $ HT.Fast speed |-/
 : array : smooth :: <arr:Values {VA %%  %%} -> smooth:Value {N 1.0}> => arr:Value {None} /-| HT.VArray arr $ HT.Smooth smooth |-/
 : array : ease :: <arr:Values {VA %%  %%} -> ease:Ease {Linear}> => arr:Value {None} /-| HT.VArray arr ease |-/

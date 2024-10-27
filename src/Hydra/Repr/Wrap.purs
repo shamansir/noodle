@@ -692,8 +692,13 @@ instance CodegenRepr WrapRepr where
                     "TODO" -> HT.hydraType_ "TODO"
                     "Values" -> HT.hydraType_ "Values"
                     "Source" -> HT.hydraType_ "Source"
-                    "Audio" -> HT.hydraType_ "Audio"
                     "GlslFn" -> HT.hydraType_ "GlslFn"
+                    "OutputN" -> HT.hydraType_ "OutputN"
+                    "Audio" -> HT.hydraType_ "AudioSource"
+                    "RenderTarget" -> HT.hydraType_ "RenderTarget"
+                    "SourceN" -> HT.hydraType_ "SourceN"
+                    "SourceOptions" -> HT.hydraType_ "SourceOptions"
+                    "Url" -> HT.hydraType_ "Url"
                     -- FIXME: implement further
                     _ -> wrapTypeCtor_ "WrapRepr"
     defaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void
@@ -705,6 +710,12 @@ instance CodegenRepr WrapRepr where
             Just "Values" -> mkExpression (R.fallback :: HT.Values)
             Just "Source" -> mkExpression (R.fallback :: HT.Source)
             Just "GlslFn" -> mkExpression (R.fallback :: HT.GlslFn)
+            Just "OutputN" -> mkExpression (R.fallback :: HT.OutputN)
+            Just "Audio" -> mkExpression (R.fallback :: HT.AudioSource)
+            Just "RenderTarget" -> mkExpression (R.fallback :: HT.RenderTarget)
+            Just "SourceN" -> mkExpression (R.fallback :: HT.SourceN)
+            Just "SourceOptions" -> mkExpression (R.fallback :: HT.SourceOptions)
+            Just "Url" -> mkExpression (R.fallback :: HT.Url)
             -- FIXME: implement further
             _ -> exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
@@ -715,8 +726,13 @@ instance CodegenRepr WrapRepr where
             Just "TODO" -> tryMkExpression (Proxy :: _ HT.TODO)
             Just "Values" -> tryMkExpression (Proxy :: _ HT.Values)
             Just "Source" -> tryMkExpression (Proxy :: _ HT.Source)
-            -- Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
+            Just "Audio" -> tryMkExpression (Proxy :: _ HT.AudioSource)
             Just "GlslFn" -> tryMkExpression (Proxy :: _ HT.GlslFn)
+            Just "OutputN" -> tryMkExpression (Proxy :: _ HT.OutputN)
+            Just "RenderTarget" -> tryMkExpression (Proxy :: _ HT.RenderTarget)
+            Just "SourceN" -> tryMkExpression (Proxy :: _ HT.SourceN)
+            -- Just "SourceOptions" -> tryMkExpression (Proxy :: _ HT.SourceOptions)
+            -- Just "Url" -> tryMkExpression (Proxy :: _ HT.Url)
             -- FIXME: implement further
             _ -> const $ wrapCtor_ "Error"
         where

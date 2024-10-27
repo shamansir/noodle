@@ -1611,3 +1611,28 @@ instance Partial => ValueCodegen Texture where
                 [ "over" /\ mkExpression over, "mbWith" /\ mkExpression mbWith ]
             , mkExpression glslFnRef
             ]
+
+
+instance Partial => ValueCodegen RenderTarget where
+    mkExpression :: RenderTarget -> CST.Expr Void
+    mkExpression = case _ of
+        Four -> hydraCtor_ "Four"
+        Output outN -> exprApp (hydraCtor_ "Output") [ mkExpression outN ]
+
+
+instance Partial => ValueCodegen Url where
+    mkExpression :: Url -> CST.Expr Void
+    mkExpression = case _ of
+        Url str -> exprApp (hydraCtor_ "Url") [ exprString str ]
+
+
+instance Partial => ValueCodegen Canvas where
+    mkExpression :: Canvas -> CST.Expr Void
+    mkExpression = case _ of
+        Canvas -> hydraCtor_ "Canvas"
+
+
+instance Partial => ValueCodegen SourceOptions where
+    mkExpression :: SourceOptions -> CST.Expr Void
+    mkExpression = case _ of
+        SourceOptions { src } -> exprApp (hydraCtor_ "SourceOptions") [ exprRecord [ "src" /\ mkExpression src ] ]

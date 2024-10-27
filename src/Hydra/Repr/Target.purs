@@ -138,8 +138,8 @@ instance ToCode HYDRA_V opts HT.Source where
 
 instance ToCode HYDRA_V opts HT.RenderTarget where
     toCode :: Proxy HYDRA_V -> opts -> HT.RenderTarget -> String
-    toCode _ _ HT.Four = "ALL"
-    toCode _ _ (HT.Output on) = show on
+    toCode _ _ HT.Four = "ALL 4"
+    toCode _ _ (HT.Output on) = "O" <> _encode on
 
 
 instance ToCode HYDRA_V opts HT.Url where
@@ -328,6 +328,18 @@ instance CanParse HYDRA_V HT.GlslFn where
     parser = const RP.glsl
 
 
+instance CanParse HYDRA_V HT.AudioSource where
+    parser = const RP.audioSrc
+
+
+instance CanParse HYDRA_V HT.RenderTarget where
+    parser = const RP.renderTarget
+
+
+instance CanParse HYDRA_V HT.SourceN where
+    parser = const RP.sourceN
+
+
 instance FromCode HYDRA_V opts HT.Value    where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.Texture  where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.Source   where fromCode = fromParser
@@ -336,3 +348,6 @@ instance FromCode HYDRA_V opts HT.AudioBin where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.TODO     where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.Values   where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.GlslFn   where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.AudioSource  where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.RenderTarget where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.SourceN  where fromCode = fromParser

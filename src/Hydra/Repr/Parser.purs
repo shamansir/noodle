@@ -269,6 +269,21 @@ geometry =
         ]
 
 
+audioSrc :: Parser String HT.AudioSource
+audioSrc =
+        string "SIL" $> HT.Silence
+    <|> string "MIC" $> HT.Mic
+    <|> string "FIL" $> HT.File
+
+
+renderTarget :: Parser String HT.RenderTarget
+renderTarget =
+    foldMarkers
+        [ marker $ "ALL" /\ const HT.Four /\ string "4"
+        , marker $ "O" /\ HT.Output /\ args1 outputN identity
+        ]
+
+
 glslKind :: Parser String HT.GlslFnKind
 glslKind =
         string "SRC" $> HT.FnSrc
@@ -509,6 +524,10 @@ noArgs :: forall x. x -> Parser String x
 noArgs x =
     string PM._argsEnd *> pure x
    --  parseArgsHelper 0 $ const $ Just x
+
+args1 :: forall arg x. Parser String arg -> (arg -> x) -> Parser String x
+args1 p f =
+    parseArgsHelper p 1 $ \arr -> f <$> arr !! 0
 
 
 parseArgs1V :: forall x. (HT.Value -> x) -> Parser String x
