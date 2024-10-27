@@ -6,6 +6,20 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Newtype (class Newtype)
 
+import Noodle.Text.FromCode (Source) as FC
+import Noodle.Fn.ToFn (Fn)
+import Noodle.Fn.ToFn (name) as Fn
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
+
+
+type NodeDefRec =
+    { group :: FamilyGroup
+    , fn :: Fn ChannelDef ChannelDef
+    , state :: StateDef
+    , process :: ProcessCode
+    , source :: Maybe FC.Source
+    }
+
 
 newtype FamilyGroup = FamilyGroup String
 newtype NodeFamily = NodeFamily String
@@ -93,3 +107,7 @@ emptyStateDef = StateDef emptyDefAndType
 
 emptyChannelDef :: ChannelDef
 emptyChannelDef = ChannelDef emptyDefAndType
+
+
+familyOf :: NodeDefRec -> NodeFamily
+familyOf = _.fn >>> Fn.name >>> NodeFamily

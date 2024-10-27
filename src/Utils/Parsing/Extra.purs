@@ -8,7 +8,7 @@ import Data.Foldable (foldr)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (fromFoldable) as Array
 
-import Parsing (Parser, runParser)
+import Parsing (Parser, runParser, ParseState(..), getParserT)
 import Parsing.String (string)
 import Parsing.Combinators (many1, sepBy1)
 import Parsing.String.Basic (space)
@@ -61,3 +61,7 @@ linesOf :: forall x. Parser String x -> Parser String (Array x)
 linesOf parser =
   Array.fromFoldable
     <$> (sepBy1 parser $ string "\n")
+
+
+source :: forall s. Parser s s
+source = getParserT >>= \(ParseState src _ _) -> pure src

@@ -12,22 +12,18 @@ import Data.Text.Format as T
 
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
+import Noodle.Text.FromCode (Source) as FC
 import Noodle.Fn.ToFn (Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make
-import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
+import Noodle.Text.NdfFile.Types (NodeDefRec, EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
 
 
-newtype NodeDef = NodeDef
-    { group :: FamilyGroup
-    , fn :: NodeFnDef
-    , state :: StateDef
-    , process :: ProcessCode
-    }
+newtype NodeDef = NodeDef NodeDefRec
 derive instance Newtype NodeDef _
 derive newtype instance Eq NodeDef
 
@@ -94,9 +90,9 @@ instance ToCode NDF opts NodeDef where
     toCode pndf opts (NodeDef ndef) =
         case ndef of
             { group, fn, process, state } ->
-                ": " <> unwrap group <> " : " <> (Fn.name $ unwrap fn) <> " :: "
+                ": " <> unwrap group <> " : " <> (Fn.name fn) <> " :: "
                      <> (if hasStateDef_ state then stateToCode_ state <> " " else "")
-                     <> toCode pndf opts fn <> case process of
+                     <> toCode pndf opts (wrap fn :: NodeFnDef) <> case process of
                         NoneSpecified -> ""
                         _ -> " " <> toCode pndf opts process
 
@@ -108,9 +104,9 @@ instance ToTaggedCode NDF opts NodeDef where
             { group, fn, process, state } ->
                 F.operator ":"
                 <> T.s " " <> F.someGroup (unwrap group) <> T.s " " <> F.operator ":"
-                <> T.s " " <> F.family (Fn.name $ unwrap fn) <> T.s " " <> F.operator "::"
+                <> T.s " " <> F.family (Fn.name fn) <> T.s " " <> F.operator "::"
                 <> (if hasStateDef_ state then T.s " " <> stateToTaggedCode_ state else T.s " ")
-                <> toTaggedCode pndf opts fn
+                <> toTaggedCode pndf opts (wrap fn :: NodeFnDef)
                 <> case process of
                     NoneSpecified -> T.s ""
                     _ -> T.s " " <> toTaggedCode pndf opts process
@@ -137,7 +133,7 @@ instance ToTaggedCode NDF opts ProcessAssign where
 instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
     toCode :: Proxy PS -> CodeGen.Options repr -> NodeDef -> String
     toCode _ opts (NodeDef ndef) =
-        CodeGen.generate opts ndef.group ndef.state (unwrap ndef.fn) ndef.process
+        CodeGen.generate opts ndef
 
 
 hasStateDef_ :: StateDef -> Boolean
@@ -201,11 +197,11 @@ group = unwrap >>> _.group
 
 
 fnDef:: NodeDef -> NodeFnDef
-fnDef = unwrap >>> _.fn
+fnDef = unwrap >>> _.fn >>> wrap
 
 
 family :: NodeDef -> NodeFamily
-family = unwrap >>> _.fn >>> unwrap >>> Fn.name >>> NodeFamily
+family = unwrap >>> _.fn >>> Fn.name >>> NodeFamily
 
 
 -- familyR :: NodeDef -> Id.FamilyR
@@ -292,9 +288,10 @@ qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDe
 qdef { group, family, inputs, outputs } =
     NodeDef
         { group : wrap group
-        , fn : wrap $ Make.fn family inputs outputs
+        , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process : NoneSpecified
+        , source : Nothing
         }
 
 
@@ -302,9 +299,10 @@ qdefp :: { group :: String, family :: String, inputs :: Array (Argument ChannelD
 qdefp { group, family, inputs, outputs, process } =
     NodeDef
         { group : wrap group
-        , fn : wrap $ Make.fn family inputs outputs
+        , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process
+        , source : Nothing
         }
 
 
@@ -312,9 +310,10 @@ qdefs :: { group :: String, family :: String, inputs :: Array (Argument ChannelD
 qdefs { group, family, inputs, outputs, state } =
     NodeDef
         { group : wrap group
-        , fn : wrap $ Make.fn family inputs outputs
+        , fn : Make.fn family inputs outputs
         , state
         , process : NoneSpecified
+        , source : Nothing
         }
 
 
@@ -322,9 +321,10 @@ qdefps :: { group :: String, family :: String, inputs :: Array (Argument Channel
 qdefps { group, family, inputs, outputs, state, process } =
     NodeDef
         { group : wrap group
-        , fn : wrap $ Make.fn family inputs outputs
+        , fn : Make.fn family inputs outputs
         , state
         , process
+        , source : Nothing
         }
 
 

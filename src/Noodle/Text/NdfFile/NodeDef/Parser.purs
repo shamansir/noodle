@@ -2,26 +2,30 @@ module Noodle.Text.NdfFile.NodeDef.Parser where
 
 import Prelude
 
-import Data.List (List)
 import Data.String.CodeUnits as StringCU
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
+import Data.String.CodeUnits as CU
+import Data.CodePoint.Unicode as CP
 import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Enum (fromEnum)
+-- import Data.CodePoint.Unicode.Internal (UnicodeCategory)
 
 import Data.Traversable (for)
 
-import Parsing (Parser, runParser, ParseError) as P
+import Parsing (Parser, runParser, ParseError, ParseState(..), getParserT, position, Position(..)) as P
 import Parsing.String (char, string)  as P
-import Parsing.String.Basic (noneOf) as P
 import Parsing.Token (alphaNum, space) as P
-import Parsing.String.Extra (eol, asArray, alphaNumToken, anythingBut) as P
+import Parsing.Extra (source) as P
+import Parsing.String.Extra (alphaNumToken, asArray) as P
 import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
 import Parsing.Combinators ((<?>))
 
 import Noodle.Fn.ToFn (fn') as Fn
-import Noodle.Text.NdfFile.NodeDef (NodeDef(..), NodeFnDef(..), ProcessAssign(..))
+import Noodle.Text.FromCode (Source) as FC
+import Noodle.Text.NdfFile.NodeDef (NodeDef(..), ProcessAssign(..))
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (parser) as PC
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
@@ -29,6 +33,7 @@ import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup
 
 parser :: P.Parser String NodeDef
 parser = do
+  source <- P.source
   _ <- sep $ P.char ':'
   tag <- P.alphaNumToken <?> "tag"
   _ <- sep $ P.char ':'
@@ -41,11 +46,18 @@ parser = do
   outputs <- results
   _ <- Array.many P.space
   maybeImpl <- P.optionMaybe PC.parser
+  -- (P.Position pos) <- P.position
   pure $ NodeDef
     { group : FamilyGroup tag
     , state : fromMaybe emptyStateDef mbState
-    , fn : NodeFnDef $ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
+    , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : fromMaybe NoneSpecified maybeImpl
+    -- , source : Just $ String.take pos.index sourceBefore
+    -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
+    --        The approach with `pos.index` failed somehow...
+    --        It could be in String parsers somewhere though, but since we didn't use it yet...
+    --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
+    , source : Just $ CU.takeWhile (_ /= '\n') $ String.drop 1 source
     }
 
 
