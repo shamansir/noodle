@@ -6,6 +6,7 @@ import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Traversable (traverse_)
+import Data.Array (length, take) as Array
 
 import Control.Monad.Error.Class (class MonadThrow)
 
@@ -29,7 +30,7 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
-import Noodle.Text.NdfFile (loadDefinitions) as NdfFile
+import Noodle.Text.NdfFile (loadDefinitions, failedLines) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
@@ -116,18 +117,20 @@ spec = do
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error
-          Right parsedNdf -> do
-            let definitions = NdfFile.loadDefinitions parsedNdf
-            traverse_ ( testNodeDefCodegen "Hydra" customHydraGenOptions ) definitions
+          Right parsedNdf ->
+            if (Array.length $ NdfFile.failedLines parsedNdf) == 0 then do
+              let definitions = NdfFile.loadDefinitions parsedNdf
+              traverse_ ( testNodeDefCodegen "Hydra" customHydraGenOptions ) definitions
+            else
+              fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
 customHydraGenOptions :: CG.Options WrapRepr
 customHydraGenOptions =
-  case hydraGenOptions of
-    (CG.Options hgRec) -> CG.Options $ hgRec
+  CG.withOptions hydraGenOptions $ \opts -> opts
       { nodeModuleName = moduleName "Hydra"
       , infoComment = Just $ \mbSource fgroup family ->
-            case hgRec.infoComment of
+            case opts.infoComment of
               Just commentFn -> (commentFn mbSource fgroup family) <> "\n\n" <> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
               Nothing -> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
       }

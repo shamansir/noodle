@@ -84,15 +84,18 @@ class CodegenRepr repr where
   | MAff -}
 
 
+type OptionsRec repr =
+  { temperamentAlgorithm :: Temperament.Algorithm
+  , monadAt :: { module_ :: String, type_ :: String }
+  , nodeModuleName :: FamilyGroup -> NodeFamily -> String
+  , infoComment :: Maybe (Maybe FC.Source -> FamilyGroup -> NodeFamily -> String)
+  , prepr :: Proxy repr
+  , imports :: Array (ImportDecl Void)
+  }
+
+
 newtype Options :: forall k. k -> Prim.Type
-newtype Options repr = Options
-    { temperamentAlgorithm :: Temperament.Algorithm
-    , monadAt :: { module_ :: String, type_ :: String }
-    , nodeModuleName :: FamilyGroup -> NodeFamily -> String
-    , infoComment :: Maybe (Maybe FC.Source -> FamilyGroup -> NodeFamily -> String)
-    , prepr :: Proxy repr
-    , imports :: Array (ImportDecl Void)
-    }
+newtype Options repr = Options (OptionsRec repr)
 
 
 type Channel = String /\ ChannelDef
@@ -343,3 +346,7 @@ familyPascalCase = unwrap >>> String.pascalCase
 
 groupPascalCase :: FamilyGroup -> String
 groupPascalCase = unwrap >>> String.pascalCase
+
+
+withOptions :: forall repr. Options repr -> (OptionsRec repr -> OptionsRec repr) -> Options repr
+withOptions (Options rec) f = Options $ f rec

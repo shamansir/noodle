@@ -18,6 +18,7 @@ import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make
 import Noodle.Text.NdfFile.Types (NodeDefRec, EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
+import Noodle.Text.NdfFile.NodeDef.ProcessCode (ndfLinesCount) as PC
 import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
@@ -331,3 +332,13 @@ qdefps { group, family, inputs, outputs, state, process } =
 qassign :: String -> ProcessCode -> ProcessAssign
 qassign family pcode =
     wrap $ wrap family /\ pcode
+
+
+ndfLinesCount :: NodeDef -> Int
+ndfLinesCount (NodeDef { process }) =
+    max 1 $ PC.ndfLinesCount process
+
+
+processAssignNdfLinesCount :: ProcessAssign -> Int
+processAssignNdfLinesCount (ProcessAssign (_ /\ process)) =
+    max 1 $ PC.ndfLinesCount process

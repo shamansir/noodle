@@ -16,6 +16,7 @@ import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
 import Noodle.Text.NdfFile.Types
 import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)
+import Noodle.Text.NdfFile.NodeDef (ndfLinesCount, processAssignNdfLinesCount) as ND
 
 
 data Command
@@ -86,3 +87,10 @@ commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize
 
 optimize :: Array Command -> Array Command
 optimize = identity -- TODO
+
+
+ndfLinesCount :: Command -> Int
+ndfLinesCount = case _ of
+    DefineNode nodeDef -> max 1 $ ND.ndfLinesCount nodeDef
+    AssignProcess pAssign -> max 1 $ ND.processAssignNdfLinesCount pAssign
+    _ -> 1

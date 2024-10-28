@@ -15,6 +15,7 @@ import Data.Foldable (foldl)
 import Data.Array (snoc)
 import Data.Array (catMaybes, length, nub) as Array
 import Data.Array.NonEmpty (toArray) as NEA
+import Data.String.Extra2 (linesCount) as String
 
 import Parsing (Parser) as P
 import Parsing.String (string)  as P
@@ -235,3 +236,11 @@ parser =
           (P.anythingBut stopAltChar)
     , P.eol *> pure NoneSpecified
     ]
+
+
+ndfLinesCount :: ProcessCode -> Int
+ndfLinesCount = case _ of
+    NoneSpecified -> 0
+    Raw raw -> String.linesCount raw
+    Auto auto -> String.linesCount auto
+    JS js -> String.linesCount js

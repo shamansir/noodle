@@ -504,7 +504,7 @@ gradient(0).r().repeat(16,1).scrollX(0,0.1).out(o0)"""
         ]
     , e TODO "source" "noise" 100
         "noise( scale = 10, offset = 0.1 )"
-        [ "noise(10, 0.1).out(o0)" -- default
+        [ "noise(10, 0.1).out(o0)"
         , """\\ noise interpolating between different scales and offsets
 noise( () => Math.sin(time/10)*50 , () => Math.sin(time/2)/500 )
 .out(o0)
@@ -512,17 +512,24 @@ noise( () => Math.sin(time/10)*50 , () => Math.sin(time/2)/500 )
         ]
     , e DONE "source" "osc" 102
         "osc( frequency = 60, sync = 0.1, offset )"
-        [ "osc( [1,10,50,100,250,500].fast(2) ).out(o0)" -- frequency
-        , "osc( () => Math.sin(time/10) * 100 ).out(o0)" -- frequency 2
-        , "osc( 10, [-10,-1,-0.1,0,0.1,1,10], 0 ).out(o0)" -- sync
-        , "osc(10,0.1, ({time}) => Math.sin(time/10) * 100 ).out(o0)" -- offset
+        [ """// frequency
+osc( [1,10,50,100,250,500].fast(2) ).out(o0)"""
+        , """// frequency 2
+osc( () => Math.sin(time/10) * 100 ).out(o0)"""
+        , """// sync
+osc( 10, [-10,-1,-0.1,0,0.1,1,10], 0 ).out(o0)"""
+        , """// offset
+osc(10,0.1, ({time}) => Math.sin(time/10) * 100 ).out(o0)"""
         ]
     , e DONE "source" "prev" 107 "" []
     , e DONE "source" "shape" 103
         "shape( sides = 3, radius = 0.3, smoothing = 0.01 )"
-        [ "shape(3,0.5,0.001).out(o0)" -- triangle
-        , "shape(100,0.5,0.001).out(o0)" -- ellipse
-        , "shape(100,0.01,1).invert(()=>Math.sin(time)*2).out(o0)" -- inverting blurry circle
+        [ """// triangle
+shape(3,0.5,0.001).out(o0)"""
+        , """// ellipse
+shape(100,0.5,0.001).out(o0)"""
+        , """// inverting blurry circle
+shape(100,0.01,1).invert(()=>Math.sin(time)*2).out(o0)"""
         , """\\ a... rainbow ball?
 shape(5,0.5,0.1).repeat(19,19)
   .mult(osc(10,1,2))
@@ -535,16 +542,19 @@ shape(5,0.5,0.1).repeat(19,19)
         ]
     , e DONE "source" "solid" 106
         "solid( r, g, b, a = 1 )"
-        [ "solid([1,0,0],[0,1,0],[0,0,1],1).out(o0)" -- cycling through red, green and blue
+        [ """// cycling through red, green and blue
+solid([1,0,0],[0,1,0],[0,0,1],1).out(o0)"""
         ]
     , e DONE "source" "src" 105
         "src( tex )"
-        [ "src(o0).modulate(noise(3),0.005).blend(shape(4),0.01).out(o0)" -- feedback
+        [ """// feedback
+src(o0).modulate(noise(3),0.005).blend(shape(4),0.01).out(o0)"""
         ]
     , e DONE "source" "voronoi" 101
         "voronoi( scale = 5, speed = 0.3, blending = 0.3 )"
-        [ "voronoi(5,0.3,0.3).out(o0)" -- default
-        , "voronoi(25,2,10).color(1,1,0).brightness(0.15).out(o0)" -- fireflies
+        [ "voronoi(5,0.3,0.3).out(o0)"
+        , """// fireflies
+voronoi(25,2,10).color(1,1,0).brightness(0.15).out(o0)"""
         ]
 
     {- Synth -}

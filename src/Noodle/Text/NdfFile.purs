@@ -11,6 +11,7 @@ import Data.String (joinWith) as String
 import Data.Map (Map)
 import Data.Map (empty, insert, update) as Map
 import Data.Foldable (foldr)
+import Data.Newtype (class Newtype)
 
 import Data.Text.Format as T
 
@@ -36,16 +37,28 @@ newtype Header =
         }
 
 
-data NdfFile = NdfFile Header (Array Command)
+data NdfFile =
+    NdfFile
+        Header
+        (Array FailedLine)
+        (Array Command)
 
 
 derive instance Eq Header
 derive instance Eq NdfFile
 
 
+newtype FailedLine = FailedLine String
+
+
+derive instance Newtype FailedLine _
+derive newtype instance Eq FailedLine
+derive newtype instance Show FailedLine
+
+
 instance Show NdfFile where
-  show :: NdfFile -> String
-  show = toNdfCode
+    show :: NdfFile -> String
+    show = toNdfCode
 
 
 instance ToCode NDF opts NdfFile where
@@ -77,15 +90,15 @@ from_ :: { toolkit :: String
          , toolkitVersion :: Number
          , ndfVersion :: Number
          } -> Array Command -> NdfFile
-from_ header = NdfFile (Header header)
+from_ header = NdfFile (Header header) []
 
 
 append :: Command -> NdfFile -> NdfFile
-append cmd (NdfFile header cmds) = NdfFile header $ cmd : cmds
+append cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd : cmds
 
 
 toNdfCode :: NdfFile -> String
-toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) commands) =
+toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines commands) =
     toolkit <> " "
     <> show toolkitVersion
     <> (if ndfVersion == 0.1 then "\n" else " " <> show ndfVersion <> "\n")
@@ -93,7 +106,7 @@ toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) commands) =
 
 
 toTaggedNdfCode :: NdfFile -> T.Tag
-toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) commands) =
+toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines commands) =
     T.toolkit toolkit <> T.s " "
     <> T.tkVersion toolkitVersion <> T.s " "
     <> T.ndfVersion ndfVersion <> T.nl
@@ -102,7 +115,11 @@ toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) comman
 
 
 extractCommands :: NdfFile -> Array Command
-extractCommands (NdfFile _ commands) = commands
+extractCommands (NdfFile _ _ commands) = commands
+
+
+failedLines :: NdfFile -> Array FailedLine
+failedLines (NdfFile _ failedLines' _) = failedLines'
 
 
 loadDefinitions :: NdfFile -> Map NodeFamily NodeDef
