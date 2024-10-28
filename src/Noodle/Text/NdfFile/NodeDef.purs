@@ -71,13 +71,13 @@ instance ToTaggedCode NDF opts NodeFnDef where
                 case (toFn fn :: String /\ Array (Argument ChannelDef) /\ Array (Output ChannelDef)) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
-                        T.s " " <> F.operator "=>" <> T.s " " <>
+                        T.space <> F.operator "=>" <> T.space <>
                         case outlets of
                             [ singleOutput ] -> outletDefToTaggedCode singleOutput
                             _ -> outletsList outlets
         where
-            inletsList inlets = F.operator "<" <> T.joinWith (T.s " " <> F.operator "->" <> T.s " ") (inletDefToTaggedCode <$> inlets) <> F.operator ">"
-            outletsList outlets = F.operator "<" <> T.joinWith (T.s " " <> F.operator "->" <> T.s " ") (outletDefToTaggedCode <$> outlets) <> F.operator ">"
+            inletsList inlets = F.operator "<" <> T.joinWith (T.space <> F.operator "->" <> T.space) (inletDefToTaggedCode <$> inlets) <> F.operator ">"
+            outletsList outlets = F.operator "<" <> T.joinWith (T.space <> F.operator "->" <> T.space) (outletDefToTaggedCode <$> outlets) <> F.operator ">"
             inletDefToTaggedCode :: Argument ChannelDef -> T.Tag
             inletDefToTaggedCode arg =
                 channelToTaggedCode_ F.inletId (argName arg) (argValue arg)
@@ -104,13 +104,13 @@ instance ToTaggedCode NDF opts NodeDef where
         case ndef of
             { group, fn, process, state } ->
                 F.operator ":"
-                <> T.s " " <> F.someGroup (unwrap group) <> T.s " " <> F.operator ":"
-                <> T.s " " <> F.family (Fn.name fn) <> T.s " " <> F.operator "::"
-                <> (if hasStateDef_ state then T.s " " <> stateToTaggedCode_ state else T.s " ")
+                <> T.space <> F.someGroup (unwrap group) <> T.space <> F.operator ":"
+                <> T.space <> F.family (Fn.name fn) <> T.space <> F.operator "::"
+                <> (if hasStateDef_ state then T.space <> stateToTaggedCode_ state else T.space)
                 <> toTaggedCode pndf opts (wrap fn :: NodeFnDef)
                 <> case process of
                     NoneSpecified -> T.s ""
-                    _ -> T.s " " <> toTaggedCode pndf opts process
+                    _ -> T.space <> toTaggedCode pndf opts process
 
 
 instance ToCode NDF opts ProcessAssign where
@@ -127,8 +127,8 @@ instance ToTaggedCode NDF opts ProcessAssign where
         case padef of
             family /\ process ->
                 F.operator ":"
-                <> T.s " " <> F.family (unwrap family) <> T.s " " <> F.operator "::"
-                <> T.s " " <> toTaggedCode pndf opts process
+                <> T.space <> F.family (unwrap family) <> T.space <> F.operator "::"
+                <> T.space <> toTaggedCode pndf opts process
 
 
 instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
@@ -158,7 +158,7 @@ stateToTaggedCode_ :: StateDef -> T.Tag
 stateToTaggedCode_ (StateDef { mbType, mbDefault }) =
     case (mbType /\ mbDefault) of
         Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
-            F.operator "[" <> F.type_ typeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}" <> F.operator "]"
+            F.operator "[" <> F.type_ typeStr <> T.space <> F.operator "{" <> F.value valueStr <> F.operator "}" <> F.operator "]"
         Just (EncodedType typeStr) /\ Nothing ->
             F.operator "[" <> F.type_ typeStr <> F.operator "]"
         Nothing /\ Just (EncodedValue valueStr) ->
@@ -184,7 +184,7 @@ channelToTaggedCode_ :: (String -> T.Tag) -> String -> ChannelDef -> T.Tag
 channelToTaggedCode_ nameToTag chName (ChannelDef { mbType, mbDefault }) =
     case (mbType /\ mbDefault) of
         Just (EncodedType typeStr) /\ Just (EncodedValue valueStr) ->
-            nameToTag chName <> F.operator ":" <> F.type_ typeStr <> T.s " " <> F.operator "{" <> F.value valueStr <> F.operator "}"
+            nameToTag chName <> F.operator ":" <> F.type_ typeStr <> T.space <> F.operator "{" <> F.value valueStr <> F.operator "}"
         Just (EncodedType typeStr) /\ Nothing ->
             nameToTag chName <> F.operator ":" <> F.type_ typeStr
         Nothing /\ Just (EncodedValue valueStr) ->

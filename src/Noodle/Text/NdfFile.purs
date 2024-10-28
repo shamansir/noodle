@@ -107,10 +107,10 @@ toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines 
 
 toTaggedNdfCode :: NdfFile -> T.Tag
 toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines commands) =
-    T.toolkit toolkit <> T.s " "
-    <> T.tkVersion toolkitVersion <> T.s " "
+    T.toolkit toolkit <> T.space
+    <> T.tkVersion toolkitVersion <> T.space
     <> T.ndfVersion ndfVersion <> T.nl
-    <> (if ndfVersion == 0.1 then T.nl else T.s " " <> T.ndfVersion ndfVersion <> T.nl)
+    <> (if ndfVersion == 0.1 then T.nl else T.space <> T.ndfVersion ndfVersion <> T.nl)
     <> commandsToTaggedNdf commands
 
 

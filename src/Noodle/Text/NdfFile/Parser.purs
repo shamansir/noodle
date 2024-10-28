@@ -5,6 +5,8 @@ import Prelude
 import Data.Semigroup.Foldable (class Foldable1)
 import Data.Array (many) as P
 import Data.List.NonEmpty as NEL
+import Data.String (Pattern(..))
+import Data.String (split) as String
 import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
 import Data.Either (Either(..))
@@ -169,6 +171,22 @@ comment = do
     pure $ Cmd.Comment content
 
 
+orderCommand :: P.Parser String Command
+orderCommand = do
+    _ <- P.string "*"
+    _ <- P.space
+    content <- Tuple.fst <$> P.anyTill P.eol
+    pure $ Cmd.Order $ (String.split $ Pattern " ") <$> String.split (Pattern " | ") content
+
+
+importCommand :: P.Parser String Command
+importCommand = do
+    _ <- P.string "i"
+    _ <- P.space
+    path <- Tuple.fst <$> P.anyTill P.eol
+    pure $ Cmd.Import path
+
+
 command :: P.Parser String Command
 command =
   P.try (NodeDef.parser <#> Cmd.DefineNode) <?> "node definition"
@@ -183,6 +201,8 @@ command =
   <|> P.try sendOCommandS <?> "send command"
   <|> P.try createCommand <?> "create command"
   <|> P.try moveCommand <?> "move command"
+  <|> P.try orderCommand <?> "order command"
+  <|> P.try importCommand <?> "import command"
   <|> P.try comment <?> "comment"
 
 

@@ -43,6 +43,9 @@ negative = Pico.darkRed :: Item
 nodeHlBg = Pico.mauve :: Item
 groupBg = Pico.blue :: Item
 type_ = Pico.pink :: Item
+orderItem = Pico.blue :: Item
+orderSplit = Pico.brown :: Item
+filePath = Pico.darkerPurple :: Item
 
 
 networkBg' = repr networkBg :: String

@@ -53,7 +53,7 @@ inletStatusLine family idx inletId = inletStatusLine' (Id.familyR family) idx $ 
 inletStatusLine' :: forall repr. Mark repr => Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> Tag
 inletStatusLine' (Id.FamilyR { family }) idx inletId (Just repr) =
     -- TODO: show node id and group as well
-    (T.fgcs (C.crepr Palette.familyName) family) <> T.s " " <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.s " " <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) family) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inletStatusLine' familyR idx inletId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
@@ -81,7 +81,7 @@ outletStatusLine family idx outletId = outletStatusLine' (Id.familyR family) idx
 outletStatusLine' :: forall repr. Mark repr => Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> Tag
 outletStatusLine' (Id.FamilyR { family }) idx outletId (Just repr) =
     -- TODO: show group as well
-    (T.fgcs (C.crepr Palette.familyName) family) <> T.s " " <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.s " " <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) family) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 outletStatusLine' familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
@@ -136,7 +136,7 @@ removeInfoBox =
 
 removeStatusLine :: forall f. IsSymbol f => Id.Family f -> Tag
 removeStatusLine family =
-    T.fgcs (C.crepr Pico.red) "remove" <> T.s " " <> (T.fgcs (C.crepr Palette.familyName) $ Id.family $ Id.familyR family)
+    T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family $ Id.familyR family)
 
 
 libraryItem :: Mark Id.FamilyR => Id.FamilyR -> Tag
@@ -157,7 +157,7 @@ glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
 
 paletteItem :: Palette.Item -> Tag
 paletteItem item =
-    T.bg item.repr (T.s "      ") <> T.s " " <> T.fg item.repr (T.s $ Palette.fullInfo item)
+    T.bg item.repr (T.s "      ") <> T.space <> T.fg item.repr (T.s $ Palette.fullInfo item)
 
 
 -- Commands
@@ -254,6 +254,17 @@ selected :: String -> Tag
 selected = T.fgc (C.crepr Palette.positive) <<< T.s
 
 
+orderItem :: String -> Tag
+orderItem = T.fgc (C.crepr Palette.orderItem) <<< T.s
+
+
+orderSplit :: String -> Tag
+orderSplit = T.fgc (C.crepr Palette.orderSplit) <<< T.s
+
+
+filePath :: String -> Tag
+filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
+
 
 familyDocs
     :: forall f grp arg out
@@ -265,7 +276,7 @@ familyDocs
 familyDocs pgrp parg pout family =
     let (familyGroup :: grp) = Id.groupOf family
     in T.fgcs (mark familyGroup) (show familyGroup)
-        <> T.s " " <> familySignature pgrp parg pout family
+        <> T.space <> familySignature pgrp parg pout family
 
 
 class
@@ -298,7 +309,7 @@ familyShortInfo pgrp parg pout family =
     let (familyGroup :: grp) = Id.groupOf family
     -- in T.bgc (C.crepr Palette.groupBg) (T.fgcs (mark familyGroup) (Info.statusLine familyGroup))
     in T.s "/" <> T.fgc (mark familyGroup) (At.statusLine familyGroup) <> T.s "/"
-        <> T.s " " <> familySignature pgrp parg pout family
+        <> T.space <> familySignature pgrp parg pout family
 
 
 familySignature
