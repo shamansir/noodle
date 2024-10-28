@@ -43,3 +43,15 @@ _glslTerminals = [ '¤', '■' ]
 
 _glslEnd :: String
 _glslEnd = "■¤¤¤¤"
+
+_arrEmpty :: String
+_arrEmpty = "%%%%"
+
+_arrStart :: String
+_arrStart = "%% "
+
+_arrEnd :: String
+_arrEnd = " %%"
+
+_arrSep :: String
+_arrSep = " <> "

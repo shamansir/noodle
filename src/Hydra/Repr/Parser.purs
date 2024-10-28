@@ -15,7 +15,7 @@ import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (fromFoldable, length) as Array
 import Data.Array ((!!))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Either (hush) as Either
 import Data.String.Read (class Read)
@@ -41,15 +41,6 @@ import Hydra.Types as HT
 import Hydra.Repr.Markers as PM
 
 
--- newtype HasParser = HasParser WrapRepr
-
-
-{- Orphan
-instance HasParser x => Decode x where
-    decode = decodeImpl
--}
-
-
 value :: Parser String HT.Value
 value =
     foldMarkers
@@ -63,7 +54,11 @@ value =
         , marker $ "H" /\ const HT.Height /\ string "V"
         , marker $ "PI" /\ const HT.Pi /\ string "V"
         , marker $ "A" /\ HT.Fft /\ audioBin
-        , marker $ "VA" /\ uncurry HT.VArray /\ ((/\) <$> (defer \_ -> values) <*> (string " $$ " *> defer \_ -> ease))
+        , marker $ "VA" /\ uncurry HT.VArray /\
+                    ((/\)
+                        <$> (defer \_ -> values)
+                        <*> (fromMaybe HT.Linear <$> optionMaybe (string " $$ " *> defer \_ -> ease))
+                    )
         , marker $ "D" /\ HT.Dep /\ fn
         ]
 
@@ -74,11 +69,12 @@ audioBin = HT.AudioBin <$> (string "@" *> intDecimal)
 
 values :: Parser String HT.Values
 values =
-    HT.Values
+    string PM._arrEmpty *> pure (HT.Values [])
+    <|> HT.Values
         <$> Array.fromFoldable
         <$>
-        (between (string "%% ") (string " %%")
-            $ flip sepBy (string " <> ") $ defer $ \f -> value
+        (between (string PM._arrStart) (string PM._arrEnd)
+            $ flip sepBy (string PM._arrSep) $ defer $ \f -> value
         )
 
 

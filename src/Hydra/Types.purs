@@ -1456,7 +1456,7 @@ instance Partial => ValueCodegen Value where
         VArray (Values vals) ease ->
             exprApp
                 (hydraCtor_ "VArray")
-                [ exprArray $ mkExpression <$> vals
+                [ exprApp (hydraCtor_ "Values") [ exprArray $ mkExpression <$> vals ]
                 , mkExpression ease
                 ]
         Dep depFn ->

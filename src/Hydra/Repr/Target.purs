@@ -205,7 +205,11 @@ instance ToCode HYDRA_V opts HT.SourceOptions where
 
 instance ToCode HYDRA_V opts HT.Values where
     toCode :: Proxy HYDRA_V -> opts -> HT.Values -> String
-    toCode _ _ (HT.Values array) = "%% " <> String.joinWith " <> " (_encode <$> array) <> " %%"
+    toCode _ _ (HT.Values array) =
+        if (Array.length array > 0) then
+            PM._arrStart <> String.joinWith PM._arrSep (_encode <$> array) <> PM._arrEnd
+        else
+            PM._arrEmpty
 
 
 instance ToCode HYDRA_V opts HT.Ease where
@@ -347,6 +351,10 @@ instance CanParse HYDRA_V HT.SourceN where
     parser = const RP.sourceN
 
 
+instance CanParse HYDRA_V HT.Ease where
+    parser = const RP.ease
+
+
 instance FromCode HYDRA_V opts HT.Value    where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.Texture  where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.Source   where fromCode = fromParser
@@ -358,3 +366,4 @@ instance FromCode HYDRA_V opts HT.GlslFn   where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.AudioSource  where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.RenderTarget where fromCode = fromParser
 instance FromCode HYDRA_V opts HT.SourceN  where fromCode = fromParser
+instance FromCode HYDRA_V opts HT.Ease     where fromCode = fromParser

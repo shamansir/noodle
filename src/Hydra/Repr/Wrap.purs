@@ -702,6 +702,8 @@ instance CodegenRepr WrapRepr where
                     "SourceOptions" -> HT.hydraType_ "SourceOptions"
                     "Url" -> HT.hydraType_ "Url"
                     "UpdateFn" -> HT.hydraType_ "UpdateFn"
+                    "Ease" -> HT.hydraType_ "Ease"
+                    "AudioBin" -> HT.hydraType_ "AudioBin"
                     -- FIXME: implement further
                     _ -> wrapTypeCtor_ "WrapRepr"
     defaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void
@@ -720,6 +722,8 @@ instance CodegenRepr WrapRepr where
             Just "SourceOptions" -> mkExpression (R.fallback :: HT.SourceOptions)
             Just "Url" -> mkExpression (R.fallback :: HT.Url)
             Just "UpdateFn" -> mkExpression (R.fallback :: HT.UpdateFn)
+            Just "Ease" -> mkExpression (R.fallback :: HT.Ease)
+            Just "AudioBin" -> mkExpression (R.fallback :: HT.AudioBin)
             -- FIXME: implement further
             _ -> exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void
@@ -735,6 +739,8 @@ instance CodegenRepr WrapRepr where
             Just "OutputN" -> tryMkExpression (Proxy :: _ HT.OutputN)
             Just "RenderTarget" -> tryMkExpression (Proxy :: _ HT.RenderTarget)
             Just "SourceN" -> tryMkExpression (Proxy :: _ HT.SourceN)
+            Just "Ease" -> tryMkExpression (Proxy :: _ HT.Ease)
+            Just "AudioBin" -> tryMkExpression (Proxy :: _ HT.AudioBin)
             -- Just "UpdateFn" -> tryMkExpression (Proxy :: _ HT.UpdateFn)
             -- Just "SourceOptions" -> tryMkExpression (Proxy :: _ HT.SourceOptions)
             -- Just "Url" -> tryMkExpression (Proxy :: _ HT.Url)

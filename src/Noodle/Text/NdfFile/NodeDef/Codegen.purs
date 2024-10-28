@@ -84,6 +84,7 @@ class CodegenRepr repr where
   | MAff -}
 
 
+type OptionsRec :: forall k. k -> Type
 type OptionsRec repr =
   { temperamentAlgorithm :: Temperament.Algorithm
   , monadAt :: { module_ :: String, type_ :: String }

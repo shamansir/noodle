@@ -19,6 +19,7 @@ import Parsing (Parser, runParser, ParseError, ParseState(..), getParserT, posit
 import Parsing.String (char, string)  as P
 import Parsing.Token (alphaNum, space) as P
 import Parsing.Extra (source) as P
+import Parsing.String.Basic (noneOf) as P
 import Parsing.String.Extra (alphaNumToken, asArray) as P
 import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
 import Parsing.Combinators ((<?>))
@@ -112,7 +113,8 @@ sep sep_ = do
 
 
 defaultValue :: P.Parser String String
-defaultValue = StringCU.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.', P.char ' ', P.char '_' ])
+defaultValue =
+  StringCU.fromCharArray <$> Array.some (P.noneOf [ '}' ]) -- (P.choice [ P.alphaNum, P.char '.', P.char ' ', P.char '_', P.char '%' ])
 
 
 channel :: P.Parser String (String /\ ChannelDef)
