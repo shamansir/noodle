@@ -1,4 +1,13 @@
 hydra 0.1 0.3
+: feed : number :: <> => out:Value {N 0.0}
+: feed : pi :: <> => out:Value {PI V}
+: feed : array :: <> => out:Value {VA %%%%}
+: feed : expression :: <> => out:Value {D /----/}
+: feed : pi :: <> => pi:Value {PI V}
+: feed : time :: <> => time:Value {T V}
+: feed : mouse :: <> => <x:Value {MX V} -> y:Value {MY V}>
+: feed : glslFn :: <> => out:Value {D /----/}
+: source : noise :: <scale:Value {N 10.0} -> offset:Value {N 0.1}> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Noise { <scale>, <offset> } |-/
 : source : voronoi :: <scale:Value {N 5.0} -> speed:Value {N 0.3} -> blending:Value {N 0.3}> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Voronoi { <scale>, <speed>, <blending> } |-/
 : source : osc :: <frequency:Value {N 60.0} -> sync:Value {N 0.1} -> offset:Value> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Osc { <frequency>, <sync>, <offset> } |-/
 : source : shape :: <sides:Value {N 60.0} -> radius:Value {N 0.3} -> smoothing:Value {N 0.01}> => out:Texture {EMP T} /-| out::HT.Start $ HT.From $ HT.Shape { <sides>, <radius>, <smoothing> } |-/
@@ -60,9 +69,6 @@ hydra 0.1 0.3
 : synth : bpm :: <v:Value {N 30.0}> => out:TODO {TODO}
 : synth : width :: <> => w:Value {W V}
 : synth : height :: <> => h:Value {H V}
-: synth : pi :: <> => pi:Value {PI V}
-: synth : time :: <> => time:Value {T V}
-: synth : mouse :: <> => <x:Value {MX V} -> y:Value {MY V}>
 : extsource : initCam :: <src:SourceN -> index:Value {0 V}> => <>
 : extsource : initImage :: <src:SourceN -> url:Url> => <>
 : extsource : initVideo :: <src:SourceN -> url:Url> => <>
