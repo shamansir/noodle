@@ -1,9 +1,12 @@
 hydra 0.1 0.3
+* | number pi array expression time mouse glslFn |
+* | noise voronoi osc shape gradient src solid prev | rotate scale pixelate repeat repeatX repeatY kaleid scroll scrollX scrollY | posterize shift invert contrast brightness luma thresh color saturate hue colorama sum r b g a |
+* | add sub layer blend mult diff mask | modulateRepeat modulateRepeatX modulateRepeatY modulateKaleid modulateScrollX modulateScrollY modulate modulateScale modulatePixelate modulateRotate modulateHue |
+* | initCam initImage initVideo init initStream initScreen | render update setResolution hush setFunction speed bpm width height time mouse | fast smooth ease offset fit | fft setSmooth setCutoff setBins setScale hide show |
 : feed : number :: <> => out:Value {N 0.0}
 : feed : pi :: <> => out:Value {PI V}
 : feed : array :: <> => out:Value {VA %%%%}
 : feed : expression :: <> => out:Value {D /----/}
-: feed : pi :: <> => pi:Value {PI V}
 : feed : time :: <> => time:Value {T V}
 : feed : mouse :: <> => <x:Value {MX V} -> y:Value {MY V}>
 : feed : glslFn :: <> => out:Value {D /----/}
@@ -25,7 +28,6 @@ hydra 0.1 0.3
 : geometry : scroll :: <what:Texture {EMP T} -> scrollX:Value {N 0.5} -> scrollY:Value {N 0.5} -> speedX:Value -> speedY:Value> => out:Texture {EMP T} /-| out::HT.Geometry <what> $ HT.GScroll { <scrollX>, <scrollY>, <speedX>, <speedY> } |-/
 : geometry : scrollX :: <what:Texture {EMP T} -> scrollX:Value {N 0.5} -> speed:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.Geometry <what> $ HT.GScrollX { <scrollX>, <speed> } |-/
 : geometry : scrollY :: <what:Texture {EMP T} -> scrollY:Value {N 0.5} -> speed:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.Geometry <what> $ HT.GScrollY { <scrollY>, <speed> } |-/
-: feed : number :: <in:Value {N 0.0}> => out:Value {N 0.0}
 : color : posterize :: <what:Texture {EMP T} -> bins:Value {N 3.0} -> gamma:Value {N 0.6}> => out:Texture {EMP T} /-| out::HT.Filter <what> $ HT.Posterize { <bins>, <gamma> } |-/
 : color : shift :: <what:Texture {EMP T} -> r:Value {N 0.5} -> g:Value {N 0.5} -> b:Value {N 0.5} -> a:Value {N 0.5}> => out:Texture {EMP T} /-| out::HT.Filter <what> $ HT.Shift { <r>, <g>, <b>, <a> } |-/
 : color : invert :: <what:Texture {EMP T} -> amount:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.Filter <what> $ HT.Invert <amount> |-/
@@ -61,12 +63,12 @@ hydra 0.1 0.3
 : modulate : modulateRotate :: <what:Texture {EMP T} -> with:Texture {EMP T} -> multiple:Value {N 1.0} -> offset:Value> => out:Texture {EMP T} /-| out::HT.ModulateWith { <what>, <with> } $ HT.ModRotate { <multiple>, <offset> } |-/
 : modulate : modulateHue :: <what:Texture {EMP T} -> with:Texture {EMP T} -> amount:Value {N 1.0}> => out:Texture {EMP T} /-| out::HT.ModulateWith { <what>, <with> } $ HT.ModHue <amount> |-/
 : synth : render :: <what:RenderTarget {ALL 4}> => <>
-: synth : update :: <fn:UpdateFn> => out:TODO {TODO}
-: synth : setResolution :: <width:Value {N 100.0} -> height:Value {N 100.0}> => out:TODO {TODO}
-: synth : hush :: <todo:TODO {TODO}> => out:TODO {TODO}
-: synth : setFunction :: <fn:GlslFn> => out:TODO {TODO}
-: synth : speed :: <v:Value {N 1.0}> => out:TODO {TODO}
-: synth : bpm :: <v:Value {N 30.0}> => out:TODO {TODO}
+: synth : update :: <fn:UpdateFn> => <>
+: synth : setResolution :: <width:Value {N 100.0} -> height:Value {N 100.0}> => <>
+: synth : hush :: <> => <>
+: synth : setFunction :: <fn:GlslFn> => <>
+: synth : speed :: <v:Value {N 1.0}> => <>
+: synth : bpm :: <v:Value {N 30.0}> => <>
 : synth : width :: <> => w:Value {W V}
 : synth : height :: <> => h:Value {H V}
 : extsource : initCam :: <src:SourceN -> index:Value {0 V}> => <>
@@ -88,7 +90,5 @@ hydra 0.1 0.3
 : audio : hide :: <audio:Audio {SIL} -> todo:TODO {TODO}> => <>
 : audio : show :: <audio:Audio {SIL} -> todo:TODO {TODO}> => <>
 : out : out :: <what:Texture {EMP T} -> target:RenderTarget {ALL 4}> => <>
-$ render :: /-| out::HT.BlendOf { <what>, <with> } $ HT.Mask |-/
-$ bpm :: /-| $ do
-    pure 120.0
-|-/
+$ render :: /-| {- render -} pure unit |-/
+$ bpm :: /-| {- bpm -} pure unit |-/

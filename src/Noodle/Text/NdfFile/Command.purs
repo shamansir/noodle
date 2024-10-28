@@ -55,7 +55,7 @@ instance ToCode NDF opts Command where
             Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
             Comment content -> "# " <> content
             Import path -> "i " <> path
-            Order items -> "* " <> (String.joinWith " | " $ String.joinWith " " <$> items)
+            Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> items) <> " |"
 
 
 instance ToTaggedCode NDF opts Command where
@@ -77,8 +77,8 @@ instance ToTaggedCode NDF opts Command where
             Connect (NodeId fromNode) (OutletId (Right oindex)) (NodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
             Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
             Comment content -> T.mark (T.s "#") $ F.comment content
-            Import path -> T.mark (T.s "i") $ F.filePath path
-            Order items -> T.mark (F.operator "*") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map F.orderItem <$> items)
+            Import path -> T.mark (F.operator "i") $ F.filePath path
+            Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map F.orderItem <$> items)
 
 
 -- instance ToCode NDF (Array Command) where
@@ -100,3 +100,17 @@ ndfLinesCount = case _ of
     DefineNode nodeDef -> max 1 $ ND.ndfLinesCount nodeDef
     AssignProcess pAssign -> max 1 $ ND.processAssignNdfLinesCount pAssign
     _ -> 1
+
+
+priority :: Command -> Int
+priority = case _ of
+    Import _ -> 0
+    Order _ -> 1
+    DefineNode _ -> 2
+    AssignProcess _ -> 3
+    MakeNode _ _ _ _ -> 4
+    Move _ _ _ -> 4
+    Connect _ _ _ _ -> 4
+    Send _ _ _ -> 4
+    SendO _ _ _ -> 4
+    Comment _ -> 5

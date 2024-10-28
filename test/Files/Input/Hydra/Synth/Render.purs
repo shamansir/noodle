@@ -55,4 +55,5 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 renderP :: Process
-renderP = pure unit
+renderP = do
+  {- render -} pure unit

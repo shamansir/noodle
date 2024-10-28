@@ -175,7 +175,10 @@ orderCommand :: P.Parser String Command
 orderCommand = do
     _ <- P.string "*"
     _ <- P.space
-    content <- Tuple.fst <$> P.anyTill P.eol
+    -- _ <- P.string "| "
+    content <- Tuple.fst <$> P.anyTill P.eol -- (P.anyTill $ P.string " |")
+    -- _ <- P.string " |"
+    -- P.eol
     pure $ Cmd.Order $ (String.split $ Pattern " ") <$> String.split (Pattern " | ") content
 
 
