@@ -78,3 +78,6 @@ spawn family@(Family rawShape state inletsMap outletsMap fn) =
         inletsMap
         outletsMap
         fn
+
+
+-- TODO: `toRaw`

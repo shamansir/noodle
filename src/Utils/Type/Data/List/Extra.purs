@@ -42,6 +42,15 @@ instance Put x TNil (x :> TNil)
 else instance Put x (some :> tail) (x :> some :> tail)
 
 
+class Merge :: forall k. TList k -> TList k -> TList k -> Constraint
+class Merge srcA srcB dst | srcA srcB -> dst
+
+
+instance Merge TNil TNil TNil
+else instance (Merge srcA srcB dst) => Merge (x :> srcA) srcB (x :> dst)
+else instance (Merge srcA srcB dst) => Merge srcA (y :> srcB) (y :> dst)
+
+
 {-
 class PutLast :: forall k. k -> TList k -> TList k -> Constraint
 class PutLast x xs ys | xs -> ys

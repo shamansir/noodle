@@ -18,6 +18,7 @@ import Data.Map (Map)
 import Data.Map (empty, lookup, insert, toUnfoldable) as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
+import Data.Foldable (foldl)
 
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
@@ -33,7 +34,11 @@ import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 type Name = String
 
 
-data Toolkit (families :: Families) repr m = Toolkit Name (Map Id.FamilyR (HoldsFamily repr m)) (Map Id.FamilyR (Raw.Family repr m))
+data Toolkit (families :: Families) repr m =
+    Toolkit
+        Name
+        (Map Id.FamilyR (HoldsFamily repr m))
+        (Map Id.FamilyR (Raw.Family repr m))
 
 
 empty :: forall repr m. Name -> Toolkit TNil repr m
@@ -42,6 +47,24 @@ empty name =
         name
         Map.empty
         Map.empty
+
+
+{- TODO, maybe with `unsafeCoerce`; but maybe this method is unreliable
+from :: forall (families :: Families) repr m. Proxy families -> Array (HoldsFamily repr m) -> Toolkit families repr m
+from _ = ?wh
+-}
+
+
+{- TODO, maybe with `unsafeCoerce`; but maybe this method is unreliable
+registerAll
+    :: forall repr m newFamilies families mergedFamilies
+    .  Proxy newFamilies
+    -> Array (HoldsFamily repr m)
+    -> Toolkit currentFamilies repr m
+    -> Toolkit mergedFamilies repr m
+registerAll families toolkit =
+    foldl (\tk holdsFamily -> withFamily holdsFamily (\family -> register family tk)) toolkit families
+-}
 
 
 register
