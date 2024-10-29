@@ -6,29 +6,26 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith) as Array
+import Data.Array (sortWith, length) as Array
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.String (joinWith) as String
 import Data.Map (Map)
 import Data.Map (empty, insert, update) as Map
 import Data.Foldable (foldl)
 import Data.Newtype (class Newtype)
 
-import Data.Text.Format as T
+import Data.Text.Format (Tag, nl, space) as T
 
-import Noodle.Id (FamilyR) as Id
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf)
 import Noodle.Text.NdfFile.Command (priority) as Command
-import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
+import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
-import Noodle.Text.NdfFile.NodeDef (forceAssign) as ND
 import Noodle.Text.NdfFile.Types (NodeFamily)
-import Noodle.Text.NdfFile.NodeDef (group, fnDef, family) as ND
-import Noodle.Ui.Cli.Tagging as T
+import Noodle.Text.NdfFile.NodeDef (family, forceAssign) as ND
+import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
 
 
-currentVersion = 0.2
+currentVersion = 0.2 :: Number
 
 
 newtype Header =
@@ -100,7 +97,7 @@ append cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd 
 
 
 toNdfCode :: NdfFile -> String
-toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines commands) =
+toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) _ commands) =
     toolkit <> " "
     <> show toolkitVersion
     <> (if ndfVersion == 0.1 then "\n" else " " <> show ndfVersion <> "\n")
@@ -108,7 +105,7 @@ toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines 
 
 
 toTaggedNdfCode :: NdfFile -> T.Tag
-toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines commands) =
+toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) _ commands) =
     T.toolkit toolkit <> T.space
     <> T.tkVersion toolkitVersion <> T.space
     <> T.ndfVersion ndfVersion <> T.nl
@@ -122,6 +119,10 @@ extractCommands (NdfFile _ _ commands) = commands
 
 failedLines :: NdfFile -> Array FailedLine
 failedLines (NdfFile _ failedLines' _) = failedLines'
+
+
+hasFailedLines :: NdfFile -> Boolean
+hasFailedLines = failedLines >>> Array.length >>> (_ > 0)
 
 
 loadDefinitions :: NdfFile -> Map NodeFamily NodeDef

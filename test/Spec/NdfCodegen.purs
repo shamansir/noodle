@@ -30,12 +30,13 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
-import Noodle.Text.NdfFile (loadDefinitions, failedLines) as NdfFile
+import Noodle.Text.NdfFile (loadDefinitions, hasFailedLines, failedLines) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..), FamilyGroup(..))
+import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
@@ -50,7 +51,7 @@ minimalGenOptions :: CG.Options MinimalRepr
 minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
-  , nodeModuleName : moduleName "Test"
+  , nodeModuleName : CG.moduleName' modulePrefix "Test"
   , prepr : (Proxy :: _ MinimalRepr)
   , infoComment : Nothing
   , imports : unsafePartial $
@@ -118,8 +119,9 @@ spec = do
         case eParsedNdf of
           Left error -> fail $ show error
           Right parsedNdf ->
-            if (Array.length $ NdfFile.failedLines parsedNdf) == 0 then do
+            if not $ NdfFile.hasFailedLines parsedNdf then do
               let definitions = NdfFile.loadDefinitions parsedNdf
+              -- TODO: use `NdfCG.codgen`
               traverse_ ( testNodeDefCodegen "Hydra" customHydraGenOptions ) definitions
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
@@ -128,7 +130,7 @@ spec = do
 customHydraGenOptions :: CG.Options WrapRepr
 customHydraGenOptions =
   CG.withOptions hydraGenOptions $ \opts -> opts
-      { nodeModuleName = moduleName "Hydra"
+      { nodeModuleName = CG.moduleName' modulePrefix "Hydra"
       , infoComment = Just $ \mbSource fgroup family ->
             case opts.infoComment of
               Just commentFn -> (commentFn mbSource fgroup family) <> "\n\n" <> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
@@ -136,37 +138,21 @@ customHydraGenOptions =
       }
 
 
-moduleName :: Toolkit.Name -> FamilyGroup -> NodeFamily -> String
-moduleName tkName group family =
-  "Test.Files.CodeGenTest." <> tkName <> "." <> CG.groupPascalCase group <> "." <> CG.familyPascalCase family
+modulePrefix = CG.ModulePrefix "Test.Files.CodeGenTest" :: CG.ModulePrefix
 
 
-toolkitPath :: Toolkit.Name -> String
-toolkitPath = identity
-
-
-modulePath :: Toolkit.Name -> ND.NodeDef -> String
-modulePath tkName nodeDef =
-  tkName <> "/" <> (CG.groupPascalCase $ NodeDef.group nodeDef)
-
-
-moduleFile :: Toolkit.Name -> ND.NodeDef -> String
-moduleFile tkName nodeDef =
-  modulePath tkName nodeDef <> "/" <> (CG.familyPascalCase $ NodeDef.family nodeDef) <> ".purs"
-
-
-inputDir = "./test/Files/Input/" :: String
-outputDir = "./test/Files/Output/" :: String
+inputDir  = CG.GenRootPath "./test/Files/Input/"  :: CG.GenRootPath
+outputDir = CG.GenRootPath "./test/Files/Output/" :: CG.GenRootPath
 
 
 testNodeDefCodegen :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> ND.NodeDef -> m Unit
 testNodeDefCodegen tkName genOptions nodeDef = do
   let
     psModuleCode = toCode (ToCode.pureScript) genOptions nodeDef
-    moduleSampleFile = inputDir <> moduleFile tkName nodeDef
-    moduleTargetPath = outputDir <> modulePath tkName nodeDef
-    moduleTargetFile = outputDir <> moduleFile tkName nodeDef
-    toolkitTargetPath = outputDir <> toolkitPath tkName
+    moduleTargetPath  = CG.modulePath  outputDir tkName nodeDef
+    moduleSampleFile  = CG.moduleFile  inputDir  tkName nodeDef
+    moduleTargetFile  = CG.moduleFile  outputDir tkName nodeDef
+    toolkitTargetPath = CG.toolkitPath outputDir tkName
   liftEffect $ do
     tkDirExists <- exists toolkitTargetPath
     when (not tkDirExists) $ mkdir toolkitTargetPath

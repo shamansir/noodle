@@ -19,6 +19,9 @@ import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)
 import Noodle.Text.NdfFile.NodeDef (ndfLinesCount, processAssignNdfLinesCount) as ND
 
 
+type FamiliesOrder = Array (Array String)
+
+
 data Command
     = DefineNode NodeDef
     | AssignProcess ProcessAssign
@@ -27,7 +30,7 @@ data Command
     | Connect NodeId OutletId NodeId InletId
     | Send NodeId InletId EncodedValue
     | SendO NodeId OutletId EncodedValue
-    | Order (Array (Array String))
+    | Order FamiliesOrder
     | Import String
     | Comment String
 
@@ -114,3 +117,7 @@ priority = case _ of
     Send _ _ _ -> 4
     SendO _ _ _ -> 4
     Comment _ -> 5
+
+
+reviewOrder_ :: FamiliesOrder -> FamiliesOrder
+reviewOrder_ = Array.filter (Array.length >>> (_ > 0)) >>> map (Array.filter (String.length >>> (_ > 0)))

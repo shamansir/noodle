@@ -26,7 +26,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Text.NdfFile.Command (Command)
-import Noodle.Text.NdfFile.Command (Command(..), ndfLinesCount) as Cmd
+import Noodle.Text.NdfFile.Command (Command(..), ndfLinesCount, reviewOrder_) as Cmd
 import Noodle.Text.NdfFile.Types (nodeId, family, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion, FailedLine(..))
@@ -179,7 +179,11 @@ orderCommand = do
     content <- Tuple.fst <$> P.anyTill P.eol -- (P.anyTill $ P.string " |")
     -- _ <- P.string " |"
     -- P.eol
-    pure $ Cmd.Order $ (String.split $ Pattern " ") <$> String.split (Pattern " | ") content
+    pure
+        $ Cmd.Order
+        $ Cmd.reviewOrder_
+        $ (String.split $ Pattern " ")
+       <$> String.split (Pattern " | ") content
 
 
 importCommand :: P.Parser String Command
