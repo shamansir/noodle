@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.Map (Map)
 import Data.Newtype (class Newtype)
 
 import Noodle.Text.FromCode (Source) as FC

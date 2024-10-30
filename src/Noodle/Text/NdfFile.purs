@@ -6,10 +6,10 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith, length) as Array
+import Data.Array (sortWith, length, fromFoldable) as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
-import Data.Map (empty, insert, update) as Map
+import Data.Map (empty, insert, update, values) as Map
 import Data.Foldable (foldl)
 import Data.Newtype (class Newtype)
 
@@ -19,9 +19,12 @@ import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTagged
 import Noodle.Text.NdfFile.Command (priority) as Command
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
-import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
 import Noodle.Text.NdfFile.Types (NodeFamily)
+import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
 import Noodle.Text.NdfFile.NodeDef (family, forceAssign) as ND
+import Noodle.Text.NdfFile.NodeDef.Codegen as CG
+import Noodle.Text.NdfFile.Codegen as CG
+import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
 
 
@@ -145,3 +148,8 @@ loadDefinitions = extractCommands >>> normalizeCommands >>> foldl applyCommand M
                 AssignProcess (ProcessAssign (family /\ processCode)) ->
                     theMap # Map.update (ND.forceAssign processCode >>> Just) family
                 _ -> theMap
+
+
+-- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
+codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> NdfFile -> Map CG.FilePath CG.FileContent
+codegen tkName options = loadDefinitions >>> Map.values >>> Array.fromFoldable >>> CG.codegen tkName options

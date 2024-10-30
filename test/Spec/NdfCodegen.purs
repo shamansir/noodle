@@ -6,7 +6,12 @@ import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Traversable (traverse_)
-import Data.Array (length, take) as Array
+import Data.Array (length, take, dropEnd) as Array
+import Data.Map (toUnfoldable) as Map
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (unwrap)
+
+import Effect.Console as Console
 
 import Control.Monad.Error.Class (class MonadThrow)
 
@@ -22,7 +27,9 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail)
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile, writeTextFile, mkdir, exists)
+import Node.Path (FilePath) as FS
+import Node.FS.Sync (readTextFile, writeTextFile, mkdir, exists, mkdir')
+import Node.FS.Perms (permsReadWrite)
 
 import Tidy.Codegen
 
@@ -30,13 +37,14 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
-import Noodle.Text.NdfFile (loadDefinitions, hasFailedLines, failedLines) as NdfFile
+import Noodle.Text.NdfFile (loadDefinitions, hasFailedLines, failedLines, codegen) as NdfFile
+import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
 import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.NodeDef.Codegen as CG
 import Noodle.Text.NdfFile.Types (NodeFamily(..), FamilyGroup(..))
-import Noodle.Text.NdfFile.Codegen as CG
+-- import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
@@ -112,7 +120,7 @@ spec = do
   Fn.send _out_len $ String.length concatenated"""
             }
 
-        testNodeDefCodegen "Test" minimalGenOptions testNodeDef
+        testSingleNodeDef "Test" minimalGenOptions testNodeDef
 
       it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.3.ndf"
@@ -121,9 +129,8 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
-              let definitions = NdfFile.loadDefinitions parsedNdf
-              -- TODO: use `NdfCG.codgen`
-              traverse_ ( testNodeDefCodegen "Hydra" customHydraGenOptions ) definitions
+              let fileMap = NdfFile.codegen "Hydra" customHydraGenOptions parsedNdf
+              traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
@@ -142,23 +149,28 @@ customHydraGenOptions =
 modulePrefix = CG.ModulePrefix "Test.Files.CodeGenTest" :: CG.ModulePrefix
 
 
-inputDir  = CG.GenRootPath "./test/Files/Input/"  :: CG.GenRootPath
-outputDir = CG.GenRootPath "./test/Files/Output/" :: CG.GenRootPath
+inputDir  = CG.GenRootPath "./test/Files/Input"  :: CG.GenRootPath
+outputDir = CG.GenRootPath "./test/Files/Output" :: CG.GenRootPath
 
 
-testNodeDefCodegen :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> ND.NodeDef -> m Unit
-testNodeDefCodegen tkName genOptions nodeDef = do
+testSingleNodeDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> ND.NodeDef -> m Unit
+testSingleNodeDef tkName genOptions nodeDef =
   let
-    psModuleCode = toCode (ToCode.pureScript) genOptions nodeDef
-    moduleTargetPath  = CG.modulePath  outputDir tkName nodeDef
-    moduleSampleFile  = CG.moduleFile  inputDir  tkName nodeDef
-    moduleTargetFile  = CG.moduleFile  outputDir tkName nodeDef
-    toolkitTargetPath = CG.toolkitPath outputDir tkName
+    filePath = CG.moduleFile (CG.GenRootPath "") tkName nodeDef
+    fileContent = toCode (ToCode.pureScript) genOptions nodeDef
+  in testCodegenFile
+     $ CG.FilePath filePath /\ CG.FileContent fileContent
+
+
+testCodegenFile :: forall m. MonadEffect m => CG.FilePath /\ CG.FileContent -> m Unit
+testCodegenFile (CG.FilePath filePath /\ CG.FileContent fileContent) = do
+  let
+    outputFilePath = unwrap outputDir <> filePath
+    inputFilePath  = unwrap inputDir <> filePath
+    outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
   liftEffect $ do
-    tkDirExists <- exists toolkitTargetPath
-    when (not tkDirExists) $ mkdir toolkitTargetPath
-    moduleDirExists <- exists moduleTargetPath
-    when (not moduleDirExists) $ mkdir moduleTargetPath
-    writeTextFile UTF8 moduleTargetFile psModuleCode
-    sample <- readTextFile UTF8 moduleSampleFile
-    psModuleCode `U.shouldEqual` sample
+    outputDirectoryExists <- exists outputDirectory
+    when (not outputDirectoryExists) $ mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
+    writeTextFile UTF8 outputFilePath fileContent
+    sample <- readTextFile UTF8 inputFilePath
+    fileContent `U.shouldEqual` sample
