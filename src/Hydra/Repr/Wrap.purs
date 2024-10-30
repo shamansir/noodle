@@ -662,7 +662,8 @@ wrapCtor_ s = exprCtor (wrapPrefix_ <> s)
 
 hydraGenOptions :: CG.Options WrapRepr
 hydraGenOptions = CG.Options
-    { temperamentAlgorithm : Temperament.defaultAlgorithm
+    { reprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
+    , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , nodeModuleName : \fgroup family -> "Hydra" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
     , prepr : (Proxy :: _ WrapRepr)

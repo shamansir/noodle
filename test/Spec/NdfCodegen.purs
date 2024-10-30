@@ -51,6 +51,7 @@ minimalGenOptions :: CG.Options MinimalRepr
 minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
+  , reprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
   , nodeModuleName : CG.moduleName' modulePrefix "Test"
   , prepr : (Proxy :: _ MinimalRepr)
   , infoComment : Nothing

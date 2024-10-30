@@ -91,6 +91,7 @@ type OptionsRec repr =
   , nodeModuleName :: FamilyGroup -> NodeFamily -> String
   , infoComment :: Maybe (Maybe FC.Source -> FamilyGroup -> NodeFamily -> String)
   , prepr :: Proxy repr
+  , reprAt :: { module_ :: String, type_ :: String }
   , imports :: Array (ImportDecl Void)
   }
 

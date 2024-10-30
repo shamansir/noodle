@@ -5,9 +5,13 @@ import Prelude
 import Partial.Unsafe (unsafePartial)
 
 import Data.Map (Map)
-import Data.Map (empty, insert) as Map
+import Data.Map (empty, insert, toUnfoldable, values) as Map
+import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Newtype (unwrap, wrap, class Newtype)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.List (toUnfoldable) as List
+import Data.Array as Array
 
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile (NdfFile)
@@ -56,42 +60,65 @@ generateToolkit tkName options ndfFile = FileContent $ printModule $ generateToo
 
 
 generateToolkitModule :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> NdfFile -> Module Void
-generateToolkitModule tkName (CG.Options opts) ndef
+generateToolkitModule tkName (CG.Options opts) ndfFile
     = unsafePartial $ module_ (toolkitModuleName tkName)
         [ ]
-        [ declImport "Effect" [ importType "Effect" ]
-        , declImport "Type.Data.List" [ importTypeOp ":>" ]
-        , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
-        , declImport "Noodle.Toolkit" [ importType "Toolkit" ]
-        , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
-        , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
-        -- TODO: autogenerate
-        , declImportAs "Test.Files.CodeGenTest.Hydra.Array.Ease" [] "Array.Ease"
-        , declImportAs "Test.Files.CodeGenTest.Hydra.Array.Fast" [] "Array.Fast"
-        -- TODO: take from options:
-        , declImport "Hydra.Repr.Wrap" [ importType "WrapRepr" ]
-        ]
-        -- TODO: autogenerate
-        [ declTypeSignature "HydraFamilies" $ typeCtor "Families"
-        , declType "HydraFamilies" []
-            $ typeOp (typeCtor "Array.Ease.F")
-                [ binaryOp ":>" $ typeCtor "Array.Fast.F"
-                , binaryOp ":>" $ typeCtor "TNil"
-                ]
+        (
+            [ declImport "Effect" [ importType "Effect" ]
+            , declImport "Type.Data.List" [ importTypeOp ":>" ]
+            , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit" ]
+            , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
+            , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
+            ]
+            <> (defToModuleImport <$> definitions) <>
+            [ declImport opts.reprAt.module_ [ importType opts.reprAt.type_ ]
+            ]
+        )
+        [ declTypeSignature (tkName <> "Families") $ typeCtor "Families"
+        , declType (tkName <> "Families") [] familiesTList
         , declSignature "toolkit"
             $ typeApp (typeCtor "Toolkit")
-                [ typeCtor "HydraFamilies"
-                , typeCtor "WrapRepr"
-                , typeCtor "Effect"
+                [ typeCtor $ tkName <> "Families"
+                , typeCtor opts.reprAt.type_
+                , typeCtor $ opts.monadAt.type_
                 ]
-        , declValue "toolkit" []
-            $ exprOp
-                -- TODO: autogenerate
-                (exprApp (exprIdent "Toolkit.empty") [ exprString "Hydra" ] )
-                [ binaryOp "#" $ exprApp (exprIdent "Toolkit.register") [ exprIdent "Array.Fast.family" ]
-                , binaryOp "#" $ exprApp (exprIdent "Toolkit.register") [ exprIdent "Array.Ease.family" ]
-                ]
+        , declValue "toolkit" [] registerFamilies
         ]
+    where
+        groupAndFamily :: NodeFamily /\ NodeDef -> FamilyGroup /\ NodeFamily
+        groupAndFamily (family /\ NodeDef ndef) = ndef.group /\ family
+        definitions :: Array (FamilyGroup /\ NodeFamily)
+        definitions = groupAndFamily <$> (Map.toUnfoldable $ NdfFile.loadDefinitions ndfFile)
+        referFamily :: FamilyGroup /\ NodeFamily -> String
+        referFamily (group /\ family) = unwrap group <> "." <> unwrap family <> "." <> "family"
+        referFamilyF :: FamilyGroup /\ NodeFamily -> String
+        referFamilyF (group /\ family) = unwrap group <> "." <> unwrap family <> "." <> "F"
+        defToModuleImport :: Partial => FamilyGroup /\ NodeFamily -> ImportDecl Void
+        defToModuleImport (group /\ family) =
+            declImportAs
+                (opts.nodeModuleName group family)
+                []
+                (unwrap group <> "." <> unwrap family)
+        familiesTList :: Partial => CST.Type Void
+        familiesTList =
+            case Array.uncons definitions of
+                Just { head, tail } ->
+                    typeOp (typeCtor $ referFamilyF head)
+                        $ (binaryOp ":>" <$> typeCtor <$> referFamilyF <$> tail)
+                Nothing -> typeCtor "TNil"
+        registerFamilies :: Partial => CST.Expr Void
+        registerFamilies =
+            exprOp
+                (exprApp (exprIdent "Toolkit.empty") [ exprString tkName ])
+                (binaryOp "#"
+                    <$> exprApp (exprIdent "Toolkit.register")
+                    <$> Array.singleton
+                    <$> exprIdent
+                    <$> referFamily
+                    <$> definitions
+                )
+
 
 
 moduleName :: Toolkit.Name -> FamilyGroup -> NodeFamily -> String

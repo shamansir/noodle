@@ -100,7 +100,7 @@ optimize = identity -- TODO
 
 ndfLinesCount :: Command -> Int
 ndfLinesCount = case _ of
-    DefineNode nodeDef -> max 1 $ ND.ndfLinesCount nodeDef
+    DefineNode nodeDef ->    max 1 $ ND.ndfLinesCount nodeDef
     AssignProcess pAssign -> max 1 $ ND.processAssignNdfLinesCount pAssign
     _ -> 1
 

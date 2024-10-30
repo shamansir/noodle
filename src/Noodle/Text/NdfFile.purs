@@ -125,8 +125,17 @@ hasFailedLines :: NdfFile -> Boolean
 hasFailedLines = failedLines >>> Array.length >>> (_ > 0)
 
 
+normalize :: NdfFile -> NdfFile
+normalize (NdfFile header failedCommands commands) =
+    NdfFile header failedCommands $ normalizeCommands commands
+
+
+normalizeCommands :: Array Command -> Array Command
+normalizeCommands = Array.sortWith Command.priority
+
+
 loadDefinitions :: NdfFile -> Map NodeFamily NodeDef
-loadDefinitions = extractCommands >>> Array.sortWith Command.priority >>> foldl applyCommand Map.empty
+loadDefinitions = extractCommands >>> normalizeCommands >>> foldl applyCommand Map.empty
     where
         applyCommand :: Map NodeFamily NodeDef -> Command -> Map NodeFamily NodeDef
         applyCommand theMap =
