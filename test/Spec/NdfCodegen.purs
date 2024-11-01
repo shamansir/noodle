@@ -37,7 +37,7 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
-import Noodle.Text.NdfFile (loadDefinitions, hasFailedLines, failedLines, codegen) as NdfFile
+import Noodle.Text.NdfFile (loadDefinitions, loadOrder, hasFailedLines, failedLines, codegen) as NdfFile
 import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
@@ -129,6 +129,7 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
+              liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
               let fileMap = NdfFile.codegen "Hydra" customHydraGenOptions parsedNdf
               traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
             else

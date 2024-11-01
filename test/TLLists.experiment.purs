@@ -3,10 +3,11 @@ module Test.TLLists.Experiment where
 import Prelude
 
 import Type.Proxy (Proxy(..))
+import Type.Data.Boolean (False, True)
 import Type.Data.List (List', Cons', Nil', type (:>))
 
 
-import Type.Data.List.Extra (TList, TCons, TNil, class Put, class Merge)
+import Type.Data.List.Extra (TList, TCons, TNil, class Put, class Merge, class Has)
 
 
 type SList = TList Symbol
@@ -73,3 +74,15 @@ testMergeNonEmptyAB' = testMerge (Proxy :: _ ("a" :> "c" :> TNil)) (Proxy :: _ (
 
 testMergeNonEmptyAB'' :: Proxy ("a" :> "c" :> "b" :> "c" :> TNil) -> Unit
 testMergeNonEmptyAB'' = testMerge (Proxy :: _ ("a" :> "c" :> TNil)) (Proxy :: _ ("b" :> "c" :> TNil))
+
+
+testHas :: forall xs res. Has "a" xs res => Proxy res -> Proxy xs -> Unit
+testHas _ _ = unit
+
+
+testHasEmpty :: Unit
+testHasEmpty = testHas (Proxy :: _ False) (Proxy :: _ TNil)
+
+
+testHasNonEmpty :: Unit
+testHasNonEmpty = testHas (Proxy :: _ True) (Proxy :: _ ("a" :> TNil))

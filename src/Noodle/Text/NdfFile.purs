@@ -6,16 +6,17 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith, length, fromFoldable) as Array
+import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat) as Array
+import Data.Array.Extra (sortUsing) as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
 import Data.Map (empty, insert, update, values) as Map
 import Data.Foldable (foldl)
-import Data.Newtype (class Newtype)
+import Data.Newtype (class Newtype, unwrap)
 
 import Data.Text.Format (Tag, nl, space) as T
 
-import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf)
+import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
 import Noodle.Text.NdfFile.Command (priority) as Command
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
@@ -137,8 +138,11 @@ normalizeCommands :: Array Command -> Array Command
 normalizeCommands = Array.sortWith Command.priority
 
 
-loadDefinitions :: NdfFile -> Map NodeFamily NodeDef
-loadDefinitions = extractCommands >>> normalizeCommands >>> foldl applyCommand Map.empty
+definitionsFromCommands_ :: Array Command -> Array NodeDef
+definitionsFromCommands_ =
+    foldl applyCommand Map.empty
+        >>> Map.values
+        >>> Array.fromFoldable
     where
         applyCommand :: Map NodeFamily NodeDef -> Command -> Map NodeFamily NodeDef
         applyCommand theMap =
@@ -150,6 +154,26 @@ loadDefinitions = extractCommands >>> normalizeCommands >>> foldl applyCommand M
                 _ -> theMap
 
 
+loadDefinitions :: NdfFile -> Array NodeDef -- a) TODO: Use Order, b) FIXME: gets auto-sorted by family name
+loadDefinitions ndfFile =
+    ndfFile
+        # extractCommands
+        # normalizeCommands
+        # definitionsFromCommands_
+        # Array.sortUsing (ND.family >>> unwrap) (Array.concat $ loadOrder ndfFile)
+
+
+loadOrder :: NdfFile -> FamiliesOrder
+loadOrder = extractCommands >>> foldl mergeOrders []
+    where
+        mergeOrders :: FamiliesOrder -> Command -> FamiliesOrder
+        mergeOrders mergedOrders =
+            case _ of
+                Order nextOrders ->
+                    mergedOrders <> nextOrders
+                _ -> mergedOrders
+
+
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
 codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> NdfFile -> Map CG.FilePath CG.FileContent
-codegen tkName options = loadDefinitions >>> Map.values >>> Array.fromFoldable >>> CG.codegen tkName options
+codegen tkName options = loadDefinitions >>> CG.codegen tkName options

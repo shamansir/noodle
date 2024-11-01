@@ -6,6 +6,7 @@ import Data.String as String
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Data.Text.Format as T
 
@@ -19,11 +20,12 @@ import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)
 import Noodle.Text.NdfFile.NodeDef (ndfLinesCount, processAssignNdfLinesCount) as ND
 
 
+-- TODO: type FamiliesOrder = Array (FamilyGroupId /\ Array FamilyId)
 type FamiliesOrder = Array (Array String)
 
 
 data Command
-    = DefineNode NodeDef
+    = DefineNode NodeDef -- FIXME: rename to DefineFamily // FamilyDef
     | AssignProcess ProcessAssign
     | MakeNode NodeFamily Coord Coord NodeId
     | Move NodeId Coord Coord
@@ -120,4 +122,6 @@ priority = case _ of
 
 
 reviewOrder_ :: FamiliesOrder -> FamiliesOrder
-reviewOrder_ = Array.filter (Array.length >>> (_ > 0)) >>> map (Array.filter (String.length >>> (_ > 0)))
+reviewOrder_ =
+    Array.filter (Array.length >>> (_ > 0))
+        >>> map (Array.filter (String.length >>> (_ > 0)) >>> Array.filter (_ /= "|"))

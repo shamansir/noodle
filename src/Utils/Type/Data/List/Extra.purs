@@ -6,7 +6,7 @@ import Type.Data.Peano as Peano
 import Type.Data.List (List', Cons', Nil', type (:>), class Length, class IsMember)
 import Type.Proxy (Proxy(..))
 
-import Prim.Boolean (True, False)
+-- import Prim.Boolean (True, False)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Monoid (class Monoid, mempty)
@@ -49,6 +49,19 @@ class Merge srcA srcB dst | srcA srcB -> dst
 instance Merge TNil TNil TNil
 else instance (Merge srcA srcB dst) => Merge (x :> srcA) srcB (x :> dst)
 else instance (Merge srcA srcB dst) => Merge srcA (y :> srcB) (y :> dst)
+
+
+{-
+class Has :: forall k. k -> TList k -> Bool -> Constraint
+class Has x xs (res :: Bool)
+
+
+instance Has x TNil False
+else instance Eq cA cB True => Has cA (cB :> TNil) True
+else instance Has x (x :> some :> TNil) True
+else instance Has x (some :> x :> TNil) True
+else instance Has x tail res => Has x (y :> tail) res
+-}
 
 
 {-

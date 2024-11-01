@@ -18,12 +18,12 @@ type NodeDefRec =
     , fn :: Fn ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
-    , source :: Maybe FC.Source
+    , source :: Maybe FC.Source -- TODO: add source file and line in the source file
     }
 
 
-newtype FamilyGroup = FamilyGroup String
-newtype NodeFamily = NodeFamily String
+newtype FamilyGroup = FamilyGroup String -- TODO: rename to FamilyGropId, move to Noodle.Id
+newtype NodeFamily = NodeFamily String -- TODO: rename to NodeFamilyId, move to Noodle.Id
 newtype NodeId = NodeId String
 newtype Coord = Coord Int
 newtype InletId = InletId (Either String Int)
