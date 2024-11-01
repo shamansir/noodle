@@ -4,24 +4,25 @@ import Prelude
 
 import Effect.Class (class MonadEffect)
 
-import Data.Map (Map)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 
 import Type.Proxy (Proxy(..))
 
 import Noodle.Id (Family(..), InletR, OutletR, familyR, inletR, outletR) as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make) as Fn
+import Noodle.Fn (make, toRawWithReprableState) as Fn
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
-import Noodle.Repr (class ToReprRow)
+import Noodle.Repr (class ToReprRow, class FromToRepr)
+import Noodle.Repr (unwrap, ensureTo) as Repr
 
 import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.FromToRec as ReprCnv
+import Noodle.Raw.Toolkit.Family (Family(..)) as Raw
 
 
 data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
@@ -80,4 +81,17 @@ spawn family@(Family rawShape state inletsMap outletsMap fn) =
         fn
 
 
--- TODO: `toRaw`
+toRaw :: forall f state is os repr m
+     . IsSymbol f
+    => FromToRepr state repr
+    => Family f state is os repr m
+    -> Raw.Family repr m
+toRaw family@(Family rawShape state inletsMap outletsMap fn) =
+    Raw.Family
+        (Id.familyR $ familyIdOf family)
+        rawShape
+        (Repr.unwrap $ Repr.ensureTo state)
+        inletsMap
+        outletsMap
+        $ Fn.toRawWithReprableState
+        $ fn

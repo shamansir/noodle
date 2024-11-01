@@ -6,6 +6,7 @@ module Noodle.Fn
   , mapM
   , imapState
   , cloneReplace
+  , toReprableState
   , toRaw, toRawWithReprableState
   )
   where
@@ -48,7 +49,8 @@ import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
 import Noodle.Raw.Fn (Fn(..)) as Raw
-import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr)
+import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr, class FromToRepr)
+import Noodle.Repr (ensureTo, ensureFrom, wrap, unwrap) as Repr
 
 
 data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn FnName (Process state is os repr m)
@@ -66,11 +68,14 @@ class ToFn a state is os repr where
     toFn :: forall m. a -> Fn state is os repr m
 
 
+{- Creating -}
+
+
 make :: forall state is os repr m. FnName -> Process state is os repr m -> Fn state is os repr m
 make = Fn
 
 
-{- Creating -}
+{- Mapping -}
 
 
 mapM :: forall state is os repr m m'. (m ~> m') -> Fn state is os repr m -> Fn state is os repr m'
@@ -79,6 +84,11 @@ mapM f (Fn name processM) = Fn name $ Process.mapMM f processM
 
 imapState :: forall state state' is os repr m. (state -> state') -> (state' -> state) -> Fn state is os repr m -> Fn state' is os repr m
 imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
+
+
+toReprableState :: forall state is os repr m. FromToRepr state repr => Fn state is os repr m -> Fn repr is os repr m
+toReprableState = imapState (Repr.ensureTo >>> Repr.unwrap) (Repr.wrap >>> Repr.ensureFrom)
+
 
 {- Running -}
 

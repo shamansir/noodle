@@ -27,9 +27,10 @@ import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Id (Family, FamilyR, familyR, ToolkitR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
-import Noodle.Toolkit.Family (familyIdOf, spawn) as F
+import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as F
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Repr (class FromToRepr)
 
 
 type Name = Id.ToolkitR
@@ -72,6 +73,7 @@ register
     :: forall f state is os repr m families families'
      . Put (F f state is os repr m) families families'
     => IsSymbol f
+    => FromToRepr state repr
     => Family f state is os repr m
     -> Toolkit families repr m
     -> Toolkit families' repr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
@@ -148,3 +150,17 @@ mapRawFamilies
     -> Array x
 mapRawFamilies f (Toolkit _ _ rawFamilies) =
     Map.toUnfoldable rawFamilies <#> Tuple.snd <#> f
+
+
+mapAllFamilies
+    :: forall x families repr m
+    .  MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))
+    => (Raw.Family repr m -> x)
+    -> Toolkit families repr m
+    -> Array x
+mapAllFamilies f (Toolkit _ families rawFamilies) =
+    ((\hf -> withFamily hf (F.toRaw >>> f))
+        <$> Array.catMaybes
+            (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m))))
+    <>
+    (Map.toUnfoldable rawFamilies <#> Tuple.snd <#> f)
