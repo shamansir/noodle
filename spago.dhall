@@ -109,6 +109,8 @@ to generate this file without the comments in this block.
   , "web-html"
   , "web-socket"
   , "web-uievents"
+  , "yoga-json"
+  , "yoga-tree"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

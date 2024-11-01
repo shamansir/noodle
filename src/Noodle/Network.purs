@@ -48,7 +48,7 @@ addPatch id patch (Network tk patches) =
 withPatch
     :: forall pstate families repr m
     .  PatchR
-    -> (Patch pstate families repr m  -> Patch pstate families repr m )
+    -> (Patch pstate families repr m -> Patch pstate families repr m )
     -> Network pstate families repr m
     -> Network pstate families repr m
 withPatch patchId fn (Network tk patches) =

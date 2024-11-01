@@ -17,6 +17,9 @@ import Data.Newtype (class Newtype, unwrap)
 
 import Data.Text.Format (Tag, nl, space) as T
 
+import Foreign (F, Foreign)
+import Yoga.JSON (class ReadForeign, class WriteForeign)
+
 import Noodle.Id (FamilyR)
 import Noodle.Id (family) as Id
 import Noodle.Toolkit (Name) as Toolkit

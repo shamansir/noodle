@@ -12,6 +12,9 @@ import Data.Text.Format as T
 
 import Type.Proxy (Proxy)
 
+import Foreign (F, Foreign)
+import Yoga.JSON (class ReadForeign, class WriteForeign, writeImpl)
+
 import Noodle.Id (FamilyR)
 import Noodle.Id (family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
@@ -128,3 +131,42 @@ reviewOrder_ :: FamiliesOrder -> FamiliesOrder
 reviewOrder_ =
     Array.filter (Array.length >>> (_ > 0))
         >>> map (Array.filter (Id.family >>> String.length >>> (_ > 0)) >>> Array.filter (Id.family >>> (_ /= "|")))
+
+
+-- TODO:
+{-
+instance WriteForeign CommandOp where
+    writeImpl :: CommandOp -> Foreign
+    writeImpl =
+        case _ of
+            DefineFamily familyDef ->
+                writeImpl { op : "define", def : writeImpl familyDef }
+            AssignProcess processAssign ->
+                writeImpl { op : "assign", assign : writeImpl processAssign }
+            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) ->
+                writeImpl { op : "make", family : Id.family familyR, top, left, instance : nodeId }
+            Move  (NodeInstanceId nodeId) (Coord top) (Coord left) ->
+                writeImpl { op : "move", top, left, instance : nodeId }
+            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) ->
+                writeImpl { op : "send-i", iindex, instance : nodeId, value } -- TODO: use `WriteForeign` implementation for value?
+            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) ->
+                writeImpl { op : "send-in", iname, instance : nodeId, value } -- TODO: use `WriteForeign` implementation for value?
+            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) ->
+                writeImpl { op : "send-o", oindex, instance : nodeId, value } -- TODO: use `WriteForeign` implementation for value?
+            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) ->
+                writeImpl { op : "send-on", oname, instance : nodeId, value } -- TODO: use `WriteForeign` implementation for value?
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) ->
+                writeImpl { op : "connect-ii", oindex, iindex, fromNode, toNode }
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   ->
+                writeImpl { op : "connect-nn", oname, iname, fromNode, toNode }
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   ->
+                writeImpl { op : "connect-in", oindex, iname, fromNode, toNode }
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) ->
+                writeImpl { op : "connect-ni", oname, iindex, fromNode, toNode }
+            Comment content ->
+                writeImpl { op : "comment", content }
+            Import path ->
+                writeImpl { op : "import", path }
+            Order items ->
+                writeImpl { op : "order", items }
+-}
