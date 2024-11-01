@@ -1,4 +1,4 @@
-module Noodle.Text.NdfFile.NodeDef where
+module Noodle.Text.NdfFile.FamilyDef where
 
 import Prelude
 
@@ -10,23 +10,25 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Text.Format as T
 
+import Noodle.Id (GroupR, FamilyR, unsafeFamilyR, unsafeGroupR)
+import Noodle.Id (group, family) as Id
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Fn.ToFn (Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make
-import Noodle.Text.NdfFile.Types (NodeDefRec, EncodedType(..), EncodedValue(..), FamilyGroup, NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ndfLinesCount) as PC
-import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
-import Noodle.Text.NdfFile.NodeDef.Codegen as CodeGen
+import Noodle.Text.NdfFile.Types (FamilyDefRec, EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ndfLinesCount) as PC
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
+import Noodle.Text.NdfFile.FamilyDef.Codegen as CodeGen
 import Noodle.Ui.Cli.Tagging as F
 
 
-newtype NodeDef = NodeDef NodeDefRec
-derive instance Newtype NodeDef _
-derive newtype instance Eq NodeDef
+newtype FamilyDef = FamilyDef FamilyDefRec
+derive instance Newtype FamilyDef _
+derive newtype instance Eq FamilyDef
 
 
 newtype NodeFnDef = NodeFnDef (Fn ChannelDef ChannelDef)
@@ -35,7 +37,7 @@ derive newtype instance Eq NodeFnDef
 
 
 newtype ProcessAssign =
-    ProcessAssign (NodeFamily /\ ProcessCode)
+    ProcessAssign (FamilyR /\ ProcessCode)
 derive instance Newtype ProcessAssign _
 derive newtype instance Eq ProcessAssign
 
@@ -86,25 +88,25 @@ instance ToTaggedCode NDF opts NodeFnDef where
                 channelToTaggedCode_ F.outletId (outName out) (outValue out)
 
 
-instance ToCode NDF opts NodeDef where
-    toCode :: Proxy NDF -> opts -> NodeDef -> String
-    toCode pndf opts (NodeDef ndef) =
+instance ToCode NDF opts FamilyDef where
+    toCode :: Proxy NDF -> opts -> FamilyDef -> String
+    toCode pndf opts (FamilyDef ndef) =
         case ndef of
             { group, fn, process, state } ->
-                ": " <> unwrap group <> " : " <> (Fn.name fn) <> " :: "
+                ": " <> Id.group group <> " : " <> (Fn.name fn) <> " :: "
                      <> (if hasStateDef_ state then stateToCode_ state <> " " else "")
                      <> toCode pndf opts (wrap fn :: NodeFnDef) <> case process of
                         NoneSpecified -> ""
                         _ -> " " <> toCode pndf opts process
 
 
-instance ToTaggedCode NDF opts NodeDef where
-    toTaggedCode :: Proxy NDF -> opts -> NodeDef -> T.Tag
-    toTaggedCode pndf opts (NodeDef ndef) =
+instance ToTaggedCode NDF opts FamilyDef where
+    toTaggedCode :: Proxy NDF -> opts -> FamilyDef -> T.Tag
+    toTaggedCode pndf opts (FamilyDef ndef) =
         case ndef of
             { group, fn, process, state } ->
                 F.operator ":"
-                <> T.space <> F.someGroup (unwrap group) <> T.space <> F.operator ":"
+                <> T.space <> F.someGroup (Id.group group) <> T.space <> F.operator ":"
                 <> T.space <> F.family (Fn.name fn) <> T.space <> F.operator "::"
                 <> (if hasStateDef_ state then T.space <> stateToTaggedCode_ state else T.space)
                 <> toTaggedCode pndf opts (wrap fn :: NodeFnDef)
@@ -118,7 +120,7 @@ instance ToCode NDF opts ProcessAssign where
     toCode pndf opts (ProcessAssign padef) =
         case padef of
             family /\ process ->
-                "$ " <> unwrap family <> " :: " <> toCode pndf opts process
+                "$ " <> Id.family family <> " :: " <> toCode pndf opts process
 
 
 instance ToTaggedCode NDF opts ProcessAssign where
@@ -127,13 +129,13 @@ instance ToTaggedCode NDF opts ProcessAssign where
         case padef of
             family /\ process ->
                 F.operator ":"
-                <> T.space <> F.family (unwrap family) <> T.space <> F.operator "::"
+                <> T.space <> F.family (Id.family family) <> T.space <> F.operator "::"
                 <> T.space <> toTaggedCode pndf opts process
 
 
-instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) NodeDef where
-    toCode :: Proxy PS -> CodeGen.Options repr -> NodeDef -> String
-    toCode _ opts (NodeDef ndef) =
+instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) FamilyDef where
+    toCode :: Proxy PS -> CodeGen.Options repr -> FamilyDef -> String
+    toCode _ opts (FamilyDef ndef) =
         CodeGen.generate opts ndef
 
 
@@ -193,38 +195,38 @@ channelToTaggedCode_ nameToTag chName (ChannelDef { mbType, mbDefault }) =
             nameToTag chName
 
 
-group :: NodeDef -> FamilyGroup
+group :: FamilyDef -> GroupR
 group = unwrap >>> _.group
 
 
-fnDef:: NodeDef -> NodeFnDef
+fnDef:: FamilyDef -> NodeFnDef
 fnDef = unwrap >>> _.fn >>> wrap
 
 
-family :: NodeDef -> NodeFamily
-family = unwrap >>> _.fn >>> Fn.name >>> NodeFamily
+family :: FamilyDef -> FamilyR
+family = unwrap >>> _.fn >>> Fn.name >>> unsafeFamilyR
 
 
--- familyR :: NodeDef -> Id.FamilyR
+-- familyR :: FamilyDef -> Id.FamilyR
 -- familyR = family >>> unwrap >>> Id.unsafeFamilyR
 
 
-stateDef :: NodeDef -> StateDef
+stateDef :: FamilyDef -> StateDef
 stateDef = unwrap >>> _.state
 
 
-processCode :: NodeDef -> ProcessCode
+processCode :: FamilyDef -> ProcessCode
 processCode = unwrap >>> _.process
 
 
-assignWhenNoneSpecified :: ProcessCode -> NodeDef -> NodeDef
-assignWhenNoneSpecified pc nodeDef =
+assignWhenNoneSpecified :: ProcessCode -> FamilyDef -> FamilyDef
+assignWhenNoneSpecified pc familyDef =
     case pc of
-        NoneSpecified -> nodeDef # forceAssign pc
-        _ -> nodeDef
+        NoneSpecified -> familyDef # forceAssign pc
+        _ -> familyDef
 
 
-forceAssign :: ProcessCode -> NodeDef -> NodeDef
+forceAssign :: ProcessCode -> FamilyDef -> FamilyDef
 forceAssign pc =
     unwrap >>> _ { process = pc } >>> wrap
 
@@ -285,10 +287,10 @@ stv value =
         }
 
 
-qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef) } -> NodeDef
+qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef) } -> FamilyDef
 qdef { group, family, inputs, outputs } =
-    NodeDef
-        { group : wrap group
+    FamilyDef
+        { group : unsafeGroupR group
         , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process : NoneSpecified
@@ -296,10 +298,10 @@ qdef { group, family, inputs, outputs } =
         }
 
 
-qdefp :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), process :: ProcessCode } -> NodeDef
+qdefp :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), process :: ProcessCode } -> FamilyDef
 qdefp { group, family, inputs, outputs, process } =
-    NodeDef
-        { group : wrap group
+    FamilyDef
+        { group : unsafeGroupR group
         , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process
@@ -307,10 +309,10 @@ qdefp { group, family, inputs, outputs, process } =
         }
 
 
-qdefs :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef } -> NodeDef
+qdefs :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef } -> FamilyDef
 qdefs { group, family, inputs, outputs, state } =
-    NodeDef
-        { group : wrap group
+    FamilyDef
+        { group : unsafeGroupR group
         , fn : Make.fn family inputs outputs
         , state
         , process : NoneSpecified
@@ -318,10 +320,10 @@ qdefs { group, family, inputs, outputs, state } =
         }
 
 
-qdefps :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef, process :: ProcessCode } -> NodeDef
+qdefps :: { group :: String, family :: String, inputs :: Array (Argument ChannelDef), outputs :: Array (Output ChannelDef), state :: StateDef, process :: ProcessCode } -> FamilyDef
 qdefps { group, family, inputs, outputs, state, process } =
-    NodeDef
-        { group : wrap group
+    FamilyDef
+        { group : unsafeGroupR group
         , fn : Make.fn family inputs outputs
         , state
         , process
@@ -331,11 +333,11 @@ qdefps { group, family, inputs, outputs, state, process } =
 
 qassign :: String -> ProcessCode -> ProcessAssign
 qassign family pcode =
-    wrap $ wrap family /\ pcode
+    wrap $ unsafeFamilyR family /\ pcode
 
 
-ndfLinesCount :: NodeDef -> Int
-ndfLinesCount (NodeDef { process }) =
+ndfLinesCount :: FamilyDef -> Int
+ndfLinesCount (FamilyDef { process }) =
     max 1 $ PC.ndfLinesCount process
 
 

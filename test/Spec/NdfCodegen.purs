@@ -33,17 +33,16 @@ import Node.FS.Perms (permsReadWrite)
 
 import Tidy.Codegen
 
+import Noodle.Id (toolkitR) as Id
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
-import Noodle.Text.NdfFile.NodeDef (family, group) as NodeDef
-import Noodle.Text.NdfFile (loadDefinitions, loadOrder, hasFailedLines, failedLines, codegen) as NdfFile
+import Noodle.Text.NdfFile (loadOrder, hasFailedLines, failedLines, codegen) as NdfFile
 import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
-import Noodle.Text.NdfFile.NodeDef (NodeDef, chtv, i, o, qdefps, st) as ND
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
-import Noodle.Text.NdfFile.NodeDef.Codegen as CG
-import Noodle.Text.NdfFile.Types (NodeFamily(..), FamilyGroup(..))
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef, chtv, i, o, qdefps, st) as FD
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as FD
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), withOptions) as CG
 -- import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Toolkit (Name) as Toolkit
 
@@ -60,7 +59,7 @@ minimalGenOptions = CG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , reprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
-  , nodeModuleName : CG.moduleName' modulePrefix "Test"
+  , familyModuleName : CG.moduleName' modulePrefix $ Id.toolkitR "Test"
   , prepr : (Proxy :: _ MinimalRepr)
   , infoComment : Nothing
   , imports : unsafePartial $
@@ -78,17 +77,17 @@ spec = do
       it "auto code definitions:" $ do
         -- (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
         -- (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
-        (toCode (ToCode.pureScript) unit $ ND.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """do
+        (toCode (ToCode.pureScript) unit $ FD.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """do
   inlet1 <- Fn.receive _in_inlet1
   inlet2 <- Fn.receive _in_inlet2
   Fn.send _out_outlet $ inlet1 + inlet2"""
-        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }") `U.shouldEqual` """do
+        (toCode (ToCode.pureScript) unit $ FD.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }") `U.shouldEqual` """do
   r <- Fn.receive _in_r
   g <- Fn.receive _in_g
   b <- Fn.receive _in_b
   a <- Fn.receive _in_a
   Fn.send _out_out $ H.Start $ H.Solid { r, g, b, a }"""
-        (toCode (ToCode.pureScript) unit $ ND.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>") `U.shouldEqual` """do
+        (toCode (ToCode.pureScript) unit $ FD.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>") `U.shouldEqual` """do
   r <- Fn.receive _in_r
   g <- Fn.receive _in_g
   b <- Fn.receive _in_b
@@ -101,18 +100,18 @@ spec = do
 
       it "should compile to the expected code" $ do
         let
-          testNodeDef = ND.qdefps
+          testFamilyDef = FD.qdefps
             { group : "all", family : "concat"
             , inputs :
-              [ ND.i $ ND.chtv "left" "String" ""
-              , ND.i $ ND.chtv "right" "String" ""
+              [ FD.i $ FD.chtv "left" "String" ""
+              , FD.i $ FD.chtv "right" "String" ""
               ]
             , outputs :
-              [ ND.o $ ND.chtv "out" "String" ""
-              , ND.o $ ND.chtv "len" "Int" "0"
+              [ FD.o $ FD.chtv "out" "String" ""
+              , FD.o $ FD.chtv "len" "Int" "0"
               ]
-            , state : ND.st "Unit" "unit"
-            , process : ND.Raw """do
+            , state : FD.st "Unit" "unit"
+            , process : FD.Raw """do
   left <- Fn.receive _in_left
   right <- Fn.receive _in_right
   let concatenated = left <> right
@@ -120,7 +119,7 @@ spec = do
   Fn.send _out_len $ String.length concatenated"""
             }
 
-        testSingleNodeDef "Test" minimalGenOptions testNodeDef
+        testSingleFamilyDef (Id.toolkitR "Test") minimalGenOptions testFamilyDef
 
       it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.3.ndf"
@@ -130,7 +129,7 @@ spec = do
           Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
               liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
-              let fileMap = NdfFile.codegen "Hydra" customHydraGenOptions parsedNdf
+              let fileMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
               traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
@@ -139,7 +138,7 @@ spec = do
 customHydraGenOptions :: CG.Options WrapRepr
 customHydraGenOptions =
   CG.withOptions hydraGenOptions $ \opts -> opts
-      { nodeModuleName = CG.moduleName' modulePrefix "Hydra"
+      { familyModuleName = CG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
       , infoComment = Just $ \mbSource fgroup family ->
             case opts.infoComment of
               Just commentFn -> (commentFn mbSource fgroup family) <> "\n\n" <> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
@@ -154,11 +153,11 @@ inputDir  = CG.GenRootPath "./test/Files/Input"  :: CG.GenRootPath
 outputDir = CG.GenRootPath "./test/Files/Output" :: CG.GenRootPath
 
 
-testSingleNodeDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> ND.NodeDef -> m Unit
-testSingleNodeDef tkName genOptions nodeDef =
+testSingleFamilyDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> FD.FamilyDef -> m Unit
+testSingleFamilyDef tkName genOptions familyDef =
   let
-    filePath = CG.moduleFile (CG.GenRootPath "") tkName nodeDef
-    fileContent = toCode (ToCode.pureScript) genOptions nodeDef
+    filePath = CG.moduleFile (CG.GenRootPath "") tkName familyDef
+    fileContent = toCode (ToCode.pureScript) genOptions familyDef
   in testCodegenFile
      $ CG.FilePath filePath /\ CG.FileContent fileContent
 

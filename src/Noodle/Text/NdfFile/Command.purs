@@ -12,12 +12,15 @@ import Data.Text.Format as T
 
 import Type.Proxy (Proxy)
 
+import Noodle.Id (FamilyR)
+import Noodle.Id (family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
 import Noodle.Text.NdfFile.Types
-import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign)
-import Noodle.Text.NdfFile.NodeDef (ndfLinesCount, processAssignNdfLinesCount) as ND
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign)
+import Noodle.Text.NdfFile.FamilyDef (ndfLinesCount, processAssignNdfLinesCount) as FD
+
 
 
 -- TODO: type FamiliesOrder = Array (FamilyGroupId /\ Array FamilyId)
@@ -25,13 +28,13 @@ type FamiliesOrder = Array (Array String)
 
 
 data Command
-    = DefineNode NodeDef -- FIXME: rename to DefineFamily // FamilyDef
+    = DefineFamily FamilyDef
     | AssignProcess ProcessAssign
-    | MakeNode NodeFamily Coord Coord NodeId
-    | Move NodeId Coord Coord
-    | Connect NodeId OutletId NodeId InletId
-    | Send NodeId InletId EncodedValue
-    | SendO NodeId OutletId EncodedValue
+    | MakeNode FamilyR Coord Coord NdfNodeId
+    | Move NdfNodeId Coord Coord
+    | Connect NdfNodeId OutletId NdfNodeId InletId
+    | Send NdfNodeId InletId EncodedValue
+    | SendO NdfNodeId OutletId EncodedValue
     | Order FamiliesOrder
     | Import String
     | Comment String
@@ -44,20 +47,20 @@ instance ToCode NDF opts Command where
     toCode :: Proxy NDF -> opts -> Command -> String
     toCode pndf opts =
         case _ of
-            DefineNode nodeDef ->
-                toCode pndf opts nodeDef
+            DefineFamily familyDef ->
+                toCode pndf opts familyDef
             AssignProcess processAssign ->
                 toCode pndf opts processAssign
-            MakeNode (NodeFamily family) (Coord top) (Coord left) (NodeId nodeId) -> family <> " " <> show top <> " " <> show left <> " " <> nodeId
-            Move  (NodeId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
-            Send  (NodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
-            Send  (NodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
-            SendO (NodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
-            SendO (NodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
-            Connect (NodeId fromNode) (OutletId (Right oindex)) (NodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
-            Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
-            Connect (NodeId fromNode) (OutletId (Right oindex)) (NodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
-            Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
+            MakeNode familyR (Coord top) (Coord left) (NdfNodeId nodeId) -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
+            Move  (NdfNodeId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
+            Send  (NdfNodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
+            Send  (NdfNodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
+            SendO (NdfNodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
+            SendO (NdfNodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
+            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
+            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
+            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
+            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
             Comment content -> "# " <> content
             Import path -> "i " <> path
             Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> items) <> " |"
@@ -67,20 +70,20 @@ instance ToTaggedCode NDF opts Command where
     toTaggedCode :: Proxy NDF -> opts -> Command -> T.Tag
     toTaggedCode pndf opts =
         case _ of
-            DefineNode nodeDef ->
-                toTaggedCode pndf opts nodeDef
+            DefineFamily familyDef ->
+                toTaggedCode pndf opts familyDef
             AssignProcess processAssign ->
                 toTaggedCode pndf opts processAssign
-            MakeNode (NodeFamily family) (Coord top) (Coord left) (NodeId nodeId) -> F.family family <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Move  (NodeId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Send  (NodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
-            Send  (NodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
-            SendO (NodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
-            SendO (NodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
-            Connect (NodeId fromNode) (OutletId (Right oindex)) (NodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
-            Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeId fromNode) (OutletId (Right oindex)) (NodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeId fromNode) (OutletId (Left oname))   (NodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            MakeNode familyR (Coord top) (Coord left) (NdfNodeId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            Move  (NdfNodeId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            Send  (NdfNodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
+            Send  (NdfNodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
+            SendO (NdfNodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
+            SendO (NdfNodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
+            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
+            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
+            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
             Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map F.orderItem <$> items)
@@ -102,8 +105,8 @@ optimize = identity -- TODO
 
 ndfLinesCount :: Command -> Int
 ndfLinesCount = case _ of
-    DefineNode nodeDef ->    max 1 $ ND.ndfLinesCount nodeDef
-    AssignProcess pAssign -> max 1 $ ND.processAssignNdfLinesCount pAssign
+    DefineFamily familyDef -> max 1 $ FD.ndfLinesCount familyDef
+    AssignProcess pAssign ->  max 1 $ FD.processAssignNdfLinesCount pAssign
     _ -> 1
 
 
@@ -111,7 +114,7 @@ priority :: Command -> Int
 priority = case _ of
     Import _ -> 0
     Order _ -> 1
-    DefineNode _ -> 2
+    DefineFamily _ -> 2
     AssignProcess _ -> 3
     MakeNode _ _ _ _ -> 4
     Move _ _ _ -> 4

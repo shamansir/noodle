@@ -16,16 +16,17 @@ import Data.Newtype (class Newtype, unwrap)
 
 import Data.Text.Format (Tag, nl, space) as T
 
+import Noodle.Id (FamilyR)
+import Noodle.Id (family) as Id
+import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
 import Noodle.Text.NdfFile.Command (priority) as Command
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
-import Noodle.Text.NdfFile.Types (NodeFamily)
-import Noodle.Text.NdfFile.NodeDef (NodeDef, ProcessAssign(..))
-import Noodle.Text.NdfFile.NodeDef (family, forceAssign) as ND
-import Noodle.Text.NdfFile.NodeDef.Codegen as CG
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign(..))
+import Noodle.Text.NdfFile.FamilyDef (family, forceAssign) as ND
+import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
 import Noodle.Text.NdfFile.Codegen as CG
-import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
 
 
@@ -138,29 +139,29 @@ normalizeCommands :: Array Command -> Array Command
 normalizeCommands = Array.sortWith Command.priority
 
 
-definitionsFromCommands_ :: Array Command -> Array NodeDef
+definitionsFromCommands_ :: Array Command -> Array FamilyDef
 definitionsFromCommands_ =
     foldl applyCommand Map.empty
         >>> Map.values
         >>> Array.fromFoldable
     where
-        applyCommand :: Map NodeFamily NodeDef -> Command -> Map NodeFamily NodeDef
+        applyCommand :: Map FamilyR FamilyDef -> Command -> Map FamilyR FamilyDef
         applyCommand theMap =
             case _ of
-                DefineNode nodeDef ->
-                    theMap # Map.insert (ND.family nodeDef) nodeDef
+                DefineFamily familyDef ->
+                    theMap # Map.insert (ND.family familyDef) familyDef
                 AssignProcess (ProcessAssign (family /\ processCode)) ->
                     theMap # Map.update (ND.forceAssign processCode >>> Just) family
                 _ -> theMap
 
 
-loadDefinitions :: NdfFile -> Array NodeDef -- a) TODO: Use Order, b) FIXME: gets auto-sorted by family name
+loadDefinitions :: NdfFile -> Array FamilyDef -- a) TODO: Use Order, b) FIXME: gets auto-sorted by family name
 loadDefinitions ndfFile =
     ndfFile
         # extractCommands
         # normalizeCommands
         # definitionsFromCommands_
-        # Array.sortUsing (ND.family >>> unwrap) (Array.concat $ loadOrder ndfFile)
+        # Array.sortUsing (ND.family >>> Id.family) (Array.concat $ loadOrder ndfFile)
 
 
 loadOrder :: NdfFile -> FamiliesOrder

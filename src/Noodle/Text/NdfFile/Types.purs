@@ -7,14 +7,15 @@ import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Newtype (class Newtype)
 
+import Noodle.Id (GroupR, FamilyR, unsafeFamilyR)
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (name) as Fn
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode)
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
 
 
-type NodeDefRec =
-    { group :: FamilyGroup
+type FamilyDefRec =
+    { group :: GroupR
     , fn :: Fn ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
@@ -22,9 +23,7 @@ type NodeDefRec =
     }
 
 
-newtype FamilyGroup = FamilyGroup String -- TODO: rename to FamilyGropId, move to Noodle.Id
-newtype NodeFamily = NodeFamily String -- TODO: rename to NodeFamilyId, move to Noodle.Id
-newtype NodeId = NodeId String
+newtype NdfNodeId = NdfNodeId String -- node ID which is local to a single NDF file (and so recognisable by commands in this file)
 newtype Coord = Coord Int
 newtype InletId = InletId (Either String Int)
 newtype OutletId = OutletId (Either String Int)
@@ -36,9 +35,7 @@ newtype ChannelDef = ChannelDef DefaultAndType
 newtype StateDef = StateDef DefaultAndType
 
 
-derive instance Newtype FamilyGroup _
-derive instance Newtype NodeFamily _
-derive instance Newtype NodeId _
+derive instance Newtype NdfNodeId _
 derive instance Newtype Coord _
 derive instance Newtype InletId _
 derive instance Newtype OutletId _
@@ -49,9 +46,7 @@ derive instance Newtype ChannelDef _
 derive instance Newtype StateDef _
 
 
-derive newtype instance Eq FamilyGroup
-derive newtype instance Eq NodeFamily
-derive newtype instance Eq NodeId
+derive newtype instance Eq NdfNodeId
 derive newtype instance Eq Coord
 derive newtype instance Eq InletId
 derive newtype instance Eq OutletId
@@ -61,17 +56,9 @@ derive newtype instance Eq ChannelName
 derive newtype instance Eq ChannelDef
 derive newtype instance Eq StateDef
 
-derive newtype instance Ord FamilyGroup
-derive newtype instance Ord NodeFamily
 
-
-
-family :: String -> NodeFamily
-family = NodeFamily
-
-
-nodeId :: String -> NodeId
-nodeId = NodeId
+ndfNodeId :: String -> NdfNodeId
+ndfNodeId = NdfNodeId
 
 
 coord :: Int -> Coord
@@ -110,5 +97,5 @@ emptyChannelDef :: ChannelDef
 emptyChannelDef = ChannelDef emptyDefAndType
 
 
-familyOf :: NodeDefRec -> NodeFamily
-familyOf = _.fn >>> Fn.name >>> NodeFamily
+familyOf :: FamilyDefRec -> FamilyR
+familyOf = _.fn >>> Fn.name >>> unsafeFamilyR

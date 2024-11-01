@@ -12,11 +12,12 @@ import Data.Newtype (unwrap, wrap, class Newtype)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (uncons, reverse, singleton) as Array
 
+import Noodle.Id (FamilyR, GroupR)
 import Noodle.Toolkit (Name) as Toolkit
-import Noodle.Text.NdfFile.Types (NodeFamily, FamilyGroup)
-import Noodle.Text.NdfFile.NodeDef (NodeDef(..))
-import Noodle.Text.NdfFile.NodeDef (group, family) as NodeDef
-import Noodle.Text.NdfFile.NodeDef.Codegen as CG
+import Noodle.Id (toolkit) as Id
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
+import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
+import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
 
 import PureScript.CST.Types (ImportDecl, Module)
 import PureScript.CST.Types (Type, Expr) as CST
@@ -38,7 +39,7 @@ derive newtype instance Eq FilePath
 derive newtype instance Ord FilePath
 
 
-codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array NodeDef -> Map FilePath FileContent
+codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> Map FilePath FileContent
 codegen tkName options definitions =
     definitions
     # foldr genModule Map.empty
@@ -48,16 +49,16 @@ codegen tkName options definitions =
     where
         genRoot = GenRootPath ""
         filePathFor = FilePath <<< moduleFile genRoot tkName
-        genModule (NodeDef nodeDef) =
-            -- toCode (ToCode.pureScript) genOptions nodeDef
-            Map.insert (filePathFor $ NodeDef nodeDef) $ FileContent $ CG.generate options nodeDef
+        genModule (FamilyDef familyDef) =
+            -- toCode (ToCode.pureScript) genOptions familyDef
+            Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ CG.generate options familyDef
 
 
-generateToolkit :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array NodeDef -> FileContent
+generateToolkit :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> FileContent
 generateToolkit tkName options = FileContent <<< printModule <<< generateToolkitModule tkName options
 
 
-generateToolkitModule :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array NodeDef -> Module Void
+generateToolkitModule :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> Module Void
 generateToolkitModule tkName (CG.Options opts) definitionsArray
     = unsafePartial $ module_ (toolkitModuleName tkName)
         [ ]
@@ -74,31 +75,31 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
             [ declImport opts.reprAt.module_ [ importType opts.reprAt.type_ ]
             ]
         )
-        [ declTypeSignature (tkName <> "Families") $ typeCtor "Families"
-        , declType (tkName <> "Families") [] familiesTList
+        [ declTypeSignature (Id.toolkit tkName <> "Families") $ typeCtor "Families"
+        , declType (Id.toolkit tkName <> "Families") [] familiesTList
         , declSignature "toolkit"
             $ typeApp (typeCtor "Toolkit")
-                [ typeCtor $ tkName <> "Families"
+                [ typeCtor $ Id.toolkit tkName <> "Families"
                 , typeCtor opts.reprAt.type_
                 , typeCtor $ opts.monadAt.type_
                 ]
         , declValue "toolkit" [] registerFamilies
         ]
     where
-        groupAndFamily :: NodeDef -> FamilyGroup /\ NodeFamily
-        groupAndFamily ndef = NodeDef.group ndef /\ NodeDef.family ndef
-        definitions :: Array (FamilyGroup /\ NodeFamily)
+        groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
+        groupAndFamily ndef = FamilyDef.group ndef /\ FamilyDef.family ndef
+        definitions :: Array (GroupR /\ FamilyR)
         definitions = groupAndFamily <$> definitionsArray
-        fModuleName :: FamilyGroup /\ NodeFamily -> String
+        fModuleName :: GroupR /\ FamilyR -> String
         fModuleName (group /\ family) = CG.groupPascalCase group <> "." <> CG.familyPascalCase family
-        referFamily :: FamilyGroup /\ NodeFamily -> String
+        referFamily :: GroupR /\ FamilyR -> String
         referFamily (group /\ family) = fModuleName (group /\ family) <> "." <> "family"
-        referFamilyF :: FamilyGroup /\ NodeFamily -> String
+        referFamilyF :: GroupR /\ FamilyR -> String
         referFamilyF (group /\ family) = fModuleName (group /\ family) <> "." <> "F"
-        defToModuleImport :: Partial => FamilyGroup /\ NodeFamily -> ImportDecl Void
+        defToModuleImport :: Partial => GroupR /\ FamilyR -> ImportDecl Void
         defToModuleImport (group /\ family) =
             declImportAs
-                (opts.nodeModuleName group family)
+                (opts.familyModuleName group family)
                 []
                 $ fModuleName (group /\ family)
         familiesTList :: Partial => CST.Type Void
@@ -112,7 +113,7 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
         registerFamilies :: Partial => CST.Expr Void
         registerFamilies =
             exprOp
-                (exprApp (exprIdent "Toolkit.empty") [ exprString tkName ])
+                (exprApp (exprIdent "Toolkit.empty") [ exprString $ Id.toolkit tkName ])
                 (binaryOp "#"
                     <$> exprApp (exprIdent "Toolkit.register")
                     <$> Array.singleton
@@ -123,29 +124,29 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
 
 
 
-moduleName :: Toolkit.Name -> FamilyGroup -> NodeFamily -> String
+moduleName :: Toolkit.Name -> GroupR -> FamilyR -> String
 moduleName tkName group family =
-  tkName <> "." <> CG.groupPascalCase group <> "." <> CG.familyPascalCase family
+  Id.toolkit tkName <> "." <> CG.groupPascalCase group <> "." <> CG.familyPascalCase family
 
 
-moduleName' :: ModulePrefix -> Toolkit.Name -> FamilyGroup -> NodeFamily -> String
+moduleName' :: ModulePrefix -> Toolkit.Name -> GroupR -> FamilyR -> String
 moduleName' modPrefix tkName group family =
   unwrap modPrefix <> "." <> moduleName tkName group family
 
 
-modulePath :: GenRootPath -> Toolkit.Name -> NodeDef -> String
-modulePath genRoot tkName nodeDef =
-  unwrap genRoot <> "/" <> tkName <> "/" <> (CG.groupPascalCase $ NodeDef.group nodeDef)
+modulePath :: GenRootPath -> Toolkit.Name -> FamilyDef -> String
+modulePath genRoot tkName familyDef =
+  unwrap genRoot <> "/" <> Id.toolkit tkName <> "/" <> (CG.groupPascalCase $ FamilyDef.group familyDef)
 
 
-moduleFile :: GenRootPath -> Toolkit.Name -> NodeDef -> String
-moduleFile genRoot tkName nodeDef =
-  modulePath genRoot tkName nodeDef <> "/" <> (CG.familyPascalCase $ NodeDef.family nodeDef) <> ".purs"
+moduleFile :: GenRootPath -> Toolkit.Name -> FamilyDef -> String
+moduleFile genRoot tkName familyDef =
+  modulePath genRoot tkName familyDef <> "/" <> (CG.familyPascalCase $ FamilyDef.family familyDef) <> ".purs"
 
 
 toolkitModuleName :: Toolkit.Name -> String
 toolkitModuleName tkName =
-    tkName <> "." <> "Toolkit"
+    Id.toolkit tkName <> "." <> "Toolkit"
 
 
 toolkitModuleName' :: ModulePrefix -> Toolkit.Name -> String
@@ -154,7 +155,7 @@ toolkitModuleName' modPrefix tkName =
 
 
 toolkitPath :: GenRootPath -> Toolkit.Name -> String
-toolkitPath genRoot tkName = unwrap genRoot <> "/" <> tkName
+toolkitPath genRoot tkName = unwrap genRoot <> "/" <> Id.toolkit tkName
 
 
 toolkitFile :: GenRootPath -> Toolkit.Name -> String

@@ -15,7 +15,7 @@ import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
 import Partial.Unsafe (unsafePartial)
 
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
-import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
 
 
 data MinimalRepr

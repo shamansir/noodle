@@ -1,4 +1,4 @@
-module Noodle.Text.NdfFile.NodeDef.ProcessCode where
+module Noodle.Text.NdfFile.FamilyDef.ProcessCode where
 
 import Prelude
 

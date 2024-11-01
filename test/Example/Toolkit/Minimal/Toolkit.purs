@@ -7,6 +7,7 @@ import Type.Data.List.Extra (TNil)
 
 import Effect (Effect)
 
+import Noodle.Id (toolkitR)
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F)
@@ -47,4 +48,4 @@ toolkit
     $ Toolkit.register Sum.family
     $ Toolkit.register Concat.family
     $ Toolkit.register Stateful.family
-    $ Toolkit.empty "my-toolkit"
+    $ Toolkit.empty (toolkitR "my-toolkit")

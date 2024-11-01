@@ -16,12 +16,13 @@ import Test.Spec.Util.Assertions (shouldEqual) as U
 
 import Parsing (runParser) as P
 
+import Noodle.Id (FamilyR, unsafeFamilyR) as Id
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
-import Noodle.Text.NdfFile.Types (coord, encodedValue, family, inletAlias, inletIndex, nodeId, outletAlias, outletIndex) as C
+import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, ndfNodeId, outletAlias, outletIndex) as C
 import Noodle.Text.NdfFile (from_, init_, toNdfCode) as NdfFile
-import Noodle.Text.NdfFile.NodeDef as ND
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..)) as ND
+import Noodle.Text.NdfFile.FamilyDef as ND
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 
 
@@ -84,23 +85,27 @@ $ mouse :: %┤ do
 : test2 : family2 :: <> => <>"""
 
 
+familyR :: String -> Id.FamilyR
+familyR = Id.unsafeFamilyR
+
+
 expected_0_1_Ndf :: NdfFile
 expected_0_1_Ndf =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.1 }
         [ C.Comment "test example"
-        , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-0")
-        , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
-        , C.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-0")
-        , C.MakeNode (C.family "number") (C.coord 40) (C.coord 40) (C.nodeId "num-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-1")
+        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.ndfNodeId "pi-0")
+        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.ndfNodeId "num-0")
         , C.Comment "connect pi to osc"
-        , C.Connect (C.nodeId "pi-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 0)
-        , C.Connect (C.nodeId "num-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 1)
-        , C.Send (C.nodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
-        , C.Connect (C.nodeId "pi-0") (C.outletAlias "foo") (C.nodeId "osc-0") (C.inletAlias "bar")
-        , C.Send (C.nodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
-        , C.Move (C.nodeId "pi-0") (C.coord 20) (C.coord 30)
+        , C.Connect (C.ndfNodeId "pi-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 0)
+        , C.Connect (C.ndfNodeId "num-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 1)
+        , C.Send (C.ndfNodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
+        , C.SendO (C.ndfNodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
+        , C.Connect (C.ndfNodeId "pi-0") (C.outletAlias "foo") (C.ndfNodeId "osc-0") (C.inletAlias "bar")
+        , C.Send (C.ndfNodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
+        , C.SendO (C.ndfNodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
+        , C.Move (C.ndfNodeId "pi-0") (C.coord 20) (C.coord 30)
         ]
 
 
@@ -108,26 +113,26 @@ expected_0_2_Ndf_OnlyCmds :: NdfFile
 expected_0_2_Ndf_OnlyCmds =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
         [ C.Comment "test example"
-        , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-0")
-        , C.MakeNode (C.family "osc") (C.coord 40) (C.coord 60) (C.nodeId "osc-1")
-        , C.MakeNode (C.family "pi") (C.coord 20) (C.coord 20) (C.nodeId "pi-0")
-        , C.MakeNode (C.family "number") (C.coord 40) (C.coord 40) (C.nodeId "num-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-1")
+        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.ndfNodeId "pi-0")
+        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.ndfNodeId "num-0")
         , C.Comment "connect pi to osc"
-        , C.Connect (C.nodeId "pi-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 0)
-        , C.Connect (C.nodeId "num-0") (C.outletIndex 0) (C.nodeId "osc-0") (C.inletIndex 1)
-        , C.Send (C.nodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
-        , C.Connect (C.nodeId "pi-0") (C.outletAlias "foo") (C.nodeId "osc-0") (C.inletAlias "bar")
-        , C.Send (C.nodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
-        , C.SendO (C.nodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
-        , C.Move (C.nodeId "pi-0") (C.coord 20) (C.coord 30)
+        , C.Connect (C.ndfNodeId "pi-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 0)
+        , C.Connect (C.ndfNodeId "num-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 1)
+        , C.Send (C.ndfNodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
+        , C.SendO (C.ndfNodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
+        , C.Connect (C.ndfNodeId "pi-0") (C.outletAlias "foo") (C.ndfNodeId "osc-0") (C.inletAlias "bar")
+        , C.Send (C.ndfNodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
+        , C.SendO (C.ndfNodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
+        , C.Move (C.ndfNodeId "pi-0") (C.coord 20) (C.coord 30)
         ]
 
 
 expected_0_2_Ndf_OnlyDefs :: NdfFile
 expected_0_2_Ndf_OnlyDefs =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
-        [ C.DefineNode $ ND.qdef
+        [ C.DefineFamily $ ND.qdef
             { group : "color", family : "colorama"
             , inputs :
               [ ND.i $ ND.chtv "what" "Texture" "Empty"
@@ -137,7 +142,7 @@ expected_0_2_Ndf_OnlyDefs =
               [ ND.o $ ND.chtv "tex" "Texture" "Empty"
               ]
             }
-        , C.DefineNode $ ND.qdefp
+        , C.DefineFamily $ ND.qdefp
             { group : "source", family : "prev"
             , inputs :
               [ ND.i $ ND.chtv "todo" "TODO" "TODO"
@@ -147,7 +152,7 @@ expected_0_2_Ndf_OnlyDefs =
               ]
             , process : ND.Auto " H.Empty "
             }
-        , C.DefineNode $ ND.qdefp
+        , C.DefineFamily $ ND.qdefp
             { group : "source", family : "solid"
             , inputs :
               [ ND.i $ ND.cht "r" "Value"
@@ -160,7 +165,7 @@ expected_0_2_Ndf_OnlyDefs =
               ]
             , process : ND.Auto " H.Start $ H.Solid { r, g, b, a } "
             }
-        , C.DefineNode $ ND.qdef
+        , C.DefineFamily $ ND.qdef
             { group : "feed", family : "number"
             , inputs :
               [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
@@ -169,15 +174,15 @@ expected_0_2_Ndf_OnlyDefs =
               [ ND.o $ ND.chtv "num" "Value" "Number 0.0"
               ]
             }
-        , C.DefineNode $ ND.qdef { group : "test", family : "family", inputs : [], outputs : [] }
-        , C.DefineNode $ ND.qdef
+        , C.DefineFamily $ ND.qdef { group : "test", family : "family", inputs : [], outputs : [] }
+        , C.DefineFamily $ ND.qdef
             { group : "synth", family : "pi"
             , inputs : []
             , outputs :
               [ ND.o $ ND.chtv "out" "Value" "Pi"
               ]
             }
-        , C.DefineNode $ ND.qdef
+        , C.DefineFamily $ ND.qdef
             { group : "synth", family : "mouse"
             , inputs : []
             , outputs :
@@ -185,7 +190,7 @@ expected_0_2_Ndf_OnlyDefs =
               , ND.o $ ND.chtv "y" "Value" "MouseY"
               ]
             }
-        , C.DefineNode $ ND.qdef
+        , C.DefineFamily $ ND.qdef
             { group : "extsource", family : "initVideo"
             , inputs :
               [ ND.i $ ND.chtv "src" "Source" "defaultSource"
@@ -194,7 +199,7 @@ expected_0_2_Ndf_OnlyDefs =
             , outputs : []
             }
         , C.AssignProcess $ ND.qassign "mouse" $ ND.Raw " do\n  # foo % test # {-} %% $\n"
-        , C.DefineNode $ ND.qdefs
+        , C.DefineFamily $ ND.qdefs
             { group : "stated", family : "stated"
             , inputs :
               [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
@@ -204,19 +209,19 @@ expected_0_2_Ndf_OnlyDefs =
               ]
             , state : ND.stt "Unit"
             }
-        , C.DefineNode $ ND.qdefs
+        , C.DefineFamily $ ND.qdefs
             { group : "stated", family : "stated2"
             , inputs : []
             , outputs : []
             , state : ND.st "Unit" "unit"
             }
-        {- }, C.DefineNode $ ND.qdefs
+        {- }, C.DefineFamily $ ND.qdefs
             { group : "stated", family : "stated3"
             , inputs : []
             , outputs : []
             , state : ND.stv "unit"
             } -}
-        , C.DefineNode $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
+        , C.DefineFamily $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
         ]
 
 

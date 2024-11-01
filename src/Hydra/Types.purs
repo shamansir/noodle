@@ -14,26 +14,19 @@ import Color (black, rgb) as Color
 import Data.Array ((:))
 import Data.Array (length) as Array
 import Data.Either (Either(..))
-import Data.Map (Map)
-import Data.Maybe (Maybe(..))
-import Data.Maybe (Maybe(..))
-import Data.Maybe (fromMaybe)
-import Data.String as String
-import Data.String.Extra as String
-import Data.String.Read (class Read)
-import Data.Tuple (snd) as Tuple
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String (joinWith) as String
+import Data.String.Extra (pascalCase) as String
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Monoid (mempty)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen
 
 import Noodle.Repr (class HasFallback)
 import Noodle.Repr (fallback) as R
-import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
-import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Text.NdfFile.NodeDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression)
+import Noodle.Fn.ToFn (Fn, class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
+import Noodle.Fn.ToFn (Argument, Output, empty) as Fn
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 

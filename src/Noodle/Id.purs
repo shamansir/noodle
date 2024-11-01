@@ -4,12 +4,16 @@ module Noodle.Id
     ( module FromShape
     , Node, NodeR
     , nodeR, nodeFamily, nodeR_
-    , Family(..), FamilyR(..)
-    , family, familyR, familyOf
+    , Family(..), FamilyR
+    , family, familyR, familyOf, unsafeFamilyR
     , PatchR, PatchName, patchR
     , FnName
     , Link(..)
     , class FamilyGroup, groupOf, groupOfR, groupName
+    , Group(..), GroupR
+    , group, groupR, unsafeGroupR
+    , ToolkitR
+    , toolkit, toolkitR
     )
     where
 
@@ -101,7 +105,7 @@ familyR :: forall proxy family. IsSymbol family => proxy family -> FamilyR
 familyR _ = unsafeFamilyR $ reflectSymbol (Proxy :: _ family)
 
 
-unsafeFamilyR :: String -> FamilyR
+unsafeFamilyR :: String -> FamilyR -- FIXME: it is safe to create `FamilyR` for raw nodes definitions, but "unsafe" to create it where `Family f` (i.e. in the context of typed non-raw nodes) is around
 unsafeFamilyR family = FamilyR { family }
 
 
@@ -130,3 +134,56 @@ class FamilyGroup x where
     groupOf :: forall f. IsSymbol f => Family f -> x
     groupOfR :: FamilyR -> x
     groupName :: x -> String
+
+
+
+data Group :: Symbol -> Type
+data Group g = Group
+
+
+newtype GroupR = GroupR { group :: String }
+
+
+instance Show GroupR where
+    show (GroupR { group }) = group
+
+
+instance IsSymbol g => Show (Group g) where
+    show _ = reflectSymbol (Proxy :: _ g)
+
+
+instance IsSymbol g => Reflectable (Group g) GroupR
+    where
+        reflectType :: Proxy (Group g) -> GroupR
+        reflectType _ = GroupR { group : reflectSymbol (Proxy :: _ g) }
+
+
+derive instance Eq GroupR
+derive instance Ord GroupR
+
+
+groupR :: forall proxy group. IsSymbol group => proxy group -> GroupR
+groupR _ = unsafeGroupR $ reflectSymbol (Proxy :: _ group)
+
+
+unsafeGroupR :: String -> GroupR -- FIXME: it is safe to create `GroupR` for raw nodes definitions, but "unsafe" to create it where `Group g` (i.e. in the context of typed non-raw nodes) is around
+unsafeGroupR group = GroupR { group }
+
+
+group :: GroupR -> String
+group (GroupR { group }) = group
+
+
+newtype ToolkitR = ToolkitR { toolkit :: String }
+
+
+derive instance Eq ToolkitR
+derive instance Ord ToolkitR
+
+
+toolkitR :: String -> ToolkitR
+toolkitR toolkit = ToolkitR { toolkit }
+
+
+toolkit :: ToolkitR -> String
+toolkit (ToolkitR { toolkit }) = toolkit -- unwrap >>> _.toolkit

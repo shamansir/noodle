@@ -9,7 +9,7 @@ import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
-import Noodle.Id (FamilyR(..), InletR(..), OutletR(..)) as Id
+import Noodle.Id (unsafeFamilyR, InletR(..), OutletR(..)) as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
@@ -72,7 +72,7 @@ makeNode =
 family :: Raw.Family MinimalRepr Effect
 family =
     RawFamily.make
-        (Id.FamilyR { family : "concatR" })
+        (Id.unsafeFamilyR "concatR")
         MinimalRepr.None
         shape
         defaultInlets

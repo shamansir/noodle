@@ -12,6 +12,7 @@ import Effect.Exception (throw)
 
 import Unsafe.Coerce (unsafeCoerce)
 
+
 import Data.Symbol (class IsSymbol)
 import Data.Array (catMaybes) as Array
 import Data.Map (Map)
@@ -23,7 +24,7 @@ import Data.Foldable (foldl)
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
-import Noodle.Id (Family, FamilyR, familyR) as Id
+import Noodle.Id (Family, FamilyR, familyR, ToolkitR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn) as F
@@ -31,7 +32,7 @@ import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 
 
-type Name = String
+type Name = Id.ToolkitR
 
 
 data Toolkit (families :: Families) repr m =

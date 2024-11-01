@@ -1,4 +1,4 @@
-module Noodle.Text.NdfFile.NodeDef.Parser where
+module Noodle.Text.NdfFile.FamilyDef.Parser where
 
 import Prelude
 
@@ -24,15 +24,17 @@ import Parsing.String.Extra (alphaNumToken, asArray) as P
 import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
 import Parsing.Combinators ((<?>))
 
+import Noodle.Id (FamilyR, GroupR)
+import Noodle.Id (unsafeFamilyR, unsafeGroupR) as Id
 import Noodle.Fn.ToFn (fn') as Fn
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Text.NdfFile.NodeDef (NodeDef(..), ProcessAssign(..))
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (ProcessCode(..))
-import Noodle.Text.NdfFile.NodeDef.ProcessCode (parser) as PC
-import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), FamilyGroup(..), NodeFamily(..), ChannelDef(..), StateDef(..), emptyStateDef)
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..), ProcessAssign(..))
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (parser) as PC
+import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
 
 
-parser :: P.Parser String NodeDef
+parser :: P.Parser String FamilyDef
 parser = do
   source <- P.source
   _ <- sep $ P.char ':'
@@ -48,8 +50,8 @@ parser = do
   _ <- Array.many P.space
   maybeImpl <- P.optionMaybe PC.parser
   -- (P.Position pos) <- P.position
-  pure $ NodeDef
-    { group : FamilyGroup tag
+  pure $ FamilyDef
+    { group : Id.unsafeGroupR tag
     , state : fromMaybe emptyStateDef mbState
     , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : fromMaybe NoneSpecified maybeImpl
@@ -157,16 +159,16 @@ assignmentParser = do
   family <- P.alphaNumToken <?> "family"
   _ <- sep $ P.string "::"
   processCode <- PC.parser
-  pure $ ProcessAssign $ NodeFamily family /\ processCode
+  pure $ ProcessAssign $ Id.unsafeFamilyR family /\ processCode
 
 
 -- TODO: return friendlier parsing errors
-toolkitList :: String -> Either (P.ParseError) (Array NodeDef)
+toolkitList :: String -> Either (P.ParseError) (Array FamilyDef)
 toolkitList lines =
   for (String.split (String.Pattern "\n") lines) $ \s -> P.runParser s parser
 
 
-toolkitList' :: String -> Array NodeDef
+toolkitList' :: String -> Array FamilyDef
 toolkitList' lines =
   case toolkitList lines of
     Left _ -> []

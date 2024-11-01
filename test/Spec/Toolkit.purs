@@ -13,7 +13,7 @@ import Data.Symbol (class IsSymbol)
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
-import Noodle.Id (familyR, family, FamilyR(..)) as Id
+import Noodle.Id (familyR, family, FamilyR(..), toolkitR) as Id
 import Noodle.Node (run, _listenUpdatesAndRun, state, modifyState) as Node
 import Noodle.Node ((#->), (@->), (<=@))
 import Noodle.Toolkit (Toolkit)
@@ -41,10 +41,10 @@ spec = do
         it "registers family" $ do
             let
                 (_ :: Toolkit (Concat.F :> TNil) _ _) =
-                    Toolkit.empty "test"
+                    Toolkit.empty (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
                 (_ :: Toolkit (Sum.F :> Concat.F :> TNil) _ _) =
-                    Toolkit.empty "test"
+                    Toolkit.empty (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
             pure unit
@@ -82,7 +82,7 @@ spec = do
 
         it "it is possible to register family and immediately spawn the node that belongs to it" $ liftEffect $ do
             (concatNode :: Concat.Node) <-
-                    Toolkit.empty "test"
+                    Toolkit.empty (Id.toolkitR "test")
                         # Toolkit.register Concat.family
                         # Toolkit.spawn Concat._concat
             concatNode # Node.run
@@ -96,15 +96,15 @@ spec = do
             familyToString :: forall f state is os repr m. IsSymbol f => Family f state is os repr m -> String
             familyToString = Family.familyIdOf >>> Id.familyR >>> Id.family
             rawFamilyToString :: forall repr m. Raw.Family repr m -> String
-            rawFamilyToString = RawFamily.familyIdOf >>> \(Id.FamilyR { family }) -> family
+            rawFamilyToString = RawFamily.familyIdOf >>> \familyR -> Id.family familyR
 
         it "it is possible to iterate through all typed families" $ liftEffect $ do
             let emptyTkArray =
-                    Toolkit.empty "test"
+                    Toolkit.empty (Id.toolkitR "test")
                         # Toolkit.mapFamilies familyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
-                    Toolkit.empty "test-2"
+                    Toolkit.empty (Id.toolkitR "test-2")
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
                         # Toolkit.register Stateful.family
@@ -113,11 +113,11 @@ spec = do
 
         it "it is possible to iterate through all raw families" $ liftEffect $ do
             let emptyTkArray =
-                    Toolkit.empty "test"
+                    Toolkit.empty (Id.toolkitR "test")
                         # Toolkit.mapRawFamilies rawFamilyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
-                    Toolkit.empty "test-2"
+                    Toolkit.empty (Id.toolkitR "test-2")
                         # Toolkit.registerRaw RawConcat.family
                         # Toolkit.registerRaw RawSum.family
                         # Toolkit.registerRaw RawStateful.family

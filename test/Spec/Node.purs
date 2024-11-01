@@ -267,7 +267,7 @@ spec = do
 
         it "is possible to create raw node" $ liftEffect $ do
             (rawNode :: Raw.Node MinimalRepr Effect) <-
-                RawNode.make (Id.FamilyR { family : "myRawNode" })
+                RawNode.make (Id.unsafeFamilyR "myRawNode")
                     MinimalRepr.None
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty

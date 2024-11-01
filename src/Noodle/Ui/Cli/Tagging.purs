@@ -12,8 +12,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
 
 
-
-
 import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
@@ -51,9 +49,9 @@ inletStatusLine family idx inletId = inletStatusLine' (Id.familyR family) idx $ 
 
 
 inletStatusLine' :: forall repr. Mark repr => Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> Tag
-inletStatusLine' (Id.FamilyR { family }) idx inletId (Just repr) =
+inletStatusLine' familyR idx inletId (Just repr) =
     -- TODO: show node id and group as well
-    (T.fgcs (C.crepr Palette.familyName) family) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inletStatusLine' familyR idx inletId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
@@ -79,9 +77,9 @@ outletStatusLine family idx outletId = outletStatusLine' (Id.familyR family) idx
 
 
 outletStatusLine' :: forall repr. Mark repr => Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> Tag
-outletStatusLine' (Id.FamilyR { family }) idx outletId (Just repr) =
+outletStatusLine' familyR idx outletId (Just repr) =
     -- TODO: show group as well
-    (T.fgcs (C.crepr Palette.familyName) family) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> (T.fgc (mark repr) $ At.statusLine repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 outletStatusLine' familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
