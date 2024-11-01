@@ -76,9 +76,6 @@ instance Show NodeR where
     show (NodeR { family, hash }) = "<" <> show family <> ":" <> show hash <> ">"
 
 
-newtype PatchR = PatchR { hash :: UniqueHash }
-
-
 instance Eq NodeR where
     eq (NodeR nodeA) (NodeR nodeB) = nodeA.family == nodeB.family && nodeA.hash == nodeB.hash
 instance Ord NodeR where
@@ -124,6 +121,13 @@ derive instance Ord Link
 
 
 type PatchName = String
+
+
+newtype PatchR = PatchR { hash :: UniqueHash }
+
+
+derive instance Eq PatchR
+derive instance Ord PatchR
 
 
 patchR :: UniqueHash -> PatchR
