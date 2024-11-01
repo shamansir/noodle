@@ -8,7 +8,7 @@ import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat) as Array
 import Data.Array.Extra (sortUsing) as Array
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
 import Data.Map (empty, insert, update, values) as Map
@@ -164,18 +164,23 @@ loadDefinitions ndfFile =
         # extractCommands
         # normalizeCommands
         # definitionsFromCommands_
-        # Array.sortUsing (Tuple.snd >>> FD.family) (Array.concat $ loadOrder ndfFile)
+        # Array.sortWith (Tuple.fst >>> map _.lineIndex)
+        # case loadOrder ndfFile of
+                Just familiesOrder -> Array.sortUsing (Tuple.snd >>> FD.family) (Array.concat familiesOrder)
+                Nothing -> identity -- Array.sortWith (Tuple.fst >>> map _.lineIndex)
 
 
-loadOrder :: NdfFile -> FamiliesOrder
-loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders []
+loadOrder :: NdfFile -> Maybe FamiliesOrder
+loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders Nothing
     where
-        mergeOrders :: FamiliesOrder -> CommandOp -> FamiliesOrder
-        mergeOrders mergedOrders =
+        mergeOrders :: Maybe FamiliesOrder -> CommandOp -> Maybe FamiliesOrder
+        mergeOrders mbMergedOrders =
             case _ of
                 Order nextOrders ->
-                    mergedOrders <> nextOrders
-                _ -> mergedOrders
+                    case mbMergedOrders of
+                        Just mergedOrders -> Just $ mergedOrders <> nextOrders
+                        Nothing -> Just nextOrders
+                _ -> mbMergedOrders
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
