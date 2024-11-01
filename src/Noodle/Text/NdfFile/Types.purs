@@ -23,7 +23,7 @@ type FamilyDefRec =
     }
 
 
-newtype NdfNodeId = NdfNodeId String -- node ID which is local to a single NDF file (and so recognisable by commands in this file)
+newtype NodeInstanceId = NodeInstanceId String -- node ID which is local to a single NDF file (and so recognisable by commands in this file)
 newtype Coord = Coord Int
 newtype InletId = InletId (Either String Int)
 newtype OutletId = OutletId (Either String Int)
@@ -35,7 +35,7 @@ newtype ChannelDef = ChannelDef DefaultAndType
 newtype StateDef = StateDef DefaultAndType
 
 
-derive instance Newtype NdfNodeId _
+derive instance Newtype NodeInstanceId _
 derive instance Newtype Coord _
 derive instance Newtype InletId _
 derive instance Newtype OutletId _
@@ -46,7 +46,7 @@ derive instance Newtype ChannelDef _
 derive instance Newtype StateDef _
 
 
-derive newtype instance Eq NdfNodeId
+derive newtype instance Eq NodeInstanceId
 derive newtype instance Eq Coord
 derive newtype instance Eq InletId
 derive newtype instance Eq OutletId
@@ -57,8 +57,8 @@ derive newtype instance Eq ChannelDef
 derive newtype instance Eq StateDef
 
 
-ndfNodeId :: String -> NdfNodeId
-ndfNodeId = NdfNodeId
+nodeInstanceId :: String -> NodeInstanceId
+nodeInstanceId = NodeInstanceId
 
 
 coord :: Int -> Coord

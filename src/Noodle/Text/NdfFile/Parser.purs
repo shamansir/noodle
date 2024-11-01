@@ -28,7 +28,7 @@ import Data.Tuple.Nested ((/\))
 import Noodle.Id (unsafeFamilyR) as Id
 import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..), ndfLinesCount, reviewOrder_) as Cmd
-import Noodle.Text.NdfFile.Types (ndfNodeId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
+import Noodle.Text.NdfFile.Types (nodeInstanceId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion, FailedLine(..))
 import Noodle.Text.NdfFile.FamilyDef.Parser (parser, assignmentParser) as FamilyDef
@@ -43,7 +43,7 @@ createCommand = do
     y <- P.intDecimal
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.eol
-    pure $ Cmd.MakeNode (Id.unsafeFamilyR family) (C.coord x) (C.coord y) (C.ndfNodeId instanceId)
+    pure $ Cmd.MakeNode (Id.unsafeFamilyR family) (C.coord x) (C.coord y) (C.nodeInstanceId instanceId)
 
 
 connectCommandII :: P.Parser String Command
@@ -58,7 +58,7 @@ connectCommandII = do
     _ <- P.many P.space
     inletIndex <- P.intDecimal
     P.eol
-    pure $ Cmd.Connect (C.ndfNodeId instanceFromId) (C.outletIndex outletIndex) (C.ndfNodeId instanceToId) (C.inletIndex inletIndex)
+    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
 
 
 connectCommandSS :: P.Parser String Command
@@ -72,7 +72,7 @@ connectCommandSS = do
     instanceToId <- P.tokenTill P.space
     _ <- P.many P.space
     inletId <- P.tokenTill P.eol
-    pure $ Cmd.Connect (C.ndfNodeId instanceFromId) (C.outletAlias outletId) (C.ndfNodeId instanceToId) (C.inletAlias inletId)
+    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
 
 
 connectCommandIS :: P.Parser String Command
@@ -86,7 +86,7 @@ connectCommandIS = do
     instanceToId <- P.tokenTill P.space
     _ <- P.many P.space
     inletId <- P.tokenTill P.eol
-    pure $ Cmd.Connect (C.ndfNodeId instanceFromId) (C.outletIndex outletIndex) (C.ndfNodeId instanceToId) (C.inletAlias inletId)
+    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
 
 
 connectCommandSI :: P.Parser String Command
@@ -101,7 +101,7 @@ connectCommandSI = do
     _ <- P.many P.space
     inletIndex <- P.intDecimal
     P.eol
-    pure $ Cmd.Connect (C.ndfNodeId instanceFromId) (C.outletAlias outletId) (C.ndfNodeId instanceToId) (C.inletIndex inletIndex)
+    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
 
 
 sendCommandI :: P.Parser String Command
@@ -113,7 +113,7 @@ sendCommandI = do
     inletIndex <- P.intDecimal
     _ <- P.many1 P.space
     valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.Send (C.ndfNodeId instanceId) (C.inletIndex inletIndex) (C.encodedValue valueStr)
+    pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletIndex inletIndex) (C.encodedValue valueStr)
 
 
 sendCommandS :: P.Parser String Command
@@ -125,7 +125,7 @@ sendCommandS = do
     inletId <- P.tokenTill P.space
     _ <- P.many P.space
     valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.Send (C.ndfNodeId instanceId) (C.inletAlias inletId) (C.encodedValue valueStr)
+    pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletAlias inletId) (C.encodedValue valueStr)
 
 
 sendOCommandI :: P.Parser String Command
@@ -137,7 +137,7 @@ sendOCommandI = do
     outletIndex <- P.intDecimal
     _ <- P.many1 P.space
     valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.SendO (C.ndfNodeId instanceId) (C.outletIndex outletIndex) (C.encodedValue valueStr)
+    pure $ Cmd.SendO (C.nodeInstanceId instanceId) (C.outletIndex outletIndex) (C.encodedValue valueStr)
 
 
 sendOCommandS :: P.Parser String Command
@@ -149,7 +149,7 @@ sendOCommandS = do
     outletId <- P.tokenTill P.space
     _ <- P.many P.space
     valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.SendO(C.ndfNodeId instanceId) (C.outletAlias outletId) (C.encodedValue valueStr)
+    pure $ Cmd.SendO(C.nodeInstanceId instanceId) (C.outletAlias outletId) (C.encodedValue valueStr)
 
 
 moveCommand :: P.Parser String Command
@@ -161,7 +161,7 @@ moveCommand = do
     y <- P.intDecimal
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.eol
-    pure $ Cmd.Move (C.ndfNodeId instanceId) (C.coord x) (C.coord y)
+    pure $ Cmd.Move (C.nodeInstanceId instanceId) (C.coord x) (C.coord y)
 
 
 comment :: P.Parser String Command

@@ -19,7 +19,7 @@ import Parsing (runParser) as P
 import Noodle.Id (FamilyR, unsafeFamilyR) as Id
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
-import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, ndfNodeId, outletAlias, outletIndex) as C
+import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, nodeInstanceId, outletAlias, outletIndex) as C
 import Noodle.Text.NdfFile (from_, init_, toNdfCode) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef as ND
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as ND
@@ -93,19 +93,19 @@ expected_0_1_Ndf :: NdfFile
 expected_0_1_Ndf =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.1 }
         [ C.Comment "test example"
-        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-0")
-        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-1")
-        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.ndfNodeId "pi-0")
-        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.ndfNodeId "num-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-1")
+        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.nodeInstanceId "pi-0")
+        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.nodeInstanceId "num-0")
         , C.Comment "connect pi to osc"
-        , C.Connect (C.ndfNodeId "pi-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 0)
-        , C.Connect (C.ndfNodeId "num-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 1)
-        , C.Send (C.ndfNodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
-        , C.SendO (C.ndfNodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
-        , C.Connect (C.ndfNodeId "pi-0") (C.outletAlias "foo") (C.ndfNodeId "osc-0") (C.inletAlias "bar")
-        , C.Send (C.ndfNodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
-        , C.SendO (C.ndfNodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
-        , C.Move (C.ndfNodeId "pi-0") (C.coord 20) (C.coord 30)
+        , C.Connect (C.nodeInstanceId "pi-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 0)
+        , C.Connect (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 1)
+        , C.Send (C.nodeInstanceId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
+        , C.Connect (C.nodeInstanceId "pi-0") (C.outletAlias "foo") (C.nodeInstanceId "osc-0") (C.inletAlias "bar")
+        , C.Send (C.nodeInstanceId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeInstanceId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
+        , C.Move (C.nodeInstanceId "pi-0") (C.coord 20) (C.coord 30)
         ]
 
 
@@ -113,19 +113,19 @@ expected_0_2_Ndf_OnlyCmds :: NdfFile
 expected_0_2_Ndf_OnlyCmds =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
         [ C.Comment "test example"
-        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-0")
-        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.ndfNodeId "osc-1")
-        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.ndfNodeId "pi-0")
-        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.ndfNodeId "num-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-0")
+        , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-1")
+        , C.MakeNode (familyR "pi") (C.coord 20) (C.coord 20) (C.nodeInstanceId "pi-0")
+        , C.MakeNode (familyR "number") (C.coord 40) (C.coord 40) (C.nodeInstanceId "num-0")
         , C.Comment "connect pi to osc"
-        , C.Connect (C.ndfNodeId "pi-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 0)
-        , C.Connect (C.ndfNodeId "num-0") (C.outletIndex 0) (C.ndfNodeId "osc-0") (C.inletIndex 1)
-        , C.Send (C.ndfNodeId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
-        , C.SendO (C.ndfNodeId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
-        , C.Connect (C.ndfNodeId "pi-0") (C.outletAlias "foo") (C.ndfNodeId "osc-0") (C.inletAlias "bar")
-        , C.Send (C.ndfNodeId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
-        , C.SendO (C.ndfNodeId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
-        , C.Move (C.ndfNodeId "pi-0") (C.coord 20) (C.coord 30)
+        , C.Connect (C.nodeInstanceId "pi-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 0)
+        , C.Connect (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 1)
+        , C.Send (C.nodeInstanceId "osc-0") (C.inletIndex 0) (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.encodedValue "N 40.0")
+        , C.Connect (C.nodeInstanceId "pi-0") (C.outletAlias "foo") (C.nodeInstanceId "osc-0") (C.inletAlias "bar")
+        , C.Send (C.nodeInstanceId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
+        , C.SendO (C.nodeInstanceId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
+        , C.Move (C.nodeInstanceId "pi-0") (C.coord 20) (C.coord 30)
         ]
 
 

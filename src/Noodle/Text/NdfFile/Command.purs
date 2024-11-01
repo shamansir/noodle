@@ -30,11 +30,11 @@ type FamiliesOrder = Array (Array String)
 data Command
     = DefineFamily FamilyDef
     | AssignProcess ProcessAssign
-    | MakeNode FamilyR Coord Coord NdfNodeId
-    | Move NdfNodeId Coord Coord
-    | Connect NdfNodeId OutletId NdfNodeId InletId
-    | Send NdfNodeId InletId EncodedValue
-    | SendO NdfNodeId OutletId EncodedValue
+    | MakeNode FamilyR Coord Coord NodeInstanceId
+    | Move NodeInstanceId Coord Coord
+    | Connect NodeInstanceId OutletId NodeInstanceId InletId
+    | Send NodeInstanceId InletId EncodedValue
+    | SendO NodeInstanceId OutletId EncodedValue
     | Order FamiliesOrder
     | Import String
     | Comment String
@@ -51,16 +51,16 @@ instance ToCode NDF opts Command where
                 toCode pndf opts familyDef
             AssignProcess processAssign ->
                 toCode pndf opts processAssign
-            MakeNode familyR (Coord top) (Coord left) (NdfNodeId nodeId) -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
-            Move  (NdfNodeId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
-            Send  (NdfNodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
-            Send  (NdfNodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
-            SendO (NdfNodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
-            SendO (NdfNodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
-            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
-            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
-            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
-            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
+            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
+            Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
+            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
+            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
+            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
+            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
             Comment content -> "# " <> content
             Import path -> "i " <> path
             Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> items) <> " |"
@@ -74,16 +74,16 @@ instance ToTaggedCode NDF opts Command where
                 toTaggedCode pndf opts familyDef
             AssignProcess processAssign ->
                 toTaggedCode pndf opts processAssign
-            MakeNode familyR (Coord top) (Coord left) (NdfNodeId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Move  (NdfNodeId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Send  (NdfNodeId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
-            Send  (NdfNodeId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
-            SendO (NdfNodeId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
-            SendO (NdfNodeId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
-            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
-            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NdfNodeId fromNode) (OutletId (Right oindex)) (NdfNodeId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NdfNodeId fromNode) (OutletId (Left oname))   (NdfNodeId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
+            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
+            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
+            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
+            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
+            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
             Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map F.orderItem <$> items)
