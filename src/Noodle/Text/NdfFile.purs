@@ -20,7 +20,8 @@ import Noodle.Id (FamilyR)
 import Noodle.Id (family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
-import Noodle.Text.NdfFile.Command (priority) as Command
+import Noodle.Text.NdfFile.Command (priority, op) as Command
+import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign(..))
@@ -141,11 +142,12 @@ normalizeCommands = Array.sortWith Command.priority
 
 definitionsFromCommands_ :: Array Command -> Array FamilyDef
 definitionsFromCommands_ =
-    foldl applyCommand Map.empty
+    map Command.op
+        >>> foldl applyCommand Map.empty
         >>> Map.values
         >>> Array.fromFoldable
     where
-        applyCommand :: Map FamilyR FamilyDef -> Command -> Map FamilyR FamilyDef
+        applyCommand :: Map FamilyR FamilyDef -> CommandOp -> Map FamilyR FamilyDef
         applyCommand theMap =
             case _ of
                 DefineFamily familyDef ->
@@ -161,13 +163,13 @@ loadDefinitions ndfFile =
         # extractCommands
         # normalizeCommands
         # definitionsFromCommands_
-        # Array.sortUsing (ND.family >>> Id.family) (Array.concat $ loadOrder ndfFile)
+        # Array.sortUsing ND.family (Array.concat $ loadOrder ndfFile)
 
 
 loadOrder :: NdfFile -> FamiliesOrder
-loadOrder = extractCommands >>> foldl mergeOrders []
+loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders []
     where
-        mergeOrders :: FamiliesOrder -> Command -> FamiliesOrder
+        mergeOrders :: FamiliesOrder -> CommandOp -> FamiliesOrder
         mergeOrders mergedOrders =
             case _ of
                 Order nextOrders ->

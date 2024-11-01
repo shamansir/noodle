@@ -18,7 +18,7 @@ import Data.Traversable (for)
 import Parsing (Parser, runParser, ParseError, ParseState(..), getParserT, position, Position(..)) as P
 import Parsing.String (char, string)  as P
 import Parsing.Token (alphaNum, space) as P
-import Parsing.Extra (source) as P
+import Parsing.Extra (sourceAt) as P
 import Parsing.String.Basic (noneOf) as P
 import Parsing.String.Extra (alphaNumToken, asArray) as P
 import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, try) as P
@@ -36,7 +36,7 @@ import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..), ChannelDef(
 
 parser :: P.Parser String FamilyDef
 parser = do
-  source <- P.source
+  source /\ pos <- P.sourceAt
   _ <- sep $ P.char ':'
   tag <- P.alphaNumToken <?> "tag"
   _ <- sep $ P.char ':'
@@ -49,18 +49,21 @@ parser = do
   outputs <- results
   _ <- Array.many P.space
   maybeImpl <- P.optionMaybe PC.parser
-  -- (P.Position pos) <- P.position
   pure $ FamilyDef
     { group : Id.unsafeGroupR tag
     , state : fromMaybe emptyStateDef mbState
     , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : fromMaybe NoneSpecified maybeImpl
     -- , source : Just $ String.take pos.index sourceBefore
-    -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
-    --        The approach with `pos.index` failed somehow...
-    --        It could be in String parsers somewhere though, but since we didn't use it yet...
-    --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
-    , source : Just $ CU.takeWhile (_ /= '\n') $ String.drop 1 source
+    , source : Just $
+        -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
+        --        The approach with `pos.index` failed somehow...
+        --        It could be in String parsers somewhere though, but since we didn't use it yet...
+        --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
+        { line : CU.takeWhile (_ /= '\n') $ String.drop 1 source
+        , lineIndex : case pos of
+            P.Position { line } -> line
+        }
     }
 
 

@@ -4,6 +4,7 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 
 import Node.Encoding (Encoding(..))
@@ -19,6 +20,7 @@ import Parsing (runParser) as P
 import Noodle.Id (FamilyR, unsafeFamilyR) as Id
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
+import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as C
 import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, nodeInstanceId, outletAlias, outletIndex) as C
 import Noodle.Text.NdfFile (from_, init_, toNdfCode) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef as ND
@@ -92,6 +94,7 @@ familyR = Id.unsafeFamilyR
 expected_0_1_Ndf :: NdfFile
 expected_0_1_Ndf =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.1 }
+        $ C.Command Nothing <$>
         [ C.Comment "test example"
         , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-0")
         , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-1")
@@ -112,6 +115,7 @@ expected_0_1_Ndf =
 expected_0_2_Ndf_OnlyCmds :: NdfFile
 expected_0_2_Ndf_OnlyCmds =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
+        $ C.Command Nothing <$>
         [ C.Comment "test example"
         , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-0")
         , C.MakeNode (familyR "osc") (C.coord 40) (C.coord 60) (C.nodeInstanceId "osc-1")
@@ -132,6 +136,7 @@ expected_0_2_Ndf_OnlyCmds =
 expected_0_2_Ndf_OnlyDefs :: NdfFile
 expected_0_2_Ndf_OnlyDefs =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
+        $ C.Command Nothing <$>
         [ C.DefineFamily $ ND.qdef
             { group : "color", family : "colorama"
             , inputs :

@@ -5,10 +5,11 @@ import Prelude
 import Control.Plus (empty)
 
 import Data.Foldable (foldr)
+import Data.Tuple (fst) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (fromFoldable) as Array
 
-import Parsing (Parser, runParser, ParseState(..), getParserT)
+import Parsing (Parser, runParser, ParseState(..), getParserT, Position(..))
 import Parsing.String (string)
 import Parsing.Combinators (many1, sepBy1)
 import Parsing.String.Basic (space)
@@ -56,7 +57,6 @@ parseBy :: forall x. Array (Marker x) -> Parser String (Array x)
 parseBy = linesOf <<< foldMarkers
 
 
-
 linesOf :: forall x. Parser String x -> Parser String (Array x)
 linesOf parser =
   Array.fromFoldable
@@ -64,4 +64,8 @@ linesOf parser =
 
 
 source :: forall s. Parser s s
-source = getParserT >>= \(ParseState src _ _) -> pure src
+source = sourceAt <#> Tuple.fst
+
+
+sourceAt :: forall s. Parser s (s /\ Position)
+sourceAt = getParserT >>= \(ParseState src pos _) -> pure $ src /\ pos

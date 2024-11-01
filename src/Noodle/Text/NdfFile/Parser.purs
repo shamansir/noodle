@@ -11,7 +11,8 @@ import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
 import Data.Either (Either(..))
 import Data.String.Extra2 (lines) as String
-import Data.Array (drop, length) as Array
+import Data.Array (drop, length, filter) as Array
+import Data.Maybe (Maybe(..))
 import Data.Foldable (sum) as F
 
 import Parsing (Parser) as P
@@ -28,14 +29,16 @@ import Data.Tuple.Nested ((/\))
 import Noodle.Id (unsafeFamilyR) as Id
 import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..), ndfLinesCount, reviewOrder_) as Cmd
+import Noodle.Text.NdfFile.Command.Op (CommandOp)
+import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Cmd
 import Noodle.Text.NdfFile.Types (nodeInstanceId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion, FailedLine(..))
 import Noodle.Text.NdfFile.FamilyDef.Parser (parser, assignmentParser) as FamilyDef
 
 
-createCommand :: P.Parser String Command
-createCommand = do
+createCommandOp :: P.Parser String CommandOp
+createCommandOp = do
     family <- P.tokenTill P.space
     _ <- P.many P.space
     x <- P.intDecimal
@@ -46,8 +49,8 @@ createCommand = do
     pure $ Cmd.MakeNode (Id.unsafeFamilyR family) (C.coord x) (C.coord y) (C.nodeInstanceId instanceId)
 
 
-connectCommandII :: P.Parser String Command
-connectCommandII = do
+connectCommandOpII :: P.Parser String CommandOp
+connectCommandOpII = do
     _ <- P.string "<>"
     _ <- P.many1 P.space
     instanceFromId <- P.tokenTill P.space
@@ -61,8 +64,8 @@ connectCommandII = do
     pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
 
 
-connectCommandSS :: P.Parser String Command
-connectCommandSS = do
+connectCommandOpSS :: P.Parser String CommandOp
+connectCommandOpSS = do
     _ <- P.string "<>"
     _ <- P.many1 P.space
     instanceFromId <- P.tokenTill P.space
@@ -75,8 +78,8 @@ connectCommandSS = do
     pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
 
 
-connectCommandIS :: P.Parser String Command
-connectCommandIS = do
+connectCommandOpIS :: P.Parser String CommandOp
+connectCommandOpIS = do
     _ <- P.string "<>"
     _ <- P.many1 P.space
     instanceFromId <- P.tokenTill P.space
@@ -89,8 +92,8 @@ connectCommandIS = do
     pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
 
 
-connectCommandSI :: P.Parser String Command
-connectCommandSI = do
+connectCommandOpSI :: P.Parser String CommandOp
+connectCommandOpSI = do
     _ <- P.string "<>"
     _ <- P.many1 P.space
     instanceFromId <- P.tokenTill P.space
@@ -104,8 +107,8 @@ connectCommandSI = do
     pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
 
 
-sendCommandI :: P.Parser String Command
-sendCommandI = do
+sendCommandOpI :: P.Parser String CommandOp
+sendCommandOpI = do
     _ <- P.string "->"
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.space
@@ -116,8 +119,8 @@ sendCommandI = do
     pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletIndex inletIndex) (C.encodedValue valueStr)
 
 
-sendCommandS :: P.Parser String Command
-sendCommandS = do
+sendCommandOpS :: P.Parser String CommandOp
+sendCommandOpS = do
     _ <- P.string "->"
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.space
@@ -128,8 +131,8 @@ sendCommandS = do
     pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletAlias inletId) (C.encodedValue valueStr)
 
 
-sendOCommandI :: P.Parser String Command
-sendOCommandI = do
+sendOCommandOpI :: P.Parser String CommandOp
+sendOCommandOpI = do
     _ <- P.string "~>"
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.space
@@ -140,8 +143,8 @@ sendOCommandI = do
     pure $ Cmd.SendO (C.nodeInstanceId instanceId) (C.outletIndex outletIndex) (C.encodedValue valueStr)
 
 
-sendOCommandS :: P.Parser String Command
-sendOCommandS = do
+sendOCommandOpS :: P.Parser String CommandOp
+sendOCommandOpS = do
     _ <- P.string "~>"
     _ <- P.many1 P.space
     instanceId <- P.tokenTill P.space
@@ -152,8 +155,8 @@ sendOCommandS = do
     pure $ Cmd.SendO(C.nodeInstanceId instanceId) (C.outletAlias outletId) (C.encodedValue valueStr)
 
 
-moveCommand :: P.Parser String Command
-moveCommand = do
+moveCommandOp :: P.Parser String CommandOp
+moveCommandOp = do
     _ <- P.string "."
     _ <- P.many1 P.space
     x <- P.intDecimal
@@ -164,7 +167,7 @@ moveCommand = do
     pure $ Cmd.Move (C.nodeInstanceId instanceId) (C.coord x) (C.coord y)
 
 
-comment :: P.Parser String Command
+comment :: P.Parser String CommandOp
 comment = do
     _ <- P.string "#"
     _ <- P.space
@@ -172,8 +175,8 @@ comment = do
     pure $ Cmd.Comment content
 
 
-orderCommand :: P.Parser String Command
-orderCommand = do
+orderCommandOp :: P.Parser String CommandOp
+orderCommandOp = do
     _ <- P.string "*"
     _ <- P.space
     -- _ <- P.string "| "
@@ -183,34 +186,36 @@ orderCommand = do
     pure
         $ Cmd.Order
         $ Cmd.reviewOrder_
+        $ map (map Id.unsafeFamilyR)
+        $ map (Array.filter (_ /= "|"))
         $ (String.split $ Pattern " ")
        <$> String.split (Pattern " | ") content
 
 
-importCommand :: P.Parser String Command
-importCommand = do
+importCommandOp :: P.Parser String CommandOp
+importCommandOp = do
     _ <- P.string "i"
     _ <- P.space
     path <- Tuple.fst <$> P.anyTill P.eol
     pure $ Cmd.Import path
 
 
-command :: P.Parser String Command
-command =
+commandOp :: P.Parser String CommandOp
+commandOp =
   P.try (FamilyDef.parser <#> Cmd.DefineFamily) <?> "node definition"
   <|> P.try (FamilyDef.assignmentParser <#> Cmd.AssignProcess) <?> "process assign"
-  <|> P.try connectCommandII <?> "connect command"
-  <|> P.try connectCommandSS <?> "connect command"
-  <|> P.try connectCommandIS <?> "connect command"
-  <|> P.try connectCommandSI <?> "connect command"
-  <|> P.try sendCommandI <?> "send command"
-  <|> P.try sendCommandS <?> "send command"
-  <|> P.try sendOCommandI <?> "send command"
-  <|> P.try sendOCommandS <?> "send command"
-  <|> P.try createCommand <?> "create command"
-  <|> P.try moveCommand <?> "move command"
-  <|> P.try orderCommand <?> "order command"
-  <|> P.try importCommand <?> "import command"
+  <|> P.try connectCommandOpII <?> "connect command"
+  <|> P.try connectCommandOpSS <?> "connect command"
+  <|> P.try connectCommandOpIS <?> "connect command"
+  <|> P.try connectCommandOpSI <?> "connect command"
+  <|> P.try sendCommandOpI <?> "send command"
+  <|> P.try sendCommandOpS <?> "send command"
+  <|> P.try sendOCommandOpI <?> "send command"
+  <|> P.try sendOCommandOpS <?> "send command"
+  <|> P.try createCommandOp <?> "create command"
+  <|> P.try moveCommandOp <?> "move command"
+  <|> P.try orderCommandOp <?> "order command"
+  <|> P.try importCommandOp <?> "import command"
   <|> P.try comment <?> "comment"
 
 
@@ -221,9 +226,9 @@ parser = do
   toolkitVersion <- P.number
   ndfVersion <- P.option 0.1 $ P.try $ P.many1 P.space *> P.number
   P.eol
-  cmds <- P.many1 command
+  cmdOps <- P.many1 commandOp
   let
-    cmdsArray = NEL.toUnfoldable cmds
+    cmdsArray = Cmd.Command Nothing <$> NEL.toUnfoldable cmdOps -- FIXME: collect source info
     -- one line as a header + parsed cmds, usually one per line, but processCode may take longer
     failedLines = FailedLine <$> (Array.drop (1 + (F.sum $ Cmd.ndfLinesCount <$> cmdsArray)) $ String.lines source)
   pure $ NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines cmdsArray

@@ -19,7 +19,7 @@ type FamilyDefRec =
     , fn :: Fn ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
-    , source :: Maybe FC.Source -- TODO: add source file and line in the source file
+    , source :: Maybe { lineIndex :: Int, line :: FC.Source } -- TODO: add source file
     }
 
 

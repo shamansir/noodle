@@ -226,7 +226,7 @@ generateModule (Options opts) ndef
           )
 
     infoComment :: String
-    infoComment = maybe __default_info_comment (\f -> f ndef.source ndef.group $ familyOf ndef) opts.infoComment
+    infoComment = maybe __default_info_comment (\f -> f (_.line <$> ndef.source) ndef.group $ familyOf ndef) opts.infoComment
 
 
   tell $
