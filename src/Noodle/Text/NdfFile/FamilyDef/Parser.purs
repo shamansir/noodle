@@ -54,7 +54,6 @@ parser = do
     , state : fromMaybe emptyStateDef mbState
     , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : fromMaybe NoneSpecified maybeImpl
-    -- , source : Just $ String.take pos.index sourceBefore
     , source : Just $
         -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
         --        The approach with `pos.index` failed somehow...

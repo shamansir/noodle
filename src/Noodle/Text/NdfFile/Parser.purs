@@ -2,25 +2,22 @@ module Noodle.Text.NdfFile.Parser where
 
 import Prelude
 
-import Data.Semigroup.Foldable (class Foldable1)
 import Data.Array (many) as P
 import Data.List.NonEmpty as NEL
 import Data.String (Pattern(..))
-import Data.String (split) as String
-import Data.String.NonEmpty.CodeUnits as CU
-import Data.String.NonEmpty.Internal as StringX
-import Data.Either (Either(..))
+import Data.String (split, drop) as String
+import Data.String.CodeUnits as CU
 import Data.String.Extra2 (lines) as String
-import Data.Array (drop, length, filter) as Array
+import Data.Array (drop, filter) as Array
 import Data.Maybe (Maybe(..))
 import Data.Foldable (sum) as F
 
-import Parsing (Parser) as P
+import Parsing (Parser, Position(..)) as P
 import Parsing.String (char, string, anyTill) as P
 import Parsing.String.Basic (alphaNum, space, number, intDecimal) as P
 import Parsing.Combinators (many1, many1Till, try, option) as P
 import Parsing.Combinators ((<?>))
-import Parsing.Extra (source) as P
+import Parsing.Extra (source, sourceAt) as P
 import Parsing.String.Extra (tokenTill, eol) as P
 import Control.Alt ((<|>))
 import Data.Tuple as Tuple
@@ -33,7 +30,7 @@ import Noodle.Text.NdfFile.Command.Op (CommandOp)
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Cmd
 import Noodle.Text.NdfFile.Types (nodeInstanceId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
 
-import Noodle.Text.NdfFile (NdfFile(..), Header(..), currentVersion, FailedLine(..))
+import Noodle.Text.NdfFile (NdfFile(..), Header(..), FailedLine(..))
 import Noodle.Text.NdfFile.FamilyDef.Parser (parser, assignmentParser) as FamilyDef
 
 
@@ -219,6 +216,25 @@ commandOp =
   <|> P.try comment <?> "comment"
 
 
+command :: P.Parser String Command
+command = do
+  source /\ pos <- P.sourceAt
+  cmdOp <- commandOp
+  -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
+  --        The approach with `pos.index` failed somehow...
+  --        It could be in String parsers somewhere though, but since we didn't use it yet...
+  --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
+  pure $
+    Cmd.Command
+    (Just $
+        { line : CU.takeWhile (_ /= '\n') $ String.drop 1 source
+        , lineIndex : case pos of
+            P.Position { line } -> line
+        }
+    )
+    cmdOp
+
+
 parser :: P.Parser String NdfFile
 parser = do
   source <- P.source
@@ -226,9 +242,9 @@ parser = do
   toolkitVersion <- P.number
   ndfVersion <- P.option 0.1 $ P.try $ P.many1 P.space *> P.number
   P.eol
-  cmdOps <- P.many1 commandOp
+  cmds <- P.many1 command
   let
-    cmdsArray = Cmd.Command Nothing <$> NEL.toUnfoldable cmdOps -- FIXME: collect source info
+    cmdsArray = NEL.toUnfoldable cmds
     -- one line as a header + parsed cmds, usually one per line, but processCode may take longer
     failedLines = FailedLine <$> (Array.drop (1 + (F.sum $ Cmd.ndfLinesCount <$> cmdsArray)) $ String.lines source)
   pure $ NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines cmdsArray
