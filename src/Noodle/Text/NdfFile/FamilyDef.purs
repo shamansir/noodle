@@ -90,8 +90,8 @@ instance ToTaggedCode NDF opts NodeFnDef where
 
 instance ToCode NDF opts FamilyDef where
     toCode :: Proxy NDF -> opts -> FamilyDef -> String
-    toCode pndf opts (FamilyDef ndef) =
-        case ndef of
+    toCode pndf opts (FamilyDef fdef) =
+        case fdef of
             { group, fn, process, state } ->
                 ": " <> Id.group group <> " : " <> (Fn.name fn) <> " :: "
                      <> (if hasStateDef_ state then stateToCode_ state <> " " else "")
@@ -102,8 +102,8 @@ instance ToCode NDF opts FamilyDef where
 
 instance ToTaggedCode NDF opts FamilyDef where
     toTaggedCode :: Proxy NDF -> opts -> FamilyDef -> T.Tag
-    toTaggedCode pndf opts (FamilyDef ndef) =
-        case ndef of
+    toTaggedCode pndf opts (FamilyDef fdef) =
+        case fdef of
             { group, fn, process, state } ->
                 F.operator ":"
                 <> T.space <> F.someGroup (Id.group group) <> T.space <> F.operator ":"
@@ -135,8 +135,8 @@ instance ToTaggedCode NDF opts ProcessAssign where
 
 instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) FamilyDef where
     toCode :: Proxy PS -> CodeGen.Options repr -> FamilyDef -> String
-    toCode _ opts (FamilyDef ndef) =
-        CodeGen.generate opts ndef
+    toCode _ opts (FamilyDef fdef) =
+        CodeGen.generate opts Nothing fdef
 
 
 hasStateDef_ :: StateDef -> Boolean
@@ -294,7 +294,6 @@ qdef { group, family, inputs, outputs } =
         , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process : NoneSpecified
-        , source : Nothing
         }
 
 
@@ -305,7 +304,6 @@ qdefp { group, family, inputs, outputs, process } =
         , fn : Make.fn family inputs outputs
         , state : emptyStateDef
         , process
-        , source : Nothing
         }
 
 
@@ -316,7 +314,6 @@ qdefs { group, family, inputs, outputs, state } =
         , fn : Make.fn family inputs outputs
         , state
         , process : NoneSpecified
-        , source : Nothing
         }
 
 
@@ -327,7 +324,6 @@ qdefps { group, family, inputs, outputs, state, process } =
         , fn : Make.fn family inputs outputs
         , state
         , process
-        , source : Nothing
         }
 
 

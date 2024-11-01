@@ -54,15 +54,6 @@ parser = do
     , state : fromMaybe emptyStateDef mbState
     , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
     , process : fromMaybe NoneSpecified maybeImpl
-    , source : Just $
-        -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
-        --        The approach with `pos.index` failed somehow...
-        --        It could be in String parsers somewhere though, but since we didn't use it yet...
-        --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
-        { line : CU.takeWhile (_ /= '\n') $ String.drop 1 source
-        , lineIndex : case pos of
-            P.Position { line } -> line
-        }
     }
 
 

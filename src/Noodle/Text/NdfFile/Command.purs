@@ -28,9 +28,6 @@ import Noodle.Text.NdfFile.Command.Op as Op
 type FamiliesOrder = Op.FamiliesOrder
 
 
-type Source = { line :: String, lineIndex :: Int }
-
-
 data Command =
     Command
         (Maybe Source)

@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat) as Array
 import Data.Array.Extra (sortUsing) as Array
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
 import Data.Map (empty, insert, update, values) as Map
@@ -24,8 +25,9 @@ import Noodle.Text.NdfFile.Command (priority, op) as Command
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
+import Noodle.Text.NdfFile.Types (Source)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign(..))
-import Noodle.Text.NdfFile.FamilyDef (family, forceAssign) as ND
+import Noodle.Text.NdfFile.FamilyDef (family, forceAssign) as FD
 import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
 import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
@@ -140,30 +142,29 @@ normalizeCommands :: Array Command -> Array Command
 normalizeCommands = Array.sortWith Command.priority
 
 
-definitionsFromCommands_ :: Array Command -> Array FamilyDef
+definitionsFromCommands_ :: Array Command -> Array (Maybe Source /\ FamilyDef)
 definitionsFromCommands_ =
-    map Command.op
-        >>> foldl applyCommand Map.empty
+    foldl applyCommand Map.empty
         >>> Map.values
         >>> Array.fromFoldable
     where
-        applyCommand :: Map FamilyR FamilyDef -> CommandOp -> Map FamilyR FamilyDef
+        applyCommand :: Map FamilyR (Maybe Source /\ FamilyDef) -> Command -> Map FamilyR (Maybe Source /\ FamilyDef)
         applyCommand theMap =
             case _ of
-                DefineFamily familyDef ->
-                    theMap # Map.insert (ND.family familyDef) familyDef
-                AssignProcess (ProcessAssign (family /\ processCode)) ->
-                    theMap # Map.update (ND.forceAssign processCode >>> Just) family
+                Command mbSource (DefineFamily familyDef) ->
+                    theMap # Map.insert (FD.family familyDef) (mbSource /\ familyDef)
+                Command _ (AssignProcess (ProcessAssign (family /\ processCode))) ->
+                    theMap # Map.update ((map $ FD.forceAssign processCode) >>> Just) family
                 _ -> theMap
 
 
-loadDefinitions :: NdfFile -> Array FamilyDef -- a) TODO: Use Order, b) FIXME: gets auto-sorted by family name
+loadDefinitions :: NdfFile -> Array (Maybe Source /\ FamilyDef) -- a) TODO: Use Order, b) FIXME: gets auto-sorted by family name
 loadDefinitions ndfFile =
     ndfFile
         # extractCommands
         # normalizeCommands
         # definitionsFromCommands_
-        # Array.sortUsing ND.family (Array.concat $ loadOrder ndfFile)
+        # Array.sortUsing (Tuple.snd >>> FD.family) (Array.concat $ loadOrder ndfFile)
 
 
 loadOrder :: NdfFile -> FamiliesOrder

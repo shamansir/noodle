@@ -220,16 +220,16 @@ command :: P.Parser String Command
 command = do
   source /\ pos <- P.sourceAt
   cmdOp <- commandOp
-  -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
-  --        The approach with `pos.index` failed somehow...
-  --        It could be in String parsers somewhere though, but since we didn't use it yet...
-  --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
   pure $
     Cmd.Command
     (Just $
+        -- FIXME: I didn't find any proper way to get a chunk where we succeeded in the parser
+        --        The approach with `pos.index` failed somehow...
+        --        It could be in String parsers somewhere though, but since we didn't use it yet...
+        --        Using `toolkitList` below we can retreive the source line for sure, but it's harder with `NdfFile` implementation
         { line : CU.takeWhile (_ /= '\n') $ String.drop 1 source
         , lineIndex : case pos of
-            P.Position { line } -> line
+            P.Position { line } -> line + 1
         }
     )
     cmdOp

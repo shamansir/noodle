@@ -4,6 +4,7 @@ import Prelude ((#))
 import Effect (Effect)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
+import Noodle.Id (toolkitR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
@@ -183,7 +184,7 @@ type HydraFamilies = Feed.Number.F :> Feed.Pi.F :> Feed.Array.F :> Feed.Expressi
   :> TNil
 
 toolkit :: Toolkit HydraFamilies WrapRepr Effect
-toolkit = Toolkit.empty "Hydra" # Toolkit.register Out.Out.family
+toolkit = Toolkit.empty (Id.toolkitR "Hydra") # Toolkit.register Out.Out.family
   # Toolkit.register Audio.Show.family
   # Toolkit.register Audio.Hide.family
   # Toolkit.register Audio.SetScale.family

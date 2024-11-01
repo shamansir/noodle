@@ -139,10 +139,6 @@ customHydraGenOptions :: CG.Options WrapRepr
 customHydraGenOptions =
   CG.withOptions hydraGenOptions $ \opts -> opts
       { familyModuleName = CG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
-      , infoComment = Just $ \mbSource fgroup family ->
-            case opts.infoComment of
-              Just commentFn -> (commentFn mbSource fgroup family) <> "\n\n" <> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
-              Nothing -> "Toolkit : Hydra. File: ./src/Hydra/hydra.v0.3.ndf"
       }
 
 

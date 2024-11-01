@@ -9,12 +9,14 @@ import Data.Map (empty, insert) as Map
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Newtype (unwrap, wrap, class Newtype)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (uncons, reverse, singleton) as Array
 
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Id (toolkit) as Id
+import Noodle.Text.NdfFile.Types (Source)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
 import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
 import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
@@ -39,19 +41,19 @@ derive newtype instance Eq FilePath
 derive newtype instance Ord FilePath
 
 
-codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> Map FilePath FileContent
+codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array (Maybe Source /\ FamilyDef) -> Map FilePath FileContent
 codegen tkName options definitions =
     definitions
     # foldr genModule Map.empty
     # Map.insert
         (FilePath $ toolkitFile genRoot tkName)
-        (generateToolkit tkName options definitions)
+        (generateToolkit tkName options $ Tuple.snd <$> definitions)
     where
         genRoot = GenRootPath ""
         filePathFor = FilePath <<< moduleFile genRoot tkName
-        genModule (FamilyDef familyDef) =
+        genModule (mbSource /\ FamilyDef familyDef) =
             -- toCode (ToCode.pureScript) genOptions familyDef
-            Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ CG.generate options familyDef
+            Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ CG.generate options mbSource familyDef
 
 
 generateToolkit :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> FileContent
@@ -67,8 +69,10 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
             , declImport "Effect" [ importType "Effect" ]
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
+            , declImportAs "Noodle.Id" [ importValue "toolkitR" ] "Id"
             , declImport "Noodle.Toolkit" [ importType "Toolkit" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
+
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
             ]
             <> (defToModuleImport <$> definitions) <>
@@ -87,7 +91,7 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
         ]
     where
         groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
-        groupAndFamily ndef = FamilyDef.group ndef /\ FamilyDef.family ndef
+        groupAndFamily fdef = FamilyDef.group fdef /\ FamilyDef.family fdef
         definitions :: Array (GroupR /\ FamilyR)
         definitions = groupAndFamily <$> definitionsArray
         fModuleName :: GroupR /\ FamilyR -> String
@@ -113,7 +117,7 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
         registerFamilies :: Partial => CST.Expr Void
         registerFamilies =
             exprOp
-                (exprApp (exprIdent "Toolkit.empty") [ exprString $ Id.toolkit tkName ])
+                (exprApp (exprIdent "Toolkit.empty") [ exprApp (exprIdent "Id.toolkitR") [ exprString $ Id.toolkit tkName ] ])
                 (binaryOp "#"
                     <$> exprApp (exprIdent "Toolkit.register")
                     <$> Array.singleton

@@ -19,8 +19,10 @@ type FamilyDefRec =
     , fn :: Fn ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
-    , source :: Maybe { lineIndex :: Int, line :: FC.Source } -- TODO: add source file
     }
+
+
+type Source = { line :: String, lineIndex :: Int }
 
 
 newtype NodeInstanceId = NodeInstanceId String -- node ID which is local to a single NDF file (and so recognisable by commands in this file)
