@@ -21,6 +21,7 @@ to generate this file without the comments in this block.
   , "argonaut-traversals"
   , "arrays"
   , "bifunctors"
+  , "blessed"
   , "codec"
   , "codec-argonaut"
   , "colors"
