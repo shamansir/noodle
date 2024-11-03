@@ -2,13 +2,17 @@ module Cli.State where
 
 import Prelude
 
+import Effect (Effect)
+
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
+import Data.Map (empty) as Map
 
 import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
+import Noodle.Network (init) as Network
 import Noodle.Toolkit.Families (Families)
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
@@ -78,6 +82,47 @@ newtype LinkState =
         }
     }
 -}
+
+
+init :: State
+init =
+    { network : initialNetwork
+    , currentPatch : Nothing -- TODO: Just (0 /\ patchIdFromIndex 0)
+    , wsServer : Nothing
+    , lastShift : { x : 0, y : 0 }
+    -- TODO, , lastKeys :
+    -- TODO,     { nodeBox : Key.nodeBox
+    -- TODO,     , inputsBox : Key.inputsBox
+    -- TODO,     , outputsBox : Key.outputsBox
+    -- TODO,     , infoBox : Key.infoBox
+    -- TODO,     , removeButton : Key.removeButton
+    -- TODO,     }
+    -- TODO, , lastClickedOutput : Nothing
+    -- TODO, , lastLink : Nothing
+    -- TODO, , linksFrom : Map.empty
+    -- TODO, , linksTo : Map.empty
+    , nodeKeysMap : Map.empty
+    , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
+    -- , commandLog : NdfFile.init "hydra" 0.1
+    -- , program : Map.empty
+    -- , innerStates : Map.empty
+    -- , nodes : Hydra.noInstances
+    , onOff :
+        { commandBox : false
+        , hydraCode : false
+        , fullInfo : false
+        }
+    -- , editors : Map.empty
+    -- , knownGlslFunctions : Glsl.knownFns
+    -- , linkWasMadeHack : false
+    , locations : Map.empty
+    }
+
+
+initialNetwork :: Network _ _ _ Effect
+initialNetwork =
+    Network.init ?wh -- Hydra.toolkit
+    -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 
 type NodeBounds =
