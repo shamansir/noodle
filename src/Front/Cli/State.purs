@@ -13,13 +13,16 @@ import Web.Socket.Server as WSS
 import Noodle.Id as Id
 import Noodle.Network (Network)
 import Noodle.Network (init) as Network
+import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
+
+import Cli.WsServer as WSS
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
 
 
-type State pstate (families :: Families) repr m =
-    { network :: Network pstate families repr m
+type State s (fs :: Families) r m =
+    { network :: Network s fs r m
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { x :: Int, y :: Int }
@@ -84,9 +87,9 @@ newtype LinkState =
 -}
 
 
-init :: State
-init =
-    { network : initialNetwork
+init :: forall s fs r m. Toolkit fs r m -> State s fs r m
+init toolkit =
+    { network : Network.init toolkit
     , currentPatch : Nothing -- TODO: Just (0 /\ patchIdFromIndex 0)
     , wsServer : Nothing
     , lastShift : { x : 0, y : 0 }
@@ -119,9 +122,10 @@ init =
     }
 
 
-initialNetwork :: Network _ _ _ Effect
-initialNetwork =
-    Network.init ?wh -- Hydra.toolkit
+informWsInitialized :: forall s fs r m. WSS.WebSocketServer -> State s fs r m -> State s fs r m
+informWsInitialized _ state = state
+
+
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 

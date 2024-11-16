@@ -38,6 +38,8 @@ import Blessed.UI.Base.Screen.Method as Screen
 
 import Web.Socket.Server as WSS
 
+import Cli.WsServer as WSS
+
 -- import Noodle.Stateful (set) as Stateful
 import Noodle.Text.NdfFile as NdfFile
 import Noodle.Text.NdfFile.Parser as NdfFile
@@ -49,17 +51,20 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Cli.State (State)
+import Cli.State (init) as State
+import Cli.State (informWsInitialized) as State
+import Cli.Components.MainScreen as MainScreen
 
 import Noodle.Toolkit.Families (Families)
 
 
 type Options =
-    { fromFile :: Maybe String
+    { fromFile :: String
     }
 
 
 defaultOptions =
-    { fromFile : Nothing
+    { fromFile : ""
     } :: Options
 
 
@@ -67,8 +72,8 @@ data App pstate (fs :: Families) repr m
     = App Options (State pstate fs repr m)
 
 
-run :: Effect Unit
-run = runWith =<< OA.execParser opts
+run :: forall s fs r m. State s fs r m -> Effect Unit
+run state = runWith state =<< OA.execParser opts
   where -- FIXME: why it shows `run.js` in the info?
     opts = OA.info (options <**> OA.helper)
       ( OA.fullDesc
@@ -77,9 +82,9 @@ run = runWith =<< OA.execParser opts
       )
 
 
-runWith :: Options -> Effect Unit
-runWith options =
-    Blessed.runAnd State.init MainScreen.component $ do
+runWith :: forall s fs r m. State s fs r m -> Options -> Effect Unit
+runWith state options =
+    Blessed.runAnd state MainScreen.component $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
         hErr <- Blessed.impair1 handleError
@@ -93,14 +98,14 @@ runWith options =
         State.modify_ $ State.informWsInitialized wss
         mainScreen >~ Screen.render
         productsCallback <- Blessed.impair1 storeProducts
-        liftEffect $ runAff_ productsCallback CAI.requestProducts
+        --liftEffect $ runAff_ productsCallback CAI.requestProducts
         if String.length options.fromFile > 0 then do
             fileCallback <- Blessed.impair1 applyFile
             liftEffect $ runAff_ fileCallback $ readTextFile UTF8 options.fromFile
             pure unit
         else pure unit
     where
-        applyFile :: Either _ String -> BlessedOp State Effect
+        applyFile :: Either _ String -> BlessedOp (State s fs r m) Effect
         applyFile (Right fileContents) = do
             case runParser fileContents NdfFile.parser of
                 Right ndfFile ->
@@ -118,21 +123,21 @@ runWith options =
             -- Blessed.lift $ Console.log $ show $ Map.size productsMap
         -}
         storeProducts _ = pure unit
-        handleStart :: Unit -> BlessedOp State Effect
+        handleStart :: Unit -> BlessedOp _ Effect
         handleStart _ =  do
             -- FIXME: State.modify_ State.informWsListening
             -- FIXME: WsButton.updateStatus $ WsButton.Waiting
             mainScreen >~ Screen.render
-        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp State Effect
+        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State s fs r m) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp State Effect
+        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State s fs r m) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
-        handleError :: Error -> BlessedOp State Effect
+        handleError :: Error -> BlessedOp (State s fs r m) Effect
         handleError _ = pure unit
 
 
