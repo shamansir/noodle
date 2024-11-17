@@ -79,138 +79,6 @@ instance R.HasFallback WrapRepr where
     fallback = Unit unit
 
 
--- FIXME: There's a Generic class that is [almost] the same as `toRepr` / `FromRepr`: https://purescript-simple-json.readthedocs.io/en/latest/generics-rep.html
-
-
-{-
-instance NMF.HasRepr Number WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> Number -> WrapRepr
-    toRepr _ = HT.Number >>> Value
-
-
-instance NMF.HasRepr HT.Value WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Value -> WrapRepr
-    toRepr _ = Value
-
-
-instance NMF.HasRepr Unit WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> Unit -> WrapRepr
-    toRepr _ = Unit
-
-
-instance NMF.HasRepr HT.Texture WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Texture -> WrapRepr
-    toRepr _ = Texture
-
-
-instance NMF.HasRepr HT.TODO WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.TODO -> WrapRepr
-    toRepr _ = TODO
-
-
-instance NMF.HasRepr HT.Context WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Context -> WrapRepr
-    toRepr _ = Context
-
-
-instance NMF.HasRepr HT.UpdateFn WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.UpdateFn -> WrapRepr
-    toRepr _ = UpdateFn
-
-
-instance NMF.HasRepr HT.Source WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Source -> WrapRepr
-    toRepr _ = Source
-
-
-instance NMF.HasRepr HT.Url WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Url -> WrapRepr
-    toRepr _ = Url
-
-
-instance NMF.HasRepr HT.GlslFn WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.GlslFn -> WrapRepr
-    toRepr _ = GlslFn
-
-
-instance NMF.HasRepr HT.SourceOptions WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.SourceOptions -> WrapRepr
-    toRepr _ = SourceOptions
-
-
-instance NMF.HasRepr HT.Values WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Values -> WrapRepr
-    toRepr _ = Values
-
-
-instance NMF.HasRepr HT.Ease WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Ease -> WrapRepr
-    toRepr _ = Ease
-
-
-instance NMF.HasRepr HT.AudioSource WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.AudioSource -> WrapRepr
-    toRepr _ = Audio
-
-
-instance NMF.HasRepr HT.AudioBin WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.AudioBin -> WrapRepr
-    toRepr _ = AudioBin
-
-
-instance NMF.HasRepr HT.OutputN WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.OutputN -> WrapRepr
-    toRepr _ = OutputN
-
-
-instance NMF.HasRepr HT.SourceN WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.SourceN -> WrapRepr
-    toRepr _ = SourceN
-
-
-instance NMF.HasRepr HT.ExtSource WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.ExtSource -> WrapRepr
-    toRepr _ = ExtSource
-
-
-instance NMF.HasRepr HT.RenderTarget WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.RenderTarget -> WrapRepr
-    toRepr _ = Target
-
-
-instance NMF.HasRepr HT.Fn WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.Fn -> WrapRepr
-    toRepr _ = HT.Dep >>> Value
-
-
-instance NMF.HasRepr HT.CanBeSource WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.CanBeSource -> WrapRepr
-    toRepr _ = CBS
-
-
-instance NMF.HasRepr HT.TOrV WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> HT.TOrV -> WrapRepr
-    toRepr _ = TOrV
-
-
-instance NMF.HasRepr CAI.Products WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> CAI.Products -> WrapRepr
-    toRepr _ = Products
-
-
-instance NMF.HasRepr CAI.Product' WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> CAI.Product' -> WrapRepr
-    toRepr _ = Product
-
-
-instance NMF.HasRepr WrapRepr WrapRepr where
-    toRepr :: forall f i o. InNode f i o -> WrapRepr -> WrapRepr
-    toRepr _ = identity
--}
-
-
-
-
 {- R.ToRepr -}
 
 
@@ -557,26 +425,6 @@ instance Show WrapRepr where
         CBS cbs -> show cbs
         WRError { source, error } -> "Error: \"" <> source <> "\" " <> error
 
-    {-
-    mark = case _ of
-        Value _ -> X11.lightyellow -- X11.seagreen-- mark HG.Synth
-        Unit _ -> X11.lightgray
-        Texture _ -> X11.darkorange
-        From _ -> X11.limegreen
-        TODO _ -> X11.burlywood
-        Context _ -> X11.papayawhip
-        UpdateFn _ -> X11.salmon
-        Source _ -> X11.cornsilk
-        Url _ -> X11.cornflowerblue
-        GlslFn _ -> X11.crimson
-        SourceOptions _ -> X11.palevioletred
-        Values _ -> mark HG.Array
-        Ease _ -> X11.darkgoldenrod
-        Audio _ -> mark HG.Audio
-        AudioBin _ -> X11.aqua
-        Output _ -> X11.blue
-    -}
-
 
 wrapParser :: Parser String WrapRepr
 wrapParser =
@@ -750,4 +598,8 @@ instance CodegenRepr WrapRepr where
                     , "error" /\ (exprString $ srcErrorToString srcError) ]
                     ]
             tryMkExpression :: forall res. Partial => ValueCodegen res => FromCode HYDRA_V Unit res => Proxy res -> EncodedValue -> CST.Expr Void
-            tryMkExpression _ (EncodedValue valueStr) = either (genError valueStr) mkExpression (fromCode hydraV unit valueStr :: Either SourceError res)
+            tryMkExpression _ (EncodedValue valueStr) =
+                either
+                    (genError valueStr)
+                    mkExpression
+                    (fromCode hydraV unit valueStr :: Either SourceError res)

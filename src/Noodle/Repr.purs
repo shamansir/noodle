@@ -39,6 +39,10 @@ import Record.Builder as Builder
 -- FIXME: Merge with `Node2.MapsFolds.Repr` and `Patch4.MapsFolds.Repr` and `Toolkit3.MapsFolds.Repr`.
 -- FIXME: Maybe reorganize into `MapsFolds.Node2.Path` & `MapsFolds.Node2.Repr` and `MapsFolds.Patch4` and `MapsFolds.Toolkit3.Path` & `MapsFolds.Toolkit3.Repr`
 
+
+-- FIXME: There's a Generic class that is [almost] the same as `toRepr` / `FromRepr`: https://purescript-simple-json.readthedocs.io/en/latest/generics-rep.html
+
+
 {-
 data Repr a
   = Accept a

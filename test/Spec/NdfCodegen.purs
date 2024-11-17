@@ -28,7 +28,7 @@ import Test.Spec.Assertions (fail)
 
 import Node.Encoding (Encoding(..))
 import Node.Path (FilePath) as FS
-import Node.FS.Sync (readTextFile, writeTextFile, mkdir, exists, mkdir')
+import Node.FS.Sync (readTextFile, writeTextFile, exists, mkdir')
 import Node.FS.Perms (permsReadWrite)
 
 import Tidy.Codegen
