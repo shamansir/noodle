@@ -12,44 +12,47 @@ import Noodle.Patch (Patch)
 import Noodle.Toolkit.Families (Families)
 
 
-data Network pstate (families :: Families) repr m = Network (Toolkit families repr m) (Map PatchR (Patch pstate families repr m))
+data Network pstate (families :: Families) repr m =
+    Network
+        (Toolkit families repr m)
+        (Map PatchR (Patch pstate families repr m))
 
 
-init :: forall pstate families repr m. Toolkit families repr m -> Network pstate families repr m
+init :: forall s fs r m. Toolkit fs r m -> Network s fs r m
 init tk = Network tk Map.empty
 
 
-patches :: forall pstate families repr m. Network pstate families repr m -> Map PatchR (Patch pstate families repr m)
+patches :: forall s fs r m. Network s fs r m -> Map PatchR (Patch s fs r m)
 patches (Network _ patches) = patches
 
 
-patch :: forall pstate families repr m. PatchR -> Network pstate families repr m -> Maybe (Patch pstate families repr m)
+patch :: forall s fs r m. PatchR -> Network s fs r m -> Maybe (Patch s fs r m)
 patch id = Map.lookup id <<< patches
 
 
-patchesCount :: forall pstate families repr m. Network pstate families repr m  -> Int
+patchesCount :: forall s fs r m. Network s fs r m  -> Int
 patchesCount = patches >>> Map.size
 
 
-hasPatch :: forall pstate families repr m. PatchR -> Network pstate families repr m  -> Boolean
+hasPatch :: forall s fs r m. PatchR -> Network s fs r m  -> Boolean
 hasPatch id = patches >>> Map.member id
 
 
 addPatch
-    :: forall pstate families repr m
+    :: forall s fs r m
     .  PatchR
-    -> Patch pstate families repr m
-    -> Network pstate families repr m
-    -> Network pstate families repr m
+    -> Patch s fs r m
+    -> Network s fs r m
+    -> Network s fs r m
 addPatch id patch (Network tk patches) =
     Network tk $ Map.insert id patch $ patches
 
 
 withPatch
-    :: forall pstate families repr m
+    :: forall s fs r m
     .  PatchR
-    -> (Patch pstate families repr m -> Patch pstate families repr m )
-    -> Network pstate families repr m
-    -> Network pstate families repr m
+    -> (Patch s fs r m -> Patch s fs r m )
+    -> Network s fs r m
+    -> Network s fs r m
 withPatch patchId fn (Network tk patches) =
     Network tk $ Map.update (fn >>> Just) patchId $ patches

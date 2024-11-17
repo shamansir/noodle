@@ -8,6 +8,8 @@ import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (empty) as Map
 
+import Type.Proxy (Proxy)
+
 import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
@@ -87,8 +89,8 @@ newtype LinkState =
 -}
 
 
-init :: forall s fs r m. Toolkit fs r m -> State s fs r m
-init toolkit =
+init :: forall s fs r m. Proxy s -> Toolkit fs r m -> State s fs r m
+init _ toolkit =
     { network : Network.init toolkit
     , currentPatch : Nothing -- TODO: Just (0 /\ patchIdFromIndex 0)
     , wsServer : Nothing

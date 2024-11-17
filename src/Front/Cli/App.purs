@@ -8,6 +8,8 @@ import Data.Map as Map
 import Data.Foldable (fold)
 import Data.String (length) as String
 
+import Type.Proxy (Proxy)
+
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception (Error)
@@ -55,6 +57,7 @@ import Cli.State (init) as State
 import Cli.State (informWsInitialized) as State
 import Cli.Components.MainScreen as MainScreen
 
+import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
 
 
@@ -72,8 +75,8 @@ data App pstate (fs :: Families) repr m
     = App Options (State pstate fs repr m)
 
 
-run :: forall s fs r m. State s fs r m -> Effect Unit
-run state = runWith state =<< OA.execParser opts
+run :: forall s fs r m. Proxy s -> Toolkit fs r m -> Effect Unit
+run ps toolkit = runWith ps toolkit =<< OA.execParser opts
   where -- FIXME: why it shows `run.js` in the info?
     opts = OA.info (options <**> OA.helper)
       ( OA.fullDesc
@@ -82,9 +85,9 @@ run state = runWith state =<< OA.execParser opts
       )
 
 
-runWith :: forall s fs r m. State s fs r m -> Options -> Effect Unit
-runWith state options =
-    Blessed.runAnd state MainScreen.component $ do
+runWith :: forall s fs r m. Proxy s -> Toolkit fs r m -> Options -> Effect Unit
+runWith ps toolkit options =
+    Blessed.runAnd (State.init ps toolkit) MainScreen.component $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
         hErr <- Blessed.impair1 handleError
