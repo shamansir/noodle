@@ -1,0 +1,10 @@
+: simple : gen-num :: <> => out:Number {#/0.0}
+: simple : sum :: <a:Number -> b:Number -> c:Number> => sum:Number {#/0.0}
+: simple : log :: <what:Value> => <>
+: simple : color :: <r:Number -> g:Number -> b:Number> => color:Color {c/000000}
+: simple : knob :: <min:Number -> max:Number> => number:Number {#/0.0}
+: simple : metro :: <enabled:Bool {b/true} -> period:Time {t/2s}> => bang:Bang
+: simple : letter :: <code:Number> => letter:Char
+: simple : random :: <bang:Bang -> min:Number -> max:Number> => random:Number
+: p5 : shape :: <> => shape:Shape {s/circle}
+: p5 : sketch :: <shape:Shape {s/circle} -> wavescount:Number {#/5.0} -> startcolor:Color {c/00000} -> endcolor:Color {c/143636} -> xspasing:Number {#/16} -> amplitude:Number {#/75} -> perido:Number {#/500}> => <>

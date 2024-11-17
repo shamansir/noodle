@@ -1,0 +1,16 @@
+processing 0.1
+metro 22 10 metro-0
+random 42 10 random-0
+color 42 10 color-0
+color 42 10 color-1
+random 50 50 random-0
+knob 0 0 knob-0
+metro 60 60 metro-1
+shape 70 70 shape-0
+sketch 100 70 sketch-0
+<> metro-0 bang random-0 bang
+<> random-0 random color-0 g
+<> random-0 random color-0 b
+<> color-0 color sketch-0 endcolor
+<> metro-1 bang random-1 bang
+<> shape-0 shape sketch-0 shape

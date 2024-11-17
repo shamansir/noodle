@@ -1,0 +1,27 @@
+processing 0.1
+spread 22 10 spread-0
+vector 42 10 vector-0
+prim 42 10 prim-0
+color 42 10 color-0
+vector 50 50 vector-1
+spread 0 0 spread-1
+spread 60 60 spread-2
+<> spread-0 spread vector-0 x
+<> spread-0 spread vector-0 y
+<> vector-0 vector prim-0 pos
+<> spread-1 spread color-0 green
+<> spread-1 spread color-0 blue
+<> spread-1 spread color-0 alpha
+<> color-0 color prim-0 color
+<> spread-1 spread vector-0 x
+<> spread-1 spread vector-0 y
+<> vector-0 vector prim-0 size
+-> spread-0 min #/-150.0
+-> spread-0 max #/150.0
+-> spread-0 count #/26
+-> spread-1 min #/0
+-> spread-1 max #/1
+-> spread-1 count #/40
+-> spread-2 min #/0
+-> spread-2 max #/100
+-> spread-2 count #/5

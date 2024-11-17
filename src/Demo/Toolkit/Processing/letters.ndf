@@ -1,0 +1,19 @@
+processing 0.1
+gen-num 22 10 gen-a
+gen-num 42 10 gen-b
+sum 60 10 sum
+log 60 30 log
+knob 42 10 knob
+<> gen-b number sum b
+<> knob number color green
+color 42 10 color
+metro 42 10 metro-0
+random 42 10 random-0
+letter 42 10 letter-0
+<> metro-0 bang random-0 bang
+<> random-0 bang letter-0 code
+metro 42 10 metro-1
+random 42 10 random-1
+letter 42 10 letter-1
+<> metro-1 bang random-1 bang
+<> random-1 bang letter-1 code
