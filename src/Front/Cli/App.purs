@@ -7,9 +7,10 @@ import Data.Either (Either(..))
 import Data.Map as Map
 import Data.String (length, joinWith) as String
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (take) as Array
+import Data.Array (take, dropEnd) as Array
 import Data.Foldable (fold)
 import Data.Traversable (traverse_)
+import Data.String (split, Pattern(..)) as String
 
 import Type.Proxy (Proxy)
 
@@ -23,8 +24,9 @@ import Control.Monad.State (modify_, get) as State
 
 import Node.HTTP (Request)
 import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile, stat) as Sync
+import Node.FS.Sync (readTextFile, stat, exists, mkdir', writeTextFile) as Sync
 import Node.FS.Aff (readTextFile, stat) as Async
+import Node.FS.Perms (permsReadWrite)
 
 import Cli.State (State)
 -- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
@@ -94,8 +96,8 @@ run ps toolkit = runWith ps toolkit =<< OA.execParser opts
 
 
 runWith :: forall s fs r m. Proxy s -> Toolkit fs r m -> Options -> Effect Unit
-runWith ps toolkit options =
-    case options of
+runWith ps toolkit =
+    case _ of
         JustRun ->
             runBlessedInterface ps toolkit $ pure unit
         LoadNetworkFrom fromFile ->
@@ -205,14 +207,25 @@ options = ado
 
 generateToolkit :: forall repr. CG.CodegenRepr repr => CG.Options repr -> Id.ToolkitR -> String -> Effect Unit
 generateToolkit options toolkitName sourcePath = do
-    hydraToolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
-    let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
+    toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
+    let eParsedNdf = P.runParser toolkitText NdfFile.parser
     case eParsedNdf of
         Left error -> Console.log $ show error
         Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
                 --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
                 let fileMap = NdfFile.codegen toolkitName options parsedNdf
-                traverse_ pure $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
+                traverse_ writeCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
             else
             Console.log $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
+
+
+writeCodegenFile :: CG.FilePath /\ CG.FileContent -> Effect Unit
+writeCodegenFile (CG.FilePath filePath /\ CG.FileContent fileContent) = do
+    let
+        outputFilePath = "./src/Demo/Toolkit/Processing/" <> filePath
+        outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
+    liftEffect $ do
+        outputDirectoryExists <- Sync.exists outputDirectory
+        when (not outputDirectoryExists) $ Sync.mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
+        Sync.writeTextFile UTF8 outputFilePath fileContent

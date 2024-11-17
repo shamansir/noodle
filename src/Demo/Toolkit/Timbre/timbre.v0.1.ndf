@@ -1,3 +1,4 @@
+spreads 0.2 0.1
 : timbre : wave :: <> => out:Wave
 : timbre : bounded-num :: <min:Number -> max:Number> => number:Number {0.0}
 : timbre : osc :: <wave:Wave> => <>

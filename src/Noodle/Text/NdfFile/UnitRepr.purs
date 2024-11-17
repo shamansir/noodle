@@ -11,6 +11,7 @@ import Partial.Unsafe (unsafePartial)
 
 import Tidy.Codegen (exprCtor, typeCtor, declImport)
 
+import Noodle.Repr (class HasFallback, wrap, unwrap, class ToRepr, class FromRepr)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), groupPascalCase, familyPascalCase)
 
@@ -19,7 +20,7 @@ data UnitRepr = UnitRepr
 
 
 instance CodegenRepr UnitRepr where
-    reprModule = const "Noodle.Text.NdfFile.FamilyDef.Codegen"
+    reprModule = const "Noodle.Text.NdfFile.UnitRepr"
     reprTypeName = const "UnitRepr"
     reprType = const $ unsafePartial $ typeCtor "UnitRepr"
     typeFor = const $ unsafePartial $ const $ typeCtor "UnitRepr"
@@ -29,7 +30,7 @@ instance CodegenRepr UnitRepr where
 
 options :: Options UnitRepr
 options = Options $
-    { reprAt : { module_ : "Noodle.Text.NdfFile.FamilyDef.Codegen", type_ : "UnitRepr" }
+    { reprAt : { module_ : "Noodle.Text.NdfFile.UnitRepr", type_ : "UnitRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "MyToolkit" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
@@ -39,6 +40,18 @@ options = Options $
             Just src -> "\n\n[[ " <> src.line <> " ]] (#" <> show src.lineIndex <> ")"
             Nothing -> ""
     , imports : unsafePartial $
-        [ declImport "Noodle.Text.NdfFile.FamilyDef.Codegen" []
+        [ declImport "Noodle.Text.NdfFile.UnitRepr" []
         ]
     }
+
+
+instance HasFallback UnitRepr where
+    fallback = UnitRepr
+
+
+instance ToRepr UnitRepr UnitRepr
+    where toRepr = Just <<< wrap
+
+
+instance FromRepr UnitRepr UnitRepr
+    where fromRepr = unwrap >>> Just
