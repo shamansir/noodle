@@ -122,13 +122,13 @@ spec = do
         testSingleFamilyDef (Id.toolkitR "Test") minimalGenOptions testFamilyDef
 
       it "properly generates Hydra Toolkit" $ do
-        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Hydra/hydra.v0.3.ndf"
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error
           Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
-              liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
+              --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
               let fileMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
               traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
             else
