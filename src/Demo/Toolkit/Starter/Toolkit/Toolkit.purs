@@ -1,4 +1,4 @@
-module Foo.Toolkit where
+module Toolkit.Toolkit where
 
 import Prelude ((#))
 import Effect (Effect)
@@ -8,21 +8,21 @@ import Noodle.Id (toolkitR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import MyToolkit.Simple.Bang as Simple.Bang
-import MyToolkit.Simple.Metro as Simple.Metro
-import MyToolkit.Simple.Random as Simple.Random
-import MyToolkit.Simple.Knob as Simple.Knob
-import MyToolkit.Simple.Color as Simple.Color
-import MyToolkit.Simple.Letter as Simple.Letter
-import MyToolkit.Simple.Sum as Simple.Sum
-import MyToolkit.Simple.Log as Simple.Log
-import MyToolkit.P5.Shape as P5.Shape
-import MyToolkit.P5.Sketch as P5.Sketch
-import MyToolkit.Simple.Gennum as Simple.Gennum
-import Demo.Toolkit.Processing.Repr (ProcessingRepr)
+import StarterTk.Simple.Bang as Simple.Bang
+import StarterTk.Simple.Metro as Simple.Metro
+import StarterTk.Simple.Random as Simple.Random
+import StarterTk.Simple.Knob as Simple.Knob
+import StarterTk.Simple.Color as Simple.Color
+import StarterTk.Simple.Letter as Simple.Letter
+import StarterTk.Simple.Sum as Simple.Sum
+import StarterTk.Simple.Log as Simple.Log
+import StarterTk.P5.Shape as P5.Shape
+import StarterTk.P5.Sketch as P5.Sketch
+import StarterTk.Simple.Gennum as Simple.Gennum
+import Demo.Toolkit.Starter.Repr (StarterRepr)
 
-type FooFamilies :: Families
-type FooFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
+type ToolkitFamilies :: Families
+type ToolkitFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
   :> Simple.Color.F
   :> Simple.Letter.F
   :> Simple.Sum.F
@@ -32,8 +32,8 @@ type FooFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.
   :> Simple.Gennum.F
   :> TNil
 
-toolkit :: Toolkit FooFamilies ProcessingRepr Effect
-toolkit = Toolkit.empty (Id.toolkitR "Foo") # Toolkit.register Simple.Gennum.family
+toolkit :: Toolkit ToolkitFamilies StarterRepr Effect
+toolkit = Toolkit.empty (Id.toolkitR "Toolkit") # Toolkit.register Simple.Gennum.family
   # Toolkit.register P5.Sketch.family
   # Toolkit.register P5.Shape.family
   # Toolkit.register Simple.Log.family

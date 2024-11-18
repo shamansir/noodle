@@ -70,7 +70,7 @@ import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as CG
 
-import Demo.Toolkit.Processing.Repr (options) as P5
+import Demo.Toolkit.Starter.Repr (options) as P5
 
 
 data Options
@@ -108,7 +108,7 @@ runWith ps toolkit =
                 liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
                 pure unit
         GenerateToolkitFrom fromFile -> do
-            generateToolkit P5.options (Id.toolkitR "Foo") fromFile
+            generateToolkit P5.options (Id.toolkitR "Toolkit") fromFile -- FIXME: `Toolkit` is not the actual toolkit name!
         SelectToolkit fromFile -> do
             pure unit -- FIXME: implement
     where
@@ -225,7 +225,7 @@ generateToolkit options toolkitName sourcePath = do
 writeCodegenFile :: CG.FilePath /\ CG.FileContent -> Effect Unit
 writeCodegenFile (CG.FilePath filePath /\ CG.FileContent fileContent) = do
     let
-        outputFilePath = "./src/Demo/Toolkit/Processing/" <> filePath
+        outputFilePath = "./src/Demo/Toolkit/Starter/" <> filePath
         outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
     liftEffect $ do
         outputDirectoryExists <- Sync.exists outputDirectory

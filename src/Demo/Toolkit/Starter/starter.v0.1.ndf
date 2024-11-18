@@ -1,4 +1,4 @@
-processing 0.2 0.1
+starter 0.2 0.1
 * | bang metro gen-num random knob color letter sum log | shape sketch |
 : simple : gennum :: <> => out:Number {#/0.0}
 : simple : sum :: <a:Number -> b:Number -> c:Number> => sum:Number {#/0.0}
