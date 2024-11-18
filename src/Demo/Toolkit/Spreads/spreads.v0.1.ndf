@@ -1,5 +1,5 @@
 spreads 0.2 0.1
-: spreads : spread :: <min:Number {#/-150.0} -> max:Number {#/150.0} -> count:Number {26}> => spread:Spread
+: spreads : spread :: <min:Number {#/-150.0} -> max:Number {#/150.0} -> count:Number {#/26}> => spread:Spread
 : spreads : vector :: <x:Spread -> y:Spread> => spread:Spread
 : spreads : color :: <red:Spread -> green:Spread -> blue:Spread -> alpha:Spread> => color:Spread
 : spreads : prim :: <pos:Spread -> color:Spread -> size:Spread -> angle:Spread> => shape:Shape

@@ -532,7 +532,7 @@ instance CodegenRepr WrapRepr where
     reprType = const $ unsafePartial $ wrapTypeCtor_ "WrapRepr"
     typeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
-                  case typeStr of
+                case typeStr of
                     "Value" -> HT.hydraType_ "Value"
                     "Texture" -> HT.hydraType_ "Texture"
                     "TODO" -> HT.hydraType_ "TODO"

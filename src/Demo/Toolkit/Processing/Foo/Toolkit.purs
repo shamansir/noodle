@@ -19,7 +19,7 @@ import MyToolkit.Simple.Log as Simple.Log
 import MyToolkit.P5.Shape as P5.Shape
 import MyToolkit.P5.Sketch as P5.Sketch
 import MyToolkit.Simple.Gennum as Simple.Gennum
-import Noodle.Text.NdfFile.UnitRepr (UnitRepr)
+import Demo.Toolkit.Processing.Repr (ProcessingRepr)
 
 type FooFamilies :: Families
 type FooFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
@@ -32,7 +32,7 @@ type FooFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.
   :> Simple.Gennum.F
   :> TNil
 
-toolkit :: Toolkit FooFamilies UnitRepr Effect
+toolkit :: Toolkit FooFamilies ProcessingRepr Effect
 toolkit = Toolkit.empty (Id.toolkitR "Foo") # Toolkit.register Simple.Gennum.family
   # Toolkit.register P5.Sketch.family
   # Toolkit.register P5.Shape.family

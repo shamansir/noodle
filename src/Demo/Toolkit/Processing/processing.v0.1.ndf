@@ -2,7 +2,7 @@ processing 0.2 0.1
 * | bang metro gen-num random knob color letter sum log | shape sketch |
 : simple : gennum :: <> => out:Number {#/0.0}
 : simple : sum :: <a:Number -> b:Number -> c:Number> => sum:Number {#/0.0}
-: simple : log :: <what:Value> => <>
+: simple : log :: <what:Any> => <>
 : simple : color :: <r:Number -> g:Number -> b:Number> => color:Color {c/000000}
 : simple : knob :: <min:Number -> max:Number> => number:Number {#/0.0}
 : simple : metro :: <enabled:Bool {b/true} -> period:Time {t/2s}> => bang:Bang
@@ -10,4 +10,4 @@ processing 0.2 0.1
 : simple : random :: <bang:Bang -> min:Number -> max:Number> => random:Number
 : simple : bang :: <> => bang:Bang
 : p5 : shape :: <> => shape:Shape {s/circle}
-: p5 : sketch :: <shape:Shape {s/circle} -> wavescount:Number {#/5.0} -> startcolor:Color {c/00000} -> endcolor:Color {c/143636} -> xspasing:Number {#/16} -> amplitude:Number {#/75} -> perido:Number {#/500}> => <>
+: p5 : sketch :: <shape:Shape {s/circle} -> wavescount:Number {#/5.0} -> startcolor:Color {c/00000} -> endcolor:Color {c/143636} -> xspasing:Number {#/16} -> amplitude:Number {#/75} -> period:Number {#/500}> => <>

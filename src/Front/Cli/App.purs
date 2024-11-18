@@ -70,6 +70,8 @@ import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as CG
 
+import Demo.Toolkit.Processing.Repr (options) as P5
+
 
 data Options
     = JustRun
@@ -106,7 +108,7 @@ runWith ps toolkit =
                 liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
                 pure unit
         GenerateToolkitFrom fromFile -> do
-            generateToolkit UnitRepr.options (Id.toolkitR "Foo") fromFile
+            generateToolkit P5.options (Id.toolkitR "Foo") fromFile
         SelectToolkit fromFile -> do
             pure unit -- FIXME: implement
     where
