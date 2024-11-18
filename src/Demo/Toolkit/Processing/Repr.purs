@@ -16,9 +16,10 @@ import Type.Proxy (Proxy(..))
 import Partial.Unsafe (unsafePartial)
 
 import Tidy.Codegen
-    ( exprCtor, exprApp, exprIdent, exprBool, exprChar, exprNumber, exprRecord, exprInt
-    , typeCtor
-    , declImportAs
+    ( exprCtor, exprApp, exprIdent, exprBool, exprChar, exprNumber, exprRecord, exprInt, exprArray, exprOp
+    , binaryOp
+    , typeCtor, typeApp, typeOp
+    , declImport, declImportAs, importOp
     )
 
 import Noodle.Repr
@@ -46,6 +47,8 @@ data ProcessingRepr
     | VTime Time
     | VColor Color
     | VShape Shape
+    | VSpreadNum (Spread Number)
+    | VSpreadVec (Spread (Number /\ Number))
 
 
 data Any = Any ProcessingRepr
@@ -60,6 +63,9 @@ newtype Time = Time { seconds :: Int }
 newtype Color = Color { r :: Int, g :: Int, b :: Int, a :: Int }
 
 
+data Spread a = Spread (Array a)
+
+
 data Shape
     = Circle
     | Cross
@@ -70,6 +76,7 @@ data Shape
 instance HasFallback Shape where fallback = Circle
 instance HasFallback Time  where fallback = Time { seconds : 0 }
 instance HasFallback Color where fallback = Color { r : 0, g : 0, b : 0, a : 255 }
+instance HasFallback (Spread a) where fallback = Spread []
 
 
 instance CodegenRepr ProcessingRepr where
@@ -78,25 +85,32 @@ instance CodegenRepr ProcessingRepr where
     reprType = const $ unsafePartial $ typeCtor "ProcessingRepr"
     typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
             case typeStr of
-                "Any"    -> typeCtor "PR.Any"
-                "Bang"   -> typeCtor "PR.Bang"
-                "Bool"   -> typeCtor "Boolean"
-                "Char"   -> typeCtor "Char"
-                "Number" -> typeCtor "Number"
-                "Time"   -> typeCtor "PR.Time"
-                "Color"  -> typeCtor "PR.Color"
-                "Shape"  -> typeCtor "PR.Shape"
+                "Any"     -> typeCtor "PR.Any"
+                "Bang"    -> typeCtor "PR.Bang"
+                "Bool"    -> typeCtor "Boolean"
+                "Char"    -> typeCtor "Char"
+                "Number"  -> typeCtor "Number"
+                "Time"    -> typeCtor "PR.Time"
+                "Color"   -> typeCtor "PR.Color"
+                "Shape"   -> typeCtor "PR.Shape"
+                "SpreadN" -> typeApp (typeCtor "PR.Spread") [ typeCtor "Number" ]
+                "SpreadV" -> typeApp (typeCtor "PR.Spread")
+                                [ typeOp (typeCtor "Number")
+                                    [ binaryOp "/\\" $ typeCtor "Number" ]
+                                ]
                 _ -> typeCtor "Unit"
     defaultFor = const $ unsafePartial $ \mbType ->
             case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
-                Just "Any"    -> exprApp (exprCtor "PR.Any") [ exprCtor "PR.VNone" ]
-                Just "Bang"   -> exprCtor "PR.Bang"
-                Just "Bool"   -> exprIdent "false"
-                Just "Char"   -> exprChar '-'
-                Just "Number" -> exprNumber 0.0
-                Just "Time"   -> mkExpression (fallback :: Time)
-                Just "Color"  -> mkExpression (fallback :: Color)
-                Just "Shape"  -> mkExpression (fallback :: Shape)
+                Just "Any"     -> exprApp (exprCtor "PR.Any") [ exprCtor "PR.VNone" ]
+                Just "Bang"    -> exprCtor "PR.Bang"
+                Just "Bool"    -> exprIdent "false"
+                Just "Char"    -> exprChar '-'
+                Just "Number"  -> exprNumber 0.0
+                Just "Time"    -> mkExpression (fallback :: Time)
+                Just "Color"   -> mkExpression (fallback :: Color)
+                Just "Shape"   -> mkExpression (fallback :: Shape)
+                Just "SpreadN" -> mkExpression (fallback :: Spread Number)
+                Just "SpreadV" -> mkExpression (fallback :: Spread (Number /\ Number))
                 _ -> exprCtor "PR.VNone"
     valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
             -- case NT.unwrap <$> mbType of
@@ -159,6 +173,26 @@ instance ValueCodegen Color where
                 ]
 
 
+instance ValueCodegen (Spread Number) where
+    mkExpression = unsafePartial $ case _ of
+        Spread items ->
+            exprApp (exprCtor "PR.Spread")
+                [ exprArray $ exprNumber <$> items
+                ]
+
+
+instance ValueCodegen (Spread (Number /\ Number)) where
+    mkExpression = unsafePartial $ case _ of
+        Spread items ->
+            exprApp (exprCtor "PR.Spread")
+                [ exprArray $ exprPair <$> items
+                ]
+        where
+            exprPair (n1 /\ n2) = unsafePartial $
+                exprOp (exprNumber n1)
+                    [ binaryOp "/\\" $ exprNumber n2 ]
+
+
 shapeFromString :: String -> Maybe Shape
 shapeFromString = case _ of
     "circle" -> Just Circle
@@ -185,7 +219,8 @@ options = Options $
             Just src -> "\n\n[[ " <> src.line <> " ]] (#" <> show src.lineIndex <> ")"
             Nothing -> ""
     , imports : unsafePartial $
-        [ declImportAs "Demo.Toolkit.Processing.Repr" [] "PR"
+        [ declImport "Data.Tuple.Nested" [ importOp "/\\"]
+        , declImportAs "Demo.Toolkit.Processing.Repr" [] "PR"
         ]
     }
 
@@ -206,3 +241,5 @@ instance ToRepr Number  ProcessingRepr where toRepr = Just <<< wrap <<< VNumber
 instance ToRepr Time    ProcessingRepr where toRepr = Just <<< wrap <<< VTime
 instance ToRepr Shape   ProcessingRepr where toRepr = Just <<< wrap <<< VShape
 instance ToRepr Color   ProcessingRepr where toRepr = Just <<< wrap <<< VColor
+instance ToRepr (Spread Number) ProcessingRepr where toRepr = Just <<< wrap <<< VSpreadNum
+instance ToRepr (Spread (Number /\ Number)) ProcessingRepr where toRepr = Just <<< wrap <<< VSpreadVec
