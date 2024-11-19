@@ -38,12 +38,12 @@ import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
 import Noodle.Text.NdfFile (loadOrder, hasFailedLines, failedLines, codegen) as NdfFile
-import Noodle.Text.NdfFile.Codegen as CG
+import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, chtv, i, o, qdefps, st) as FD
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as FD
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), withOptions) as CG
--- import Noodle.Text.NdfFile.Codegen as CG
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), withOptions) as FCG
+-- import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
@@ -54,12 +54,12 @@ import Hydra.Repr.Wrap (WrapRepr, hydraGenOptions)
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
-minimalGenOptions :: CG.Options MinimalRepr
-minimalGenOptions = CG.Options
+minimalGenOptions :: FCG.Options MinimalRepr
+minimalGenOptions = FCG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , reprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
-  , familyModuleName : CG.moduleName' modulePrefix $ Id.toolkitR "Test"
+  , familyModuleName : MCG.moduleName' modulePrefix $ Id.toolkitR "Test"
   , prepr : (Proxy :: _ MinimalRepr)
   , infoComment : Nothing
   , imports : unsafePartial $
@@ -130,36 +130,36 @@ spec = do
             if not $ NdfFile.hasFailedLines parsedNdf then do
               --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
               let fileMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
-              traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
+              traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
-customHydraGenOptions :: CG.Options WrapRepr
+customHydraGenOptions :: FCG.Options WrapRepr
 customHydraGenOptions =
-  CG.withOptions hydraGenOptions $ \opts -> opts
-      { familyModuleName = CG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
+  FCG.withOptions hydraGenOptions $ \opts -> opts
+      { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
       }
 
 
-modulePrefix = CG.ModulePrefix "Test.Files.CodeGenTest" :: CG.ModulePrefix
+modulePrefix = MCG.ModulePrefix "Test.Files.CodeGenTest" :: MCG.ModulePrefix
 
 
-inputDir  = CG.GenRootPath "./test/Files/Input"  :: CG.GenRootPath
-outputDir = CG.GenRootPath "./test/Files/Output" :: CG.GenRootPath
+inputDir  = MCG.GenRootPath "./test/Files/Input"  :: MCG.GenRootPath
+outputDir = MCG.GenRootPath "./test/Files/Output" :: MCG.GenRootPath
 
 
-testSingleFamilyDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> FD.FamilyDef -> m Unit
+testSingleFamilyDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> FD.FamilyDef -> m Unit
 testSingleFamilyDef tkName genOptions familyDef =
   let
-    filePath = CG.moduleFile (CG.GenRootPath "") tkName familyDef
+    filePath = MCG.moduleFile (MCG.GenRootPath "") tkName familyDef
     fileContent = toCode (ToCode.pureScript) genOptions familyDef
   in testCodegenFile
-     $ CG.FilePath filePath /\ CG.FileContent fileContent
+     $ MCG.FilePath filePath /\ MCG.FileContent fileContent
 
 
-testCodegenFile :: forall m. MonadEffect m => CG.FilePath /\ CG.FileContent -> m Unit
-testCodegenFile (CG.FilePath filePath /\ CG.FileContent fileContent) = do
+testCodegenFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -> m Unit
+testCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
   let
     outputFilePath = unwrap outputDir <> filePath
     inputFilePath  = unwrap inputDir <> filePath

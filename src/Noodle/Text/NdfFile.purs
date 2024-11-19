@@ -31,8 +31,8 @@ import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Text.NdfFile.Types (Source)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign(..))
 import Noodle.Text.NdfFile.FamilyDef (family, forceAssign) as FD
-import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
-import Noodle.Text.NdfFile.Codegen as CG
+import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
+import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
 
 
@@ -187,5 +187,5 @@ loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders Nothing
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
-codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> NdfFile -> Map CG.FilePath CG.FileContent
-codegen tkName options = loadDefinitions >>> CG.codegen tkName options
+codegen :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> NdfFile -> Map MCG.FilePath MCG.FileContent
+codegen tkName options = loadDefinitions >>> MCG.codegen tkName options

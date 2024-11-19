@@ -25,7 +25,7 @@ import Noodle.Repr as R
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, familyPascalCase, groupPascalCase)
-import Noodle.Text.NdfFile.FamilyDef.Codegen (Options(..)) as CG
+import Noodle.Text.NdfFile.FamilyDef.Codegen (Options(..)) as FCG
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Text.ToCode (class ToCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError, Source, srcErrorToString)
@@ -503,8 +503,8 @@ wrapCtor_ :: Partial => String -> CST.Expr Void
 wrapCtor_ s = exprCtor (wrapPrefix_ <> s)
 
 
-hydraGenOptions :: CG.Options WrapRepr
-hydraGenOptions = CG.Options
+hydraGenOptions :: FCG.Options WrapRepr
+hydraGenOptions = FCG.Options
     { reprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }

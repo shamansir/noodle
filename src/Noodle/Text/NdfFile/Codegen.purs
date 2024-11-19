@@ -19,7 +19,7 @@ import Noodle.Id (toolkit) as Id
 import Noodle.Text.NdfFile.Types (Source)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
 import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
-import Noodle.Text.NdfFile.FamilyDef.Codegen as CG
+import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
 
 import PureScript.CST.Types (ImportDecl, Module)
 import PureScript.CST.Types (Type, Expr) as CST
@@ -41,7 +41,7 @@ derive newtype instance Eq FilePath
 derive newtype instance Ord FilePath
 
 
-codegen :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array (Maybe Source /\ FamilyDef) -> Map FilePath FileContent
+codegen :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array (Maybe Source /\ FamilyDef) -> Map FilePath FileContent
 codegen tkName options definitions =
     definitions
     # foldr genModule Map.empty
@@ -53,15 +53,15 @@ codegen tkName options definitions =
         filePathFor = FilePath <<< moduleFile genRoot tkName
         genModule (mbSource /\ FamilyDef familyDef) =
             -- toCode (ToCode.pureScript) genOptions familyDef
-            Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ CG.generate options mbSource familyDef
+            Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ FCG.generate options mbSource familyDef
 
 
-generateToolkit :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> FileContent
+generateToolkit :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> FileContent
 generateToolkit tkName options = FileContent <<< printModule <<< generateToolkitModule tkName options
 
 
-generateToolkitModule :: forall repr. CG.CodegenRepr repr => Toolkit.Name -> CG.Options repr -> Array FamilyDef -> Module Void
-generateToolkitModule tkName (CG.Options opts) definitionsArray
+generateToolkitModule :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> Module Void
+generateToolkitModule tkName (FCG.Options opts) definitionsArray
     = unsafePartial $ module_ (toolkitModuleName tkName)
         [ ]
         (
@@ -95,7 +95,7 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
         definitions :: Array (GroupR /\ FamilyR)
         definitions = groupAndFamily <$> definitionsArray
         fModuleName :: GroupR /\ FamilyR -> String
-        fModuleName (group /\ family) = CG.groupPascalCase group <> "." <> CG.familyPascalCase family
+        fModuleName (group /\ family) = FCG.groupPascalCase group <> "." <> FCG.familyPascalCase family
         referFamily :: GroupR /\ FamilyR -> String
         referFamily (group /\ family) = fModuleName (group /\ family) <> "." <> "family"
         referFamilyF :: GroupR /\ FamilyR -> String
@@ -130,7 +130,7 @@ generateToolkitModule tkName (CG.Options opts) definitionsArray
 
 moduleName :: Toolkit.Name -> GroupR -> FamilyR -> String
 moduleName tkName group family =
-  Id.toolkit tkName <> "." <> CG.groupPascalCase group <> "." <> CG.familyPascalCase family
+  Id.toolkit tkName <> "." <> FCG.groupPascalCase group <> "." <> FCG.familyPascalCase family
 
 
 moduleName' :: ModulePrefix -> Toolkit.Name -> GroupR -> FamilyR -> String
@@ -140,12 +140,12 @@ moduleName' modPrefix tkName group family =
 
 modulePath :: GenRootPath -> Toolkit.Name -> FamilyDef -> String
 modulePath genRoot tkName familyDef =
-  unwrap genRoot <> "/" <> Id.toolkit tkName <> "/" <> (CG.groupPascalCase $ FamilyDef.group familyDef)
+  unwrap genRoot <> "/" <> Id.toolkit tkName <> "/" <> (FCG.groupPascalCase $ FamilyDef.group familyDef)
 
 
 moduleFile :: GenRootPath -> Toolkit.Name -> FamilyDef -> String
 moduleFile genRoot tkName familyDef =
-  modulePath genRoot tkName familyDef <> "/" <> (CG.familyPascalCase $ FamilyDef.family familyDef) <> ".purs"
+  modulePath genRoot tkName familyDef <> "/" <> (FCG.familyPascalCase $ FamilyDef.family familyDef) <> ".purs"
 
 
 toolkitModuleName :: Toolkit.Name -> String

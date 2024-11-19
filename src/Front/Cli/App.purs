@@ -12,7 +12,7 @@ import Data.Foldable (fold)
 import Data.Traversable (traverse_)
 import Data.String (split, Pattern(..)) as String
 
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -66,29 +66,39 @@ import Cli.Components.MainScreen as MainScreen
 import Noodle.Id (ToolkitR, toolkitR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
-import Noodle.Text.NdfFile.Codegen as CG
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as CG
+import Noodle.Text.NdfFile.Codegen as MCG
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
 
-import Demo.Toolkit.Starter.Repr (options) as P5
+import Starter.Toolkit as Starter
+import Demo.Toolkit.Starter.Repr (options) as Starter
+
+
+data ToolkitKey
+    -- = Hydra
+    = Starter
+    -- | Timbre
+    | User String
 
 
 data Options
-    = JustRun
-    | LoadNetworkFrom String
-    | GenerateToolkitFrom String
-    | SelectToolkit String
+    = JustRun ToolkitKey
+    | LoadNetworkFrom String ToolkitKey
+    | GenerateToolkitFrom String ToolkitKey
 
 
-defaultOptions = JustRun :: Options
+defaultOptions = JustRun defaultToolkit :: Options
+
+
+defaultToolkit = Starter
 
 
 data App pstate (fs :: Families) repr m
     = App Options (State pstate fs repr m)
 
 
-run :: forall s fs r m. Proxy s -> Toolkit fs r m -> Effect Unit
-run ps toolkit = runWith ps toolkit =<< OA.execParser opts
+run :: Effect Unit
+run = runWith =<< OA.execParser opts
   where -- FIXME: why it shows `run.js` in the info?
     opts = OA.info (options <**> OA.helper)
       ( OA.fullDesc
@@ -97,22 +107,31 @@ run ps toolkit = runWith ps toolkit =<< OA.execParser opts
       )
 
 
-runWith :: forall s fs r m. Proxy s -> Toolkit fs r m -> Options -> Effect Unit
-runWith ps toolkit =
+runWith :: Options -> Effect Unit
+runWith =
     case _ of
-        JustRun ->
-            runBlessedInterface ps toolkit $ pure unit
-        LoadNetworkFrom fromFile ->
-            runBlessedInterface ps toolkit $ do
-                fileCallback <- Blessed.impair1 applyFile
-                liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
-                pure unit
-        GenerateToolkitFrom fromFile -> do
-            generateToolkit P5.options (Id.toolkitR "Toolkit") fromFile -- FIXME: `Toolkit` is not the actual toolkit name!
-        SelectToolkit fromFile -> do
-            pure unit -- FIXME: implement
+        JustRun tkKey ->
+            case tkKey of
+                Starter -> runBlessedInterface ( Proxy :: _ Unit ) Starter.toolkit $ pure unit
+                User _  -> pure unit
+        LoadNetworkFrom fromFile tkKey ->
+            case tkKey of
+                Starter -> runBlessedInterface ( Proxy :: _ Unit ) Starter.toolkit $ postFix fromFile
+                User _  -> pure unit
+        GenerateToolkitFrom fromFile tkKey -> do
+            case tkKey of
+                -- FIXME: even though `Starter` is the actual toolkit name, it mixes up modules names when we want them to be different.
+                -- FIXME: Also, it puts families into `Starter.Starter` directory
+                -- FIXME: Check the families' modules names as well, since they are `StarterTk` in current configuration...
+                -- FIXME: May be put `toolkitName` into `FCG.Options`, and/or generate its module name same way as with families...?
+                Starter -> generateToolkit Starter.options (Id.toolkitR "Starter") fromFile
+                User _  -> pure unit
     where
-        applyFile :: Either _ String -> BlessedOp (State s fs r m) Effect
+        postFix fromFile = do
+            fileCallback <- Blessed.impair1 applyFile
+            liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
+            pure unit
+        applyFile :: forall s fs r m. Either _ String -> BlessedOp (State s fs r m) Effect
         applyFile (Right fileContents) = do
             case P.runParser fileContents NdfFile.parser of
                 Right ndfFile ->
@@ -196,18 +215,21 @@ options = ado
         [ OA.long "toolkit"
         , OA.short 't'
         , OA.metavar "TOOLKIT-NAME"
-        , OA.value ""
-        , OA.help "Name of the toolkit to launch with"
+        , OA.help "Name of the toolkit to launch with: only `starter` is supported at the time"
         ]
 
+    let selectedToolkit =
+            case selectToolkit of
+                "starter" -> Starter
+                _ -> defaultToolkit
+
     in
-        if (genFromFile /= "") then GenerateToolkitFrom genFromFile
-        else if (nwFromFile /= "") then LoadNetworkFrom nwFromFile
-        else if (selectToolkit /= "") then SelectToolkit selectToolkit
-        else JustRun
+        if (genFromFile /= "") then GenerateToolkitFrom genFromFile selectedToolkit
+        else if (nwFromFile /= "") then LoadNetworkFrom nwFromFile selectedToolkit
+        else JustRun selectedToolkit
 
 
-generateToolkit :: forall repr. CG.CodegenRepr repr => CG.Options repr -> Id.ToolkitR -> String -> Effect Unit
+generateToolkit :: forall repr. FCG.CodegenRepr repr => FCG.Options repr -> Id.ToolkitR -> String -> Effect Unit
 generateToolkit options toolkitName sourcePath = do
     toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
     let eParsedNdf = P.runParser toolkitText NdfFile.parser
@@ -217,13 +239,13 @@ generateToolkit options toolkitName sourcePath = do
             if not $ NdfFile.hasFailedLines parsedNdf then do
                 --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
                 let fileMap = NdfFile.codegen toolkitName options parsedNdf
-                traverse_ writeCodegenFile $ (Map.toUnfoldable fileMap :: Array (CG.FilePath /\ CG.FileContent))
+                traverse_ writeCodegenFile $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else
             Console.log $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
-writeCodegenFile :: CG.FilePath /\ CG.FileContent -> Effect Unit
-writeCodegenFile (CG.FilePath filePath /\ CG.FileContent fileContent) = do
+writeCodegenFile :: MCG.FilePath /\ MCG.FileContent -> Effect Unit
+writeCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
     let
         outputFilePath = "./src/Demo/Toolkit/Starter/" <> filePath
         outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath

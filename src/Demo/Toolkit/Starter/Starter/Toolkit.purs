@@ -1,4 +1,4 @@
-module Toolkit.Toolkit where
+module Starter.Toolkit where
 
 import Prelude ((#))
 import Effect (Effect)
@@ -25,8 +25,8 @@ import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
 import Demo.Toolkit.Starter.Repr (StarterRepr)
 
-type ToolkitFamilies :: Families
-type ToolkitFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
+type StarterFamilies :: Families
+type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
   :> Simple.Color.F
   :> Simple.Letter.F
   :> Simple.Sum.F
@@ -40,8 +40,8 @@ type ToolkitFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Sim
   :> Spreads.Xsshape.F
   :> TNil
 
-toolkit :: Toolkit ToolkitFamilies StarterRepr Effect
-toolkit = Toolkit.empty (Id.toolkitR "Toolkit") # Toolkit.register Spreads.Xsshape.family
+toolkit :: Toolkit StarterFamilies StarterRepr Effect
+toolkit = Toolkit.empty (Id.toolkitR "Starter") # Toolkit.register Spreads.Xsshape.family
   # Toolkit.register Spreads.Cspread.family
   # Toolkit.register Spreads.Vspread.family
   # Toolkit.register Spreads.Nspread.family
