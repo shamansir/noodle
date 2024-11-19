@@ -11,3 +11,7 @@ starter 0.2 0.1
 : simple : bang :: <> => bang:Bang
 : p5 : shape :: <> => shape:Shape {s/circle}
 : p5 : sketch :: <shape:Shape {s/circle} -> wavescount:Number {#/5.0} -> startcolor:Color {c/00000} -> endcolor:Color {c/143636} -> xspasing:Number {#/16} -> amplitude:Number {#/75} -> period:Number {#/500}> => <>
+: spreads : nspread :: <min:Number {#/-150.0} -> max:Number {#/150.0} -> count:Number {#/26}> => spread:SpreadN
+: spreads : vspread :: <x:SpreadN -> y:SpreadN> => spread:SpreadV
+: spreads : cspread :: <red:SpreadN -> green:SpreadN -> blue:SpreadN -> alpha:SpreadN> => color:SpreadC
+: spreads : xsshape :: <pos:SpreadN -> color:SpreadC -> size:SpreadV -> angle:SpreadN> => shape:SpreadS

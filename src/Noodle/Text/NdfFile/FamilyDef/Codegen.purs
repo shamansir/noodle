@@ -39,8 +39,22 @@ class TypeCodegen a where
   mkType :: a -> CST.Type Void
 
 
-instance Partial => ValueCodegen Unit where
-  mkExpression = const $ exprIdent "unit"
+instance Partial => ValueCodegen Unit    where mkExpression = const $ exprIdent "unit"
+instance Partial => ValueCodegen Int     where mkExpression = exprInt
+instance Partial => ValueCodegen Number  where mkExpression = exprNumber
+instance Partial => ValueCodegen Boolean where mkExpression = exprBool
+instance Partial => ValueCodegen Char    where mkExpression = exprChar
+instance Partial => ValueCodegen String  where mkExpression = exprString
+instance ( Partial, ValueCodegen a ) => ValueCodegen (Array a)
+  where mkExpression items = exprArray $ mkExpression <$> items
+instance
+  ( Partial, ValueCodegen a, ValueCodegen b )
+  => ValueCodegen (a /\ b)
+  where
+  mkExpression (a /\ b) =
+    exprOp (mkExpression a)
+      [ binaryOp "/\\" $ mkExpression b
+      ] -- FIXME: relies on the imported operator
 
 
 instance (Partial, ValueCodegen a) => ValueCodegen (Maybe a) where

@@ -19,6 +19,10 @@ import StarterTk.Simple.Log as Simple.Log
 import StarterTk.P5.Shape as P5.Shape
 import StarterTk.P5.Sketch as P5.Sketch
 import StarterTk.Simple.Gennum as Simple.Gennum
+import StarterTk.Spreads.Nspread as Spreads.Nspread
+import StarterTk.Spreads.Vspread as Spreads.Vspread
+import StarterTk.Spreads.Cspread as Spreads.Cspread
+import StarterTk.Spreads.Xsshape as Spreads.Xsshape
 import Demo.Toolkit.Starter.Repr (StarterRepr)
 
 type ToolkitFamilies :: Families
@@ -30,10 +34,18 @@ type ToolkitFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Sim
   :> P5.Shape.F
   :> P5.Sketch.F
   :> Simple.Gennum.F
+  :> Spreads.Nspread.F
+  :> Spreads.Vspread.F
+  :> Spreads.Cspread.F
+  :> Spreads.Xsshape.F
   :> TNil
 
 toolkit :: Toolkit ToolkitFamilies StarterRepr Effect
-toolkit = Toolkit.empty (Id.toolkitR "Toolkit") # Toolkit.register Simple.Gennum.family
+toolkit = Toolkit.empty (Id.toolkitR "Toolkit") # Toolkit.register Spreads.Xsshape.family
+  # Toolkit.register Spreads.Cspread.family
+  # Toolkit.register Spreads.Vspread.family
+  # Toolkit.register Spreads.Nspread.family
+  # Toolkit.register Simple.Gennum.family
   # Toolkit.register P5.Sketch.family
   # Toolkit.register P5.Shape.family
   # Toolkit.register Simple.Log.family

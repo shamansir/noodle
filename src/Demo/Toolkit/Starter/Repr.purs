@@ -19,7 +19,7 @@ import Tidy.Codegen
     ( exprCtor, exprApp, exprIdent, exprBool, exprChar, exprNumber, exprRecord, exprInt, exprArray, exprOp
     , binaryOp
     , typeCtor, typeApp, typeOp
-    , declImport, declImportAs, importOp
+    , declImport, declImportAs, importOp, importTypeOp
     )
 
 import Noodle.Repr
@@ -49,6 +49,8 @@ data StarterRepr
     | VShape Shape
     | VSpreadNum (Spread Number)
     | VSpreadVec (Spread (Number /\ Number))
+    | VSpreadCol (Spread Color)
+    | VSpreadShp (Spread Shape)
 
 
 data Any = Any StarterRepr
@@ -98,6 +100,8 @@ instance CodegenRepr StarterRepr where
                                 [ typeOp (typeCtor "Number")
                                     [ binaryOp "/\\" $ typeCtor "Number" ]
                                 ]
+                "SpreadC" -> typeApp (typeCtor "PR.Spread") [ typeCtor "PR.Color" ]
+                "SpreadS" -> typeApp (typeCtor "PR.Spread") [ typeCtor "PR.Shape" ]
                 _ -> typeCtor "Unit"
     defaultFor = const $ unsafePartial $ \mbType ->
             case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
@@ -111,6 +115,8 @@ instance CodegenRepr StarterRepr where
                 Just "Shape"   -> mkExpression (fallback :: Shape)
                 Just "SpreadN" -> mkExpression (fallback :: Spread Number)
                 Just "SpreadV" -> mkExpression (fallback :: Spread (Number /\ Number))
+                Just "SpreadC" -> mkExpression (fallback :: Spread Color)
+                Just "SpreadS" -> mkExpression (fallback :: Spread Shape)
                 _ -> exprCtor "PR.VNone"
     valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
             -- case NT.unwrap <$> mbType of
@@ -173,24 +179,12 @@ instance ValueCodegen Color where
                 ]
 
 
-instance ValueCodegen (Spread Number) where
+instance ValueCodegen a => ValueCodegen (Spread a) where
     mkExpression = unsafePartial $ case _ of
         Spread items ->
             exprApp (exprCtor "PR.Spread")
-                [ exprArray $ exprNumber <$> items
+                [ exprArray $ mkExpression <$> items
                 ]
-
-
-instance ValueCodegen (Spread (Number /\ Number)) where
-    mkExpression = unsafePartial $ case _ of
-        Spread items ->
-            exprApp (exprCtor "PR.Spread")
-                [ exprArray $ exprPair <$> items
-                ]
-        where
-            exprPair (n1 /\ n2) = unsafePartial $
-                exprOp (exprNumber n1)
-                    [ binaryOp "/\\" $ exprNumber n2 ]
 
 
 shapeFromString :: String -> Maybe Shape
@@ -219,7 +213,7 @@ options = Options $
             Just src -> "\n\n[[ " <> src.line <> " ]] (#" <> show src.lineIndex <> ")"
             Nothing -> ""
     , imports : unsafePartial $
-        [ declImport "Data.Tuple.Nested" [ importOp "/\\"]
+        [ declImport "Data.Tuple.Nested" [ importOp "/\\", importTypeOp "/\\" ]
         , declImportAs "Demo.Toolkit.Starter.Repr" [] "PR"
         ]
     }
@@ -243,3 +237,5 @@ instance ToRepr Shape   StarterRepr where toRepr = Just <<< wrap <<< VShape
 instance ToRepr Color   StarterRepr where toRepr = Just <<< wrap <<< VColor
 instance ToRepr (Spread Number) StarterRepr where toRepr = Just <<< wrap <<< VSpreadNum
 instance ToRepr (Spread (Number /\ Number)) StarterRepr where toRepr = Just <<< wrap <<< VSpreadVec
+instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpreadCol
+instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
