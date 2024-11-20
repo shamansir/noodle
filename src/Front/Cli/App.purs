@@ -101,10 +101,10 @@ run :: Effect Unit
 run = runWith =<< OA.execParser opts
   where -- FIXME: why it shows `run.js` in the info?
     opts = OA.info (options <**> OA.helper)
-      ( OA.fullDesc
+     (  OA.fullDesc
      <> OA.progDesc "Noodle Terminal Interface"
      <> OA.header "noodle - Noodle IDE"
-      )
+     )
 
 
 runWith :: Options -> Effect Unit
@@ -112,11 +112,11 @@ runWith =
     case _ of
         JustRun tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface ( Proxy :: _ Unit ) Starter.toolkit $ pure unit
+                Starter -> runBlessedInterface unit Starter.toolkit $ pure unit
                 User _  -> pure unit
         LoadNetworkFrom fromFile tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface ( Proxy :: _ Unit ) Starter.toolkit $ postFix fromFile
+                Starter -> runBlessedInterface unit Starter.toolkit $ postFix fromFile
                 User _  -> pure unit
         GenerateToolkitFrom fromFile tkKey -> do
             case tkKey of
@@ -144,46 +144,45 @@ runWith =
 
 
 runBlessedInterface
-    :: forall s fs r m
-     . Proxy s
-    -> Toolkit fs r m
-    -> BlessedOp (State s fs r m) Effect
+    :: forall s fs r
+     . s
+    -> Toolkit fs r Effect
+    -> BlessedOp (State s fs r Effect) Effect
     -> Effect Unit
-runBlessedInterface ps toolkit andThen =
+runBlessedInterface pState toolkit andThen = do
+    (initialState :: State s fs r Effect) <- State.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
-            hMsg <- Blessed.impair2 handleMessage
-            hCon <- Blessed.impair2 handleConnection
-            hErr <- Blessed.impair1 handleError
-            hStart <- Blessed.impair1 handleStart
-            wss <- liftEffect $ WSS.start
-                { handleMessage : hMsg
-                , handleConnection : hCon
-                , handleError : hErr
-                , handleStart : hStart
-                }
-            State.modify_ $ State.informWsInitialized wss
-            mainScreen >~ Screen.render
-            -- productsCallback <- Blessed.impair1 storeProducts
-            --liftEffect $ runAff_ productsCallback CAI.requestProducts
-            andThen
+        hMsg <- Blessed.impair2 handleMessage
+        hCon <- Blessed.impair2 handleConnection
+        hErr <- Blessed.impair1 handleError
+        hStart <- Blessed.impair1 handleStart
+        wss <- liftEffect $ WSS.start
+            { handleMessage : hMsg
+            , handleConnection : hCon
+            , handleError : hErr
+            , handleStart : hStart
+            }
+        State.modify_ $ State.informWsInitialized wss
+        mainScreen >~ Screen.render
+        -- productsCallback <- Blessed.impair1 storeProducts
+        --liftEffect $ runAff_ productsCallback CAI.requestProducts
+        andThen
     where
-        initialState :: State s fs r m
-        initialState = State.init ps toolkit
         handleStart :: Unit -> BlessedOp _ Effect
         handleStart _ =  do
             -- FIXME: State.modify_ State.informWsListening
             -- FIXME: WsButton.updateStatus $ WsButton.Waiting
             mainScreen >~ Screen.render
-        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State s fs r m) Effect
+        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State s fs r Effect) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State s fs r m) Effect
+        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State s fs r Effect) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
-        handleError :: Error -> BlessedOp (State s fs r m) Effect
+        handleError :: Error -> BlessedOp (State s fs r Effect) Effect
         handleError _ = pure unit
         {- FIXME
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect

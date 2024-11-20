@@ -9,6 +9,7 @@ import Data.Map (empty, lookup, insert, size, member, update) as Map
 import Noodle.Id (PatchR)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Patch (Patch)
+import Noodle.Patch (id) as Patch
 import Noodle.Toolkit.Families (Families)
 
 
@@ -40,12 +41,11 @@ hasPatch id = patches >>> Map.member id
 
 addPatch
     :: forall s fs r m
-    .  PatchR
-    -> Patch s fs r m
+    .  Patch s fs r m
     -> Network s fs r m
     -> Network s fs r m
-addPatch id patch (Network tk patches) =
-    Network tk $ Map.insert id patch $ patches
+addPatch patch (Network tk patches) =
+    Network tk $ Map.insert (Patch.id patch) patch $ patches
 
 
 withPatch

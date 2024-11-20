@@ -3,10 +3,12 @@ module Cli.State where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (empty) as Map
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Proxy (Proxy)
 
@@ -14,9 +16,10 @@ import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
-import Noodle.Network (init) as Network
+import Noodle.Network (init, addPatch) as Network
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families)
+import Noodle.Patch (make, id) as Patch
 
 import Cli.WsServer as WSS
 
@@ -89,39 +92,41 @@ newtype LinkState =
 -}
 
 
-init :: forall s fs r m. Proxy s -> Toolkit fs r m -> State s fs r m
-init _ toolkit =
-    { network : Network.init toolkit
-    , currentPatch : Nothing -- TODO: Just (0 /\ patchIdFromIndex 0)
-    , wsServer : Nothing
-    , lastShift : { x : 0, y : 0 }
-    -- TODO, , lastKeys :
-    -- TODO,     { nodeBox : Key.nodeBox
-    -- TODO,     , inputsBox : Key.inputsBox
-    -- TODO,     , outputsBox : Key.outputsBox
-    -- TODO,     , infoBox : Key.infoBox
-    -- TODO,     , removeButton : Key.removeButton
-    -- TODO,     }
-    -- TODO, , lastClickedOutput : Nothing
-    -- TODO, , lastLink : Nothing
-    -- TODO, , linksFrom : Map.empty
-    -- TODO, , linksTo : Map.empty
-    , nodeKeysMap : Map.empty
-    , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
-    -- , commandLog : NdfFile.init "hydra" 0.1
-    -- , program : Map.empty
-    -- , innerStates : Map.empty
-    -- , nodes : Hydra.noInstances
-    , onOff :
-        { commandBox : false
-        , hydraCode : false
-        , fullInfo : false
+init :: forall s fs r m. MonadEffect m => s -> Toolkit fs r m -> m (State s fs r m)
+init state toolkit = do
+    firstPatch <- Patch.make "Patch 1" state
+    pure
+        { network : Network.init toolkit # Network.addPatch firstPatch
+        , currentPatch : Just { index : 0, id : Patch.id firstPatch }
+        , wsServer : Nothing
+        , lastShift : { x : 0, y : 0 }
+        -- TODO, , lastKeys :
+        -- TODO,     { nodeBox : Key.nodeBox
+        -- TODO,     , inputsBox : Key.inputsBox
+        -- TODO,     , outputsBox : Key.outputsBox
+        -- TODO,     , infoBox : Key.infoBox
+        -- TODO,     , removeButton : Key.removeButton
+        -- TODO,     }
+        -- TODO, , lastClickedOutput : Nothing
+        -- TODO, , lastLink : Nothing
+        -- TODO, , linksFrom : Map.empty
+        -- TODO, , linksTo : Map.empty
+        , nodeKeysMap : Map.empty
+        , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
+        -- , commandLog : NdfFile.init "hydra" 0.1
+        -- , program : Map.empty
+        -- , innerStates : Map.empty
+        -- , nodes : Hydra.noInstances
+        , onOff :
+            { commandBox : false
+            , hydraCode : false
+            , fullInfo : false
+            }
+        -- , editors : Map.empty
+        -- , knownGlslFunctions : Glsl.knownFns
+        -- , linkWasMadeHack : false
+        , locations : Map.empty
         }
-    -- , editors : Map.empty
-    -- , knownGlslFunctions : Glsl.knownFns
-    -- , linkWasMadeHack : false
-    , locations : Map.empty
-    }
 
 
 informWsInitialized :: forall s fs r m. WSS.WebSocketServer -> State s fs r m -> State s fs r m
