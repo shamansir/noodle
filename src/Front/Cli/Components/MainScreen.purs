@@ -68,7 +68,7 @@ component initialState =
         ]
 
         [ PatchesListbar.component $ Network.patches $ initialState.network
-        , PatchBox.component initialState.ptk $ State.families initialState
+        , PatchBox.component $ State.families initialState
         , AddPatchButton.component
         -- , LoadFileButton.component
         -- , CommandLogButton.component

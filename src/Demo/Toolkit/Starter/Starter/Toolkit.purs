@@ -63,5 +63,5 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Simple.Bang.family
 
 instance MarkToolkit STARTER where
-  markGroup _ group = Color.rgb 255 255 255
+  markGroup  _ group  = Color.rgb 255 255 255
   markFamily _ family = Color.rgb 255 255 255

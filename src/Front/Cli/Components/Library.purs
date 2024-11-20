@@ -3,7 +3,7 @@ module Cli.Components.Library where
 
 import Control.Monad.State as State
 
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
@@ -51,8 +51,8 @@ import Data.Text.Output.Blessed (singleLine) as T
 import Prelude
 
 
-component :: forall tk p fs r m. MarkToolkit tk => Proxy tk -> Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component ptk families =
+component :: forall tk p fs r m. MarkToolkit tk => Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
+component families =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
@@ -60,7 +60,7 @@ component ptk families =
         , Box.height $ Dimension.percents 65.0
         , Box.draggable true
         , Box.scrollable true
-        , List.items $ (T.singleLine <<< T.libraryItem ptk) <$> families
+        , List.items $ (T.singleLine <<< T.libraryItem (Proxy :: _ tk)) <$> families
         , List.mouse true
         , List.keys true
         , Box.tags true

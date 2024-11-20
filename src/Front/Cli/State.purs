@@ -29,7 +29,6 @@ import Cli.Keys (NodeBoxKey, PatchBoxKey)
 
 type State (tk :: ToolkitKey) s (fs :: Families) r m =
     { network :: Network tk s fs r m
-    , ptk :: Proxy tk
     , initPatchesFrom :: s
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
@@ -101,7 +100,6 @@ init state toolkit = do
     firstPatch <- Patch.make "Patch 1" state
     pure
         { network : Network.init toolkit # Network.addPatch firstPatch
-        , ptk : (Proxy :: _ tk)
         , currentPatch : Just { index : 0, id : Patch.id firstPatch }
         , initPatchesFrom : state
         , wsServer : Nothing

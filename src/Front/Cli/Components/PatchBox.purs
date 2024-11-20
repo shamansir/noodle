@@ -29,8 +29,8 @@ import Noodle.Toolkit (class MarkToolkit)
 -- import Cli.Components.OutputIndicator as OutputIndicator
 
 
-component :: forall tk p fs r m. MarkToolkit tk => Proxy tk -> Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component ptk families =
+component :: forall tk p fs r m. MarkToolkit tk => Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
+component families =
     B.boxAnd Key.patchBox
 
         [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
@@ -43,7 +43,7 @@ component ptk families =
         , Style.patchBoxBorder
         ]
 
-        [ Library.component ptk families
+        [ Library.component families
         -- , InputIndicator.component
         -- , OutputIndicator.component
         ]
