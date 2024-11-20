@@ -28,7 +28,6 @@ import Blessed.UI.Base.Screen.Method as Screen
 import Noodle.Patch (Patch)
 import Noodle.Patch (name) as Patch
 import Noodle.Id (PatchR) as Id
-import Noodle.Ui.Cli.Palette as Palette
 
 import Cli.Keys as Key
 import Cli.State (State)

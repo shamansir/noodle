@@ -55,7 +55,7 @@ data Patch state (families :: Families) repr m =
     Links -- use `Channel` as well?
 
 
-make :: forall state families repr m. MonadEffect m => Id.PatchName -> state -> m (Patch state families repr m)
+make :: forall state families repr mo mi. MonadEffect mo => Id.PatchName -> state -> mo (Patch state families repr mi)
 make patchName state = liftEffect $ do
   uniqueHash <- UH.generate
   let patchId = Id.patchR uniqueHash
@@ -70,7 +70,7 @@ make patchName state = liftEffect $ do
       Links.init
 
 
-fromToolkit :: forall state families repr m. MonadEffect m => Toolkit families repr m -> Id.PatchName -> state -> m (Patch state families repr m)
+fromToolkit :: forall state families repr mo mi. MonadEffect mo => Toolkit families repr mi -> Id.PatchName -> state -> mo (Patch state families repr mi)
 fromToolkit _ = make
 
 
@@ -125,22 +125,22 @@ registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
 
 
 connect
-    :: forall state repr m families fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
-     . Wiring m
+    :: forall state repr mo mi families fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => FromRepr repr doutA
     => ToRepr dinB repr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
-    => RegisteredFamily (F fA stateA isA osA repr m) families
-    => RegisteredFamily (F fB stateB isB osB repr m) families
+    => RegisteredFamily (F fA stateA isA osA repr mi) families
+    => RegisteredFamily (F fB stateB isB osB repr mi) families
     => Id.Outlet oA
     -> Id.Inlet iB
-    -> Node fA stateA isA osA repr m
-    -> Node fB stateB isB osB repr m
-    -> Patch state families repr m
-    -> m (Patch state families repr m /\ Link fA fB oA iB)
+    -> Node fA stateA isA osA repr mi
+    -> Node fB stateB isB osB repr mi
+    -> Patch state families repr mi
+    -> mo (Patch state families repr mi /\ Link fA fB oA iB)
 connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) = do
     link <- Node.connect outletA inletB nodeA nodeB
     let
@@ -151,11 +151,11 @@ connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) 
 
 
 disconnect
-    :: forall state repr m families fA fB oA iB
-     . Wiring m
+    :: forall state repr mo mi families fA fB oA iB
+     . Wiring mo
     => Link fA fB oA iB
-    -> Patch state families repr m
-    -> m (Patch state families repr m /\ Boolean)
+    -> Patch state families repr mi
+    -> mo (Patch state families repr mi /\ Boolean)
 disconnect link (Patch name id chState nodes rawNodes links) = do
     _ <- liftEffect $ Link.cancel link
     let

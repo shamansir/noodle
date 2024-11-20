@@ -71,19 +71,19 @@ family _ = (Id.Family :: _ f)
 
 
 make
-    :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) repr m
+    :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) repr mo mi
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
     => ToReprRow isrl is Id.InletR repr => ToReprRow osrl os Id.OutletR repr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
-    => MonadEffect m
+    => MonadEffect mo
     => Id.Family f
     -> state
     -> Shape inlets outlets
     -> Record is
     -> Record os
-    -> Process state is os repr m
-    -> m (Node f state is os repr m)
+    -> Process state is os repr mi
+    -> mo (Node f state is os repr mi)
 make family state shape inletsRec outletsRec process =
     make_
         (Id.familyR family)
@@ -95,29 +95,29 @@ make family state shape inletsRec outletsRec process =
 
 
 make_ -- TODO: private
-    :: forall f state (is :: Row Type) (os :: Row Type) repr m
-     . MonadEffect m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr mo mi
+     . MonadEffect mo
     => Id.FamilyR
     -> state
     -> Raw.Shape
     -> Raw.InletsValues repr
     -> Raw.OutletsValues repr
-    -> Process state is os repr m
-    -> m (Node f state is os repr m)
+    -> Process state is os repr mi
+    -> mo (Node f state is os repr mi)
 make_ family state rawShape inletsMap outletsMap process = do
     _makeWithFn family state rawShape inletsMap outletsMap $ Fn.make (Id.family family) process
 
 
 _makeWithFn -- TODO: private
-    :: forall f state (is :: Row Type) (os :: Row Type) repr m
-     . MonadEffect m
+    :: forall f state (is :: Row Type) (os :: Row Type) repr mo mi
+     . MonadEffect mo
     => Id.FamilyR
     -> state
     -> Raw.Shape
     -> Raw.InletsValues repr
     -> Raw.OutletsValues repr
-    -> Fn state is os repr m
-    -> m (Node f state is os repr m)
+    -> Fn state is os repr mi
+    -> mo (Node f state is os repr mi)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeR_ family uniqueHash
@@ -127,6 +127,7 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 
 {- Running -}
 
+-- FIXME: Try distinguishing outer monad from inner one here as well (as we did for other methods)
 
 -- TODO: private
 _runOnInletUpdates
@@ -236,31 +237,31 @@ subscribeChangesRec (Node _ _ tracker _ _) =
 {- Get Data -}
 
 
-inlets :: forall f state is isrl os repr m. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m -> m (Record is)
+inlets :: forall f state is isrl os repr mo mi. MonadEffect mo => FromReprRow isrl is repr => Node f state is os repr mi -> mo (Record is)
 inlets node = liftEffect $ Protocol.getRecInlets $ _getProtocol node
 
 
-outlets :: forall f state is os osrl repr m. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m -> m (Record os)
+outlets :: forall f state is os osrl repr mo mi. MonadEffect mo => FromReprRow osrl os repr => Node f state is os repr mi -> mo (Record os)
 outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
 
 
-inletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Raw.InletsValues repr)
+inletsRaw :: forall f state is os repr mo mi. MonadEffect mo => Node f state is os repr mi -> mo (Raw.InletsValues repr)
 inletsRaw node = liftEffect $ Protocol.getInlets $ _getProtocol node
 
 
-outletsRaw :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m (Raw.OutletsValues repr)
+outletsRaw :: forall f state is os repr mo mi. MonadEffect mo => Node f state is os repr mi -> mo (Raw.OutletsValues repr)
 outletsRaw node = liftEffect $ Protocol.getOutlets $ _getProtocol node
 
 
-inletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy is
+inletsRow :: forall f state is os repr m. Node f state is os repr m -> Proxy is
 inletsRow _ = Proxy :: _ is
 
 
-outletsRow :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> Proxy os
+outletsRow :: forall f state is os repr m. Node f state is os repr m -> Proxy os
 outletsRow _ = Proxy :: _ os
 
 
-state :: forall f state is os repr m. MonadEffect m => Node f state is os repr m -> m state
+state :: forall f state is os repr mo mi. MonadEffect mo => Node f state is os repr mi -> mo state
 state node = liftEffect $ Protocol.getState $ _getProtocol node
 
 
@@ -273,43 +274,43 @@ infixr 6 getFromInletsFlipped as <=#
 infixr 6 getFromOutletsFlipped as <=@
 
 
-atInlet :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr m -> m din
+atInlet :: forall f i state is is' isrl os repr mo mi din. MonadEffect mo => FromReprRow isrl is repr => HasInlet is is' i din => Id.Inlet i -> Node f state is os repr mi -> mo din
 atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
 
 
-atInletFlipped :: forall f i state is is' isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => HasInlet is is' i din => Node f state is os repr m -> Id.Inlet i -> m din
+atInletFlipped :: forall f i state is is' isrl os repr mo mi din. MonadEffect mo => FromReprRow isrl is repr => HasInlet is is' i din => Node f state is os repr mi -> Id.Inlet i -> mo din
 atInletFlipped = flip atInlet
 
 
-atOutlet :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr m -> m dout
+atOutlet :: forall f o state is os os' osrl repr mo mi dout. MonadEffect mo => FromReprRow osrl os repr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os repr mi -> mo dout
 atOutlet _ = getFromOutlets $ Record.get (Proxy :: _ o)
 
 
-atOutletFlipped :: forall f o state is os os' osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => HasOutlet os os' o dout => Node f state is os repr m -> Id.Outlet o -> m dout
+atOutletFlipped :: forall f o state is os os' osrl repr mo mi dout. MonadEffect mo => FromReprRow osrl os repr => HasOutlet os os' o dout => Node f state is os repr mi -> Id.Outlet o -> mo dout
 atOutletFlipped = flip atOutlet
 
 
-atInletR :: forall f state is os repr m. MonadEffect m => Id.InletR -> Node f state is os repr m -> m (Maybe repr)
+atInletR :: forall f state is os repr mo mi. MonadEffect mo => Id.InletR -> Node f state is os repr mi -> mo (Maybe repr)
 atInletR iid node = inletsRaw node <#> Map.lookup iid
 
 
-atOutletR :: forall f state is os repr m. MonadEffect m => Id.OutletR -> Node f state is os repr m -> m (Maybe repr)
+atOutletR :: forall f state is os repr mo mi. MonadEffect mo => Id.OutletR -> Node f state is os repr mi -> mo (Maybe repr)
 atOutletR oid node = outletsRaw node <#> Map.lookup oid
 
 
-getFromInlets :: forall f state is isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr m -> m din
+getFromInlets :: forall f state is isrl os repr mo mi din. MonadEffect mo => FromReprRow isrl is repr => (Record is -> din) -> Node f state is os repr mi -> mo din
 getFromInlets getter node = inlets node <#> getter
 
 
-getFromInletsFlipped :: forall f state is isrl os repr m din. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr m -> (Record is -> din) -> m din
+getFromInletsFlipped :: forall f state is isrl os repr mo mi din. MonadEffect mo => FromReprRow isrl is repr => Node f state is os repr mi -> (Record is -> din) -> mo din
 getFromInletsFlipped = flip getFromInlets
 
 
-getFromOutlets :: forall f state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr m -> m dout
+getFromOutlets :: forall f state is os osrl repr mo mi dout. MonadEffect mo => FromReprRow osrl os repr => (Record os -> dout) -> Node f state is os repr mi -> mo dout
 getFromOutlets getter node = outlets node <#> getter
 
 
-getFromOutletsFlipped :: forall f state is os osrl repr m dout. MonadEffect m => FromReprRow osrl os repr => Node f state is os repr m -> (Record os -> dout) -> m dout
+getFromOutletsFlipped :: forall f state is os osrl repr mo mi dout. MonadEffect mo => FromReprRow osrl os repr => Node f state is os repr mi -> (Record os -> dout) -> mo dout
 getFromOutletsFlipped = flip getFromOutlets
 
 
@@ -320,31 +321,31 @@ infixr 6 sendInOp as #->
 infixr 6 sendOutOp as @->
 
 
-sendIn :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os repr m -> m Unit
+sendIn :: forall f i state is is' os repr mo mi din. MonadEffect mo => ToRepr din repr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os repr mi -> mo Unit
 sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 
-sendInOp :: forall f i state is is' os repr m din. MonadEffect m => ToRepr din repr => HasInlet is is' i din  => Node f state is os repr m -> Id.Inlet i /\ din -> m Unit
+sendInOp :: forall f i state is is' os repr mo mi din. MonadEffect mo => ToRepr din repr => HasInlet is is' i din  => Node f state is os repr mi -> Id.Inlet i /\ din -> mo Unit
 sendInOp node (input /\ din) = sendIn input din node
 
 
-sendOut :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os repr m -> m Unit
+sendOut :: forall f o state is os os' repr mo mi dout. MonadEffect mo => ToRepr dout repr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os repr mi -> mo Unit
 sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
 
 
-sendOutOp :: forall f o state is os os' repr m dout. MonadEffect m => ToRepr dout repr => HasOutlet os os' o dout => Node f state is os repr m -> Id.Outlet o /\ dout -> m Unit
+sendOutOp :: forall f o state is os os' repr mo mi dout. MonadEffect mo => ToRepr dout repr => HasOutlet os os' o dout => Node f state is os repr mi -> Id.Outlet o /\ dout -> mo Unit
 sendOutOp node (output /\ dout) = sendOut output dout node
 
 
-unsafeSendIn :: forall f state is os repr m. MonadEffect m => Id.InletR -> repr -> Node f state is os repr m -> m Unit
+unsafeSendIn :: forall f state is os repr mo mi. MonadEffect mo => Id.InletR -> repr -> Node f state is os repr mi -> mo Unit
 unsafeSendIn input repr = liftEffect <<< Protocol._unsafeSendIn input repr <<< _getProtocol
 
 
-unsafeSendOut :: forall f state is os repr m. MonadEffect m => Id.OutletR -> repr -> Node f state is os repr m -> m Unit
+unsafeSendOut :: forall f state is os repr mo mi. MonadEffect mo => Id.OutletR -> repr -> Node f state is os repr mi -> mo Unit
 unsafeSendOut output repr = liftEffect <<< Protocol._unsafeSendOut output repr <<< _getProtocol
 
 
-modifyState :: forall f state is os repr m. MonadEffect m => (state -> state) -> Node f state is os repr m -> m Unit
+modifyState :: forall f state is os repr mo mi. MonadEffect mo => (state -> state) -> Node f state is os repr mi -> mo Unit
 modifyState f = liftEffect <<< Protocol.modifyState f <<< _getProtocol
 
 
@@ -355,8 +356,8 @@ infixr 6 connectOp as <~>
 
 
 connect
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr m
-     . Wiring m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr mo mi
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => FromRepr repr doutA
@@ -365,32 +366,32 @@ connect
     => HasInlet isB isB' iB dinB
     => Id.Outlet oA
     -> Id.Inlet iB
-    -> Node fA stateA isA osA repr m
-    -> Node fB stateB isB osB repr m
-    -> m (Link fA fB oA iB)
+    -> Node fA stateA isA osA repr mi
+    -> Node fB stateB isB osB repr mi
+    -> mo (Link fA fB oA iB)
 connect outletA inletB nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
 
 
 connectOp
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr m
-     . Wiring m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' repr mi mo
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => FromRepr repr doutA
     => ToRepr dinB repr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
-    => Node fA stateA isA osA repr m /\ Id.Outlet oA
-    -> Node fB stateB isB osB repr m /\ Id.Inlet iB
-    -> m (Link fA fB oA iB)
+    => Node fA stateA isA osA repr mi /\ Id.Outlet oA
+    -> Node fB stateB isB osB repr mi /\ Id.Inlet iB
+    -> mo (Link fA fB oA iB)
 connectOp (nodeA /\ outletA) (nodeB /\ inletB) =
     connect outletA inletB nodeA nodeB
 
 
 connectBySameRepr
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m repr
-     . Wiring m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' mo mi repr
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => HasOutlet osA osA' oA doutA
@@ -400,16 +401,16 @@ connectBySameRepr
     => Proxy repr -- FIXME: Proxy is not needed anymore
     -> Id.Outlet oA
     -> Id.Inlet iB
-    -> Node fA stateA isA osA repr m
-    -> Node fB stateB isB osB repr m
-    -> m (Link fA fB oA iB)
+    -> Node fA stateA isA osA repr mi
+    -> Node fB stateB isB osB repr mi
+    -> mo (Link fA fB oA iB)
 connectBySameRepr _ outletA inletB nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
 
 
 connectByDistinctRepr
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
-     . Wiring m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB mo mi
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => FromRepr reprA doutA
@@ -419,17 +420,17 @@ connectByDistinctRepr
     => Id.Outlet oA
     -> Id.Inlet iB
     -> (doutA -> dinB)
-    -> Node fA stateA isA osA reprA m
-    -> Node fB stateB isB osB reprB m
-    -> m (Link fA fB oA iB)
+    -> Node fA stateA isA osA reprA mi
+    -> Node fB stateB isB osB reprB mi
+    -> mo (Link fA fB oA iB)
 connectByDistinctRepr outletA inletB convertF nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (Repr.inbetween convertF) nodeA nodeB <#> Link.fromRaw
 
 
 
 connectAlike
-    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB m
-     . Wiring m
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' reprA reprB mo mi
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => HasFallback reprB
@@ -439,16 +440,16 @@ connectAlike
     => HasInlet isB isB' iB d
     => Id.Outlet oA
     -> Id.Inlet iB
-    -> Node fA stateA isA osA reprA m
-    -> Node fB stateB isB osB reprB m
-    -> m (Link fA fB oA iB)
+    -> Node fA stateA isA osA reprA mi
+    -> Node fB stateB isB osB reprB mi
+    -> mo (Link fA fB oA iB)
 connectAlike outletA inletB nodeA nodeB =
     unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (Repr.inbetween' (Proxy :: _ d)) nodeA nodeB <#> Link.fromRaw
 
 
 unsafeConnect
-    :: forall fA fB stateA stateB isA isB osA osB reprA reprB m
-     . Wiring m
+    :: forall fA fB stateA stateB isA isB osA osB reprA reprB mo mi
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => HasFallback reprA
@@ -456,9 +457,9 @@ unsafeConnect
     => Id.OutletR
     -> Id.InletR
     -> (reprA -> reprB)
-    -> Node fA stateA isA osA reprA m
-    -> Node fB stateB isB osB reprB m
-    -> m Raw.Link
+    -> Node fA stateA isA osA reprA mi
+    -> Node fB stateB isB osB reprB mi
+    -> mo Raw.Link
 unsafeConnect
     outletA
     inletB
@@ -468,7 +469,7 @@ unsafeConnect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn :: reprB -> mo Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
@@ -482,16 +483,16 @@ unsafeConnect
 
 
 disconnect
-    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB m
-     . Wiring m
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB mo mi
+     . Wiring mo
     => IsSymbol fA
     => IsSymbol fB
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => Link fA fB oA iB
-    -> Node fA stateA isA osA reprA m
-    -> Node fB stateB isB osB reprB m
-    -> m Boolean
+    -> Node fA stateA isA osA reprA mi
+    -> Node fB stateB isB osB reprB mi
+    -> mo Boolean
 disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
     if (Link.fromNode link == nodeAId) && (Link.toNode link == nodeBId) then
         liftEffect (Link.cancel link) >>= (const $ pure true)

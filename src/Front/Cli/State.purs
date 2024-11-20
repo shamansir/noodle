@@ -28,6 +28,7 @@ import Cli.Keys (NodeBoxKey, PatchBoxKey)
 
 type State s (fs :: Families) r m =
     { network :: Network s fs r m
+    , initPatchesFrom :: s
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { x :: Int, y :: Int }
@@ -98,6 +99,7 @@ init state toolkit = do
     pure
         { network : Network.init toolkit # Network.addPatch firstPatch
         , currentPatch : Just { index : 0, id : Patch.id firstPatch }
+        , initPatchesFrom : state
         , wsServer : Nothing
         , lastShift : { x : 0, y : 0 }
         -- TODO, , lastKeys :

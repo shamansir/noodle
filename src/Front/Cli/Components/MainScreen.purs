@@ -25,9 +25,10 @@ import Noodle.Toolkit as Toolkit
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
 
+
 -- import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesListbar as PatchesListbar
--- import Cli.Components.AddPatchButton as AddPatchButton
+import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.LoadFileButton as LoadFileButton
 -- import Cli.Components.CommandLogButton as CommandLogButton
 -- import Cli.Components.HydraCodeButton as HydraCodeButton
@@ -62,7 +63,7 @@ component initialState =
 
         [ PatchesListbar.component $ Network.patches $ initialState.network
         -- , PatchBox.component families
-        -- , AddPatchButton.component
+        , AddPatchButton.component
         -- , LoadFileButton.component
         -- , CommandLogButton.component
         -- , HydraCodeButton.component
@@ -76,6 +77,6 @@ component initialState =
         ]
 
         $ \_ -> do
-            -- PatchesListbar.selectPatch 1
+            PatchesListbar.selectPatch 1
             -- Key.library >~ Box.focus
             Key.mainScreen >~ Screen.render
