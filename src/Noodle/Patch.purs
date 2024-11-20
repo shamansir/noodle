@@ -74,6 +74,14 @@ fromToolkit :: forall state families repr m. MonadEffect m => Toolkit families r
 fromToolkit _ = make
 
 
+name :: forall state families repr m. Patch state families repr m -> Id.PatchName
+name (Patch n _ _ _ _ _) = n
+
+
+id :: forall state families repr m. Patch state families repr m -> Id.PatchR
+id (Patch _ i _ _ _ _) = i
+
+
 registerNode
     :: forall f state repr is os m families
      . IsSymbol f

@@ -24,10 +24,9 @@ import Noodle.Toolkit as Toolkit
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
--- import Cli.State (initial) as State
 
 -- import Cli.Components.PatchBox as PatchBox
--- import Cli.Components.PatchesListbar as PatchesListbar
+import Cli.Components.PatchesListbar as PatchesListbar
 -- import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.LoadFileButton as LoadFileButton
 -- import Cli.Components.CommandLogButton as CommandLogButton
@@ -48,8 +47,8 @@ import Cli.State (State)
 
 
 -- TODO: take toolkit here
-component ∷ forall p fs r m. Core.Blessed (State p fs r m)
-component =
+component ∷ forall p fs r m. State p fs r m -> Core.Blessed (State p fs r m)
+component initialState =
     B.screenAnd Key.mainScreen
 
         [ Screen.title "Noodle"
@@ -61,8 +60,7 @@ component =
                 Blessed.exit
         ]
 
-        [
-        -- [ PatchesListbar.component $ Network.patches $ unwrapN State.initial.network
+        [ PatchesListbar.component $ Network.patches $ initialState.network
         -- , PatchBox.component families
         -- , AddPatchButton.component
         -- , LoadFileButton.component

@@ -150,7 +150,7 @@ runBlessedInterface
     -> BlessedOp (State s fs r m) Effect
     -> Effect Unit
 runBlessedInterface ps toolkit andThen =
-    Blessed.runAnd (State.init ps toolkit) MainScreen.component $ do
+    Blessed.runAnd initialState (MainScreen.component initialState) $ do
             hMsg <- Blessed.impair2 handleMessage
             hCon <- Blessed.impair2 handleConnection
             hErr <- Blessed.impair1 handleError
@@ -163,10 +163,12 @@ runBlessedInterface ps toolkit andThen =
                 }
             State.modify_ $ State.informWsInitialized wss
             mainScreen >~ Screen.render
-            productsCallback <- Blessed.impair1 storeProducts
+            -- productsCallback <- Blessed.impair1 storeProducts
             --liftEffect $ runAff_ productsCallback CAI.requestProducts
             andThen
     where
+        initialState :: State s fs r m
+        initialState = State.init ps toolkit
         handleStart :: Unit -> BlessedOp _ Effect
         handleStart _ =  do
             -- FIXME: State.modify_ State.informWsListening
@@ -190,7 +192,6 @@ runBlessedInterface ps toolkit andThen =
             -- State.modify_ (_ { products = Just productsMap })
             -- Blessed.lift $ Console.log $ show $ Map.size productsMap
         -}
-        storeProducts _ = pure unit
 
 
 options :: OA.Parser Options

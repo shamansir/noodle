@@ -6,7 +6,7 @@ module Noodle.Id
     , nodeR, nodeFamily, nodeR_
     , Family(..), FamilyR
     , family, familyR, familyOf, unsafeFamilyR
-    , PatchR, PatchName, patchR
+    , PatchR, PatchName, patchR, hashOf
     , FnName
     , Link(..)
     , class FamilyGroup, groupOf, groupOfR, groupName
@@ -132,6 +132,10 @@ derive instance Ord PatchR
 
 patchR :: UniqueHash -> PatchR
 patchR hash = PatchR { hash }
+
+
+hashOf :: PatchR -> UniqueHash
+hashOf (PatchR { hash }) = hash
 
 
 class FamilyGroup x where
