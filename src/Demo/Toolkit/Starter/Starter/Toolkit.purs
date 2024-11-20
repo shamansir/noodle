@@ -41,10 +41,10 @@ type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Sim
   :> Spreads.Xsshape.F
   :> TNil
 
-foreign import data StarterKey :: ToolkitKey
+foreign import data STARTER :: ToolkitKey
 
-toolkit :: Toolkit StarterKey StarterFamilies StarterRepr Effect
-toolkit = Toolkit.empty (Proxy :: _ StarterKey) (Id.toolkitR "Starter")
+toolkit :: Toolkit STARTER StarterFamilies StarterRepr Effect
+toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Spreads.Xsshape.family
   # Toolkit.register Spreads.Cspread.family
   # Toolkit.register Spreads.Vspread.family

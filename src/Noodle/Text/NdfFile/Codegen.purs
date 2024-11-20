@@ -12,6 +12,7 @@ import Data.Newtype (unwrap, wrap, class Newtype)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (uncons, reverse, singleton) as Array
+import Data.String (toUpper) as String
 
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Toolkit (Name) as Toolkit
@@ -86,19 +87,21 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             [ declImport opts.reprAt.module_ [ importType opts.reprAt.type_ ]
             ]
         )
-        [ declTypeSignature (Id.toolkit tkName <> "Families") $ typeCtor "Families"
-        , declType (Id.toolkit tkName <> "Families") [] familiesTList
-        , declForeignData (Id.toolkit tkName <> "Key") $ typeCtor "ToolkitKey"
+        [ declTypeSignature familiesCtor $ typeCtor "Families"
+        , declType familiesCtor [] familiesTList
+        , declForeignData toolkitKey $ typeCtor "ToolkitKey"
         , declSignature "toolkit"
             $ typeApp (typeCtor "Toolkit")
-                [ typeCtor $ Id.toolkit tkName <> "Key"
-                , typeCtor $ Id.toolkit tkName <> "Families"
+                [ typeCtor toolkitKey
+                , typeCtor familiesCtor
                 , typeCtor opts.reprAt.type_
                 , typeCtor $ opts.monadAt.type_
                 ]
         , declValue "toolkit" [] registerFamilies
         ]
     where
+        toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
+        familiesCtor = Id.toolkit tkName <> "Families"
         groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
         groupAndFamily fdef = FamilyDef.group fdef /\ FamilyDef.family fdef
         definitions :: Array (GroupR /\ FamilyR)
@@ -129,7 +132,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 (exprApp (exprIdent "Toolkit.empty")
                     [ exprTyped
                         ( exprCtor "Proxy" )
-                        $ typeApp typeWildcard [ typeCtor $ Id.toolkit tkName <> "Key" ]
+                        $ typeApp typeWildcard [ typeCtor toolkitKey ]
                     , exprApp (exprIdent "Id.toolkitR")
                         [ exprString $ Id.toolkit tkName ]
                     ]

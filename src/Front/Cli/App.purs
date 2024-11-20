@@ -71,11 +71,11 @@ import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
 
-import Starter.Toolkit as Starter
+import Starter.Toolkit (toolkit) as Starter
 import Demo.Toolkit.Starter.Repr (options) as Starter
 
 
-data ToolkitSelection
+data SelectedToolkit
     -- = Hydra
     = Starter
     -- | Timbre
@@ -83,15 +83,15 @@ data ToolkitSelection
 
 
 data Options
-    = JustRun ToolkitSelection
-    | LoadNetworkFrom String ToolkitSelection
-    | GenerateToolkitFrom String ToolkitSelection
+    = JustRun SelectedToolkit
+    | LoadNetworkFrom String SelectedToolkit
+    | GenerateToolkitFrom String SelectedToolkit
 
 
 defaultOptions = JustRun defaultToolkit :: Options
 
 
-defaultToolkit = Starter
+defaultToolkit = Starter :: SelectedToolkit
 
 
 data App (tk :: ToolkitKey) pstate (fs :: Families) repr m
