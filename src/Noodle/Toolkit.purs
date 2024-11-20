@@ -12,6 +12,7 @@ import Effect.Exception (throw)
 
 import Unsafe.Coerce (unsafeCoerce)
 
+import Color (Color)
 
 import Data.Symbol (class IsSymbol)
 import Data.Array (catMaybes) as Array
@@ -24,7 +25,7 @@ import Data.Foldable (foldl)
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
-import Noodle.Id (Family, FamilyR, familyR, ToolkitR) as Id
+import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as F
@@ -33,18 +34,21 @@ import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr (class FromToRepr)
 
 
+data ToolkitKey
+
+
 type Name = Id.ToolkitR
 
 
-data Toolkit (families :: Families) repr m =
+data Toolkit (tk :: ToolkitKey) (families :: Families) repr m = -- bind to
     Toolkit
         Name
         (Map Id.FamilyR (HoldsFamily repr m))
         (Map Id.FamilyR (Raw.Family repr m))
 
 
-empty :: forall repr m. Name -> Toolkit TNil repr m
-empty name =
+empty :: forall tk repr m. Proxy tk -> Name -> Toolkit tk TNil repr m
+empty _ name =
     Toolkit
         name
         Map.empty
@@ -70,33 +74,33 @@ registerAll families toolkit =
 
 
 register
-    :: forall f state is os repr m families families'
+    :: forall tk f state is os repr m families families'
      . Put (F f state is os repr m) families families'
     => IsSymbol f
     => FromToRepr state repr
     => Family f state is os repr m
-    -> Toolkit families repr m
-    -> Toolkit families' repr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
+    -> Toolkit tk families repr m
+    -> Toolkit tk families' repr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
 register family (Toolkit name families rawFamilies) =
     Toolkit name (Map.insert (Id.familyR $ F.familyIdOf family) (holdFamily family) families) rawFamilies
 
 
 registerRaw
-    :: forall repr m families
+    :: forall tk repr m families
      . Raw.Family repr m
-    -> Toolkit families repr m
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
+    -> Toolkit tk families repr m
 registerRaw rawFamily (Toolkit name families rawFamilies) =
     Toolkit name families (Map.insert (RF.familyIdOf rawFamily) rawFamily rawFamilies)
 
 
 spawn
-    :: forall f state repr is os m families
+    :: forall tk f state repr is os m families
      . IsSymbol f
     => MonadEffect m
     => RegisteredFamily (F f state is os repr m) families
     => Id.Family f
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
     -> m (Node f state is os repr m)
 spawn familyId (Toolkit _ families _) = do
     case Map.lookup (Id.familyR familyId) families of
@@ -110,10 +114,10 @@ spawn familyId (Toolkit _ families _) = do
 
 
 spawnRaw
-    :: forall repr m families
+    :: forall tk repr m families
      . MonadEffect m
     => Id.FamilyR
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
     -> m (Maybe (Raw.Node repr m))
 spawnRaw familyId (Toolkit _ _ rawFamilies) = do
     case Map.lookup familyId rawFamilies of
@@ -137,10 +141,10 @@ instance (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m
 
 
 mapFamilies
-    :: forall x families repr m
+    :: forall x tk families repr m
     .  MapFamiliesImpl repr m families
     => (forall f state is os. IsSymbol f => Family f state is os repr m -> x)
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
     -> Array x
 mapFamilies f (Toolkit _ families _) =
     (\hf -> withFamily hf f)
@@ -149,19 +153,19 @@ mapFamilies f (Toolkit _ families _) =
 
 
 mapRawFamilies
-    :: forall x families repr m
+    :: forall x tk families repr m
     .  (Raw.Family repr m -> x)
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
     -> Array x
 mapRawFamilies f (Toolkit _ _ rawFamilies) =
     Map.toUnfoldable rawFamilies <#> Tuple.snd <#> f
 
 
 mapAllFamilies
-    :: forall x families repr m
+    :: forall x tk families repr m
     .  MapFamiliesImpl repr m families
     => (Raw.Family repr m -> x)
-    -> Toolkit families repr m
+    -> Toolkit tk families repr m
     -> Array x
 mapAllFamilies f (Toolkit _ families rawFamilies) =
     ((\hf -> withFamily hf (F.toRaw >>> f))
@@ -172,8 +176,18 @@ mapAllFamilies f (Toolkit _ families rawFamilies) =
 
 
 families
-    :: forall families repr m
+    :: forall tk families repr m
     .  MapFamiliesImpl repr m families
-    => Toolkit families repr m
+    => Toolkit tk families repr m
     -> Array Id.FamilyR
 families = mapAllFamilies RF.familyIdOf
+
+
+class IsToolkit (tk :: ToolkitKey) where
+    name    :: Proxy tk -> String
+    groupOf :: Proxy tk -> Id.FamilyR -> Id.GroupR
+
+
+class MarkToolkit (tk :: ToolkitKey) where
+    markGroup  :: Proxy tk -> Id.GroupR  -> Color
+    markFamily :: Proxy tk -> Id.FamilyR -> Color

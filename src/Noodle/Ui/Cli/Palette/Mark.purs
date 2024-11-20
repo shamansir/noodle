@@ -20,6 +20,5 @@ instance Mark Unit where
     mark = const $ Color.rgb 102 205 170
 
 
-instance Mark FamilyR where
-    mark :: FamilyR -> Color
-    mark = const $ Color.rgb 102 205 170 -- FIXME
+instance Mark FamilyR where  -- FIXME: Remove
+    mark = const $ Color.rgb 102 205 170

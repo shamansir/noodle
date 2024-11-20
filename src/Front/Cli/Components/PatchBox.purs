@@ -24,7 +24,7 @@ import Noodle.Id as Id
 -- import Cli.Components.OutputIndicator as OutputIndicator
 
 
-component :: forall p fs r m. Array Id.FamilyR -> Core.Blessed (State p fs r m)
+component :: forall tk p fs r m. Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
 component families =
     B.boxAnd Key.patchBox
 

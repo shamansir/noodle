@@ -48,7 +48,7 @@ import Data.Text.Output.Blessed (singleLine) as T
 import Prelude
 
 
-component :: forall p fs r m. Array Id.FamilyR -> Core.Blessed (State p fs r m)
+component :: forall tk p fs r m. Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
 component families =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0

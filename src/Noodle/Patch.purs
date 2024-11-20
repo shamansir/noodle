@@ -70,7 +70,7 @@ make patchName state = liftEffect $ do
       Links.init
 
 
-fromToolkit :: forall state families repr mo mi. MonadEffect mo => Toolkit families repr mi -> Id.PatchName -> state -> mo (Patch state families repr mi)
+fromToolkit :: forall tk state families repr mo mi. MonadEffect mo => Toolkit tk families repr mi -> Id.PatchName -> state -> mo (Patch state families repr mi)
 fromToolkit _ = make
 
 

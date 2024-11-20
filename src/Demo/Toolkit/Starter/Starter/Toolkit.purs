@@ -4,8 +4,9 @@ import Prelude ((#))
 import Effect (Effect)
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
+import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR) as Id
-import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import StarterTk.Simple.Bang as Simple.Bang
@@ -40,8 +41,11 @@ type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Sim
   :> Spreads.Xsshape.F
   :> TNil
 
-toolkit :: Toolkit StarterFamilies StarterRepr Effect
-toolkit = Toolkit.empty (Id.toolkitR "Starter") # Toolkit.register Spreads.Xsshape.family
+foreign import data StarterKey :: ToolkitKey
+
+toolkit :: Toolkit StarterKey StarterFamilies StarterRepr Effect
+toolkit = Toolkit.empty (Proxy :: _ StarterKey) (Id.toolkitR "Starter")
+  # Toolkit.register Spreads.Xsshape.family
   # Toolkit.register Spreads.Cspread.family
   # Toolkit.register Spreads.Vspread.family
   # Toolkit.register Spreads.Nspread.family

@@ -49,7 +49,7 @@ import Cli.Components.AddPatchButton as AddPatchButton
 
 
 -- TODO: take toolkit here
-component ∷ forall p fs r m. Toolkit.MapFamiliesImpl r m fs => State p fs r m -> Core.Blessed (State p fs r m)
+component ∷ forall tk p fs r m. Toolkit.MapFamiliesImpl r m fs => State tk p fs r m -> Core.Blessed (State tk p fs r m)
 component initialState =
     B.screenAnd Key.mainScreen
 

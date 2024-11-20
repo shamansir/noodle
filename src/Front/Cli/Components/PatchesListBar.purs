@@ -34,7 +34,7 @@ import Cli.State (State)
 import Cli.Style as Style
 
 
-component :: forall s fs repr m. Map Id.PatchR (Patch s fs repr m) -> Core.Blessed (State s fs repr m)
+component :: forall tk s fs repr m. Map Id.PatchR (Patch s fs repr m) -> Core.Blessed (State tk s fs repr m)
 
 -- Map Patch.Id (Patch gstate instances)
 -- component ∷ ∀ (t106 ∷ Type) (t110 ∷ Row Type). Map String t106 → SNode { currentPatch ∷ Maybe (Tuple Int String) | t110 }

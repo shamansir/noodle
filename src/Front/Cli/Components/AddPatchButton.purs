@@ -42,7 +42,7 @@ import Noodle.Patch as Patch
 import Noodle.Ui.Cli.Palette as Palette
 
 
-component ∷ forall s fs r m. Core.Blessed (State s fs r m)
+component ∷ forall tk s fs r m. Core.Blessed (State tk s fs r m)
 component =
     B.button Key.addPatchButton
         [ Box.content "+"

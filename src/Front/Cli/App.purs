@@ -64,7 +64,7 @@ import Cli.State (informWsInitialized) as State
 import Cli.Components.MainScreen as MainScreen
 
 import Noodle.Id (ToolkitR, toolkitR) as Id
-import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class MapFamiliesImpl) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
@@ -75,7 +75,7 @@ import Starter.Toolkit as Starter
 import Demo.Toolkit.Starter.Repr (options) as Starter
 
 
-data ToolkitKey
+data ToolkitSelection
     -- = Hydra
     = Starter
     -- | Timbre
@@ -83,9 +83,9 @@ data ToolkitKey
 
 
 data Options
-    = JustRun ToolkitKey
-    | LoadNetworkFrom String ToolkitKey
-    | GenerateToolkitFrom String ToolkitKey
+    = JustRun ToolkitSelection
+    | LoadNetworkFrom String ToolkitSelection
+    | GenerateToolkitFrom String ToolkitSelection
 
 
 defaultOptions = JustRun defaultToolkit :: Options
@@ -94,8 +94,8 @@ defaultOptions = JustRun defaultToolkit :: Options
 defaultToolkit = Starter
 
 
-data App pstate (fs :: Families) repr m
-    = App Options (State pstate fs repr m)
+data App (tk :: ToolkitKey) pstate (fs :: Families) repr m
+    = App Options (State tk pstate fs repr m)
 
 
 run :: Effect Unit
@@ -132,7 +132,7 @@ runWith =
             fileCallback <- Blessed.impair1 applyFile
             liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
             pure unit
-        applyFile :: forall s fs r m. Either _ String -> BlessedOp (State s fs r m) Effect
+        applyFile :: forall tk s fs r m. Either _ String -> BlessedOp (State tk s fs r m) Effect
         applyFile (Right fileContents) = do
             case P.runParser fileContents NdfFile.parser of
                 Right ndfFile ->
@@ -145,14 +145,14 @@ runWith =
 
 
 runBlessedInterface
-    :: forall s fs r
+    :: forall tk s fs r
      . Toolkit.MapFamiliesImpl r Effect fs
     => s
-    -> Toolkit fs r Effect
-    -> BlessedOp (State s fs r Effect) Effect
+    -> Toolkit tk fs r Effect
+    -> BlessedOp (State tk s fs r Effect) Effect
     -> Effect Unit
 runBlessedInterface pState toolkit andThen = do
-    (initialState :: State s fs r Effect) <- State.init pState toolkit
+    (initialState :: State tk s fs r Effect) <- State.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
@@ -175,16 +175,16 @@ runBlessedInterface pState toolkit andThen = do
             -- FIXME: State.modify_ State.informWsListening
             -- FIXME: WsButton.updateStatus $ WsButton.Waiting
             mainScreen >~ Screen.render
-        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State s fs r Effect) Effect
+        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State tk s fs r Effect) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State s fs r Effect) Effect
+        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State tk s fs r Effect) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
-        handleError :: Error -> BlessedOp (State s fs r Effect) Effect
+        handleError :: Error -> BlessedOp (State tk s fs r Effect) Effect
         handleError _ = pure unit
         {- FIXME
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect

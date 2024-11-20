@@ -41,7 +41,13 @@ derive newtype instance Eq FilePath
 derive newtype instance Ord FilePath
 
 
-codegen :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array (Maybe Source /\ FamilyDef) -> Map FilePath FileContent
+codegen
+    :: forall repr
+    .  FCG.CodegenRepr repr
+    => Toolkit.Name
+    -> FCG.Options repr
+    -> Array (Maybe Source /\ FamilyDef)
+    -> Map FilePath FileContent
 codegen tkName options definitions =
     definitions
     # foldr genModule Map.empty
@@ -69,8 +75,9 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Effect" [ importType "Effect" ]
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
+            , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
             , declImportAs "Noodle.Id" [ importValue "toolkitR" ] "Id"
-            , declImport "Noodle.Toolkit" [ importType "Toolkit" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
 
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
@@ -81,9 +88,11 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         )
         [ declTypeSignature (Id.toolkit tkName <> "Families") $ typeCtor "Families"
         , declType (Id.toolkit tkName <> "Families") [] familiesTList
+        , declForeignData (Id.toolkit tkName <> "Key") $ typeCtor "ToolkitKey"
         , declSignature "toolkit"
             $ typeApp (typeCtor "Toolkit")
-                [ typeCtor $ Id.toolkit tkName <> "Families"
+                [ typeCtor $ Id.toolkit tkName <> "Key"
+                , typeCtor $ Id.toolkit tkName <> "Families"
                 , typeCtor opts.reprAt.type_
                 , typeCtor $ opts.monadAt.type_
                 ]
@@ -117,7 +126,14 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         registerFamilies :: Partial => CST.Expr Void
         registerFamilies =
             exprOp
-                (exprApp (exprIdent "Toolkit.empty") [ exprApp (exprIdent "Id.toolkitR") [ exprString $ Id.toolkit tkName ] ])
+                (exprApp (exprIdent "Toolkit.empty")
+                    [ exprTyped
+                        ( exprCtor "Proxy" )
+                        $ typeApp typeWildcard [ typeCtor $ Id.toolkit tkName <> "Key" ]
+                    , exprApp (exprIdent "Id.toolkitR")
+                        [ exprString $ Id.toolkit tkName ]
+                    ]
+                )
                 (binaryOp "#"
                     <$> exprApp (exprIdent "Toolkit.register")
                     <$> Array.singleton

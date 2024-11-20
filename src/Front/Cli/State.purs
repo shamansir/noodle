@@ -17,7 +17,7 @@ import Web.Socket.Server as WSS
 import Noodle.Id as Id
 import Noodle.Network (Network)
 import Noodle.Network (init, addPatch, toolkit) as Network
-import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class MapFamiliesImpl) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (make, id) as Patch
@@ -27,8 +27,8 @@ import Cli.WsServer as WSS
 import Cli.Keys (NodeBoxKey, PatchBoxKey)
 
 
-type State s (fs :: Families) r m =
-    { network :: Network s fs r m
+type State (tk :: ToolkitKey) s (fs :: Families) r m =
+    { network :: Network tk s fs r m
     , initPatchesFrom :: s
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
@@ -95,7 +95,7 @@ newtype LinkState =
 -}
 
 
-init :: forall s fs r m. MonadEffect m => s -> Toolkit fs r m -> m (State s fs r m)
+init :: forall tk s fs r m. MonadEffect m => s -> Toolkit tk fs r m -> m (State tk s fs r m)
 init state toolkit = do
     firstPatch <- Patch.make "Patch 1" state
     pure
@@ -134,14 +134,14 @@ init state toolkit = do
         }
 
 
-informWsInitialized :: forall s fs r m. WSS.WebSocketServer -> State s fs r m -> State s fs r m
+informWsInitialized :: forall tk s fs r m. WSS.WebSocketServer -> State tk s fs r m -> State tk s fs r m
 informWsInitialized _ state = state
 
 
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 
-families :: forall s fs r m. Toolkit.MapFamiliesImpl r m fs => State s fs r m -> Array Id.FamilyR
+families :: forall tk s fs r m. Toolkit.MapFamiliesImpl r m fs => State tk s fs r m -> Array Id.FamilyR
 families = _.network >>> Network.toolkit >>> Toolkit.families
 
 
