@@ -7,7 +7,7 @@ import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
-import Data.Map (empty) as Map
+import Data.Map (empty, insert) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Proxy (Proxy)
@@ -37,6 +37,7 @@ type State s (fs :: Families) r m =
     -- TODO, linksFrom :: Map RawNodeKey (Map OutputIndex LinkState)
     -- TODO, linksTo :: Map RawNodeKey (Map InputIndex LinkState)
     -- TODO, lastKeys :: LastKeys
+    , patchIdToIndex :: Map Id.PatchR Int
     , nodeKeysMap :: Map Id.NodeR NodeBoxKey
     , patchKeysMap :: Map Id.PatchR PatchBoxKey
     -- TODO, commandLog :: NdfFile
@@ -113,6 +114,7 @@ init state toolkit = do
         -- TODO, , lastLink : Nothing
         -- TODO, , linksFrom : Map.empty
         -- TODO, , linksTo : Map.empty
+        , patchIdToIndex : Map.empty # Map.insert (Patch.id firstPatch) 0
         , nodeKeysMap : Map.empty
         , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
         -- , commandLog : NdfFile.init "hydra" 0.1

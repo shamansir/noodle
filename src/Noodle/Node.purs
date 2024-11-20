@@ -127,7 +127,8 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 
 {- Running -}
 
--- FIXME: Try distinguishing outer monad from inner one here as well (as we did for other methods)
+-- TODO: Try distinguishing outer monad from inner one here as well (as we did for other methods)
+--       Could be not possible because running the node' processing function requires the same monad environment
 
 -- TODO: private
 _runOnInletUpdates
@@ -484,7 +485,7 @@ unsafeConnect
 
 disconnect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' reprA reprB mo mi
-     . Wiring mo
+     . MonadEffect mo
     => IsSymbol fA
     => IsSymbol fB
     => HasOutlet osA osA' oA doutA

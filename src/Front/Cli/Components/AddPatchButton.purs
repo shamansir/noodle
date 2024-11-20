@@ -11,6 +11,7 @@ import Control.Monad.State (get, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
+import Data.Map (insert) as Map
 
 import Blessed as B
 import Blessed ((>~))
@@ -63,6 +64,7 @@ component =
                 State.modify_
                     (_
                         { currentPatch = Just { index : nextPatchIndex, id : Patch.id nextPatch }
+                        , patchIdToIndex = state.patchIdToIndex # Map.insert (Patch.id nextPatch) nextPatchIndex
                         , network = nextNW
                         }
                     )
