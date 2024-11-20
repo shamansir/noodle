@@ -2,6 +2,11 @@ module Cli.Components.PatchBox where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
+
+import Type.Proxy (Proxy(..))
+
 import Blessed as B
 import Blessed.Core.Border (type_, _line) as Border
 import Blessed.Core.Coord ((<+>), (<->))
@@ -11,21 +16,21 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.Core as Core
 import Blessed.UI.Boxes.Box.Option as Box
+
 import Cli.Components.Library as Library
 import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style (patchBox, patchBoxBorder) as Style
-import Data.Lens (united)
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
+
 import Noodle.Id as Id
+import Noodle.Toolkit (class MarkToolkit)
 
 -- import Cli.Components.InputIndicator as InputIndicator
 -- import Cli.Components.OutputIndicator as OutputIndicator
 
 
-component :: forall tk p fs r m. Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component families =
+component :: forall tk p fs r m. MarkToolkit tk => Proxy tk -> Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
+component ptk families =
     B.boxAnd Key.patchBox
 
         [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
@@ -38,7 +43,7 @@ component families =
         , Style.patchBoxBorder
         ]
 
-        [ Library.component families
+        [ Library.component ptk families
         -- , InputIndicator.component
         -- , OutputIndicator.component
         ]

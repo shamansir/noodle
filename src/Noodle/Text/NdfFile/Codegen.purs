@@ -74,11 +74,12 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         (
             [ declImport "Prelude" [ importOp "#" ]
             , declImport "Effect" [ importType "Effect" ]
+            , declImportAs "Color" [] "Color"
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
             , declImportAs "Noodle.Id" [ importValue "toolkitR" ] "Id"
-            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
 
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
@@ -98,6 +99,20 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 , typeCtor $ opts.monadAt.type_
                 ]
         , declValue "toolkit" [] registerFamilies
+        , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
+            [ instValue "markGroup" [ binderWildcard, binderVar "group" ]
+                $ exprApp (exprIdent "Color.rgb")
+                    [ exprInt 255
+                    , exprInt 255
+                    , exprInt 255
+                    ]
+            , instValue "markFamily" [ binderWildcard, binderVar "family" ]
+                $ exprApp (exprIdent "Color.rgb")
+                    [ exprInt 255
+                    , exprInt 255
+                    , exprInt 255
+                    ]
+            ]
         ]
     where
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"

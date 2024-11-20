@@ -49,7 +49,12 @@ import Cli.Components.AddPatchButton as AddPatchButton
 
 
 -- TODO: take toolkit here
-component ∷ forall tk p fs r m. Toolkit.MapFamiliesImpl r m fs => State tk p fs r m -> Core.Blessed (State tk p fs r m)
+component
+    :: forall tk p fs r m
+    .  Toolkit.MarkToolkit tk
+    => Toolkit.MapFamiliesImpl r m fs
+    => State tk p fs r m
+    -> Core.Blessed (State tk p fs r m)
 component initialState =
     B.screenAnd Key.mainScreen
 
@@ -63,7 +68,7 @@ component initialState =
         ]
 
         [ PatchesListbar.component $ Network.patches $ initialState.network
-        , PatchBox.component $ State.families initialState
+        , PatchBox.component initialState.ptk $ State.families initialState
         , AddPatchButton.component
         -- , LoadFileButton.component
         -- , CommandLogButton.component

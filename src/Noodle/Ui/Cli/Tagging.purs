@@ -18,6 +18,7 @@ import Data.Text.Format as T
 import Noodle.Id as Id
 import Noodle.Fn.ToFn (Fn, class ToFn, class PossiblyToFn, possiblyToFn, toFn, FnS)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
+import Noodle.Toolkit (ToolkitKey, class MarkToolkit, markFamily)
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
@@ -137,9 +138,9 @@ removeStatusLine family =
     T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family $ Id.familyR family)
 
 
-libraryItem :: Mark Id.FamilyR => Id.FamilyR -> Tag
-libraryItem familyR =
-    T.fgc (mark familyR) $ T.s $ Id.family familyR
+libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
+libraryItem ptk familyR =
+    T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
 
 
 {- TODO

@@ -2,11 +2,12 @@ module Starter.Toolkit where
 
 import Prelude ((#))
 import Effect (Effect)
+import Color as Color
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR) as Id
-import Noodle.Toolkit (Toolkit, ToolkitKey)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import StarterTk.Simple.Bang as Simple.Bang
@@ -60,3 +61,7 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Simple.Random.family
   # Toolkit.register Simple.Metro.family
   # Toolkit.register Simple.Bang.family
+
+instance MarkToolkit STARTER where
+  markGroup _ group = Color.rgb 255 255 255
+  markFamily _ family = Color.rgb 255 255 255

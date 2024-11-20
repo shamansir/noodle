@@ -3,6 +3,8 @@ module Cli.Components.Library where
 
 import Control.Monad.State as State
 
+import Type.Proxy (Proxy)
+
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\))
@@ -37,6 +39,7 @@ import Cli.Style (library, libraryBorder) as Style
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Palette.Mark
+import Noodle.Toolkit (class MarkToolkit)
 
 -- import Cli.Components.NodeBox as NodeBox
 
@@ -48,8 +51,8 @@ import Data.Text.Output.Blessed (singleLine) as T
 import Prelude
 
 
-component :: forall tk p fs r m. Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component families =
+component :: forall tk p fs r m. MarkToolkit tk => Proxy tk -> Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
+component ptk families =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
@@ -57,7 +60,7 @@ component families =
         , Box.height $ Dimension.percents 65.0
         , Box.draggable true
         , Box.scrollable true
-        , List.items $ (T.singleLine <<< T.libraryItem) <$> families
+        , List.items $ (T.singleLine <<< T.libraryItem ptk) <$> families
         , List.mouse true
         , List.keys true
         , Box.tags true
