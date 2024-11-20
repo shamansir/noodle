@@ -39,6 +39,10 @@ hasPatch :: forall s fs r m. PatchR -> Network s fs r m  -> Boolean
 hasPatch id = patches >>> Map.member id
 
 
+toolkit :: forall s fs r m. Network s fs r m -> Toolkit fs r m
+toolkit (Network tk _) = tk
+
+
 addPatch
     :: forall s fs r m
     .  Patch s fs r m

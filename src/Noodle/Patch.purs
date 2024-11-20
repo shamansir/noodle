@@ -179,9 +179,14 @@ instance IsSymbol f => LMap (MapNodes repr m) (F f state is os repr m) (Maybe (A
     lmap (MapNodes families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
 
 
+class MapNodesImpl :: Type -> (Type -> Type) -> Families -> Constraint
+class    (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) <= MapNodesImpl repr m families
+instance (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) => MapNodesImpl repr m families
+
+
 mapNodes
     :: forall x pstate families repr m
-    .  MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))
+    .  MapNodesImpl repr m families
     => (forall f state is os. IsSymbol f => Node f state is os repr m -> x)
     -> Patch pstate families repr m
     -> Array x

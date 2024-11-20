@@ -16,8 +16,9 @@ import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
-import Noodle.Network (init, addPatch) as Network
+import Noodle.Network (init, addPatch, toolkit) as Network
 import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (families, class MapFamiliesImpl) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (make, id) as Patch
 
@@ -138,6 +139,10 @@ informWsInitialized _ state = state
 
 
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
+
+
+families :: forall s fs r m. Toolkit.MapFamiliesImpl r m fs => State s fs r m -> Array Id.FamilyR
+families = _.network >>> Network.toolkit >>> Toolkit.families
 
 
 type NodeBounds =

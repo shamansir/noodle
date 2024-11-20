@@ -65,6 +65,7 @@ import Cli.Components.MainScreen as MainScreen
 
 import Noodle.Id (ToolkitR, toolkitR) as Id
 import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (class MapFamiliesImpl) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
@@ -145,7 +146,8 @@ runWith =
 
 runBlessedInterface
     :: forall s fs r
-     . s
+     . Toolkit.MapFamiliesImpl r Effect fs
+    => s
     -> Toolkit fs r Effect
     -> BlessedOp (State s fs r Effect) Effect
     -> Effect Unit
