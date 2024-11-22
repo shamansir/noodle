@@ -8,12 +8,14 @@ import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (toUnfoldable) as Map
 import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Blessed as B
 import Blessed ((>~))
 
+import Blessed.Core.Key (Key)
 import Blessed.Internal.Core as Core
+import Blessed.Internal.BlessedOp as Core
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.ListStyle as LStyle
@@ -35,9 +37,6 @@ import Cli.Style as Style
 
 
 component :: forall tk s fs repr m. Map Id.PatchR (Patch s fs repr m) -> Core.Blessed (State tk s fs repr m)
-
--- Map Patch.Id (Patch gstate instances)
--- component ∷ ∀ (t106 ∷ Type) (t110 ∷ Row Type). Map String t106 → SNode { currentPatch ∷ Maybe (Tuple Int String) | t110 }
 component patches =
     B.listbar Key.patchesBar
         [ Box.top $ Offset.px 0
@@ -51,12 +50,25 @@ component patches =
         ]
         []
 
+type Command_ subj id tk s fs repr m =
+    (  String
+    /\ Array Key
+    /\ Core.HandlerFn subj id (State tk s fs repr m)
+    )
 
---patchesLBCommands ∷ ∀ (t41 ∷ Type -> Type) (t45 ∷ Type) (t46 ∷ Type) (t47 ∷ Type) (t48 ∷ Type) (t49 ∷ Row Type) (t50 ∷ Type) (t51 ∷ Type) (t52 ∷ Type -> Type). FunctorWithIndex t50 t41 ⇒ Unfoldable t41 ⇒ Map t51 t45 → t41 (Tuple t51 (Tuple (Array t46) (t47 → t48 → BlessedOpM { currentPatch ∷ Maybe (Tuple t50 t51) | t49 } t52 Unit ) ) )
+
+lbCommands
+    :: forall tk s fs repr m
+    .  Map Id.PatchR (Patch s fs repr m)
+    -> Array (Command_ _ _ tk s fs repr m)
 lbCommands = mapWithIndex buttonFor <<< Map.toUnfoldable
 
 
---patchButton ∷ ∀ (t5 ∷ Type) (t10 ∷ Type) (t11 ∷ Type) (t13 ∷ Type) (t20 ∷ Row Type) (t24 ∷ Type) (t25 ∷ Type) (t30 ∷ Type -> Type). t24 → Tuple t25 t5 → Tuple t25 (Tuple (Array t10) (t11 → t13 → BlessedOpM { currentPatch ∷ Maybe (Tuple t24 t25) | t20 } t30 Unit ) )
+buttonFor
+    :: forall tk s fs repr m
+    .  Int
+    -> Id.PatchR /\ Patch s fs repr m
+    -> Command_ _ _ tk s fs repr m
 buttonFor index (id /\ patch) =
     Patch.name patch /\ [] /\ \_ _ -> do
         State.modify_
@@ -65,9 +77,11 @@ buttonFor index (id /\ patch) =
         Key.mainScreen >~ Screen.render
 
 
+updatePatches :: forall tk s fs repr mi mo. Map Id.PatchR (Patch s fs repr mi) -> Core.BlessedOp (State tk s fs repr mi) mo
 updatePatches patches =
     Key.patchesBar >~ ListBar.setItems $ lbCommands patches
 
 
+selectPatch :: forall tk s fs repr mi mo. Int -> Core.BlessedOp (State tk s fs repr mi) mo
 selectPatch patchNumId =
     Key.patchesBar >~ ListBar.select patchNumId

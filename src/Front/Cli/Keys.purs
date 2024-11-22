@@ -5,13 +5,13 @@ import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button, T
 import Blessed.Internal.NodeKey (nk, type (<^>))
 
 
-type InputsBoxKey = Box <^> "node-inputs-box"
+type InletsBoxKey = Box <^> "node-inlets-box"
 type InfoBoxKey = Box <^> "node-info-box"
-type OutputsBoxKey = Box <^> "node-outputs-box"
+type OutletsBoxKey = Box <^> "node-outlets-box"
 type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
-type InputButtonKey = Button <^> "input-button"
-type OutputButtonKey = Button <^> "output-button"
+type InletButtonKey  = Button <^> "inlet-button"
+type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
 type RemoveButtonKey = Button <^> "remove-button"
 -- type TextBoxKey = TextBox <^> "text-box"
@@ -24,11 +24,11 @@ patchBox = nk :: PatchBoxKey
 library = nk :: List <^> "library"
 statusLine = nk :: StatusLineKey
 nodeBox = nk :: NodeBoxKey
-inputsBox = nk :: InputsBoxKey
-outputsBox = nk :: OutputsBoxKey
+inputsBox = nk :: InletsBoxKey
+outputsBox = nk :: OutletsBoxKey
 infoBox = nk :: InfoBoxKey
-inputButton = nk :: InputButtonKey
-outputButton = nk :: OutputButtonKey
+inputButton = nk :: InletButtonKey
+outputButton = nk :: OutletButtonKey
 removeButton = nk :: RemoveButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"

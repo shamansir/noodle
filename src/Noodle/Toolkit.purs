@@ -120,7 +120,7 @@ spawnRaw
     -> Toolkit tk families repr m
     -> m (Maybe (Raw.Node repr m))
 spawnRaw familyId (Toolkit _ _ rawFamilies) = do
-    case Map.lookup familyId rawFamilies of
+    case Map.lookup familyId rawFamilies of -- FIXME: also look up in "usual" typed families
         -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
         -- and satisfy this constraint using method in `FamilyExistsIn (F f state is os repr m) families`
         Just rawFamily -> Just <$> RF.spawn rawFamily

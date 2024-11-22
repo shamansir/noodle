@@ -63,6 +63,10 @@ data Node (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr 
 {- Get info -}
 
 
+id :: forall f state is os repr m. Node f state is os repr m -> Id.NodeR
+id (Node id _ _ _ _) = id
+
+
 family :: forall f state is os repr m. Node f state is os repr m -> Id.Family f
 family _ = (Id.Family :: _ f)
 

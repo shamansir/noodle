@@ -56,7 +56,7 @@ outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
 
 
 make ::
-    { inlets :: Array { name :: String, order :: Int, temp :: Temperament }
+    { inlets  :: Array { name :: String, order :: Int, temp :: Temperament }
     , outlets :: Array { name :: String, order :: Int }
     }
     -> Shape
