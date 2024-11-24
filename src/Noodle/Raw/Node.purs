@@ -117,7 +117,7 @@ _runOnStateUpdates node =
 _listenUpdatesAndRun
   :: forall repr m
    . Wiring m
-    => HasFallback repr
+  => HasFallback repr
   => Node repr m
   -> m Unit
 _listenUpdatesAndRun node = do

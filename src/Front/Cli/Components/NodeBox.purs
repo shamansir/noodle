@@ -67,7 +67,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 -- import Blessed.UI.Line.Li ()
 
-import Noodle.Repr (class HasFallback)
+import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
 import Noodle.Id as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
@@ -145,15 +145,17 @@ fromNodeAuto
     -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
     .  Wiring m
     => IsSymbol f => Mark (Id.Family f)
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
-    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
+    => Mark repr => T.At At.ChannelLabel repr
+    => HasCliCustomSize tk f (Raw.Node repr m)
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAuto curPatchId curPatch family node =
-    autoPos >>= \pos -> fromNodeAt pos curPatchId curPatch family node
+fromNodeAuto curPatchId curPatch family node = do
+    pos <- autoPos
+    fromNodeAt pos curPatchId curPatch family node
 
 
 -- TODO: fromRawNodeAuto
@@ -165,13 +167,14 @@ fromRawNodeAt
     -- => IsSymbol f => Mark (Id.Family f)
     -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     => HasCliCustomSize tk f (Raw.Node repr m)
-    => Int /\ Int
+    => Id.Family f
+    -> Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
     -> Raw.Node repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromRawNodeAt (leftN /\ topN) curPatchId curPatch family rawNode = do
+fromRawNodeAt _ (leftN /\ topN) curPatchId curPatch family rawNode = do
     --liftEffect $ Node.run node -- just Node.run ??
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
     _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
@@ -346,14 +349,17 @@ fromNodeAt
     .  Wiring m
     => IsSymbol f => Mark (Id.Family f)
     => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
-    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => FromRepr repr nstate => ToRepr nstate repr
+    -- => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => HasCliCustomSize tk f (Raw.Node repr m)
     => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAt (leftN /\ topN) curPatchId curPatch family node = pure unit
+fromNodeAt pos curPatchId curPatch family node =
+    fromRawNodeAt family pos curPatchId curPatch (Id.familyR family) (Node.toRaw node)
 
 
 fromFamilyAt
@@ -362,9 +368,10 @@ fromFamilyAt
     -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
      . Wiring m
     => IsSymbol f => Mark (Id.Family f)
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
+    => Mark repr => T.At At.ChannelLabel repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => HasCliCustomSize tk f (Raw.Node repr m)
     => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
@@ -391,9 +398,10 @@ fromFamilyAuto
     -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
      . MonadEffect m => Wiring m
     => IsSymbol f => Mark (Id.Family f)
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
+    => Mark repr => T.At At.ChannelLabel repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => HasCliCustomSize tk f (Raw.Node repr m)
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
