@@ -58,29 +58,29 @@ id (Node nodeR _ _ _ _) = nodeR
 
 
 make
-    :: forall repr mi mo
-     . MonadEffect mo
+    :: forall repr mp m
+     . MonadEffect m
     => Id.FamilyR
     -> repr
     -> Raw.Shape
     -> InletsValues repr
     -> OutletsValues repr
-    -> Raw.Process repr repr mi
-    -> mo (Node repr mi)
+    -> Raw.Process repr repr mp
+    -> m (Node repr mp)
 make family state rawShape inletsMap outletsMap process = do
     _makeWithFn family state rawShape inletsMap outletsMap $ RawFn.make (Id.family family) process
 
 
 _makeWithFn
-    :: forall repr mi mo
-     . MonadEffect mo
+    :: forall repr mp m
+     . MonadEffect m
     => Id.FamilyR
     -> repr
     -> Raw.Shape
     -> InletsValues repr
     -> OutletsValues repr
-    -> Raw.Fn repr repr mi
-    -> mo (Node repr mi)
+    -> Raw.Fn repr repr mp
+    -> m (Node repr mp)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeR_ family uniqueHash

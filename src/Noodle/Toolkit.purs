@@ -95,13 +95,13 @@ registerRaw rawFamily (Toolkit name families rawFamilies) =
 
 
 spawn
-    :: forall tk f state repr is os mi mo families
+    :: forall m tk f state repr is os mp families
      . IsSymbol f
-    => MonadEffect mo
-    => RegisteredFamily (F f state is os repr mi) families
+    => MonadEffect m
+    => RegisteredFamily (F f state is os repr mp) families
     => Id.Family f
-    -> Toolkit tk families repr mi
-    -> mo (Node f state is os repr mi)
+    -> Toolkit tk families repr mp
+    -> m (Node f state is os repr mp)
 spawn familyId (Toolkit _ families _) = do
     case Map.lookup (Id.familyR familyId) families of
         -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
@@ -109,16 +109,16 @@ spawn familyId (Toolkit _ families _) = do
         Just holdsFamily -> withFamily holdsFamily (spawnNode <<< unsafeCoerce)
         Nothing -> liftEffect $ throw $ "Family is not in the registry: " <> show familyId
     where
-        spawnNode :: Family f state is os repr mi -> mo (Node f state is os repr mi)
+        spawnNode :: Family f state is os repr mp -> m (Node f state is os repr mp)
         spawnNode = F.spawn
 
 
 spawnRaw
-    :: forall tk repr mi mo families
-     . MonadEffect mo
+    :: forall m tk repr mp families
+     . MonadEffect m
     => Id.FamilyR
-    -> Toolkit tk families repr mi
-    -> mo (Maybe (Raw.Node repr mi))
+    -> Toolkit tk families repr mp
+    -> m (Maybe (Raw.Node repr mp))
 spawnRaw familyId (Toolkit _ _ rawFamilies) = do
     case Map.lookup familyId rawFamilies of -- FIXME: also look up in "usual" typed families
         -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`

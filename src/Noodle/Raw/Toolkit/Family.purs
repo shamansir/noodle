@@ -46,10 +46,10 @@ make family state rawShape inletsMap outletsMap process = do
 
 
 spawn ::
-    forall repr mi mo
-     . MonadEffect mo
-    => Family repr mi
-    -> mo (Raw.Node repr mi)
+    forall repr mp m
+     . MonadEffect m
+    => Family repr mp
+    -> m (Raw.Node repr mp)
 spawn (Family familyR rawShape state inletsMap outletsMap fn) =
     RawNode._makeWithFn
         familyR
