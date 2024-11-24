@@ -16,7 +16,6 @@ import Noodle.Raw.Fn (make) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 
 
-
 data Family (repr :: Type) (m :: Type -> Type)
     = Family
         Id.FamilyR
@@ -47,10 +46,10 @@ make family state rawShape inletsMap outletsMap process = do
 
 
 spawn ::
-    forall repr m
-     . MonadEffect m
-    => Family repr m
-    -> m (Raw.Node repr m)
+    forall repr mi mo
+     . MonadEffect mo
+    => Family repr mi
+    -> mo (Raw.Node repr mi)
 spawn (Family familyR rawShape state inletsMap outletsMap fn) =
     RawNode._makeWithFn
         familyR

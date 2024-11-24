@@ -24,7 +24,8 @@ import Noodle.Patch (make, id) as Patch
 
 import Cli.WsServer as WSS
 
-import Cli.Keys (NodeBoxKey, PatchBoxKey)
+import Cli.Keys as K
+import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox) as Key
 
 
 type State (tk :: ToolkitKey) s (fs :: Families) r m =
@@ -37,10 +38,10 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     -- TODO, lastLink :: Maybe LinkState
     -- TODO, linksFrom :: Map RawNodeKey (Map OutputIndex LinkState)
     -- TODO, linksTo :: Map RawNodeKey (Map InputIndex LinkState)
-    -- TODO, lastKeys :: LastKeys
+    , lastKeys :: LastKeys
     , patchIdToIndex :: Map Id.PatchR Int
-    , nodeKeysMap :: Map Id.NodeR NodeBoxKey
-    , patchKeysMap :: Map Id.PatchR PatchBoxKey
+    , nodeKeysMap :: Map Id.NodeR K.NodeBoxKey
+    , patchKeysMap :: Map Id.PatchR K.PatchBoxKey
     -- TODO, commandLog :: NdfFile
     -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
@@ -66,15 +67,14 @@ type OutputInfo =
     }
 -}
 
-{-
+
 type LastKeys =
-    { inputsBox :: InputsBoxKey
-    , nodeBox :: NodeBoxKey
-    , outputsBox :: OutputsBoxKey
-    , infoBox :: InfoBoxKey
-    , removeButton :: RemoveButtonKey
+    { inletsBox :: K.InletsBoxKey
+    , nodeBox :: K.NodeBoxKey
+    , outletsBox :: K.OutletsBoxKey
+    , infoBox :: K.InfoBoxKey
+    , removeButton :: K.RemoveButtonKey
     }
--}
 
 {-
 newtype LinkState =
@@ -104,13 +104,13 @@ init state toolkit = do
         , initPatchesFrom : state
         , wsServer : Nothing
         , lastShift : { x : 0, y : 0 }
-        -- TODO, , lastKeys :
-        -- TODO,     { nodeBox : Key.nodeBox
-        -- TODO,     , inputsBox : Key.inputsBox
-        -- TODO,     , outputsBox : Key.outputsBox
-        -- TODO,     , infoBox : Key.infoBox
-        -- TODO,     , removeButton : Key.removeButton
-        -- TODO,     }
+        , lastKeys :
+            { nodeBox : Key.nodeBox
+            , inletsBox : Key.inletsBox
+            , outletsBox : Key.outletsBox
+            , infoBox : Key.infoBox
+            , removeButton : Key.removeButton
+            }
         -- TODO, , lastClickedOutput : Nothing
         -- TODO, , lastLink : Nothing
         -- TODO, , linksFrom : Map.empty

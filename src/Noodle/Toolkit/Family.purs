@@ -66,11 +66,11 @@ familyIdOf _ = Id.Family :: _ f
 
 
 spawn ::
-    forall f state is os repr m
+    forall f state is os repr mi mo
      . IsSymbol f
-    => MonadEffect m
-    => Family f state is os repr m
-    -> m (Node f state is os repr m)
+    => MonadEffect mo
+    => Family f state is os repr mi
+    -> mo (Node f state is os repr mi)
 spawn family@(Family rawShape state inletsMap outletsMap fn) =
     Node._makeWithFn
         (Id.familyR $ familyIdOf family)

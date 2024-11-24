@@ -24,11 +24,11 @@ patchBox = nk :: PatchBoxKey
 library = nk :: List <^> "library"
 statusLine = nk :: StatusLineKey
 nodeBox = nk :: NodeBoxKey
-inputsBox = nk :: InletsBoxKey
-outputsBox = nk :: OutletsBoxKey
+inletsBox = nk :: InletsBoxKey
+outletsBox = nk :: OutletsBoxKey
 infoBox = nk :: InfoBoxKey
-inputButton = nk :: InletButtonKey
-outputButton = nk :: OutletButtonKey
+inletButton = nk :: InletButtonKey
+outletButton = nk :: OutletButtonKey
 removeButton = nk :: RemoveButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"
@@ -40,8 +40,8 @@ fullInfoButton = nk :: Button <^> "toggle-full-info"
 fullInfoBox = nk :: Box <^> "full-info"
 wsStatusButton = nk :: Button <^> "ws-status"
 numValueEditor = nk :: NumValueEditorKey
-inputIndicator = nk :: Button <^> "input-led"
-outputIndicator = nk :: Button <^> "output-led"
+inletIndicator = nk :: Button <^> "inlet-led"
+outletIndicator = nk :: Button <^> "outlet-led"
 
 
 {- For links -}

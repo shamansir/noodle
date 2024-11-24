@@ -56,7 +56,7 @@ import Blessed.Core.Coord ((<->))
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (runM, runM', getStateRef, imapState) as Blessed
+import Blessed.Internal.BlessedOp (runM, runM', getStateRef, imapState, lift, lift') as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -67,6 +67,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 -- import Blessed.UI.Line.Li ()
 
+import Noodle.Repr (class HasFallback)
 import Noodle.Id as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
@@ -81,7 +82,7 @@ import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Repr (class DataFromToReprRow, class ToReprRow)
 import Noodle.Text.NdfFile.Command as Cmd
-
+import Noodle.Wiring (class Wiring)
 
 import Cli.Keys (NodeBoxKey, PatchBoxKey, InletButtonKey, OutletButtonKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
@@ -126,23 +127,27 @@ widthN familyName isCount osCount =
 -- widthN :: String -> Int -> Int -> Dimension
 
 
-autoPos :: forall m. BlessedOpM State m (Int /\ Int)
+autoPos :: forall tk pstate fs repr m. BlessedOpM (State tk pstate fs repr m) m (Int /\ Int)
 autoPos = do
     state <- State.get
 
-    let topN = state.lastShiftX + 2
-    let leftN = 16 + state.lastShiftY + 2
+    let topN = state.lastShift.x + 2
+    let leftN = 16 + state.lastShift.y + 2
     pure (leftN /\ topN)
 
 
 fromNodeAuto
-    :: forall instances' rlins f state isrl is osrl os repr_is repr_os pstate nstate fs repr m
+    :: forall tk fs pstate f nstate is os repr m
     -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-    .  Id.PatchR
-    -> Noodle.Patch pstate families repr m
+    .  MonadEffect m => Wiring m
+    => IsSymbol f => Mark (Id.Family f)
+    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => Id.PatchR
+    -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
-    -> BlessedOpM State Effect _
+    -> BlessedOpM (State tk pstate fs repr m) m _
 fromNodeAuto curPatchId curPatch family node =
     autoPos >>= \pos -> fromNodeAt pos curPatchId curPatch family node
 
@@ -151,18 +156,21 @@ type NodeChanges state repr = (UpdateFocus /\ state /\ Raw.InletsValues repr /\ 
 
 
 fromNodeAt
-    :: forall tk instances' rlins f state isrl is osrl os repr_is repr_os pstate nstate fs repr m
-    -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-    .  Int /\ Int
+    :: forall tk fs pstate f nstate is os repr m
+    .  MonadEffect m => Wiring m
+    => IsSymbol f => Mark (Id.Family f)
+    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
+    => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
-    -> BlessedOpM (State tk pstate fs repr m) Effect _
+    -> BlessedOpM (State tk pstate fs repr m) m _
 fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
     --liftEffect $ Node.run node -- just Node.run ??
-    Node._runOnInletUpdates node
-    Node._runOnStateUpdates node
+    _ <- Blessed.lift $ Node._runOnInletUpdates node
+    _ <- Blessed.lift $ Node._runOnStateUpdates node
 
     state <- State.get
 
@@ -183,13 +191,13 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
     -- REM logNdfCommandM $ Cmd.MakeNode (Cmd.family $ reflect family) (Cmd.coord topN) (Cmd.coord $ leftN) (Cmd.nodeId $ reflect' nodeId) -- TODO: log somewhere else in a special place
     -- REM CommandLogBox.refresh
 
-    -- REM let (is :: Array (Node.HoldsInletInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInletsTest' node
-    -- REM let (os :: Array (Node.HoldsOutletInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutletsTest' node
+    -- REM? let (is :: Array (Node.HoldsInletInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInletsTest' node
+    -- REM? let (os :: Array (Node.HoldsOutletInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutletsTest' node
 
     -- REM let (is :: Raw.InletsValues repr)  = Node.inletsRaw node  -- Sort using shape in the node
     -- REM let (os :: Raw.OutletsValues repr) = Node.outletsRaw node -- Sort using shape in the node
-    let is = Node.inletsRaw node  -- Sort using shape in the node
-    let os = Node.outletsRaw node -- Sort using shape in the node
+    is <- Map.toUnfoldable <$> Node.inletsRaw node  -- Sort using shape in the node
+    os <- Map.toUnfoldable <$> Node.outletsRaw node -- Sort using shape in the node
 
     {- REM
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode curPatch node
@@ -263,18 +271,18 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
         -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
         renderNodeUpdate = renderUpdate nextNodeBox Map.empty Map.empty
 
-    (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
+    -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
-    (nodeState :: nstate) <- Node.state node
+    -- REM (nodeState :: nstate) <- Node.state node
 
     -- REM liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
     -- REM liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
-    Node.run node
+    -- REM Node.run node
 
-    Key.patchBox >~ Node.append nextNodeBoxN
+    -- REM Key.patchBox >~ Node.append nextNodeBoxN
 
     {- REM
     nextNodeBox >~ Node.append inletsBoxN
@@ -309,6 +317,7 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
             , height : boxHeight
             }
 
+    {- REM
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
@@ -317,27 +326,32 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
         , locations   = Map.insert nodeIdR location state.locations
         }
     )
+    -}
 
-    Key.mainScreen >~ Screen.render
+    -- REM Key.mainScreen >~ Screen.render
 
     pure unit -- REM { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
 
 
 
 fromFamilyAt
-    :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
+    :: forall tk fs pstate f nstate is os repr m
     -- REM . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Hydra.WrapRepr Effect
     -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-     . RegisteredFamily (F f nstate is os repr m) families
+     . MonadEffect m => Wiring m
+    => IsSymbol f => Mark (Id.Family f)
+    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => RegisteredFamily (F f nstate is os repr m) fs
+    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
     => Int /\ Int
     -> Id.PatchR
-    -> Noodle.Patch pstate families repr m
+    -> Noodle.Patch pstate fs repr m
     -> Id.Family f
-    -- REM -> Raw.Family repr m -- TODO: implement aw version as well
-    -> Toolkit tk families repr m
-    -> BlessedOpM State Effect _
-fromFamilyAt pos curPatchId curPatch family _ tk = do
-    (node :: Noodle.Node f nstate is os repr m) <- liftEffect $ Toolkit.spawn tk family
+    -- REM -> Raw.Family repr m -- TODO: implement Raw version as well
+    -> Toolkit tk fs repr m
+    -> BlessedOpM (State tk pstate fs repr m) m _
+fromFamilyAt pos curPatchId curPatch family tk = do
+    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
     {- REM
     let (mbState :: Maybe pstate) = fromGlobal $ Stateful.get curPatch
     node' <- liftEffect $ case mbState of
@@ -350,24 +364,30 @@ fromFamilyAt pos curPatchId curPatch family _ tk = do
 
 
 fromFamilyAuto
-    :: forall families' instances' rlins f state isrl is osrl os repr_is repr_os
+    :: forall fs tk f nstate pstate is os repr m
     -- REM . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Hydra.WrapRepr Effect
     -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-     . RegisteredFamily (F f nstate is os repr m) families
+     . MonadEffect m => Wiring m
+    => IsSymbol f => Mark (Id.Family f)
+    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => RegisteredFamily (F f nstate is os repr m) fs
+    => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
     => Id.PatchR
-    -> Noodle.Patch pstate families repr m
+    -> Noodle.Patch pstate fs repr m
     -> Id.Family f
-    -- REM -> Raw.Family repr m -- TODO: implement aw version as well
-    -> Toolkit tk families repr m
-    -> BlessedOpM State Effect _
-fromFamilyAuto curPatchId curPatch family def tk = do
-    autoPos >>= \pos -> fromFamilyAt pos curPatchId curPatch family def tk
+    -- REM -> Raw.Family repr m -- TODO: implement Raw version as well
+    -> Toolkit tk fs repr m
+    -> BlessedOpM (State tk pstate fs repr m) m _
+fromFamilyAuto curPatchId curPatch family tk = do
+    pos <- autoPos
+    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
+    fromNodeAt pos curPatchId curPatch family node
 
 
 logDataCommand
-    :: forall tk f s fs nstate repr m
+    :: forall tk fs pstate nstate repr m
      . MonadEffect m
-    => Ref (State tk s fs repr m)
+    => Ref (State tk pstate fs repr m)
     -> NodeChanges nstate repr
     -> m Unit
 logDataCommand stateRef (chFocus /\ _ /\ inlets /\ outlets) =
@@ -437,7 +457,7 @@ renderUpdate _ inletsKeysMap outletsKeysMap (_ /\ stateRepr /\ inletsReps /\ out
                 Nothing -> pure unit
 
 
-onMove :: forall tk f s fs nstate repr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk s fs repr m) Effect
+onMove :: forall tk pstate fs repr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk pstate fs repr m) Effect
 onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.rawify nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
@@ -451,7 +471,7 @@ onMove nodeId nodeKey _ _ = do
         updatePos nb = Just <<< Bounds.move nb
 
 
-onMouseOver :: forall tk f s fs nstate repr m. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp (State tk s fs repr m) Effect
+onMouseOver :: forall tk fs f pstate repr m. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
 onMouseOver family _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
@@ -463,7 +483,7 @@ onMouseOver family _ _ = do
     --liftEffect $ Console.log $ "over" <> show idx
 
 
-onMouseOut :: forall tk f s fs nstate repr m. _ -> _ -> BlessedOp (State tk s fs repr m) Effect
+onMouseOut :: forall tk fs pstate repr m. _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
 onMouseOut _ _ = do
     {- REM
     SL.clear

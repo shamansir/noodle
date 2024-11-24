@@ -23,6 +23,8 @@ class HasBody x f state is os m repr | x -> f, f -> state is os where
     run :: Proxy x -> NodeBoxKey -> Node f state is os m -> Signal repr -> BlessedOp state m
 -}
 
+-- TODO: better lock the typeclass on `F` family instance? Because we use it only for nodes? Aren't we?
+--       see `RegisteredFamily`
 --class HasCliBody :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
 class HasCliBody (tk :: ToolkitKey) (f :: Symbol) {- repr -} x state m | tk f -> x state m where
 --     {-
@@ -50,6 +52,8 @@ class HasBody''' x y repr state m | x -> y state where
 -}
 
 
+-- TODO: better lock the typeclass on `F` family instance? Because we use it only for nodes? Aren't we?
+--       see `RegisteredFamily`
 class HasCliCustomSize (tk :: ToolkitKey) (f :: Symbol) x | tk f -> x where
     cliSize :: Proxy tk -> Proxy f -> NodeBoxKey -> x -> Maybe { width :: Int, height :: Int }
 
