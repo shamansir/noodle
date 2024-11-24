@@ -46,7 +46,7 @@ import Noodle.Repr (fallback, inbetween, inbetween') as Repr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
-import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues) as Raw
+import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues, NodeChanges) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
@@ -224,7 +224,7 @@ subscribeState :: forall f state is os repr m. Node f state is os repr m -> Sign
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Fn.UpdateFocus /\ state /\ Raw.InletsValues repr /\ Raw.OutletsValues repr)
+subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Raw.NodeChanges state repr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
 
 

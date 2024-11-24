@@ -139,11 +139,11 @@ shape :: forall repr m. Node repr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
 
 
-inlets :: forall repr m. MonadEffect m => Node repr m -> m (InletsValues repr)
+inlets :: forall m repr mp. MonadEffect m => Node repr mp -> m (InletsValues repr)
 inlets node = liftEffect $ RawProtocol.getInlets $ _getProtocol node
 
 
-outlets :: forall repr m. MonadEffect m => Node repr m -> m (OutletsValues repr)
+outlets :: forall m repr mp. MonadEffect m => Node repr mp -> m (OutletsValues repr)
 outlets node = liftEffect $ RawProtocol.getOutlets $ _getProtocol node
 
 
@@ -151,11 +151,11 @@ state :: forall repr m. MonadEffect m => Node repr m -> m repr
 state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
-atInlet :: forall repr m. MonadEffect m => Id.InletR -> Node repr m -> m (Maybe repr)
+atInlet :: forall m repr mp. MonadEffect m => Id.InletR -> Node repr mp -> m (Maybe repr)
 atInlet inlet node = inlets node <#> Map.lookup inlet
 
 
-atOutlet :: forall repr m. MonadEffect m => Id.OutletR -> Node repr m -> m (Maybe repr)
+atOutlet :: forall m repr mp. MonadEffect m => Id.OutletR -> Node repr mp -> m (Maybe repr)
 atOutlet outlet node = outlets node <#> Map.lookup outlet
 
 
@@ -171,6 +171,9 @@ _getTracker (Node _ _ tracker _ _) = tracker
 
 
 {- Subscriptions -}
+
+
+type NodeChanges state repr = (Fn.UpdateFocus /\ state /\ InletsValues repr /\ OutletsValues repr)
 
 
 subscribeInlet :: forall repr m. Id.InletR -> Node repr m -> Signal (Maybe repr)
@@ -193,5 +196,5 @@ subscribeState :: forall repr m. Node repr m -> Signal repr
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall repr m. Node repr m -> Signal (Fn.UpdateFocus /\ repr /\ InletsValues repr /\ OutletsValues repr)
+subscribeChanges :: forall repr m. Node repr m -> Signal (NodeChanges repr repr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
