@@ -28,7 +28,7 @@ import Noodle.Id (Inlet, Outlet, Family(..), NodeR, InletR, OutletR, FamilyR, fa
 import Noodle.Fn (Fn)
 import Noodle.Fn (make, run', toRawWithReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
-import Noodle.Fn.Shape (reflect, inletRName, outletRName) as Shape
+import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
@@ -37,6 +37,7 @@ import Noodle.Fn.Updates (UpdateFocus) as Fn
 import Noodle.Fn.Updates (toTuple) as Updates
 -- import Noodle.Fn.Process (ProcessM)
 import Noodle.Raw.Fn.Shape (Shape) as Raw
+import Noodle.Raw.Fn.Shape (inletRName, outletRName) as RShape
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.FromToRec as ReprCnv
@@ -196,7 +197,7 @@ subscribeInletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
 
 
 subscribeInlets :: forall f state is isrl os repr m. RL.RowToList is isrl => FromReprRow isrl is repr => Node f state is os repr m -> Signal (Record is)
-subscribeInlets (Node _ _ tracker _ _) = ReprCnv.toRec Shape.inletRName <$> Tuple.snd <$> tracker.inlets
+subscribeInlets (Node _ _ tracker _ _) = ReprCnv.toRec RShape.inletRName <$> Tuple.snd <$> tracker.inlets
 
 
 subscribeOutletR :: forall f state is os repr m. Id.OutletR -> Node f state is os repr m -> Signal (Maybe repr)
@@ -216,7 +217,7 @@ subscribeOutletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
 
 
 subscribeOutlets :: forall f state is os osrl repr m. RL.RowToList os osrl => FromReprRow osrl os repr => Node f state is os repr m -> Signal (Record os)
-subscribeOutlets (Node _ _ tracker _ _) = ReprCnv.toRec Shape.outletRName <$> Tuple.snd <$> tracker.outlets
+subscribeOutlets (Node _ _ tracker _ _) = ReprCnv.toRec RShape.outletRName <$> Tuple.snd <$> tracker.outlets
 
 
 subscribeState :: forall f state is os repr m. Node f state is os repr m -> Signal state
@@ -236,10 +237,14 @@ subscribeChangesRec
 subscribeChangesRec (Node _ _ tracker _ _) =
     tracker.all <#> Updates.toTuple <#>
         \(focus /\ state /\ inputsMap /\ outputsMap) ->
-            focus /\ state /\ ReprCnv.toRec Shape.inletRName inputsMap /\ ReprCnv.toRec Shape.outletRName outputsMap
+            focus /\ state /\ ReprCnv.toRec RShape.inletRName inputsMap /\ ReprCnv.toRec RShape.outletRName outputsMap
 
 
 {- Get Data -}
+
+
+shape :: forall f state is os repr m. Node f state is os repr m -> Raw.Shape
+shape (Node _ shape _ _ _) = shape
 
 
 inlets :: forall m f state is isrl os repr mp. MonadEffect m => FromReprRow isrl is repr => Node f state is os repr mp -> m (Record is)

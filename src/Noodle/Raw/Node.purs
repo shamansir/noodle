@@ -135,6 +135,10 @@ run (Node _ _ _ protocol fn) = RawFn.run' protocol fn
 {- Get Data -}
 
 
+shape :: forall repr m. Node repr m -> Raw.Shape
+shape (Node _ shape _ _ _) = shape
+
+
 inlets :: forall repr m. MonadEffect m => Node repr m -> m (InletsValues repr)
 inlets node = liftEffect $ RawProtocol.getInlets $ _getProtocol node
 

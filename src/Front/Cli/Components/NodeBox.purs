@@ -196,6 +196,9 @@ fromNodeAt (leftN /\ topN) curPatchId curPatch family node = do
 
     -- REM let (is :: Raw.InletsValues repr)  = Node.inletsRaw node  -- Sort using shape in the node
     -- REM let (os :: Raw.OutletsValues repr) = Node.outletsRaw node -- Sort using shape in the node
+
+    let shape = Node.shape node
+
     is <- Map.toUnfoldable <$> Node.inletsRaw node  -- Sort using shape in the node
     os <- Map.toUnfoldable <$> Node.outletsRaw node -- Sort using shape in the node
 

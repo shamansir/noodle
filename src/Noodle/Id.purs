@@ -29,8 +29,12 @@ import Data.Reflectable (class Reflectable)
 
 
 import Noodle.Fn.Shape
-    ( Inlet(..), InletR(..), inletR, inletRName, inletName
-    , Outlet(..), OutletR(..), outletR, outletRName, outletName
+    ( Inlet(..), inletName
+    , Outlet(..), outletName
+    ) as FromShape
+import Noodle.Raw.Fn.Shape
+    ( InletR, inletR, inletRName
+    , OutletR, outletR, outletRName
     ) as FromShape
 import Noodle.Fn.Shape.Temperament
     ( Temperament(..)-- , TemperamentK, Hot, Cold)

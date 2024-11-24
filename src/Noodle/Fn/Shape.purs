@@ -16,7 +16,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown, ByReflect(..))
 
-import Noodle.Raw.Fn.Shape (InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
+import Noodle.Raw.Fn.Shape (InletR(..), OutletR(..), InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
 import Noodle.Fn.Shape.Temperament (TemperamentK(..), Hot, Cold, Temperament(..), class IsTemperament, reflectTemperament)
 
 
@@ -25,17 +25,9 @@ data Inlet :: Symbol -> Type
 data Inlet name = Inlet
 
 
--- | `InletR` stores rawified inlet name as String.
-newtype InletR = InletR String
-
-
 -- | Outlet ID is used to reference corresponding outlet on a type-level by its name (e.g. as a record key)
 data Outlet :: Symbol -> Type
 data Outlet name = Outlet
-
-
--- | `OutletR` stores rawified outlet name as String.
-newtype OutletR = OutletR String
 
 
 instance IsSymbol name => Show (Inlet name) where
@@ -48,46 +40,12 @@ instance IsSymbol name => Show (Outlet name) where
     show Outlet = reflectSymbol (Proxy :: _ name)
 
 
-instance Show InletR where
-    show (InletR name) = name
-
-
-instance Show OutletR where
-    show (OutletR name) = name
-
-
-inletR :: forall proxy name. IsSymbol name => proxy name -> InletR
-inletR _ = InletR $ reflectSymbol (Proxy :: _ name)
-
-
-outletR :: forall proxy name. IsSymbol name => proxy name -> OutletR
-outletR _ = OutletR $ reflectSymbol (Proxy :: _ name)
-
-
 inletName :: forall name. IsSymbol name => Inlet name -> String
 inletName = const $ reflectSymbol (Proxy :: _ name)
 
 
 outletName :: forall name. IsSymbol name => Outlet name -> String
 outletName = const $ reflectSymbol (Proxy :: _ name)
-
-
-inletRName :: InletR -> String
-inletRName = unwrap
-
-
-outletRName :: OutletR -> String
-outletRName = unwrap
-
-
-derive instance Newtype InletR _
-derive instance Newtype OutletR _
-
-derive instance Eq InletR
-derive instance Eq OutletR
-
-derive instance Ord InletR
-derive instance Ord OutletR
 
 
 -- data InletDef t = I { default :: t }
@@ -128,7 +86,7 @@ class InletsDefs (inlets :: Inlets) where
 instance MapDown ByReflect inlets Array (Temperament /\ String) => InletsDefs inlets where
     reflectInlets :: Proxy inlets -> Raw.InletsShape
     reflectInlets _ = Raw.Inlets $ mapWithIndex makeInletDef (mapDown ByReflect (Proxy :: _ inlets) :: Array (Temperament /\ String))
-        where makeInletDef order (temp /\ name) = Raw.InletDefR { name, order, temp }
+        where makeInletDef order (temp /\ name) = Raw.InletDefR { name : Raw.InletR name, order, temp }
 
 
 class OutletsDefs (outlets :: Outlets) where
@@ -138,7 +96,7 @@ class OutletsDefs (outlets :: Outlets) where
 instance MapDown ByReflect outlets Array String => OutletsDefs outlets where
     reflectOutlets :: Proxy outlets -> Raw.OutletsShape
     reflectOutlets _ = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown ByReflect (Proxy :: _ outlets) :: Array String)
-        where makeOutletDef order name = Raw.OutletDefR { name, order }
+        where makeOutletDef order name = Raw.OutletDefR { name : Raw.OutletR name, order }
 
 
 class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
