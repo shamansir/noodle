@@ -18,7 +18,7 @@ import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
-import Noodle.Fn.Generic.Updates (UpdateFocus) as Fn
+import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Generic.Updates (toTuple) as Updates
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run') as RawFn
@@ -147,7 +147,7 @@ outlets :: forall m repr mp. MonadEffect m => Node repr mp -> m (OutletsValues r
 outlets node = liftEffect $ RawProtocol.getOutlets $ _getProtocol node
 
 
-state :: forall repr m. MonadEffect m => Node repr m -> m repr
+state :: forall m repr mp. MonadEffect m => Node repr mp -> m repr
 state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
@@ -157,6 +157,14 @@ atInlet inlet node = inlets node <#> Map.lookup inlet
 
 atOutlet :: forall m repr mp. MonadEffect m => Id.OutletR -> Node repr mp -> m (Maybe repr)
 atOutlet outlet node = outlets node <#> Map.lookup outlet
+
+
+curChanges :: forall m repr mp. MonadEffect m => Node repr mp -> m (NodeChanges repr repr)
+curChanges node = do
+  is <- inlets node
+  os <- outlets node
+  s  <- state node
+  pure $ Fn.Everything /\ s /\ is /\ os
 
 
 {- Private accessors -}

@@ -5,9 +5,11 @@ import Data.Maybe (Maybe)
 import Cli.Keys (NodeBoxKey)
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Noodle.Id (FamilyR) as Id
+import Noodle.Id (Family, FamilyR) as Id
 import Noodle.Node (Node)
-import Noodle.Toolkit (ToolkitKey)
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Toolkit (Toolkit, ToolkitKey)
+import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 
 
 -- import Toolkit.Hydra.Family.Render.RenderTarget
@@ -26,12 +28,39 @@ class HasBody x f state is os m repr | x -> f, f -> state is os where
 -- TODO: better lock the typeclass on `F` family instance? Because we use it only for nodes? Aren't we?
 --       see `RegisteredFamily`
 --class HasCliBody :: forall k. k -> Type -> Type -> (Type -> Type) -> Constraint
-class HasCliBody (tk :: ToolkitKey) (f :: Symbol) {- repr -} x state m | tk f -> x state m where
---     {-
---     component :: x -> Blessed state m
---     init :: x -> Blessed state m -> BlessedOp state m
---     -}
-    runBlessed :: Proxy tk -> Proxy f -> NodeBoxKey -> x -> {- Signal repr -> -} BlessedOp state m
+{- REM
+class HasCliBody (tk :: ToolkitKey) (f :: Symbol) x state m | tk f -> x state m where
+    runBlessed :: Proxy tk -> Proxy f -> NodeBoxKey -> x -> BlessedOp state m
+-}
+
+
+{-
+type Renderer f nstate is os repr m =
+    (  NodeBoxKey
+    -> Node f nstate is os repr m
+    ->
+        { size :: Maybe { width :: Int, height :: Int }
+        , node :: BlessedOp nstate m
+        }
+    )
+
+
+type RawRenderer repr m =
+    (  NodeBoxKey
+    -> Raw.Node repr m
+    ->
+        { size :: Maybe { width :: Int, height :: Int }
+        , node :: BlessedOp repr m
+        }
+    )
+-}
+
+
+class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
+    cliSize :: forall (f :: Symbol) nstate is os. RegisteredFamily (F f nstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f nstate is os repr m -> Maybe { width :: Int, height :: Int }
+    cliSizeRaw :: Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node repr m -> Maybe { width :: Int, height :: Int }
+    renderCli :: forall (f :: Symbol) nstate is os. RegisteredFamily (F f nstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f nstate is os repr m -> BlessedOp repr m
+    renderCliRaw :: Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node repr m -> BlessedOp repr m
 
 
 {-
@@ -54,8 +83,11 @@ class HasBody''' x y repr state m | x -> y state where
 
 -- TODO: better lock the typeclass on `F` family instance? Because we use it only for nodes? Aren't we?
 --       see `RegisteredFamily`
+
+{- REM
 class HasCliCustomSize (tk :: ToolkitKey) (f :: Symbol) x | tk f -> x where
     cliSize :: Proxy tk -> Proxy f -> NodeBoxKey -> x -> Maybe { width :: Int, height :: Int }
+-}
 
 
 {-

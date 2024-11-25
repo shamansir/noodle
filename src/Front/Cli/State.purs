@@ -22,6 +22,8 @@ import Noodle.Toolkit (families, class MapFamiliesImpl) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (make, id) as Patch
 
+import Blessed.Internal.NodeKey as NodeKey
+
 import Cli.WsServer as WSS
 
 import Cli.Keys as K
@@ -143,6 +145,16 @@ informWsInitialized _ state = state
 
 families :: forall tk s fs r m. Toolkit.MapFamiliesImpl r m fs => State tk s fs r m -> Array Id.FamilyR
 families = _.network >>> Network.toolkit >>> Toolkit.families
+
+
+nextKeys :: LastKeys -> LastKeys
+nextKeys lk =
+    { nodeBox      : NodeKey.next lk.nodeBox
+    , inletsBox    : NodeKey.next lk.inletsBox
+    , outletsBox   : NodeKey.next lk.outletsBox
+    , infoBox      : NodeKey.next lk.infoBox
+    , removeButton : NodeKey.next lk.removeButton
+    }
 
 
 type NodeBounds =
