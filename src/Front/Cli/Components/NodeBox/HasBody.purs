@@ -58,9 +58,9 @@ type RawRenderer repr m =
 
 class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
     cliSize :: forall (f :: Symbol) nstate is os. RegisteredFamily (F f nstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f nstate is os repr m -> Maybe { width :: Int, height :: Int }
-    cliSizeRaw :: Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node repr m -> Maybe { width :: Int, height :: Int }
-    renderCli :: forall (f :: Symbol) nstate is os. RegisteredFamily (F f nstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f nstate is os repr m -> BlessedOp repr m
-    renderCliRaw :: Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node repr m -> BlessedOp repr m
+    cliSizeRaw :: forall nstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node nstate repr m -> Maybe { width :: Int, height :: Int }
+    renderCli :: forall (f :: Symbol) nstate is os. RegisteredFamily (F f nstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f nstate is os repr m -> BlessedOp nstate m
+    renderCliRaw :: forall nstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node nstate repr m -> BlessedOp nstate m
 
 
 {-

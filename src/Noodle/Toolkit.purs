@@ -29,7 +29,7 @@ import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as F
-import Noodle.Raw.Toolkit.Family (familyIdOf, spawn) as RF
+import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RF
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr (class FromToRepr)
 
@@ -44,7 +44,7 @@ data Toolkit (tk :: ToolkitKey) (families :: Families) repr m = -- bind to
     Toolkit
         Name
         (Map Id.FamilyR (HoldsFamily repr m))
-        (Map Id.FamilyR (Raw.Family repr m))
+        (Map Id.FamilyR (Raw.Family repr repr m))
 
 
 empty :: forall tk repr m. Proxy tk -> Name -> Toolkit tk TNil repr m
@@ -86,12 +86,13 @@ register family (Toolkit name families rawFamilies) =
 
 
 registerRaw
-    :: forall tk repr m families
-     . Raw.Family repr m
+    :: forall tk fstate repr m families
+     . FromToRepr fstate repr
+    => Raw.Family fstate repr m
     -> Toolkit tk families repr m
     -> Toolkit tk families repr m
 registerRaw rawFamily (Toolkit name families rawFamilies) =
-    Toolkit name families (Map.insert (RF.familyIdOf rawFamily) rawFamily rawFamilies)
+    Toolkit name families (Map.insert (RF.familyIdOf rawFamily) (RF.toReprableState rawFamily) rawFamilies)
 
 
 spawn
@@ -118,7 +119,7 @@ spawnRaw
      . MonadEffect m
     => Id.FamilyR
     -> Toolkit tk families repr mp
-    -> m (Maybe (Raw.Node repr mp))
+    -> m (Maybe (Raw.Node repr repr mp))
 spawnRaw familyId (Toolkit _ _ rawFamilies) = do
     case Map.lookup familyId rawFamilies of -- FIXME: also look up in "usual" typed families
         -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
@@ -154,7 +155,7 @@ mapFamilies f (Toolkit _ families _) =
 
 mapRawFamilies
     :: forall x tk families repr m
-    .  (Raw.Family repr m -> x)
+    .  (Raw.Family repr repr m -> x)
     -> Toolkit tk families repr m
     -> Array x
 mapRawFamilies f (Toolkit _ _ rawFamilies) =
@@ -164,11 +165,11 @@ mapRawFamilies f (Toolkit _ _ rawFamilies) =
 mapAllFamilies
     :: forall x tk families repr m
     .  MapFamiliesImpl repr m families
-    => (Raw.Family repr m -> x)
+    => (Raw.Family repr repr m -> x)
     -> Toolkit tk families repr m
     -> Array x
 mapAllFamilies f (Toolkit _ families rawFamilies) =
-    ((\hf -> withFamily hf (F.toRaw >>> f))
+    ((\hf -> withFamily hf (F.toRaw >>> RF.toReprableState >>> f))
         <$> Array.catMaybes
             (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m))))
     <>

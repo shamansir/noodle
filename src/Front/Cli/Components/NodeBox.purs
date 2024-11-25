@@ -164,17 +164,17 @@ fromNodeAuto curPatchId curPatch family node = do
 -- TODO: fromRawNodeAuto
 
 _component
-    :: forall tk fs pstate repr m
+    :: forall tk fs nstate pstate repr m
     .  Wiring m
     => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
-    -> Raw.Node repr m
+    -> Raw.Node nstate repr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
-    -> BlessedOp repr m
+    -> BlessedOp nstate m
     -> BlessedOpM (State tk pstate fs repr m) m _
 _component
     (leftN /\ topN)
@@ -186,7 +186,7 @@ _component
     mbBodySize
     nodeOp
     = do
-    let (updates :: Signal (Raw.NodeChanges repr repr)) = RawNode.subscribeChanges rawNode
+    let (updates :: Signal (Raw.NodeChanges nstate repr)) = RawNode.subscribeChanges rawNode
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
     _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
@@ -273,13 +273,13 @@ _component
                 -- REM     $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges repr repr -> BlessedOp a Effect -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a Effect -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
         renderNodeUpdate = renderUpdate nextKeys.nodeBox Map.empty Map.empty
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
-    (nodeState :: repr) <- RawNode.state rawNode
+    (nodeState :: nstate) <- RawNode.state rawNode
 
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
@@ -301,7 +301,7 @@ _component
 
     -- REM X liftEffect $ renderNodeUpdate $ Everything /\ nodeState /\ is /\ os
 
-    (nodeStateRef :: Ref repr) <- liftEffect $ Ref.new nodeState
+    (nodeStateRef :: Ref nstate) <- liftEffect $ Ref.new nodeState
 
     Blessed.lift $ Blessed.runM' nodeStateRef $ nodeOp
 
@@ -331,7 +331,7 @@ _component
 
 
 fromRawNodeAt
-    :: forall tk fs pstate repr m
+    :: forall tk fs nstate pstate repr m
     .  Wiring m
     => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     -- => IsSymbol f => Mark (Id.Family f)
@@ -341,7 +341,7 @@ fromRawNodeAt
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
-    -> Raw.Node repr m
+    -> Raw.Node nstate repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
 fromRawNodeAt pos curPatchId curPatch familyR rawNode = do
     --liftEffect $ Node.run node -- just Node.run ??

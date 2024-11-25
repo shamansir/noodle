@@ -10,14 +10,13 @@ import Type.Proxy (Proxy(..))
 
 import Noodle.Id (Family(..), InletR, OutletR, familyR, inletR, outletR) as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make, toRawWithReprableState) as Fn
+import Noodle.Fn (make, toRaw) as Fn
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
 import Noodle.Repr (class ToReprRow, class FromToRepr)
-import Noodle.Repr (unwrap, ensureTo) as Repr
 
 import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
@@ -83,15 +82,13 @@ spawn family@(Family rawShape state inletsMap outletsMap fn) =
 
 toRaw :: forall f state is os repr m
      . IsSymbol f
-    => FromToRepr state repr
     => Family f state is os repr m
-    -> Raw.Family repr m
+    -> Raw.Family state repr m
 toRaw family@(Family rawShape state inletsMap outletsMap fn) =
     Raw.Family
         (Id.familyR $ familyIdOf family)
         rawShape
-        (Repr.unwrap $ Repr.ensureTo state)
+        state
         inletsMap
         outletsMap
-        $ Fn.toRawWithReprableState
-        $ fn
+        $ Fn.toRaw fn

@@ -7,49 +7,51 @@ import Data.Map (Map)
 import Effect.Class (class MonadEffect)
 
 import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
+import Noodle.Repr (class FromRepr, class ToRepr)
+import Noodle.Repr (ensureTo, unwrap) as Repr
 import Noodle.Raw.Node (InletsValues, OutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn (Fn) as Raw
-import Noodle.Raw.Fn (make) as RawFn
+import Noodle.Raw.Fn (make, toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 
 
-data Family (repr :: Type) (m :: Type -> Type)
+data Family state (repr :: Type) (m :: Type -> Type)
     = Family
         Id.FamilyR
         Raw.Shape
-        repr
+        state
         (InletsValues repr)
         (OutletsValues repr)
-        (Raw.Fn repr repr m)
+        (Raw.Fn state repr m)
 
 
 make
-    :: forall repr m
+    :: forall state repr m
      . Id.FamilyR
-    -> repr
+    -> state
     -> Raw.Shape
     -> InletsValues repr
     -> OutletsValues repr
-    -> Raw.Process repr repr m
-    -> Family repr m
-make family state rawShape inletsMap outletsMap process = do
+    -> Raw.Process state repr m
+    -> Family state repr m
+make familyR state rawShape inletsMap outletsMap process = do
     Family
-        family
+        familyR
         rawShape
         state
         inletsMap
         outletsMap
-        $ RawFn.make (Id.family family) process
+        $ RawFn.make (Id.family familyR) process
 
 
 spawn ::
-    forall repr mp m
+    forall m state repr mp
      . MonadEffect m
-    => Family repr mp
-    -> m (Raw.Node repr mp)
+    => Family state repr mp
+    -> m (Raw.Node state repr mp)
 spawn (Family familyR rawShape state inletsMap outletsMap fn) =
     RawNode._makeWithFn
         familyR
@@ -61,7 +63,23 @@ spawn (Family familyR rawShape state inletsMap outletsMap fn) =
 
 
 familyIdOf
-    :: forall repr m
-     . Family repr m
+    :: forall state repr m
+     . Family state repr m
     -> Id.FamilyR
 familyIdOf (Family rawId _ _ _ _ _) = rawId
+
+
+toReprableState
+    :: forall state repr m
+     . FromRepr repr state
+    => ToRepr state repr
+    => Family state repr m
+    -> Family repr repr m
+toReprableState (Family familyR rawShape state inletsMap outletsMap fn) =
+    Family
+        familyR
+        rawShape
+        (Repr.unwrap $ Repr.ensureTo state)
+        inletsMap
+        outletsMap
+        $ RawFn.toReprableState fn

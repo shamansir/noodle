@@ -2,10 +2,9 @@ module Noodle.Patch where
 
 import Prelude
 
-import Signal.Channel (Channel, channel)
-
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
+import Prim.Boolean (True, False)
+import Prim.Row as R
+import Prim.RowList as RL
 
 import Type.Data.List (class IsMember)
 import Type.Data.List.Extra (class LMap, class MapDown, mapDown)
@@ -20,28 +19,28 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
 
-import Prim.Boolean (True, False)
-import Prim.Row as R
-import Prim.RowList as RL
--- import Type.RowList as RL
--- import Type.Row as R
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+
+import Signal.Channel (Channel, channel)
 
 import Noodle.Id (PatchR, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet) as Id
+import Noodle.Link (FromId, ToId, setId, cancel) as Link
+import Noodle.Link (Link)
 import Noodle.Node (Node)
 import Noodle.Node (family, toRaw, connect) as Node
-import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (family) as RawNode
-import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
-import Noodle.Link (Link)
-import Noodle.Link (FromId, ToId, setId, cancel) as Link
-import Noodle.Raw.Link (Link) as Raw
-import Noodle.Repr (class ToRepr, class FromRepr)
 import Noodle.Patch.Links (Links)
 import Noodle.Patch.Links (init, track, nextId, forget) as Links
-import Noodle.Node.Has (class HasInlet, class HasOutlet)
+import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (family, toReprableState) as RawNode
+import Noodle.Repr (class ToRepr, class FromRepr, class FromToRepr)
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
+
 
 
 data Patch state (families :: Families) repr m =
@@ -51,7 +50,7 @@ data Patch state (families :: Families) repr m =
     -- Toolkit families repr m
     (Channel state)
     (Map Id.FamilyR (Array (HoldsNode repr m))) -- FIXME: consider storing all the nodes in Raw format
-    (Map Id.FamilyR (Array (Raw.Node repr m))) -- use `Channel` as well?
+    (Map Id.FamilyR (Array (Raw.Node repr repr m))) -- use `Channel` as well?
     Links -- use `Channel` as well?
 
 
@@ -112,14 +111,15 @@ registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
 
 
 registerRawNode
-    :: forall state repr m families
-     . Raw.Node repr m
-    -> Patch state families repr m
-    -> Patch state families repr m
+    :: forall pstate nstate repr m families
+     . FromToRepr nstate repr
+    => Raw.Node nstate repr m
+    -> Patch pstate families repr m
+    -> Patch pstate families repr m
 registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
-    Patch name id chState nodes (Map.alter (insertOrInit rawNode) (RawNode.family rawNode) rawNodes) links
+    Patch name id chState nodes (Map.alter (insertOrInit $ RawNode.toReprableState rawNode) (RawNode.family rawNode) rawNodes) links
     where
-      insertOrInit :: Raw.Node repr m -> Maybe (Array (Raw.Node repr m)) -> Maybe (Array (Raw.Node repr m))
+      insertOrInit :: Raw.Node repr repr m -> Maybe (Array (Raw.Node repr repr m)) -> Maybe (Array (Raw.Node repr repr m))
       insertOrInit holdsNode Nothing        = Just $ Array.singleton holdsNode
       insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
 
@@ -200,7 +200,7 @@ mapNodes f (Patch _ _ _ nodes _ _) =
 
 mapRawNodes
     :: forall x pstate families repr m
-    .  (Raw.Node repr m -> x)
+    .  (Raw.Node repr repr m -> x)
     -> Patch pstate families repr m
     -> Array x
 mapRawNodes f (Patch _ _ _ _ rawNodes _) =
@@ -209,10 +209,10 @@ mapRawNodes f (Patch _ _ _ _ rawNodes _) =
 
 mapAllNodes
     :: forall x pstate families repr m
-    .  (Raw.Node repr m -> x)
+    .  (Raw.Node repr repr m -> x)
     -> Patch pstate families repr m
     -> Array x
 mapAllNodes f patch@(Patch _ _ _ nodes _ _) =
     Array.concat (map (toRawCnv >>> f) <$> Tuple.snd <$> Map.toUnfoldable nodes) <> mapRawNodes f patch
     where
-      toRawCnv hn = withNode hn Node.toRaw
+      toRawCnv hn = withNode hn (Node.toRaw >>> RawNode.toReprableState)

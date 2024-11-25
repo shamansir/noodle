@@ -21,36 +21,38 @@ import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as 
 import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Generic.Updates (toTuple) as Updates
 import Noodle.Raw.Fn (Fn) as Raw
-import Noodle.Raw.Fn (make, run') as RawFn
+import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
-import Noodle.Repr (class HasFallback)
+import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
+import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
+import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
 
 
 type InletsValues repr = Map Id.InletR repr
 type OutletsValues repr = Map Id.OutletR repr
 
 
-data Node (repr :: Type) (m :: Type -> Type)
+data Node state (repr :: Type) (m :: Type -> Type)
     = Node
         Id.NodeR
         Raw.Shape
-        (Raw.Tracker repr repr)
-        (Raw.Protocol repr repr)
-        (Raw.Fn repr repr m)
+        (Raw.Tracker state repr)
+        (Raw.Protocol state repr)
+        (Raw.Fn state repr m)
 
 
 {- Get info -}
 
 
-family :: forall repr m. Node repr m -> Id.FamilyR
+family :: forall state repr m. Node state repr m -> Id.FamilyR
 family = id >>> Id.familyOf
 
 
-id :: forall repr m. Node repr m -> Id.NodeR
+id :: forall state repr m. Node state repr m -> Id.NodeR
 id (Node nodeR _ _ _ _) = nodeR
 
 
@@ -58,29 +60,29 @@ id (Node nodeR _ _ _ _) = nodeR
 
 
 make
-    :: forall repr mp m
+    :: forall m state repr mp
      . MonadEffect m
     => Id.FamilyR
-    -> repr
+    -> state
     -> Raw.Shape
     -> InletsValues repr
     -> OutletsValues repr
-    -> Raw.Process repr repr mp
-    -> m (Node repr mp)
+    -> Raw.Process state repr mp
+    -> m (Node state repr mp)
 make family state rawShape inletsMap outletsMap process = do
     _makeWithFn family state rawShape inletsMap outletsMap $ RawFn.make (Id.family family) process
 
 
 _makeWithFn
-    :: forall repr mp m
+    :: forall m state repr mp
      . MonadEffect m
     => Id.FamilyR
-    -> repr
+    -> state
     -> Raw.Shape
     -> InletsValues repr
     -> OutletsValues repr
-    -> Raw.Fn repr repr mp
-    -> m (Node repr mp)
+    -> Raw.Fn state repr mp
+    -> m (Node state repr mp)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeR_ family uniqueHash
@@ -93,10 +95,10 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 
 -- TODO: private
 _runOnInletUpdates
-    :: forall repr m
+    :: forall state repr m
     .  Wiring m
     => HasFallback repr
-    => Node repr m
+    => Node state repr m
     -> m Unit
 _runOnInletUpdates node =
   SignalX.runSignal $ subscribeInlets node ~> const (run node)
@@ -104,10 +106,10 @@ _runOnInletUpdates node =
 
 -- TODO: private
 _runOnStateUpdates
-    :: forall repr m
+    :: forall state repr m
     .  Wiring m
     => HasFallback repr
-    => Node repr m
+    => Node state repr m
     -> m Unit
 _runOnStateUpdates node =
   SignalX.runSignal $ subscribeState node ~> const (run node)
@@ -115,10 +117,10 @@ _runOnStateUpdates node =
 
 --- FIXME: find better name
 _listenUpdatesAndRun
-  :: forall repr m
+  :: forall state repr m
    . Wiring m
   => HasFallback repr
-  => Node repr m
+  => Node state repr m
   -> m Unit
 _listenUpdatesAndRun node = do
   _runOnInletUpdates node
@@ -128,38 +130,38 @@ _listenUpdatesAndRun node = do
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 
 
-run :: forall repr m. MonadRec m => MonadEffect m => HasFallback repr => Node repr m -> m Unit
+run :: forall state repr m. MonadRec m => MonadEffect m => HasFallback repr => Node state repr m -> m Unit
 run (Node _ _ _ protocol fn) = RawFn.run' protocol fn
 
 
 {- Get Data -}
 
 
-shape :: forall repr m. Node repr m -> Raw.Shape
+shape :: forall state repr m. Node state repr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
 
 
-inlets :: forall m repr mp. MonadEffect m => Node repr mp -> m (InletsValues repr)
+inlets :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (InletsValues repr)
 inlets node = liftEffect $ RawProtocol.getInlets $ _getProtocol node
 
 
-outlets :: forall m repr mp. MonadEffect m => Node repr mp -> m (OutletsValues repr)
+outlets :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (OutletsValues repr)
 outlets node = liftEffect $ RawProtocol.getOutlets $ _getProtocol node
 
 
-state :: forall m repr mp. MonadEffect m => Node repr mp -> m repr
+state :: forall m state repr mp. MonadEffect m => Node state repr mp -> m state
 state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
-atInlet :: forall m repr mp. MonadEffect m => Id.InletR -> Node repr mp -> m (Maybe repr)
+atInlet :: forall m state repr mp. MonadEffect m => Id.InletR -> Node state repr mp -> m (Maybe repr)
 atInlet inlet node = inlets node <#> Map.lookup inlet
 
 
-atOutlet :: forall m repr mp. MonadEffect m => Id.OutletR -> Node repr mp -> m (Maybe repr)
+atOutlet :: forall m state repr mp. MonadEffect m => Id.OutletR -> Node state repr mp -> m (Maybe repr)
 atOutlet outlet node = outlets node <#> Map.lookup outlet
 
 
-curChanges :: forall m repr mp. MonadEffect m => Node repr mp -> m (NodeChanges repr repr)
+curChanges :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (NodeChanges state repr)
 curChanges node = do
   is <- inlets node
   os <- outlets node
@@ -170,11 +172,11 @@ curChanges node = do
 {- Private accessors -}
 
 
-_getProtocol :: forall repr m. Node repr m -> Raw.Protocol repr repr
+_getProtocol :: forall state repr m. Node state repr m -> Raw.Protocol state repr
 _getProtocol (Node _ _ _ protocol _) = protocol
 
 
-_getTracker :: forall repr m. Node repr m -> Raw.Tracker repr repr
+_getTracker :: forall state repr m. Node state repr m -> Raw.Tracker state repr
 _getTracker (Node _ _ tracker _ _) = tracker
 
 
@@ -184,25 +186,38 @@ _getTracker (Node _ _ tracker _ _) = tracker
 type NodeChanges state repr = (Fn.UpdateFocus /\ state /\ InletsValues repr /\ OutletsValues repr)
 
 
-subscribeInlet :: forall repr m. Id.InletR -> Node repr m -> Signal (Maybe repr)
+subscribeInlet :: forall state repr m. Id.InletR -> Node state repr m -> Signal (Maybe repr)
 subscribeInlet input node = Map.lookup input <$> subscribeInlets node
 
 
-subscribeInlets :: forall repr m. Node repr m -> Signal (InletsValues repr)
+subscribeInlets :: forall state repr m. Node state repr m -> Signal (InletsValues repr)
 subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
 
 
-subscribeOutlet :: forall repr m. Id.OutletR -> Node repr m -> Signal (Maybe repr)
+subscribeOutlet :: forall state repr m. Id.OutletR -> Node state repr m -> Signal (Maybe repr)
 subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
 
 
-subscribeOutlets :: forall repr m. Node repr m -> Signal (OutletsValues repr)
+subscribeOutlets :: forall state repr m. Node state repr m -> Signal (OutletsValues repr)
 subscribeOutlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
 
 
-subscribeState :: forall repr m. Node repr m -> Signal repr
+subscribeState :: forall state repr m. Node state repr m -> Signal state
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall repr m. Node repr m -> Signal (NodeChanges repr repr)
+subscribeChanges :: forall state repr m. Node state repr m -> Signal (NodeChanges state repr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
+
+
+{- Convert -}
+
+
+toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => Node state repr m -> Node repr repr m
+toReprableState (Node nodeR shape tracker protocol fn) =
+    Node
+        nodeR
+        shape
+        (RawTracker.toReprableState tracker)
+        (RawProtocol.toReprableState protocol)
+        $ RawFn.toReprableState fn

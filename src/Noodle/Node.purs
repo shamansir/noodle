@@ -26,7 +26,7 @@ import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Id (Inlet, Outlet, Family(..), NodeR, InletR, OutletR, FamilyR, family, familyR, inletR, outletR, nodeR_) as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make, run', toRawWithReprableState) as Fn
+import Noodle.Fn (make, run', toRaw, toRawWithReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Fn.Process (Process)
@@ -532,9 +532,11 @@ logUpdates (Node _ _ tracker _ _) = show <$> tracker.all
 {- Rawify -}
 
 
-toRaw :: forall f state is os repr m. FromRepr repr state => ToRepr state repr => Node f state is os repr m -> Raw.Node repr m
+toRaw :: forall f state is os repr m. Node f state is os repr m -> Raw.Node state repr m
 toRaw (Node nodeR shape tracker protocol fn) =
-    Raw.Node nodeR shape
-        (RawTracker.toReprableState tracker)
-        (RawProtocol.toReprableState protocol)
-        $ Fn.toRawWithReprableState fn
+    Raw.Node
+        nodeR
+        shape
+        tracker
+        protocol
+        $ Fn.toRaw fn

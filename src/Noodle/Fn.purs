@@ -56,14 +56,6 @@ import Noodle.Repr (ensureTo, ensureFrom, wrap, unwrap) as Repr
 data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn FnName (Process state is os repr m)
 
 
-toRaw :: forall state is os repr m. Fn state is os repr m -> Raw.Fn state repr m
-toRaw (Fn name processM) = Raw.Fn name $ Process.toRaw processM
-
-
-toRawWithReprableState :: forall state is os repr m. FromRepr repr state => ToRepr state repr => Fn state is os repr m -> Raw.Fn repr repr m
-toRawWithReprableState (Fn name processM) = Raw.Fn name $ Process.toRawWithReprableState processM
-
-
 class ToFn a state is os repr where
     toFn :: forall m. a -> Fn state is os repr m
 
@@ -140,3 +132,13 @@ name (Fn n _) = n
 cloneReplace :: forall state is os repr m. Fn state is os repr m -> Process state is os repr m -> Fn state is os repr m
 cloneReplace (Fn name _) newProcessM =
     Fn name newProcessM
+
+
+{- Convert -}
+
+toRaw :: forall state is os repr m. Fn state is os repr m -> Raw.Fn state repr m
+toRaw (Fn name processM) = Raw.Fn name $ Process.toRaw processM
+
+
+toRawWithReprableState :: forall state is os repr m. FromRepr repr state => ToRepr state repr => Fn state is os repr m -> Raw.Fn repr repr m
+toRawWithReprableState (Fn name processM) = Raw.Fn name $ Process.toRawWithReprableState processM

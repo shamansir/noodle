@@ -11,10 +11,10 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Noodle.Id (FnName, InletR, OutletR)
 
 import Noodle.Raw.Fn.Process (Process) as Raw
-import Noodle.Raw.Fn.Process (runM) as RawProcess
+import Noodle.Raw.Fn.Process (runM, toReprableState) as RawProcess
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
-import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets) as RawProtocol
-import Noodle.Repr (class HasFallback)
+import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets, toReprableState) as RawProtocol
+import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
 
 
 data Fn state repr (m :: Type -> Type) = Fn FnName (Raw.Process state repr m) -- TODO: move to separate module
@@ -42,3 +42,7 @@ run protocol (Fn _ process) = do
 run' :: forall state repr m. MonadRec m => MonadEffect m => HasFallback repr => Raw.Protocol state repr -> Fn state repr m -> m Unit
 run' protocol (Fn _ process) =
     RawProcess.runM protocol process
+
+
+toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => Fn state repr m -> Fn repr repr m
+toReprableState (Fn name processFn) = Fn name $ RawProcess.toReprableState processFn
