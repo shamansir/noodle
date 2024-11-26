@@ -47,7 +47,7 @@ import Blessed.Internal.Foreign (encode, encode', encodeHandler, encodeHandlerRe
 
 
 -- TODO: these function types make reading the code and finding proper things to fit complex, try to get rid of them in the end
-type InitFn subj id state = (NodeKey subj id -> Op.BlessedOp state Effect)
+type InitFn subj id state    = (NodeKey subj id -> Op.BlessedOp state Effect)
 type HandlerFn subj id state = (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)
 
 

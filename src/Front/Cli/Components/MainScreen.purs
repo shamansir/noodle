@@ -21,10 +21,17 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Noodle.Id as Id
 import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
+import Noodle.Wiring (class Wiring)
+import Noodle.Repr (class HasFallback)
+
+import Noodle.Ui.Cli.Tagging.At as T
+import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
 import Cli.State (families) as State
+import Cli.Class.CliFriendly (class CliFriendly)
 
 
 import Cli.Components.PatchBox as PatchBox
@@ -41,6 +48,7 @@ import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.FullInfoBox as FullInfoBox
 -- import Cli.Components.WsStatusButton as WsStatusButton
 
+
 -- import Toolkit.Hydra (toolkit, Toolkit) as Hydra
 
 
@@ -50,11 +58,10 @@ import Cli.Components.AddPatchButton as AddPatchButton
 
 -- TODO: take toolkit here
 component
-    :: forall tk p fs r m
-    .  Toolkit.MarkToolkit tk
-    => Toolkit.MapFamiliesImpl r m fs
-    => State tk p fs r m
-    -> Core.Blessed (State tk p fs r m)
+    :: forall tk p fs repr m
+    .  CliFriendly tk fs repr m
+    => State tk p fs repr m
+    -> Core.Blessed (State tk p fs repr m)
 component initialState =
     B.screenAnd Key.mainScreen
 
@@ -68,7 +75,7 @@ component initialState =
         ]
 
         [ PatchesListbar.component $ Network.patches $ initialState.network
-        , PatchBox.component $ State.families initialState
+        , PatchBox.component $ Network.toolkit initialState.network
         , AddPatchButton.component
         -- , LoadFileButton.component
         -- , CommandLogButton.component

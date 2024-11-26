@@ -37,6 +37,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Signal (Signal, (~>))
 import Signal as Signal
+import Signal.Extra as SignalX
 import Signal.Channel (Channel)
 import Signal.Channel as Channel
 
@@ -107,8 +108,9 @@ import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 -- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
 -- REM import Cli.Components.NodeBox.InfoBox as InfoBox
-import Cli.Components.NodeBox.HasBody (cliSize, cliSizeRaw, renderCli, renderCliRaw, class CliRenderer)
-import Cli.Components.NodeBox.HasBody (renderCli, renderCliRaw) as NodeBody
+import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
+import Cli.Class.CliRenderer (renderCli, renderCliRaw) as NodeBody
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
 -- REM import Cli.Components.NodeBox.InfoBox as IB
@@ -146,12 +148,10 @@ autoPos = do
 fromNodeAuto
     :: forall tk fs pstate f nstate is os repr m
     -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-    .  Wiring m
-    => IsSymbol f => Mark (Id.Family f)
-    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
-    => Mark repr => T.At At.ChannelLabel repr
+    .  IsSymbol f => Mark (Id.Family f)
+    => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => CliRenderer tk fs repr m
+    => CliFriendly tk fs repr m
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -274,7 +274,7 @@ _component
                 -- REM     $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a Effect -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
         renderNodeUpdate = renderUpdate nextKeys.nodeBox Map.empty Map.empty
 
@@ -282,12 +282,12 @@ _component
 
     (nodeState :: nstate) <- RawNode.state rawNode
 
-    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+    Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
     -- REM liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
-    Blessed.lift $ RawNode.run rawNode
+    _ <- Blessed.lift $ RawNode.run rawNode
 
     Key.patchBox >~ Node.append nextNodeBoxN
 
@@ -333,11 +333,9 @@ _component
 
 fromRawNodeAt
     :: forall tk fs nstate pstate repr m
-    .  Wiring m
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     -- => IsSymbol f => Mark (Id.Family f)
     -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
-    => CliRenderer tk fs repr m
+     . CliFriendly tk fs repr m
     => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
@@ -358,10 +356,9 @@ fromNodeAt
     :: forall tk fs pstate f nstate is os repr m
     .  Wiring m
     => IsSymbol f => Mark (Id.Family f)
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
-    => RegisteredFamily (F f nstate is os repr m) fs
-    => CliRenderer tk fs repr m
     => FromRepr repr nstate => ToRepr nstate repr
+    => RegisteredFamily (F f nstate is os repr m) fs
+    => CliFriendly tk fs repr m
     -- => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
     => Int /\ Int
     -> Id.PatchR
@@ -382,12 +379,10 @@ fromNodeAt pos curPatchId curPatch family node = do
 
 fromFamilyAt
     :: forall tk fs pstate f nstate is os repr m
-     . Wiring m
-    => IsSymbol f => Mark (Id.Family f)
-    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
-    => CliRenderer tk fs repr m
-    => Mark repr => T.At At.ChannelLabel repr
+     . IsSymbol f => Mark (Id.Family f)
+    => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
+    => CliFriendly tk fs repr m
     => Int /\ Int
     -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
@@ -410,12 +405,10 @@ fromFamilyAt pos curPatchId curPatch family tk = do
 
 fromFamilyAuto
     :: forall fs tk f nstate pstate is os repr m
-     . MonadEffect m => Wiring m
-    => IsSymbol f => Mark (Id.Family f)
-    => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
-    => Mark repr => T.At At.ChannelLabel repr
+     . IsSymbol f => Mark (Id.Family f)
+    => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => CliRenderer tk fs repr m
+    => CliFriendly tk fs repr m
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -433,7 +426,7 @@ fromRawFamilyAuto
     => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     -- => IsSymbol f => Mark (Id.Family f)
     -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
-    => CliRenderer tk fs repr m
+    => CliFriendly tk fs repr m
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m
@@ -495,14 +488,14 @@ updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
 
 
 renderUpdate
-    :: forall nstate state repr
+    :: forall m nstate state repr
      . Mark repr
     => T.At At.ChannelLabel repr
     => NodeBoxKey
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey
     -> Raw.NodeChanges nstate repr
-    -> BlessedOp state Effect
+    -> BlessedOp state m
 renderUpdate _ inletsKeysMap outletsKeysMap (_ /\ stateRepr /\ inletsReps /\ outletsReprs) = do
     -- liftEffect $ Console.log $ show outletsReprs
     _ <- traverseWithIndex updateInlet inletsReps

@@ -10,6 +10,9 @@ import Data.Number (fromString) as Number
 import Data.Int (fromString) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Color as Color
+import Data.Text.Format as T
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
+import Noodle.Ui.Cli.Tagging.At (class At)
 
 import Type.Proxy (Proxy(..))
 
@@ -239,3 +242,11 @@ instance ToRepr (Spread Number) StarterRepr where toRepr = Just <<< wrap <<< VSp
 instance ToRepr (Spread (Number /\ Number)) StarterRepr where toRepr = Just <<< wrap <<< VSpreadVec
 instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpreadCol
 instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
+
+
+instance Mark StarterRepr where
+    mark  _  = Color.rgb 255 255 255
+
+
+instance At p StarterRepr where
+    at _ _ = T.nil

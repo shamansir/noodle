@@ -64,12 +64,19 @@ import Cli.State (informWsInitialized) as State
 import Cli.Components.MainScreen as MainScreen
 
 import Noodle.Id (ToolkitR, toolkitR) as Id
+import Noodle.Repr (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class MapFamiliesImpl, class MarkToolkit) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
+
+import Noodle.Ui.Cli.Tagging.At as T
+import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
+
+import Cli.Class.CliFriendly (class CliFriendly)
 
 import Starter.Toolkit (toolkit) as Starter
 import Demo.Toolkit.Starter.Repr (options) as Starter
@@ -145,15 +152,14 @@ runWith =
 
 
 runBlessedInterface
-    :: forall tk s fs r
-     . Toolkit.MarkToolkit tk
-    => Toolkit.MapFamiliesImpl r Effect fs
+    :: forall tk s fs repr
+     . CliFriendly tk fs repr Effect
     => s
-    -> Toolkit tk fs r Effect
-    -> BlessedOp (State tk s fs r Effect) Effect
+    -> Toolkit tk fs repr Effect
+    -> BlessedOp (State tk s fs repr Effect) Effect
     -> Effect Unit
 runBlessedInterface pState toolkit andThen = do
-    (initialState :: State tk s fs r Effect) <- State.init pState toolkit
+    (initialState :: State tk s fs repr Effect) <- State.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
@@ -176,16 +182,16 @@ runBlessedInterface pState toolkit andThen = do
             -- FIXME: State.modify_ State.informWsListening
             -- FIXME: WsButton.updateStatus $ WsButton.Waiting
             mainScreen >~ Screen.render
-        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State tk s fs r Effect) Effect
+        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State tk s fs repr Effect) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State tk s fs r Effect) Effect
+        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State tk s fs repr Effect) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
-        handleError :: Error -> BlessedOp (State tk s fs r Effect) Effect
+        handleError :: Error -> BlessedOp (State tk s fs repr Effect) Effect
         handleError _ = pure unit
         {- FIXME
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect

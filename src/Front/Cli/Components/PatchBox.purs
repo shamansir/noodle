@@ -17,20 +17,30 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.Core as Core
 import Blessed.UI.Boxes.Box.Option as Box
 
-import Cli.Components.Library as Library
 import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style (patchBox, patchBoxBorder) as Style
+import Cli.Components.Library as Library
+import Cli.Class.CliFriendly (class CliFriendly)
 
+import Noodle.Wiring (class Wiring)
 import Noodle.Id as Id
-import Noodle.Toolkit (class MarkToolkit)
+import Noodle.Repr (class HasFallback)
+import Noodle.Toolkit (Toolkit, class MarkToolkit, class MapFamiliesImpl)
+import Noodle.Ui.Cli.Tagging.At as T
+import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 -- import Cli.Components.InputIndicator as InputIndicator
 -- import Cli.Components.OutputIndicator as OutputIndicator
 
 
-component :: forall tk p fs r m. MarkToolkit tk => Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component families =
+component
+    :: forall tk p fs repr m
+     . CliFriendly tk fs repr m
+    => Toolkit tk fs repr m
+    -> Core.Blessed (State tk p fs repr m)
+component toolkit =
     B.boxAnd Key.patchBox
 
         [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
@@ -43,7 +53,7 @@ component families =
         , Style.patchBoxBorder
         ]
 
-        [ Library.component families
+        [ Library.component toolkit
         -- , InputIndicator.component
         -- , OutputIndicator.component
         ]
