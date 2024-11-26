@@ -82,6 +82,7 @@ import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 -- REM import Noodle.Stateful (get, getM, setM) as Stateful
 import Noodle.Raw.Toolkit.Family (Family) as Raw
+import Noodle.Raw.Toolkit.Family (id) as RawFamily
 import Noodle.Repr (class DataFromToReprRow, class ToReprRow)
 import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Wiring (class Wiring)
@@ -381,8 +382,6 @@ fromNodeAt pos curPatchId curPatch family node = do
 
 fromFamilyAt
     :: forall tk fs pstate f nstate is os repr m
-    -- REM . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Hydra.WrapRepr Effect
-    -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
      . Wiring m
     => IsSymbol f => Mark (Id.Family f)
     => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
@@ -411,8 +410,6 @@ fromFamilyAt pos curPatchId curPatch family tk = do
 
 fromFamilyAuto
     :: forall fs tk f nstate pstate is os repr m
-    -- REM . THas.HasNodesOf families' (Hydra.Families Effect) instances' (Hydra.Instances Effect) f state isrl is osrl os Hydra.WrapRepr Effect
-    -- REM => PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
      . MonadEffect m => Wiring m
     => IsSymbol f => Mark (Id.Family f)
     => FromRepr repr nstate => ToRepr nstate repr => HasFallback repr
@@ -422,13 +419,33 @@ fromFamilyAuto
     => Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
-    -- REM -> Raw.Family repr m -- TODO: implement Raw version as well
     -> Toolkit tk fs repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
 fromFamilyAuto curPatchId curPatch family tk = do
     pos <- autoPos
     (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
     fromNodeAt pos curPatchId curPatch family node
+
+
+fromRawFamilyAuto
+    :: forall tk fs pstate repr m
+    .  Wiring m
+    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    -- => IsSymbol f => Mark (Id.Family f)
+    -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => CliRenderer tk fs repr m
+    => Id.PatchR
+    -> Noodle.Patch pstate fs repr m
+    -> Raw.Family repr repr m
+    -> Toolkit tk fs repr m
+    -> BlessedOpM (State tk pstate fs repr m) m _
+fromRawFamilyAuto curPatchId curPatch rawFamily tk = do
+    pos <- autoPos
+    let familyR = RawFamily.id rawFamily
+    (mbNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR tk
+    case mbNode of
+        Just node -> fromRawNodeAt pos curPatchId curPatch familyR node
+        Nothing -> pure unit
 
 
 logDataCommand

@@ -26,10 +26,11 @@ import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR) as Id
-import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, withFamily)
+import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily)
+import Noodle.Toolkit.HoldsFamily (withFamily) as HF
 import Noodle.Toolkit.Family (Family)
-import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as F
-import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RF
+import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as Family
+import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RawFamily
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr (class FromToRepr)
 
@@ -40,10 +41,10 @@ data ToolkitKey
 type Name = Id.ToolkitR
 
 
-data Toolkit (tk :: ToolkitKey) (families :: Families) repr m = -- bind to
+data Toolkit (tk :: ToolkitKey) (families :: Families) repr m =
     Toolkit
         Name
-        (Map Id.FamilyR (HoldsFamily repr m))
+        (Map Id.FamilyR (HoldsFamily repr m)) -- FIXME: consider storing all the families in Raw format since, all the type data is in `families :: Families` and can be extracted
         (Map Id.FamilyR (Raw.Family repr repr m))
 
 
@@ -82,7 +83,7 @@ register
     -> Toolkit tk families repr m
     -> Toolkit tk families' repr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
 register family (Toolkit name families rawFamilies) =
-    Toolkit name (Map.insert (Id.familyR $ F.familyIdOf family) (holdFamily family) families) rawFamilies
+    Toolkit name (Map.insert (Id.familyR $ Family.familyIdOf family) (holdFamily family) families) rawFamilies
 
 
 registerRaw
@@ -92,7 +93,7 @@ registerRaw
     -> Toolkit tk families repr m
     -> Toolkit tk families repr m
 registerRaw rawFamily (Toolkit name families rawFamilies) =
-    Toolkit name families (Map.insert (RF.familyIdOf rawFamily) (RF.toReprableState rawFamily) rawFamilies)
+    Toolkit name families (Map.insert (RawFamily.familyIdOf rawFamily) (RawFamily.toReprableState rawFamily) rawFamilies)
 
 
 spawn
@@ -105,13 +106,11 @@ spawn
     -> m (Node f state is os repr mp)
 spawn familyId (Toolkit _ families _) = do
     case Map.lookup (Id.familyR familyId) families of
-        -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
-        -- and satisfy this constraint using method in `FamilyExistsIn (F f state is os repr m) families`
-        Just holdsFamily -> withFamily holdsFamily (spawnNode <<< unsafeCoerce)
+        Just holdsFamily -> HF.withFamily holdsFamily (spawnNode <<< unsafeCoerce)
         Nothing -> liftEffect $ throw $ "Family is not in the registry: " <> show familyId
     where
         spawnNode :: Family f state is os repr mp -> m (Node f state is os repr mp)
-        spawnNode = F.spawn
+        spawnNode = Family.spawn
 
 
 spawnRaw
@@ -120,12 +119,23 @@ spawnRaw
     => Id.FamilyR
     -> Toolkit tk families repr mp
     -> m (Maybe (Raw.Node repr repr mp))
-spawnRaw familyId (Toolkit _ _ rawFamilies) = do
-    case Map.lookup familyId rawFamilies of -- FIXME: also look up in "usual" typed families
-        -- TODO: Maybe lock by some constraint like `FromFamily f state is os repr m`
-        -- and satisfy this constraint using method in `FamilyExistsIn (F f state is os repr m) families`
-        Just rawFamily -> Just <$> RF.spawn rawFamily
+spawnRaw familyR (Toolkit _ _ rawFamilies) = do
+    case Map.lookup familyR rawFamilies of -- FIXME: also look up in "usual" typed families
+        Just rawFamily -> Just <$> RawFamily.spawn rawFamily
         Nothing -> pure Nothing
+
+
+spawnAnyRaw :: forall m tk repr mp families
+     . MonadEffect m
+    => Id.FamilyR
+    -> Toolkit tk families repr mp
+    -> m (Maybe (Raw.Node repr repr mp))
+spawnAnyRaw familyR (Toolkit _ families rawFamilies) = do
+    case Map.lookup familyR rawFamilies of -- FIXME: also look up in "usual" typed families
+        Just rawFamily -> Just <$> RawFamily.spawn rawFamily
+        Nothing -> case Map.lookup familyR families of
+                Just hf -> Just <$> HF.withFamily hf (Family.toRaw >>> RawFamily.toReprableState >>> RawFamily.spawn)
+                Nothing -> pure Nothing
 
 
 data MapFamilies repr m = MapFamilies (Map Id.FamilyR (HoldsFamily repr m))
@@ -144,11 +154,11 @@ instance (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m
 mapFamilies
     :: forall x tk families repr m
     .  MapFamiliesImpl repr m families
-    => (forall f state is os. IsSymbol f => Family f state is os repr m -> x)
+    => (forall f state is os. IsSymbol f => FromToRepr state repr => Family f state is os repr m -> x)
     -> Toolkit tk families repr m
     -> Array x
 mapFamilies f (Toolkit _ families _) =
-    (\hf -> withFamily hf f)
+    (\hf -> HF.withFamily hf f)
         <$> Array.catMaybes
             (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m)))
 
@@ -169,7 +179,7 @@ mapAllFamilies
     -> Toolkit tk families repr m
     -> Array x
 mapAllFamilies f (Toolkit _ families rawFamilies) =
-    ((\hf -> withFamily hf (F.toRaw >>> RF.toReprableState >>> f))
+    ((\hf -> HF.withFamily hf (Family.toRaw >>> RawFamily.toReprableState >>> f))
         <$> Array.catMaybes
             (mapDown (MapFamilies families) (Proxy :: _ families) :: Array (Maybe (HoldsFamily repr m))))
     <>
@@ -181,7 +191,45 @@ families
     .  MapFamiliesImpl repr m families
     => Toolkit tk families repr m
     -> Array Id.FamilyR
-families = mapAllFamilies RF.familyIdOf
+families = mapAllFamilies RawFamily.familyIdOf
+
+
+withFamily
+    :: forall f state is os x tk families repr m
+    .  RegisteredFamily (F f state is os repr m) families
+    => IsSymbol f
+    => (Family f state is os repr m -> x)
+    -> Id.Family f
+    -> Toolkit tk families repr m
+    -> Maybe x
+withFamily f familyId (Toolkit _ families _) = ado
+    holdsFamily <- Map.lookup (Id.familyR familyId) families
+    in HF.withFamily holdsFamily (f <<< unsafeCoerce)
+
+
+withRawFamily
+    :: forall x tk families repr m
+    .  (Raw.Family repr repr m -> x)
+    -> Id.FamilyR
+    -> Toolkit tk families repr m
+    -> Maybe x
+withRawFamily f familyR (Toolkit _ _ rawFamilies) =
+    Map.lookup familyR rawFamilies <#> f
+
+
+withAnyFamily
+    :: forall x tk families repr m
+    .  (Raw.Family repr repr m -> x)
+    -> Id.FamilyR
+    -> Toolkit tk families repr m
+    -> Maybe x
+withAnyFamily f familyR (Toolkit _ families rawFamilies) =
+    case Map.lookup familyR rawFamilies of
+        Just rawFamily -> Just $ f rawFamily
+        Nothing ->
+            case Map.lookup familyR families of
+                Just hf -> Just $ HF.withFamily hf (Family.toRaw >>> RawFamily.toReprableState >>> f)
+                Nothing -> Nothing
 
 
 class IsToolkit (tk :: ToolkitKey) where

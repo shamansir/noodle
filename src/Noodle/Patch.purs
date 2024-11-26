@@ -13,24 +13,27 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (empty, alter, lookup, toUnfoldable) as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes) as Array
+
+import Unsafe.Coerce (unsafeCoerce)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Signal.Channel (Channel, channel)
 
-import Noodle.Id (PatchR, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet) as Id
+import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet) as Id
 import Noodle.Link (FromId, ToId, setId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
 import Noodle.Node (family, toRaw, connect) as Node
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
-import Noodle.Node.HoldsNode (HoldsNode, holdNode, withNode)
+import Noodle.Node.HoldsNode (HoldsNode, holdNode)
+import Noodle.Node.HoldsNode (withNode) as HN
 import Noodle.Patch.Links (Links)
 import Noodle.Patch.Links (init, track, nextId, forget) as Links
 import Noodle.Raw.Link (Link) as Raw
@@ -49,7 +52,7 @@ data Patch state (families :: Families) repr m =
     Id.PatchR
     -- Toolkit families repr m
     (Channel state)
-    (Map Id.FamilyR (Array (HoldsNode repr m))) -- FIXME: consider storing all the nodes in Raw format
+    (Map Id.FamilyR (Array (HoldsNode repr m))) -- FIXME: consider storing all the nodes in Raw format since, all the type data is in `families :: Families` and can be extracted
     (Map Id.FamilyR (Array (Raw.Node repr repr m))) -- use `Channel` as well?
     Links -- use `Channel` as well?
 
@@ -187,7 +190,7 @@ instance (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr
 mapNodes
     :: forall x pstate families repr m
     .  MapNodesImpl repr m families
-    => (forall f state is os. IsSymbol f => Node f state is os repr m -> x)
+    => (forall f state is os. IsSymbol f => FromToRepr state repr => Node f state is os repr m -> x)
     -> Patch pstate families repr m
     -> Array x
 mapNodes f (Patch _ _ _ nodes _ _) =
@@ -195,7 +198,7 @@ mapNodes f (Patch _ _ _ nodes _ _) =
       (map nodeToX)
         <$> Array.catMaybes
               (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
-    where nodeToX hn = withNode hn f
+    where nodeToX hn = HN.withNode hn f
 
 
 mapRawNodes
@@ -215,4 +218,44 @@ mapAllNodes
 mapAllNodes f patch@(Patch _ _ _ nodes _ _) =
     Array.concat (map (toRawCnv >>> f) <$> Tuple.snd <$> Map.toUnfoldable nodes) <> mapRawNodes f patch
     where
-      toRawCnv hn = withNode hn (Node.toRaw >>> RawNode.toReprableState)
+      toRawCnv hn = HN.withNode hn (Node.toRaw >>> RawNode.toReprableState)
+
+
+withNodes
+    :: forall f state is os x pstate families repr m
+    .  RegisteredFamily (F f state is os repr m) families
+    => IsSymbol f
+    => (Node f state is os repr m -> x)
+    -> Id.Family f
+    -> Patch pstate families repr m
+    -> Array x
+withNodes f familyId (Patch _ _ _ nodes _ _) =
+    Map.lookup (Id.familyR familyId) nodes <#> map nodeToX # fromMaybe []
+    where nodeToX hn = HN.withNode hn (unsafeCoerce >>> f)
+
+
+withRawNodes
+    :: forall x pstate families repr m
+    .  (Raw.Node repr repr m -> x)
+    -> Id.FamilyR
+    -> Patch pstate families repr m
+    -> Array x
+withRawNodes f familyR (Patch _ _ _ _ rawNodes _) =
+    (Map.lookup familyR rawNodes <#> map f) # fromMaybe []
+
+
+withAnyNodes
+    :: forall x pstate families repr m
+    .  (Raw.Node repr repr m -> x)
+    -> Id.FamilyR
+    -> Patch pstate families repr m
+    -> Array x
+withAnyNodes f familyR (Patch _ _ _ nodes rawNodes _) =
+    case Map.lookup familyR rawNodes of
+        Just rawNodesOfF -> f <$> rawNodesOfF
+        Nothing ->
+            case Map.lookup familyR nodes of
+                Just holdsNodeArr -> map (toRawCnv >>> f) holdsNodeArr
+                Nothing -> []
+    where
+        toRawCnv hn = HN.withNode hn (Node.toRaw >>> RawNode.toReprableState)

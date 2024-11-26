@@ -28,6 +28,10 @@ data Family state (repr :: Type) (m :: Type -> Type)
         (Raw.Fn state repr m)
 
 
+id :: forall state repr m. Family state repr m -> Id.FamilyR
+id (Family familyR _ _ _ _ _) = familyR
+
+
 make
     :: forall state repr m
      . Id.FamilyR

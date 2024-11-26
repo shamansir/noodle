@@ -5,6 +5,8 @@ import Control.Monad.State as State
 
 import Type.Proxy (Proxy(..))
 
+import Effect (Effect)
+
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\))
@@ -31,6 +33,7 @@ import Blessed.UI.Lists.List.Property (selected) as List
 
 import Noodle.Id as Id
 import Noodle.Network as Network
+import Noodle.Toolkit as Toolkit
 
 import Cli.Keys as Key
 import Cli.State (State)
@@ -39,9 +42,15 @@ import Cli.Style (library, libraryBorder) as Style
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Palette.Mark
-import Noodle.Toolkit (class MarkToolkit)
+import Noodle.Toolkit (Toolkit, class MarkToolkit)
+import Noodle.Repr (class HasFallback)
+import Noodle.Ui.Cli.Tagging as T
+import Noodle.Ui.Cli.Tagging.At as T
+import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
+import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Cli.Components.NodeBox.HasBody (class CliRenderer)
 
--- import Cli.Components.NodeBox as NodeBox
+import Cli.Components.NodeBox as NodeBox
 
 import Data.Text.Format (fgc, s) as T
 import Data.Text.Output.Blessed (singleLine) as T
@@ -51,8 +60,8 @@ import Data.Text.Output.Blessed (singleLine) as T
 import Prelude
 
 
-component :: forall tk p fs r m. MarkToolkit tk => Array Id.FamilyR -> Core.Blessed (State tk p fs r m)
-component families =
+component :: forall tk p fs repr m. CliRenderer tk fs repr Effect => HasFallback repr => MarkToolkit tk => Mark repr => T.At At.ChannelLabel repr => Toolkit tk fs repr m -> Array Id.FamilyR -> Core.Blessed (State tk p fs repr Effect)
+component toolkit families =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
@@ -94,6 +103,7 @@ component families =
                 {- -}
                 selected <- List.selected ~< Key.library
                 let mbSelectedFamily = families !! selected
+                let toolkit = Network.toolkit state.network
 
                 {-
                 let familyStr = fromMaybe "??" (Id.reflect' <$> mbSelectedFamily)
@@ -108,11 +118,14 @@ component families =
                 -- mbNextNode <-
                 _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
                     Just (familyR /\ curPatch /\ curPatchId) ->
-                        pure Nothing
+                        let test rawFamily = NodeBox.fromRawFamilyAuto curPatchId curPatch rawFamily toolkit in
+                        case Toolkit.withAnyFamily test familyR toolkit of
+                            Just op -> op
+                            Nothing -> pure unit
                         {- Hydra.withFamily
                             (NodeBox.fromFamilyAuto curPatchId curPatch)
                             familyR -}
-                    Nothing -> pure Nothing
+                    Nothing -> pure unit
                 -- liftEffect $ Console.log $ show selected
                 {- -}
 
