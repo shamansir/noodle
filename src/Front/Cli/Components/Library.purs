@@ -9,6 +9,8 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception as Ex
 
+import Unsafe.Coerce (unsafeCoerce)
+
 import Control.Monad.Error.Class (class MonadThrow)
 
 import Data.Maybe (Maybe(..))
@@ -68,10 +70,11 @@ import Prelude
 
 
 component
-    :: forall tk p fs repr m
-     . CliFriendly tk fs repr m
-    => Toolkit tk fs repr m
-    -> Core.Blessed (State tk p fs repr m)
+    :: forall tk p fs repr
+     . CliFriendly tk fs repr Effect
+    => Toolkit tk fs repr Effect
+    -> Core.Blessed (State tk p fs repr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
+    -- -> BlessedOpM (State tk p fs repr m) m Unit
 component toolkit =
     B.listAnd Key.library
         [ Box.top $ Offset.px 0
@@ -91,7 +94,7 @@ component toolkit =
         --         selected <- List.selected ~< Key.library
         --         liftEffect $ Console.log $ show selected
         , Core.on List.Select
-            \_ _ -> pure unit
+            \_ _ -> onFamilySelect
         ]
         []
         \_ ->
@@ -102,9 +105,8 @@ component toolkit =
 onFamilySelect
     :: forall tk pstate fs repr m
      . CliFriendly tk fs repr m
-    => Toolkit tk fs repr m
-    -> BlessedOpM (State tk pstate fs repr m) m Unit
-onFamilySelect toolkit =
+    => BlessedOpM (State tk pstate fs repr m) m Unit
+onFamilySelect =
     do
         -- lastShiftX <- _.lastShiftX <$> State.get
         -- lastShiftY <- _.lastShiftY <$> State.get
@@ -127,6 +129,7 @@ onFamilySelect toolkit =
 
         {- -}
         selected <- List.selected ~< Key.library
+        let toolkit = Network.toolkit state.network
         let families = Toolkit.families toolkit
         let mbSelectedFamily = families !! selected
         let toolkit = Network.toolkit state.network

@@ -2,6 +2,8 @@ module Cli.Components.PatchBox where
 
 import Prelude
 
+import Effect (Effect)
+
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
@@ -36,10 +38,10 @@ import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 
 component
-    :: forall tk p fs repr m
-     . CliFriendly tk fs repr m
-    => Toolkit tk fs repr m
-    -> Core.Blessed (State tk p fs repr m)
+    :: forall tk p fs repr
+     . CliFriendly tk fs repr Effect
+    => Toolkit tk fs repr Effect
+    -> Core.Blessed (State tk p fs repr Effect)
 component toolkit =
     B.boxAnd Key.patchBox
 

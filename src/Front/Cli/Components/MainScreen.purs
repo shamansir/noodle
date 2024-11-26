@@ -58,10 +58,10 @@ import Cli.Components.AddPatchButton as AddPatchButton
 
 -- TODO: take toolkit here
 component
-    :: forall tk p fs repr m
-    .  CliFriendly tk fs repr m
-    => State tk p fs repr m
-    -> Core.Blessed (State tk p fs repr m)
+    :: forall tk p fs repr
+    .  CliFriendly tk fs repr Effect
+    => State tk p fs repr Effect
+    -> Core.Blessed (State tk p fs repr Effect)
 component initialState =
     B.screenAnd Key.mainScreen
 
