@@ -148,7 +148,7 @@ onFamilySelect =
         _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
             Just (familyR /\ curPatch /\ curPatchId) ->
                 let
-                    createNodeBox rawFamily = NodeBox.fromRawFamilyAuto curPatchId curPatch rawFamily toolkit
+                    createNodeBox rawFamily = NodeBox.fromRawFamilyAuto curPatch rawFamily toolkit
                 in
                 case Toolkit.withAnyFamily createNodeBox familyR toolkit of
                     Just op -> op

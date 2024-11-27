@@ -24,7 +24,7 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState) as RawProtocol
+import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
@@ -32,8 +32,12 @@ import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
 
 
-type InletsValues repr = Map Id.InletR repr
+type InletsValues  repr = Map Id.InletR repr
 type OutletsValues repr = Map Id.OutletR repr
+
+
+type OrderedInletsValues  repr = Map (Int /\ Id.InletR) repr
+type OrderedOutletsValues repr = Map (Int /\ Id.OutletR) repr
 
 
 data Node state (repr :: Type) (m :: Type -> Type)
@@ -208,6 +212,16 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 subscribeChanges :: forall state repr m. Node state repr m -> Signal (NodeChanges state repr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
+
+
+{- Send data -}
+
+
+sendIn :: forall m state repr mp. MonadEffect m => Id.InletR -> repr -> Node state repr mp -> m Unit
+sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
+
+
+-- TODO:
 
 
 {- Convert -}

@@ -91,6 +91,11 @@ nodeLabel family =
     T.bgc (C.crepr Palette.nodeBg) $ T.fgc (mark family) $ T.s $ Id.family $ Id.familyR family
 
 
+nodeLabel' :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
+nodeLabel' ptk familyR =
+    T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
+
+
 nodeMouseOver
     :: forall f grp arg out
      . IsSymbol f

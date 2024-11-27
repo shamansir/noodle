@@ -70,7 +70,7 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 
 import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
 import Noodle.Id as Id
-import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Patch as Patch
 import Noodle.Patch (Patch) as Noodle
@@ -102,8 +102,8 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
 -- REM import Cli.Components.Link as Link
--- REM import Cli.Components.NodeBox.InletsBox as InletsBox
--- REM import Cli.Components.NodeBox.OutletsBox as OutletsBox
+import Cli.Components.NodeBox.InletsBox as InletsBox
+import Cli.Components.NodeBox.OutletsBox as OutletsBox
 -- REM import Cli.Components.NodeBox.InletButton as InletButton
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 -- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
@@ -126,8 +126,7 @@ width familyName isCount osCount =
 
 widthN :: Id.FamilyR -> Int -> Int -> Int
 widthN familyName isCount osCount =
-    20
-    -- REM (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
+    (max (String.length $ Id.family familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
 
 
 -- widthN :: String -> Int -> Int -> Dimension
@@ -152,14 +151,13 @@ fromNodeAuto
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
-    => Id.PatchR
-    -> Noodle.Patch pstate fs repr m
+    => Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAuto curPatchId curPatch family node = do
+fromNodeAuto curPatch family node = do
     pos <- autoPos
-    fromNodeAt pos curPatchId curPatch family node
+    fromNodeAt pos curPatch family node
 
 
 -- TODO: fromRawNodeAuto
@@ -167,9 +165,9 @@ fromNodeAuto curPatchId curPatch family node = do
 _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
+    => MarkToolkit tk
     => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     => Int /\ Int
-    -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
     -> Raw.Node nstate repr m
@@ -179,7 +177,6 @@ _component
     -> BlessedOpM (State tk pstate fs repr m) m _
 _component
     (leftN /\ topN)
-    curPatchId
     curPatch
     familyR
     rawNode
@@ -262,7 +259,7 @@ _component
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
                 , Box.height $ Dimension.px boxHeight
-                -- REM , Box.label $ T.singleLine $ T.nodeLabel family
+                , Box.label $ T.singleLine $ T.nodeLabel' (Proxy :: _ tk ) familyR
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
@@ -314,18 +311,18 @@ _component
             , height : boxHeight
             }
 
-    {- REM
-    State.modify_ (_
+    State.modify_ (_ { lastKeys = nextKeys })
+
+    {- REM State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
         , lastKeys = nextKeys
         , nodeKeysMap = Map.insert nodeIdR nextNodeBox state.nodeKeysMap
         , locations   = Map.insert nodeIdR location state.locations
         }
-    )
-    -}
+    ) -}
 
-    -- REM Key.mainScreen >~ Screen.render
+    Key.mainScreen >~ Screen.render
 
     pure unit -- REM { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
 
@@ -337,19 +334,18 @@ fromRawNodeAt
     -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
      . CliFriendly tk fs repr m
     => Int /\ Int
-    -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
     -> Raw.Node nstate repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromRawNodeAt pos curPatchId curPatch familyR rawNode = do
+fromRawNodeAt pos curPatch familyR rawNode = do
     --liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
     let
         nextKeys = State.nextKeys state.lastKeys
         mbSize = cliSizeRaw   (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
         nodeOp = renderCliRaw (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
-    _component pos curPatchId curPatch familyR rawNode nextKeys mbSize nodeOp
+    _component pos curPatch familyR rawNode nextKeys mbSize nodeOp
 
 
 fromNodeAt
@@ -361,12 +357,11 @@ fromNodeAt
     => CliFriendly tk fs repr m
     -- => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
     => Int /\ Int
-    -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAt pos curPatchId curPatch family node = do
+fromNodeAt pos curPatch family node = do
     state <- State.get
     let
         familyR = Id.familyR family
@@ -374,7 +369,7 @@ fromNodeAt pos curPatchId curPatch family node = do
         nextKeys = State.nextKeys state.lastKeys
         mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
         nodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
-    _component pos curPatchId curPatch familyR rawNode nextKeys mbSize nodeOp
+    _component pos curPatch familyR rawNode nextKeys mbSize nodeOp
 
 
 fromFamilyAt
@@ -384,13 +379,12 @@ fromFamilyAt
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
     => Int /\ Int
-    -> Id.PatchR
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
     -- REM -> Raw.Family repr m -- TODO: implement Raw version as well
     -> Toolkit tk fs repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromFamilyAt pos curPatchId curPatch family tk = do
+fromFamilyAt pos curPatch family tk = do
     (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
     {- REM
     let (mbState :: Maybe pstate) = fromGlobal $ Stateful.get curPatch
@@ -400,7 +394,7 @@ fromFamilyAt pos curPatchId curPatch family tk = do
     fromNodeAt pos curPatchId curPatch family node'
      -}
     -- TODO: update node in the patch?
-    fromNodeAt pos curPatchId curPatch family node
+    fromNodeAt pos curPatch family node
 
 
 fromFamilyAuto
@@ -409,15 +403,14 @@ fromFamilyAuto
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
-    => Id.PatchR
-    -> Noodle.Patch pstate fs repr m
+    => Noodle.Patch pstate fs repr m
     -> Id.Family f
     -> Toolkit tk fs repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromFamilyAuto curPatchId curPatch family tk = do
+fromFamilyAuto curPatch family tk = do
     pos <- autoPos
     (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
-    fromNodeAt pos curPatchId curPatch family node
+    fromNodeAt pos curPatch family node
 
 
 fromRawFamilyAuto
@@ -427,17 +420,16 @@ fromRawFamilyAuto
     -- => IsSymbol f => Mark (Id.Family f)
     -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
     => CliFriendly tk fs repr m
-    => Id.PatchR
-    -> Noodle.Patch pstate fs repr m
+    => Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m
     -> Toolkit tk fs repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromRawFamilyAuto curPatchId curPatch rawFamily tk = do
+fromRawFamilyAuto curPatch rawFamily tk = do
     pos <- autoPos
     let familyR = RawFamily.id rawFamily
     (mbNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR tk
     case mbNode of
-        Just node -> fromRawNodeAt pos curPatchId curPatch familyR node
+        Just node -> fromRawNodeAt pos curPatch familyR node
         Nothing -> pure unit
 
 
