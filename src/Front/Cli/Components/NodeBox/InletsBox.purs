@@ -5,11 +5,11 @@ import Prelude
 import Effect (Effect)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
-import Signal (Signal)
+import Signal (Signal, (~>))
 import Signal as Signal
 
 import Blessed as B
@@ -25,13 +25,17 @@ import Blessed.UI.Boxes.Box.Option as Box
 
 import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey, InfoBoxKey)
 import Cli.Style as Style
-import Cli.State (State)
+import Cli.State (State, LastKeys)
 import Cli.Components.NodeBox.InletButton as InletButton
 
 import Noodle.Id as Id
 import Noodle.Node as Node
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
+import Noodle.Ui.Cli.Tagging as T
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
+import Noodle.Repr (class HasFallback, fallback)
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -61,18 +65,19 @@ component
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     {- HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
     => -}
-     . Patch pstate fs repr m
-    -> NodeBoxKey
-    -> InfoBoxKey
-    -> InletsBoxKey
+     . HasFallback repr
+    => Mark repr
+    => T.At T.ChannelLabel repr
+    => Patch pstate fs repr m
+    -> LastKeys
     -> Id.FamilyR
     -> Signal (InletsValues repr)
     -> OrderedInletsValues repr
     -> KeysMap /\ C.Blessed (State tk pstate fs repr m)
-component curPatch nextNodeBox nextInfoBox nextInputsBox family iReprSignal is =
+component curPatch keys family iReprSignal inlets =
     Map.empty /\
-    B.box nextInputsBox
-        [ Box.width $ width $ Map.size is
+    B.box keys.inletsBox
+        [ Box.width $ width $ Map.size inlets
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
@@ -94,8 +99,16 @@ component curPatch nextNodeBox nextInfoBox nextInputsBox family iReprSignal is =
                 liftEffect $ Console.log $ show inputSelected
         -}
         ]
-        []
-        -- REM inputsButtons
+        (makeInletButton <$> Array.zip keysArray inletsArr)
+    where
+        inletsArr = Map.toUnfoldable inlets
+        keysArray :: Array InletButtonKey
+        keysArray = NK.nestChain keys.nodeBox $ Array.length inletsArr
+        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ repr)) -> C.Blessed (State tk pstate fs repr m)
+        makeInletButton (buttonKey /\ ((idx /\ inletR ) /\ repr)) =
+            InletButton.component curPatch buttonKey keys.infoBox keys.nodeBox inletR idx (Just repr)
+                $ Signal.filterMap (Map.lookup inletR) (fallback :: repr)
+                $ iReprSignal
     {- REM
     where
         extractInput :: Id.InputR -> Signal (Id.InputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)

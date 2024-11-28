@@ -7,11 +7,12 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
-import Data.Map (lookup) as Map
+import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
 import Data.UniqueHash (generate) as UH
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
@@ -19,25 +20,18 @@ import Signal.Extra (runSignal) as SignalX
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
-import Noodle.Fn.Generic.Updates (toTuple) as Updates
+import Noodle.Fn.Generic.Updates (toRecord) as Updates
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
+import Noodle.Raw.Fn.Shape (inlets, outlets) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
-
-
-type InletsValues  repr = Map Id.InletR repr
-type OutletsValues repr = Map Id.OutletR repr
-
-
-type OrderedInletsValues  repr = Map (Int /\ Id.InletR) repr
-type OrderedOutletsValues repr = Map (Int /\ Id.OutletR) repr
 
 
 data Node state (repr :: Type) (m :: Type -> Type)
@@ -47,6 +41,14 @@ data Node state (repr :: Type) (m :: Type -> Type)
         (Raw.Tracker state repr)
         (Raw.Protocol state repr)
         (Raw.Fn state repr m)
+
+
+type InletsValues  repr = Map Id.InletR repr
+type OutletsValues repr = Map Id.OutletR repr
+
+
+type OrderedInletsValues  repr = Map (Int /\ Id.InletR) repr
+type OrderedOutletsValues repr = Map (Int /\ Id.OutletR) repr
 
 
 {- Get info -}
@@ -170,7 +172,7 @@ curChanges node = do
   is <- inlets node
   os <- outlets node
   s  <- state node
-  pure $ Fn.Everything /\ s /\ is /\ os
+  pure { focus : Fn.Everything, state : s, inlets : is, outlets : os }
 
 
 {- Private accessors -}
@@ -187,7 +189,7 @@ _getTracker (Node _ _ tracker _ _) = tracker
 {- Subscriptions -}
 
 
-type NodeChanges state repr = (Fn.UpdateFocus /\ state /\ InletsValues repr /\ OutletsValues repr)
+type NodeChanges state repr = { focus :: Fn.UpdateFocus, state :: state, inlets :: InletsValues repr, outlets :: OutletsValues repr }
 
 
 subscribeInlet :: forall state repr m. Id.InletR -> Node state repr m -> Signal (Maybe repr)
@@ -211,7 +213,7 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
 subscribeChanges :: forall state repr m. Node state repr m -> Signal (NodeChanges state repr)
-subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
+subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
 
 
 {- Send data -}
@@ -225,6 +227,24 @@ sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 
 
 {- Convert -}
+
+
+orderInlets :: forall repr. Raw.Shape -> InletsValues repr -> OrderedInletsValues repr
+orderInlets shape ivalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ivalues
+  where
+    maxN = Array.length $ RawShape.inlets shape
+    resortF :: Array (Id.InletR /\ repr) -> Array ((Int /\ Id.InletR) /\ repr)
+    resortF = map (\(inletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup inletR ishapeMap) /\ inletR) /\ repr)
+    ishapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.inlets shape
+
+
+orderOutlets :: forall repr. Raw.Shape -> OutletsValues repr -> OrderedOutletsValues repr
+orderOutlets shape ovalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ovalues
+  where
+    maxN = Array.length $ RawShape.outlets shape
+    resortF :: Array (Id.OutletR /\ repr) -> Array ((Int /\ Id.OutletR) /\ repr)
+    resortF = map (\(outletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup outletR oshapeMap) /\ outletR) /\ repr)
+    oshapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.outlets shape
 
 
 toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => Node state repr m -> Node repr repr m

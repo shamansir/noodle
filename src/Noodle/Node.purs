@@ -34,7 +34,7 @@ import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Updates (UpdateFocus) as Fn
-import Noodle.Fn.Updates (toTuple) as Updates
+import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape (inletRName, outletRName) as RShape
@@ -223,19 +223,7 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
 subscribeChanges :: forall f state is os repr m. Node f state is os repr m -> Signal (Raw.NodeChanges state repr)
-subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toTuple
-
-
-subscribeChangesRec
-    :: forall f state is isrl os osrl repr m
-     . RL.RowToList is isrl => FromReprRow isrl is repr
-    => RL.RowToList os osrl => FromReprRow osrl os repr
-    => Node f state is os repr m
-    -> Signal (Fn.UpdateFocus /\ state /\ Record is /\ Record os)
-subscribeChangesRec (Node _ _ tracker _ _) =
-    tracker.all <#> Updates.toTuple <#>
-        \(focus /\ state /\ inputsMap /\ outputsMap) ->
-            focus /\ state /\ ReprCnv.toRec RShape.inletRName inputsMap /\ ReprCnv.toRec RShape.outletRName outputsMap
+subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
 
 
 {- Get Data -}

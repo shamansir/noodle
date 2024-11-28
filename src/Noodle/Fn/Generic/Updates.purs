@@ -36,13 +36,16 @@ data Update state inlets outlets
     | UpdateOutlets OutletsUpdate outlets
 
 
+type MergedUpdateRec state inlets outlets =
+    { focus :: UpdateFocus
+    , state :: state
+    , inlets :: inlets
+    , outlets :: outlets
+    }
+
+
 newtype MergedUpdate state inlets outlets
-    = MergedUpdate
-        { focus :: UpdateFocus
-        , state :: state
-        , inlets :: inlets
-        , outlets :: outlets
-        }
+    = MergedUpdate (MergedUpdateRec state inlets outlets)
 
 
 instance Show UpdateFocus where
@@ -114,8 +117,14 @@ fold lastUpdate (MergedUpdate { state, inlets, outlets }) =
             , state, inlets, outlets : nextOutlets }
 
 
+{-
 toTuple :: forall state inlets outlets. MergedUpdate state inlets outlets -> UpdateFocus /\ state /\ inlets /\ outlets
 toTuple (MergedUpdate { focus, state, inlets, outlets }) = focus /\ state /\ inlets /\ outlets
+-}
+
+
+toRecord :: forall state inlets outlets. MergedUpdate state inlets outlets -> MergedUpdateRec state inlets outlets
+toRecord (MergedUpdate rec) = rec -- unwrap
 
 
 mapState :: forall state state' inlets outlets. (state -> state') -> Update state inlets outlets -> Update state' inlets outlets

@@ -180,7 +180,7 @@ _component
     curPatch
     familyR
     rawNode
-    nextKeys
+    keys
     mbBodySize
     nodeOp
     = do
@@ -242,9 +242,9 @@ _component
                 case mbBodySize of
                     Just { height } -> height
                     Nothing -> 3
-        {- REM
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInletSignal updates') isWithReprs
+            InletsBox.component curPatch keys familyR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
+        {- REM
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutletSignal updates') osWithReprs
         infoBoxN =
@@ -253,7 +253,7 @@ _component
             RemoveButton.component removeButtonOffset family node nextNodeBox nextInfoBox nextRemoveButton
         -}
         nextNodeBoxN =
-            B.box nextKeys.nodeBox
+            B.box keys.nodeBox
                 [ Box.draggable true
                 , Box.top top
                 , Box.left left
@@ -273,7 +273,7 @@ _component
                 [ ]
         renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
-        renderNodeUpdate = renderUpdate nextKeys.nodeBox Map.empty Map.empty
+        renderNodeUpdate = renderUpdate keys.nodeBox Map.empty Map.empty
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
@@ -288,8 +288,8 @@ _component
 
     Key.patchBox >~ Node.append nextNodeBoxN
 
+    keys.nodeBox >~ Node.append inletsBoxN
     {- REM
-    nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append infoBoxN
     nextNodeBox >~ Node.append outletsBoxN
     nextNodeBox >~ Node.append removeButtonN
@@ -311,7 +311,7 @@ _component
             , height : boxHeight
             }
 
-    State.modify_ (_ { lastKeys = nextKeys })
+    State.modify_ (_ { lastKeys = keys })
 
     {- REM State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
@@ -439,17 +439,17 @@ logDataCommand
     => Ref (State tk pstate fs repr m)
     -> Raw.NodeChanges nstate repr
     -> m Unit
-logDataCommand stateRef (chFocus /\ _ /\ inlets /\ outlets) =
-    case chFocus of
+logDataCommand stateRef update =
+    case update.focus of
         InletUpdate inletR ->
-            case Map.lookup inletR inlets of
+            case Map.lookup inletR update.inlets of
                 Just wrapRepr -> do
                     -- REM flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inletAlias $ reflect' inlet) $ Cmd.encodedValue $ encode wrapRepr
                     -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
                     pure unit
                 Nothing -> pure unit
         OutletUpdate outletR ->
-            case Map.lookup outletR outlets of
+            case Map.lookup outletR update.outlets of
                 Just wrapRepr -> do
                     -- REM flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outletAlias $ reflect' outlet) $ Cmd.encodedValue $ encode wrapRepr
                     -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
@@ -466,7 +466,7 @@ updateCodeFor
     -> Id.Family f
     -> Raw.NodeChanges nstate repr
     -> m Unit
-updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
+updateCodeFor stateRef family update = do
     {- REM
     flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
     liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
@@ -488,10 +488,10 @@ renderUpdate
     -> Map Id.OutletR OutletButtonKey
     -> Raw.NodeChanges nstate repr
     -> BlessedOp state m
-renderUpdate _ inletsKeysMap outletsKeysMap (_ /\ stateRepr /\ inletsReps /\ outletsReprs) = do
+renderUpdate _ inletsKeysMap outletsKeysMap update = do
     -- liftEffect $ Console.log $ show outletsReprs
-    _ <- traverseWithIndex updateInlet inletsReps
-    _ <- traverseWithIndex updateOutlet outletsReprs
+    _ <- traverseWithIndex updateInlet update.inlets
+    _ <- traverseWithIndex updateOutlet update.outlets
     Key.mainScreen >~ Screen.render
     where
         updateInlet inletR repr =

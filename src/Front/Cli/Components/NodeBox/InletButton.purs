@@ -50,6 +50,10 @@ import Cli.Keys (NodeBoxKey, PatchBoxKey, InfoBoxKey, InletButtonKey, mainScreen
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
 import Cli.Bounds (collect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
+import Noodle.Ui.Cli.Tagging as T
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
+
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 
@@ -78,3 +82,40 @@ widthN = 3
 
 left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
+
+
+component
+    :: forall tk pstate fs repr m
+     . Mark repr
+    => T.At T.ChannelLabel repr
+    => Patch pstate fs repr m
+    -> InletButtonKey
+    -> InfoBoxKey
+    -> NodeBoxKey
+    -> Id.InletR
+    -> Int
+    -> Maybe repr
+    -> Signal repr
+    -- -> Raw.Node
+    -> Core.Blessed (State tk pstate fs repr m)
+component curPatch buttonKey nextInfoBox nextNodeBox inletR idx mbRepr reprSignal =
+    B.button buttonKey
+        [ Box.content $ T.singleLine $ T.inlet' idx inletR mbRepr
+        , Box.top $ Offset.px 0
+        , Box.left $ left idx
+        -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
+        , Box.width width
+        , Box.height $ Dimension.px 1
+        , Box.tags true
+        , Button.mouse true
+        , Style.inputsOutputs
+        {-
+        , Core.on Button.Press
+            $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
+        , Core.on Element.MouseOver
+            $ onMouseOver (Node.family inode) (Id.nodeIdR $ Node.id inode) nextNodeBox nextInfoBox idx inputId maybeRepr reprSignal
+        , Core.on Element.MouseOut
+            $ onMouseOut nextInfoBox idx
+        -}
+        ]
+        []
