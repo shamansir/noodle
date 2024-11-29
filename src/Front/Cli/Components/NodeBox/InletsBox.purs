@@ -19,7 +19,7 @@ import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.NodeKey (nestChain) as NK
+import Blessed.Internal.NodeKey (next, nestChain, first) as NK
 
 import Blessed.UI.Boxes.Box.Option as Box
 
@@ -77,7 +77,7 @@ component
 component curPatch keys family iReprSignal inlets =
     Map.empty /\
     B.box keys.inletsBox
-        [ Box.width $ width $ Map.size inlets
+        [ Box.width $ width $ Map.size inlets -- * InletButton.widthN
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px 0

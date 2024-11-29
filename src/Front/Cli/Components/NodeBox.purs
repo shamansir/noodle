@@ -289,6 +289,7 @@ _component
     Key.patchBox >~ Node.append nextNodeBoxN
 
     keys.nodeBox >~ Node.append inletsBoxN
+
     {- REM
     nextNodeBox >~ Node.append infoBoxN
     nextNodeBox >~ Node.append outletsBoxN

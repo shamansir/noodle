@@ -2,7 +2,7 @@ module Noodle.Raw.Fn.Shape where
 
 import Prelude
 
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Type.Proxy (Proxy(..))
 
@@ -49,6 +49,14 @@ derive instance Eq OutletR
 
 derive instance Ord InletR
 derive instance Ord OutletR
+
+
+unsafeInletR :: String -> InletR
+unsafeInletR = wrap
+
+
+unsafeOutletR :: String -> OutletR
+unsafeOutletR = wrap
 
 
 -- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.

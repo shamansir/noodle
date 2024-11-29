@@ -100,7 +100,7 @@ component
     -> Core.Blessed (State tk pstate fs repr m)
 component curPatch buttonKey nextInfoBox nextNodeBox inletR idx mbRepr reprSignal =
     B.button buttonKey
-        [ Box.content $ T.singleLine $ T.inlet' idx inletR mbRepr
+        [ Box.content $ "TEST" -- T.singleLine $ T.inlet' idx inletR mbRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1

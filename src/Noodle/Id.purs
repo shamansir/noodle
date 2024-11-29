@@ -33,8 +33,8 @@ import Noodle.Fn.Shape
     , Outlet(..), outletName
     ) as FromShape
 import Noodle.Raw.Fn.Shape
-    ( InletR, inletR, inletRName
-    , OutletR, outletR, outletRName
+    ( InletR, inletR, inletRName, unsafeInletR
+    , OutletR, outletR, outletRName, unsafeOutletR
     ) as FromShape
 import Noodle.Fn.Shape.Temperament
     ( Temperament(..)-- , TemperamentK, Hot, Cold)
