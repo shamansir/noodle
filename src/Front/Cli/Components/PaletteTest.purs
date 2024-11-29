@@ -18,9 +18,14 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Base.Screen.Option (fullUnicode, smartCSR, title) as Screen
 
 
+import Data.Text.Format (Tag)
+import Data.Text.Format as T
+import Data.Foldable (foldl)
+import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 import Noodle.Ui.Cli.Palette.Mark (class Mark)
+import Data.Text.Output.Blessed (multiLine) as Blessed
 
 
 type MainScreenKey = Screen <^> "main"
@@ -31,17 +36,16 @@ mainScreenKey  = nk :: MainScreenKey
 paletteTestKey = nk :: PaletteTestKey
 
 
-
 paletteBox
     :: Core.Blessed Unit
 paletteBox =
     B.boxAnd paletteTestKey
 
-        [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
-        , Box.left $ Offset.center
-        , Box.width $ Dimension.percents 100.0
+        [ Box.top    $ Offset.calc $ Coord.center <+> Coord.px 1
+        , Box.left   $ Offset.center
+        , Box.width  $ Dimension.percents 100.0
         , Box.height $ Dimension.percents 100.0
-        , Box.content "PALETTE"
+        , Box.content $ Blessed.multiLine $ foldl (<>) T.nil buildPalette
         , Box.tags true
         ]
 
@@ -49,6 +53,12 @@ paletteBox =
         ]
 
         $ \_ -> do pure unit
+
+
+buildPalette :: Array Tag
+buildPalette =
+    [ T.s "PALETTE"
+    ]
 
 
 component
