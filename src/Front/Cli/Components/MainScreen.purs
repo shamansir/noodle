@@ -75,8 +75,9 @@ component initialState =
         ]
 
         [ PatchesListbar.component $ Network.patches $ initialState.network
-        , PatchBox.component $ Network.toolkit initialState.network
         , AddPatchButton.component
+        , PatchBox.component $ Network.toolkit initialState.network
+
         -- , LoadFileButton.component
         -- , CommandLogButton.component
         -- , HydraCodeButton.component

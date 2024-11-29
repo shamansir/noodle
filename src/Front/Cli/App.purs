@@ -62,6 +62,7 @@ import Cli.State (State)
 import Cli.State (init) as State
 import Cli.State (informWsInitialized) as State
 import Cli.Components.MainScreen as MainScreen
+import Cli.Components.PaletteTest as PaletteTest
 
 import Noodle.Id (ToolkitR, toolkitR) as Id
 import Noodle.Repr (class HasFallback)
@@ -93,6 +94,7 @@ data Options
     = JustRun SelectedToolkit
     | LoadNetworkFrom String SelectedToolkit
     | GenerateToolkitFrom String SelectedToolkit
+    | PaletteTest SelectedToolkit
 
 
 defaultOptions = JustRun defaultToolkit :: Options
@@ -134,6 +136,8 @@ runWith =
                 -- FIXME: May be put `toolkitName` into `FCG.Options`, and/or generate its module name same way as with families...?
                 Starter -> generateToolkit Starter.options (Id.toolkitR "Starter") fromFile
                 User _  -> pure unit
+        PaletteTest tkKey ->
+            runPaletteTest
     where
         postFix fromFile = do
             fileCallback <- Blessed.impair1 applyFile
@@ -202,8 +206,21 @@ runBlessedInterface pState toolkit andThen = do
         -}
 
 
+runPaletteTest
+    :: Effect Unit
+runPaletteTest =
+    Blessed.run unit PaletteTest.component
+
+
 options :: OA.Parser Options
 options = ado
+    selectToolkit <- OA.strOption $ fold
+        [ OA.long "toolkit"
+        , OA.short 't'
+        , OA.metavar "TOOLKIT-NAME"
+        , OA.help "Required: Name of the toolkit to launch with: only `starter` is supported at the time"
+        ]
+
     nwFromFile <- OA.strOption $ fold
         [ OA.long "file"
         , OA.short 'f'
@@ -220,11 +237,9 @@ options = ado
         , OA.help "Generate Tookit definition from given NDF file"
         ]
 
-    selectToolkit <- OA.strOption $ fold
-        [ OA.long "toolkit"
-        , OA.short 't'
-        , OA.metavar "TOOLKIT-NAME"
-        , OA.help "Name of the toolkit to launch with: only `starter` is supported at the time"
+    paletteTest <- OA.switch $ fold
+        [ OA.long "palette-test"
+        , OA.help "Run the palette preview test"
         ]
 
     let selectedToolkit =
@@ -233,7 +248,8 @@ options = ado
                 _ -> defaultToolkit
 
     in
-        if (genFromFile /= "") then GenerateToolkitFrom genFromFile selectedToolkit
+        if paletteTest then PaletteTest selectedToolkit
+        else if (genFromFile /= "") then GenerateToolkitFrom genFromFile selectedToolkit
         else if (nwFromFile /= "") then LoadNetworkFrom nwFromFile selectedToolkit
         else JustRun selectedToolkit
 

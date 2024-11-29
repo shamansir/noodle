@@ -36,6 +36,7 @@ inlet idx inletId = inlet' idx $ Id.inletR inletId
 
 inlet' :: forall repr. Mark repr => Tagged.At At.ChannelLabel repr  => Int -> Id.InletR -> Maybe repr -> Tag
 inlet' idx inletId (Just repr) =
+    -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
     T.fgc (mark repr) $ At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inlet' idx inletId Nothing = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
