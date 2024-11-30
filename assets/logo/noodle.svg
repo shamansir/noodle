@@ -1,0 +1,19 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="-0.5" y="0.5" width="15" height="22" rx="1.5" transform="matrix(-1 0 0 1 71 0)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="13" rx="1.5" transform="matrix(-1 0 0 1 71 25)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="13" rx="1.5" transform="matrix(-1 0 0 1 71 58)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="28" rx="1.5" transform="matrix(-1 0 0 1 15 43)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="19" rx="1.5" transform="matrix(-1 0 0 1 15 21)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="6" rx="1.5" transform="matrix(-1 0 0 1 71 41)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="6" rx="1.5" transform="matrix(-1 0 0 1 15 12)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="9" rx="1.5" transform="matrix(-1 0 0 1 15 0)" stroke="white"/>
+<rect x="-0.5" y="0.5" width="15" height="5" rx="1.5" transform="matrix(-1 0 0 1 71 50)" stroke="white"/>
+<path d="M56 44C25.7845 44 43.2845 4 16 4" stroke="white"/>
+<path d="M56 62C25.7845 62 38.5 29 16 29" stroke="white"/>
+<path d="M56 36C25.7845 36 43.2845 27 16 27" stroke="white"/>
+<path d="M56 52C25.7845 52 43.2845 6 16 6" stroke="white"/>
+<path d="M56 33C36.5 33 43.2845 17 16 17" stroke="white"/>
+<path d="M56 19C25.7845 19 36 2 16 2" stroke="white"/>
+<path d="M57 69C29.5 69 40.5 15 15 15" stroke="white"/>
+<path d="M57 66C25.2738 66 43.6488 48 15 48" stroke="white"/>
+</svg>

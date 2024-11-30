@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Vectornator (http://vectornator.io/) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="0 0 72 72" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<path d="M0 0L72 0L72 72L0 72L0 0Z" fill="#000000" fill-rule="nonzero" opacity="1" stroke="none"/>
+<g id="Untitled" vectornator:layerName="Untitled">
+<path d="M70 0.5L58 0.5C57.1716 0.5 56.5 1.17157 56.5 2L56.5 21C56.5 21.8284 57.1716 22.5 58 22.5L70 22.5C70.8284 22.5 71.5 21.8284 71.5 21L71.5 2C71.5 1.17157 70.8284 0.5 70 0.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M70 25.5L58 25.5C57.1716 25.5 56.5 26.1716 56.5 27L56.5 37C56.5 37.8284 57.1716 38.5 58 38.5L70 38.5C70.8284 38.5 71.5 37.8284 71.5 37L71.5 27C71.5 26.1716 70.8284 25.5 70 25.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M70 58.5L58 58.5C57.1716 58.5 56.5 59.1716 56.5 60L56.5 70C56.5 70.8284 57.1716 71.5 58 71.5L70 71.5C70.8284 71.5 71.5 70.8284 71.5 70L71.5 60C71.5 59.1716 70.8284 58.5 70 58.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M14 43.5L2 43.5C1.17157 43.5 0.5 44.1716 0.5 45L0.5 70C0.5 70.8284 1.17157 71.5 2 71.5L14 71.5C14.8284 71.5 15.5 70.8284 15.5 70L15.5 45C15.5 44.1716 14.8284 43.5 14 43.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M14 21.5L2 21.5C1.17157 21.5 0.5 22.1716 0.5 23L0.5 39C0.5 39.8284 1.17157 40.5 2 40.5L14 40.5C14.8284 40.5 15.5 39.8284 15.5 39L15.5 23C15.5 22.1716 14.8284 21.5 14 21.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M70 41.5L58 41.5C57.1716 41.5 56.5 42.1716 56.5 43L56.5 46C56.5 46.8284 57.1716 47.5 58 47.5L70 47.5C70.8284 47.5 71.5 46.8284 71.5 46L71.5 43C71.5 42.1716 70.8284 41.5 70 41.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M14 12.5L2 12.5C1.17157 12.5 0.5 13.1716 0.5 14L0.5 17C0.5 17.8284 1.17157 18.5 2 18.5L14 18.5C14.8284 18.5 15.5 17.8284 15.5 17L15.5 14C15.5 13.1716 14.8284 12.5 14 12.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M14 0.5L2 0.5C1.17157 0.5 0.5 1.17157 0.5 2L0.5 8C0.5 8.82843 1.17157 9.5 2 9.5L14 9.5C14.8284 9.5 15.5 8.82843 15.5 8L15.5 2C15.5 1.17157 14.8284 0.5 14 0.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M70 50.5L58 50.5C57.1716 50.5 56.5 51.1716 56.5 52L56.5 54C56.5 54.8284 57.1716 55.5 58 55.5L70 55.5C70.8284 55.5 71.5 54.8284 71.5 54L71.5 52C71.5 51.1716 70.8284 50.5 70 50.5Z" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="rect"/>
+<path d="M56 44C25.7845 44 43.2845 4 16 4" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M56 62C25.7845 62 38.5 29 16 29" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M56 36C25.7845 36 43.2845 27 16 27" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M56 52C25.7845 52 43.2845 6 16 6" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M56 33C36.5 33 43.2845 17 16 17" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M56 19C25.7845 19 36 2 16 2" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M57 69C29.5 69 40.5 15 15 15" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+<path d="M57 66C25.2738 66 43.6488 48 15 48" fill="none" opacity="1" stroke="#ffffff" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1" vectornator:layerName="path"/>
+</g>
+</svg>
