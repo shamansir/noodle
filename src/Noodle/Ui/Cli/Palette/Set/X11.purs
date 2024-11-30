@@ -841,8 +841,15 @@ x11colors =
     , gray
     , gray0
     , gray1
+    , gray2
+    , gray3
+    , gray4
+    , gray5
+    , gray6
+    , gray7
+    , gray8
+    , gray9
     , gray10
-    , gray100
     , gray11
     , gray12
     , gray13
@@ -852,7 +859,6 @@ x11colors =
     , gray17
     , gray18
     , gray19
-    , gray2
     , gray20
     , gray21
     , gray22
@@ -863,7 +869,6 @@ x11colors =
     , gray27
     , gray28
     , gray29
-    , gray3
     , gray30
     , gray31
     , gray32
@@ -874,7 +879,6 @@ x11colors =
     , gray37
     , gray38
     , gray39
-    , gray4
     , gray40
     , gray41
     , gray42
@@ -885,7 +889,6 @@ x11colors =
     , gray47
     , gray48
     , gray49
-    , gray5
     , gray50
     , gray51
     , gray52
@@ -896,7 +899,6 @@ x11colors =
     , gray57
     , gray58
     , gray59
-    , gray6
     , gray60
     , gray61
     , gray62
@@ -907,7 +909,6 @@ x11colors =
     , gray67
     , gray68
     , gray69
-    , gray7
     , gray70
     , gray71
     , gray72
@@ -918,7 +919,6 @@ x11colors =
     , gray77
     , gray78
     , gray79
-    , gray8
     , gray80
     , gray81
     , gray82
@@ -929,7 +929,6 @@ x11colors =
     , gray87
     , gray88
     , gray89
-    , gray9
     , gray90
     , gray91
     , gray92
@@ -940,17 +939,26 @@ x11colors =
     , gray97
     , gray98
     , gray99
+    , gray100
     , green
     , green1
     , green2
     , green3
     , green4
     , greenyellow
+    {-
     , grey
     , grey0
     , grey1
+    , grey2
+    , grey3
+    , grey4
+    , grey5
+    , grey6
+    , grey7
+    , grey8
+    , grey9
     , grey10
-    , grey100
     , grey11
     , grey12
     , grey13
@@ -960,7 +968,6 @@ x11colors =
     , grey17
     , grey18
     , grey19
-    , grey2
     , grey20
     , grey21
     , grey22
@@ -971,7 +978,6 @@ x11colors =
     , grey27
     , grey28
     , grey29
-    , grey3
     , grey30
     , grey31
     , grey32
@@ -982,7 +988,6 @@ x11colors =
     , grey37
     , grey38
     , grey39
-    , grey4
     , grey40
     , grey41
     , grey42
@@ -993,7 +998,6 @@ x11colors =
     , grey47
     , grey48
     , grey49
-    , grey5
     , grey50
     , grey51
     , grey52
@@ -1004,7 +1008,6 @@ x11colors =
     , grey57
     , grey58
     , grey59
-    , grey6
     , grey60
     , grey61
     , grey62
@@ -1015,7 +1018,6 @@ x11colors =
     , grey67
     , grey68
     , grey69
-    , grey7
     , grey70
     , grey71
     , grey72
@@ -1026,7 +1028,6 @@ x11colors =
     , grey77
     , grey78
     , grey79
-    , grey8
     , grey80
     , grey81
     , grey82
@@ -1037,7 +1038,6 @@ x11colors =
     , grey87
     , grey88
     , grey89
-    , grey9
     , grey90
     , grey91
     , grey92
@@ -1048,6 +1048,8 @@ x11colors =
     , grey97
     , grey98
     , grey99
+    , grey100
+    -}
     , honeydew
     , honeydew1
     , honeydew2

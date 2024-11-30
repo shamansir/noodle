@@ -160,9 +160,19 @@ glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
     in T.fgc color $ T.s $ Id.reflectFamilyR familyR
     -}
 
+paletteFg :: Palette.Item -> Tag
+paletteFg item = T.fg item.repr (T.s item.label)
+
+
+paletteBg :: Palette.Item -> Tag
+paletteBg item = T.bg item.repr (T.s item.label)
+
+
+{-
 paletteItem :: Palette.Item -> Tag
 paletteItem item =
     T.bg item.repr (T.s "      ") <> T.space <> T.fg item.repr (T.s $ Palette.fullInfo item)
+-}
 
 
 -- Commands
