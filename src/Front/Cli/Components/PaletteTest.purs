@@ -6,6 +6,7 @@ import Data.Text.Format (Tag)
 import Data.Text.Format as T
 import Data.Foldable (foldl)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Type.Proxy (Proxy(..))
 
 import Data.Text.Output.Blessed (multiLine) as Blessed
@@ -107,11 +108,36 @@ buildPalette =
     , T.wraps "rem-sl-2<" ">" $ T.removeStatusLine Starter.Color._color
     , T.wraps "libitem-1<" ">" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Color._color
     , T.wraps "libitem-2<" ">" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Sum._sum
+    , T.wraps "btn-tgl-on<" ">" $ T.buttonToggle "H" true
+    , T.wraps "btn-tgl-off<" ">" $ T.buttonToggle "H" false
+    , T.wraps "btn-con-left<" ">" $ T.buttonConnection $ Left "W"
+    , T.wraps "btn-con-r-0<" ">" $ T.buttonConnection $ Right 0
+    , T.wraps "btn-con-r-1<" ">" $ T.buttonConnection $ Right 1
+    , T.wraps "o-hvr<" ">" $ T.outletHover
+    , T.wraps "o-sel<" ">" $ T.outletSelect
+    , T.wraps "i-hvr<" ">" $ T.inletHover
+    -- TODO , T.wraps "i-sel<" ">" $ T.inletSelect
+    , T.wraps "inode-num<" ">" $ T.infoNode $ VNumber 20.0
+    , T.wraps "inode-chr<" ">" $ T.infoNode $ VChar 'b'
+    -- TODO , T.wraps "f-docs<" ">" $ T.family-docs Starter.Color._color
+    , T.wraps "sel<" ">" $ T.selected "SEL"
+    , T.wraps "ord-i<" ">" $ T.orderItem "oi"
+    , T.wraps "fpath<" ">" $ T.filePath "file://"
     , T.wraps "cmd-tk<" ">" $ T.toolkit "Test"
     , T.wraps "cmd-tk-ver<" ">" $ T.tkVersion 2.1
     , T.wraps "cmd-ndf-ver<" ">" $ T.ndfVersion 2.1
     , T.wraps "cmd-family<" ">" $ T.family "family"
     , T.wraps "cmd-some-grp<" ">" $ T.someGroup "group"
+    , T.wraps "cmd-nodeid<" ">" $ T.nodeId "node-id"
+    , T.wraps "cmd-op<" ">" $ T.operator "~>"
+    , T.wraps "cmd-comment<" ">" $ T.comment "comment"
+    , T.wraps "cmd-val<" ">" $ T.value "12"
+    , T.wraps "cmd-coord<" ">" $ T.coord 5
+    , T.wraps "cmd-i-idx<" ">" $ T.inletIdx 1
+    , T.wraps "cmd-o-idx<" ">" $ T.outletIdx 3
+    , T.wraps "cmd-i-id<" ">" $ T.inletId "foo"
+    , T.wraps "cmd-o-id<" ">" $ T.outletId "bar"
+    , T.wraps "cmd-type<" ">" $ T.type_ "String"
     ]
 
 
