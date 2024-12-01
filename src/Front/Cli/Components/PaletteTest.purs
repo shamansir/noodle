@@ -28,8 +28,10 @@ import Blessed.UI.Base.Screen.Option (fullUnicode, smartCSR, title) as Screen
 
 import Noodle.Id as Id
 import Noodle.Ui.Cli.Tagging as T
-import Noodle.Ui.Cli.Tagging.At as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Cli.Tagging.At as At
+import Noodle.Ui.Cli.Tagging.At (class At)
+import Noodle.Ui.Cli.Tagging.At (ChannelLabel, channelLabel) as At
+import Noodle.Ui.Cli.Palette as P
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
@@ -39,7 +41,8 @@ import Noodle.Ui.Cli.Palette.Item as Palette
 import Starter.Toolkit (STARTER)
 import StarterTk.Simple.Sum as Starter.Sum
 import StarterTk.Simple.Color as Starter.Color
-import Demo.Toolkit.Starter.Repr (StarterRepr(..))
+import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (StarterRepr(..), Time(..), Shape(..), Color(..), Spread(..)) as Sr
 
 
 type MainScreenKey = Screen <^> "main"
@@ -84,61 +87,89 @@ buildPalette =
     [ T.s "]] X11 / BG :: [[ " ] <>
     (T.paletteBg <$> X11.x11colors) <>
     [ T.s "]]"
-    , T.wraps "empty-i-0<" ">" $ T.inlet 0 Starter.Sum._in_a (Nothing :: Maybe StarterRepr)
-    , T.wraps "empty-i-1<" ">" $ T.inlet 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
-    , T.wraps "num-i-0<" ">" $ T.inlet 0 Starter.Sum._in_a $ Just $ VNumber 10.0
-    , T.wraps "num-i-1<" ">" $ T.inlet 1 Starter.Sum._in_b $ Just $ VNumber 20.0
-    , T.wraps "char-i-1<" ">" $ T.inlet 1 Starter.Sum._in_b $ Just $ VChar 'a'
-    , T.wraps "i-infobox<" ">" $ T.inletInfoBox Starter.Sum._in_b
-    , T.wraps "empty-i-sl<" ">" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
-    , T.wraps "num-i-sl<" ">" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b $ Just $ VNumber 20.0
-    , T.wraps "empty-o-0<" ">" $ T.outlet 0 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
-    , T.wraps "empty-o-1<" ">" $ T.outlet 0 Starter.Color._out_color (Nothing :: Maybe StarterRepr)
-    , T.wraps "num-o-0<" ">" $ T.outlet 0 Starter.Sum._out_sum $ Just $ VNumber 10.0
-    , T.wraps "char-o-1<" ">" $ T.outlet 1 Starter.Sum._out_sum $ Just $ VChar 'a'
-    , T.wraps "o-infobox<" ">" $ T.outletInfoBox Starter.Sum._out_sum
-    , T.wraps "empty-o-sl<" ">" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
-    , T.wraps "num-o-sl<" ">" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum $ Just $ VNumber 20.0
-    -- TODO , T.wraps "node-lbl-1<" ">" $ T.nodeLabel Starter.Sum._sum
-    -- TODO , T.wraps "node-lbl-2<" ">" $ T.nodeLabel Starter.Color._color
-    , T.wraps "rembtn-out<" ">" $ T.removeButtonOut
-    , T.wraps "rembtn-over<" ">" $ T.removeButtonOver
-    , T.wraps "rembtn-infobox<" ">" $ T.removeInfoBox
-    , T.wraps "rem-sl-1<" ">" $ T.removeStatusLine Starter.Sum._sum
-    , T.wraps "rem-sl-2<" ">" $ T.removeStatusLine Starter.Color._color
-    , T.wraps "libitem-1<" ">" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Color._color
-    , T.wraps "libitem-2<" ">" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Sum._sum
-    , T.wraps "btn-tgl-on<" ">" $ T.buttonToggle "H" true
-    , T.wraps "btn-tgl-off<" ">" $ T.buttonToggle "H" false
-    , T.wraps "btn-con-left<" ">" $ T.buttonConnection $ Left "W"
-    , T.wraps "btn-con-r-0<" ">" $ T.buttonConnection $ Right 0
-    , T.wraps "btn-con-r-1<" ">" $ T.buttonConnection $ Right 1
-    , T.wraps "o-hvr<" ">" $ T.outletHover
-    , T.wraps "o-sel<" ">" $ T.outletSelect
-    , T.wraps "i-hvr<" ">" $ T.inletHover
-    -- TODO , T.wraps "i-sel<" ">" $ T.inletSelect
-    , T.wraps "inode-num<" ">" $ T.infoNode $ VNumber 20.0
-    , T.wraps "inode-chr<" ">" $ T.infoNode $ VChar 'b'
-    -- TODO , T.wraps "f-docs<" ">" $ T.family-docs Starter.Color._color
-    , T.wraps "sel<" ">" $ T.selected "SEL"
-    , T.wraps "ord-i<" ">" $ T.orderItem "oi"
-    , T.wraps "fpath<" ">" $ T.filePath "file://"
-    , T.wraps "cmd-tk<" ">" $ T.toolkit "Test"
-    , T.wraps "cmd-tk-ver<" ">" $ T.tkVersion 2.1
-    , T.wraps "cmd-ndf-ver<" ">" $ T.ndfVersion 2.1
-    , T.wraps "cmd-family<" ">" $ T.family "family"
-    , T.wraps "cmd-some-grp<" ">" $ T.someGroup "group"
-    , T.wraps "cmd-nodeid<" ">" $ T.nodeId "node-id"
-    , T.wraps "cmd-op<" ">" $ T.operator "~>"
-    , T.wraps "cmd-comment<" ">" $ T.comment "comment"
-    , T.wraps "cmd-val<" ">" $ T.value "12"
-    , T.wraps "cmd-coord<" ">" $ T.coord 5
-    , T.wraps "cmd-i-idx<" ">" $ T.inletIdx 1
-    , T.wraps "cmd-o-idx<" ">" $ T.outletIdx 3
-    , T.wraps "cmd-i-id<" ">" $ T.inletId "foo"
-    , T.wraps "cmd-o-id<" ">" $ T.outletId "bar"
-    , T.wraps "cmd-type<" ">" $ T.type_ "String"
-    ]
+    , qt "empty-i-0" $ T.inlet 0 Starter.Sum._in_a (Nothing :: Maybe StarterRepr)
+    , qt "empty-i-1" $ T.inlet 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
+    , qt "num-i-0" $ T.inlet 0 Starter.Sum._in_a $ Just $ Sr.VNumber 10.0
+    , qt "num-i-1" $ T.inlet 1 Starter.Sum._in_b $ Just $ Sr.VNumber 20.0
+    , qt "char-i-1" $ T.inlet 1 Starter.Sum._in_b $ Just $ Sr.VChar 'a'
+    , qt "i-infobox" $ T.inletInfoBox Starter.Sum._in_b
+    , qt "empty-i-sl" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
+    , qt "num-i-sl" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b $ Just $ Sr.VNumber 20.0
+    , qt "empty-o-0" $ T.outlet 0 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
+    , qt "empty-o-1" $ T.outlet 0 Starter.Color._out_color (Nothing :: Maybe StarterRepr)
+    , qt "num-o-0" $ T.outlet 0 Starter.Sum._out_sum $ Just $ Sr.VNumber 10.0
+    , qt "char-o-1" $ T.outlet 1 Starter.Sum._out_sum $ Just $ Sr.VChar 'a'
+    , qt "o-infobox" $ T.outletInfoBox Starter.Sum._out_sum
+    , qt "empty-o-sl" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
+    , qt "num-o-sl" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum $ Just $ Sr.VNumber 20.0
+    -- TODO , qt "node-lbl-1" $ T.nodeLabel Starter.Sum._sum
+    -- TODO , qt "node-lbl-2" $ T.nodeLabel Starter.Color._color
+    , qt "rembtn-out" $ T.removeButtonOut
+    , qt "rembtn-over" $ T.removeButtonOver
+    , qt "rembtn-infobox" $ T.removeInfoBox
+    , qt "rem-sl-1" $ T.removeStatusLine Starter.Sum._sum
+    , qt "rem-sl-2" $ T.removeStatusLine Starter.Color._color
+    , qt "libitem-1" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Color._color
+    , qt "libitem-2" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Sum._sum
+    , qt "btn-tgl-on" $ T.buttonToggle "H" true
+    , qt "btn-tgl-off" $ T.buttonToggle "H" false
+    , qt "btn-con-left" $ T.buttonConnection $ Left "W"
+    , qt "btn-con-r-0" $ T.buttonConnection $ Right 0
+    , qt "btn-con-r-1" $ T.buttonConnection $ Right 1
+    , qt "o-hvr" $ T.outletHover
+    , qt "o-sel" $ T.outletSelect
+    , qt "i-hvr" $ T.inletHover
+    -- TODO , qt "i-sel" $ T.inletSelect
+    , qt "inode-num" $ T.infoNode $ Sr.VNumber 20.0
+    , qt "inode-chr" $ T.infoNode $ Sr.VChar 'b'
+    -- TODO , qt "f-docs" $ T.family-docs Starter.Color._color
+    , qt "sel" $ T.selected "SEL"
+    , qt "ord-i" $ T.orderItem "oi"
+    , qt "ord-spl" $ T.orderSplit "|" -- FIXME: removing this item breaks file path highlight to direct code
+    , qt "fpath" $ T.filePath "file://"
+    , qt "cmd-tk" $ T.toolkit "Test"
+    , qt "cmd-tk-ver" $ T.tkVersion 2.1
+    , qt "cmd-ndf-ver" $ T.ndfVersion 2.1
+    , qt "cmd-family" $ T.family "family"
+    , qt "cmd-some-grp" $ T.someGroup "group"
+    , qt "cmd-nodeid" $ T.nodeId "node-id"
+    , qt "cmd-op" $ T.operator "~>"
+    , qt "cmd-comment" $ T.comment "comment"
+    , qt "cmd-val" $ T.value "12"
+    , qt "cmd-coord" $ T.coord 5
+    , qt "cmd-i-idx" $ T.inletIdx 1
+    , qt "cmd-o-idx" $ T.outletIdx 3
+    , qt "cmd-i-id" $ T.inletId "foo"
+    , qt "cmd-o-id" $ T.outletId "bar"
+    , qt "cmd-type" $ T.type_ "String"
+    , qbg "node-bg" $ P.nodeBg
+    ] <>
+    (qchrepr <$>
+        [ Sr.VNone, Sr.VBang, Sr.VNumber 5.0, Sr.VBool false, Sr.VBool true, Sr.VChar 'x'
+        , Sr.VTime $ Sr.Time { seconds : 5 }, Sr.VTime $ Sr.Time { seconds : 12 }
+        , Sr.VShape Sr.Circle, Sr.VShape Sr.Rect, Sr.VShape Sr.Cross, Sr.VShape Sr.Diamond
+        , Sr.VColor $ Sr.Color { r : 255, g : 0, b : 0, a : 255 }, Sr.VColor $ Sr.Color { r : 255, g : 255, b : 0, a : 255 }, Sr.VColor $ Sr.Color { r : 255, g : 0, b : 255, a : 255 }
+        , Sr.VSpreadNum $ Sr.Spread [ ], Sr.VSpreadNum $ Sr.Spread [ 2.0, 5.0 ]
+        ]
+    )
+
+
+qt :: String -> Tag -> Tag
+qt n = T.wraps (n <> "<") ">"
+
+
+qbg :: String -> Palette.Item -> Tag
+qbg n c = qt n $ T.bgcs (Palette.crepr c) n
+
+
+qfg :: String -> Palette.Item -> Tag
+qfg n c = qt n $ T.fgcs (Palette.crepr c) n
+
+
+qchrepr :: forall repr. At At.ChannelLabel repr => repr -> Tag
+qchrepr repr =
+    -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
+    At.channelLabel repr
 
 
 component

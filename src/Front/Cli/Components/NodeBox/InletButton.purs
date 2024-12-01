@@ -86,8 +86,7 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs repr m
-     . Mark repr
-    => T.At T.ChannelLabel repr
+     . T.At T.ChannelLabel repr
     => Patch pstate fs repr m
     -> InletButtonKey
     -> InfoBoxKey

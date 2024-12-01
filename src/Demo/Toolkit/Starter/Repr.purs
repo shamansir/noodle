@@ -7,12 +7,15 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap) as NT
 import Data.String (splitAt, drop) as String
 import Data.Number (fromString) as Number
-import Data.Int (fromString) as Int
+import Data.Array (length) as Array
+import Data.Int (fromString, toNumber) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Color as Color
 import Data.Text.Format as T
 import Noodle.Ui.Cli.Palette.Mark (class Mark)
-import Noodle.Ui.Cli.Tagging.At (class At)
+import Noodle.Ui.Cli.Palette.Item (crepr) as C
+import Noodle.Ui.Cli.Palette.Set.X11 as X11
+import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 
 import Type.Proxy (Proxy(..))
 
@@ -244,9 +247,46 @@ instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpr
 instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
 
 
+{-
 instance Mark StarterRepr where
     mark  _  = Color.rgb 255 255 255
+-}
+
+-- x == ChannelLabel
+instance At x StarterRepr where
+    at _ = case _ of
+        VNone -> T.fgc (C.crepr $ X11.burlywood) $ T.s "∅"
+        VAny repr -> at (Proxy :: _ x) repr
+        VBang -> T.fgc (C.crepr $ X11.aqua) $ T.s "⊚" -- ⌾ ⏺
+        VBool bool ->
+            if bool
+                then T.fgc (C.crepr $ X11.steelblue2) $ T.s "T"
+                else T.fgc (C.crepr $ X11.steelblue)  $ T.s "F"
+            -- T.fgc (C.crepr $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar ch -> T.fgc (C.crepr $ X11.aquamarine) $ T.s $ show ch
+        VNumber num -> T.fgc (C.crepr $ X11.green) $ T.s $ show num
+        VTime t -> T.fgc (C.crepr $ X11.darkolivegreen4) $ T.s $ show t
+        VColor clr -> T.fgc (toNativeColor clr) $ T.s "■"
+        VShape shape ->
+            T.fgc (C.crepr $ X11.firebrick1) $ T.s $ case shape of -- TODO: replace with Unicode shapes if possible
+                Circle -> "⏺"
+                Rect -> "■"
+                Cross -> "⨯"
+                Diamond -> "◇"
+        VSpreadNum spread -> channelSpread spread
+        VSpreadVec spread -> channelSpread spread
+        VSpreadCol spread -> channelSpread spread
+        VSpreadShp spread -> channelSpread spread
+        where
+            channelSpread :: forall a. Spread a -> T.Tag
+            channelSpread (Spread arr) = T.fgc (C.crepr $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
+            toNativeColor :: Color -> Color.Color
+            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
 
 
-instance At p StarterRepr where
-    at _ _ = T.nil
+-- instance At a StarterRepr where
+--     at _ _ = T.nil
+
+
+instance Show Time where
+    show (Time { seconds }) = show seconds <> "s"

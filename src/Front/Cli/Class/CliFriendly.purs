@@ -19,7 +19,7 @@ class
     , CliRenderer tk fs repr m
     , HasFallback repr
     , Toolkit.MapFamiliesImpl repr m fs
-    , Toolkit.MarkToolkit tk, Mark repr, T.At At.ChannelLabel repr
+    , Toolkit.MarkToolkit tk, T.At At.ChannelLabel repr
     ) <= CliFriendly tk fs repr m
 
 
@@ -28,5 +28,5 @@ instance
     , CliRenderer tk fs repr m
     , HasFallback repr
     , Toolkit.MapFamiliesImpl repr m fs
-    , Toolkit.MarkToolkit tk, Mark repr, T.At At.ChannelLabel repr
+    , Toolkit.MarkToolkit tk, T.At At.ChannelLabel repr
     ) => CliFriendly tk fs repr m

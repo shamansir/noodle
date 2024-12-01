@@ -166,7 +166,7 @@ _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
     => MarkToolkit tk
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => HasFallback repr => T.At At.ChannelLabel repr
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
@@ -332,7 +332,7 @@ _component
 fromRawNodeAt
     :: forall tk fs nstate pstate repr m
     -- => IsSymbol f => Mark (Id.Family f)
-    -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    -- => HasFallback repr => T.At At.ChannelLabel repr
      . CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -417,9 +417,9 @@ fromFamilyAuto curPatch family tk = do
 fromRawFamilyAuto
     :: forall tk fs pstate repr m
     .  Wiring m
-    => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    => HasFallback repr => T.At At.ChannelLabel repr
     -- => IsSymbol f => Mark (Id.Family f)
-    -- => HasFallback repr => Mark repr => T.At At.ChannelLabel repr
+    -- => HasFallback repr => T.At At.ChannelLabel repr
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m
@@ -482,8 +482,7 @@ updateCodeFor stateRef family update = do
 
 renderUpdate
     :: forall m nstate state repr
-     . Mark repr
-    => T.At At.ChannelLabel repr
+     . T.At At.ChannelLabel repr
     => NodeBoxKey
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey

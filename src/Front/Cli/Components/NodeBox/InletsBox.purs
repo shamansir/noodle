@@ -66,7 +66,6 @@ component
     {- HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
     => -}
      . HasFallback repr
-    => Mark repr
     => T.At T.ChannelLabel repr
     => Patch pstate fs repr m
     -> LastKeys
