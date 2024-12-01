@@ -34,7 +34,6 @@ import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 import Noodle.Repr (class HasFallback, fallback)
 -- import Noodle.Family.Def as Family
 

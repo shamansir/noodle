@@ -55,7 +55,6 @@ import Noodle.Ui.Cli.Palette.Mark
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Wiring (class Wiring)
 
 import Cli.Class.CliFriendly (class CliFriendly)

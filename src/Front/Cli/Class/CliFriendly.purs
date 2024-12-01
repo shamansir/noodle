@@ -7,7 +7,6 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Toolkit (class MapFamiliesImpl, class MarkToolkit) as Toolkit
 import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 import Cli.Class.CliRenderer (class CliRenderer)
 

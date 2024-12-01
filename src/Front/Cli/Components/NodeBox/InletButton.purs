@@ -52,7 +52,6 @@ import Cli.Bounds (collect, inputPos) as Bounds
 import Cli.Style (inputsOutputs) as Style
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 import Noodle.Network as Network
 import Noodle.Patch as Patch

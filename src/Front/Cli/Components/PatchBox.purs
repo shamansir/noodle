@@ -31,7 +31,6 @@ import Noodle.Repr (class HasFallback)
 import Noodle.Toolkit (Toolkit, class MarkToolkit, class MapFamiliesImpl)
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 -- import Cli.Components.InputIndicator as InputIndicator
 -- import Cli.Components.OutputIndicator as OutputIndicator

@@ -75,7 +75,6 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
 
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 import Cli.Class.CliFriendly (class CliFriendly)
 

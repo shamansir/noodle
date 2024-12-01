@@ -99,7 +99,6 @@ import Noodle.Ui.Cli.Palette.Item (crepr) as Palette
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
 -- REM import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -147,7 +146,7 @@ autoPos = do
 fromNodeAuto
     :: forall tk fs pstate f nstate is os repr m
     -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-    .  IsSymbol f => Mark (Id.Family f)
+    .  IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -352,7 +351,7 @@ fromRawNodeAt pos curPatch familyR rawNode = do
 fromNodeAt
     :: forall tk fs pstate f nstate is os repr m
     .  Wiring m
-    => IsSymbol f => Mark (Id.Family f)
+    => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -375,7 +374,7 @@ fromNodeAt pos curPatch family node = do
 
 fromFamilyAt
     :: forall tk fs pstate f nstate is os repr m
-     . IsSymbol f => Mark (Id.Family f)
+     . IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -400,7 +399,7 @@ fromFamilyAt pos curPatch family tk = do
 
 fromFamilyAuto
     :: forall fs tk f nstate pstate is os repr m
-     . IsSymbol f => Mark (Id.Family f)
+     . IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m

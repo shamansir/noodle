@@ -26,7 +26,6 @@ import Noodle.Repr (class HasFallback)
 
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)

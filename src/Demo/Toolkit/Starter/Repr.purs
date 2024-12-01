@@ -12,7 +12,6 @@ import Data.Int (fromString, toNumber) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Color as Color
 import Data.Text.Format as T
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
