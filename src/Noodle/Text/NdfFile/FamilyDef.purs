@@ -2,7 +2,7 @@ module Noodle.Text.NdfFile.FamilyDef where
 
 import Prelude
 
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.String (joinWith) as String
@@ -15,7 +15,7 @@ import Noodle.Id (group, family) as Id
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Fn.ToFn (Fn, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
+import Noodle.Fn.ToFn (Fn, FnS, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make
 import Noodle.Text.NdfFile.Types (FamilyDefRec, EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
@@ -47,7 +47,7 @@ instance ToCode NDF opts NodeFnDef where
     toCode _ _ =
         case _ of
             NodeFnDef fn ->
-                case (toFn fn :: String /\ Array (Argument ChannelDef) /\ Array (Output ChannelDef)) of
+                case (unwrap $ toFn (Proxy :: _ Void) fn :: FnS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         " => " <>
@@ -70,7 +70,7 @@ instance ToTaggedCode NDF opts NodeFnDef where
     toTaggedCode _ _ =
         case _ of
             NodeFnDef fn ->
-                case (toFn fn :: String /\ Array (Argument ChannelDef) /\ Array (Output ChannelDef)) of
+                case (unwrap $ toFn (Proxy :: _ Void) fn :: FnS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         T.space <> F.operator "=>" <> T.space <>

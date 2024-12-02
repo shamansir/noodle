@@ -7,9 +7,13 @@ import Data.Tuple (snd, uncurry) as Tuple
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
 import Data.Array (length) as Array
+import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.String (joinWith) as String
+import Data.String.Extra (pascalCase) as String
+
+import Type.Proxy (Proxy(..))
 
 import Data.Bifunctor (bimap)
-
 
 -- import Toolkit.Hydra.Types
 -- import Toolkit.Hydra.Repr.Wrap (WrapRepr)
@@ -40,15 +44,17 @@ type ArgumentName = String
 type OutputName = String
 
 
--- TODO: use in `ToFn` & PossinlyToFn
--- TODO: add output type
-newtype Fn arg out = Fn (String /\ Array (Argument arg) /\ Array (Output out))
+type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
+
+
+newtype Fn arg out = Fn (FnS arg out)
+
+
+derive instance Newtype (Fn arg out) _
 
 
 type FnU arg = Fn arg Unit
 
-
-type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
 
 derive instance (Eq arg) => Eq (Argument arg)
@@ -56,12 +62,13 @@ derive instance (Eq out) => Eq (Output out)
 derive newtype instance (Eq arg, Eq out) => Eq (Fn arg out)
 
 
-class ToFn arg out a where
-    toFn :: a -> String /\ Array (Argument arg) /\ Array (Output out)
+class ToFn x arg out a where
+    toFn :: Proxy x -> a -> Fn arg out
 
 
-class PossiblyToFn arg out a where
-    possiblyToFn :: a -> Maybe (String /\ Array (Argument arg) /\ Array (Output out))
+class PossiblyToFn :: forall k. k -> Type -> Type -> Type -> Constraint
+class PossiblyToFn x arg out a where
+    possiblyToFn :: Proxy x -> a -> Maybe (Fn arg out)
 
 
 instance Functor Argument where
@@ -76,6 +83,10 @@ instance Functor Output where
 
 empty :: forall arg out. String -> Fn arg out
 empty n = Fn $ n /\ [] /\ []
+
+
+fns :: forall arg out. FnS arg out -> Fn arg out
+fns = wrap
 
 
 fn :: forall arg out. String -> Array (Argument arg) -> Array (Output out) -> Fn arg out
@@ -217,10 +228,32 @@ name :: forall i o. Fn i o -> String
 name (Fn (name /\ _)) = name
 
 
-toFnX :: forall a arg out. ToFn arg out a => a -> String /\ Array arg /\ Array out
-toFnX a = bimap (map argValue) (map outValue) <$> (toFn a :: String /\ Array (Argument arg) /\ Array (Output out))
+extract :: forall x a arg out. ToFn x arg out a => Proxy x -> a -> String /\ Array arg /\ Array out
+extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn arg out)
 
 
-instance ToFn arg out (Fn arg out) where
-    toFn :: Fn arg out -> String /\ Array (Argument arg) /\ Array (Output out)
-    toFn (Fn fn) = fn
+instance ToFn Void arg out (Fn arg out) where
+    toFn :: Proxy Void -> Fn arg out -> Fn arg out
+    toFn = const identity
+
+
+instance (Show arg, Show out) => Show (Fn arg out) where
+    show = defaultShow
+
+
+defaultShow :: forall arg out. Show arg => Show out => Fn arg out -> String
+defaultShow fn =
+    case unwrap fn of
+        name /\ args /\ outs ->
+            if Array.length args > 0 && Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+            else if Array.length args > 0 then
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+            else if Array.length outs > 0 then
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+            else
+                 "<" <> String.pascalCase name <> ">"
+
+
+showUsingFn :: forall x arg out a. Show arg => Show out => ToFn x arg out a => Proxy x -> a -> String
+showUsingFn px a = defaultShow (toFn px a :: Fn arg out)

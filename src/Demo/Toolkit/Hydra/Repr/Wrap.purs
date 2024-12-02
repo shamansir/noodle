@@ -397,6 +397,7 @@ instance Mark WrapRepr where
     -}
 
 
+{-
 instance Show WrapRepr where
     show = case _ of
         Value v -> show v
@@ -424,6 +425,7 @@ instance Show WrapRepr where
         -- Product product -> show product
         CBS cbs -> show cbs
         WRError { source, error } -> "Error: \"" <> source <> "\" " <> error
+-}
 
 
 wrapParser :: Parser String WrapRepr

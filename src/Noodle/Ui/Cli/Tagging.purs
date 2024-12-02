@@ -10,6 +10,7 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 -- import Data.SProxy (reflect)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
+import Data.Newtype (unwrap)
 
 
 import Data.Text.Format (Tag)
@@ -293,7 +294,7 @@ familyDocs ptk pgrp parg pout family =
 
 
 class
-    ( PossiblyToFn arg out (Id.Family f)
+    ( PossiblyToFn tk arg out (Id.Family f)
     -- , MarkToolkit tk
     , Tagged.At At.Documentation (Id.Family f)
     , Tagged.At At.Documentation arg
@@ -305,7 +306,7 @@ class
 
 
 instance
-    ( PossiblyToFn arg out (Id.Family f)
+    ( PossiblyToFn tk arg out (Id.Family f)
     --, MarkToolkit tk
     , Tagged.At At.Documentation (Id.Family f)
     , Tagged.At At.Documentation arg
@@ -338,8 +339,8 @@ familySignature
     => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
     -> Id.Family f
     -> Tag
-familySignature _ _ _ _ family =
-    case (possiblyToFn family :: Maybe (FnS arg out)) of
+familySignature ptk _ _ _ family =
+    case (unwrap <$> possiblyToFn ptk family :: Maybe (FnS arg out)) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
