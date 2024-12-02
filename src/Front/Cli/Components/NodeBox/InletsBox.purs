@@ -2,14 +2,12 @@ module Cli.Components.NodeBox.InletsBox where
 
 import Prelude
 
-import Effect (Effect)
-import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..))
 import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
-import Signal (Signal, (~>))
+import Signal (Signal)
 import Signal as Signal
 
 import Blessed as B
@@ -19,20 +17,17 @@ import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.NodeKey (next, nestChain, first) as NK
+import Blessed.Internal.NodeKey (nestChain) as NK
 
 import Blessed.UI.Boxes.Box.Option as Box
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey, InfoBoxKey)
+import Cli.Keys (InletButtonKey)
 import Cli.Style as Style
 import Cli.State (State, LastKeys)
 import Cli.Components.NodeBox.InletButton as InletButton
 
 import Noodle.Id as Id
-import Noodle.Node as Node
 import Noodle.Patch (Patch)
-import Noodle.Patch as Patch
-import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
 import Noodle.Repr (class HasFallback, fallback)
 -- import Noodle.Family.Def as Family
@@ -55,15 +50,6 @@ type KeysMap = Map Id.InletR InletButtonKey -- TODO: store in State?
 
 component
     :: forall tk pstate fs repr m
-    -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
-    --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    -- => DataFromToReprRow rli is Hydra.WrapRepr
-    -- => DataFromToReprRow rlo os Hydra.WrapRepr
-    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    {- HasEditor (Hydra.CliD din) (Id.Input i) (Noodle.Node f nstate is os Effect) din Effect
-    => -}
      . HasFallback repr
     => T.At T.ChannelLabel repr
     => Patch pstate fs repr m

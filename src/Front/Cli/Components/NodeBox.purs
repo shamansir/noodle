@@ -243,9 +243,9 @@ _component
                     Nothing -> 3
         inletsKeys /\ inletsBoxN =
             InletsBox.component curPatch keys familyR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
-        {- REM
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component outletsTopOffset nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutletSignal updates') osWithReprs
+            OutletsBox.component outletsTopOffset curPatch keys familyR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
+        {- REM
         infoBoxN =
             InfoBox.component nextInfoBox $ boxWidth - 2
         removeButtonN =
@@ -288,6 +288,7 @@ _component
     Key.patchBox >~ Node.append nextNodeBoxN
 
     keys.nodeBox >~ Node.append inletsBoxN
+    keys.nodeBox >~ Node.append outletsBoxN
 
     {- REM
     nextNodeBox >~ Node.append infoBoxN
