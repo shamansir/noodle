@@ -62,6 +62,7 @@ derive instance (Eq out) => Eq (Output out)
 derive newtype instance (Eq arg, Eq out) => Eq (Fn arg out)
 
 
+class ToFn :: forall k. k -> Type -> Type -> Type -> Constraint
 class ToFn x arg out a where
     toFn :: Proxy x -> a -> Fn arg out
 
@@ -241,18 +242,20 @@ instance (Show arg, Show out) => Show (Fn arg out) where
     show = defaultShow
 
 
-defaultShow :: forall arg out. Show arg => Show out => Fn arg out -> String
-defaultShow fn =
-    case unwrap fn of
+_showManually :: forall arg out. (arg -> String) -> (out -> String) -> Fn arg out -> String
+_showManually showArg showOut = unwrap >>> case _ of
         name /\ args /\ outs ->
             if Array.length args > 0 && Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> map showArg <$> args) <> " -> " <> String.joinWith " " (show <$> map showOut <$> outs) <> ">"
             else if Array.length args > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> args) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> map showArg <$> args) <> ">"
             else if Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> outs) <> ">"
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> map showOut <$> outs) <> ">"
             else
                  "<" <> String.pascalCase name <> ">"
+
+defaultShow :: forall arg out. Show arg => Show out => Fn arg out -> String
+defaultShow = _showManually show show
 
 
 showUsingFn :: forall x arg out a. Show arg => Show out => ToFn x arg out a => Proxy x -> a -> String
