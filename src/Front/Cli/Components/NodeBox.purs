@@ -272,7 +272,7 @@ _component
                 [ ]
         renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
-        renderNodeUpdate = renderUpdate keys.nodeBox Map.empty Map.empty
+        renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
@@ -434,52 +434,6 @@ fromRawFamilyAuto curPatch rawFamily tk = do
         Nothing -> pure unit
 
 
-logDataCommand
-    :: forall tk fs pstate nstate repr m
-     . MonadEffect m
-    => Ref (State tk pstate fs repr m)
-    -> Raw.NodeChanges nstate repr
-    -> m Unit
-logDataCommand stateRef update =
-    case update.focus of
-        InletUpdate inletR ->
-            case Map.lookup inletR update.inlets of
-                Just wrapRepr -> do
-                    -- REM flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inletAlias $ reflect' inlet) $ Cmd.encodedValue $ encode wrapRepr
-                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
-                    pure unit
-                Nothing -> pure unit
-        OutletUpdate outletR ->
-            case Map.lookup outletR update.outlets of
-                Just wrapRepr -> do
-                    -- REM flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outletAlias $ reflect' outlet) $ Cmd.encodedValue $ encode wrapRepr
-                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
-                    pure unit
-                Nothing -> pure unit
-        _ -> pure unit
-
-
-updateCodeFor
-    :: forall tk f s fs nstate repr m
-     . MonadEffect m
-    => IsSymbol f
-    => Ref (State tk s fs repr m)
-    -> Id.Family f
-    -> Raw.NodeChanges nstate repr
-    -> m Unit
-updateCodeFor stateRef family update = do
-    {- REM
-    flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
-    liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
-    state <- liftEffect $ Ref.read stateRef
-    case state.wsServer of
-        Just serverState ->
-            liftEffect $ flip WSS.broadcastProgram serverState $ Lang.formProgram state.program
-        Nothing -> pure unit
-    -}
-    pure unit
-
-
 renderUpdate
     :: forall m nstate state repr
      . T.At At.ChannelLabel repr
@@ -504,6 +458,52 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
                 Just outletKey -> do
                     outletKey >~ Box.setContent $ T.singleLine $ T.outlet' 0 outletR $ Just repr
                 Nothing -> pure unit
+
+
+updateCodeFor
+    :: forall tk f s fs nstate repr m
+     . MonadEffect m
+    => IsSymbol f
+    => Ref (State tk s fs repr m)
+    -> Id.Family f
+    -> Raw.NodeChanges nstate repr
+    -> m Unit
+updateCodeFor stateRef family update = do
+    {- REM
+    flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
+    liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
+    state <- liftEffect $ Ref.read stateRef
+    case state.wsServer of
+        Just serverState ->
+            liftEffect $ flip WSS.broadcastProgram serverState $ Lang.formProgram state.program
+        Nothing -> pure unit
+    -}
+    pure unit
+
+
+logDataCommand
+    :: forall tk fs pstate nstate repr m
+     . MonadEffect m
+    => Ref (State tk pstate fs repr m)
+    -> Raw.NodeChanges nstate repr
+    -> m Unit
+logDataCommand stateRef update =
+    case update.focus of
+        InletUpdate inletR ->
+            case Map.lookup inletR update.inlets of
+                Just wrapRepr -> do
+                    -- REM flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inletAlias $ reflect' inlet) $ Cmd.encodedValue $ encode wrapRepr
+                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
+                    pure unit
+                Nothing -> pure unit
+        OutletUpdate outletR ->
+            case Map.lookup outletR update.outlets of
+                Just wrapRepr -> do
+                    -- REM flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outletAlias $ reflect' outlet) $ Cmd.encodedValue $ encode wrapRepr
+                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
+                    pure unit
+                Nothing -> pure unit
+        _ -> pure unit
 
 
 onMove :: forall tk pstate fs repr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk pstate fs repr m) Effect

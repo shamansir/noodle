@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Tuple as Tuple
 
 import Signal (Signal)
 import Signal as Signal
@@ -47,9 +48,6 @@ widthN :: Int -> Int
 widthN count = (OutletButton.widthN + 1) * count
 
 
-type KeysMap = Map Id.InletR OutletButtonKey -- TODO: store in State?
-
-
 component
     :: forall tk pstate fs repr m
      . HasFallback repr
@@ -60,9 +58,10 @@ component
     -> Id.FamilyR
     -> Signal (OutletsValues repr)
     -> OrderedOutletsValues repr
-    -> KeysMap /\ C.Blessed (State tk pstate fs repr m)
+    -> Map Id.OutletR OutletButtonKey
+    /\ C.Blessed (State tk pstate fs repr m)
 component offsetY curPatch keys family oReprSignal outlets =
-    Map.empty /\
+    outletsKeys /\
     B.box keys.outletsBox
         [ Box.width $ width $ Map.size outlets -- * OutletButton.widthN
         , Box.height $ Dimension.px 1
@@ -86,33 +85,23 @@ component offsetY curPatch keys family oReprSignal outlets =
                 liftEffect $ Console.log $ show inputSelected
         -}
         ]
-        (makeOutletButton <$> Array.zip keysArray outletsArr)
+        outletsButtons
     where
+        outletsArr :: Array ((Int /\ Id.OutletR) /\ repr)
         outletsArr = Map.toUnfoldable outlets
         keysArray :: Array OutletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length outletsArr
-        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ repr)) -> C.Blessed (State tk pstate fs repr m)
-        makeOutletButton (buttonKey /\ ((idx /\ outletR ) /\ repr)) =
-            OutletButton.component curPatch buttonKey keys.infoBox keys.nodeBox outletR idx (Just repr)
-                $ Signal.filterMap (Map.lookup outletR) (fallback :: repr)
-                $ oReprSignal
-    {- REM
-    where
-        extractInput :: Id.InputR -> Signal (Id.InputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
-        extractInput inputR = map ((#) inputR)
-        keysArray :: Array InputButtonKey
-        keysArray = NK.nestChain nextNodeBox $ Array.length is
-        inputsKeysMap =
-            Map.fromFoldable $ toKeyPair <$> Array.zip keysArray is
-        toKeyPair (buttonKey /\ (_ /\ hiinr)) =
-            Node.withInputInNodeMRepr hiinr \_ _ inputId -> Id.inputR inputId
-            /\ buttonKey
-        inputsButtons =
-            mapWithIndex mapF $ Array.zip keysArray is
-        mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
-            -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withInputInNodeMRepr hiinr
-                (\pdin node input -> do
-                    InputButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
-                )
-    -}
+        outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs repr m))
+        outletsButtonsWithKeys = makeOutletButton <$> Array.zip keysArray outletsArr
+        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ repr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs repr m)
+        makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ repr)) =
+            (outletR /\ buttonKey)
+            /\
+            ( OutletButton.component curPatch buttonKey keys.infoBox keys.nodeBox outletR idx (Just repr)
+            $ Signal.filterMap (Map.lookup outletR) (fallback :: repr)
+            $ oReprSignal
+            )
+        outletsButtons :: Array (C.Blessed (State tk pstate fs repr m))
+        outletsButtons = Tuple.snd <$> outletsButtonsWithKeys
+        outletsKeys :: Map Id.OutletR OutletButtonKey
+        outletsKeys = Map.fromFoldable (Tuple.fst <$> outletsButtonsWithKeys)
