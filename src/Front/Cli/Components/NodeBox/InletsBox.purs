@@ -102,23 +102,3 @@ component curPatch keys family iReprSignal inlets =
         inletsButtons = Tuple.snd <$> inletsButtonsWithKeys
         inletsKeys :: Map Id.InletR InletButtonKey
         inletsKeys = Map.fromFoldable (Tuple.fst <$> inletsButtonsWithKeys)
-    {- REM
-    where
-        extractInput :: Id.InputR -> Signal (Id.InputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
-        extractInput inputR = map ((#) inputR)
-        keysArray :: Array InputButtonKey
-        keysArray = NK.nestChain nextNodeBox $ Array.length is
-        inputsKeysMap =
-            Map.fromFoldable $ toKeyPair <$> Array.zip keysArray is
-        toKeyPair (buttonKey /\ (_ /\ hiinr)) =
-            Node.withInputInNodeMRepr hiinr \_ _ inputId -> Id.inputR inputId
-            /\ buttonKey
-        inputsButtons =
-            mapWithIndex mapF $ Array.zip keysArray is
-        mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
-            -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withInputInNodeMRepr hiinr
-                (\pdin node input -> do
-                    InputButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
-                )
-    -}

@@ -30,70 +30,49 @@ import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
 
 
-inlet :: forall i repr. IsSymbol i => Tagged.At At.ChannelLabel repr => Int -> Id.Inlet i -> Maybe repr -> Tag
-inlet idx inletId = inlet' idx $ Id.inletR inletId
-
-
-inlet' :: forall repr. Tagged.At At.ChannelLabel repr  => Int -> Id.InletR -> Maybe repr -> Tag
-inlet' idx inletId (Just repr) =
+inlet :: forall repr. Tagged.At At.ChannelLabel repr  => Int -> Id.InletR -> Maybe repr -> Tag
+inlet idx inletId (Just repr) =
     -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
     At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-inlet' idx inletId Nothing = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
+inlet idx inletId Nothing = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
-inletInfoBox :: forall i. IsSymbol i => Id.Inlet i -> Tag
-inletInfoBox inletId =
-    T.fgcs (C.crepr Palette.inletId) $ Id.inletName inletId
+inletInfoBox :: Id.InletR -> Tag
+inletInfoBox inletR =
+    T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletR
 
 
-inletStatusLine :: forall f i repr. IsSymbol i => IsSymbol f => Tagged.At At.StatusLine repr => Id.Family f -> Int -> Id.Inlet i -> Maybe repr -> Tag
-inletStatusLine family idx inletId = inletStatusLine' (Id.familyR family) idx $ Id.inletR inletId
-
-
-inletStatusLine' :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> Tag
-inletStatusLine' familyR idx inletId (Just repr) =
+inletStatusLine :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> Tag
+inletStatusLine familyR idx inletId (Just repr) =
     -- TODO: show node id and group as well
     (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-inletStatusLine' familyR idx inletId Nothing =
+inletStatusLine familyR idx inletId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
-outlet ::forall o repr. IsSymbol o => Tagged.At At.ChannelLabel repr => Int -> Id.Outlet o -> Maybe repr -> Tag
-outlet idx outletId = outlet' idx $ Id.outletR outletId
-
-
-outlet' :: forall repr. Tagged.At At.ChannelLabel repr => Int -> Id.OutletR -> Maybe repr -> Tag
-outlet' idx outletId (Just repr) =
+outlet :: forall repr. Tagged.At At.ChannelLabel repr => Int -> Id.OutletR -> Maybe repr -> Tag
+outlet idx outletId (Just repr) =
     At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-outlet' idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
+outlet idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
-outletInfoBox :: forall o. IsSymbol o => Id.Outlet o -> Tag
-outletInfoBox outletId =
-    T.fgcs (C.crepr Palette.outletId) $ Id.outletName outletId
+outletInfoBox :: Id.OutletR -> Tag
+outletInfoBox outletR =
+    T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletR
 
 
-outletStatusLine ::forall f o repr. IsSymbol f => IsSymbol o => Tagged.At At.StatusLine repr => Id.Family f -> Int -> Id.Outlet o -> Maybe repr -> Tag
-outletStatusLine family idx outletId = outletStatusLine' (Id.familyR family) idx $ Id.outletR outletId
-
-
-outletStatusLine' :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> Tag
-outletStatusLine' familyR idx outletId (Just repr) =
+outletStatusLine :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> Tag
+outletStatusLine familyR idx outletId (Just repr) =
     -- TODO: show group as well
     (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-outletStatusLine' familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
+outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
-nodeLabel :: forall tk f. IsSymbol f => MarkToolkit tk => Proxy tk -> Id.Family f -> Tag
-nodeLabel ptk =
-    nodeLabel' ptk <<< Id.familyR
-
-
-nodeLabel' :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
-nodeLabel' ptk familyR =
+nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
+nodeLabel ptk familyR =
     T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
 
 
@@ -139,9 +118,9 @@ removeInfoBox =
     T.fgcs (C.crepr Pico.red) "remove"
 
 
-removeStatusLine :: forall f. IsSymbol f => Id.Family f -> Tag
-removeStatusLine family =
-    T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family $ Id.familyR family)
+removeStatusLine :: Id.FamilyR -> Tag
+removeStatusLine familyR =
+    T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR)
 
 
 libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag

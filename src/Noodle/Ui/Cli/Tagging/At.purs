@@ -9,6 +9,7 @@ data Loc
 foreign import data StatusLine :: Loc
 foreign import data Documentation :: Loc
 foreign import data ChannelLabel :: Loc
+foreign import data InfoBox :: Loc
 foreign import data InfoNode :: Loc
 
 
@@ -28,5 +29,9 @@ documentation :: forall a. At Documentation a => a -> Tag
 documentation = at (Proxy :: _ Documentation)
 
 
-infoNode :: forall a. At InfoNode a => a -> Tag
+infoNode :: forall a. At InfoNode a => a -> Tag -- TODO: USE in Tagging
 infoNode = at (Proxy :: _ InfoNode) -- same as status line?
+
+
+infoBox :: forall a. At InfoBox a => a -> Tag -- TODO: USE in Tagging
+infoBox = at (Proxy :: _ InfoBox)

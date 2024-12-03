@@ -258,7 +258,7 @@ _component
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
                 , Box.height $ Dimension.px boxHeight
-                , Box.label $ T.singleLine $ T.nodeLabel' (Proxy :: _ tk ) familyR
+                , Box.label $ T.singleLine $ T.nodeLabel (Proxy :: _ tk ) familyR
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
@@ -451,12 +451,12 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
         updateInlet inletR repr =
             case Map.lookup inletR inletsKeysMap of
                 Just inletKey -> do
-                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet' 0 inletR $ Just repr
+                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet 0 inletR $ Just repr
                 Nothing -> pure unit
         updateOutlet outletR repr =
             case Map.lookup outletR outletsKeysMap of
                 Just outletKey -> do
-                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet' 0 outletR $ Just repr
+                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet 0 outletR $ Just repr
                 Nothing -> pure unit
 
 

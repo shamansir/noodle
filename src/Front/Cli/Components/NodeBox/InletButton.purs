@@ -22,7 +22,8 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
 import Cli.Style (inputsOutputs) as Style
-import Noodle.Ui.Cli.Tagging (inlet') as T
+
+import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
 
 
@@ -61,7 +62,7 @@ component
     -> Core.Blessed (State tk pstate fs repr m)
 component curPatch buttonKey nextInfoBox nextNodeBox inletR idx mbRepr reprSignal =
     B.button buttonKey
-        [ Box.content $ T.singleLine $ T.inlet' idx inletR mbRepr
+        [ Box.content $ T.singleLine $ T.inlet idx inletR mbRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1

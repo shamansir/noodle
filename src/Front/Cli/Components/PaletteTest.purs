@@ -86,28 +86,28 @@ buildPalette =
     [ T.s "]] X11 / BG :: [[ " ] <>
     (T.paletteBg <$> X11.x11colors) <>
     [ T.s "]]"
-    , qt "empty-i-0" $ T.inlet 0 Starter.Sum._in_a (Nothing :: Maybe StarterRepr)
-    , qt "empty-i-1" $ T.inlet 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
-    , qt "num-i-0" $ T.inlet 0 Starter.Sum._in_a $ Just $ Sr.VNumber 10.0
-    , qt "num-i-1" $ T.inlet 1 Starter.Sum._in_b $ Just $ Sr.VNumber 20.0
-    , qt "char-i-1" $ T.inlet 1 Starter.Sum._in_b $ Just $ Sr.VChar 'a'
-    , qt "i-infobox" $ T.inletInfoBox Starter.Sum._in_b
-    , qt "empty-i-sl" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b (Nothing :: Maybe StarterRepr)
-    , qt "num-i-sl" $ T.inletStatusLine Starter.Sum._sum 1 Starter.Sum._in_b $ Just $ Sr.VNumber 20.0
-    , qt "empty-o-0" $ T.outlet 0 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
-    , qt "empty-o-1" $ T.outlet 0 Starter.Color._out_color (Nothing :: Maybe StarterRepr)
-    , qt "num-o-0" $ T.outlet 0 Starter.Sum._out_sum $ Just $ Sr.VNumber 10.0
-    , qt "char-o-1" $ T.outlet 1 Starter.Sum._out_sum $ Just $ Sr.VChar 'a'
-    , qt "o-infobox" $ T.outletInfoBox Starter.Sum._out_sum
-    , qt "empty-o-sl" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum (Nothing :: Maybe StarterRepr)
-    , qt "num-o-sl" $ T.outletStatusLine Starter.Sum._sum 1 Starter.Sum._out_sum $ Just $ Sr.VNumber 20.0
-    -- TODO , qt "node-lbl-1" $ T.nodeLabel Starter.Sum._sum
+    , qt "empty-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) (Nothing :: Maybe StarterRepr)
+    , qt "empty-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) (Nothing :: Maybe StarterRepr)
+    , qt "num-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) $ Just $ Sr.VNumber 10.0
+    , qt "num-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VNumber 20.0
+    , qt "char-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VChar 'a'
+    , qt "i-infobox" $ T.inletInfoBox (Id.inletR Starter.Sum._in_b)
+    , qt "empty-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) (Nothing :: Maybe StarterRepr)
+    , qt "num-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VNumber 20.0
+    , qt "empty-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) (Nothing :: Maybe StarterRepr)
+    , qt "empty-o-1" $ T.outlet 0 (Id.outletR Starter.Color._out_color) (Nothing :: Maybe StarterRepr)
+    , qt "num-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VNumber 10.0
+    , qt "char-o-1" $ T.outlet 1 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VChar 'a'
+    , qt "o-infobox" $ T.outletInfoBox (Id.outletR Starter.Sum._out_sum)
+    , qt "empty-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) (Nothing :: Maybe StarterRepr)
+    , qt "num-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VNumber 20.0
+    -- TODO , qt "node-lbl-1" $ T.nodeLabel (Id.familyR Starter.Sum._sum)
     -- TODO , qt "node-lbl-2" $ T.nodeLabel Starter.Color._color
     , qt "rembtn-out" $ T.removeButtonOut
     , qt "rembtn-over" $ T.removeButtonOver
     , qt "rembtn-infobox" $ T.removeInfoBox
-    , qt "rem-sl-1" $ T.removeStatusLine Starter.Sum._sum
-    , qt "rem-sl-2" $ T.removeStatusLine Starter.Color._color
+    , qt "rem-sl-1" $ T.removeStatusLine (Id.familyR Starter.Sum._sum)
+    , qt "rem-sl-2" $ T.removeStatusLine (Id.familyR Starter.Color._color)
     , qt "libitem-1" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Color._color
     , qt "libitem-2" $ T.libraryItem (Proxy :: _ STARTER) $ Id.familyR Starter.Sum._sum
     , qt "btn-tgl-on" $ T.buttonToggle "H" true
