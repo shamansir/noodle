@@ -103,10 +103,10 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 -- REM import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
+import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.InletButton as InletButton
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 -- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
--- REM import Cli.Components.NodeBox.InfoBox as InfoBox
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
 import Cli.Class.CliRenderer (renderCli, renderCliRaw) as NodeBody
@@ -245,9 +245,9 @@ _component
             InletsBox.component curPatch keys familyR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset curPatch keys familyR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
-        {- REM
         infoBoxN =
-            InfoBox.component nextInfoBox $ boxWidth - 2
+            InfoBox.component keys.infoBox $ boxWidth - 2
+        {- REM
         removeButtonN =
             RemoveButton.component removeButtonOffset family node nextNodeBox nextInfoBox nextRemoveButton
         -}
@@ -263,15 +263,14 @@ _component
                 , Style.nodeBoxBorder
                 , Style.nodeBox
                 -- REM , Core.on Element.Move
-                -- REM     $ onMove nodeIdR nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
+                -- REM     $ onMove nodeIdR keys.nodeBox
                 -- REM , Core.on Element.MouseOver
-                -- REM     $ onMouseOver family
+                -- REM     $ onMouseOver familyR
                 -- REM , Core.on Element.MouseOut
                 -- REM     $ onMouseOut
                 ]
                 [ ]
         renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
-        -- REM renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
         renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
@@ -289,10 +288,8 @@ _component
 
     keys.nodeBox >~ Node.append inletsBoxN
     keys.nodeBox >~ Node.append outletsBoxN
-
+    keys.nodeBox >~ Node.append infoBoxN
     {- REM
-    nextNodeBox >~ Node.append infoBoxN
-    nextNodeBox >~ Node.append outletsBoxN
     nextNodeBox >~ Node.append removeButtonN
      -}
 
@@ -312,16 +309,16 @@ _component
             , height : boxHeight
             }
 
-    State.modify_ (_ { lastKeys = keys })
-
-    {- REM State.modify_ (_
-        { lastShiftX = state.lastShiftX + 1
-        , lastShiftY = state.lastShiftY + 1
-        , lastKeys = nextKeys
-        , nodeKeysMap = Map.insert nodeIdR nextNodeBox state.nodeKeysMap
-        , locations   = Map.insert nodeIdR location state.locations
+    State.modify_ (\s -> s
+        { lastShift =
+            { x : s.lastShift.x + 1
+            , y : s.lastShift.y + 1
+            }
+        , nodeKeysMap = Map.insert nodeIdR keys.nodeBox s.nodeKeysMap
+        , locations   = Map.insert nodeIdR location s.locations
+        , lastKeys = keys
         }
-    ) -}
+    )
 
     Key.mainScreen >~ Screen.render
 
@@ -520,10 +517,10 @@ onMove nodeId nodeKey _ _ = do
         updatePos nb = Just <<< Bounds.move nb
 
 
-onMouseOver :: forall tk fs f pstate repr m. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
-onMouseOver family _ _ = do
+onMouseOver :: forall tk fs f pstate repr m. Id.FamilyR -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOver familyR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
-    -- -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
+    -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
     {- REM
     SL.familyStatus family
     FI.familyStatus family
