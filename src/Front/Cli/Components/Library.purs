@@ -198,7 +198,7 @@ onFamilySelect =
                     , List.mouse true
                     , List.keys true
                     , ListBar.autoCommandKeys true
-                    , inputsOutputsStyle
+                    , inletsOutletsStyle
                     -- , Core.on ListBar.Select
                     --     \_ _ -> do
                     --         liftEffect $ Console.log "input"
@@ -221,7 +221,7 @@ onFamilySelect =
                     , ListBar.commands $  mapWithIndex outputHandler os
                     , List.mouse true
                     , List.keys true
-                    , inputsOutputsStyle
+                    , inletsOutletsStyle
                     -- , Core.on ListBar.Select
                     --     \_ _ -> do
                     --         liftEffect $ Console.log "output"

@@ -36,7 +36,7 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { x :: Int, y :: Int }
-    -- TODO, lastClickedOutput :: Maybe OutputInfo
+    , lastClickedOutput :: Maybe OutputInfo
     -- TODO, lastLink :: Maybe LinkState
     -- TODO, linksFrom :: Map RawNodeKey (Map OutputIndex LinkState)
     -- TODO, linksTo :: Map RawNodeKey (Map InputIndex LinkState)
@@ -58,16 +58,15 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     , locations :: Map Id.NodeR NodeBounds
     }
 
-{-
+
 type OutputInfo =
-    { nodeKey :: NodeBoxKey
+    { nodeKey :: K.NodeBoxKey
     , index :: Int
     , subj :: String
-    , nodeId :: Id.HoldsNodeId
-    , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr
-    , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
+    -- , nodeId :: Id.HoldsNodeId
+    -- , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr
+    -- , node :: Patch.HoldsNode Effect
     }
--}
 
 
 type LastKeys =
@@ -124,6 +123,7 @@ init state toolkit = do
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances
+        , lastClickedOutput : Nothing
         , onOff :
             { commandBox : false
             , hydraCode : false

@@ -156,8 +156,8 @@ nodeBoxBorder =
         ]
 
 
-inputsOutputs :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
-inputsOutputs =
+inletsOutlets :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+inletsOutlets =
     Box.style
         [ Style.fg Palette.itemSelected'
         , Style.bg Palette.nodeBg'
@@ -206,8 +206,8 @@ glslFnList =
         ]
 
 
-{- inputsOutputs :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
-inputsOutputs =
+{- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
+inletsOutlets =
     List.style
         [ LStyle.bg Palette.libraryBg'
         , LStyle.item

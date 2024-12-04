@@ -23,7 +23,7 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 
 import Cli.Keys (OutletsBoxKey, OutletButtonKey, InfoBoxKey, NodeBoxKey)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
-import Cli.Style (inputsOutputs) as Style
+import Cli.Style (inletsOutlets) as Style
 import Noodle.Ui.Cli.Tagging (outlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
 
@@ -72,7 +72,7 @@ component curPatch buttonKey nextInfoBox nextNodeBox outletR idx mbRepr reprSign
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
-        , Style.inputsOutputs
+        , Style.inletsOutlets
         {-
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode outletId $ Hydra.editorIdOf =<< maybeRepr

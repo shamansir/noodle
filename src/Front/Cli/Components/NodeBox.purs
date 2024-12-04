@@ -221,12 +221,12 @@ _component
     --       Maybe try using `Exists` as we're sure the Node Family exists but don't want to parametrize `State` type with it.
 
     let
-        (nodeIdR    :: Id.NodeR)   = RawNode.id rawNode
-        (nodeFamily :: Id.FamilyR) = Id.familyOf nodeIdR
+        (nodeR   :: Id.NodeR)   = RawNode.id rawNode
+        (familyR :: Id.FamilyR) = Id.familyOf nodeR
         boxWidth =
             case mbBodySize of
                 Just { width } -> width - 1
-                Nothing -> widthN nodeFamily (Array.length is) (Array.length os)
+                Nothing -> widthN familyR (Array.length is) (Array.length os)
         boxHeight =
             case mbBodySize of
                 Just { width, height } -> height + 2
@@ -242,7 +242,7 @@ _component
                     Just { height } -> height
                     Nothing -> 3
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatch keys familyR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
+            InletsBox.component curPatch keys familyR nodeR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset curPatch keys familyR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
@@ -314,8 +314,8 @@ _component
             { x : s.lastShift.x + 1
             , y : s.lastShift.y + 1
             }
-        , nodeKeysMap = Map.insert nodeIdR keys.nodeBox s.nodeKeysMap
-        , locations   = Map.insert nodeIdR location s.locations
+        , nodeKeysMap = Map.insert nodeR keys.nodeBox s.nodeKeysMap
+        , locations   = Map.insert nodeR location s.locations
         , lastKeys = keys
         }
     )

@@ -64,23 +64,23 @@ loadOrCollect nodeId nodeKey = do
             -- since we update bounds every time in the state, there's no need to collect them
 
 
-outputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
-outputPos n outputIdx =
-    -- { x : n.left + 1 + (outputIdx * 4)
+outletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+outletPos n outletIdx =
+    -- { x : n.left + 1 + (outletIdx * 4)
     -- , y : n.top + 5
     -- }
-    { x : n.left + (outputIdx * 4)
+    { x : n.left + (outletIdx * 4)
     , y : n.top + (n.height - 1)
     }
 
 
 
-inputPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
-inputPos n inputIdx =
-    -- { x : n.left + 1 + (inputIdx * 4)
+inletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+inletPos n inletIdx =
+    -- { x : n.left + 1 + (inletIdx * 4)
     -- , y : n.top + 1
     -- }
-    { x : n.left + (inputIdx * 4)
+    { x : n.left + (inletIdx * 4)
     , y : n.top
     }
 

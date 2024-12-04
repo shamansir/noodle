@@ -52,12 +52,12 @@ component
     => T.At T.ChannelLabel repr
     => Patch pstate fs repr m
     -> LastKeys
-    -> Id.FamilyR
+    -> Id.FamilyR -> Id.NodeR
     -> Signal (InletsValues repr)
     -> OrderedInletsValues repr
     -> Map Id.InletR InletButtonKey
     /\ C.Blessed (State tk pstate fs repr m)
-component curPatch keys family iReprSignal inlets =
+component curPatch keys familyR nodeR iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
         [ Box.width $ width $ Map.size inlets -- * InletButton.widthN
@@ -66,7 +66,6 @@ component curPatch keys family iReprSignal inlets =
         , Box.left $ Offset.px 0
         -- , List.items is
 
-
         -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inputHandler curPatchId curPatch nextNodeBox idx)) is
 
 
@@ -74,7 +73,7 @@ component curPatch keys family iReprSignal inlets =
         -- , List.mouse true
         -- , List.keys true
         -- , ListBar.autoCommandKeys true
-        , Style.inputsOutputs
+        , Style.inletsOutlets
         {- , Core.on ListBar.Select
             \_ _ -> do
                 liftEffect $ Console.log "input"
@@ -94,7 +93,7 @@ component curPatch keys family iReprSignal inlets =
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
             (inletR /\ buttonKey)
             /\
-            ( InletButton.component curPatch buttonKey keys.infoBox keys.nodeBox inletR idx (Just repr)
+            ( InletButton.component curPatch buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
             $ Signal.filterMap (Map.lookup inletR) (fallback :: repr)
             $ iReprSignal
             )

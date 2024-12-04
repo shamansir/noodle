@@ -47,13 +47,13 @@ familyStatus family =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.nodeMouseOver family -}
 
 
-inputInfo :: forall state m.  Id.InletR -> InfoBoxKey -> C.BlessedOp state m
-inputInfo inletR infoBox =
+inletInfo :: forall state m.  Id.InletR -> InfoBoxKey -> C.BlessedOp state m
+inletInfo inletR infoBox =
     infoBox >~ Box.setContent $ T.singleLine $ T.inletInfoBox inletR
 
 
-outputInfo :: forall state m. Id.OutletR -> InfoBoxKey -> C.BlessedOp state m
-outputInfo outputId infoBox =
+outletInfo :: forall state m. Id.OutletR -> InfoBoxKey -> C.BlessedOp state m
+outletInfo outputId infoBox =
     infoBox >~ Box.setContent $ T.singleLine $ T.outletInfoBox outputId
 
 

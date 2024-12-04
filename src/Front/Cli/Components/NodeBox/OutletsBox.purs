@@ -77,7 +77,7 @@ component offsetY curPatch keys family oReprSignal outlets =
         -- , List.mouse true
         -- , List.keys true
         -- , ListBar.autoCommandKeys true
-        , Style.inputsOutputs
+        , Style.inletsOutlets
         {- , Core.on ListBar.Select
             \_ _ -> do
                 liftEffect $ Console.log "input"

@@ -2,26 +2,38 @@ module Cli.Components.NodeBox.InletButton where
 
 import Prelude
 
-import Data.Maybe (Maybe)
+import Effect (Effect)
+import Effect.Class (liftEffect)
+
+import Control.Monad.State (get, modify, modify_) as State
+
+import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 
 import Signal (Signal)
+import Signal (get) as Signal
 
 import Blessed as B
+import Blessed ((>~))
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
+import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.UI.Base.Screen.Method (render) as Screen
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Base.Element.Method (show, focus) as Element
+import Cli.Components.NodeBox.InfoBox as IB
 
-import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey)
+import Cli.Bounds (collect, inletPos) as Bounds
+import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, mainScreen)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
-import Cli.Style (inputsOutputs) as Style
+import Cli.Style (inletsOutlets) as Style
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
@@ -51,16 +63,14 @@ component
     :: forall tk pstate fs repr m
      . T.At T.ChannelLabel repr
     => Patch pstate fs repr m
-    -> InletButtonKey
-    -> InfoBoxKey
-    -> NodeBoxKey
-    -> Id.InletR
+    -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
+    -> Id.FamilyR -> Id.NodeR -> Id.InletR
     -> Int
     -> Maybe repr
     -> Signal repr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs repr m)
-component curPatch buttonKey nextInfoBox nextNodeBox inletR idx mbRepr reprSignal =
+component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR idx mbRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet idx inletR mbRepr
         , Box.top $ Offset.px 0
@@ -70,14 +80,32 @@ component curPatch buttonKey nextInfoBox nextNodeBox inletR idx mbRepr reprSigna
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
-        , Style.inputsOutputs
-        {-
-        , Core.on Button.Press
-            $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId $ Hydra.editorIdOf =<< maybeRepr
+        , Style.inletsOutlets
+        -- REM , Core.on Button.Press
+        -- REM     $ onPress curPatchId curPatch nextNodeBox idx pdin inode inletId $ Hydra.editorIdOf =<< maybeRepr
+
         , Core.on Element.MouseOver
-            $ onMouseOver (Node.family inode) (Id.nodeIdR $ Node.id inode) nextNodeBox nextInfoBox idx inputId maybeRepr reprSignal
-        , Core.on Element.MouseOut
-            $ onMouseOut nextInfoBox idx
-        -}
+            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx inletR mbRepr reprSignal
+        -- REM , Core.on Element.MouseOut
+        -- REM     $ onMouseOut nextInfoBox idx
         ]
         []
+
+
+onMouseOver :: forall tk pstate fs repr m. Id.FamilyR -> Id.NodeR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.InletR -> Maybe repr -> Signal repr -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOver familyR nodeIdR nodeBox infoBox idx inletR _ reprSignal _ _ = do
+    state <- State.get
+    nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
+    let inletPos = Bounds.inletPos nodeBounds idx
+    maybeRepr <- liftEffect $ Signal.get reprSignal
+    -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
+    infoBox >~ IB.inletInfo inletR
+    -- REM SL.inletStatus family idx inletId maybeRepr
+    -- REM FI.inletStatus family idx inletId maybeRepr
+    case state.lastClickedOutput of
+        Just _ -> pure unit
+        Nothing -> do
+            pure unit
+            -- REM II.move { x : inletPos.x, y : inletPos.y - 1 }
+            -- REM II.updateStatus II.Hover
+    mainScreen >~ Screen.render
