@@ -86,8 +86,8 @@ component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR idx mbRe
 
         , Core.on Element.MouseOver
             $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx inletR mbRepr reprSignal
-        -- REM , Core.on Element.MouseOut
-        -- REM     $ onMouseOut nextInfoBox idx
+        , Core.on Element.MouseOut
+            $ onMouseOut infoBoxKey idx
         ]
         []
 
@@ -98,7 +98,6 @@ onMouseOver familyR nodeIdR nodeBox infoBox idx inletR _ reprSignal _ _ = do
     nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
-    -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
     infoBox >~ IB.inletInfo inletR
     -- REM SL.inletStatus family idx inletId maybeRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
@@ -108,4 +107,16 @@ onMouseOver familyR nodeIdR nodeBox infoBox idx inletR _ reprSignal _ _ = do
             pure unit
             -- REM II.move { x : inletPos.x, y : inletPos.y - 1 }
             -- REM II.updateStatus II.Hover
+    mainScreen >~ Screen.render
+
+
+onMouseOut :: forall tk pstate fs repr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOut infoBox idx _ _ = do
+    state <- State.get
+    infoBox >~ IB.clear
+    -- REM SL.clear
+    -- REM FI.clear
+    case state.lastClickedOutput of
+        Just _ -> pure unit
+        Nothing -> pure unit -- REM II.hide
     mainScreen >~ Screen.render
