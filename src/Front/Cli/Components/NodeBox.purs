@@ -44,7 +44,6 @@ import Signal.Channel as Channel
 import Blessed ((>~))
 import Blessed as B
 
-
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
@@ -87,18 +86,19 @@ import Noodle.Raw.Toolkit.Family (id) as RawFamily
 import Noodle.Repr (class DataFromToReprRow, class ToReprRow)
 import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Wiring (class Wiring)
-
-import Cli.Keys (NodeBoxKey, PatchBoxKey, InletButtonKey, OutletButtonKey)
-import Cli.Keys (mainScreen, patchBox, statusLine) as Key
-import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.State (LastKeys, nextKeys) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.Style as Style
+import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as Palette
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
+
+import Cli.Keys (NodeBoxKey, PatchBoxKey, InletButtonKey, OutletButtonKey)
+import Cli.Keys (mainScreen, patchBox, statusLine) as Key
+import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
+import Cli.State (LastKeys, nextKeys) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
+import Cli.Style as Style
 
 -- REM import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -113,7 +113,7 @@ import Cli.Class.CliRenderer (renderCli, renderCliRaw) as NodeBody
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
 -- REM import Cli.Components.NodeBox.InfoBox as IB
--- REM import Cli.Components.StatusLine as SL
+import Cli.Components.StatusLine as SL
 -- REM import Cli.Components.FullInfoBox as FI
 import Cli.Bounds as Bounds
 
@@ -149,6 +149,7 @@ fromNodeAuto
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -165,6 +166,7 @@ _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
     => HasFallback repr
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -203,14 +205,6 @@ _component
 
     isValues <- RawNode.inlets rawNode  -- Sort using shape in the node?
     osValues <- RawNode.outlets rawNode -- Sort using shape in the node?
-
-    {- REM
-    let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode curPatch node
-    let (toInletSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.InletR -> Maybe Hydra.WrapRepr)) = map R.getInletFromMap
-    let (toOutletSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.OutletR -> Maybe Hydra.WrapRepr)) = map R.getOutletFromMap
-    let isWithReprs = (\hiinr -> Node.withInletInNodeMRepr hiinr (\_ _ inletId -> Map.lookup (Id.inletR inletId) inletsReps) /\ hiinr) <$> is
-    let osWithReprs = (\hoinr -> Node.withOutletInNodeMRepr hoinr (\_ _ outletId -> Map.lookup (Id.outletR outletId) outletsReprs) /\ hoinr) <$> os
-    -}
 
     -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Inlet' / Outlet' instances, we will probably be able to connect things
     --       or not Repr but some fold over inlets / outlets shape
@@ -264,8 +258,8 @@ _component
                 , Style.nodeBox
                 -- REM , Core.on Element.Move
                 -- REM     $ onMove nodeIdR keys.nodeBox
-                -- REM , Core.on Element.MouseOver
-                -- REM     $ onMouseOver familyR
+                , Core.on Element.MouseOver
+                    $ onMouseOver (Proxy :: _ tk) familyR
                 -- REM , Core.on Element.MouseOut
                 -- REM     $ onMouseOut
                 ]
@@ -330,6 +324,7 @@ fromRawNodeAt
     :: forall tk fs nstate pstate repr m
      . Wiring m
     => HasFallback repr
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -352,6 +347,7 @@ fromNodeAt
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -375,6 +371,7 @@ fromFamilyAt
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -401,6 +398,7 @@ fromFamilyAuto
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -416,6 +414,7 @@ fromRawFamilyAuto
     :: forall tk fs pstate repr m
     .  Wiring m
     => HasFallback repr
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m
@@ -516,12 +515,23 @@ onMove nodeId nodeKey _ _ = do
         updatePos nb = Just <<< Bounds.move nb
 
 
-onMouseOver :: forall tk fs f pstate repr m. Id.FamilyR -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
-onMouseOver familyR _ _ = do
+onMouseOver
+    :: forall tk pstate fs repr m
+     . MarkToolkit tk
+    => Toolkit.HasRepr tk repr
+    => T.At At.StatusLine repr
+    => PossiblyToFn tk repr repr Id.FamilyR
+    => Proxy tk
+    -> Id.FamilyR
+    -> _
+    -> _
+    -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOver ptk familyR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
-    {- REM
-    SL.familyStatus family
+
+    SL.familyStatus ptk familyR
+    {-
     FI.familyStatus family
      -}
     Key.mainScreen >~ Screen.render
@@ -530,8 +540,8 @@ onMouseOver familyR _ _ = do
 
 onMouseOut :: forall tk fs pstate repr m. _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
 onMouseOut _ _ = do
-    {- REM
     SL.clear
+    {- REM
     FI.clear
     -}
     Key.mainScreen >~ Screen.render

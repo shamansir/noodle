@@ -13,10 +13,13 @@ import Data.Int (fromString, toNumber) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
 
+import Noodle.Fn.ToFn (class PossiblyToFn)
+
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+
 
 import Type.Proxy (Proxy(..))
 
@@ -248,6 +251,7 @@ instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpr
 instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
 
 
+{-
 instance Mark StarterRepr where
     mark = case _ of
         VNone -> C.crepr $ X11.burlywood
@@ -271,6 +275,7 @@ instance Mark StarterRepr where
         where
             toNativeColor :: Color -> Color.Color
             toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
+-}
 
 
 -- x == ChannelLabel

@@ -30,6 +30,7 @@ import Noodle.Id as Id
 import Noodle.Repr (class HasFallback)
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies) as Toolkit
+import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
@@ -40,6 +41,7 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 component
     :: forall tk p fs repr
      . HasFallback repr
+    => PossiblyToFn tk repr repr Id.FamilyR
     => Toolkit.HoldsFamilies repr Effect fs
     => CliFriendly tk fs repr Effect
     => Toolkit tk fs repr Effect

@@ -64,11 +64,12 @@ import Cli.State (informWsInitialized) as State
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 
-import Noodle.Id (ToolkitR, toolkitR) as Id
+import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
 import Noodle.Repr (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit) as Toolkit
 import Noodle.Toolkit.Families (Families)
+import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
@@ -158,6 +159,7 @@ runBlessedInterface
     :: forall tk s fs repr
      . HasFallback repr
     => Toolkit.HoldsFamilies repr Effect fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr Effect
     => s
     -> Toolkit tk fs repr Effect

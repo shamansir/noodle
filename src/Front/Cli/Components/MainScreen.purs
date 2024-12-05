@@ -23,6 +23,7 @@ import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
 import Noodle.Wiring (class Wiring)
 import Noodle.Repr (class HasFallback)
+import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
@@ -60,6 +61,7 @@ component
     :: forall tk p fs repr
     .  HasFallback repr
     => Toolkit.HoldsFamilies repr Effect fs
+    => PossiblyToFn tk repr repr Id.FamilyR
     => CliFriendly tk fs repr Effect
     => State tk p fs repr Effect
     -> Core.Blessed (State tk p fs repr Effect)

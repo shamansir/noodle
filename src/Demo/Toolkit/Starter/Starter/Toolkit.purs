@@ -7,10 +7,11 @@ import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
-import Noodle.Id (toolkitR, unsafeGroupR) as Id
+import Noodle.Id (toolkitR, unsafeGroupR, FamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasRepr)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Fn.ToFn (class PossiblyToFn)
 import Cli.Class.CliRenderer (class CliRenderer)
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Metro as Simple.Metro
@@ -79,3 +80,6 @@ instance CliRenderer STARTER StarterFamilies StarterRepr m where
   renderCliRaw _ _ _ _ _ = pure unit
 
 instance HasRepr STARTER StarterRepr
+
+instance PossiblyToFn STARTER StarterRepr StarterRepr Id.FamilyR where
+  possiblyToFn _ _ = Nothing
