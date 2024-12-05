@@ -18,7 +18,7 @@ import Noodle.Id as Id
 import Noodle.Network (Network)
 import Noodle.Network (init, addPatch, toolkit) as Network
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (families, class MapFamiliesImpl) as Toolkit
+import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (make, id) as Patch
 
@@ -143,7 +143,7 @@ informWsInitialized _ state = state
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 
-families :: forall tk s fs r m. Toolkit.MapFamiliesImpl r m fs => State tk s fs r m -> Array Id.FamilyR
+families :: forall tk s fs r m. Toolkit.HoldsFamilies r m fs => State tk s fs r m -> Array Id.FamilyR
 families = _.network >>> Network.toolkit >>> Toolkit.families
 
 

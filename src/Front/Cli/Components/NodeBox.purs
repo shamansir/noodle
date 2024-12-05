@@ -108,7 +108,7 @@ import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 -- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Class.CliFriendly (class CliFriendly)
-import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
+import Cli.Class.CliRenderer (class CliRenderer, cliSize, cliSizeRaw, renderCli, renderCliRaw)
 import Cli.Class.CliRenderer (renderCli, renderCliRaw) as NodeBody
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
@@ -145,8 +145,8 @@ autoPos = do
 
 fromNodeAuto
     :: forall tk fs pstate f nstate is os repr m
-    -- REM . PIs.IsReprableRenderableNodeInPatch Hydra.CliF Hydra.State instances' (Hydra.Instances Effect) rlins f state is os isrl osrl repr_is repr_os Hydra.WrapRepr Effect
-    .  IsSymbol f
+    .  Wiring m
+    => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -164,8 +164,8 @@ fromNodeAuto curPatch family node = do
 _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
-    => MarkToolkit tk
-    => HasFallback repr => T.At At.ChannelLabel repr
+    => HasFallback repr
+    => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
@@ -328,9 +328,9 @@ _component
 
 fromRawNodeAt
     :: forall tk fs nstate pstate repr m
-    -- => IsSymbol f => Mark (Id.Family f)
-    -- => HasFallback repr => T.At At.ChannelLabel repr
-     . CliFriendly tk fs repr m
+     . Wiring m
+    => HasFallback repr
+    => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
     -> Id.FamilyR
@@ -353,7 +353,6 @@ fromNodeAt
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
-    -- => HasCliCustomSize tk f (Noodle.Node f nstate is os repr m)
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -372,7 +371,8 @@ fromNodeAt pos curPatch family node = do
 
 fromFamilyAt
     :: forall tk fs pstate f nstate is os repr m
-     . IsSymbol f
+     . Wiring m
+    => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -397,7 +397,8 @@ fromFamilyAt pos curPatch family tk = do
 
 fromFamilyAuto
     :: forall fs tk f nstate pstate is os repr m
-     . IsSymbol f
+     . Wiring m
+    => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => CliFriendly tk fs repr m
@@ -414,9 +415,7 @@ fromFamilyAuto curPatch family tk = do
 fromRawFamilyAuto
     :: forall tk fs pstate repr m
     .  Wiring m
-    => HasFallback repr => T.At At.ChannelLabel repr
-    -- => IsSymbol f => Mark (Id.Family f)
-    -- => HasFallback repr => T.At At.ChannelLabel repr
+    => HasFallback repr
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m

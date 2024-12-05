@@ -67,7 +67,7 @@ import Cli.Components.PaletteTest as PaletteTest
 import Noodle.Id (ToolkitR, toolkitR) as Id
 import Noodle.Repr (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class MapFamiliesImpl, class MarkToolkit) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
@@ -156,7 +156,9 @@ runWith =
 
 runBlessedInterface
     :: forall tk s fs repr
-     . CliFriendly tk fs repr Effect
+     . HasFallback repr
+    => Toolkit.HoldsFamilies repr Effect fs
+    => CliFriendly tk fs repr Effect
     => s
     -> Toolkit tk fs repr Effect
     -> BlessedOp (State tk s fs repr Effect) Effect

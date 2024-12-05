@@ -28,7 +28,8 @@ import Cli.Class.CliFriendly (class CliFriendly)
 import Noodle.Wiring (class Wiring)
 import Noodle.Id as Id
 import Noodle.Repr (class HasFallback)
-import Noodle.Toolkit (Toolkit, class MarkToolkit, class MapFamiliesImpl)
+import Noodle.Toolkit (Toolkit, class MarkToolkit)
+import Noodle.Toolkit (class HoldsFamilies) as Toolkit
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
@@ -38,7 +39,9 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 component
     :: forall tk p fs repr
-     . CliFriendly tk fs repr Effect
+     . HasFallback repr
+    => Toolkit.HoldsFamilies repr Effect fs
+    => CliFriendly tk fs repr Effect
     => Toolkit tk fs repr Effect
     -> Core.Blessed (State tk p fs repr Effect)
 component toolkit =

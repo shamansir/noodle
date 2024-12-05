@@ -48,7 +48,7 @@ import Cli.State (State)
 import Cli.Style (library, libraryBorder) as Style
 
 import Noodle.Repr (class HasFallback)
-import Noodle.Toolkit (Toolkit, class MarkToolkit, class MapFamiliesImpl)
+import Noodle.Toolkit (Toolkit, class MarkToolkit, class HoldsFamilies)
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Palette.Mark
@@ -57,8 +57,8 @@ import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Noodle.Wiring (class Wiring)
 
-import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Components.NodeBox as NodeBox
+import Cli.Class.CliFriendly (class CliFriendly)
 
 import Data.Text.Format (fgc, s) as T
 import Data.Text.Output.Blessed (singleLine) as T
@@ -70,7 +70,9 @@ import Prelude
 
 component
     :: forall tk p fs repr
-     . CliFriendly tk fs repr Effect
+     . Toolkit.HoldsFamilies repr Effect fs
+    => CliFriendly tk fs repr Effect
+    => HasFallback repr
     => Toolkit tk fs repr Effect
     -> Core.Blessed (State tk p fs repr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
     -- -> BlessedOpM (State tk p fs repr m) m Unit
@@ -103,7 +105,10 @@ component toolkit =
 
 onFamilySelect
     :: forall tk pstate fs repr m
-     . CliFriendly tk fs repr m
+     . Wiring m
+    => Toolkit.HoldsFamilies repr m fs
+    => HasFallback repr
+    => CliFriendly tk fs repr m
     => BlessedOpM (State tk pstate fs repr m) m Unit
 onFamilySelect =
     do

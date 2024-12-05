@@ -100,9 +100,9 @@ component =
 familyStatus
     :: forall tk pstate fs repr m
      . IsToolkit tk
-    => Tagged.At At.Documentation repr
-    => HasRepr tk repr
     => MarkToolkit tk
+    => HasRepr tk repr
+    => Tagged.At At.Documentation repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR

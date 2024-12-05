@@ -147,14 +147,14 @@ instance IsSymbol f => LMap (MapFamilies repr m) (F f state is os repr m) (Maybe
     lmap (MapFamilies families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
 
 
-class MapFamiliesImpl :: Type -> (Type -> Type) -> Families -> Constraint
-class    (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))) <= MapFamiliesImpl repr m families
-instance (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))) => MapFamiliesImpl repr m families
+class HoldsFamilies :: Type -> (Type -> Type) -> Families -> Constraint
+class    (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))) <= HoldsFamilies repr m families
+instance (MapDown (MapFamilies repr m) families Array (Maybe (HoldsFamily repr m))) => HoldsFamilies repr m families
 
 
 mapFamilies
     :: forall x tk families repr m
-    .  MapFamiliesImpl repr m families
+    .  HoldsFamilies repr m families
     => (forall f state is os. IsSymbol f => FromToRepr state repr => Family f state is os repr m -> x)
     -> Toolkit tk families repr m
     -> Array x
@@ -175,7 +175,7 @@ mapRawFamilies f (Toolkit _ _ rawFamilies) =
 
 mapAllFamilies
     :: forall x tk families repr m
-    .  MapFamiliesImpl repr m families
+    .  HoldsFamilies repr m families
     => (Raw.Family repr repr m -> x)
     -> Toolkit tk families repr m
     -> Array x
@@ -189,7 +189,7 @@ mapAllFamilies f (Toolkit _ families rawFamilies) =
 
 families
     :: forall tk families repr m
-    .  MapFamiliesImpl repr m families
+    .  HoldsFamilies repr m families
     => Toolkit tk families repr m
     -> Array Id.FamilyR
 families = mapAllFamilies RawFamily.familyIdOf

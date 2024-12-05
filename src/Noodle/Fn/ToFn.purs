@@ -10,10 +10,14 @@ import Data.Array (length) as Array
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
+import Data.Bifunctor (class Bifunctor)
 
 import Type.Proxy (Proxy(..))
 
 import Data.Bifunctor (bimap)
+
+import Noodle.Repr (class ToRepr)
+import Noodle.Repr (ensureTo, unwrap) as Repr
 
 -- import Toolkit.Hydra.Types
 -- import Toolkit.Hydra.Repr.Wrap (WrapRepr)
@@ -48,6 +52,10 @@ type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
 
 newtype Fn arg out = Fn (FnS arg out)
+
+
+instance Bifunctor Fn where
+    bimap f g (Fn fnS) = Fn $ bimap (map $ map f) (map $ map g) <$> fnS
 
 
 derive instance Newtype (Fn arg out) _
@@ -231,6 +239,10 @@ name (Fn (name /\ _)) = name
 
 extract :: forall x a arg out. ToFn x arg out a => Proxy x -> a -> String /\ Array arg /\ Array out
 extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn arg out)
+
+
+toReprable :: forall x arg out a repr. ToRepr arg repr => ToRepr out repr => ToFn x arg out a => Proxy x -> a -> Fn repr repr
+toReprable px a = bimap (Repr.ensureTo >>> Repr.unwrap) (Repr.ensureTo >>> Repr.unwrap) (toFn px a :: Fn arg out)
 
 
 instance ToFn Void arg out (Fn arg out) where

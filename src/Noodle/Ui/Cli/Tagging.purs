@@ -238,9 +238,9 @@ filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
 
 familyDocs
     :: forall tk repr
-     . Tagged.At At.Documentation repr
-    => MarkToolkit tk
+     . MarkToolkit tk
     => HasRepr tk repr
+    => Tagged.At At.Documentation repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -252,9 +252,9 @@ familyDocs ptk familyR =
 
 familyShortInfo
     :: forall tk repr
-     . Tagged.At At.Documentation repr
-    => MarkToolkit tk
+     . MarkToolkit tk
     => HasRepr tk repr
+    => Tagged.At At.Documentation repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -267,9 +267,9 @@ familyShortInfo ptk familyR =
 
 familySignature
     :: forall tk repr
-     . Tagged.At At.Documentation repr
-    => MarkToolkit tk
+     . MarkToolkit tk
     => HasRepr tk repr
+    => Tagged.At At.Documentation repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
