@@ -2,7 +2,7 @@ module Noodle.Ui.Cli.Tagging where
 
 import Prelude
 
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
@@ -25,7 +25,7 @@ import Noodle.Ui.Cli.Palette.Item (crepr) as C
 import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
-import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
+import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
 
 
@@ -246,35 +246,37 @@ familyDocs
     -> Id.FamilyR
     -> Tag
 familyDocs ptk familyR =
-    T.fgcs (markGroup ptk $ groupOf ptk familyR) (Id.family familyR)
-        <> T.space <> familySignature ptk familyR
+    let group = groupOf ptk familyR
+    in T.fgcs (markGroup ptk group) (Id.group group)
+        <> T.space <> familyOnelineSignature (Proxy :: _ At.Documentation) ptk familyR
 
 
-familyShortInfo
+familyStatusLine
     :: forall tk repr
      . MarkToolkit tk
     => HasRepr tk repr
-    => Tagged.At At.Documentation repr
+    => Tagged.At At.StatusLine repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
-familyShortInfo ptk familyR =
-    -- in T.bgc (C.crepr Palette.groupBg) (T.fgcs (mark familyGroup) (Info.statusLine familyGroup))
-    T.s "/" <> T.fgcs (markGroup ptk $ groupOf ptk familyR) (Id.family familyR) <> T.s "/"
-        <> T.space <> familySignature ptk familyR
+familyStatusLine ptk familyR =
+    let group = groupOf ptk familyR
+    in T.s "/" <> T.fgcs (markGroup ptk group) (Id.group group) <> T.s "/"
+        <> T.space <> familyOnelineSignature (Proxy :: _ At.StatusLine) ptk familyR
 
 
-familySignature
-    :: forall tk repr
+familyOnelineSignature
+    :: forall at tk repr
      . MarkToolkit tk
     => HasRepr tk repr
-    => Tagged.At At.Documentation repr
+    => Tagged.At at repr
     => PossiblyToFn tk repr repr Id.FamilyR
-    => Proxy tk
+    => Proxy at
+    -> Proxy tk
     -> Id.FamilyR
     -> Tag
-familySignature ptk familyR =
+familyOnelineSignature pat ptk familyR =
     case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS repr repr)) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
@@ -293,7 +295,7 @@ familySignature ptk familyR =
                 _ ->
                     T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg)
                     <> T.s "::"
-                    <> tagArgValue (Fn.argValue arg)
+                    <> (Tagged.at pat) (Fn.argValue arg)
             <> T.s "> "
         tagOut :: Fn.Output repr -> Tag
         tagOut out = T.s "(" <>
@@ -301,11 +303,5 @@ familySignature ptk familyR =
                 _ ->
                     T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out)
                     <> T.s "::"
-                    <> tagOutValue (Fn.outValue out)
+                    <> (Tagged.at pat) (Fn.outValue out)
             <> T.s ") "
-        tagArgValue :: repr -> Tag
-        tagArgValue val =
-            At.documentation val
-        tagOutValue :: repr -> Tag
-        tagOutValue val =
-            At.documentation val

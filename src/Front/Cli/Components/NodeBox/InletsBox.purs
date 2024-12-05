@@ -29,7 +29,7 @@ import Cli.Components.NodeBox.InletButton as InletButton
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr (class HasFallback, fallback)
 -- import Noodle.Family.Def as Family
 
@@ -50,6 +50,7 @@ component
     :: forall tk pstate fs repr m
      . HasFallback repr
     => T.At T.ChannelLabel repr
+    => T.At T.StatusLine repr
     => Patch pstate fs repr m
     -> LastKeys
     -> Id.FamilyR -> Id.NodeR

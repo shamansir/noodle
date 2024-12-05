@@ -28,7 +28,7 @@ import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Base.Element.Method (show, focus) as Element
-import Cli.Components.NodeBox.InfoBox as IB
+
 
 import Cli.Bounds (collect, inletPos) as Bounds
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, mainScreen)
@@ -36,11 +36,12 @@ import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logN
 import Cli.Style (inletsOutlets) as Style
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
-
-
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
+
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -61,7 +62,8 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs repr m
-     . T.At T.ChannelLabel repr
+     . T.At T.StatusLine repr
+    => T.At T.ChannelLabel repr
     => Patch pstate fs repr m
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.InletR
@@ -92,14 +94,25 @@ component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR idx mbRe
         []
 
 
-onMouseOver :: forall tk pstate fs repr m. Id.FamilyR -> Id.NodeR -> NodeBoxKey -> InfoBoxKey -> Int -> Id.InletR -> Maybe repr -> Signal repr -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
-onMouseOver familyR nodeIdR nodeBox infoBox idx inletR _ reprSignal _ _ = do
+onMouseOver
+    :: forall tk pstate fs repr m
+     . T.At T.StatusLine repr
+    => Id.FamilyR
+    -> Id.NodeR
+    -> NodeBoxKey
+    -> InfoBoxKey
+    -> Int
+    -> Id.InletR
+    -> Maybe repr
+    -> Signal repr
+    -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.inletInfo inletR
-    -- REM SL.inletStatus family idx inletId maybeRepr
+    SL.inletStatus familyR idx inletR mbRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
     case state.lastClickedOutput of
         Just _ -> pure unit
@@ -114,7 +127,7 @@ onMouseOut :: forall tk pstate fs repr m. InfoBoxKey -> Int ->  _ -> _ -> Blesse
 onMouseOut infoBox idx _ _ = do
     state <- State.get
     infoBox >~ IB.clear
-    -- REM SL.clear
+    SL.clear
     -- REM FI.clear
     case state.lastClickedOutput of
         Just _ -> pure unit

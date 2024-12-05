@@ -5,20 +5,12 @@ import Prelude
 import Type.Proxy (Proxy)
 
 import Effect (Effect)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe)
-import Data.Array (length, zip) as Array
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Symbol (class IsSymbol)
-import Data.Text.Format as T
 import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed ((>~))
 import Blessed as B
 
-import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
@@ -26,35 +18,21 @@ import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.BlessedOp (BlessedOp) as C
-import Blessed.Internal.NodeKey (nestChain) as NK
 
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
 import Cli.Keys (statusLine) as Key
 import Cli.Style as Style
 import Cli.State (State)
-import Noodle.Ui.Cli.Tagging as T
-import Noodle.Ui.Cli.Tagging.At as T
-
--- import Cli.Components.NodeBox.InputButton as InputButton
 
 import Noodle.Id as Id
-import Noodle.Node as Node
-import Noodle.Patch (Patch)
-import Noodle.Patch as Patch
 -- import Noodle.Family.Def as Family
 import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasRepr)
-import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
-
-
-import Noodle.Ui.Cli.Palette as Palette
-import Noodle.Ui.Cli.Palette.Item (crepr) as C
-import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
-import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
+import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine)  as T
 import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
-import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
+import Noodle.Ui.Cli.Tagging.At (StatusLine) as At
 
 
 {-}
@@ -99,24 +77,23 @@ component =
 
 familyStatus
     :: forall tk pstate fs repr m
-     . IsToolkit tk
-    => MarkToolkit tk
+     . MarkToolkit tk
     => HasRepr tk repr
-    => Tagged.At At.Documentation repr
+    => Tagged.At At.StatusLine repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> C.BlessedOp (State tk pstate fs repr m) Effect
 familyStatus ptk familyR =
-    Key.statusLine >~ Box.setContent $ T.singleLine $ T.familyShortInfo ptk familyR
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.familyStatusLine ptk familyR
 
 
-inletStatus :: forall tk pstate fs repr m. T.At T.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
+inletStatus :: forall tk pstate fs repr m. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
 inletStatus family idx inputId maybeRepr =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.inletStatusLine family idx inputId maybeRepr
 
 
-outletStatus :: forall tk pstate fs repr m. T.At T.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
+outletStatus :: forall tk pstate fs repr m. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
 outletStatus family idx outputId maybeRepr =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.outletStatusLine family idx outputId maybeRepr
 
