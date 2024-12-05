@@ -9,7 +9,6 @@ module Noodle.Id
     , PatchR, PatchName, patchR, hashOf
     , FnName
     , Link(..)
-    , class FamilyGroup, groupOf, groupOfR, groupName
     , Group(..), GroupR
     , group, groupR, unsafeGroupR
     , ToolkitR
@@ -140,13 +139,6 @@ patchR hash = PatchR { hash }
 
 hashOf :: PatchR -> UniqueHash
 hashOf (PatchR { hash }) = hash
-
-
-class FamilyGroup x where
-    groupOf :: forall f. IsSymbol f => Family f -> x
-    groupOfR :: FamilyR -> x
-    groupName :: x -> String
-
 
 
 data Group :: Symbol -> Type

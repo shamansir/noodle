@@ -33,6 +33,7 @@ import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as Family
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RawFamily
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr (class FromToRepr)
+import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 
 data ToolkitKey
@@ -237,6 +238,6 @@ class IsToolkit (tk :: ToolkitKey) where
     groupOf :: Proxy tk -> Id.FamilyR -> Id.GroupR
 
 
-class MarkToolkit (tk :: ToolkitKey) where
+class (IsToolkit tk, Mark repr) <= MarkToolkit (tk :: ToolkitKey) repr | tk -> repr where
     markGroup  :: Proxy tk -> Id.GroupR  -> Color
     markFamily :: Proxy tk -> Id.FamilyR -> Color

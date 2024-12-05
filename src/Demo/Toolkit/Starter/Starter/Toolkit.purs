@@ -7,8 +7,8 @@ import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
-import Noodle.Id (toolkitR) as Id
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit)
+import Noodle.Id (toolkitR, unsafeGroupR) as Id
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Cli.Class.CliRenderer (class CliRenderer)
@@ -64,7 +64,11 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Simple.Metro.family
   # Toolkit.register Simple.Bang.family
 
-instance MarkToolkit STARTER where
+instance IsToolkit STARTER where
+  name _ = "Starter"
+  groupOf _ familyR = Id.unsafeGroupR "TODO"
+
+instance MarkToolkit STARTER StarterRepr where
   markGroup  _ group  = Color.rgb 255 255 255
   markFamily _ family = Color.rgb 255 255 255
 

@@ -2,11 +2,10 @@ module Noodle.Ui.Cli.Tagging where
 
 import Prelude
 
-import Type.Proxy (Proxy(..))
+import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Symbol (class IsSymbol, reflectSymbol)
 -- import Data.SProxy (reflect)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
@@ -17,16 +16,16 @@ import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
 import Noodle.Id as Id
-import Noodle.Fn.ToFn (Fn, class ToFn, class PossiblyToFn, possiblyToFn, toFn, FnS)
+import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
-import Noodle.Toolkit (ToolkitKey, class MarkToolkit, markFamily)
+import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, markGroup, markFamily, groupOf)
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
 import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
-import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
+import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
 
 
@@ -71,31 +70,9 @@ outletStatusLine familyR idx outletId (Just repr) =
 outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
-nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
+nodeLabel :: forall tk repr. MarkToolkit tk repr => Proxy tk -> Id.FamilyR -> Tag
 nodeLabel ptk familyR =
     T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
-
-
-nodeMouseOver
-    :: forall tk f grp arg out
-     . IsSymbol f
-    => FamilyHasDocs tk arg out grp f
-    => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
-    -> Id.Family f
-    -> Tag
-nodeMouseOver =
-    familyShortInfo
-
-
-familyMouseOver
-    :: forall tk f grp arg out
-     . IsSymbol f
-    => FamilyHasDocs tk arg out grp f
-    => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
-    -> Id.Family f
-    -> Tag
-familyMouseOver =
-    familyShortInfo
 
 
 {- T.fgcs (C.crepr Palette.familyName) (reflect family)
@@ -123,7 +100,7 @@ removeStatusLine familyR =
     T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR)
 
 
-libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
+libraryItem :: forall (tk :: ToolkitKey) repr. MarkToolkit tk repr => Proxy tk -> Id.FamilyR -> Tag
 libraryItem ptk familyR =
     T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
 
@@ -260,66 +237,42 @@ filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
 
 
 familyDocs
-    :: forall tk f grp arg out
-     . IsSymbol f
-    => FamilyHasDocs tk arg out grp f
-    => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
-    -> Id.Family f
+    :: forall tk repr
+     . Tagged.At At.Documentation repr
+    => MarkToolkit tk repr
+    => PossiblyToFn tk repr repr Id.FamilyR
+    => Proxy tk
+    -> Id.FamilyR
     -> Tag
-familyDocs ptk pgrp parg pout family =
-    let (familyGroup :: grp) = Id.groupOf family
-    in At.documentation familyGroup
-        <> T.space <> familySignature ptk pgrp parg pout family
-
-
-class
-    ( PossiblyToFn tk arg out (Id.Family f)
-    -- , MarkToolkit tk
-    , Tagged.At At.Documentation (Id.Family f)
-    , Tagged.At At.Documentation arg
-    , Tagged.At At.Documentation out
-    , Tagged.At At.Documentation grp
-    , Id.FamilyGroup grp
-    -- , Show grp, Id.FamilyGroup grp, Tagged.At At.StatusLine grp
-    ) <= FamilyHasDocs tk arg out grp f
-
-
-instance
-    ( PossiblyToFn tk arg out (Id.Family f)
-    --, MarkToolkit tk
-    , Tagged.At At.Documentation (Id.Family f)
-    , Tagged.At At.Documentation arg
-    , Tagged.At At.Documentation out
-    , Tagged.At At.Documentation grp
-    , Id.FamilyGroup grp
-    -- , Show grp, Id.FamilyGroup grp, Tagged.At At.StatusLine grp
-    ) => FamilyHasDocs tk arg out grp f
-
+familyDocs ptk familyR =
+    T.fgcs (markGroup ptk $ groupOf ptk familyR) (Id.family familyR)
+        <> T.space <> familySignature ptk familyR
 
 
 familyShortInfo
-    :: forall tk f grp arg out
-     . IsSymbol f
-    => FamilyHasDocs tk arg out grp f
-    => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
-    -> Id.Family f
+    :: forall tk repr
+     . Tagged.At At.Documentation repr
+    => MarkToolkit tk repr
+    => PossiblyToFn tk repr repr Id.FamilyR
+    => Proxy tk
+    -> Id.FamilyR
     -> Tag
-familyShortInfo ptk pgrp parg pout family =
-    let (familyGroup :: grp) = Id.groupOf family
+familyShortInfo ptk familyR =
     -- in T.bgc (C.crepr Palette.groupBg) (T.fgcs (mark familyGroup) (Info.statusLine familyGroup))
-    in T.s "/" <> At.documentation familyGroup <> T.s "/"
-        <> T.space <> familySignature ptk pgrp parg pout family
+    T.s "/" <> T.fgcs (markGroup ptk $ groupOf ptk familyR) (Id.family familyR) <> T.s "/"
+        <> T.space <> familySignature ptk familyR
 
 
 familySignature
-    :: forall tk grp arg out f
-     . IsSymbol f
-    => FamilyHasDocs tk arg out grp f
-    => Proxy tk -> Proxy grp -> Proxy arg -> Proxy out
-    -> Id.Family f
+    :: forall tk repr
+     . Tagged.At At.Documentation repr
+    => MarkToolkit tk repr
+    => PossiblyToFn tk repr repr Id.FamilyR
+    => Proxy tk
+    -> Id.FamilyR
     -> Tag
-familySignature ptk _ _ _ family =
-    case (unwrap <$> possiblyToFn ptk family :: Maybe (FnS arg out)) of
+familySignature ptk familyR =
+    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS repr repr)) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
@@ -328,10 +281,10 @@ familySignature ptk _ _ _ family =
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> T.s " // "
-            <> T.fgc (C.crepr Pico.lavender) (At.documentation family)
+            <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
-        tagArgument :: Fn.Argument arg -> Tag
+        tagArgument :: Fn.Argument repr -> Tag
         tagArgument arg = T.s "<" <>
             case Fn.argValue arg of
                 _ ->
@@ -339,7 +292,7 @@ familySignature ptk _ _ _ family =
                     <> T.s "::"
                     <> tagArgValue (Fn.argValue arg)
             <> T.s "> "
-        tagOut :: Fn.Output out -> Tag
+        tagOut :: Fn.Output repr -> Tag
         tagOut out = T.s "(" <>
             case Fn.outValue out of
                 _ ->
@@ -347,9 +300,9 @@ familySignature ptk _ _ _ family =
                     <> T.s "::"
                     <> tagOutValue (Fn.outValue out)
             <> T.s ") "
-        tagArgValue :: arg -> Tag
+        tagArgValue :: repr -> Tag
         tagArgValue val =
             At.documentation val
-        tagOutValue :: out -> Tag
+        tagOutValue :: repr -> Tag
         tagOutValue val =
             At.documentation val

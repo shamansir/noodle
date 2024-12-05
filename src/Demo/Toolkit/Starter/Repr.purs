@@ -2,6 +2,7 @@ module Demo.Toolkit.Starter.Repr where
 
 import Prelude
 
+import Color as Color
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap) as NT
@@ -10,11 +11,12 @@ import Data.Number (fromString) as Number
 import Data.Array (length) as Array
 import Data.Int (fromString, toNumber) as Int
 import Data.Tuple.Nested ((/\), type (/\))
-import Color as Color
 import Data.Text.Format as T
+
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
+import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
 import Type.Proxy (Proxy(..))
 
@@ -246,10 +248,30 @@ instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpr
 instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
 
 
-{-
 instance Mark StarterRepr where
-    mark  _  = Color.rgb 255 255 255
--}
+    mark = case _ of
+        VNone -> C.crepr $ X11.burlywood
+        VAny repr -> mark repr
+        VBang -> C.crepr $ X11.aqua
+        VBool bool ->
+            if bool
+                then C.crepr $ X11.steelblue2
+                else C.crepr $ X11.steelblue
+            -- T.fgc (C.crepr $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar _ -> C.crepr $ X11.aquamarine
+        VNumber _ -> C.crepr $ X11.green
+        VTime _ -> C.crepr $ X11.darkolivegreen4
+        VColor clr -> toNativeColor clr
+        VShape _ ->
+            C.crepr $ X11.firebrick1
+        VSpreadNum _ -> C.crepr $ X11.darkolivegreen3
+        VSpreadVec _ -> C.crepr $ X11.darkolivegreen3
+        VSpreadCol _ -> C.crepr $ X11.darkolivegreen3
+        VSpreadShp _ -> C.crepr $ X11.darkolivegreen3
+        where
+            toNativeColor :: Color -> Color.Color
+            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
+
 
 -- x == ChannelLabel
 instance At x StarterRepr where

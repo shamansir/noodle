@@ -164,7 +164,7 @@ fromNodeAuto curPatch family node = do
 _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
-    => MarkToolkit tk
+    => MarkToolkit tk repr
     => HasFallback repr => T.At At.ChannelLabel repr
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
