@@ -44,7 +44,7 @@ import Noodle.Node as Node
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
 -- import Noodle.Family.Def as Family
-import Noodle.Toolkit (class IsToolkit, class MarkToolkit)
+import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
 
 
@@ -101,7 +101,8 @@ familyStatus
     :: forall tk pstate fs repr m
      . IsToolkit tk
     => Tagged.At At.Documentation repr
-    => MarkToolkit tk repr
+    => HasRepr tk repr
+    => MarkToolkit tk
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR

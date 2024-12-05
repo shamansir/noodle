@@ -4,7 +4,7 @@ import Prelude
 
 import Noodle.Repr (class HasFallback)
 import Noodle.Wiring (class Wiring)
-import Noodle.Toolkit (class MapFamiliesImpl, class MarkToolkit) as Toolkit
+import Noodle.Toolkit (class MapFamiliesImpl, class MarkToolkit, class HasRepr) as Toolkit
 import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
@@ -17,8 +17,9 @@ class
     ( Wiring m
     , CliRenderer tk fs repr m
     , HasFallback repr
+    , Toolkit.HasRepr tk repr
     , Toolkit.MapFamiliesImpl repr m fs
-    , Toolkit.MarkToolkit tk repr, T.At At.ChannelLabel repr
+    , Toolkit.MarkToolkit tk, T.At At.ChannelLabel repr
     ) <= CliFriendly tk fs repr m
 
 
@@ -26,6 +27,7 @@ instance
     ( Wiring m
     , CliRenderer tk fs repr m
     , HasFallback repr
+    , Toolkit.HasRepr tk repr
     , Toolkit.MapFamiliesImpl repr m fs
-    , Toolkit.MarkToolkit tk repr, T.At At.ChannelLabel repr
+    , Toolkit.MarkToolkit tk, T.At At.ChannelLabel repr
     ) => CliFriendly tk fs repr m

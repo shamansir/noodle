@@ -18,7 +18,7 @@ import Data.Text.Format as T
 import Noodle.Id as Id
 import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
-import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, markGroup, markFamily, groupOf)
+import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasRepr, markGroup, markFamily, groupOf)
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
@@ -70,7 +70,7 @@ outletStatusLine familyR idx outletId (Just repr) =
 outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
-nodeLabel :: forall tk repr. MarkToolkit tk repr => Proxy tk -> Id.FamilyR -> Tag
+nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 nodeLabel ptk familyR =
     T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
 
@@ -100,7 +100,7 @@ removeStatusLine familyR =
     T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR)
 
 
-libraryItem :: forall (tk :: ToolkitKey) repr. MarkToolkit tk repr => Proxy tk -> Id.FamilyR -> Tag
+libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 libraryItem ptk familyR =
     T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
 
@@ -239,7 +239,8 @@ filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
 familyDocs
     :: forall tk repr
      . Tagged.At At.Documentation repr
-    => MarkToolkit tk repr
+    => MarkToolkit tk
+    => HasRepr tk repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -252,7 +253,8 @@ familyDocs ptk familyR =
 familyShortInfo
     :: forall tk repr
      . Tagged.At At.Documentation repr
-    => MarkToolkit tk repr
+    => MarkToolkit tk
+    => HasRepr tk repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -266,7 +268,8 @@ familyShortInfo ptk familyR =
 familySignature
     :: forall tk repr
      . Tagged.At At.Documentation repr
-    => MarkToolkit tk repr
+    => MarkToolkit tk
+    => HasRepr tk repr
     => PossiblyToFn tk repr repr Id.FamilyR
     => Proxy tk
     -> Id.FamilyR

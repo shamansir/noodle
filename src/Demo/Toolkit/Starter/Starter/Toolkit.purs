@@ -8,7 +8,7 @@ import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR, unsafeGroupR) as Id
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasRepr)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Cli.Class.CliRenderer (class CliRenderer)
@@ -68,7 +68,7 @@ instance IsToolkit STARTER where
   name _ = "Starter"
   groupOf _ familyR = Id.unsafeGroupR "TODO"
 
-instance MarkToolkit STARTER StarterRepr where
+instance MarkToolkit STARTER where
   markGroup  _ group  = Color.rgb 255 255 255
   markFamily _ family = Color.rgb 255 255 255
 
@@ -77,3 +77,5 @@ instance CliRenderer STARTER StarterFamilies StarterRepr m where
   cliSizeRaw _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = pure unit
   renderCliRaw _ _ _ _ _ = pure unit
+
+instance HasRepr STARTER StarterRepr
