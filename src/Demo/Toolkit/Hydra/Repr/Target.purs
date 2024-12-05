@@ -15,7 +15,7 @@ import Type.Proxy (Proxy(..))
 import Noodle.Text.Code.Target (Target)
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError)
-import Noodle.Fn.ToFn (Fn, FnS, class ToFn, fns, toFn, class PossiblyToFn, possiblyToFn, q, o)
+import Noodle.Fn.ToFn (Fn, FnS, class ToFn, fns, toFn, class PossiblyToFn, possiblyToFn, i, o)
 import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
 
 import Hydra.Types as HT
@@ -378,49 +378,49 @@ instance FromCode HYDRA_V opts HT.Ease     where fromCode = fromParser
 instance ToFn HYDRA_V HT.Value Unit HT.ColorOp where
     toFn :: Proxy _ -> HT.ColorOp -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
-        HT.R { scale, offset } -> "r" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        HT.G { scale, offset } -> "g" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        HT.B { scale, offset } -> "b" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        HT.A { scale, offset } -> "a" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        HT.Posterize { bins, gamma } -> "posterize" /\ [ q "bins" bins, q "gamma" gamma ] /\ [ o "out" unit ]
-        HT.Shift { r, g, b, a } -> "shift" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
-        HT.Invert amount -> "invert" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Contrast amount -> "contrast" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Brightness amount -> "brightness" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Luma { threshold, tolerance } -> "luma" /\ [ q "threshold" threshold, q "tolerance" tolerance ] /\ [ o "out" unit ]
-        HT.Thresh { threshold, tolerance } -> "thresh" /\ [ q "threshold" threshold, q "tolerance" tolerance ] /\ [ o "out" unit ]
-        HT.Color { r, g, b, a } -> "color" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
-        HT.Saturate amount -> "saturate" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Hue amount -> "hue" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Colorama amount -> "colorama" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        HT.R { scale, offset } -> "r" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
+        HT.G { scale, offset } -> "g" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
+        HT.B { scale, offset } -> "b" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
+        HT.A { scale, offset } -> "a" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
+        HT.Posterize { bins, gamma } -> "posterize" /\ [ i "bins" bins, i "gamma" gamma ] /\ [ o "out" unit ]
+        HT.Shift { r, g, b, a } -> "shift" /\ [ i "r" r, i "g" g, i "b" b, i "a" a ] /\ [ o "out" unit ]
+        HT.Invert amount -> "invert" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Contrast amount -> "contrast" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Brightness amount -> "brightness" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Luma { threshold, tolerance } -> "luma" /\ [ i "threshold" threshold, i "tolerance" tolerance ] /\ [ o "out" unit ]
+        HT.Thresh { threshold, tolerance } -> "thresh" /\ [ i "threshold" threshold, i "tolerance" tolerance ] /\ [ o "out" unit ]
+        HT.Color { r, g, b, a } -> "color" /\ [ i "r" r, i "g" g, i "b" b, i "a" a ] /\ [ o "out" unit ]
+        HT.Saturate amount -> "saturate" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Hue amount -> "hue" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Colorama amount -> "colorama" /\ [ i "amount" amount ] /\ [ o "out" unit ]
 
 
 -- TODO: generate it automatically from NDF
 instance ToFn HYDRA_V HT.Value Unit HT.Modulate where
     toFn :: Proxy _ -> HT.Modulate -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
-        HT.Modulate amount -> "modulate" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.ModHue amount -> "modHue" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.ModKaleid { nSides } -> "modKaleid" /\ [ q "nSides" nSides ] /\ [ o "out" unit ]
-        HT.ModPixelate { multiple, offset } -> "modPixelate" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
-        HT.ModRepeat { repeatX, repeatY, offsetX, offsetY } -> "modRepeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
-        HT.ModRepeatX { reps, offset } -> "modRepeatX" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
-        HT.ModRepeatY { reps, offset } -> "modRepeatY" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
-        HT.ModRotate { multiple, offset } -> "modRotate" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
-        HT.ModScale { multiple, offset } -> "modScale" /\ [ q "multiple" multiple, q "offset" offset ] /\ [ o "out" unit ]
-        HT.ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ] /\ [ o "out" unit ]
-        HT.ModScrollX { scrollX, speed } -> "modScrollX" /\ [ q "scrollX" scrollX, q "speed" speed ] /\ [ o "out" unit ]
-        HT.ModScrollY { scrollY, speed } -> "modScrollY" /\ [ q "scrollY" scrollY, q "speed" speed ] /\ [ o "out" unit ]
+        HT.Modulate amount -> "modulate" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.ModHue amount -> "modHue" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.ModKaleid { nSides } -> "modKaleid" /\ [ i "nSides" nSides ] /\ [ o "out" unit ]
+        HT.ModPixelate { multiple, offset } -> "modPixelate" /\ [ i "multiple" multiple, i "offset" offset ] /\ [ o "out" unit ]
+        HT.ModRepeat { repeatX, repeatY, offsetX, offsetY } -> "modRepeat" /\ [ i "repeatX" repeatX, i "repeatY" repeatY, i "offsetX" offsetX, i "offsetY" offsetY ] /\ [ o "out" unit ]
+        HT.ModRepeatX { reps, offset } -> "modRepeatX" /\ [ i "reps" reps, i "offset" offset ] /\ [ o "out" unit ]
+        HT.ModRepeatY { reps, offset } -> "modRepeatY" /\ [ i "reps" reps, i "offset" offset ] /\ [ o "out" unit ]
+        HT.ModRotate { multiple, offset } -> "modRotate" /\ [ i "multiple" multiple, i "offset" offset ] /\ [ o "out" unit ]
+        HT.ModScale { multiple, offset } -> "modScale" /\ [ i "multiple" multiple, i "offset" offset ] /\ [ o "out" unit ]
+        HT.ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ i "scrollX" scrollX, i "scrollY" scrollY, i "speedX" speedX, i "speedY" speedY ] /\ [ o "out" unit ]
+        HT.ModScrollX { scrollX, speed } -> "modScrollX" /\ [ i "scrollX" scrollX, i "speed" speed ] /\ [ o "out" unit ]
+        HT.ModScrollY { scrollY, speed } -> "modScrollY" /\ [ i "scrollY" scrollY, i "speed" speed ] /\ [ o "out" unit ]
 
 
 instance ToFn HYDRA_V HT.Value Unit HT.Blend where
     toFn :: Proxy _ -> HT.Blend -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
-        HT.Blend amount -> "blend" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Add amount -> "add" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Sub amount -> "sub" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Mult amount -> "mult" /\ [ q "amount" amount ] /\ [ o "out" unit ]
-        HT.Layer amount -> "layer" /\ [ q "amount" amount ] /\ [ o "out" unit ]
+        HT.Blend amount -> "blend" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Add amount -> "add" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Sub amount -> "sub" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Mult amount -> "mult" /\ [ i "amount" amount ] /\ [ o "out" unit ]
+        HT.Layer amount -> "layer" /\ [ i "amount" amount ] /\ [ o "out" unit ]
         HT.Diff -> "diff" /\ [] /\ []
         HT.Mask -> "mask" /\ [] /\ []
 
@@ -428,26 +428,26 @@ instance ToFn HYDRA_V HT.Value Unit HT.Blend where
 instance ToFn HYDRA_V HT.Value Unit HT.Geometry where
     toFn :: Proxy _ -> HT.Geometry -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
-        HT.GKaleid { nSides } -> "kaleid" /\ [ q "nSides" nSides ] /\ [ o "out" unit ]
-        HT.GPixelate { pixelX, pixelY } -> "pixelate" /\ [ q "pixelX" pixelX, q "pixelY" pixelY ] /\ [ o "out" unit ]
-        HT.GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ q "repeatX" repeatX, q "repeatY" repeatY, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
-        HT.GRepeatX { reps, offset } -> "repeatX" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
-        HT.GRepeatY { reps, offset } -> "repeatY" /\ [ q "reps" reps, q "offset" offset ] /\ [ o "out" unit ]
-        HT.GRotate { angle, speed } -> "rotate" /\ [ q "angle" angle, q "speed" speed ] /\ [ o "out" unit ]
-        HT.GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ q "amount" amount, q "xMult" xMult, q "yMult" yMult, q "offsetX" offsetX, q "offsetY" offsetY ] /\ [ o "out" unit ]
-        HT.GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ q "scrollX" scrollX, q "scrollY" scrollY, q "speedX" speedX, q "speedY" speedY ] /\ [ o "out" unit ]
-        HT.GScrollX { scrollX, speed } -> "scrollX" /\ [ q "scrollX" scrollX, q "speed" speed ] /\ [ o "out" unit ]
-        HT.GScrollY { scrollY, speed } -> "scrollY" /\ [ q "scrollY" scrollY, q "speed" speed ] /\ [ o "out" unit ]
+        HT.GKaleid { nSides } -> "kaleid" /\ [ i "nSides" nSides ] /\ [ o "out" unit ]
+        HT.GPixelate { pixelX, pixelY } -> "pixelate" /\ [ i "pixelX" pixelX, i "pixelY" pixelY ] /\ [ o "out" unit ]
+        HT.GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ i "repeatX" repeatX, i "repeatY" repeatY, i "offsetX" offsetX, i "offsetY" offsetY ] /\ [ o "out" unit ]
+        HT.GRepeatX { reps, offset } -> "repeatX" /\ [ i "reps" reps, i "offset" offset ] /\ [ o "out" unit ]
+        HT.GRepeatY { reps, offset } -> "repeatY" /\ [ i "reps" reps, i "offset" offset ] /\ [ o "out" unit ]
+        HT.GRotate { angle, speed } -> "rotate" /\ [ i "angle" angle, i "speed" speed ] /\ [ o "out" unit ]
+        HT.GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ i "amount" amount, i "xMult" xMult, i "yMult" yMult, i "offsetX" offsetX, i "offsetY" offsetY ] /\ [ o "out" unit ]
+        HT.GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ i "scrollX" scrollX, i "scrollY" scrollY, i "speedX" speedX, i "speedY" speedY ] /\ [ o "out" unit ]
+        HT.GScrollX { scrollX, speed } -> "scrollX" /\ [ i "scrollX" scrollX, i "speed" speed ] /\ [ o "out" unit ]
+        HT.GScrollY { scrollY, speed } -> "scrollY" /\ [ i "scrollY" scrollY, i "speed" speed ] /\ [ o "out" unit ]
 
 
 instance ToFn HYDRA_V HT.Value Unit HT.Ease where
     toFn :: Proxy _ -> HT.Ease -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
         HT.Linear -> "linear" /\ [] /\ [ o "out" unit ]
-        HT.Fast v -> "fast" /\ [ q "v" v ] /\ [ o "out" unit ]
-        HT.Smooth v -> "smooth" /\ [ q "v" v ] /\ [ o "out" unit ]
-        HT.Fit { low, high } -> "fit" /\ [ q "low" low, q "high" high ] /\ [ o "out" unit ]
-        HT.Offset v -> "offset" /\ [ q "v" v ] /\ [ o "out" unit ]
+        HT.Fast v -> "fast" /\ [ i "v" v ] /\ [ o "out" unit ]
+        HT.Smooth v -> "smooth" /\ [ i "v" v ] /\ [ o "out" unit ]
+        HT.Fit { low, high } -> "fit" /\ [ i "low" low, i "high" high ] /\ [ o "out" unit ]
+        HT.Offset v -> "offset" /\ [ i "v" v ] /\ [ o "out" unit ]
         HT.InOutCubic -> "inOutCubic" /\ [] /\ [ o "out" unit ]
 
 
@@ -464,12 +464,12 @@ instance ToFn HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFnRef where
 instance ToFn HYDRA_V HT.Value Unit HT.From where
     toFn :: Proxy _ -> HT.From -> Fn HT.Value Unit
     toFn = const $ fns <<< case _ of
-        HT.Gradient { speed } -> "gradient" /\ [ q "speed" speed ] /\ [ o "out" unit ]
-        HT.Noise { scale, offset } -> "noise" /\ [ q "scale" scale, q "offset" offset ] /\ [ o "out" unit ]
-        HT.Osc { frequency, sync, offset } -> "osc" /\ [ q "frequency" frequency, q "sync" sync, q "offset" offset ] /\ [ o "out" unit ]
-        HT.Shape { sides, radius, smoothing } -> "shape" /\ [ q "sides" sides, q "radius" radius, q "smoothing" smoothing ] /\ [ o "out" unit ]
-        HT.Solid { r, g, b, a } -> "solid" /\ [ q "r" r, q "g" g, q "b" b, q "a" a ] /\ [ o "out" unit ]
-        HT.Voronoi { scale, speed, blending } -> "voronoi" /\ [ q "scale" scale, q "speed" speed, q "blending" blending ] /\ [ o "out" unit ]
+        HT.Gradient { speed } -> "gradient" /\ [ i "speed" speed ] /\ [ o "out" unit ]
+        HT.Noise { scale, offset } -> "noise" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
+        HT.Osc { frequency, sync, offset } -> "osc" /\ [ i "frequency" frequency, i "sync" sync, i "offset" offset ] /\ [ o "out" unit ]
+        HT.Shape { sides, radius, smoothing } -> "shape" /\ [ i "sides" sides, i "radius" radius, i "smoothing" smoothing ] /\ [ o "out" unit ]
+        HT.Solid { r, g, b, a } -> "solid" /\ [ i "r" r, i "g" g, i "b" b, i "a" a ] /\ [ o "out" unit ]
+        HT.Voronoi { scale, speed, blending } -> "voronoi" /\ [ i "scale" scale, i "speed" speed, i "blending" blending ] /\ [ o "out" unit ]
 
 
 instance PossiblyToFn HYDRA_V HT.Value Unit HT.Source where
@@ -490,21 +490,21 @@ instance PossiblyToFn HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
                 Nothing -> Nothing
         HT.BlendOf { what, with } blend ->
             case unwrap $ toFn ph blend :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((q "what" $ HT.T what) : (map HT.V <$> args) <> [ q "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ fns $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Filter texture cop ->
             case unwrap $ toFn ph cop :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ q "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.ModulateWith { what, with } mod ->
             case unwrap $ toFn ph mod :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((q "what" $ HT.T what) : (map HT.V <$> args) <> [ q "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ fns $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Geometry texture gmt ->
             case unwrap $ toFn ph gmt :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ q "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.CallGlslFn { over, mbWith } fnRef ->
             case unwrap $ toFn ph fnRef :: FnS HT.TOrV HT.GlslFnOut of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((q "over" $ HT.T over) : args <>
+                name /\ args /\ outs -> Just $ fns $ name /\ ((i "over" $ HT.T over) : args <>
                     case mbWith of
-                        Just with -> [ q "with" $ HT.T with ]
+                        Just with -> [ i "with" $ HT.T with ]
                         Nothing -> [ ]
                     ) /\ (map (const HT.OT) <$> outs)
 
@@ -524,77 +524,77 @@ defaultsFor :: String -> Maybe (Fn HT.FnArg HT.FnOut) -- TODO: output of Fn!
 defaultsFor = map fns <<< case _ of
     -- "number" -> Feed
 
-    "noise" -> Just $ "noise" /\ [ q "scale" $ HT.narg 10.0, q "offset" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
-    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ HT.narg 5.0, q "speed" $ HT.narg 0.3, q "blending" $ HT.narg 0.3 ] /\ [ o "out" HT.tOut ]
-    "osc" -> Just $ "osc" /\ [ q "frequency" $ HT.narg 60.0, q "sync" $ HT.narg 0.1, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "shape" -> Just $ "shape" /\ [ q "sides" $ HT.narg 3.0, q "radius" $ HT.narg 0.3, q "smoothing" $ HT.narg 0.01 ] /\ [ o "out" HT.tOut ]
-    "gradient" -> Just $ "gradient" /\ [ q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "src" -> Just $ "src" /\ [ q "src" HT.sourceArg  ] /\ [ o "out" HT.tOut ]
-    "solid" -> Just $ "solid" /\ [ q "r" $ HT.narg 0.0, q "g" $ HT.narg 0.0, q "b" $ HT.narg 0.0, q "a" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "noise" -> Just $ "noise" /\ [ i "scale" $ HT.narg 10.0, i "offset" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
+    "voronoi" -> Just $ "voronoi" /\ [ i "scale" $ HT.narg 5.0, i "speed" $ HT.narg 0.3, i "blending" $ HT.narg 0.3 ] /\ [ o "out" HT.tOut ]
+    "osc" -> Just $ "osc" /\ [ i "frequency" $ HT.narg 60.0, i "sync" $ HT.narg 0.1, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "shape" -> Just $ "shape" /\ [ i "sides" $ HT.narg 3.0, i "radius" $ HT.narg 0.3, i "smoothing" $ HT.narg 0.01 ] /\ [ o "out" HT.tOut ]
+    "gradient" -> Just $ "gradient" /\ [ i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "src" -> Just $ "src" /\ [ i "src" HT.sourceArg  ] /\ [ o "out" HT.tOut ]
+    "solid" -> Just $ "solid" /\ [ i "r" $ HT.narg 0.0, i "g" $ HT.narg 0.0, i "b" $ HT.narg 0.0, i "a" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
     -- "prev" -> Source
 
-    "rotate" -> Just $ "rotate" /\ [ q "what" HT.tArg, q "angle" $ HT.narg 10.0, q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "scale" -> Just $ "scale" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 1.5, q "xMult" $ HT.narg 1.0, q "yMult" $ HT.narg 1.0, q "offsetX" $ HT.narg 0.5, q "offsetY" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "pixelate" -> Just $ "pixelate" /\ [ q "what" HT.tArg, q "pixelX" $ HT.narg 20.0, q "pixelY" $ HT.narg 20.0 ] /\ [ o "out" HT.tOut ]
-    "repeat" -> Just $ "repeat" /\ [ q "what" HT.tArg, q "repeatX" $ HT.narg 3.0, q "repeatY" $ HT.narg 3.0, q "offsetX" $ HT.narg 0.0, q "offsetY" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "repeatX" -> Just $ "repeatX" /\ [ q "what" HT.tArg, q "reps" $ HT.narg 3.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "repeatY" -> Just $ "repeatY" /\ [ q "what" HT.tArg, q "reps" $ HT.narg 3.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "kaleid" -> Just $ "kaleid" /\ [ q "what" HT.tArg, q "nSides" $ HT.narg 4.0 ] /\ [ o "out" HT.tOut ]
-    "scroll" -> Just $ "scroll" /\ [ q "what" HT.tArg, q "scrollX" $ HT.narg 0.5, q "scrollY" $ HT.narg 0.5, q "speedX" $ HT.narg 0.0, q "speedY" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "scrollX" -> Just $ "scrollX" /\ [ q "what" HT.tArg, q "scrollX" $ HT.narg 0.5, q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "scrollY" -> Just $ "scrollY" /\ [ q "what" HT.tArg, q "scrollY" $ HT.narg 0.5, q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "rotate" -> Just $ "rotate" /\ [ i "what" HT.tArg, i "angle" $ HT.narg 10.0, i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "scale" -> Just $ "scale" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 1.5, i "xMult" $ HT.narg 1.0, i "yMult" $ HT.narg 1.0, i "offsetX" $ HT.narg 0.5, i "offsetY" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "pixelate" -> Just $ "pixelate" /\ [ i "what" HT.tArg, i "pixelX" $ HT.narg 20.0, i "pixelY" $ HT.narg 20.0 ] /\ [ o "out" HT.tOut ]
+    "repeat" -> Just $ "repeat" /\ [ i "what" HT.tArg, i "repeatX" $ HT.narg 3.0, i "repeatY" $ HT.narg 3.0, i "offsetX" $ HT.narg 0.0, i "offsetY" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "repeatX" -> Just $ "repeatX" /\ [ i "what" HT.tArg, i "reps" $ HT.narg 3.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "repeatY" -> Just $ "repeatY" /\ [ i "what" HT.tArg, i "reps" $ HT.narg 3.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "kaleid" -> Just $ "kaleid" /\ [ i "what" HT.tArg, i "nSides" $ HT.narg 4.0 ] /\ [ o "out" HT.tOut ]
+    "scroll" -> Just $ "scroll" /\ [ i "what" HT.tArg, i "scrollX" $ HT.narg 0.5, i "scrollY" $ HT.narg 0.5, i "speedX" $ HT.narg 0.0, i "speedY" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "scrollX" -> Just $ "scrollX" /\ [ i "what" HT.tArg, i "scrollX" $ HT.narg 0.5, i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "scrollY" -> Just $ "scrollY" /\ [ i "what" HT.tArg, i "scrollY" $ HT.narg 0.5, i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
 
-    "posterize" -> Just $ "posterize" /\ [ q "what" HT.tArg, q "bins" $ HT.narg 3.0, q "gamma" $ HT.narg 6.0 ] /\ [ o "out" HT.tOut ]
-    "shift" -> Just $ "shift" /\ [ q "what" HT.tArg, q "r" $ HT.narg 0.5, q "g" $ HT.narg 0.0, q "b" $ HT.narg 0.0, q "a" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "invert" -> Just $ "invert" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "contrast" -> Just $ "contrast" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 1.6 ] /\ [ o "out" HT.tOut ]
-    "brightness" -> Just $ "brightness" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 0.4 ] /\ [ o "out" HT.tOut ]
-    "luma" -> Just $ "luma" /\ [ q "what" HT.tArg, q "threshold" $ HT.narg 0.5, q "tolerance" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
-    "thresh" -> Just $ "thresh" /\ [ q "what" HT.tArg, q "threshold" $ HT.narg 0.5, q "tolerance" $ HT.narg 0.04 ] /\ [ o "out" HT.tOut ]
-    "color" -> Just $ "color" /\ [ q "what" HT.tArg, q "r" $ HT.narg 1.0, q "g" $ HT.narg 1.0, q "b" $ HT.narg 1.0, q "a" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "saturate" -> Just $ "saturate" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 2.0 ] /\ [ o "out" HT.tOut ]
-    "hue" -> Just $ "hue" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 0.4 ] /\ [ o "out" HT.tOut ]
-    "colorama" -> Just $ "colorama" /\ [ q "what" HT.tArg, q "amount" $ HT.narg 0.005 ] /\ [ o "out" HT.tOut ]
+    "posterize" -> Just $ "posterize" /\ [ i "what" HT.tArg, i "bins" $ HT.narg 3.0, i "gamma" $ HT.narg 6.0 ] /\ [ o "out" HT.tOut ]
+    "shift" -> Just $ "shift" /\ [ i "what" HT.tArg, i "r" $ HT.narg 0.5, i "g" $ HT.narg 0.0, i "b" $ HT.narg 0.0, i "a" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "invert" -> Just $ "invert" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "contrast" -> Just $ "contrast" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 1.6 ] /\ [ o "out" HT.tOut ]
+    "brightness" -> Just $ "brightness" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 0.4 ] /\ [ o "out" HT.tOut ]
+    "luma" -> Just $ "luma" /\ [ i "what" HT.tArg, i "threshold" $ HT.narg 0.5, i "tolerance" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
+    "thresh" -> Just $ "thresh" /\ [ i "what" HT.tArg, i "threshold" $ HT.narg 0.5, i "tolerance" $ HT.narg 0.04 ] /\ [ o "out" HT.tOut ]
+    "color" -> Just $ "color" /\ [ i "what" HT.tArg, i "r" $ HT.narg 1.0, i "g" $ HT.narg 1.0, i "b" $ HT.narg 1.0, i "a" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "saturate" -> Just $ "saturate" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 2.0 ] /\ [ o "out" HT.tOut ]
+    "hue" -> Just $ "hue" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 0.4 ] /\ [ o "out" HT.tOut ]
+    "colorama" -> Just $ "colorama" /\ [ i "what" HT.tArg, i "amount" $ HT.narg 0.005 ] /\ [ o "out" HT.tOut ]
     -- "sum" -> Color
-    "r" -> Just $ "r" /\ [ q "what" HT.tArg, q "scale" $ HT.narg 1.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "g" -> Just $ "g" /\ [ q "what" HT.tArg, q "scale" $ HT.narg 1.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "b" -> Just $ "b" /\ [ q "what" HT.tArg, q "scale" $ HT.narg 1.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "a" -> Just $ "a" /\ [ q "what" HT.tArg, q "scale" $ HT.narg 1.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "r" -> Just $ "r" /\ [ i "what" HT.tArg, i "scale" $ HT.narg 1.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "g" -> Just $ "g" /\ [ i "what" HT.tArg, i "scale" $ HT.narg 1.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "b" -> Just $ "b" /\ [ i "what" HT.tArg, i "scale" $ HT.narg 1.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "a" -> Just $ "a" /\ [ i "what" HT.tArg, i "scale" $ HT.narg 1.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
 
      -- FIXME : first arg is texture for everything below
-    "add" -> Just $ "add" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "sub" -> Just $ "sub" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "layer" -> Just $ "layer" /\ [ q "what" HT.tArg, q "with" HT.tArg ] /\ [ o "out" HT.tOut ]
-    "blend" -> Just $ "blend" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "mult" -> Just $ "mult" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "diff" -> Just $ "diff" /\ [ q "what" HT.tArg, q "with" HT.tArg ] /\ [ o "out" HT.tOut ]
-    "mask" -> Just $ "mask" /\ [ q "what" HT.tArg, q "with" HT.tArg ] /\ [ o "out" HT.tOut ]
+    "add" -> Just $ "add" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "sub" -> Just $ "sub" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "layer" -> Just $ "layer" /\ [ i "what" HT.tArg, i "with" HT.tArg ] /\ [ o "out" HT.tOut ]
+    "blend" -> Just $ "blend" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "mult" -> Just $ "mult" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "diff" -> Just $ "diff" /\ [ i "what" HT.tArg, i "with" HT.tArg ] /\ [ o "out" HT.tOut ]
+    "mask" -> Just $ "mask" /\ [ i "what" HT.tArg, i "with" HT.tArg ] /\ [ o "out" HT.tOut ]
 
-    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "repeatX" $ HT.narg 3.0, q "repeatY" $ HT.narg 3.0, q "offsetX" $ HT.narg 0.5, q "offsetY" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "reps" $ HT.narg 3.0, q "offset" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "reps" $ HT.narg 3.0, q "offset" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
-    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "nSides" $ HT.narg 4.0 ] /\ [ o "out" HT.tOut ]
-    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "scrollX" $ HT.narg 0.5, q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "scrollY" $ HT.narg 0.5, q "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "modulate" -> Just $ "modulate" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
-    "modulateScale" -> Just $ "modScale" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "multiple" $ HT.narg 1.0, q "offset" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
-    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "multiple" $ HT.narg 10.0, q "offset" $ HT.narg 3.0 ] /\ [ o "out" HT.tOut ]
-    "modulateRotate" -> Just $ "modRotate" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "multiple" $ HT.narg 1.0, q "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
-    "modulateHue" -> Just $ "modHue" /\ [ q "what" HT.tArg, q "with" HT.tArg, q "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "repeatX" $ HT.narg 3.0, i "repeatY" $ HT.narg 3.0, i "offsetX" $ HT.narg 0.5, i "offsetY" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "reps" $ HT.narg 3.0, i "offset" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "reps" $ HT.narg 3.0, i "offset" $ HT.narg 0.5 ] /\ [ o "out" HT.tOut ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "nSides" $ HT.narg 4.0 ] /\ [ o "out" HT.tOut ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "scrollX" $ HT.narg 0.5, i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "scrollY" $ HT.narg 0.5, i "speed" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "modulate" -> Just $ "modulate" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
+    "modulateScale" -> Just $ "modScale" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "multiple" $ HT.narg 1.0, i "offset" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "multiple" $ HT.narg 10.0, i "offset" $ HT.narg 3.0 ] /\ [ o "out" HT.tOut ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "multiple" $ HT.narg 1.0, i "offset" $ HT.narg 0.0 ] /\ [ o "out" HT.tOut ]
+    "modulateHue" -> Just $ "modHue" /\ [ i "what" HT.tArg, i "with" HT.tArg, i "amount" $ HT.narg 1.0 ] /\ [ o "out" HT.tOut ]
 
     "initCam" -> Just $ "initCam" /\ [] /\ []
-    "initImage" -> Just $ "initImage" /\ [ q "url" HT.urlArg ] /\ []
-    "initVideo" -> Just $ "initVideo" /\ [ q "url" HT.urlArg ] /\ []
-    "init" -> Just $ "init" /\ [ q "options" HT.optionsArg ] /\ []
-    "initStream" -> Just $ "initStream" /\ [ q "url" HT.urlArg ] /\ []
-    "initCam" -> Just $ "initCam" /\ [ q "index" HT.ciArg ] /\ []
+    "initImage" -> Just $ "initImage" /\ [ i "url" HT.urlArg ] /\ []
+    "initVideo" -> Just $ "initVideo" /\ [ i "url" HT.urlArg ] /\ []
+    "init" -> Just $ "init" /\ [ i "options" HT.optionsArg ] /\ []
+    "initStream" -> Just $ "initStream" /\ [ i "url" HT.urlArg ] /\ []
+    "initCam" -> Just $ "initCam" /\ [ i "index" HT.ciArg ] /\ []
     "initScreen" -> Just $ "initScreen" /\ [] /\ []
 
-    "render" -> Just $ "render" /\ [ q "target" HT.rtArg ] /\ []
-    "update" -> Just $ "update" /\ [ q "update" HT.updateArg ] /\ []
-    "setResolution" -> Just $ "setResolution" /\ [ q "width" HT.sideArg, q "height" HT.sideArg ] /\ []
+    "render" -> Just $ "render" /\ [ i "target" HT.rtArg ] /\ []
+    "update" -> Just $ "update" /\ [ i "update" HT.updateArg ] /\ []
+    "setResolution" -> Just $ "setResolution" /\ [ i "width" HT.sideArg, i "height" HT.sideArg ] /\ []
     "hush" -> Just $ "hush" /\ [] /\ []
-    "setFunction" -> Just $ "setFunction" /\ [ q "fn" HT.glslArg ] /\ []
+    "setFunction" -> Just $ "setFunction" /\ [ i "fn" HT.glslArg ] /\ []
 
     -- "speed" -> Synth
     -- "bpm" -> Synth
@@ -604,22 +604,22 @@ defaultsFor = map fns <<< case _ of
     "mouse" -> Just $ "time" /\ [] /\ [ o "x" HT.vOut, o "y" HT.vOut ]
     "pi" -> Just $ "time" /\ [] /\ [ o "out" HT.vOut ]
 
-    "fft" -> Just $ "fft" /\ [ q "audio" HT.audioArg ] /\ [ o "out" HT.vOut ]
-    "setSmooth" -> Just $ "setSmooth" /\ [ q "audio" HT.audioArg, q "smooth" $ HT.narg 0.4 ] /\ []
-    "setCutoff" -> Just $ "setCutoff" /\ [ q "audio" HT.audioArg, q "cutoff" $ HT.narg 2.0 ] /\ []
-    "setBins" -> Just $ "setCutoff" /\ [ q "audio" HT.audioArg, q "bins" HT.audioBinsArg ] /\ []
-    "setScale" -> Just $ "setScale" /\ [ q "audio" HT.audioArg, q "scale" $ HT.narg 10.0 ] /\ []
+    "fft" -> Just $ "fft" /\ [ i "audio" HT.audioArg ] /\ [ o "out" HT.vOut ]
+    "setSmooth" -> Just $ "setSmooth" /\ [ i "audio" HT.audioArg, i "smooth" $ HT.narg 0.4 ] /\ []
+    "setCutoff" -> Just $ "setCutoff" /\ [ i "audio" HT.audioArg, i "cutoff" $ HT.narg 2.0 ] /\ []
+    "setBins" -> Just $ "setCutoff" /\ [ i "audio" HT.audioArg, i "bins" HT.audioBinsArg ] /\ []
+    "setScale" -> Just $ "setScale" /\ [ i "audio" HT.audioArg, i "scale" $ HT.narg 10.0 ] /\ []
     "hide" -> Just $ "hide" /\ [] /\ []
     "show" -> Just $ "show" /\ [] /\ []
 
-    "out" -> Just $ "out" /\ [ q "output" HT.outputArg ] /\ []
+    "out" -> Just $ "out" /\ [ i "output" HT.outputArg ] /\ []
 
-    "linear" -> Just $ "linear" /\ [ q "array" HT.valuesArg ] /\ [ o "out" HT.arrOut ]
-    "ease" -> Just $ "ease" /\ [ q "ease" HT.easeArg ] /\ [ o "out" HT.arrOut ]
-    "fast" -> Just $ "fast" /\ [ q "array" HT.valuesArg, q "v" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
-    "smooth" -> Just $ "smooth" /\ [ q "array" HT.valuesArg, q "v" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
-    "offset" -> Just $ "offset" /\ [ q "array" HT.valuesArg, q "v" $ HT.narg 0.5 ] /\ [ o "out" HT.arrOut ]
-    "fit" -> Just $ "fit" /\ [ q "array" HT.valuesArg, q "low" $ HT.narg 0.0, q "high" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
+    "linear" -> Just $ "linear" /\ [ i "array" HT.valuesArg ] /\ [ o "out" HT.arrOut ]
+    "ease" -> Just $ "ease" /\ [ i "ease" HT.easeArg ] /\ [ o "out" HT.arrOut ]
+    "fast" -> Just $ "fast" /\ [ i "array" HT.valuesArg, i "v" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
+    "smooth" -> Just $ "smooth" /\ [ i "array" HT.valuesArg, i "v" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
+    "offset" -> Just $ "offset" /\ [ i "array" HT.valuesArg, i "v" $ HT.narg 0.5 ] /\ [ o "out" HT.arrOut ]
+    "fit" -> Just $ "fit" /\ [ i "array" HT.valuesArg, i "low" $ HT.narg 0.0, i "high" $ HT.narg 1.0 ] /\ [ o "out" HT.arrOut ]
 
     -- "inOutCubic" -> Just $ "inOutCubic" /\ []
 
@@ -640,63 +640,63 @@ fromKnownFn :: String -> Maybe (Fn HT.Value Unit)
 fromKnownFn = map fns <<< case _ of
     -- "number" -> Feed
 
-    "noise" -> Just $ "noise" /\ [ q "scale" $ HT.Number 10.0, q "offset" $ HT.Number 0.1 ] /\ [ o "out" unit ]
-    "voronoi" -> Just $ "voronoi" /\ [ q "scale" $ HT.Number 5.0, q "speed" $ HT.Number 0.3, q "blending" $ HT.Number 0.3 ] /\ [ o "out" unit ]
-    "osc" -> Just $ "osc" /\ [ q "frequency" $ HT.Number 60.0, q "sync" $ HT.Number 0.1, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "shape" -> Just $ "shape" /\ [ q "sides" $ HT.Number 3.0, q "radius" $ HT.Number 0.3, q "smoothing" $ HT.Number 0.01 ] /\ [ o "out" unit ]
-    "gradient" -> Just $ "gradient" /\ [ q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "noise" -> Just $ "noise" /\ [ i "scale" $ HT.Number 10.0, i "offset" $ HT.Number 0.1 ] /\ [ o "out" unit ]
+    "voronoi" -> Just $ "voronoi" /\ [ i "scale" $ HT.Number 5.0, i "speed" $ HT.Number 0.3, i "blending" $ HT.Number 0.3 ] /\ [ o "out" unit ]
+    "osc" -> Just $ "osc" /\ [ i "frequency" $ HT.Number 60.0, i "sync" $ HT.Number 0.1, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "shape" -> Just $ "shape" /\ [ i "sides" $ HT.Number 3.0, i "radius" $ HT.Number 0.3, i "smoothing" $ HT.Number 0.01 ] /\ [ o "out" unit ]
+    "gradient" -> Just $ "gradient" /\ [ i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
     -- "src" -> Source
-    "solid" -> Just $ "solid" /\ [ q "r" $ HT.Number 0.0, q "g" $ HT.Number 0.0, q "b" $ HT.Number 0.0, q "a" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "solid" -> Just $ "solid" /\ [ i "r" $ HT.Number 0.0, i "g" $ HT.Number 0.0, i "b" $ HT.Number 0.0, i "a" $ HT.Number 1.0 ] /\ [ o "out" unit ]
     -- "prev" -> Source
 
-    "rotate" -> Just $ "rotate" /\ [ q "angle" $ HT.Number 10.0, q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "scale" -> Just $ "scale" /\ [ q "amount" $ HT.Number 1.5, q "xMult" $ HT.Number 1.0, q "yMult" $ HT.Number 1.0, q "offsetX" $ HT.Number 0.5, q "offsetY" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "pixelate" -> Just $ "pixelate" /\ [ q "pixelX" $ HT.Number 20.0, q "pixelY" $ HT.Number 20.0 ] /\ [ o "out" unit ]
-    "repeat" -> Just $ "repeat" /\ [ q "repeatX" $ HT.Number 3.0, q "repeatY" $ HT.Number 3.0, q "offsetX" $ HT.Number 0.0, q "offsetY" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "repeatX" -> Just $ "repeatX" /\ [ q "reps" $ HT.Number 3.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "repeatY" -> Just $ "repeatY" /\ [ q "reps" $ HT.Number 3.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "kaleid" -> Just $ "kaleid" /\ [ q "nSides" $ HT.Number 4.0 ] /\ [ o "out" unit ]
-    "scroll" -> Just $ "scroll" /\ [ q "scrollX" $ HT.Number 0.5, q "scrollY" $ HT.Number 0.5, q "speedX" $ HT.Number 0.0, q "speedY" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "scrollX" -> Just $ "scrollX" /\ [ q "scrollX" $ HT.Number 0.5, q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "scrollY" -> Just $ "scrollY" /\ [ q "scrollY" $ HT.Number 0.5, q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "rotate" -> Just $ "rotate" /\ [ i "angle" $ HT.Number 10.0, i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "scale" -> Just $ "scale" /\ [ i "amount" $ HT.Number 1.5, i "xMult" $ HT.Number 1.0, i "yMult" $ HT.Number 1.0, i "offsetX" $ HT.Number 0.5, i "offsetY" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "pixelate" -> Just $ "pixelate" /\ [ i "pixelX" $ HT.Number 20.0, i "pixelY" $ HT.Number 20.0 ] /\ [ o "out" unit ]
+    "repeat" -> Just $ "repeat" /\ [ i "repeatX" $ HT.Number 3.0, i "repeatY" $ HT.Number 3.0, i "offsetX" $ HT.Number 0.0, i "offsetY" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "repeatX" -> Just $ "repeatX" /\ [ i "reps" $ HT.Number 3.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "repeatY" -> Just $ "repeatY" /\ [ i "reps" $ HT.Number 3.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "kaleid" -> Just $ "kaleid" /\ [ i "nSides" $ HT.Number 4.0 ] /\ [ o "out" unit ]
+    "scroll" -> Just $ "scroll" /\ [ i "scrollX" $ HT.Number 0.5, i "scrollY" $ HT.Number 0.5, i "speedX" $ HT.Number 0.0, i "speedY" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "scrollX" -> Just $ "scrollX" /\ [ i "scrollX" $ HT.Number 0.5, i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "scrollY" -> Just $ "scrollY" /\ [ i "scrollY" $ HT.Number 0.5, i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
 
-    "posterize" -> Just $ "posterize" /\ [ q "bins" $ HT.Number 3.0, q "gamma" $ HT.Number 6.0 ] /\ [ o "out" unit ]
-    "shift" -> Just $ "shift" /\ [ q "r" $ HT.Number 0.5, q "g" $ HT.Number 0.0, q "b" $ HT.Number 0.0, q "a" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "invert" -> Just $ "invert" /\ [ q "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "contrast" -> Just $ "contrast" /\ [ q "amount" $ HT.Number 1.6 ] /\ [ o "out" unit ]
-    "brightness" -> Just $ "brightness" /\ [ q "amount" $ HT.Number 0.4 ] /\ [ o "out" unit ]
-    "luma" -> Just $ "luma" /\ [ q "threshold" $ HT.Number 0.5, q "tolerance" $ HT.Number 0.1 ] /\ [ o "out" unit ]
-    "thresh" -> Just $ "thresh" /\ [ q "threshold" $ HT.Number 0.5, q "tolerance" $ HT.Number 0.04 ] /\ [ o "out" unit ]
-    "color" -> Just $ "color" /\ [ q "r" $ HT.Number 1.0, q "g" $ HT.Number 1.0, q "b" $ HT.Number 1.0, q "a" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "saturate" -> Just $ "saturate" /\ [ q "amount" $ HT.Number 2.0 ] /\ [ o "out" unit ]
-    "hue" -> Just $ "hue" /\ [ q "amount" $ HT.Number 0.4 ] /\ [ o "out" unit ]
-    "colorama" -> Just $ "colorama" /\ [ q "amount" $ HT.Number 0.005 ] /\ [ o "out" unit ]
+    "posterize" -> Just $ "posterize" /\ [ i "bins" $ HT.Number 3.0, i "gamma" $ HT.Number 6.0 ] /\ [ o "out" unit ]
+    "shift" -> Just $ "shift" /\ [ i "r" $ HT.Number 0.5, i "g" $ HT.Number 0.0, i "b" $ HT.Number 0.0, i "a" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "invert" -> Just $ "invert" /\ [ i "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "contrast" -> Just $ "contrast" /\ [ i "amount" $ HT.Number 1.6 ] /\ [ o "out" unit ]
+    "brightness" -> Just $ "brightness" /\ [ i "amount" $ HT.Number 0.4 ] /\ [ o "out" unit ]
+    "luma" -> Just $ "luma" /\ [ i "threshold" $ HT.Number 0.5, i "tolerance" $ HT.Number 0.1 ] /\ [ o "out" unit ]
+    "thresh" -> Just $ "thresh" /\ [ i "threshold" $ HT.Number 0.5, i "tolerance" $ HT.Number 0.04 ] /\ [ o "out" unit ]
+    "color" -> Just $ "color" /\ [ i "r" $ HT.Number 1.0, i "g" $ HT.Number 1.0, i "b" $ HT.Number 1.0, i "a" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "saturate" -> Just $ "saturate" /\ [ i "amount" $ HT.Number 2.0 ] /\ [ o "out" unit ]
+    "hue" -> Just $ "hue" /\ [ i "amount" $ HT.Number 0.4 ] /\ [ o "out" unit ]
+    "colorama" -> Just $ "colorama" /\ [ i "amount" $ HT.Number 0.005 ] /\ [ o "out" unit ]
     -- "sum" -> Color
-    "r" -> Just $ "r" /\ [ q "scale" $ HT.Number 1.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "g" -> Just $ "g" /\ [ q "scale" $ HT.Number 1.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "b" -> Just $ "b" /\ [ q "scale" $ HT.Number 1.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "a" -> Just $ "a" /\ [ q "scale" $ HT.Number 1.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "r" -> Just $ "r" /\ [ i "scale" $ HT.Number 1.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "g" -> Just $ "g" /\ [ i "scale" $ HT.Number 1.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "b" -> Just $ "b" /\ [ i "scale" $ HT.Number 1.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "a" -> Just $ "a" /\ [ i "scale" $ HT.Number 1.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
 
      -- FIXME : first arg is texture for everything below
-    "add" -> Just $ "add" /\ [ q "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "sub" -> Just $ "sub" /\ [ q "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "add" -> Just $ "add" /\ [ i "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "sub" -> Just $ "sub" /\ [ i "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
     "layer" -> Just $ "layer" /\ [] /\ []
-    "blend" -> Just $ "blend" /\ [ q "amount" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "mult" -> Just $ "mult" /\ [ q "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "blend" -> Just $ "blend" /\ [ i "amount" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "mult" -> Just $ "mult" /\ [ i "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
     "diff" -> Just $ "diff" /\ [] /\ []
     "mask" -> Just $ "mask" /\ [] /\ []
 
-    "modulateRepeat" -> Just $ "modRepeat" /\ [ q "repeatX" $ HT.Number 3.0, q "repeatY" $ HT.Number 3.0, q "offsetX" $ HT.Number 0.5, q "offsetY" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ q "reps" $ HT.Number 3.0, q "offset" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ q "reps" $ HT.Number 3.0, q "offset" $ HT.Number 0.5 ] /\ [ o "out" unit ]
-    "modulateKaleid" -> Just $ "modKaleid" /\ [ q "nSides" $ HT.Number 4.0 ] /\ [ o "out" unit ]
-    "modulateScrollX" -> Just $ "modScrollX" /\ [ q "scrollX" $ HT.Number 0.5, q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "modulateScrollY" -> Just $ "modScrollY" /\ [ q "scrollY" $ HT.Number 0.5, q "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "modulate" -> Just $ "modulate" /\ [ q "amount" $ HT.Number 0.1 ] /\ [ o "out" unit ]
-    "modulateScale" -> Just $ "modScale" /\ [ q "multiple" $ HT.Number 1.0, q "offset" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "modulatePixelate" -> Just $ "modPixelate" /\ [ q "multiple" $ HT.Number 10.0, q "offset" $ HT.Number 3.0 ] /\ [ o "out" unit ]
-    "modulateRotate" -> Just $ "modRotate" /\ [ q "multiple" $ HT.Number 1.0, q "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
-    "modulateHue" -> Just $ "modHue" /\ [ q "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "modulateRepeat" -> Just $ "modRepeat" /\ [ i "repeatX" $ HT.Number 3.0, i "repeatY" $ HT.Number 3.0, i "offsetX" $ HT.Number 0.5, i "offsetY" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "modulateRepeatX" -> Just $ "modRepeatX" /\ [ i "reps" $ HT.Number 3.0, i "offset" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "modulateRepeatY" -> Just $ "modRepeatY" /\ [ i "reps" $ HT.Number 3.0, i "offset" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "modulateKaleid" -> Just $ "modKaleid" /\ [ i "nSides" $ HT.Number 4.0 ] /\ [ o "out" unit ]
+    "modulateScrollX" -> Just $ "modScrollX" /\ [ i "scrollX" $ HT.Number 0.5, i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "modulateScrollY" -> Just $ "modScrollY" /\ [ i "scrollY" $ HT.Number 0.5, i "speed" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "modulate" -> Just $ "modulate" /\ [ i "amount" $ HT.Number 0.1 ] /\ [ o "out" unit ]
+    "modulateScale" -> Just $ "modScale" /\ [ i "multiple" $ HT.Number 1.0, i "offset" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "modulatePixelate" -> Just $ "modPixelate" /\ [ i "multiple" $ HT.Number 10.0, i "offset" $ HT.Number 3.0 ] /\ [ o "out" unit ]
+    "modulateRotate" -> Just $ "modRotate" /\ [ i "multiple" $ HT.Number 1.0, i "offset" $ HT.Number 0.0 ] /\ [ o "out" unit ]
+    "modulateHue" -> Just $ "modHue" /\ [ i "amount" $ HT.Number 1.0 ] /\ [ o "out" unit ]
 
     -- "initCam" -> ExternalSources
     -- "initImage" -> ExternalSources
@@ -731,10 +731,10 @@ fromKnownFn = map fns <<< case _ of
     -- "out" -> Out
 
     "linear" -> Just $ "linear" /\ [] /\ [ o "out" unit ]
-    "fast" -> Just $ "fast" /\ [ q "v" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "smooth" -> Just $ "smooth" /\ [ q "v" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "fit" -> Just $ "fit" /\ [ q "low" $ HT.Number 0.0, q "high" $ HT.Number 1.0 ] /\ [ o "out" unit ]
-    "offset" -> Just $ "offset" /\ [ q "v" $ HT.Number 0.5 ] /\ [ o "out" unit ]
+    "fast" -> Just $ "fast" /\ [ i "v" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "smooth" -> Just $ "smooth" /\ [ i "v" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "fit" -> Just $ "fit" /\ [ i "low" $ HT.Number 0.0, i "high" $ HT.Number 1.0 ] /\ [ o "out" unit ]
+    "offset" -> Just $ "offset" /\ [ i "v" $ HT.Number 0.5 ] /\ [ o "out" unit ]
     -- "inOutCubic" -> Just $ "inOutCubic" /\ []
 
     _ -> Nothing

@@ -159,7 +159,7 @@ runBlessedInterface
     :: forall tk s fs repr
      . HasFallback repr
     => Toolkit.HoldsFamilies repr Effect fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr Effect
     => s
     -> Toolkit tk fs repr Effect
@@ -262,7 +262,7 @@ generateToolkit options toolkitName sourcePath = do
     toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
     let eParsedNdf = P.runParser toolkitText NdfFile.parser
     case eParsedNdf of
-        Left error -> Console.log $ show error
+        Left error -> Console.log $ "Error: " <> show error
         Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
                 --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf

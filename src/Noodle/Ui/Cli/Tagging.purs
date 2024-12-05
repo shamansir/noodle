@@ -241,7 +241,7 @@ familyDocs
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At At.Documentation repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -256,7 +256,7 @@ familyStatusLine
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At At.StatusLine repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -271,13 +271,13 @@ familyOnelineSignature
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At at repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Proxy at
     -> Proxy tk
     -> Id.FamilyR
     -> Tag
 familyOnelineSignature pat ptk familyR =
-    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS repr repr)) of
+    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS (Maybe repr) (Maybe repr))) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
@@ -289,19 +289,18 @@ familyOnelineSignature pat ptk familyR =
             <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
-        tagArgument :: Fn.Argument repr -> Tag
-        tagArgument arg = T.s "<" <>
+        tagArgument :: Fn.Argument (Maybe repr) -> Tag
+        tagArgument arg = T.s "<" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg) <>
             case Fn.argValue arg of
-                _ ->
-                    T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg)
-                    <> T.s "::"
-                    <> (Tagged.at pat) (Fn.argValue arg)
+                Just inVal ->
+                    T.s "::" <> (Tagged.at pat) inVal
+                Nothing -> T.nil
             <> T.s "> "
-        tagOut :: Fn.Output repr -> Tag
-        tagOut out = T.s "(" <>
+        tagOut :: Fn.Output (Maybe repr) -> Tag
+        tagOut out = T.s "(" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out) <>
             case Fn.outValue out of
-                _ ->
-                    T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out)
-                    <> T.s "::"
-                    <> (Tagged.at pat) (Fn.outValue out)
+                Just outVal ->
+                    T.s "::" <> (Tagged.at pat) outVal
+                Nothing ->
+                    T.nil
             <> T.s ") "

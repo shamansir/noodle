@@ -62,7 +62,7 @@ import Prelude
 component
     :: forall tk p fs repr
      . Toolkit.HoldsFamilies repr Effect fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr Effect
     => HasFallback repr
     => Toolkit tk fs repr Effect
@@ -103,7 +103,7 @@ onFamilySelect
      . Wiring m
     => Toolkit.HoldsFamilies repr m fs
     => HasFallback repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => BlessedOpM (State tk pstate fs repr m) m Unit
 onFamilySelect =

@@ -41,7 +41,7 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 component
     :: forall tk p fs repr
      . HasFallback repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Toolkit.HoldsFamilies repr Effect fs
     => CliFriendly tk fs repr Effect
     => Toolkit tk fs repr Effect

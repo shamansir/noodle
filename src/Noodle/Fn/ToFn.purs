@@ -178,11 +178,11 @@ out3 o1 o2 o3 =
 
 
 arg :: forall x. ArgumentName -> x -> Argument x
-arg = Argument
+arg = i
 
 
 out :: forall x. OutputName -> x -> Output x
-out = Output
+out = o
 
 
 args :: forall arg out. Fn arg out -> Array (String /\ arg)
@@ -193,12 +193,28 @@ outs :: forall arg out. Fn arg out -> Array (String /\ out)
 outs (Fn (_ /\ _ /\ os)) = deout <$> os
 
 
-q :: forall x. ArgumentName -> x -> Argument x
-q = Argument -- TODO: private
+i :: forall x. ArgumentName -> x -> Argument x
+i = Argument -- TODO: private
+
+
+in_ :: forall x. ArgumentName -> x -> Argument (Maybe x)
+in_ n = i n <<< Just
+
+
+inx_ :: forall x. ArgumentName -> Argument (Maybe x)
+inx_ n = i n $ Nothing
 
 
 o :: forall x. OutputName -> x -> Output x
 o = Output -- TODO: private
+
+
+out_ :: forall x. OutputName -> x -> Output (Maybe x)
+out_ n = o n <<< Just
+
+
+outx_ :: forall x. OutputName -> Output (Maybe x)
+outx_ n = o n $ Nothing
 
 
 argValue :: forall x. Argument x -> x

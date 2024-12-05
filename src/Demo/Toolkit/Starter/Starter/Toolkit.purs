@@ -1,17 +1,18 @@
 module Starter.Toolkit where
 
-import Prelude ((#), pure, unit)
+import Prelude (($), (#), (>>>), pure, unit)
 import Effect (Effect)
 import Color as Color
 import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
-import Noodle.Id (toolkitR, unsafeGroupR, FamilyR) as Id
+import Noodle.Id (toolkitR, unsafeGroupR, FamilyR, family) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasRepr)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.ToFn (class PossiblyToFn, fn)
+import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
 import Cli.Class.CliRenderer (class CliRenderer)
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Metro as Simple.Metro
@@ -29,6 +30,7 @@ import StarterTk.Spreads.Vspread as Spreads.Vspread
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
 import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (StarterRepr(..)) as R
 
 type StarterFamilies :: Families
 type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Random.F :> Simple.Knob.F
@@ -81,5 +83,8 @@ instance CliRenderer STARTER StarterFamilies StarterRepr m where
 
 instance HasRepr STARTER StarterRepr
 
-instance PossiblyToFn STARTER StarterRepr StarterRepr Id.FamilyR where
-  possiblyToFn _ _ = Nothing
+instance PossiblyToFn STARTER (Maybe StarterRepr) (Maybe StarterRepr) Id.FamilyR where
+  possiblyToFn _ = Id.family >>> case _ of
+    "sketch" -> Just $ fn "sketch" [] [ Fn.out_ "number" $ R.VNumber 0.0 ]
+    "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ R.VNumber 0.0 ]
+    _ -> Nothing

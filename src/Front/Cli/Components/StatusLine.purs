@@ -80,7 +80,7 @@ familyStatus
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At At.StatusLine repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> C.BlessedOp (State tk pstate fs repr m) Effect

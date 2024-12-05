@@ -5,6 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.List (toUnfoldable) as List
+import Data.Maybe (Maybe)
 
 import Blessed ((>~))
 import Blessed as B
@@ -61,7 +62,7 @@ component
     :: forall tk p fs repr
     .  HasFallback repr
     => Toolkit.HoldsFamilies repr Effect fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr Effect
     => State tk p fs repr Effect
     -> Core.Blessed (State tk p fs repr Effect)

@@ -149,7 +149,7 @@ fromNodeAuto
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -166,7 +166,7 @@ _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
     => HasFallback repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -324,7 +324,7 @@ fromRawNodeAt
     :: forall tk fs nstate pstate repr m
      . Wiring m
     => HasFallback repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -347,7 +347,7 @@ fromNodeAt
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -371,7 +371,7 @@ fromFamilyAt
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Int /\ Int
     -> Noodle.Patch pstate fs repr m
@@ -398,7 +398,7 @@ fromFamilyAuto
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Id.Family f
@@ -414,7 +414,7 @@ fromRawFamilyAuto
     :: forall tk fs pstate repr m
     .  Wiring m
     => HasFallback repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Noodle.Patch pstate fs repr m
     -> Raw.Family repr repr m
@@ -520,7 +520,7 @@ onMouseOver
      . MarkToolkit tk
     => Toolkit.HasRepr tk repr
     => T.At At.StatusLine repr
-    => PossiblyToFn tk repr repr Id.FamilyR
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> _
