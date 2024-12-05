@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 
-import Control.Monad.State (get, modify, modify_) as State
+import Control.Monad.State (get) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
@@ -35,13 +35,13 @@ import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, mainScreen)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
 import Cli.Style (inletsOutlets) as Style
 
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
+
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
-
-import Cli.Components.NodeBox.InfoBox as IB
-import Cli.Components.StatusLine as SL
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')

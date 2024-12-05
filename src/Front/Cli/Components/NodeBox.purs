@@ -238,7 +238,7 @@ _component
         inletsKeys /\ inletsBoxN =
             InletsBox.component curPatch keys familyR nodeR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component outletsTopOffset curPatch keys familyR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
+            OutletsBox.component outletsTopOffset curPatch keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
             InfoBox.component keys.infoBox $ boxWidth - 2
         {- REM
@@ -260,8 +260,8 @@ _component
                 -- REM     $ onMove nodeIdR keys.nodeBox
                 , Core.on Element.MouseOver
                     $ onMouseOver (Proxy :: _ tk) familyR
-                -- REM , Core.on Element.MouseOut
-                -- REM     $ onMouseOut
+                , Core.on Element.MouseOut
+                   $ onMouseOut
                 ]
                 [ ]
         renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway

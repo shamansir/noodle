@@ -2,35 +2,45 @@ module Cli.Components.NodeBox.OutletButton where
 
 import Prelude
 
-import Prelude
+import Effect (Effect)
+import Effect.Class (liftEffect)
 
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 
+import Control.Monad.State (get) as State
+
 import Signal (Signal)
+import Signal (get) as Signal
 
 import Blessed as B
+import Blessed ((>~))
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
+import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Base.Element.Method (show, focus) as Element
 
-import Cli.Keys (OutletsBoxKey, OutletButtonKey, InfoBoxKey, NodeBoxKey)
+import Cli.Bounds (collect, outletPos) as Bounds
+import Cli.Keys (OutletsBoxKey, OutletButtonKey, InfoBoxKey, NodeBoxKey, mainScreen)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
 import Cli.Style (inletsOutlets) as Style
-import Noodle.Ui.Cli.Tagging (outlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
 
+import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.StatusLine as SL
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
-
+import Noodle.Ui.Cli.Tagging (outlet) as T
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -51,18 +61,17 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs repr m
-     . T.At T.ChannelLabel repr
+     . T.At T.StatusLine repr
+    => T.At T.ChannelLabel repr
     => Patch pstate fs repr m
-    -> OutletButtonKey
-    -> InfoBoxKey
-    -> NodeBoxKey
-    -> Id.OutletR
+    -> OutletButtonKey -> NodeBoxKey -> InfoBoxKey
+    -> Id.FamilyR -> Id.NodeR -> Id.OutletR
     -> Int
     -> Maybe repr
     -> Signal repr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs repr m)
-component curPatch buttonKey nextInfoBox nextNodeBox outletR idx mbRepr reprSignal =
+component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.outlet idx outletR mbRepr
         , Box.top $ Offset.px 0
@@ -76,10 +85,53 @@ component curPatch buttonKey nextInfoBox nextNodeBox outletR idx mbRepr reprSign
         {-
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode outletId $ Hydra.editorIdOf =<< maybeRepr
-        , Core.on Element.MouseOver
-            $ onMouseOver (Node.family inode) (Id.nodeIdR $ Node.id inode) nextNodeBox nextInfoBox idx outletId maybeRepr reprSignal
-        , Core.on Element.MouseOut
-            $ onMouseOut nextInfoBox idx
         -}
+        , Core.on Element.MouseOver
+            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx outletR mbRepr reprSignal
+        , Core.on Element.MouseOut
+            $ onMouseOut infoBoxKey idx
         ]
         []
+
+
+onMouseOver
+    :: forall tk pstate fs repr m
+     . T.At T.StatusLine repr
+    => Id.FamilyR
+    -> Id.NodeR
+    -> NodeBoxKey
+    -> InfoBoxKey
+    -> Int
+    -> Id.OutletR
+    -> Maybe repr
+    -> Signal repr
+    -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = do
+    state <- State.get
+    nodeBounds <- Bounds.collect nodeIdR nodeBox
+    let outputPos = Bounds.outletPos nodeBounds idx
+    maybeRepr <- liftEffect $ Signal.get reprSignal
+    infoBox >~ IB.outletInfo outletR
+    SL.outletStatus family idx outletR mbRepr
+    -- REM FI.outputStatus family idx outputId maybeRepr
+    case state.lastClickedOutput of
+        Just _ -> pure unit
+        Nothing -> do
+            pure unit
+            -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
+            -- REM OI.updateStatus OI.Hover
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "over" <> show idx
+
+
+onMouseOut :: forall tk pstate fs repr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOut infoBox idx _ _ = do
+    state <- State.get
+    infoBox >~ IB.clear
+    SL.clear
+    -- REM: FI.clear
+    case state.lastClickedOutput of
+        Just _ -> pure unit
+        Nothing -> pure unit -- REM OI.hide
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "out" <> show idx
