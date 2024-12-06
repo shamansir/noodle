@@ -41,7 +41,7 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { x :: Int, y :: Int }
-    , lastClickedOutput :: Maybe OutputInfo
+    , lastClickedOutlet :: Maybe OutletInfo
     , lastLink :: Maybe (LinkState Unit)
     , linksFrom :: LinksFrom Unit
     , linksTo :: LinksTo Unit
@@ -64,12 +64,12 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     }
 
 
-type OutputInfo =
+type OutletInfo =
     { nodeKey :: K.NodeBoxKey
     , index :: Int
-    , subj :: String
-    -- , nodeId :: Id.HoldsNodeId
-    -- , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr
+    -- , subj :: String
+    , nodeId :: Id.NodeR
+    , outletId :: Id.OutletR
     -- , node :: Patch.HoldsNode Effect
     }
 
@@ -99,7 +99,7 @@ init state toolkit = do
             , infoBox : Key.infoBox
             , removeButton : Key.removeButton
             }
-        -- TODO, , lastClickedOutput : Nothing
+        , lastClickedOutlet : Nothing
         , lastLink : Nothing
         , linksFrom : Map.empty
         , linksTo : Map.empty
@@ -110,7 +110,6 @@ init state toolkit = do
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances
-        , lastClickedOutput : Nothing
         , onOff :
             { commandBox : false
             , hydraCode : false

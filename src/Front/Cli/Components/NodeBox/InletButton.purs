@@ -114,7 +114,7 @@ onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = d
     infoBox >~ IB.inletInfo inletR
     SL.inletStatus familyR idx inletR mbRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
-    case state.lastClickedOutput of
+    case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> do
             pure unit
@@ -129,7 +129,7 @@ onMouseOut infoBox idx _ _ = do
     infoBox >~ IB.clear
     SL.clear
     -- REM FI.clear
-    case state.lastClickedOutput of
+    case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> pure unit -- REM II.hide
     mainScreen >~ Screen.render

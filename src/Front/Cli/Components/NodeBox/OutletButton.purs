@@ -8,7 +8,7 @@ import Effect.Class (liftEffect)
 import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 
-import Control.Monad.State (get) as State
+import Control.Monad.State (get, modify_) as State
 
 import Signal (Signal)
 import Signal (get) as Signal
@@ -82,10 +82,8 @@ component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbR
         , Box.tags true
         , Button.mouse true
         , Style.inletsOutlets
-        {-
         , Core.on Button.Press
-            $ onPress curPatchId curPatch nextNodeBox idx pdin inode outletId $ Hydra.editorIdOf =<< maybeRepr
-        -}
+            $ onPress idx outletR nodeR nodeBoxKey
         , Core.on Element.MouseOver
             $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx outletR mbRepr reprSignal
         , Core.on Element.MouseOut
@@ -109,12 +107,12 @@ onMouseOver
 onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox
-    let outputPos = Bounds.outletPos nodeBounds idx
+    let outletPos = Bounds.outletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.outletInfo outletR
     SL.outletStatus family idx outletR mbRepr
     -- REM FI.outputStatus family idx outputId maybeRepr
-    case state.lastClickedOutput of
+    case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> do
             pure unit
@@ -130,8 +128,28 @@ onMouseOut infoBox idx _ _ = do
     infoBox >~ IB.clear
     SL.clear
     -- REM: FI.clear
-    case state.lastClickedOutput of
+    case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> pure unit -- REM OI.hide
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "out" <> show idx
+
+
+onPress :: forall tk pstate fs repr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onPress idx outletR nodeR nodeBoxKey _ _ = do
+    nodeBounds <- Bounds.collect nodeR nodeBoxKey
+    let outletPos = Bounds.outletPos nodeBounds idx
+    -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
+    -- REM OI.updateStatus OI.WaitConnection
+    mainScreen >~ Screen.render
+    State.modify_
+        (_
+            { lastClickedOutlet =
+                Just
+                    { index : idx
+                    , nodeKey : nodeBoxKey
+                    , nodeId : nodeR
+                    , outletId : outletR
+                    }
+            }
+        )

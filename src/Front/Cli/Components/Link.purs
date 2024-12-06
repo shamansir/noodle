@@ -16,17 +16,17 @@ import Data.List (List)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Newtype (unwrap)
+import Data.Newtype (class Newtype, unwrap)
 import Data.Ord (abs)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Newtype (class Newtype)
 
-import Blessed ((>~), (~<))
+import Blessed ((>~))
 import Blessed (line) as B
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Orientation as Orientation
+import Blessed.Internal.BlessedOp (imapState) as Blessed
 import Blessed.Internal.NodeKey (RawNodeKey)
 import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
 import Blessed.Internal.BlessedSubj (Line)
@@ -283,3 +283,9 @@ removeAllOf nk pnk linksFrom linksTo = do
     let rawNk = NodeKey.rawify nk
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksFrom) $ flip remove pnk
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksTo) $ flip remove pnk
+
+
+-- toUnit :: forall s. LinkState s -> LinkState Unit
+-- toUnit (LinkState s) = LinkState $ s
+--     { blessed = { a : Blessed.imapState ?wh ?wh ?wh, b : ?wh, c : ?wh  }
+--     }
