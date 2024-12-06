@@ -87,4 +87,5 @@ instance PossiblyToFn STARTER (Maybe StarterRepr) (Maybe StarterRepr) Id.FamilyR
   possiblyToFn _ = Id.family >>> case _ of
     "sketch" -> Just $ fn "sketch" [] [ Fn.out_ "number" $ R.VNumber 0.0 ]
     "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ R.VNumber 0.0 ]
+    -- TODO: code-generate
     _ -> Nothing

@@ -118,3 +118,17 @@ make { inlets, outlets } =
         { inlets : Inlets $ InletDefR <$> inlets
         , outlets : Outlets $ OutletDefR <$> outlets
         }
+
+
+-- the types below are sometimes helpful to distinguich inlet index from outlet index in function calls
+
+
+newtype InletIndex = InletIndex Int
+newtype OutletIndex = OutletIndex Int
+
+
+derive newtype instance Eq InletIndex
+derive instance Ord InletIndex
+
+derive instance Eq OutletIndex
+derive instance Ord OutletIndex

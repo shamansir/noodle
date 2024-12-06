@@ -19,12 +19,21 @@ import Blessed.Internal.BlessedOp (BlessedOp', BlessedOpGet)
 
 import Blessed.UI.Base.Element.Property (left, top, width, height) as Element
 
-import Cli.State (NodeBounds, State)
-
 import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.BlessedSubj as K
 
 import Noodle.Id as Id
+
+
+type Bounds =
+    { top :: Int
+    , left :: Int
+    , width :: Int
+    , height :: Int
+    }
+
+
+type NodeBounds = Bounds
 
 
 collect
@@ -35,7 +44,7 @@ collect
     => MonadThrow Error m
     => Id.NodeR
     -> NodeKey subj key
-    -> BlessedOp' state m NodeBounds
+    -> BlessedOp' state m Bounds
 collect _ node = do
     left <- Element.left ~< node
     top <- Element.top ~< node
@@ -44,6 +53,7 @@ collect _ node = do
     pure { top, left, width, height }
 
 
+{- REM
 loadOrCollect
     :: forall subj key mo tk s fs r mi
     .  K.Extends K.Element subj
@@ -62,6 +72,7 @@ loadOrCollect nodeId nodeKey = do
         Nothing -> collect nodeId nodeKey
             -- FIXME: pure { top : 0, left : 0, width : 0, height : 0 },
             -- since we update bounds every time in the state, there's no need to collect them
+-}
 
 
 outletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }

@@ -9,6 +9,7 @@ import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (empty, insert) as Map
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (class Newtype)
 
 import Type.Proxy (Proxy(..))
 
@@ -22,12 +23,16 @@ import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (make, id) as Patch
 
+import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
+import Blessed.Internal.NodeKey (RawNodeKey)
 
 import Cli.WsServer as WSS
 
+import Cli.Bounds (Bounds)
 import Cli.Keys as K
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox) as Key
+import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
 
 
 type State (tk :: ToolkitKey) s (fs :: Families) r m =
@@ -37,9 +42,9 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { x :: Int, y :: Int }
     , lastClickedOutput :: Maybe OutputInfo
-    -- TODO, lastLink :: Maybe LinkState
-    -- TODO, linksFrom :: Map RawNodeKey (Map OutputIndex LinkState)
-    -- TODO, linksTo :: Map RawNodeKey (Map InputIndex LinkState)
+    , lastLink :: Maybe (LinkState Unit)
+    , linksFrom :: LinksFrom Unit
+    , linksTo :: LinksTo Unit
     , lastKeys :: LastKeys
     , patchIdToIndex :: Map Id.PatchR Int
     , nodeKeysMap :: Map Id.NodeR K.NodeBoxKey
@@ -55,7 +60,7 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     -- TODO, , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
-    , locations :: Map Id.NodeR NodeBounds
+    , locations :: Map Id.NodeR Bounds
     }
 
 
@@ -77,24 +82,6 @@ type LastKeys =
     , removeButton :: K.RemoveButtonKey
     }
 
-{-
-newtype LinkState =
-    LinkState
-    { id :: Int
-    , inPatch :: Id.LinkId
-    , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
-    , fromNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }
-    , toNode :: { key :: NodeBoxKey, id :: Id.NodeIdR }
-    , outputIndex :: Int
-    , inputIndex :: Int
-    , keys ::
-        { a :: Key.LineA
-        , b :: Key.LineB
-        , c :: Key.LineC
-        }
-    }
--}
-
 
 init :: forall tk s fs r m. MonadEffect m => s -> Toolkit tk fs r m -> m (State tk s fs r m)
 init state toolkit = do
@@ -113,9 +100,9 @@ init state toolkit = do
             , removeButton : Key.removeButton
             }
         -- TODO, , lastClickedOutput : Nothing
-        -- TODO, , lastLink : Nothing
-        -- TODO, , linksFrom : Map.empty
-        -- TODO, , linksTo : Map.empty
+        , lastLink : Nothing
+        , linksFrom : Map.empty
+        , linksTo : Map.empty
         , patchIdToIndex : Map.empty # Map.insert (Patch.id firstPatch) 0
         , nodeKeysMap : Map.empty
         , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox

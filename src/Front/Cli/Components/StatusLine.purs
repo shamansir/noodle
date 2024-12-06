@@ -45,7 +45,7 @@ widthN count = (InputButton.widthN + 1) * count -}
 
 
 component
-    :: forall tk pstate fs repr m. C.Blessed (State tk pstate fs repr m)
+    :: forall state. C.Blessed state
 component =
     B.box Key.statusLine
         [ Box.width $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 2
