@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map (Map)
-import Data.Map (empty, insert, alter, delete) as Map
+import Data.Map (empty, insert, alter, delete, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (singleton, cons) as Array
 
@@ -84,3 +84,8 @@ forgetRaw rawLink { lastId, from, to, byNode, byId } =
     , byId :
         byId -- FIXME: we don't know ID, store (Maybe ID) in the Link
     }
+
+
+findRaw :: Id.Link -> Links -> Maybe Raw.Link
+findRaw linkId =
+  _.byId >>> Map.lookup linkId

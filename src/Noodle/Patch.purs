@@ -35,8 +35,9 @@ import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId, forget) as Links
+import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw) as Links
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Link (cancel) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (family, toReprableState) as RawNode
 import Noodle.Repr (class ToRepr, class FromRepr, class FromToRepr)
@@ -160,6 +161,7 @@ disconnect
     -> Patch state families repr mp
     -> m (Patch state families repr mp /\ Boolean)
 disconnect link (Patch name id chState nodes rawNodes links) = do
+    -- FIXME: ensure link is registered in the patch. Return false if not
     _ <- liftEffect $ Link.cancel link
     let
         nextLinks = links # Links.forget link
@@ -172,6 +174,30 @@ disconnect link (Patch name id chState nodes rawNodes links) = do
       nextLinks = links # Links.track linkWithId
       nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure (nextPatch /\ linkWithId) -}
+
+
+disconnectRaw
+    :: forall m state repr mp families
+     . Wiring m
+    => Raw.Link
+    -> Patch state families repr mp
+    -> m (Patch state families repr mp /\ Boolean)
+disconnectRaw rawLink (Patch name id chState nodes rawNodes links) = do
+    -- FIXME: ensure link is registered in the patch. Return false if not
+    _ <- liftEffect $ RawLink.cancel rawLink
+    let
+        nextLinks = links # Links.forgetRaw rawLink
+        nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ true)
+
+
+findRawLink
+    :: forall state repr mp families
+     . Id.Link
+    -> Patch state families repr mp
+    -> Maybe Raw.Link
+findRawLink linkId (Patch _ _ _ _ _ links) =
+    links # Links.findRaw linkId
 
 
 data MapNodes repr m = MapNodes (Map Id.FamilyR (Array (HoldsNode repr m)))
