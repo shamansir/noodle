@@ -233,6 +233,9 @@ sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 {- Connecting -}
 
 
+-- TODO: reuse those in `Noodle.Node` implementation instead of what is implemented there
+
+
 connect
     :: forall m stateA stateB reprA reprB mp
      . Wiring m

@@ -17,7 +17,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
-import Data.Array (singleton, cons, concat, catMaybes) as Array
+import Data.Array (singleton, cons, concat, catMaybes, find) as Array
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -26,21 +26,22 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Signal.Channel (Channel, channel)
 
-import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet) as Id
+import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, setId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
-import Noodle.Node (family, toRaw, connect) as Node
+import Noodle.Node (id, family, toRaw, connect) as Node
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
+import Noodle.Raw.Node (connect) as RawNode
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw) as Links
+import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw) as Links
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Raw.Link (cancel) as RawLink
+import Noodle.Raw.Link (setId, cancel) as RawLink
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (family, toReprableState) as RawNode
-import Noodle.Repr (class ToRepr, class FromRepr, class FromToRepr)
+import Noodle.Raw.Node (id, family, toReprableState) as RawNode
+import Noodle.Repr (class ToRepr, class FromRepr, class FromToRepr, class HasFallback)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
@@ -128,6 +129,16 @@ registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
       insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
 
 
+-- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family
+findNode :: forall pstate repr m families. StoresNodesAt repr m families => Id.NodeR -> Patch pstate families repr m -> Maybe (HoldsNode repr m)
+findNode nodeR = nonRawNodes >>> Array.find (\hn -> HN.withNode hn (Node.id >>> (_ == nodeR)))
+
+
+ -- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family
+findRawNode :: forall pstate repr m families. Id.NodeR -> Patch pstate families repr m -> Maybe (Raw.Node repr repr m)
+findRawNode nodeR = mapAllNodes identity >>> Array.find (RawNode.id >>> (_ == nodeR))
+
+
 connect
     :: forall m state repr mp families fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
      . Wiring m
@@ -152,6 +163,25 @@ connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) 
       nextLinks = links # Links.track linkWithId
       nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure (nextPatch /\ linkWithId)
+
+
+connectRaw
+    :: forall m state repr mp families stateA stateB
+     . Wiring m
+    => HasFallback repr
+    => Id.OutletR
+    -> Id.InletR
+    -> Raw.Node stateA repr mp
+    -> Raw.Node stateB repr mp
+    -> Patch state families repr mp
+    -> m (Patch state families repr mp /\ Raw.Link)
+connectRaw outletRA inletRB nodeRA nodeRB (Patch name id chState nodes rawNodes links) = do
+    rawLink <- RawNode.connect outletRA inletRB identity nodeRA nodeRB
+    let
+      rawLinkWithId = rawLink # RawLink.setId (Links.nextId links)
+      nextLinks = links # Links.trackRaw rawLinkWithId
+      nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure (nextPatch /\ rawLinkWithId)
 
 
 disconnect
@@ -208,22 +238,32 @@ instance IsSymbol f => LMap (MapNodes repr m) (F f state is os repr m) (Maybe (A
     lmap (MapNodes families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
 
 
-class MapNodesImpl :: Type -> (Type -> Type) -> Families -> Constraint
-class    (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) <= MapNodesImpl repr m families
-instance (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) => MapNodesImpl repr m families
+class StoresNodesAt :: Type -> (Type -> Type) -> Families -> Constraint
+class    (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) <= StoresNodesAt repr m families
+instance (MapDown (MapNodes repr m) families Array (Maybe (Array (HoldsNode repr m)))) => StoresNodesAt repr m families
+
+
+nonRawNodes
+    :: forall x pstate families repr m
+    .  StoresNodesAt repr m families
+    => Patch pstate families repr m
+    -> Array (HoldsNode repr m)
+nonRawNodes (Patch _ _ _ nodes _ _) =
+    Array.concat $ Array.catMaybes (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
 
 
 mapNodes
     :: forall x pstate families repr m
-    .  MapNodesImpl repr m families
+    .  StoresNodesAt repr m families
     => (forall f state is os. IsSymbol f => FromToRepr state repr => Node f state is os repr m -> x)
     -> Patch pstate families repr m
     -> Array x
-mapNodes f (Patch _ _ _ nodes _ _) =
-    Array.concat $
-      (map nodeToX)
-        <$> Array.catMaybes
-              (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
+mapNodes f patch =
+    nodeToX <$> nonRawNodes patch
+    -- Array.concat $
+    --   (map nodeToX)
+    --     <$> Array.catMaybes
+    --           (mapDown (MapNodes nodes) (Proxy :: _ families) :: Array (Maybe (Array (HoldsNode repr m))))
     where nodeToX hn = HN.withNode hn f
 
 

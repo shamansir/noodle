@@ -52,7 +52,8 @@ import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
-import Noodle.Patch (findRawLink, disconnectRaw) as Patch
+import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
+import Noodle.Repr (class HasFallback)
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -149,6 +150,7 @@ onMouseOut infoBox idx _ _ = do
 onPress
     :: forall tk pstate fs repr m
      . Wiring m
+    => HasFallback repr
     => Id.PatchR
     -> Patch pstate fs repr m
     -> NodeBoxKey
@@ -158,16 +160,18 @@ onPress
     -> _
     -> _
     -> BlessedOp (State tk pstate fs repr m) Effect
-onPress patchR curPatch nodeBoxKey idx nodeR inletR _ _ = do
+onPress patchR curPatch nodeTrgBoxKey idx nodeTrgR inletTrgR _ _ = do
         state <- State.get
         case state.lastClickedOutlet of
             Just lco ->
-                if nodeBoxKey /= lco.nodeKey then do
+                if nodeTrgBoxKey /= lco.nodeKey then do
 
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
-                            Map.lookup (NodeKey.rawify nodeBoxKey) state.linksTo
+                            Map.lookup (NodeKey.rawify nodeTrgBoxKey) state.linksTo
                             >>= Map.lookup (Id.InletIndex idx)
+                        outletSrcR = lco.outletId
+                        nodeSrcR = lco.nodeId
 
                     nextPatch /\ isDisconnected <-
                         case mbPrevLink of
@@ -177,7 +181,7 @@ onPress patchR curPatch nodeBoxKey idx nodeR inletR _ _ = do
                                 in
                                     case curPatch # Patch.findRawLink linkId of
                                         Just rawLink -> do
-                                            nextPatch /\ success <- liftEffect (curPatch # Patch.disconnectRaw rawLink)
+                                            nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic, because `LinksState Unit` confronts
                                             -- with `LinkState s` <-> `BlessedOp s m` in `CLink.remove`.
                                             -- And for the moment there is no way in `Blessed` to get rid of `State` in SNode because of many reasons including the way Handlers currently work.
@@ -186,6 +190,14 @@ onPress patchR curPatch nodeBoxKey idx nodeR inletR _ _ = do
                                         Nothing -> pure (curPatch /\ false)
 
                             Nothing -> pure (curPatch /\ false)
+
+                     -- all this could be done in `curPatch` the same, but let's imagine we completely have moved to the next one after the previous operations
+                    case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of
+                        Just rawNodeSrc /\ Just rawNodeTrg -> do
+                            rawLink /\ nextPatch' <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
+                            pure unit
+                        _ -> pure unit
+
 
                     {- REM
                     linkId /\ nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
