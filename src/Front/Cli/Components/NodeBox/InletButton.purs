@@ -45,7 +45,7 @@ import Cli.Style (inletsOutlets) as Style
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
-import Cli.Components.Link (remove) as CLink
+import Cli.Components.Link (create, remove, store, append) as CLink
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -54,6 +54,8 @@ import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
 import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
 import Noodle.Repr (class HasFallback)
+import Noodle.Raw.Link (id) as RawLink
+import Noodle.Network as Network
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -160,8 +162,9 @@ onPress
     -> _
     -> _
     -> BlessedOp (State tk pstate fs repr m) Effect
-onPress patchR curPatch nodeTrgBoxKey idx nodeTrgR inletTrgR _ _ = do
+onPress patchR curPatch nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
         state <- State.get
+        -- FIXME: load current patch from the state
         case state.lastClickedOutlet of
             Just lco ->
                 if nodeTrgBoxKey /= lco.nodeKey then do
@@ -169,55 +172,66 @@ onPress patchR curPatch nodeTrgBoxKey idx nodeTrgR inletTrgR _ _ = do
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
                             Map.lookup (NodeKey.rawify nodeTrgBoxKey) state.linksTo
-                            >>= Map.lookup (Id.InletIndex idx)
+                            >>= Map.lookup (Id.InletIndex inletIdx)
                         outletSrcR = lco.outletId
                         nodeSrcR = lco.nodeId
+                        nodeSrcBoxKey = lco.nodeKey
+                        outletIdx = lco.index
 
                     nextPatch /\ isDisconnected <-
                         case mbPrevLink of
-                            Just linkState ->
+                            Just prevLinkState ->
                                 let
-                                    linkId = _.inPatch $ unwrap linkState
+                                    prevLinkId = _.inPatch $ unwrap prevLinkState
                                 in
-                                    case curPatch # Patch.findRawLink linkId of
+                                    case curPatch # Patch.findRawLink prevLinkId of
                                         Just rawLink -> do
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic, because `LinksState Unit` confronts
                                             -- with `LinkState s` <-> `BlessedOp s m` in `CLink.remove`.
                                             -- And for the moment there is no way in `Blessed` to get rid of `State` in SNode because of many reasons including the way Handlers currently work.
-                                            Key.patchBox >~ CLink.remove (unsafeCoerce linkState)
+                                            Key.patchBox >~ CLink.remove (unsafeCoerce prevLinkState)
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 
                             Nothing -> pure (curPatch /\ false)
 
-                     -- all this could be done in `curPatch` the same, but let's imagine we completely have moved to the next one after the previous operations
                     case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of
                         Just rawNodeSrc /\ Just rawNodeTrg -> do
-                            rawLink /\ nextPatch' <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
-                            pure unit
+                            nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
+
+                            case RawLink.id rawLink of
+                                Just rawLinkId -> do
+                                    (linkState :: (LinkState Unit))
+                                        <- CLink.create
+                                                rawLinkId
+                                                { id : nodeSrcR, key : nodeSrcBoxKey }
+                                                (Id.OutletIndex outletIdx)
+                                                { id : nodeTrgR, key : nodeTrgBoxKey  }
+                                                (Id.InletIndex inletIdx)
+                                                Nothing -- FIXME: it expects last `LinkState` from the patch to use the id propely
+
+                                    State.modify_ $ \s ->
+                                        let
+                                            nextLinksFrom /\ nextLinksTo = CLink.store linkState $ s.linksFrom /\ s.linksTo
+                                        in
+                                            s
+                                                { linksFrom = nextLinksFrom
+                                                , linksTo = nextLinksTo
+                                                }
+
+                                    -- FIXME: see note on `unsafeCoerce` above
+                                    Key.patchBox >~ CLink.append (unsafeCoerce linkState)
+
+                                    State.modify_ $ \s ->
+                                        s { network = Network.withPatch patchR (const nextPatch') s.network }
+
+                                    pure unit
+                                Nothing -> pure unit
                         _ -> pure unit
 
 
                     {- REM
-                    linkId /\ nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
-                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect H.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
-                        (\_ onode outputId -> do
-                            link <- Node.connectByRepr (Proxy :: _ H.WrapRepr) outputId inputId onode inode
-                            let linkId /\ nextPatch' = Patch.registerLink link curPatch'
-                            pure $ linkId /\ nextPatch' /\ Patch.holdLink link
-                        )
-
-                    linkCmp <- Link.create
-                                linkId
-                                { key : lco.nodeKey, id : Id.withNodeId lco.nodeId Id.nodeIdR }
-                                (OutputIndex lco.index)
-                                { key : inodeKey, id : Id.nodeIdR inodeId }
-                                (InputIndex idx)
-
-                    State.modify_ $ Link.store linkCmp
-
-                    Key.patchBox >~ Link.append linkCmp
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'
 
