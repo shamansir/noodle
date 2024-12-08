@@ -63,15 +63,14 @@ component
     :: forall tk pstate fs repr m
      . T.At T.StatusLine repr
     => T.At T.ChannelLabel repr
-    => Patch pstate fs repr m
-    -> OutletButtonKey -> NodeBoxKey -> InfoBoxKey
+    => OutletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.OutletR
     -> Int
     -> Maybe repr
     -> Signal repr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs repr m)
-component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprSignal =
+component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.outlet idx outletR mbRepr
         , Box.top $ Offset.px 0

@@ -76,9 +76,11 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs repr m
-     . T.At T.StatusLine repr
+     . Wiring m
+    => HasFallback repr
+    => T.At T.StatusLine repr
     => T.At T.ChannelLabel repr
-    => Patch pstate fs repr m
+    => Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.InletR
     -> Int
@@ -86,24 +88,23 @@ component
     -> Signal repr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs repr m)
-component curPatch buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR idx mbRepr reprSignal =
+component patchR buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR inletIdx mbRepr reprSignal =
     B.button buttonKey
-        [ Box.content $ T.singleLine $ T.inlet idx inletR mbRepr
+        [ Box.content $ T.singleLine $ T.inlet inletIdx inletR mbRepr
         , Box.top $ Offset.px 0
-        , Box.left $ left idx
+        , Box.left $ left inletIdx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.width width
         , Box.height $ Dimension.px 1
         , Box.tags true
         , Button.mouse true
         , Style.inletsOutlets
-        -- REM , Core.on Button.Press
-        -- REM     $ onPress curPatchId curPatch nextNodeBox idx pdin inode inletId $ Hydra.editorIdOf =<< maybeRepr
-
+        , Core.on Button.Press
+            $ onPress patchR nodeBoxKey inletIdx nodeR inletR -- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx inletR mbRepr reprSignal
+            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
         , Core.on Element.MouseOut
-            $ onMouseOut infoBoxKey idx
+            $ onMouseOut infoBoxKey inletIdx
         ]
         []
 
@@ -154,7 +155,6 @@ onPress
      . Wiring m
     => HasFallback repr
     => Id.PatchR
-    -> Patch pstate fs repr m
     -> NodeBoxKey
     -> Int
     -> Id.NodeR
@@ -162,11 +162,11 @@ onPress
     -> _
     -> _
     -> BlessedOp (State tk pstate fs repr m) Effect
-onPress patchR curPatch nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
+onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
-        case state.lastClickedOutlet of
-            Just lco ->
+        case state.lastClickedOutlet /\ Network.patch patchR state.network of
+            Just lco /\ Just curPatch ->
                 if nodeTrgBoxKey /= lco.nodeKey then do
 
                     let
@@ -177,6 +177,7 @@ onPress patchR curPatch nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                         nodeSrcR = lco.nodeId
                         nodeSrcBoxKey = lco.nodeKey
                         outletIdx = lco.index
+
 
                     nextPatch /\ isDisconnected <-
                         case mbPrevLink of
@@ -251,7 +252,7 @@ onPress patchR curPatch nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
 
                     pure unit
                 else pure unit
-            Nothing -> do
+            _ -> do
                 pure unit
                 {- REM
                 case mbEditorId of

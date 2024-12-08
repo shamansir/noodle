@@ -31,6 +31,7 @@ import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr (class HasFallback, fallback)
+import Noodle.Wiring (class Wiring)
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -48,17 +49,18 @@ widthN count = (InletButton.widthN + 1) * count
 
 component
     :: forall tk pstate fs repr m
-     . HasFallback repr
+     . Wiring m
+    => HasFallback repr
     => T.At T.ChannelLabel repr
     => T.At T.StatusLine repr
-    => Patch pstate fs repr m
+    => Id.PatchR
     -> LastKeys
     -> Id.FamilyR -> Id.NodeR
     -> Signal (InletsValues repr)
     -> OrderedInletsValues repr
     -> Map Id.InletR InletButtonKey
     /\ C.Blessed (State tk pstate fs repr m)
-component curPatch keys familyR nodeR iReprSignal inlets =
+component patchR keys familyR nodeR iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
         [ Box.width $ width $ Map.size inlets -- * InletButton.widthN
@@ -94,7 +96,7 @@ component curPatch keys familyR nodeR iReprSignal inlets =
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
             (inletR /\ buttonKey)
             /\
-            ( InletButton.component curPatch buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
+            ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
             $ Signal.filterMap (Map.lookup inletR) (fallback :: repr)
             $ iReprSignal
             )
