@@ -178,7 +178,10 @@ onPress patchR curPatch nodeBoxKey idx nodeR inletR _ _ = do
                                     case curPatch # Patch.findRawLink linkId of
                                         Just rawLink -> do
                                             nextPatch /\ success <- liftEffect (curPatch # Patch.disconnectRaw rawLink)
-                                            Key.patchBox >~ CLink.remove (unsafeCoerce linkState) -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic
+                                            -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic, because `LinksState Unit` confronts
+                                            -- with `LinkState s` <-> `BlessedOp s m` in `CLink.remove`.
+                                            -- And for the moment there is no way in `Blessed` to get rid of `State` in SNode because of many reasons including the way Handlers currently work.
+                                            Key.patchBox >~ CLink.remove (unsafeCoerce linkState)
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 

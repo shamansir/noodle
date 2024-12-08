@@ -3,6 +3,7 @@ module Noodle.Raw.Node where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (new, read, write) as Ref
 
 import Control.Monad.Rec.Class (class MonadRec)
 
@@ -21,6 +22,8 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Generic.Updates (toRecord) as Updates
+import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
+import Noodle.Repr (fallback) as Repr
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -31,7 +34,8 @@ import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
-import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
+import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
 
 
 data Node state (repr :: Type) (m :: Type -> Type)
@@ -224,6 +228,55 @@ sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 
 
 -- TODO:
+
+
+{- Connecting -}
+
+
+connect
+    :: forall m stateA stateB reprA reprB mp
+     . Wiring m
+    => HasFallback reprA
+    => HasFallback reprB
+    => Id.OutletR
+    -> Id.InletR
+    -> (reprA -> reprB)
+    -> Node stateA reprA mp
+    -> Node stateB reprB mp
+    -> m Raw.Link
+connect
+    outletA
+    inletB
+    convertRepr
+    nodeA@(Node nodeAId _ _ _ _)
+    nodeB@(Node nodeBId _ _ _ _) =
+    do
+        flagRef <- liftEffect $ Ref.new true
+        let
+            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
+                flagOn <- liftEffect $ Ref.read flagRef
+                if flagOn then do
+                  sendIn inletB reprB nodeB
+                --   run nodeB
+                else pure unit
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> fromMaybe Repr.fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe reprA) <- atOutlet outletA nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe Repr.fallback mbReprA
+        pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
+
+
+disconnect
+    :: forall m stateA stateB reprA reprB mp
+     . MonadEffect m
+    => Raw.Link
+    -> Node stateA reprA mp
+    -> Node stateB reprB mp
+    -> m Boolean
+disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
+    if (RawLink.fromNode link == nodeAId) && (RawLink.toNode link == nodeBId) then
+        liftEffect (RawLink.cancel link) >>= (const $ pure true)
+    else pure false
 
 
 {- Convert -}

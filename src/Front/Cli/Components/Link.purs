@@ -285,7 +285,9 @@ removeAllOf nk pnk linksFrom linksTo = do
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksTo) $ flip remove pnk
 
 
--- toUnit :: forall s. LinkState s -> LinkState Unit
--- toUnit (LinkState s) = LinkState $ s
---     { blessed = { a : Blessed.imapState ?wh ?wh ?wh, b : ?wh, c : ?wh  }
---     }
+{-
+toUnit :: forall s. LinkState s -> LinkState Unit
+toUnit (LinkState s) = LinkState $ s
+    { blessed = { a : Blessed.imapState ?wh ?wh ?wh, b : ?wh, c : ?wh  }
+    }
+-}
