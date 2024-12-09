@@ -7,7 +7,7 @@ import Effect.Class (liftEffect)
 
 import Effect.Console (log) as Console
 
-import Control.Monad.State (get, modify_) as State
+import Control.Monad.State (get, modify) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
@@ -33,7 +33,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.State (State)
--- import Cli.State (patchIdFromIndex) as State
+import Cli.State (spawnPatch, registerPatch, lastPatchIndex) as State
 import Cli.Components.PatchesListbar as PatchesListbar
 import Cli.Style as Style
 
@@ -55,21 +55,11 @@ component =
         , Core.on Button.Press
             \_ _ -> do
                 state <- State.get
-                let
-                    patchesCount = state.network # Network.patchesCount
-                    nextPatchIndex = patchesCount + 1
-                nextPatch <- Blessed.lift' $ Patch.make ("Patch " <> show nextPatchIndex) state.initPatchesFrom
-                let
-                    nextNW = state.network # Network.addPatch nextPatch
-                State.modify_
-                    (_
-                        { currentPatch = Just { index : nextPatchIndex, id : Patch.id nextPatch }
-                        , patchIdToIndex = state.patchIdToIndex # Map.insert (Patch.id nextPatch) nextPatchIndex
-                        , network = nextNW
-                        }
-                    )
-                PatchesListbar.updatePatches $ Network.patches nextNW -- TODO: load patches from state in PatchesBar, just call some refresh/update
-                PatchesListbar.selectPatch nextPatchIndex
+                newPatch <- Blessed.lift' $ State.spawnPatch state
+                nextState <- State.modify $ State.registerPatch newPatch
+
+                PatchesListbar.updatePatches $ Network.patches nextState.network -- TODO: load patches from state in PatchesBar, just call some refresh/update
+                PatchesListbar.selectPatch $ State.lastPatchIndex nextState
                 -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
                 Key.mainScreen >~ Screen.render
         {-

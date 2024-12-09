@@ -17,7 +17,7 @@ import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
-import Noodle.Network (init, patch, addPatch, withPatch, toolkit) as Network
+import Noodle.Network (init, patch, addPatch, withPatch, patchesCount, toolkit) as Network
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
@@ -171,7 +171,37 @@ withPatch :: forall tk s fs r m. Id.PatchR -> (Patch s fs r m -> Patch s fs r m)
 withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
 
 
+replacePatch :: forall tk s fs r m. Id.PatchR -> Patch s fs r m -> State tk s fs r m -> State tk s fs r m
+replacePatch patchR = withPatch patchR <<< const
+
+
 withCurrentPatch :: forall tk s fs r m. (Patch s fs r m -> Patch s fs r m) -> State tk s fs r m -> State tk s fs r m
 withCurrentPatch f s = case s.currentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s
+
+
+spawnPatch :: forall tk s fs r mp m. MonadEffect m => State tk s fs r mp -> m (Patch s fs r mp)
+spawnPatch s = do
+    let
+        patchesCount = s.network # Network.patchesCount
+        nextPatchIndex = patchesCount + 1
+    Patch.make ("Patch " <> show nextPatchIndex) s.initPatchesFrom
+
+
+registerPatch :: forall tk s fs r m. Patch s fs r m -> State tk s fs r m -> State tk s fs r m
+registerPatch newPatch s =
+    let
+        patchesCount = s.network # Network.patchesCount
+        nextPatchIndex = patchesCount + 1
+        nextNW = s.network # Network.addPatch newPatch
+    in
+        s
+            { currentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch }
+            , patchIdToIndex = s.patchIdToIndex # Map.insert (Patch.id newPatch) nextPatchIndex
+            , network = nextNW
+            }
+
+
+lastPatchIndex :: forall tk s fs r m. State tk s fs r m -> Int
+lastPatchIndex s = Network.patchesCount s.network

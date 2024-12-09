@@ -40,7 +40,8 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 import Cli.Bounds (collect, inletPos) as Bounds
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, mainScreen)
 import Cli.Keys (patchBox) as Key
-import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
+import Cli.State (State)
+import Cli.State (patch, replacePatch) as State
 import Cli.Style (inletsOutlets) as Style
 
 import Cli.Components.NodeBox.InfoBox as IB
@@ -166,7 +167,7 @@ onPress
 onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
-        case state.lastClickedOutlet /\ Network.patch patchR state.network of
+        case state.lastClickedOutlet /\ State.patch patchR state of
             Just lco /\ Just curPatch ->
                 if nodeTrgBoxKey /= lco.nodeKey then do
 
@@ -230,8 +231,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                     -- FIXME: see note on `unsafeCoerce` above
                                     Key.patchBox >~ CLink.append (unsafeCoerce linkState)
 
-                                    State.modify_ $ \s ->
-                                        s { network = Network.withPatch patchR (const nextPatch') s.network }
+                                    State.modify_ $ State.replacePatch patchR nextPatch'
 
                                     pure unit
                                 Nothing -> pure unit
