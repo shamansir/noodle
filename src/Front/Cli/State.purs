@@ -40,7 +40,7 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     , initPatchesFrom :: s
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
-    , lastShift :: { x :: Int, y :: Int }
+    , lastShift :: { left :: Int, top :: Int }
     , lastClickedOutlet :: Maybe OutletInfo
     , lastLink :: Maybe (LinkState Unit)
     , linksFrom :: LinksFrom Unit
@@ -91,7 +91,7 @@ init state toolkit = do
         , currentPatch : Just { index : 0, id : Patch.id firstPatch }
         , initPatchesFrom : state
         , wsServer : Nothing
-        , lastShift : { x : 0, y : 0 }
+        , lastShift : { left : 0, top : 0 }
         , lastKeys :
             { nodeBox : Key.nodeBox
             , inletsBox : Key.inletsBox

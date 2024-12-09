@@ -131,36 +131,12 @@ widthN familyName isCount osCount =
 -- widthN :: String -> Int -> Int -> Dimension
 
 
-autoPos :: forall tk pstate fs repr m. BlessedOpM (State tk pstate fs repr m) m (Int /\ Int)
-autoPos = do
-    state <- State.get
+nextPos :: { left :: Int, top :: Int } -> { left :: Int, top :: Int }
+nextPos { left, top } =
+    { left : 16 + left + 2
+    , top : top + 2
+    }
 
-    let topN = state.lastShift.x + 2
-    let leftN = 16 + state.lastShift.y + 2
-    pure (leftN /\ topN)
-
-
--- TODO: fromRawNodeAuto
-
-
-fromNodeAuto
-    :: forall tk fs pstate f nstate is os repr m
-    .  Wiring m
-    => IsSymbol f
-    => FromRepr repr nstate => ToRepr nstate repr
-    => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => Noodle.Patch pstate fs repr m
-    -> Id.Family f
-    -> Noodle.Node f nstate is os repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAuto curPatch family node = do
-    pos <- autoPos
-    fromNodeAt pos curPatch family node
-
-
--- TODO: fromRawNodeAuto
 
 _component
     :: forall tk fs nstate pstate repr m
@@ -168,8 +144,8 @@ _component
     => HasFallback repr
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
-    => Int /\ Int
-    -> Noodle.Patch pstate fs repr m
+    => { left :: Int, top :: Int }
+    -> Id.PatchR
     -> Id.FamilyR
     -> Raw.Node nstate repr m
     -> State.LastKeys
@@ -177,8 +153,8 @@ _component
     -> BlessedOp nstate m
     -> BlessedOpM (State tk pstate fs repr m) m _
 _component
-    (leftN /\ topN)
-    curPatch
+    pos
+    patchR
     familyR
     rawNode
     keys
@@ -190,8 +166,8 @@ _component
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
     _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
 
-    let top  = Offset.px topN
-    let left = Offset.px leftN
+    let top  = Offset.px pos.top
+    let left = Offset.px pos.left
 
     curChanges <- liftEffect $ RawNode.curChanges rawNode
 
@@ -236,7 +212,7 @@ _component
                     Just { height } -> height
                     Nothing -> 3
         inletsKeys /\ inletsBoxN =
-            InletsBox.component (Patch.id curPatch) keys familyR nodeR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
+            InletsBox.component patchR keys familyR nodeR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
@@ -297,16 +273,16 @@ _component
 
     let
         location =
-            { left : leftN
-            , top : topN
+            { left : pos.left
+            , top : pos.top
             , width : boxWidth
             , height : boxHeight
             }
 
     State.modify_ (\s -> s
-        { lastShift =
-            { x : s.lastShift.x + 1
-            , y : s.lastShift.y + 1
+        { lastShift = -- FIXME: should record last location
+            { left : s.lastShift.left + 1
+            , top : s.lastShift.top + 1
             }
         , nodeKeysMap = Map.insert nodeR keys.nodeBox s.nodeKeysMap
         , locations   = Map.insert nodeR location s.locations
@@ -320,19 +296,19 @@ _component
 
 
 
-fromRawNodeAt
+componentRaw
     :: forall tk fs nstate pstate repr m
      . Wiring m
     => HasFallback repr
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
-    => Int /\ Int
-    -> Noodle.Patch pstate fs repr m
+    => { left :: Int, top :: Int }
+    -> Id.PatchR
     -> Id.FamilyR
     -> Raw.Node nstate repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromRawNodeAt pos curPatch familyR rawNode = do
-    --liftEffect $ Node.run node -- just Node.run ??
+componentRaw pos curPatch familyR rawNode = do
+    -- REM liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
     let
         nextKeys = State.nextKeys state.lastKeys
@@ -341,7 +317,7 @@ fromRawNodeAt pos curPatch familyR rawNode = do
     _component pos curPatch familyR rawNode nextKeys mbSize nodeOp
 
 
-fromNodeAt
+component
     :: forall tk fs pstate f nstate is os repr m
     .  Wiring m
     => IsSymbol f
@@ -349,84 +325,13 @@ fromNodeAt
     => RegisteredFamily (F f nstate is os repr m) fs
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
-    => Int /\ Int
-    -> Noodle.Patch pstate fs repr m
+    => { left :: Int, top :: Int }
+    -> Id.PatchR
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-fromNodeAt pos curPatch family node = do
-    state <- State.get
-    let
-        familyR = Id.familyR family
-        rawNode = Node.toRaw node
-        nextKeys = State.nextKeys state.lastKeys
-        mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
-        nodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
-    _component pos curPatch familyR rawNode nextKeys mbSize nodeOp
-
-
-fromFamilyAt
-    :: forall tk fs pstate f nstate is os repr m
-     . Wiring m
-    => IsSymbol f
-    => FromRepr repr nstate => ToRepr nstate repr
-    => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => Int /\ Int
-    -> Noodle.Patch pstate fs repr m
-    -> Id.Family f
-    -- REM -> Raw.Family repr m -- TODO: implement Raw version as well
-    -> Toolkit tk fs repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
-fromFamilyAt pos curPatch family tk = do
-    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
-    {- REM
-    let (mbState :: Maybe pstate) = fromGlobal $ Stateful.get curPatch
-    node' <- liftEffect $ case mbState of
-        Just state -> Stateful.setM state node
-        Nothing -> pure node
-    fromNodeAt pos curPatchId curPatch family node'
-     -}
-    -- TODO: update node in the patch?
-    fromNodeAt pos curPatch family node
-
-
-fromFamilyAuto
-    :: forall fs tk f nstate pstate is os repr m
-     . Wiring m
-    => IsSymbol f
-    => FromRepr repr nstate => ToRepr nstate repr
-    => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => Noodle.Patch pstate fs repr m
-    -> Id.Family f
-    -> Toolkit tk fs repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
-fromFamilyAuto curPatch family tk = do
-    pos <- autoPos
-    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family tk
-    fromNodeAt pos curPatch family node
-
-
-fromRawFamilyAuto
-    :: forall tk fs pstate repr m
-    .  Wiring m
-    => HasFallback repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => Noodle.Patch pstate fs repr m
-    -> Raw.Family repr repr m
-    -> Toolkit tk fs repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
-fromRawFamilyAuto curPatch rawFamily tk = do
-    pos <- autoPos
-    let familyR = RawFamily.id rawFamily
-    (mbNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR tk
-    case mbNode of
-        Just node -> fromRawNodeAt pos curPatch familyR node
-        Nothing -> pure unit
+component pos curPatch family =
+    componentRaw pos curPatch (Id.familyR family) <<< Node.toRaw
 
 
 renderUpdate

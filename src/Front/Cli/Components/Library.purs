@@ -4,9 +4,10 @@ module Cli.Components.Library where
 import Control.Monad.State as State
 
 import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Effect.Console as Console
 
@@ -32,6 +33,7 @@ import Blessed.Core.EndStyle as ES
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
+import Blessed.Internal.BlessedOp (lift') as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -43,14 +45,19 @@ import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style (library, libraryBorder) as Style
 
-import Noodle.Id (FamilyR) as Id
-import Noodle.Repr (class HasFallback)
+import Noodle.Id (PatchR, FamilyR, Family) as Id
+import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
 import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
+import Noodle.Toolkit.Family (Family) as Toolkit
+import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Ui.Cli.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Node (Node) as Noodle
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Toolkit.Family (Family) as Raw
 
 import Cli.Components.NodeBox as NodeBox
 import Cli.Class.CliFriendly (class CliFriendly)
@@ -108,53 +115,68 @@ onFamilySelect
     => BlessedOpM (State tk pstate fs repr m) m Unit
 onFamilySelect =
     do
-        -- lastShiftX <- _.lastShiftX <$> State.get
-        -- lastShiftY <- _.lastShiftY <$> State.get
-        -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
         state <- State.get
 
-        {- -}
-        let mbCurrentPatchId = _.id <$> state.currentPatch
-        let mbCurrentPatch = mbCurrentPatchId >>= \id -> Network.patch id state.network
-        {- -}
-        -- patchesBar >~ ListBar.addItemH ?wh [] ?wh
-
-        -- Hydra.withFamily
-
-        -- let top = Offset.px $ state.lastShiftX + 2
-        -- let left = Offset.px $ 16 + state.lastShiftY + 2
-        -- let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-        -- let nextInputsBox = NodeKey.next state.lastInputsBoxKey
-        -- let nextOutputsBox = NodeKey.next state.lastOutputsBoxKey
-
-        {- -}
+        let mbCurrentPatchR = _.id <$> state.currentPatch
         selected <- List.selected ~< Key.library
         let toolkit = Network.toolkit state.network
         let families = Toolkit.families toolkit
         let mbSelectedFamily = families !! selected
-        let toolkit = Network.toolkit state.network
 
-        {-
-        let familyStr = fromMaybe "??" (Id.reflect' <$> mbSelectedFamily)
-
-        Key.patchesBar >~ ListBar.setItems
-            [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
-            , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
-            , familyStr /\ [] /\ \_ _ -> do liftEffect $ Console.log familyStr
-            ]
-        -}
-
-        -- mbNextNode <-
-        _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
-            Just (familyR /\ curPatch /\ curPatchId) ->
-                let
-                    createNodeBox rawFamily = NodeBox.fromRawFamilyAuto curPatch rawFamily toolkit
-                in
-                case Toolkit.withAnyFamily createNodeBox familyR toolkit of
+        _ <- case (/\) <$> mbSelectedFamily <*> mbCurrentPatchR of
+            Just (familyR /\ curPatchR) ->
+                case Toolkit.withAnyFamily
+                        (spawnAndRenderRaw
+                            toolkit
+                            curPatchR
+                            familyR
+                            $ NodeBox.nextPos state.lastShift)
+                        familyR
+                        toolkit
+                    of
                     Just op -> op
                     Nothing -> pure unit
             Nothing -> pure unit
-        -- liftEffect $ Console.log $ show selected
-        {- -}
 
         pure unit
+
+
+spawnAndRenderRaw
+    :: forall  tk pstate fs repr m
+     . Wiring m
+    => Toolkit.HoldsFamilies repr m fs
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => CliFriendly tk fs repr m
+    => HasFallback repr
+    => Toolkit tk fs repr m
+    -> Id.PatchR
+    -> Id.FamilyR
+    -> { left :: Int, top :: Int }
+    -> Raw.Family repr repr m
+    -> BlessedOpM (State tk pstate fs repr m) m Unit
+spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
+    (mbRawNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
+    -- TODO: put node instance in the patch
+    case mbRawNode of
+        Just rawNode -> NodeBox.componentRaw nextPos patchR familyR rawNode
+        Nothing -> pure unit
+
+
+spawnAndRender
+    :: forall tk fs pstate f nstate is os repr m
+     . Wiring m
+    => IsSymbol f
+    => FromRepr repr nstate => ToRepr nstate repr
+    => RegisteredFamily (F f nstate is os repr m) fs
+    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => CliFriendly tk fs repr m
+    => Toolkit tk fs repr m
+    -> Id.PatchR
+    -> Id.Family f
+    -> { left :: Int, top :: Int }
+    -> Toolkit.Family f nstate is os repr m
+    -> BlessedOpM (State tk pstate fs repr m) m _
+spawnAndRender toolkit patchR family nextPos  _ = do
+    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
+    -- TODO: put node instance in the patch
+    NodeBox.component nextPos patchR family node

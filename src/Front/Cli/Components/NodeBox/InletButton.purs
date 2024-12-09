@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -169,6 +170,8 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
             Just lco /\ Just curPatch ->
                 if nodeTrgBoxKey /= lco.nodeKey then do
 
+                    liftEffect $ Console.log "inlet press"
+
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
                             Map.lookup (NodeKey.rawify nodeTrgBoxKey) state.linksTo
@@ -187,6 +190,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                 in
                                     case curPatch # Patch.findRawLink prevLinkId of
                                         Just rawLink -> do
+                                            liftEffect $ Console.log "disconnect previous"
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic, because `LinksState Unit` confronts
                                             -- with `LinkState s` <-> `BlessedOp s m` in `CLink.remove`.
@@ -199,10 +203,12 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
 
                     case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of
                         Just rawNodeSrc /\ Just rawNodeTrg -> do
+                            liftEffect $ Console.log "both nodes were found"
                             nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
 
                             case RawLink.id rawLink of
                                 Just rawLinkId -> do
+                                    liftEffect $ Console.log "RawLink ID is set"
                                     (linkState :: (LinkState Unit))
                                         <- CLink.create
                                                 rawLinkId

@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
 
 import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
@@ -136,6 +137,7 @@ onMouseOut infoBox idx _ _ = do
 
 onPress :: forall tk pstate fs repr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
 onPress idx outletR nodeR nodeBoxKey _ _ = do
+    liftEffect $ Console.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey
     let outletPos = Bounds.outletPos nodeBounds idx
     -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
