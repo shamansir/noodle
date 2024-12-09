@@ -79,9 +79,9 @@ component patchR keys familyR nodeR iReprSignal inlets =
         , Style.inletsOutlets
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "input"
+                CC.log "input"
                 inputSelected <- List.selected ~< nextInputsBox
-                liftEffect $ Console.log $ show inputSelected
+                CC.log $ show inputSelected
         -}
         ]
         inletsButtons

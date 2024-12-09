@@ -37,6 +37,7 @@ import Cli.Style (inletsOutlets) as Style
 
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
+import Cli.Components.Console as CC
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -119,7 +120,7 @@ onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = d
             -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
             -- REM OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
-    --liftEffect $ Console.log $ "over" <> show idx
+    --CC.log $ "over" <> show idx
 
 
 onMouseOut :: forall tk pstate fs repr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
@@ -132,12 +133,12 @@ onMouseOut infoBox idx _ _ = do
         Just _ -> pure unit
         Nothing -> pure unit -- REM OI.hide
     mainScreen >~ Screen.render
-    --liftEffect $ Console.log $ "out" <> show idx
+    --CC.log $ "out" <> show idx
 
 
 onPress :: forall tk pstate fs repr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
 onPress idx outletR nodeR nodeBoxKey _ _ = do
-    liftEffect $ Console.log "outlet press"
+    CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey
     let outletPos = Bounds.outletPos nodeBounds idx
     -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }

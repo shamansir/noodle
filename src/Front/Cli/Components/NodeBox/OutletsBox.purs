@@ -80,9 +80,9 @@ component offsetY keys familyR nodeR oReprSignal outlets =
         , Style.inletsOutlets
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "input"
+                CC.log "input"
                 inputSelected <- List.selected ~< nextInputsBox
-                liftEffect $ Console.log $ show inputSelected
+                CC.log $ show inputSelected
         -}
         ]
         outletsButtons

@@ -65,10 +65,10 @@ component =
         {-
         , Core.on Element.MouseOver
             \_ _ -> do
-                liftEffect $ Console.log "over"
+                CC.log "over"
         , Core.on Element.MouseOut
             \_ _ -> do
-                liftEffect $ Console.log "out"
+                CC.log "out"
         -}
         ]
         []

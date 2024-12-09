@@ -67,9 +67,9 @@ component =
         , Style.statusLine
         {- , Core.on ListBar.Select
             \_ _ -> do
-                liftEffect $ Console.log "input"
+                CC.log "input"
                 inputSelected <- List.selected ~< nextInputsBox
-                liftEffect $ Console.log $ show inputSelected
+                CC.log $ show inputSelected
         -}
         ]
         [ ]

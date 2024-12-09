@@ -86,7 +86,7 @@ component toolkit =
             \_ evt -> do
                 -- TODO show family info in status line & documentation
                 selected <- List.selected ~< Key.library
-                liftEffect $ Console.log $ show selected
+                CC.log $ show selected
         -}
         , Core.on List.Select
             \_ _ -> onFamilySelect

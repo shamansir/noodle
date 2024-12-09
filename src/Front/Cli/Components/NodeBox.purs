@@ -343,7 +343,7 @@ renderUpdate
     -> Raw.NodeChanges nstate repr
     -> BlessedOp state m
 renderUpdate _ inletsKeysMap outletsKeysMap update = do
-    -- liftEffect $ Console.log $ show outletsReprs
+    -- CC.log $ show outletsReprs
     _ <- traverseWithIndex updateInlet update.inlets
     _ <- traverseWithIndex updateOutlet update.outlets
     Key.mainScreen >~ Screen.render
@@ -440,7 +440,7 @@ onMouseOver ptk familyR _ _ = do
     FI.familyStatus family
      -}
     Key.mainScreen >~ Screen.render
-    --liftEffect $ Console.log $ "over" <> show idx
+    --CC.log $ "over" <> show idx
 
 
 onMouseOut :: forall tk fs pstate repr m. _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
