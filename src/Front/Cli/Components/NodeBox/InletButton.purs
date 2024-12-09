@@ -209,15 +209,15 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
 
                             case RawLink.id rawLink of
                                 Just rawLinkId -> do
-                                    liftEffect $ Console.log "RawLink ID is set"
-                                    (linkState :: (LinkState Unit))
+                                    liftEffect $ Console.log $ "RawLink ID is set: " <> show rawLinkId
+                                    (linkState :: LinkState Unit)
                                         <- CLink.create
                                                 rawLinkId
                                                 { id : nodeSrcR, key : nodeSrcBoxKey }
                                                 (Id.OutletIndex outletIdx)
                                                 { id : nodeTrgR, key : nodeTrgBoxKey  }
                                                 (Id.InletIndex inletIdx)
-                                                Nothing -- FIXME: it expects last `LinkState` from the patch to use the id propely
+                                                state.lastLink
 
                                     State.modify_ $ \s ->
                                         let
@@ -226,6 +226,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                             s
                                                 { linksFrom = nextLinksFrom
                                                 , linksTo = nextLinksTo
+                                                , lastLink = Just linkState
                                                 }
 
                                     -- FIXME: see note on `unsafeCoerce` above
@@ -293,4 +294,6 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                 -}
         State.modify_
             (_ { lastClickedOutlet = Nothing })
+
+        liftEffect $ Console.log "render screen"
         mainScreen >~ Screen.render -- FIXME: only re-render patchBox

@@ -122,6 +122,7 @@ newtype Link = Link Int
 
 derive instance Eq Link
 derive instance Ord Link
+derive newtype instance Show Link
 
 
 type PatchName = String
@@ -132,6 +133,7 @@ newtype PatchR = PatchR { hash :: UniqueHash }
 
 derive instance Eq PatchR
 derive instance Ord PatchR
+instance Show PatchR where show (PatchR { hash }) = "<Patch::" <> show hash <> ">"
 
 
 patchR :: UniqueHash -> PatchR
