@@ -307,14 +307,14 @@ componentRaw
     -> Id.FamilyR
     -> Raw.Node nstate repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-componentRaw pos curPatch familyR rawNode = do
+componentRaw pos curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
     let
         nextKeys = State.nextKeys state.lastKeys
         mbSize = cliSizeRaw   (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
         nodeOp = renderCliRaw (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
-    _component pos curPatch familyR rawNode nextKeys mbSize nodeOp
+    _component pos curPatchR familyR rawNode nextKeys mbSize nodeOp
 
 
 component
@@ -330,8 +330,8 @@ component
     -> Id.Family f
     -> Noodle.Node f nstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
-component pos curPatch family =
-    componentRaw pos curPatch (Id.familyR family) <<< Node.toRaw
+component pos curPatchR family =
+    componentRaw pos curPatchR (Id.familyR family) <<< Node.toRaw
 
 
 renderUpdate

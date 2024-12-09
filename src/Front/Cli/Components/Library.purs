@@ -1,61 +1,52 @@
 module Cli.Components.Library where
 
 
-import Control.Monad.State as State
+import Control.Monad.State (get, modify_) as State
 
 import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-
-import Effect.Console as Console
 
 import Data.Maybe (Maybe(..))
-import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Array ((!!))
 
-import Data.Text.Format (fgc, s) as T
 import Data.Text.Output.Blessed (singleLine) as T
 
-import Data.Argonaut.Decode (decodeJson)
 
 import Blessed as B
 import Blessed ((>~), (~<))
 
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Border as Border
-import Blessed.Core.ListStyle as LStyle
-import Blessed.Core.EndStyle as ES
 
 import Blessed.Internal.Core as Core
-import Blessed.Internal.NodeKey as NodeKey
-import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
+import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (lift') as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
-import Blessed.UI.Lists.List.Option (items, keys, mouse, style) as List
+import Blessed.UI.Lists.List.Option (items, keys, mouse) as List
 import Blessed.UI.Lists.List.Property (selected) as List
 
 import Cli.Keys as Key
 import Cli.State (State)
+import Cli.State (withCurrentPatch) as State
 import Cli.Style (library, libraryBorder) as Style
 
 import Noodle.Id (PatchR, FamilyR, Family) as Id
-import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
-import Noodle.Network as Network
-import Noodle.Toolkit as Toolkit
+import Noodle.Repr (class HasFallback, class FromToRepr)
+import Noodle.Network (toolkit) as Network
+import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily) as Toolkit
 import Noodle.Toolkit.Family (Family) as Toolkit
-import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Ui.Cli.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Node (Node) as Noodle
+import Noodle.Patch (registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 
@@ -68,7 +59,8 @@ import Prelude
 
 component
     :: forall tk p fs repr
-     . Toolkit.HoldsFamilies repr Effect fs
+     . FromToRepr repr repr
+    => Toolkit.HoldsFamilies repr Effect fs
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr Effect
     => HasFallback repr
@@ -108,11 +100,12 @@ component toolkit =
 onFamilySelect
     :: forall tk pstate fs repr m
      . Wiring m
+    => FromToRepr repr repr
     => Toolkit.HoldsFamilies repr m fs
     => HasFallback repr
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
-    => BlessedOpM (State tk pstate fs repr m) m Unit
+    => BlessedOp (State tk pstate fs repr m) m
 onFamilySelect =
     do
         state <- State.get
@@ -144,6 +137,7 @@ onFamilySelect =
 spawnAndRenderRaw
     :: forall  tk pstate fs repr m
      . Wiring m
+    => FromToRepr repr repr
     => Toolkit.HoldsFamilies repr m fs
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
@@ -153,12 +147,14 @@ spawnAndRenderRaw
     -> Id.FamilyR
     -> { left :: Int, top :: Int }
     -> Raw.Family repr repr m
-    -> BlessedOpM (State tk pstate fs repr m) m Unit
+    -> BlessedOp (State tk pstate fs repr m) m
 spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
     (mbRawNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
-    -- TODO: put node instance in the patch
+
     case mbRawNode of
-        Just rawNode -> NodeBox.componentRaw nextPos patchR familyR rawNode
+        Just rawNode -> do
+            State.modify_ $ State.withCurrentPatch $ Patch.registerRawNode rawNode
+            NodeBox.componentRaw nextPos patchR familyR rawNode
         Nothing -> pure unit
 
 
@@ -166,7 +162,7 @@ spawnAndRender
     :: forall tk fs pstate f nstate is os repr m
      . Wiring m
     => IsSymbol f
-    => FromRepr repr nstate => ToRepr nstate repr
+    => FromToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr m
@@ -175,7 +171,7 @@ spawnAndRender
     -> Id.Family f
     -> { left :: Int, top :: Int }
     -> Toolkit.Family f nstate is os repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
+    -> BlessedOp (State tk pstate fs repr m) m
 spawnAndRender toolkit patchR family nextPos  _ = do
     (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
     -- TODO: put node instance in the patch

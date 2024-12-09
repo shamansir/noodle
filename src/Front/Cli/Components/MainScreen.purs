@@ -22,8 +22,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Noodle.Id as Id
 import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
-import Noodle.Wiring (class Wiring)
-import Noodle.Repr (class HasFallback)
+import Noodle.Repr (class FromToRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Tagging.At as T
@@ -60,7 +59,7 @@ import Cli.Components.StatusLine as StatusLine
 -- TODO: take toolkit here
 component
     :: forall tk p fs repr
-    .  HasFallback repr
+    .  FromToRepr repr repr
     => Toolkit.HoldsFamilies repr Effect fs
     => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
     => CliFriendly tk fs repr Effect

@@ -1,6 +1,7 @@
 module Noodle.Repr
     ( Repr(..)
     , ensureTo, ensureFrom
+    , fromEq, toEq
     , class HasFallback, fallback, fallbackByRepr, fallbackBy
     , class ToRepr, toRepr
     , class FromRepr, fromRepr
@@ -21,6 +22,7 @@ module Noodle.Repr
 import Prelude
 
 import Type.Proxy (Proxy(..))
+import Type.Equality (class TypeEquals, from, to)
 
 import Data.Map (Map)
 import Data.Map (lookup, insert, empty) as Map
@@ -90,24 +92,32 @@ class (FromRepr repr a, ToRepr a repr) <= FromToRepr a repr
 instance (FromRepr repr a, ToRepr a repr) => FromToRepr a repr
 
 
--- instance HasFallback x => ToRepr x x where toRepr = wrap >>> Just
--- instance HasFallback x => FromRepr x x where fromRepr = unwrap >>> Just
+-- instance (HasFallback x, TypeEquals x x) => ToRepr x x where toRepr = wrap >>> Just
+-- instance  (HasFallback x, TypeEquals x x) => FromRepr x x where fromRepr = unwrap >>> Just
 --instance Monoid a => HasFallback a where fallback = mempty
 
 
 instance HasFallback Unit   where fallback = unit
 instance HasFallback Int    where fallback = 0
 instance HasFallback String where fallback = ""
-instance ToRepr Unit Unit     where toRepr = wrap >>> Just
-instance ToRepr Int Int       where toRepr = wrap >>> Just
-instance ToRepr String String where toRepr = wrap >>> Just
-instance FromRepr Unit Unit     where fromRepr = unwrap >>> Just
-instance FromRepr Int Int       where fromRepr = unwrap >>> Just
-instance FromRepr String String where fromRepr = unwrap >>> Just
+instance ToRepr Unit Unit     where toRepr = toEq
+instance ToRepr Int Int       where toRepr = toEq
+instance ToRepr String String where toRepr = toEq
+instance FromRepr Unit Unit     where fromRepr = fromEq
+instance FromRepr Int Int       where fromRepr = fromEq
+instance FromRepr String String where fromRepr = fromEq
 
 
 -- wrap :: forall a. a -> Repr a
 -- wrap = Repr
+
+fromEq :: forall a. Repr a -> Maybe a
+fromEq = unwrap >>> to >>> Just
+
+
+toEq :: forall a. a -> Maybe (Repr a)
+toEq = wrap >>> to >>> Just
+
 
 wrap :: forall repr. repr -> Repr repr
 wrap = Repr

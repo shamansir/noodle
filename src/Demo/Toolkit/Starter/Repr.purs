@@ -36,6 +36,7 @@ import Noodle.Repr
     ( class HasFallback, fallback
     , wrap, unwrap
     , class ToRepr, class FromRepr
+    , fromEq, toEq
     )
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen
@@ -233,8 +234,8 @@ instance HasFallback StarterRepr where
     fallback = VNone
 
 
-instance FromRepr StarterRepr StarterRepr where fromRepr = unwrap >>> Just
-instance ToRepr   StarterRepr StarterRepr where toRepr = Just <<< wrap
+instance FromRepr StarterRepr StarterRepr where fromRepr = fromEq
+instance ToRepr   StarterRepr StarterRepr where toRepr = toEq
 
 
 instance ToRepr Any     StarterRepr where toRepr = Just <<< wrap <<< case _ of Any pr -> pr

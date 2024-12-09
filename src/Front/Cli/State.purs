@@ -17,11 +17,14 @@ import Web.Socket.Server as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
-import Noodle.Network (init, addPatch, toolkit) as Network
+import Noodle.Network (init, patch, addPatch, withPatch, toolkit) as Network
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
-import Noodle.Patch (make, id) as Patch
+import Noodle.Patch (Patch)
+import Noodle.Patch (make, id, registerRawNode) as Patch
+import Noodle.Repr (class FromToRepr)
+import Noodle.Raw.Node (Node) as Raw
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
@@ -149,3 +152,26 @@ type NodeBounds =
     , width :: Int
     , height :: Int
     }
+
+
+registerRawNode :: forall nstate tk s fs repr m. FromToRepr nstate repr => Id.PatchR -> Raw.Node nstate repr m -> State tk s fs repr m -> State tk s fs repr m
+registerRawNode patchR rawNode s = s
+    { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
+
+
+patch :: forall tk s fs r m. Id.PatchR -> State tk s fs r m -> Maybe (Patch s fs r m)
+patch patchR = _.network >>> Network.patch patchR
+
+
+currentPatch :: forall tk s fs r m. State tk s fs r m -> Maybe (Patch s fs r m)
+currentPatch s = s.currentPatch <#> _.id >>= flip patch s
+
+
+withPatch :: forall tk s fs r m. Id.PatchR -> (Patch s fs r m -> Patch s fs r m) -> State tk s fs r m -> State tk s fs r m
+withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
+
+
+withCurrentPatch :: forall tk s fs r m. (Patch s fs r m -> Patch s fs r m) -> State tk s fs r m -> State tk s fs r m
+withCurrentPatch f s = case s.currentPatch <#> _.id of
+    Just curPatchR -> withPatch curPatchR f s
+    Nothing -> s
