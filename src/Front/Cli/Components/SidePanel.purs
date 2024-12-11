@@ -2,11 +2,12 @@ module Cli.Components.SidePanel where
 
 import Prelude
 
-import Data.Text.Output.Blessed (singleLine) as T
+import Data.Text.Output.Blessed (singleLine, multiLine) as T
 import Data.Text.Format as T
 import Data.String.CodeUnits as CU
 
 import Type.Data.Symbol (class IsSymbol)
+import Prim.Symbol (class Append)
 
 import Effect (Effect)
 
@@ -42,18 +43,19 @@ import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Ui.Cli.Tagging as T
 
 
-type SidePanel s id =
+type SidePanel (id :: Symbol) s =
     { char :: { on :: Char, off :: Char }
     , panelKey :: NodeKey Subj.Box id
     , buttonKey :: NodeKey Subj.Button id
+    , init :: Array T.Tag
+    , next :: (s -> Array T.Tag)
     , toggle :: (s -> s)
-    , refresh :: BlessedOp s Effect
     }
 
 
-component
-    :: forall id s. IsSymbol id => SidePanel s id -> C.Blessed s
-component sidePanel =
+panel
+    :: forall id s. IsSymbol id => SidePanel id s -> C.Blessed s
+panel sidePanel =
     B.boxAnd sidePanel.panelKey
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
         , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 10
@@ -62,37 +64,20 @@ component sidePanel =
         , Box.tags true
         , Box.content "."
         , Box.hidden true
-        -- , List.items is
-
-
-        -- , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inputHandler curPatchId curPatch nextNodeBox idx)) is
-
-
-        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inputHandler $ is
-        -- , List.mouse true
-        -- , List.keys true
-        -- , ListBar.autoCommandKeys true
-        , Style.commandLog
-        , Style.patchBoxBorder
-        {- , Core.on ListBar.Select
-            \_ _ -> do
-                liftEffect $ Console.log "input"
-                inputSelected <- List.selected ~< nextInputsBox
-                liftEffect $ Console.log $ show inputSelected
-        -}
+        , Style.sidePanel
+        , Style.sidePanelBorder
         ]
         [ ]
-        $ const $ pure unit -- $ const refresh
-
+        $ const $ refresh sidePanel
 
 
 button
-    ∷ forall id s. IsSymbol id => SidePanel s id -> C.Blessed s
-button sidePanel =
+    ∷ forall id s. IsSymbol id => Int -> SidePanel id s -> C.Blessed s
+button offset sidePanel =
     B.button sidePanel.buttonKey
         [ Box.content $ T.singleLine $ T.buttonToggle (CU.singleton sidePanel.char.off) false
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 7
+        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px offset
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Button.mouse true
@@ -103,8 +88,8 @@ button sidePanel =
                 State.modify_ sidePanel.toggle
                 sidePanel.panelKey >~ Element.toggle
                 -- state <- State.get
-                sidePanel.panelKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton sidePanel.char.off) false
-                sidePanel.refresh
+                sidePanel.buttonKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton sidePanel.char.on) true
+                refresh sidePanel
                 Key.mainScreen >~ Screen.render
         {-
         , Core.on Element.MouseOver
@@ -119,10 +104,8 @@ button sidePanel =
 
 
 
-{-
-refresh :: BlessedOp State Effect
-refresh = do
+refresh :: forall id s m. IsSymbol id => SidePanel id s -> BlessedOp s m
+refresh sidePanel = do
     state <- State.get
-    Key.commandLogBox >~ Box.setContent $ T.singleLine $ NdfFile.toTaggedNdfCode state.commandLog
+    sidePanel.panelKey >~ Box.setContent $ T.multiLine $ T.stack $ sidePanel.next state
     -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
--}

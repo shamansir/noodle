@@ -30,20 +30,19 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
-import Cli.State (families) as State
 import Cli.Class.CliFriendly (class CliFriendly)
 
+import Cli.Components.SidePanel as SP
 
 import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesListbar as PatchesListbar
 import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.LoadFileButton as LoadFileButton
--- import Cli.Components.CommandLogButton as CommandLogButton
+import Cli.Components.SidePanel.CommandLog (sidePanel) as CL
 -- import Cli.Components.HydraCodeButton as HydraCodeButton
 -- import Cli.Components.FullInfoButton as FullInfoButton
 -- import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
--- import Cli.Components.CommandLogBox as CommandLogBox
 -- import Cli.Components.HydraCodeBox as HydraCodeBox
 -- import Cli.Components.FullInfoBox as FullInfoBox
 -- import Cli.Components.WsStatusButton as WsStatusButton
@@ -77,21 +76,22 @@ component initialState =
                 Blessed.exit
         ]
 
+        (
         [ PatchesListbar.component $ Network.patches $ initialState.network
         , AddPatchButton.component
         , PatchBox.component $ Network.toolkit initialState.network
-
         -- , LoadFileButton.component
-        -- , CommandLogButton.component
+        , SP.button 5 CL.sidePanel
         -- , HydraCodeButton.component
         -- , FullInfoButton.component
         -- , WsStatusButton.component
         -- -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
-        -- , CommandLogBox.component
+        , SP.panel CL.sidePanel
         -- , HydraCodeBox.component
         -- , FullInfoBox.component
         ]
+        )
 
         $ \_ -> do
             PatchesListbar.selectPatch 1
