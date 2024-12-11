@@ -5,13 +5,15 @@ import Prelude
 import Data.Text.Output.Blessed (singleLine, multiLine) as T
 import Data.Text.Format as T
 import Data.String.CodeUnits as CU
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append)
 
 import Effect (Effect)
 
-import Control.Monad.State (get, modify_) as State
+import Control.Monad.State (get, modify) as State
 
 import Blessed as B
 import Blessed ((>~))
@@ -43,18 +45,19 @@ import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Ui.Cli.Tagging as T
 
 
-type SidePanel (id :: Symbol) s =
-    { char :: { on :: Char, off :: Char }
+type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of the SidePanel: is it visible and its content
+    { char :: v -> Char
+    , isOn :: v -> Boolean
     , panelKey :: NodeKey Subj.Box id
     , buttonKey :: NodeKey Subj.Button id
-    , init :: Array T.Tag
-    , next :: (s -> Array T.Tag)
-    , toggle :: (s -> s)
+    , init :: v /\ Array T.Tag
+    , next :: (s -> v /\ Array T.Tag)
+    , onButton :: (s -> s)
     }
 
 
 panel
-    :: forall id s. IsSymbol id => SidePanel id s -> C.Blessed s
+    :: forall id s v. IsSymbol id => SidePanel id s v -> C.Blessed s
 panel sidePanel =
     B.boxAnd sidePanel.panelKey
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
@@ -68,14 +71,14 @@ panel sidePanel =
         , Style.sidePanelBorder
         ]
         [ ]
-        $ const $ refresh sidePanel
+        $ const $ refreshWith sidePanel.init sidePanel
 
 
 button
-    ∷ forall id s. IsSymbol id => Int -> SidePanel id s -> C.Blessed s
+    ∷ forall id s v. IsSymbol id => Int -> SidePanel id s v -> C.Blessed s
 button offset sidePanel =
     B.button sidePanel.buttonKey
-        [ Box.content $ T.singleLine $ T.buttonToggle (CU.singleton sidePanel.char.off) false
+        [ Box.content $ T.singleLine $ T.buttonToggle (CU.singleton $ sidePanel.char initV) $ sidePanel.isOn initV
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px offset
         , Box.width $ Dimension.px 1
@@ -85,11 +88,9 @@ button offset sidePanel =
         , Style.addPatch
         , Core.on Button.Press
             \_ _ -> do
-                State.modify_ sidePanel.toggle
+                state <- State.modify sidePanel.onButton
+                sidePanel # refreshWith (sidePanel.next state)
                 sidePanel.panelKey >~ Element.toggle
-                -- state <- State.get
-                sidePanel.buttonKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton sidePanel.char.on) true
-                refresh sidePanel
                 Key.mainScreen >~ Screen.render
         {-
         , Core.on Element.MouseOver
@@ -101,11 +102,17 @@ button offset sidePanel =
         -}
         ]
         []
+    where
+        initV = Tuple.fst $ sidePanel.init
 
 
+refreshWith :: forall id s m v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> BlessedOp s m
+refreshWith (nextV /\ nextContent) sidePanel = do
+    sidePanel.panelKey  >~ Box.setContent $ T.multiLine  $ T.stack nextContent
+    sidePanel.buttonKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton $ sidePanel.char nextV) $ sidePanel.isOn nextV
+    -- Key.mainScreen >~ Screen.render
 
-refresh :: forall id s m. IsSymbol id => SidePanel id s -> BlessedOp s m
-refresh sidePanel = do
-    state <- State.get
-    sidePanel.panelKey >~ Box.setContent $ T.multiLine $ T.stack $ sidePanel.next state
-    -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
+
+refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
+refresh sidePanel =
+    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
