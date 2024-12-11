@@ -7,6 +7,7 @@ import Data.Text.Format as T
 import Data.String.CodeUnits as CU
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (bimap)
 
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append)
@@ -46,7 +47,8 @@ import Noodle.Ui.Cli.Tagging as T
 
 
 type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of the SidePanel: is it visible and its content
-    { char :: v -> Char
+    { title :: String
+    , char :: v -> Char
     , isOn :: v -> Boolean
     , panelKey :: NodeKey Subj.Box id
     , buttonKey :: NodeKey Subj.Button id
@@ -67,6 +69,7 @@ panel sidePanel =
         , Box.tags true
         , Box.content "."
         , Box.hidden true
+        , Box.label sidePanel.title
         , Style.sidePanel
         , Style.sidePanelBorder
         ]

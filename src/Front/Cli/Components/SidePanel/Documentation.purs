@@ -1,4 +1,4 @@
-module Cli.Components.SidePanel.CommandLog where
+module Cli.Components.SidePanel.Documentation where
 
 import Prelude
 
@@ -12,14 +12,13 @@ import Cli.Components.SidePanel (SidePanel)
 import Cli.Keys as Key
 
 
-
-sidePanel :: forall tk p fs repr. SidePanel "command-log" (State tk p fs repr Effect) Boolean
+sidePanel :: forall tk p fs repr. SidePanel "documentation" (State tk p fs repr Effect) Boolean
 sidePanel =
-    { title : "history"
-    , char : const '⏺'
+    { title : "documentation"
+    , char : const '☰'
     , isOn : identity
-    , panelKey : Key.commandLogBox
-    , buttonKey : Key.commandLogButton
+    , panelKey : Key.documentationBox
+    , buttonKey : Key.documentationButton
     , init : false /\ []
     , next : const $ true /\ []
     , onButton : identity

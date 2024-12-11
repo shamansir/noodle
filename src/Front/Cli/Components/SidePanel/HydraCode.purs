@@ -1,4 +1,4 @@
-module Cli.Components.SidePanel.CommandLog where
+module Cli.Components.SidePanel.HydraCode where
 
 import Prelude
 
@@ -12,14 +12,13 @@ import Cli.Components.SidePanel (SidePanel)
 import Cli.Keys as Key
 
 
-
-sidePanel :: forall tk p fs repr. SidePanel "command-log" (State tk p fs repr Effect) Boolean
+sidePanel :: forall tk p fs repr. SidePanel "hydra-code" (State tk p fs repr Effect) Boolean
 sidePanel =
-    { title : "history"
-    , char : const '⏺'
+    { title : "hydra"
+    , char : const 'H'
     , isOn : identity
-    , panelKey : Key.commandLogBox
-    , buttonKey : Key.commandLogButton
+    , panelKey : Key.hydraCodeBox
+    , buttonKey : Key.hydraCodeButton
     , init : false /\ []
     , next : const $ true /\ []
     , onButton : identity

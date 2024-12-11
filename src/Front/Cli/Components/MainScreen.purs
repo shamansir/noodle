@@ -38,14 +38,13 @@ import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesListbar as PatchesListbar
 import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.LoadFileButton as LoadFileButton
+import Cli.Components.SidePanel.Documentation (sidePanel) as Doc
 import Cli.Components.SidePanel.CommandLog (sidePanel) as CL
--- import Cli.Components.HydraCodeButton as HydraCodeButton
--- import Cli.Components.FullInfoButton as FullInfoButton
+import Cli.Components.SidePanel.Console (sidePanel) as Console
+import Cli.Components.SidePanel.WsServerStatus (sidePanel) as WS
+-- import Cli.Components.SidePanel.HydraCode (sidePanel) as HC
 -- import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
--- import Cli.Components.HydraCodeBox as HydraCodeBox
--- import Cli.Components.FullInfoBox as FullInfoBox
--- import Cli.Components.WsStatusButton as WsStatusButton
 
 
 -- import Toolkit.Hydra (toolkit, Toolkit) as Hydra
@@ -81,13 +80,21 @@ component initialState =
         , AddPatchButton.component
         , PatchBox.component $ Network.toolkit initialState.network
         -- , LoadFileButton.component
-        , SP.button 5 CL.sidePanel
+        , SP.button 9 Doc.sidePanel
+        , SP.button 7 CL.sidePanel
+        , SP.button 5 Console.sidePanel
+        -- , SP.button 2 HC.sidePanel
+        , SP.button 3 WS.sidePanel
         -- , HydraCodeButton.component
         -- , FullInfoButton.component
         -- , WsStatusButton.component
         -- -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
+        , SP.panel Doc.sidePanel
         , SP.panel CL.sidePanel
+        , SP.panel WS.sidePanel
+        , SP.panel Console.sidePanel
+        -- , SP.panel HC.sidePanel
         -- , HydraCodeBox.component
         -- , FullInfoBox.component
         ]
