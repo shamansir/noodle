@@ -33,7 +33,7 @@ import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.Core as Core
 import Blessed.Internal.Emitter (class Fires) as E
 import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.NodeKey (next, rawify) as NodeKey
+import Blessed.Internal.NodeKey (next, toRaw) as NodeKey
 import Blessed.Internal.NodeKey (type (<^>))
 import Blessed.UI.Base.Element.Method (setBack) as Element
 import Blessed.UI.Base.Element.Property (left, top, width, height) as Element
@@ -241,16 +241,16 @@ update (LinkState link) = do
 
 forget :: forall s. LinkState s -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
 forget (LinkState props) (linksFrom /\ linksTo) =
-    Map.update (Map.delete (Id.OutletIndex props.outletIndex) >>> Just) (NodeKey.rawify props.fromNode.key) linksFrom
+    Map.update (Map.delete (Id.OutletIndex props.outletIndex) >>> Just) (NodeKey.toRaw props.fromNode.key) linksFrom
     /\
-    Map.update (Map.delete (Id.InletIndex props.inletIndex) >>> Just) (NodeKey.rawify props.toNode.key) linksTo
+    Map.update (Map.delete (Id.InletIndex props.inletIndex) >>> Just) (NodeKey.toRaw props.toNode.key) linksTo
 
 
 store :: forall s. LinkState s -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
 store link@(LinkState props) (linksFrom /\ linksTo) =
-    Map.alter (push (Id.OutletIndex props.outletIndex) link) (NodeKey.rawify props.fromNode.key) linksFrom
+    Map.alter (push (Id.OutletIndex props.outletIndex) link) (NodeKey.toRaw props.fromNode.key) linksFrom
     /\
-    Map.alter (push (Id.InletIndex props.inletIndex) link) (NodeKey.rawify props.toNode.key) linksTo
+    Map.alter (push (Id.InletIndex props.inletIndex) link) (NodeKey.toRaw props.toNode.key) linksTo
     {-
     state
         { linksFrom =
@@ -270,7 +270,7 @@ push id link Nothing = Just $ Map.singleton id link
 forgetAllFromTo :: forall s. K.NodeBoxKey -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
 forgetAllFromTo nbKey (linksFrom /\ linksTo) =
     let
-        rawNk = NodeKey.rawify nbKey
+        rawNk = NodeKey.toRaw nbKey
         allLinks :: List (LinkState s)
         allLinks
             =  (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk linksFrom)
@@ -279,8 +279,8 @@ forgetAllFromTo nbKey (linksFrom /\ linksTo) =
 
 
 removeAllOf :: forall s m. K.NodeBoxKey -> K.PatchBoxKey -> LinksFrom s -> LinksTo s -> BlessedOp s m
-removeAllOf nk pnk linksFrom linksTo = do
-    let rawNk = NodeKey.rawify nk
+removeAllOf nbKey pnk linksFrom linksTo = do
+    let rawNk = NodeKey.toRaw nbKey
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksFrom) $ flip remove pnk
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksTo) $ flip remove pnk
 

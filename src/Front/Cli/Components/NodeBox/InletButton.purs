@@ -22,7 +22,7 @@ import Signal (get) as Signal
 import Blessed as B
 import Blessed ((>~))
 
-import Blessed.Internal.NodeKey (rawify) as NodeKey
+import Blessed.Internal.NodeKey (toRaw) as NodeKey
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
@@ -176,7 +176,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
 
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
-                            Map.lookup (NodeKey.rawify nodeTrgBoxKey) state.linksTo
+                            Map.lookup (NodeKey.toRaw nodeTrgBoxKey) state.linksTo
                             >>= Map.lookup (Id.InletIndex inletIdx)
                         outletSrcR = lco.outletId
                         nodeSrcR = lco.nodeId

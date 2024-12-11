@@ -408,7 +408,7 @@ logDataCommand stateRef update =
 
 onMove :: forall tk pstate fs repr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk pstate fs repr m) Effect
 onMove nodeId nodeKey _ _ = do
-    let rawNk = NodeKey.rawify nodeKey
+    let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
     state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
     {- REM
