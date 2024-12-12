@@ -15,6 +15,9 @@ module Noodle.Raw.Fn.Process
   , sendIn
   , inletsOf
   , outletsOf
+  , join
+  , mkRunner
+  , spawn
   )
   where
 
@@ -44,6 +47,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
+import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
 import Noodle.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
 
 
@@ -52,6 +56,8 @@ data ProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
 data ProcessF state repr m a
     = State (state -> a /\ state)
     | Lift (m a)
+    | Join (ProcessF state repr m a)
+    | GetProto (Raw.Protocol state repr -> a)
     | Send OutletR (Repr repr) a
     | SendIn InletR (Repr repr) a
     | Receive InletR (Repr repr -> a)
@@ -59,10 +65,12 @@ data ProcessF state repr m a
 
 instance functorProcessF :: Functor m => Functor (ProcessF state repr m) where
     map f = case _ of
-        State k -> State (lmap f <<< k)
-        Lift m -> Lift (map f m)
-        Receive iid k -> Receive iid (map f k)
-        Send oid d next -> Send oid d $ f next
+        Join proc ->         Join $ map f proc
+        GetProto pf ->       GetProto $ map f pf
+        State k ->           State $ lmap f <<< k
+        Lift m ->            Lift $ map f m
+        Receive iid k ->     Receive iid $ map f k
+        Send oid d next ->   Send oid d $ f next
         SendIn iid d next -> SendIn iid d $ f next
         -- RunEffect effA -> RunEffect $ map f effA
 
@@ -135,12 +143,30 @@ outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List St
 outletsOf = keys
 
 
+join :: forall state repr m a. ProcessM state repr m a -> ProcessM state repr m a
+join (ProcessM free) = ProcessM $ Free.hoistFree Join free
+
+
+getProtocol :: forall state repr m. ProcessM state repr m (Raw.Protocol state repr)
+getProtocol = ProcessM $ Free.liftF $ GetProto identity
+
+
+mkRunner :: forall state repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state repr m (ProcessM state repr m Unit -> m Unit)
+mkRunner = getProtocol >>= (pure <<< runM)
+
+
+spawn :: forall state repr m a. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state repr m Unit -> ProcessM state repr m (m Unit)
+spawn proc = mkRunner <#> (#) proc
+
+
 {- Maps -}
 
 
 imapFState :: forall state state' repr m. (state -> state') -> (state' -> state) -> ProcessF state repr m ~> ProcessF state' repr m
 imapFState f g =
     case _ of
+        Join proc -> Join $ imapFState f g proc
+        GetProto pf -> GetProto $ pf <<< RawProtocol.imapState g f
         State k -> State (map f <<< k <<< g)
         Lift m -> Lift m
         Receive iid k -> Receive iid k
@@ -157,6 +183,8 @@ imapMState f g (ProcessM processFree) =
 mapFM :: forall state repr m m'. (m ~> m') -> ProcessF state repr m ~> ProcessF state repr m'
 mapFM f =
     case _ of
+        Join proc -> mapFM f proc
+        GetProto pf -> GetProto pf
         State k -> State k
         Lift m -> Lift $ f m
         Receive iid k -> Receive iid k
@@ -203,6 +231,10 @@ runFreeM protocol fn =
     Free.runFreeM go fn
     where
         go :: forall a. ProcessF state repr m a -> m a
+        go (Join proc) = do
+            runFreeM protocol $ Free.liftF $ proc
+        go (GetProto getProto) = do
+            pure $ getProto protocol
         go (State f) = do
             state <- getUserState
             case f state of

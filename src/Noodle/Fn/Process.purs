@@ -13,6 +13,9 @@ module Noodle.Fn.Process
 --   , runFreeM
   , toRaw
   , toRawWithReprableState
+  , join
+  , mkRunner
+  , spawn
   )
   where
 
@@ -40,7 +43,7 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 -- import Noodle.Raw.Fn.Protocol (InletsUpdate, OutletsUpdate) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
-import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState) as Raw
+import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn) as Raw
 import Noodle.Repr (class FromRepr, class HasFallback, class ToRepr)
 import Noodle.Repr (ensureTo, ensureFrom) as Repr
 
@@ -102,6 +105,18 @@ inletsOf = keys
 
 outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
 outletsOf = keys
+
+
+join :: forall state is os repr m a. ProcessM state is os repr m a -> ProcessM state is os repr m a
+join = wrap <<< Raw.join <<< unwrap
+
+
+mkRunner :: forall state is os repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state is os repr m (ProcessM state is os repr m Unit -> m Unit)
+mkRunner = wrap $ Raw.mkRunner <#> \runner -> unwrap >>> runner
+
+
+spawn :: forall state is os repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state is os repr m Unit -> ProcessM state is os repr m (m Unit)
+spawn = wrap <<< Raw.spawn <<< unwrap
 
 
 {- Maps -}
