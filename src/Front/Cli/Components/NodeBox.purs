@@ -2,21 +2,19 @@ module Cli.Components.NodeBox where
 
 import Prelude
 
-import Data.Text.Format (fgc, bgc, s, fgcs) as T
 import Data.Text.Output.Blessed (singleLine) as T
 
-import Debug as Debug
-
 import Cli.WsServer as WSS
+import Control.Monad.Error.Class (class MonadThrow)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Console as Console
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Effect.Exception (Error)
 
-import Control.Monad.State as State
-import Control.Monad.State (class MonadState)
+import Control.Monad.State (get, modify, modify_) as State
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -25,82 +23,61 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Array as Array
 import Data.Foldable (for_)
-import Data.List (length) as List
 -- REM import Data.KeyHolder as KH
 import Data.Symbol (class IsSymbol)
 import Data.String as String
 import Data.TraversableWithIndex (traverseWithIndex)
 -- REM import Data.SProxy (reflect, reflect')
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
 -- REM import Data.FromToFile (class Encode, encode)
 
 import Signal (Signal, (~>))
-import Signal as Signal
 import Signal.Extra as SignalX
-import Signal.Channel (Channel)
-import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
 
-import Blessed.Core.Border as Border
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.EndStyle as ES
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style as Style
-import Blessed.Core.Coord as C
-import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (runM, runM', getStateRef, imapState, lift, lift') as Blessed
+import Blessed.Internal.BlessedOp (lift, runM, runM') as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
-import Blessed.UI.Forms.TextArea.Option as TextArea
+import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
 import Noodle.Id as Id
-import Noodle.Toolkit (Toolkit, class MarkToolkit)
+import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
-import Noodle.Patch as Patch
-import Noodle.Patch (Patch) as Noodle
-import Noodle.Node as Node
+import Noodle.Node (toRaw) as Node
 import Noodle.Node (Node) as Noodle
 import Noodle.Fn.Updates (UpdateFocus(..))
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues, NodeChanges) as Raw
+import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
--- REM import Noodle.Stateful (get, getM, setM) as Stateful
-import Noodle.Raw.Toolkit.Family (Family) as Raw
-import Noodle.Raw.Toolkit.Family (id) as RawFamily
-import Noodle.Repr (class DataFromToReprRow, class ToReprRow)
-import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
-import Noodle.Ui.Cli.Palette as Palette
-import Noodle.Ui.Cli.Palette.Item (crepr) as Palette
-import Noodle.Ui.Cli.Tagging as T
-import Noodle.Ui.Cli.Tagging.At as T
+import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
+import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 
-import Cli.Keys (NodeBoxKey, PatchBoxKey, InletButtonKey, OutletButtonKey)
-import Cli.Keys (mainScreen, patchBox, statusLine) as Key
+import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
+import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.State (LastKeys, nextKeys) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
 
--- REM import Cli.Components.Link as Link
+import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InfoBox as InfoBox
@@ -108,8 +85,7 @@ import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 -- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Class.CliFriendly (class CliFriendly)
-import Cli.Class.CliRenderer (class CliRenderer, cliSize, cliSizeRaw, renderCli, renderCliRaw)
-import Cli.Class.CliRenderer (renderCli, renderCliRaw) as NodeBody
+import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
 -- REM import Cli.Components.NodeBox.InfoBox as IB
@@ -232,8 +208,8 @@ _component
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
-                -- REM , Core.on Element.Move
-                -- REM     $ onMove nodeIdR keys.nodeBox
+                , Core.on Element.Move
+                    $ onMove nodeR keys.nodeBox
                 , Core.on Element.MouseOver
                     $ onMouseOver (Proxy :: _ tk) familyR
                 , Core.on Element.MouseOut
@@ -411,10 +387,9 @@ onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
     state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
-    {- REM
-    for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
-    for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
-    -}
+    CLink.runB $ do
+        for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update
+        for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) CLink.update
     pure unit
     where
         updatePos nb = Just <<< Bounds.move nb

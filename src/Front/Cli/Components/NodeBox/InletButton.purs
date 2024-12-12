@@ -47,7 +47,7 @@ import Cli.Style (inletsOutlets) as Style
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
-import Cli.Components.Link (create, remove, store, append) as CLink
+import Cli.Components.Link (create, remove, store, append, runB) as CLink
 import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
@@ -194,10 +194,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                         Just rawLink -> do
                                             CC.log "disconnect previous"
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
-                                            -- FIXME: w/o `unsafeCoerce` breaks type of State in the logic, because `LinksState Unit` confronts
-                                            -- with `LinkState s` <-> `BlessedOp s m` in `CLink.remove`.
-                                            -- And for the moment there is no way in `Blessed` to get rid of `State` in SNode because of many reasons including the way Handlers currently work.
-                                            Key.patchBox >~ CLink.remove (unsafeCoerce prevLinkState)
+                                            CLink.runB $ Key.patchBox >~ CLink.remove prevLinkState
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 
@@ -230,8 +227,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                                 , lastLink = Just linkState
                                                 }
 
-                                    -- FIXME: see note on `unsafeCoerce` above
-                                    Key.patchBox >~ CLink.append (unsafeCoerce linkState)
+                                    CLink.runB $ Key.patchBox >~ CLink.append linkState
 
                                     State.modify_ $ State.replacePatch patchR nextPatch'
 

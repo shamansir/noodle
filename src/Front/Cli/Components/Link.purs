@@ -3,12 +3,14 @@ module Cli.Components.Link where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Effect.Exception (Error)
 
 import Type.Data.Symbol (class IsSymbol)
 
 import Control.Monad.State as State
 import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Foldable (for_, foldr)
 import Data.Int (floor, toNumber)
@@ -26,7 +28,7 @@ import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Orientation as Orientation
-import Blessed.Internal.BlessedOp (imapState) as Blessed
+import Blessed.Internal.BlessedOp (lift, runM) as Blessed
 import Blessed.Internal.NodeKey (RawNodeKey)
 import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
 import Blessed.Internal.BlessedSubj (Line)
@@ -291,3 +293,7 @@ toUnit (LinkState s) = LinkState $ s
     { blessed = { a : Blessed.imapState ?wh ?wh ?wh, b : ?wh, c : ?wh  }
     }
 -}
+
+
+runB :: forall s m. MonadRec m => MonadEffect m => BlessedOp Unit m -> BlessedOp s m
+runB = Blessed.lift <<< Blessed.runM unit
