@@ -48,7 +48,7 @@ import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
 import Cli.Components.Link (create, remove, store, append) as CLink
-import Cli.Components.Console as CC
+import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T

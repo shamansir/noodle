@@ -37,7 +37,7 @@ import Cli.Style (inletsOutlets) as Style
 
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
-import Cli.Components.Console as CC
+import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
