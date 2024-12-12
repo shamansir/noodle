@@ -15,7 +15,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Id as Id
-import Noodle.Fn.Shape (Shape(..), InletR(..), OutletR(..))
+import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Raw.Fn.Shape (inlets, outlets, make) as RawShape
 import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
@@ -32,6 +32,14 @@ import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
 
 
+inletR :: String -> Id.InletR
+inletR = Id.unsafeInletR
+
+
+outletR :: String -> Id.OutletR
+outletR = Id.unsafeOutletR
+
+
 spec :: Spec Unit
 spec = do
 
@@ -42,13 +50,13 @@ spec = do
                 rawShape =
                     Shape.reflect (Shape :: Sample.Shape)
             RawShape.inlets rawShape `shouldEqual`
-                [ { name : "foo", order : 0, temp : Hot }
-                , { name : "c"  , order : 1, temp : Hot }
-                , { name : "bar", order : 2, temp : Cold }
+                [ { name : inletR "foo", order : 0, temp : Hot }
+                , { name : inletR "c"  , order : 1, temp : Hot }
+                , { name : inletR "bar", order : 2, temp : Cold }
                 ]
             RawShape.outlets rawShape `shouldEqual`
-                [ { name : "foo", order : 0 }
-                , { name : "bar", order : 1 }
+                [ { name : outletR "foo", order : 0 }
+                , { name : outletR "bar", order : 1 }
                 ]
 
     describe "creation" $ do
@@ -266,26 +274,26 @@ spec = do
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
-            (rawNode :: Raw.Node MinimalRepr Effect) <-
+            (rawNode :: Raw.Node MinimalRepr MinimalRepr Effect) <-
                 RawNode.make (Id.unsafeFamilyR "myRawNode")
                     MinimalRepr.None
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
-                        # Map.insert (InletR "a") (MinimalRepr.Int 5)
-                        # Map.insert (InletR "b") (MinimalRepr.Int 7)
+                        # Map.insert (inletR "a") (MinimalRepr.Int 5)
+                        # Map.insert (inletR "b") (MinimalRepr.Int 7)
                     )
                     (Map.empty
-                        # Map.insert (OutletR "sum") (MinimalRepr.Int 0)
+                        # Map.insert (outletR "sum") (MinimalRepr.Int 0)
                     )
                     $ do
-                        mbA <- RawFn.receive $ InletR "a"
-                        mbB <- RawFn.receive $ InletR "b"
-                        RawFn.send (OutletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
+                        mbA <- RawFn.receive $ inletR "a"
+                        mbB <- RawFn.receive $ inletR "b"
+                        RawFn.send (outletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
                             (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> a + b
                             _ -> 0
 
             rawNode # RawNode.run
 
-            mbSum <- RawNode.atOutlet (OutletR "sum") rawNode
+            mbSum <- RawNode.atOutlet (outletR "sum") rawNode
 
             mbSum `shouldEqual` (Just $ MinimalRepr.Int 12)

@@ -9,7 +9,7 @@ import Noodle.Repr (Repr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
-import Noodle.Id (unsafeFamilyR, InletR(..), OutletR(..)) as Id
+import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
@@ -27,12 +27,12 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : "left", temp : Hot, order : 0 }
-            , { name : "right", temp : Hot, order : 1 }
+            [ { name : Id.inletR "left", temp : Hot, order : 0 }
+            , { name : Id.inletR "right", temp : Hot, order : 1 }
             ] -- FIXME: order is not necessary here due to the fact we have index
         , outlets :
-            [ { name : "out", order : 0 }
-            , { name : "len", order : 1 }
+            [ { name : Id.outletR "out", order : 0 }
+            , { name : Id.outletR "len", order : 1 }
             ]
         } -- TODO
 
@@ -40,39 +40,39 @@ shape =
 defaultInlets :: Raw.InletsValues MinimalRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.InletR "left") (MinimalRepr.Str "")
-        # Map.insert (Id.InletR "right") (MinimalRepr.Str "")
+        # Map.insert (Id.inletR "left") (MinimalRepr.Str "")
+        # Map.insert (Id.inletR "right") (MinimalRepr.Str "")
 
 
 defaultOutlets :: Raw.OutletsValues MinimalRepr
 defaultOutlets =
     Map.empty
-        # Map.insert (Id.OutletR "str") (MinimalRepr.Str "")
-        # Map.insert (Id.OutletR "len") (MinimalRepr.Int 0)
+        # Map.insert (Id.outletR "str") (MinimalRepr.Str "")
+        # Map.insert (Id.outletR "len") (MinimalRepr.Int 0)
 
 
 process :: Raw.Process MinimalRepr MinimalRepr Effect
 process = do
-    mbLeft  <- RawFn.receive $ Id.InletR "left"
-    mbRight <- RawFn.receive $ Id.InletR "right"
+    mbLeft  <- RawFn.receive $ Id.inletR "left"
+    mbRight <- RawFn.receive $ Id.inletR "right"
     case mbLeft /\ mbRight of
         (Repr (MinimalRepr.Str left) /\ Repr (MinimalRepr.Str right)) ->
             let combined = left <> right
             in do
-                RawFn.send (Id.OutletR "str") $ Repr $ MinimalRepr.Str combined
-                RawFn.send (Id.OutletR "len") $ Repr $ MinimalRepr.Int $ String.length combined
+                RawFn.send (Id.outletR "str") $ Repr $ MinimalRepr.Str combined
+                RawFn.send (Id.outletR "len") $ Repr $ MinimalRepr.Int $ String.length combined
         _ -> pure unit
 
 
-makeNode :: Effect (Raw.Node MinimalRepr Effect)
+makeNode :: Effect (Raw.Node MinimalRepr MinimalRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family MinimalRepr Effect
+family :: Raw.Family MinimalRepr MinimalRepr Effect
 family =
     RawFamily.make
-        (Id.unsafeFamilyR "concatR")
+        (Id.familyR "concatR")
         MinimalRepr.None
         shape
         defaultInlets
