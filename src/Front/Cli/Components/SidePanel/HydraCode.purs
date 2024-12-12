@@ -6,10 +6,11 @@ import Effect (Effect)
 
 import Data.Tuple.Nested ((/\))
 
-import Cli.State (State)
+import Cli.State (State, withPanels)
 import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
+import Cli.Panels (Which(..), load, toggle)
 
 
 sidePanel :: forall tk p fs repr. SidePanel "hydra-code" (State tk p fs repr Effect) Boolean
@@ -20,6 +21,6 @@ sidePanel =
     , panelKey : Key.hydraCodeBox
     , buttonKey : Key.hydraCodeButton
     , init : false /\ []
-    , next : const $ true /\ []
-    , onToggle : identity
+    , next : _.panels >>> load Console
+    , onToggle : withPanels $ toggle Console
     }

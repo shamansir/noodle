@@ -30,8 +30,8 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
 import Blessed.Internal.NodeKey (RawNodeKey)
 
-import Cli.WsServer as WSS
-import Cli.Panels
+-- import Cli.WsServer as WSS
+import Cli.Panels (SidePanels, initPanels)
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
@@ -198,3 +198,7 @@ registerPatch newPatch s =
 
 lastPatchIndex :: forall tk s fs r m. State tk s fs r m -> Int
 lastPatchIndex s = Network.patchesCount s.network
+
+
+withPanels :: forall tk s fs r m. (SidePanels -> SidePanels) -> State tk s fs r m -> State tk s fs r m
+withPanels f s = s { panels = f s.panels }

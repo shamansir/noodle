@@ -63,8 +63,8 @@ panel
 panel sidePanel =
     B.boxAnd sidePanel.panelKey
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
-        , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 10
-        , Box.top $ Offset.px 5
+        , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 5
+        , Box.top $ Offset.px 3
         , Box.left $ Offset.calc $ Coord.percents 60.0
         , Box.tags true
         , Box.content "."

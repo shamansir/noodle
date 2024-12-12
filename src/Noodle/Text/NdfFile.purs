@@ -130,8 +130,7 @@ toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) _ commands) 
 toTaggedNdfCode :: NdfFile -> T.Tag
 toTaggedNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) _ commands) =
     T.toolkit toolkit <> T.space
-    <> T.tkVersion toolkitVersion <> T.space
-    <> T.ndfVersion ndfVersion <> T.nl
+    <> T.tkVersion toolkitVersion
     <> (if ndfVersion == 0.1 then T.nl else T.space <> T.ndfVersion ndfVersion <> T.nl)
     <> commandsToTaggedNdf commands
 

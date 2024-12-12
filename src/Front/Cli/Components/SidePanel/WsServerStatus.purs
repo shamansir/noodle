@@ -7,10 +7,11 @@ import Effect (Effect)
 
 import Data.Tuple.Nested ((/\))
 
-import Cli.State (State)
+import Cli.State (State, withPanels)
 import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
+import Cli.Panels (Which(..), load, toggle)
 
 
 data Status
@@ -27,6 +28,6 @@ sidePanel =
     , panelKey : Key.wsStatusBox
     , buttonKey : Key.wsStatusButton
     , init : false /\ []
-    , next : const $ true /\ []
-    , onToggle : identity
+    , next : _.panels >>> load WsServer
+    , onToggle : withPanels $ toggle WsServer
     }
