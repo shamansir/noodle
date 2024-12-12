@@ -15,7 +15,7 @@ import Noodle.Id (group, family) as Id
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Fn.ToFn (Fn, FnS, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
+import Noodle.Fn.ToFn (class ToFn, Fn, FnS, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.ToFn (name) as Fn
 import Noodle.Fn.ToFn (fn) as Make
 import Noodle.Text.NdfFile.Types (FamilyDefRec, EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
@@ -40,6 +40,16 @@ newtype ProcessAssign =
     ProcessAssign (FamilyR /\ ProcessCode)
 derive instance Newtype ProcessAssign _
 derive newtype instance Eq ProcessAssign
+
+
+instance ToFn a ChannelDef ChannelDef FamilyDef where
+    toFn :: Proxy a -> FamilyDef -> Fn ChannelDef ChannelDef
+    toFn _ = _.fn <<< unwrap
+
+
+instance ToFn a ChannelDef ChannelDef NodeFnDef where
+    toFn :: Proxy a -> NodeFnDef -> Fn ChannelDef ChannelDef
+    toFn = const unwrap
 
 
 instance ToCode NDF opts NodeFnDef where

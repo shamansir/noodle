@@ -2,11 +2,13 @@ module Noodle.Text.NdfFile.Codegen where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
+
 import Partial.Unsafe (unsafePartial)
 
 import Data.Map (Map)
 import Data.Map (empty, insert) as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Foldable (foldr)
 import Data.Newtype (unwrap, wrap, class Newtype)
 import Data.Tuple (snd) as Tuple
@@ -17,13 +19,15 @@ import Data.String (toUpper) as String
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Id (toolkit) as Id
-import Noodle.Text.NdfFile.Types (Source)
+import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
 import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
 import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
+import Noodle.Fn.ToFn (Fn, FnS, FnX, toFn)
+import Noodle.Fn.ToFn (Argument, Output, extract, argName, argValue, outName, outValue) as Fn
 
 import PureScript.CST.Types (ImportDecl, Module)
-import PureScript.CST.Types (Type, Expr) as CST
+import PureScript.CST.Types (Type, Expr, Declaration) as CST
 
 import Tidy.Codegen -- hiding (importType, importTypeOp, importValue, importTypeAll)
 -- import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue)
@@ -159,6 +163,62 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     <$> referFamily
                     <$> Array.reverse definitions
                 )
+        qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+        qvalue mbDataType = maybe (FCG.defaultFor opts.prepr mbDataType) (FCG.valueFor opts.prepr mbDataType)
+        inletExpr :: Partial => Fn.Argument ChannelDef -> CST.Expr Void
+        inletExpr chdef = case chdef # Fn.argValue # unwrap of
+            { mbType, mbDefault } -> case mbDefault of
+                Just default ->
+                    exprOp
+                        (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
+                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                Nothing ->
+                    exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
+        outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
+        outletExpr chdef = case chdef # Fn.outValue # unwrap of
+            { mbType, mbDefault } -> case mbDefault of
+                Just default ->
+                    exprOp
+                        (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
+                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                Nothing ->
+                    exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
+        fnDefBranch :: Partial => FamilyDef -> _
+        fnDefBranch fdef =
+            -- case unwrap (toFn (Proxy :: _ Void) fdef :: Fn ChannelDef ChannelDef) of
+            case (unwrap $ toFn (Proxy :: _ Void) fdef :: FnS ChannelDef ChannelDef) of
+                name /\ inlets /\ outlets ->
+                    caseBranch
+                        [ binderString name ]
+                        $ exprOp ( exprCtor "Just" )
+                            [ binaryOp "$"
+                                $ exprApp (exprIdent "fn")
+                                    [ exprString name
+                                    , exprArray $ inletExpr  <$> inlets
+                                    , exprArray $ outletExpr <$> outlets
+                                    ]
+                            ]
+        generateFnDeclarations :: Partial => CST.Declaration Void
+        generateFnDeclarations =
+            declInstance Nothing [] "PossiblyToFn"
+                [ typeCtor toolkitKey
+                , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
+                , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
+                , typeCtor "Id.FamilyR"
+                ]
+                [ instValue "possiblyToFn" [ binderWildcard ]
+                    $ exprOp (exprIdent "Id.family")
+                    [ binaryOp ">>>"
+                        $ exprCase [ exprSection ]
+                            $ fnDefBranch <$> definitionsArray
+                    ]
+                ]
+
+
+{-
+generateFnDeclaration :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> CST.Declaration Void
+generateFnDeclaration tkname opts families =
+    declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ] -}
 
 
 

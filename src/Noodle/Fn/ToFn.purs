@@ -51,6 +51,9 @@ type OutputName = String
 type FnS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
 
+type FnX arg out = String /\ Array arg /\ Array out
+
+
 newtype Fn arg out = Fn (FnS arg out)
 
 
@@ -253,7 +256,7 @@ name :: forall i o. Fn i o -> String
 name (Fn (name /\ _)) = name
 
 
-extract :: forall x a arg out. ToFn x arg out a => Proxy x -> a -> String /\ Array arg /\ Array out
+extract :: forall x a arg out. ToFn x arg out a => Proxy x -> a -> FnX arg out
 extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn arg out)
 
 
