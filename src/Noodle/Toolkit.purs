@@ -239,8 +239,8 @@ class IsToolkit (tk :: ToolkitKey) where
 
 
 class IsToolkit tk <= MarkToolkit (tk :: ToolkitKey) where
-    markGroup  :: Proxy tk -> Id.GroupR  -> Color
-    markFamily :: Proxy tk -> Id.FamilyR -> Color
+    markGroup  :: Proxy tk -> Id.GroupR -> Color
+    markFamily :: Proxy tk -> Id.GroupR -> Id.FamilyR -> Color
 
 
 class HasRepr (tk :: ToolkitKey) repr | tk -> repr

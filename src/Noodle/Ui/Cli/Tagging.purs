@@ -72,7 +72,7 @@ outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <>
 
 nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 nodeLabel ptk familyR =
-    T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
+    T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk (groupOf ptk familyR) familyR) $ T.s $ Id.family familyR
 
 
 {- T.fgcs (C.crepr Palette.familyName) (reflect family)
@@ -102,7 +102,7 @@ removeStatusLine familyR =
 
 libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 libraryItem ptk familyR =
-    T.fgc (markFamily ptk familyR) $ T.s $ Id.family familyR
+    T.fgc (markFamily ptk (groupOf ptk familyR) familyR) $ T.s $ Id.family familyR
 
 
 {- TODO
@@ -286,7 +286,7 @@ familyOnelineSignature pat ptk familyR =
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> T.s " // "
-            <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk familyR) $ Id.family familyR)
+            <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
         tagArgument :: Fn.Argument (Maybe repr) -> Tag
