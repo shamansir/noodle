@@ -13,6 +13,12 @@ import Cli.Components.SidePanel (SidePanel)
 import Cli.Keys as Key
 
 
+data Status
+    = Off
+    | Waiting
+    | Connected Int
+
+
 sidePanel :: forall tk p fs repr. SidePanel "ws-status" (State tk p fs repr Effect) Boolean
 sidePanel =
     { title : "server"
@@ -22,5 +28,5 @@ sidePanel =
     , buttonKey : Key.wsStatusButton
     , init : false /\ []
     , next : const $ true /\ []
-    , onButton : identity
+    , onToggle : identity
     }

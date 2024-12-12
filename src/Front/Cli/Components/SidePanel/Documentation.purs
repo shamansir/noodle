@@ -21,5 +21,5 @@ sidePanel =
     , buttonKey : Key.documentationButton
     , init : false /\ []
     , next : const $ true /\ []
-    , onButton : identity
+    , onToggle : identity
     }

@@ -47,7 +47,7 @@ component =
     B.button Key.addPatchButton
         [ Box.content "+"
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 13
+        , Box.left $ Offset.px 0 -- Offset.calc $ Coord.percents 100.0 <-> Coord.px 13
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Button.mouse true

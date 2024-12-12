@@ -22,5 +22,5 @@ sidePanel =
     , buttonKey : Key.commandLogButton
     , init : false /\ []
     , next : const $ true /\ []
-    , onButton : identity
+    , onToggle : identity
     }

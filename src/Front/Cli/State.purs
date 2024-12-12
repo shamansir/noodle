@@ -31,6 +31,7 @@ import Blessed.Internal.NodeKey as NodeKey
 import Blessed.Internal.NodeKey (RawNodeKey)
 
 import Cli.WsServer as WSS
+import Cli.Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
@@ -55,11 +56,7 @@ type State (tk :: ToolkitKey) s (fs :: Families) r m =
     -- TODO, commandLog :: NdfFile
     -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
-    , onOff ::
-        { commandBox :: Boolean
-        , hydraCode :: Boolean
-        , fullInfo :: Boolean
-        }
+    , panels :: SidePanels
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     -- TODO, , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
@@ -113,11 +110,7 @@ init state toolkit = do
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances
-        , onOff :
-            { commandBox : false
-            , hydraCode : false
-            , fullInfo : false
-            }
+        , panels : initPanels
         -- , editors : Map.empty
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false

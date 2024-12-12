@@ -17,7 +17,7 @@ import Noodle.Id (family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
-import Noodle.Text.NdfFile.Types
+import Noodle.Text.NdfFile.Types (Source)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign)
 import Noodle.Text.NdfFile.FamilyDef (ndfLinesCount, processAssignNdfLinesCount) as FD
 import Noodle.Text.NdfFile.Command.Op (CommandOp)
@@ -75,3 +75,7 @@ priority = op >>> Op.priority
 
 reviewOrder_ :: Op.FamiliesOrder -> Op.FamiliesOrder
 reviewOrder_ = Op.reviewOrder_
+
+
+fromOp :: CommandOp -> Command
+fromOp = Command Nothing

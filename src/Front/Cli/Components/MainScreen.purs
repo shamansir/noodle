@@ -85,18 +85,13 @@ component initialState =
         , SP.button 5 Console.sidePanel
         -- , SP.button 2 HC.sidePanel
         , SP.button 3 WS.sidePanel
-        -- , HydraCodeButton.component
-        -- , FullInfoButton.component
-        -- , WsStatusButton.component
         -- -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
         , SP.panel Doc.sidePanel
         , SP.panel CL.sidePanel
-        , SP.panel WS.sidePanel
         , SP.panel Console.sidePanel
+        , SP.panel WS.sidePanel
         -- , SP.panel HC.sidePanel
-        -- , HydraCodeBox.component
-        -- , FullInfoBox.component
         ]
         )
 

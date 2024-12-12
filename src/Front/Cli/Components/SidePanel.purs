@@ -54,7 +54,7 @@ type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of 
     , buttonKey :: NodeKey Subj.Button id
     , init :: v /\ Array T.Tag
     , next :: (s -> v /\ Array T.Tag)
-    , onButton :: (s -> s)
+    , onToggle :: (s -> s)
     }
 
 
@@ -90,11 +90,7 @@ button offset sidePanel =
         , Box.tags true
         , Style.addPatch
         , Core.on Button.Press
-            \_ _ -> do
-                state <- State.modify sidePanel.onButton
-                sidePanel # refreshWith (sidePanel.next state)
-                sidePanel.panelKey >~ Element.toggle
-                Key.mainScreen >~ Screen.render
+            \_ _ -> toggle sidePanel
         {-
         , Core.on Element.MouseOver
             \_ _ -> do
@@ -119,3 +115,11 @@ refreshWith (nextV /\ nextContent) sidePanel = do
 refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
 refresh sidePanel =
     State.get <#> sidePanel.next >>= flip refreshWith sidePanel
+
+
+toggle :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
+toggle sidePanel = do
+    state <- State.modify sidePanel.onToggle
+    sidePanel # refreshWith (sidePanel.next state)
+    sidePanel.panelKey >~ Element.toggle
+    Key.mainScreen >~ Screen.render

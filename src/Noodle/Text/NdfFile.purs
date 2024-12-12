@@ -6,7 +6,7 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat) as Array
+import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat, snoc) as Array
 import Data.Array.Extra (sortUsing) as Array
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
@@ -24,7 +24,7 @@ import Noodle.Id (FamilyR)
 import Noodle.Id (family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
-import Noodle.Text.NdfFile.Command (priority, op) as Command
+import Noodle.Text.NdfFile.Command (priority, op, fromOp) as Command
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
@@ -103,8 +103,20 @@ from_ :: { toolkit :: String
 from_ header = NdfFile (Header header) []
 
 
-append :: Command -> NdfFile -> NdfFile
-append cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd : cmds
+cons :: Command -> NdfFile -> NdfFile
+cons cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd : cmds
+
+
+snoc :: NdfFile -> Command -> NdfFile
+snoc (NdfFile header failedLines cmds) cmd = NdfFile header failedLines $ cmds `Array.snoc` cmd
+
+
+consOp :: CommandOp -> NdfFile -> NdfFile
+consOp cmdop (NdfFile header failedLines cmds) = NdfFile header failedLines $ Command.fromOp cmdop : cmds
+
+
+snocOp :: NdfFile -> CommandOp -> NdfFile
+snocOp (NdfFile header failedLines cmds) cmdop = NdfFile header failedLines $ cmds `Array.snoc` Command.fromOp cmdop
 
 
 toNdfCode :: NdfFile -> String

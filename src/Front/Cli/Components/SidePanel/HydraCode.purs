@@ -21,5 +21,5 @@ sidePanel =
     , buttonKey : Key.hydraCodeButton
     , init : false /\ []
     , next : const $ true /\ []
-    , onButton : identity
+    , onToggle : identity
     }
