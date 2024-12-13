@@ -19,11 +19,12 @@ import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
 import Noodle.Fn.ToFn (Fn(..))
-import Noodle.Fn.ToFn (q) as Fn
+import Noodle.Fn.ToFn (i, o) as Fn
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.FromCode (fromCode, SourceError, srcErrorToString)
 
 import Hydra.Types
+import Hydra.Repr.Show (hShow)
 import Hydra.Repr.Wrap
 import Hydra.Repr.Wrap (WrapRepr(..)) as W
 import Hydra.Types (AudioBin(..), Values(..), GlslFn(..)) as T
@@ -177,21 +178,21 @@ code
         $ GlslFnRef $ Fn ("aaa" /\ [] /\ [])
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
-        $ GlslFnRef $ Fn ("aaa" /\ [ Fn.q "arg1" $ T $ Empty ] /\ [])
+        $ GlslFnRef $ Fn ("aaa" /\ [ Fn.i "arg1" $ T $ Empty ] /\ [])
     , W.GlslFn
         $ T.GlslFn
         $ { kind : FnSrc
           , code : GlslFnCode "foo\nbar\nbzz"
-          , fn : Fn ("axz" /\ [ Fn.q "arg1" $ T $ Empty, Fn.q "arg2" $ V $ Number 2.0 ] /\ [])
+          , fn : Fn ("axz" /\ [ Fn.i "arg1" $ T $ Empty, Fn.i "arg2" $ V $ Number 2.0 ] /\ [])
           }
     , Texture
         $ CallGlslFn { over : Filter Empty $ Posterize { bins : Time, gamma : Height }, mbWith : Nothing }
         $ GlslFnRef $ Fn
             $ "bzz" /\
-                [ Fn.q "a1" $ T Empty
-                , Fn.q "a2"
+                [ Fn.i "a1" $ T Empty
+                , Fn.i "a2"
                     $ T $ BlendOf { what : Empty, with : Empty } $ Diff
-                , Fn.q "a3" $ V $ Number 2.0
+                , Fn.i "a3" $ V $ Number 2.0
                 ] /\
                 []
     ]
@@ -206,12 +207,12 @@ spec = do
         (\idx prev sample -> do
             prev
             *>
-            (it ("works for sample " <> show idx <> " : " <> show sample <> " : " <> Hydra._encode sample) $
+            (it ("works for sample " <> show idx <> " : " <> hShow sample <> " : " <> Hydra._encode sample) $
                 case (Hydra._decode $ Hydra._encode sample :: Either SourceError WrapRepr) of
                     Right decoded -> do
                         -- liftEffect $ Console.log $ Hydra._encode sample
                         (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
-                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample <> "\n\n\t" <> srcErrorToString srcError
+                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> hShow sample <> "\n\n\t" <> srcErrorToString srcError
             )
         )
         (pure unit)
@@ -223,11 +224,11 @@ spec = do
         (\idx prev sample -> do
             prev
             *>
-            (it ("works for sample " <> show idx <> " : " <> show sample {- <> " : " <> Hydra._encode sample-}) $
+            (it ("works for sample " <> show idx <> " : " <> hShow sample {- <> " : " <> Hydra._encode sample-}) $
                 case (Hydra._decode $ Hydra._encode sample :: Either SourceError Texture) of
                     Right decoded ->
                         (Hydra._encode decoded) `U.shouldEqual` (Hydra._encode sample)
-                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> show sample <> "\n\n\t" <> srcErrorToString srcError
+                    Left srcError -> fail $ "\t" <> Hydra._encode sample <> "\n\n\tfailed to decode the following sample:\n\n\t" <> hShow sample <> "\n\n\t" <> srcErrorToString srcError
             )
         )
         (pure unit)

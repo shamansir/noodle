@@ -4,7 +4,7 @@ import Prelude
 
 
 import Data.Maybe (Maybe(..), fromMaybe)
-import Noodle.Repr (class ToRepr, class FromRepr, class HasFallback)
+import Noodle.Repr (class ToRepr, class FromRepr, class HasFallback, fromEq, toEq)
 import Noodle.Repr (wrap, unwrap) as Repr
 import Data.Newtype (unwrap) as NT
 -- import Data.String.Read (read)
@@ -26,6 +26,10 @@ data MinimalRepr
 
 
 derive instance Eq MinimalRepr
+
+
+instance FromRepr MinimalRepr MinimalRepr where fromRepr = fromEq
+instance ToRepr   MinimalRepr MinimalRepr where toRepr = toEq
 
 
 instance Show MinimalRepr where

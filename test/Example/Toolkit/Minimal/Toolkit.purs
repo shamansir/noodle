@@ -4,11 +4,12 @@ import Prelude
 
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
+import Type.Proxy (Proxy(..))
 
 import Effect (Effect)
 
 import Noodle.Id (toolkitR)
-import Noodle.Toolkit (Toolkit) as Noodle
+import Noodle.Toolkit (Toolkit, ToolkitKey) as Noodle
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F)
 
@@ -20,6 +21,12 @@ import Example.Toolkit.Minimal.Node.Stateful as Stateful
 import Example.Toolkit.Minimal.Repr (MinimalRepr)
 
 
+foreign import data MINIMAL :: Noodle.ToolkitKey
+
+
+minimalTk = Proxy :: _ MINIMAL
+
+
 type MyFamilies :: Families
 type MyFamilies
     =  Sample.F
@@ -29,7 +36,7 @@ type MyFamilies
     :> TNil
 
 
-type Toolkit = Noodle.Toolkit MyFamilies MinimalRepr Effect
+type Toolkit = Noodle.Toolkit MINIMAL MyFamilies MinimalRepr Effect
 
 
 {-
@@ -48,4 +55,4 @@ toolkit
     $ Toolkit.register Sum.family
     $ Toolkit.register Concat.family
     $ Toolkit.register Stateful.family
-    $ Toolkit.empty (toolkitR "my-toolkit")
+    $ Toolkit.empty minimalTk (toolkitR "my-toolkit")

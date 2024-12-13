@@ -30,7 +30,7 @@ import Example.Toolkit.Minimal.Node.Stateful as Stateful
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
 import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
-import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit) as My
+import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit, MINIMAL,  minimalTk) as My
 
 
 spec :: Spec Unit
@@ -40,11 +40,11 @@ spec = do
 
         it "registers family" $ do
             let
-                (_ :: Toolkit (Concat.F :> TNil) _ _) =
-                    Toolkit.empty (Id.toolkitR "Test")
+                (_ :: Toolkit My.MINIMAL (Concat.F :> TNil) _ _) =
+                    Toolkit.empty My.minimalTk (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
-                (_ :: Toolkit (Sum.F :> Concat.F :> TNil) _ _) =
-                    Toolkit.empty (Id.toolkitR "Test")
+                (_ :: Toolkit My.MINIMAL (Sum.F :> Concat.F :> TNil) _ _) =
+                    Toolkit.empty My.minimalTk (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
             pure unit
@@ -82,7 +82,7 @@ spec = do
 
         it "it is possible to register family and immediately spawn the node that belongs to it" $ liftEffect $ do
             (concatNode :: Concat.Node) <-
-                    Toolkit.empty (Id.toolkitR "test")
+                    Toolkit.empty My.minimalTk (Id.toolkitR "test")
                         # Toolkit.register Concat.family
                         # Toolkit.spawn Concat._concat
             concatNode # Node.run
@@ -95,16 +95,16 @@ spec = do
         let
             familyToString :: forall f state is os repr m. IsSymbol f => Family f state is os repr m -> String
             familyToString = Family.familyIdOf >>> Id.familyR >>> Id.family
-            rawFamilyToString :: forall repr m. Raw.Family repr m -> String
+            rawFamilyToString :: forall repr m. Raw.Family repr repr m -> String
             rawFamilyToString = RawFamily.familyIdOf >>> \familyR -> Id.family familyR
 
         it "it is possible to iterate through all typed families" $ liftEffect $ do
             let emptyTkArray =
-                    Toolkit.empty (Id.toolkitR "test")
+                    Toolkit.empty My.minimalTk (Id.toolkitR "test")
                         # Toolkit.mapFamilies familyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
-                    Toolkit.empty (Id.toolkitR "test-2")
+                    Toolkit.empty My.minimalTk (Id.toolkitR "test-2")
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
                         # Toolkit.register Stateful.family
@@ -113,11 +113,11 @@ spec = do
 
         it "it is possible to iterate through all raw families" $ liftEffect $ do
             let emptyTkArray =
-                    Toolkit.empty (Id.toolkitR "test")
+                    Toolkit.empty My.minimalTk (Id.toolkitR "test")
                         # Toolkit.mapRawFamilies rawFamilyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
-                    Toolkit.empty (Id.toolkitR "test-2")
+                    Toolkit.empty My.minimalTk (Id.toolkitR "test-2")
                         # Toolkit.registerRaw RawConcat.family
                         # Toolkit.registerRaw RawSum.family
                         # Toolkit.registerRaw RawStateful.family

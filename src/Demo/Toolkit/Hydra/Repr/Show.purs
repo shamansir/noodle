@@ -14,7 +14,7 @@ import Hydra.Types
 import Hydra.Repr.Target
 
 
-class HydraShow a where
+class HydraShow a where -- Some kind of `ToCode` ?
     hShow :: a -> String
 
 

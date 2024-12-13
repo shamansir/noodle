@@ -34,6 +34,7 @@ import Hydra.Types as HT
 import Hydra.Repr.Parser as RP
 import Hydra.Repr.Target (HYDRA_V, hydraV)
 import Hydra.Repr.Target (_encode) as H
+import Hydra.Repr.Show (class HydraShow, hShow)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen
@@ -397,35 +398,34 @@ instance Mark WrapRepr where
     -}
 
 
-{-
-instance Show WrapRepr where
-    show = case _ of
-        Value v -> show v
-        Unit unit -> show unit
-        Texture t -> show t
-        TOrV (HT.T t) -> show t
-        TOrV (HT.V v) -> show v
-        OutputN outN -> show outN
-        SourceN srcN -> show srcN
-        TODO todo -> show todo
-        Context ctx -> show ctx
-        UpdateFn fn -> show fn
-        Source src -> show src
-        Url url -> show url
-        GlslFn fn -> show fn
-        SourceOptions so -> show so
-        Values vs -> show vs
-        Ease e -> show e
-        Audio a -> show a
-        AudioBin ab -> show ab
-        ExtSource ext -> show ext
-        Target trg -> show trg
-        DepFn depFn -> show depFn
-        -- Products products -> show products
-        -- Product product -> show product
-        CBS cbs -> show cbs
+
+instance HydraShow WrapRepr where
+    hShow = case _ of
+        Value v -> hShow v
+        Unit unit -> hShow unit
+        Texture t -> hShow t
+        TOrV (HT.T t) -> hShow t
+        TOrV (HT.V v) -> hShow v
+        OutputN outN -> hShow outN
+        SourceN srcN -> hShow srcN
+        TODO todo -> hShow todo
+        Context ctx -> hShow ctx
+        UpdateFn fn -> hShow fn
+        Source src -> hShow src
+        Url url -> hShow url
+        GlslFn fn -> hShow fn
+        SourceOptions so -> hShow so
+        Values vs -> hShow vs
+        Ease e -> hShow e
+        Audio a -> hShow a
+        AudioBin ab -> hShow ab
+        ExtSource ext -> hShow ext
+        Target trg -> hShow trg
+        DepFn depFn -> hShow depFn
+        -- Products products -> hShow products
+        -- Product product -> hShow product
+        CBS cbs -> hShow cbs
         WRError { source, error } -> "Error: \"" <> source <> "\" " <> error
--}
 
 
 wrapParser :: Parser String WrapRepr
