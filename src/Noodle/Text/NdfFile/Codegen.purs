@@ -117,6 +117,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     , exprInt 255
                     ]
             ]
+        , generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
