@@ -24,6 +24,8 @@ import Prelude
 import Data.Symbol (class IsSymbol)
 import Data.List (List)
 import Data.Newtype (class Newtype, wrap, unwrap)
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -122,6 +124,7 @@ spawn = wrap <<< Raw.spawn <<< unwrap
 {- Maps -}
 
 
+
 imapMState :: forall state state' is os repr m. (state -> state') -> (state' -> state) -> ProcessM state is os repr m ~> ProcessM state' is os repr m
 imapMState f g =
     unwrap >>> Raw.imapMState f g >>> wrap
@@ -130,6 +133,17 @@ imapMState f g =
 mapMM :: forall state is os repr m m'. (m ~> m') -> ProcessM state is os repr m ~> ProcessM state is os repr m'
 mapMM f =
     unwrap >>> Raw.mapMM f >>> wrap
+
+
+
+{-
+tuplify :: forall ostate istate is os repr m. ostate -> ProcessM istate is os repr m ~> ProcessM (ostate /\ istate) is os repr m
+tuplify ostate = imapMState ((/\) ostate) Tuple.snd
+
+
+untuple :: forall ostate istate is os repr m. ostate -> ProcessM (ostate /\ istate) is os repr m ~> ProcessM istate is os repr m
+untuple ostate = imapMState Tuple.snd ((/\) ostate)
+-}
 
 
 {-

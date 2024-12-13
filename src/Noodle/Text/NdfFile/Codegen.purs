@@ -163,29 +163,27 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     <$> referFamily
                     <$> Array.reverse definitions
                 )
-        qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-        qvalue mbDataType = maybe (FCG.defaultFor opts.prepr mbDataType) (FCG.valueFor opts.prepr mbDataType)
-        inletExpr :: Partial => Fn.Argument ChannelDef -> CST.Expr Void
-        inletExpr chdef = case chdef # Fn.argValue # unwrap of
-            { mbType, mbDefault } -> case mbDefault of
-                Just default ->
-                    exprOp
-                        (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
-                        [ binaryOp "$" $ qvalue mbType mbDefault ]
-                Nothing ->
-                    exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
-        outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
-        outletExpr chdef = case chdef # Fn.outValue # unwrap of
-            { mbType, mbDefault } -> case mbDefault of
-                Just default ->
-                    exprOp
-                        (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
-                        [ binaryOp "$" $ qvalue mbType mbDefault ]
-                Nothing ->
-                    exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
+
+
+generatePossiblyToFnInstance :: forall repr. Partial => FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> CST.Declaration Void
+generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
+    declInstance Nothing [] "PossiblyToFn"
+        [ typeCtor toolkitKey
+        , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
+        , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
+        , typeCtor "Id.FamilyR"
+        ]
+        [ instValue "possiblyToFn" [ binderWildcard ]
+            $ exprOp (exprIdent "Id.family")
+            [ binaryOp ">>>"
+                $ exprCase [ exprSection ]
+                    $ fnDefBranch <$> definitionsArray
+            ]
+        ]
+    where
+        toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         fnDefBranch :: Partial => FamilyDef -> _
         fnDefBranch fdef =
-            -- case unwrap (toFn (Proxy :: _ Void) fdef :: Fn ChannelDef ChannelDef) of
             case (unwrap $ toFn (Proxy :: _ Void) fdef :: FnS ChannelDef ChannelDef) of
                 name /\ inlets /\ outlets ->
                     caseBranch
@@ -198,27 +196,26 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                                     , exprArray $ outletExpr <$> outlets
                                     ]
                             ]
-        generateFnDeclarations :: Partial => CST.Declaration Void
-        generateFnDeclarations =
-            declInstance Nothing [] "PossiblyToFn"
-                [ typeCtor toolkitKey
-                , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
-                , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
-                , typeCtor "Id.FamilyR"
-                ]
-                [ instValue "possiblyToFn" [ binderWildcard ]
-                    $ exprOp (exprIdent "Id.family")
-                    [ binaryOp ">>>"
-                        $ exprCase [ exprSection ]
-                            $ fnDefBranch <$> definitionsArray
-                    ]
-                ]
-
-
-{-
-generateFnDeclaration :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> CST.Declaration Void
-generateFnDeclaration tkname opts families =
-    declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ] -}
+        inletExpr :: Partial => Fn.Argument ChannelDef -> CST.Expr Void
+        inletExpr chdef = case chdef # Fn.argValue # unwrap of
+            { mbType, mbDefault } -> case mbDefault of
+                Just _ ->
+                    exprOp
+                        (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
+                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                Nothing ->
+                    exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
+        outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
+        outletExpr chdef = case chdef # Fn.outValue # unwrap of
+            { mbType, mbDefault } -> case mbDefault of
+                Just _ ->
+                    exprOp
+                        (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
+                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                Nothing ->
+                    exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
+        qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+        qvalue mbDataType = maybe (FCG.defaultFor opts.prepr mbDataType) (FCG.valueFor opts.prepr mbDataType)
 
 
 

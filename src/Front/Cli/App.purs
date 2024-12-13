@@ -48,7 +48,6 @@ import Web.Socket.Server as WSS
 
 import Cli.WsServer as WSS
 
--- import Noodle.Stateful (set) as Stateful
 import Noodle.Text.NdfFile as NdfFile
 import Noodle.Text.NdfFile.Parser as NdfFile
 import Noodle.Text.NdfFile.Apply as NdfFile

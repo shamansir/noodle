@@ -27,6 +27,7 @@ import Type.Equality (class TypeEquals, from, to)
 import Data.Map (Map)
 import Data.Map (lookup, insert, empty) as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Tuple (Tuple(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 
 import Prim.Row as Row
@@ -100,6 +101,7 @@ instance (FromRepr repr a, ToRepr a repr) => FromToRepr a repr
 instance HasFallback Unit   where fallback = unit
 instance HasFallback Int    where fallback = 0
 instance HasFallback String where fallback = ""
+instance (HasFallback a, HasFallback b) => HasFallback (Tuple a b) where fallback = Tuple fallback fallback
 instance ToRepr Unit Unit     where toRepr = toEq
 instance ToRepr Int Int       where toRepr = toEq
 instance ToRepr String String where toRepr = toEq

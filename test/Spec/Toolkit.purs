@@ -27,6 +27,7 @@ import Noodle.Raw.Toolkit.Family (familyIdOf) as RawFamily
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
+import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
 import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
@@ -105,11 +106,12 @@ spec = do
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
                     Toolkit.empty My.minimalTk (Id.toolkitR "test-2")
+                        # Toolkit.register ModifiesPatch.family
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
                         # Toolkit.register Stateful.family
                         # Toolkit.mapFamilies familyToString
-            nonEmptyTkArray `shouldEqual` [ "stateful", "sum", "concat" ] -- since we use `#` operator, `Put` typeclass pushes "stateful" before "sum" & s.o.
+            nonEmptyTkArray `shouldEqual` [ "stateful", "sum", "concat", "modifiesPatch" ] -- since we use `#` operator, `Put` typeclass pushes "stateful" before "sum" & s.o.
 
         it "it is possible to iterate through all raw families" $ liftEffect $ do
             let emptyTkArray =
