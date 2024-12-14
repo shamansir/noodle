@@ -48,10 +48,11 @@ type InletsRow =
 
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "sketch" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "sketch" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "sketch" Unit InletsRow OutletsRow ValueRepr Effect
+
 
 defaultI :: Record InletsRow
 defaultI =
@@ -76,7 +77,7 @@ _in_amplitude = Noodle.Inlet :: _ "amplitude"
 _in_period = Noodle.Inlet :: _ "period"
 
 family :: Family
-family = Family.make _sketch PR.VNone (Noodle.Shape :: Shape) defaultI defaultO sketchP
+family = Family.make _sketch unit (Noodle.Shape :: Shape) defaultI defaultO sketchP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

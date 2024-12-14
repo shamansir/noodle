@@ -43,10 +43,10 @@ type InletsRow =
 
 type OutletsRow = (color :: PR.Spread PR.Color)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "cspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "cspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "cspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "cspread" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "cspread" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "cspread" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { red: PR.Spread [], green: PR.Spread [], blue: PR.Spread [], alpha: PR.Spread [] }
@@ -61,7 +61,7 @@ _in_alpha = Noodle.Inlet :: _ "alpha"
 _out_color = Noodle.Outlet :: _ "color"
 
 family :: Family
-family = Family.make _cspread PR.VNone (Noodle.Shape :: Shape) defaultI defaultO cspreadP
+family = Family.make _cspread unit (Noodle.Shape :: Shape) defaultI defaultO cspreadP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

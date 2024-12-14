@@ -33,10 +33,10 @@ type Outlets = (O "spread" (PR.Spread (Number /\ Number)) :> TNil) :: Noodle.Out
 type InletsRow = (x :: PR.Spread Number, y :: PR.Spread Number)
 type OutletsRow = (spread :: PR.Spread (Number /\ Number))
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "vspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "vspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "vspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "vspread" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "vspread" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "vspread" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { x: PR.Spread [], y: PR.Spread [] }
@@ -49,7 +49,7 @@ _in_y = Noodle.Inlet :: _ "y"
 _out_spread = Noodle.Outlet :: _ "spread"
 
 family :: Family
-family = Family.make _vspread PR.VNone (Noodle.Shape :: Shape) defaultI defaultO vspreadP
+family = Family.make _vspread unit (Noodle.Shape :: Shape) defaultI defaultO vspreadP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

@@ -43,8 +43,6 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 component
     :: forall tk p fs strepr chrepr
      . HasFallback chrepr
-    => StRepr strepr strepr
-    => FromToChRepr chrepr chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => CliFriendly tk fs chrepr Effect

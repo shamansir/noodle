@@ -158,8 +158,7 @@ runWith =
 
 runBlessedInterface
     :: forall tk ps fs strepr chrepr
-     . StRepr strepr strepr
-    => FromToChRepr chrepr chrepr
+     . HasFallback chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect

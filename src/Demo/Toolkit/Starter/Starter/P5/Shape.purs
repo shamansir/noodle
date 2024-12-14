@@ -31,10 +31,10 @@ type Outlets = (O "shape" PR.Shape :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (shape :: PR.Shape)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "shape" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "shape" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "shape" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "shape" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "shape" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "shape" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -45,7 +45,7 @@ defaultO = { shape: PR.Circle }
 _out_shape = Noodle.Outlet :: _ "shape"
 
 family :: Family
-family = Family.make _shape PR.VNone (Noodle.Shape :: Shape) defaultI defaultO shapeP
+family = Family.make _shape unit (Noodle.Shape :: Shape) defaultI defaultO shapeP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

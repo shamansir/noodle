@@ -43,10 +43,10 @@ type InletsRow =
 
 type OutletsRow = (shape :: PR.Spread PR.Shape)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "xsshape" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "xsshape" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "xsshape" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { pos: PR.Spread [], color: PR.Spread [], size: PR.Spread [], angle: PR.Spread [] }
@@ -61,7 +61,7 @@ _in_angle = Noodle.Inlet :: _ "angle"
 _out_shape = Noodle.Outlet :: _ "shape"
 
 family :: Family
-family = Family.make _xsshape PR.VNone (Noodle.Shape :: Shape) defaultI defaultO xsshapeP
+family = Family.make _xsshape unit (Noodle.Shape :: Shape) defaultI defaultO xsshapeP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

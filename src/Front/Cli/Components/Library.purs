@@ -61,9 +61,7 @@ import Prelude
 
 component
     :: forall tk p fs strepr chrepr
-     . StRepr strepr strepr
-    => FromToChRepr chrepr chrepr
-    => Toolkit.HoldsFamilies strepr chrepr Effect fs
+     . Toolkit.HoldsFamilies strepr chrepr Effect fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => HasFallback chrepr
@@ -103,8 +101,6 @@ component toolkit =
 onFamilySelect
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
-    => StRepr strepr strepr
-    => FromToChRepr chrepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
@@ -141,8 +137,6 @@ onFamilySelect =
 spawnAndRenderRaw
     :: forall  tk pstate fs strepr chrepr m
      . Wiring m
-    => StRepr strepr strepr
-    => FromToChRepr chrepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m

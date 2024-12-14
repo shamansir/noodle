@@ -22,7 +22,7 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (make, id, registerRawNode) as Patch
+import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Raw.Node (Node) as Raw
@@ -148,9 +148,14 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall fstate strepr tk ps fs chrepr m. StRepr strepr fstate => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode :: forall fstate strepr tk ps fs chrepr m. Id.PatchR -> Raw.Node strepr chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
+
+
+registerRawNode' :: forall fstate strepr tk ps fs chrepr m. StRepr strepr fstate => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode' patchR rawNode s = s
+    { network = s.network # Network.withPatch patchR (Patch.registerRawNode' rawNode) }
 
 
 patch :: forall tk ps fs sr cr m. Id.PatchR -> State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)

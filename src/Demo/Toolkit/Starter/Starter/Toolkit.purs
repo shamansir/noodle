@@ -52,6 +52,7 @@ type StarterFamilies =
   :> Spreads.Cspread.F
   :> Spreads.Xsshape.F
   :> TNil
+  -- TNil
 
 foreign import data STARTER :: ToolkitKey
 

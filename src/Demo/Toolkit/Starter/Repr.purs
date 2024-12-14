@@ -47,15 +47,19 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
 
+data NoState
+    = NoState
+
+
 data StateRepr
     = StateRepr
 
 
-instance StRepr StateRepr StateRepr where
-    from = identity
-    to = identity
-else instance StRepr StateRepr Unit where
+instance StRepr StateRepr Unit where
     from = const unit
+    to = const StateRepr
+else instance StRepr StateRepr NoState where
+    from = const NoState
     to = const StateRepr
 
 

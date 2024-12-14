@@ -117,17 +117,26 @@ registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
 
 
 registerRawNode
+    :: forall pstate strepr chrepr m families
+     . Raw.Node strepr chrepr m
+    -> Patch pstate families strepr chrepr m
+    -> Patch pstate families strepr chrepr m
+registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
+    Patch name id chState nodes (Map.alter (insertOrInit rawNode) (RawNode.family rawNode) rawNodes) links
+    where
+      insertOrInit :: Raw.Node strepr chrepr m -> Maybe (Array (Raw.Node strepr chrepr m)) -> Maybe (Array (Raw.Node strepr chrepr m))
+      insertOrInit holdsNode Nothing        = Just $ Array.singleton holdsNode
+      insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
+
+
+registerRawNode'
     :: forall pstate fstate strepr chrepr m families
      . StRepr strepr fstate
     => Raw.Node fstate chrepr m
     -> Patch pstate families strepr chrepr m
     -> Patch pstate families strepr chrepr m
-registerRawNode rawNode (Patch name id chState nodes rawNodes links) =
-    Patch name id chState nodes (Map.alter (insertOrInit $ RawNode.toReprableState rawNode) (RawNode.family rawNode) rawNodes) links
-    where
-      insertOrInit :: Raw.Node strepr chrepr m -> Maybe (Array (Raw.Node strepr chrepr m)) -> Maybe (Array (Raw.Node strepr chrepr m))
-      insertOrInit holdsNode Nothing        = Just $ Array.singleton holdsNode
-      insertOrInit holdsNode (Just prev_vs) = Just $ Array.cons holdsNode prev_vs
+registerRawNode' =
+    registerRawNode <<< RawNode.toReprableState
 
 
 -- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family
