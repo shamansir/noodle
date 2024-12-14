@@ -160,20 +160,20 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
 
 spawnAndRender
-    :: forall tk fs pstate f nstate is os repr m
+    :: forall tk fs pstate f fstate is os repr m
      . Wiring m
     => IsSymbol f
-    => StRepr nstate strepr
-    => RegisteredFamily (F f nstate is os repr m) fs
+    => StRepr fstate strepr
+    => RegisteredFamily (F f fstate is os repr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Toolkit tk fs repr m
     -> Id.PatchR
     -> Id.Family f
     -> { left :: Int, top :: Int }
-    -> Toolkit.Family f nstate is os repr m
+    -> Toolkit.Family f fstate is os repr m
     -> BlessedOp (State tk pstate fs repr m) m
 spawnAndRender toolkit patchR family nextPos  _ = do
-    (node :: Noodle.Node f nstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
+    (node :: Noodle.Node f fstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
     -- TODO: put node instance in the patch
     NodeBox.component nextPos patchR family node

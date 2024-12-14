@@ -23,6 +23,7 @@ import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (make, id, registerRawNode) as Patch
+import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Raw.Node (Node) as Raw
 
@@ -39,9 +40,9 @@ import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox
 import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
 
 
-type State (tk :: ToolkitKey) s (fs :: Families) r m =
-    { network :: Network tk s fs r m
-    , initPatchesFrom :: s
+type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
+    { network :: Network tk ps fs sr cr m
+    , initPatchesFrom :: ps
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastShift :: { left :: Int, top :: Int }
@@ -83,7 +84,7 @@ type LastKeys =
     }
 
 
-init :: forall tk s fs r m. MonadEffect m => s -> Toolkit tk fs r m -> m (State tk s fs r m)
+init :: forall tk ps fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> m (State tk ps fs sr cr m)
 init state toolkit = do
     firstPatch <- Patch.make "Patch 1" state
     pure
@@ -118,14 +119,14 @@ init state toolkit = do
         }
 
 
-informWsInitialized :: forall tk s fs r m. WSS.WebSocketServer -> State tk s fs r m -> State tk s fs r m
+informWsInitialized :: forall tk ps fs sr cr m. WSS.WebSocketServer -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 informWsInitialized _ state = state
 
 
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 
-families :: forall tk s fs r m. Toolkit.HoldsFamilies r m fs => State tk s fs r m -> Array Id.FamilyR
+families :: forall tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m fs => State tk ps fs sr cr m -> Array Id.FamilyR
 families = _.network >>> Network.toolkit >>> Toolkit.families
 
 
@@ -147,34 +148,34 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall nstate tk s fs repr m. StRepr nstate strepr => Id.PatchR -> Raw.Node nstate repr m -> State tk s fs repr m -> State tk s fs repr m
+registerRawNode :: forall fstate strepr tk ps fs chrepr m. StRepr fstate strepr => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 
 
-patch :: forall tk s fs r m. Id.PatchR -> State tk s fs r m -> Maybe (Patch s fs r m)
+patch :: forall tk ps fs sr cr m. Id.PatchR -> State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 patch patchR = _.network >>> Network.patch patchR
 
 
-currentPatch :: forall tk s fs r m. State tk s fs r m -> Maybe (Patch s fs r m)
+currentPatch :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 currentPatch s = s.currentPatch <#> _.id >>= flip patch s
 
 
-withPatch :: forall tk s fs r m. Id.PatchR -> (Patch s fs r m -> Patch s fs r m) -> State tk s fs r m -> State tk s fs r m
+withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
 
 
-replacePatch :: forall tk s fs r m. Id.PatchR -> Patch s fs r m -> State tk s fs r m -> State tk s fs r m
+replacePatch :: forall tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 replacePatch patchR = withPatch patchR <<< const
 
 
-withCurrentPatch :: forall tk s fs r m. (Patch s fs r m -> Patch s fs r m) -> State tk s fs r m -> State tk s fs r m
+withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 withCurrentPatch f s = case s.currentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s
 
 
-spawnPatch :: forall tk s fs r mp m. MonadEffect m => State tk s fs r mp -> m (Patch s fs r mp)
+spawnPatch :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Patch ps fs sr cr mp)
 spawnPatch s = do
     let
         patchesCount = s.network # Network.patchesCount
@@ -182,7 +183,7 @@ spawnPatch s = do
     Patch.make ("Patch " <> show nextPatchIndex) s.initPatchesFrom
 
 
-registerPatch :: forall tk s fs r m. Patch s fs r m -> State tk s fs r m -> State tk s fs r m
+registerPatch :: forall tk ps fs sr cr m. Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 registerPatch newPatch s =
     let
         patchesCount = s.network # Network.patchesCount
@@ -196,9 +197,9 @@ registerPatch newPatch s =
             }
 
 
-lastPatchIndex :: forall tk s fs r m. State tk s fs r m -> Int
+lastPatchIndex :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Int
 lastPatchIndex s = Network.patchesCount s.network
 
 
-withPanels :: forall tk s fs r m. (SidePanels -> SidePanels) -> State tk s fs r m -> State tk s fs r m
+withPanels :: forall tk ps fs sr cr m. (SidePanels -> SidePanels) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 withPanels f s = s { panels = f s.panels }

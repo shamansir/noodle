@@ -115,7 +115,7 @@ nextPos { left, top } =
 
 
 _component
-    :: forall tk fs nstate pstate repr m
+    :: forall tk fs fstate pstate repr m
     .  Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
@@ -123,10 +123,10 @@ _component
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node nstate repr m
+    -> Raw.Node fstate repr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
-    -> BlessedOp nstate m
+    -> BlessedOp fstate m
     -> BlessedOpM (State tk pstate fs repr m) m _
 _component
     pos
@@ -137,7 +137,7 @@ _component
     mbBodySize
     nodeOp
     = do
-    let (updates :: Signal (Raw.NodeChanges nstate repr)) = RawNode.subscribeChanges rawNode
+    let (updates :: Signal (Raw.NodeChanges fstate repr)) = RawNode.subscribeChanges rawNode
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
     _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
@@ -216,12 +216,12 @@ _component
                    $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges nstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: forall a. Raw.NodeChanges fstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
-    (nodeState :: nstate) <- RawNode.state rawNode
+    (nodeState :: fstate) <- RawNode.state rawNode
 
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
@@ -243,7 +243,7 @@ _component
 
     -- REM X liftEffect $ renderNodeUpdate $ Everything /\ nodeState /\ is /\ os
 
-    (nodeStateRef :: Ref nstate) <- liftEffect $ Ref.new nodeState
+    (nodeStateRef :: Ref fstate) <- liftEffect $ Ref.new nodeState
 
     Blessed.lift $ Blessed.runM' nodeStateRef $ nodeOp
 
@@ -273,7 +273,7 @@ _component
 
 
 componentRaw
-    :: forall tk fs nstate pstate repr m
+    :: forall tk fs fstate pstate repr m
      . Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
@@ -281,7 +281,7 @@ componentRaw
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node nstate repr m
+    -> Raw.Node fstate repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
 componentRaw pos curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
@@ -294,29 +294,29 @@ componentRaw pos curPatchR familyR rawNode = do
 
 
 component
-    :: forall tk fs pstate f nstate is os repr m
+    :: forall tk fs pstate f fstate is os repr m
     .  Wiring m
     => IsSymbol f
-    => FromRepr repr nstate => ToRepr nstate repr
-    => RegisteredFamily (F f nstate is os repr m) fs
+    => FromRepr repr fstate => ToRepr fstate repr
+    => RegisteredFamily (F f fstate is os repr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.Family f
-    -> Noodle.Node f nstate is os repr m
+    -> Noodle.Node f fstate is os repr m
     -> BlessedOpM (State tk pstate fs repr m) m _
 component pos curPatchR family =
     componentRaw pos curPatchR (Id.familyR family) <<< Node.toRaw
 
 
 renderUpdate
-    :: forall m nstate state repr
+    :: forall m fstate state repr
      . T.At At.ChannelLabel repr
     => NodeBoxKey
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey
-    -> Raw.NodeChanges nstate repr
+    -> Raw.NodeChanges fstate repr
     -> BlessedOp state m
 renderUpdate _ inletsKeysMap outletsKeysMap update = do
     -- CC.log $ show outletsReprs
@@ -337,12 +337,12 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
 
 
 updateCodeFor
-    :: forall tk f s fs nstate repr m
+    :: forall tk f s fs fstate repr m
      . MonadEffect m
     => IsSymbol f
     => Ref (State tk s fs repr m)
     -> Id.Family f
-    -> Raw.NodeChanges nstate repr
+    -> Raw.NodeChanges fstate repr
     -> m Unit
 updateCodeFor stateRef family update = do
     {- REM
@@ -358,10 +358,10 @@ updateCodeFor stateRef family update = do
 
 
 logDataCommand
-    :: forall tk fs pstate nstate repr m
+    :: forall tk fs pstate fstate repr m
      . MonadEffect m
     => Ref (State tk pstate fs repr m)
-    -> Raw.NodeChanges nstate repr
+    -> Raw.NodeChanges fstate repr
     -> m Unit
 logDataCommand stateRef update =
     case update.focus of

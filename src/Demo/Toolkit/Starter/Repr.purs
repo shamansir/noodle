@@ -32,7 +32,8 @@ import Tidy.Codegen
     , declImport, declImportAs, importOp, importTypeOp
     )
 
-import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
 import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as ChRepr
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -231,22 +232,22 @@ instance HasFallback StarterRepr where
     fallback = VNone
 
 
-instance FromRepr StarterRepr StarterRepr where fromRepr = fromEq
-instance ToRepr   StarterRepr StarterRepr where toRepr = toEq
+instance FromChRepr StarterRepr StarterRepr where fromChRepr = fromEq
+instance ToChRepr   StarterRepr StarterRepr where toChRepr   = toEq
 
 
-instance ToRepr Any     StarterRepr where toRepr = Just <<< wrap <<< case _ of Any pr -> pr
-instance ToRepr Bang    StarterRepr where toRepr = Just <<< wrap <<< const VBang
-instance ToRepr Boolean StarterRepr where toRepr = Just <<< wrap <<< VBool
-instance ToRepr Char    StarterRepr where toRepr = Just <<< wrap <<< VChar
-instance ToRepr Number  StarterRepr where toRepr = Just <<< wrap <<< VNumber
-instance ToRepr Time    StarterRepr where toRepr = Just <<< wrap <<< VTime
-instance ToRepr Shape   StarterRepr where toRepr = Just <<< wrap <<< VShape
-instance ToRepr Color   StarterRepr where toRepr = Just <<< wrap <<< VColor
-instance ToRepr (Spread Number) StarterRepr where toRepr = Just <<< wrap <<< VSpreadNum
-instance ToRepr (Spread (Number /\ Number)) StarterRepr where toRepr = Just <<< wrap <<< VSpreadVec
-instance ToRepr (Spread Color) StarterRepr where toRepr = Just <<< wrap <<< VSpreadCol
-instance ToRepr (Spread Shape) StarterRepr where toRepr = Just <<< wrap <<< VSpreadShp
+instance ToChRepr Any     StarterRepr where toChRepr = Just <<< wrap <<< case _ of Any pr -> pr
+instance ToChRepr Bang    StarterRepr where toChRepr = Just <<< wrap <<< const VBang
+instance ToChRepr Boolean StarterRepr where toChRepr = Just <<< wrap <<< VBool
+instance ToChRepr Char    StarterRepr where toChRepr = Just <<< wrap <<< VChar
+instance ToChRepr Number  StarterRepr where toChRepr = Just <<< wrap <<< VNumber
+instance ToChRepr Time    StarterRepr where toChRepr = Just <<< wrap <<< VTime
+instance ToChRepr Shape   StarterRepr where toChRepr = Just <<< wrap <<< VShape
+instance ToChRepr Color   StarterRepr where toChRepr = Just <<< wrap <<< VColor
+instance ToChRepr (Spread Number) StarterRepr where toChRepr = Just <<< wrap <<< VSpreadNum
+instance ToChRepr (Spread (Number /\ Number)) StarterRepr where toChRepr = Just <<< wrap <<< VSpreadVec
+instance ToChRepr (Spread Color) StarterRepr where toChRepr = Just <<< wrap <<< VSpreadCol
+instance ToChRepr (Spread Shape) StarterRepr where toChRepr = Just <<< wrap <<< VSpreadShp
 
 
 {-

@@ -11,7 +11,9 @@ import Partial.Unsafe (unsafePartial)
 
 import Tidy.Codegen (exprCtor, typeCtor, declImport)
 
-import Noodle.Repr.ChRepr (class HasFallback, wrap, unwrap, class ToRepr, class FromRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (wrap, unwrap) as ChRepr
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), groupPascalCase, familyPascalCase)
 
@@ -49,9 +51,9 @@ instance HasFallback UnitRepr where
     fallback = UnitRepr
 
 
-instance ToRepr UnitRepr UnitRepr
-    where toRepr = Just <<< wrap
+instance ToChRepr UnitRepr UnitRepr
+    where toChRepr = Just <<< ChRepr.wrap
 
 
-instance FromRepr UnitRepr UnitRepr
-    where fromRepr = unwrap >>> Just
+instance FromChRepr UnitRepr UnitRepr
+    where fromChRepr = ChRepr.unwrap >>> Just

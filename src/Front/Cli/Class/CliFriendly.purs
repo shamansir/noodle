@@ -2,7 +2,7 @@ module Cli.Class.CliFriendly where
 
 import Prelude
 
-import Noodle.Toolkit (class MarkToolkit, class HasRepr) as Toolkit
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr) as Toolkit
 import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel, StatusLine) as At
 
@@ -13,18 +13,18 @@ import Cli.Class.CliRenderer (class CliRenderer)
 
 
 class
-    ( CliRenderer tk fs repr m
-    , Toolkit.HasRepr tk repr
+    ( CliRenderer tk fs chrepr m
+    , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
-    , T.At At.ChannelLabel repr
-    , T.At At.StatusLine repr
-    ) <= CliFriendly tk fs repr m
+    , T.At At.ChannelLabel chrepr
+    , T.At At.StatusLine chrepr
+    ) <= CliFriendly tk fs chrepr m
 
 
 instance
-    ( CliRenderer tk fs repr m
-    , Toolkit.HasRepr tk repr
+    ( CliRenderer tk fs chrepr m
+    , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
-    , T.At At.ChannelLabel repr
-    , T.At At.StatusLine repr
-    ) => CliFriendly tk fs repr m
+    , T.At At.ChannelLabel chrepr
+    , T.At At.StatusLine chrepr
+    ) => CliFriendly tk fs chrepr m

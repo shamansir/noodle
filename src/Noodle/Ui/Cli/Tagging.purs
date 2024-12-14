@@ -18,7 +18,7 @@ import Data.Text.Format as T
 import Noodle.Id as Id
 import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
-import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasRepr, markGroup, markFamily, groupOf)
+import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasChRepr, markGroup, markFamily, groupOf)
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (crepr) as C
@@ -29,7 +29,7 @@ import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
 
 
-inlet :: forall repr. Tagged.At At.ChannelLabel repr  => Int -> Id.InletR -> Maybe repr -> Tag
+inlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr  => Int -> Id.InletR -> Maybe chrepr -> Tag
 inlet idx inletId (Just repr) =
     -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
     At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
@@ -41,7 +41,7 @@ inletInfoBox inletR =
     T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletR
 
 
-inletStatusLine :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> Tag
+inletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> Maybe chrepr -> Tag
 inletStatusLine familyR idx inletId (Just repr) =
     -- TODO: show node id and group as well
     (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
@@ -49,7 +49,7 @@ inletStatusLine familyR idx inletId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
-outlet :: forall repr. Tagged.At At.ChannelLabel repr => Int -> Id.OutletR -> Maybe repr -> Tag
+outlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr => Int -> Id.OutletR -> Maybe chrepr -> Tag
 outlet idx outletId (Just repr) =
     At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
@@ -61,7 +61,7 @@ outletInfoBox outletR =
     T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletR
 
 
-outletStatusLine :: forall repr. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> Tag
+outletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> Maybe chrepr -> Tag
 outletStatusLine familyR idx outletId (Just repr) =
     -- TODO: show group as well
     (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
@@ -237,10 +237,10 @@ filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
 
 
 familyDocs
-    :: forall tk repr
+    :: forall tk chrepr
      . MarkToolkit tk
-    => HasRepr tk repr
-    => Tagged.At At.Documentation repr
+    => HasChRepr tk chrepr
+    => Tagged.At At.Documentation chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -252,10 +252,10 @@ familyDocs ptk familyR =
 
 
 familyStatusLine
-    :: forall tk repr
+    :: forall tk chrepr
      . MarkToolkit tk
-    => HasRepr tk repr
-    => Tagged.At At.StatusLine repr
+    => HasChRepr tk chrepr
+    => Tagged.At At.StatusLine chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
@@ -267,10 +267,10 @@ familyStatusLine ptk familyR =
 
 
 familyOnelineSignature
-    :: forall at tk repr
+    :: forall at tk chrepr
      . MarkToolkit tk
-    => HasRepr tk repr
-    => Tagged.At at repr
+    => HasChRepr tk chrepr
+    => Tagged.At at chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy at
     -> Proxy tk
