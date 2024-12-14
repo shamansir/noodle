@@ -47,10 +47,11 @@ derive newtype instance Ord FilePath
 
 
 codegen
-    :: forall repr
-    .  FCG.CodegenRepr repr
+    :: forall strepr chrepr
+    .  FCG.CodegenRepr strepr
+    => FCG.CodegenRepr chrepr
     => Toolkit.Name
-    -> FCG.Options repr
+    -> FCG.Options strepr chrepr
     -> Array (Maybe Source /\ FamilyDef)
     -> Map FilePath FileContent
 codegen tkName options definitions =
@@ -67,11 +68,11 @@ codegen tkName options definitions =
             Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ FCG.generate options mbSource familyDef
 
 
-generateToolkit :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> FileContent
+generateToolkit :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> FileContent
 generateToolkit tkName options = FileContent <<< printModule <<< generateToolkitModule tkName options
 
 
-generateToolkitModule :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> Module Void
+generateToolkitModule :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> Module Void
 generateToolkitModule tkName (FCG.Options opts) definitionsArray
     = unsafePartial $ module_ (toolkitModuleName tkName)
         [ ]
@@ -166,7 +167,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 )
 
 
-generatePossiblyToFnInstance :: forall repr. Partial => FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> Array FamilyDef -> CST.Declaration Void
+generatePossiblyToFnInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
 generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
     declInstance Nothing [] "PossiblyToFn"
         [ typeCtor toolkitKey
@@ -203,7 +204,7 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                 Just _ ->
                     exprOp
                         (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
-                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                        [ binaryOp "$" $ qChValue mbType mbDefault ]
                 Nothing ->
                     exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
         outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
@@ -212,11 +213,11 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                 Just _ ->
                     exprOp
                         (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
-                        [ binaryOp "$" $ qvalue mbType mbDefault ]
+                        [ binaryOp "$" $ qChValue mbType mbDefault ]
                 Nothing ->
                     exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
-        qvalue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-        qvalue mbDataType = maybe (FCG.defaultFor opts.prepr mbDataType) (FCG.valueFor opts.prepr mbDataType)
+        qChValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+        qChValue mbDataType = maybe (FCG.defaultFor opts.pchrepr mbDataType) (FCG.valueFor opts.pchrepr mbDataType)
 
 
 

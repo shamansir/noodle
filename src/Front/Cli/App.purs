@@ -258,7 +258,7 @@ options = ado
         else JustRun selectedToolkit
 
 
-generateToolkit :: forall chrepr. FCG.CodegenRepr chrepr => FCG.Options chrepr -> Id.ToolkitR -> String -> Effect Unit
+generateToolkit :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => FCG.Options strepr chrepr -> Id.ToolkitR -> String -> Effect Unit
 generateToolkit options toolkitName sourcePath = do
     toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
     let eParsedNdf = P.runParser toolkitText NdfFile.parser

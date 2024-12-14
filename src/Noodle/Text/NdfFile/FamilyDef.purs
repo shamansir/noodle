@@ -143,8 +143,8 @@ instance ToTaggedCode NDF opts ProcessAssign where
                 <> T.space <> toTaggedCode pndf opts process
 
 
-instance CodegenRepr repr => ToCode PS (CodeGen.Options repr) FamilyDef where
-    toCode :: Proxy PS -> CodeGen.Options repr -> FamilyDef -> String
+instance (CodegenRepr strepr, CodegenRepr chrepr) => ToCode PS (CodeGen.Options strepr chrepr) FamilyDef where
+    toCode :: Proxy PS -> CodeGen.Options strepr chrepr -> FamilyDef -> String
     toCode _ opts (FamilyDef fdef) =
         CodeGen.generate opts Nothing fdef
 

@@ -198,5 +198,5 @@ loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders Nothing
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
-codegen :: forall repr. FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> NdfFile -> Map MCG.FilePath MCG.FileContent
+codegen :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> NdfFile -> Map MCG.FilePath MCG.FileContent
 codegen tkName options = loadDefinitions >>> MCG.codegen tkName options
