@@ -13,7 +13,7 @@ import Cli.Keys as Key
 import Cli.Panels (Which(..), load, toggle)
 
 
-sidePanel :: forall tk p fs repr. SidePanel "hydra-code" (State tk p fs repr Effect) Boolean
+sidePanel :: forall tk p fs sr cr. SidePanel "hydra-code" (State tk p fs sr cr Effect) Boolean
 sidePanel =
     { title : "hydra"
     , char : const 'H'

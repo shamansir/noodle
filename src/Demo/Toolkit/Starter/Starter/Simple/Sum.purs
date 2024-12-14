@@ -2,7 +2,7 @@ module StarterTk.Simple.Sum where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -31,10 +31,10 @@ type Outlets = (O "sum" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (a :: Number, b :: Number, c :: Number)
 type OutletsRow = (sum :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "sum" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "sum" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "sum" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { a: 0.0, b: 0.0, c: 0.0 }

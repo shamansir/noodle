@@ -22,7 +22,8 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Noodle.Id as Id
 import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
-import Noodle.Repr.ChRepr (class FromToRepr)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Tagging.At as T
@@ -56,13 +57,14 @@ import Cli.Components.StatusLine as StatusLine
 
 -- TODO: take toolkit here
 component
-    :: forall tk p fs repr
-    .  FromToRepr repr repr
-    => Toolkit.HoldsFamilies repr Effect fs
+    :: forall tk p fs strepr chrepr
+    .  StRepr strepr strepr
+    => FromToChRepr chrepr chrepr
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr Effect
-    => State tk p fs repr Effect
-    -> Core.Blessed (State tk p fs repr Effect)
+    => CliFriendly tk fs chrepr Effect
+    => State tk p fs strepr chrepr Effect
+    -> Core.Blessed (State tk p fs strepr chrepr Effect)
 component initialState =
     B.screenAnd Key.mainScreen
 

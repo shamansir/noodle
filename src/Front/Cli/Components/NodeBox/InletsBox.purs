@@ -48,18 +48,18 @@ widthN count = (InletButton.widthN + 1) * count
 
 
 component
-    :: forall tk pstate fs repr m
+    :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => T.At T.ChannelLabel repr
-    => T.At T.StatusLine repr
+    => T.At T.ChannelLabel chrepr
+    => T.At T.StatusLine chrepr
     => Id.PatchR
     -> LastKeys
     -> Id.FamilyR -> Id.NodeR
-    -> Signal (InletsValues repr)
-    -> OrderedInletsValues repr
+    -> Signal (InletsValues chrepr)
+    -> OrderedInletsValues chrepr
     -> Map Id.InletR InletButtonKey
-    /\ C.Blessed (State tk pstate fs repr m)
+    /\ C.Blessed (State tk pstate fs strepr chrepr m)
 component patchR keys familyR nodeR iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
@@ -86,21 +86,21 @@ component patchR keys familyR nodeR iReprSignal inlets =
         ]
         inletsButtons
     where
-        inletsArr :: Array ((Int /\ Id.InletR) /\ repr)
+        inletsArr :: Array ((Int /\ Id.InletR) /\ chrepr)
         inletsArr = Map.toUnfoldable inlets
         keysArray :: Array InletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length inletsArr
-        inletsButtonsWithKeys :: Array ((Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs repr m))
+        inletsButtonsWithKeys :: Array ((Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
         inletsButtonsWithKeys = makeInletButton <$> Array.zip keysArray inletsArr
-        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ repr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs repr m)
+        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ chrepr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
             (inletR /\ buttonKey)
             /\
             ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
-            $ Signal.filterMap (Map.lookup inletR) (fallback :: repr)
+            $ Signal.filterMap (Map.lookup inletR) (fallback :: chrepr)
             $ iReprSignal
             )
-        inletsButtons :: Array (C.Blessed (State tk pstate fs repr m))
+        inletsButtons :: Array (C.Blessed (State tk pstate fs strepr chrepr m))
         inletsButtons = Tuple.snd <$> inletsButtonsWithKeys
         inletsKeys :: Map Id.InletR InletButtonKey
         inletsKeys = Map.fromFoldable (Tuple.fst <$> inletsButtonsWithKeys)

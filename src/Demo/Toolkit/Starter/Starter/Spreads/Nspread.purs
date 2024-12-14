@@ -2,7 +2,7 @@ module StarterTk.Spreads.Nspread where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -33,10 +33,10 @@ type Outlets = (O "spread" (PR.Spread Number) :> TNil) :: Noodle.Outlets
 type InletsRow = (min :: Number, max :: Number, count :: Number)
 type OutletsRow = (spread :: PR.Spread Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "nspread" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "nspread" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "nspread" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "nspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "nspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "nspread" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { min: -150.0, max: 150.0, count: 26.0 }

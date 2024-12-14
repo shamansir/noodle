@@ -20,7 +20,7 @@ data Status
     | Connected Int
 
 
-sidePanel :: forall tk p fs repr. SidePanel "ws-status" (State tk p fs repr Effect) Boolean
+sidePanel :: forall tk p fs sr cr. SidePanel "ws-status" (State tk p fs sr cr Effect) Boolean
 sidePanel =
     { title : "server"
     , char : const 'W'

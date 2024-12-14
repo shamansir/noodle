@@ -2,7 +2,7 @@ module StarterTk.Simple.Metro where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -34,10 +34,10 @@ type Outlets = (O "bang" PR.Bang :> TNil) :: Noodle.Outlets
 type InletsRow = (enabled :: Boolean, period :: PR.Time)
 type OutletsRow = (bang :: PR.Bang)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "metro" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "metro" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "metro" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { enabled: true, period: PR.Time { seconds: 0 } }

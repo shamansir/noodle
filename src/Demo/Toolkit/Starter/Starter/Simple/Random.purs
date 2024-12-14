@@ -2,7 +2,7 @@ module StarterTk.Simple.Random where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -33,10 +33,10 @@ type Outlets = (O "random" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (bang :: PR.Bang, min :: Number, max :: Number)
 type OutletsRow = (random :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "random" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "random" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "random" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { bang: PR.Bang, min: 0.0, max: 0.0 }

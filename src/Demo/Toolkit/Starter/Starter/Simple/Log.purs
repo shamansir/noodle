@@ -2,7 +2,7 @@ module StarterTk.Simple.Log where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -31,10 +31,10 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (what :: PR.Any)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "log" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "log" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "log" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { what: PR.Any PR.VNone }

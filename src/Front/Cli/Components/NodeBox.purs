@@ -53,7 +53,9 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 -- import Blessed.UI.Line.Li ()
 
-import Noodle.Repr.ChRepr (class HasFallback, class FromRepr, class ToRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
 import Noodle.Id as Id
 import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
@@ -115,19 +117,19 @@ nextPos { left, top } =
 
 
 _component
-    :: forall tk fs fstate pstate repr m
+    :: forall tk fs fstate pstate strepr chrepr m
     .  Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
+    => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node fstate repr m
+    -> Raw.Node fstate chrepr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
     -> BlessedOp fstate m
-    -> BlessedOpM (State tk pstate fs repr m) m _
+    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 _component
     pos
     patchR
@@ -137,7 +139,7 @@ _component
     mbBodySize
     nodeOp
     = do
-    let (updates :: Signal (Raw.NodeChanges fstate repr)) = RawNode.subscribeChanges rawNode
+    let (updates :: Signal (Raw.NodeChanges fstate chrepr)) = RawNode.subscribeChanges rawNode
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
     _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
@@ -216,7 +218,7 @@ _component
                    $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges fstate repr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: forall a. Raw.NodeChanges fstate chrepr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
@@ -273,16 +275,16 @@ _component
 
 
 componentRaw
-    :: forall tk fs fstate pstate repr m
+    :: forall tk fs fstate pstate strepr chrepr m
      . Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
+    => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node fstate repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
+    -> Raw.Node fstate chrepr m
+    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 componentRaw pos curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
@@ -294,30 +296,31 @@ componentRaw pos curPatchR familyR rawNode = do
 
 
 component
-    :: forall tk fs pstate f fstate is os repr m
+    :: forall tk fs pstate f fstate is os strepr chrepr m
     .  Wiring m
     => IsSymbol f
-    => FromRepr repr fstate => ToRepr fstate repr
-    => RegisteredFamily (F f fstate is os repr m) fs
+    => HasFallback chrepr
+    => StRepr fstate strepr
+    => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
+    => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.Family f
-    -> Noodle.Node f fstate is os repr m
-    -> BlessedOpM (State tk pstate fs repr m) m _
+    -> Noodle.Node f fstate is os chrepr m
+    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 component pos curPatchR family =
     componentRaw pos curPatchR (Id.familyR family) <<< Node.toRaw
 
 
 renderUpdate
-    :: forall m fstate state repr
-     . T.At At.ChannelLabel repr
+    :: forall s m fstate chrepr
+     . T.At At.ChannelLabel chrepr
     => NodeBoxKey
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey
-    -> Raw.NodeChanges fstate repr
-    -> BlessedOp state m
+    -> Raw.NodeChanges fstate chrepr
+    -> BlessedOp s m
 renderUpdate _ inletsKeysMap outletsKeysMap update = do
     -- CC.log $ show outletsReprs
     _ <- traverseWithIndex updateInlet update.inlets
@@ -337,12 +340,12 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
 
 
 updateCodeFor
-    :: forall tk f s fs fstate repr m
+    :: forall f fstate tk pstate fs strepr chrepr m
      . MonadEffect m
     => IsSymbol f
-    => Ref (State tk s fs repr m)
+    => Ref (State tk pstate fs strepr chrepr m)
     -> Id.Family f
-    -> Raw.NodeChanges fstate repr
+    -> Raw.NodeChanges fstate chrepr
     -> m Unit
 updateCodeFor stateRef family update = do
     {- REM
@@ -358,10 +361,10 @@ updateCodeFor stateRef family update = do
 
 
 logDataCommand
-    :: forall tk fs pstate fstate repr m
+    :: forall tk fs pstate fstate strepr chrepr m
      . MonadEffect m
-    => Ref (State tk pstate fs repr m)
-    -> Raw.NodeChanges fstate repr
+    => Ref (State tk pstate fs strepr chrepr m)
+    -> Raw.NodeChanges fstate chrepr
     -> m Unit
 logDataCommand stateRef update =
     case update.focus of
@@ -382,7 +385,7 @@ logDataCommand stateRef update =
         _ -> pure unit
 
 
-onMove :: forall tk pstate fs repr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk pstate fs repr m) Effect
+onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
 onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
@@ -396,16 +399,16 @@ onMove nodeId nodeKey _ _ = do
 
 
 onMouseOver
-    :: forall tk pstate fs repr m
+    :: forall tk pstate fs strepr chrepr m
      . MarkToolkit tk
-    => Toolkit.HasRepr tk repr
-    => T.At At.StatusLine repr
+    => Toolkit.HasChRepr tk chrepr
+    => T.At At.StatusLine chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> _
     -> _
-    -> BlessedOp (State tk pstate fs repr m) Effect
+    -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onMouseOver ptk familyR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
@@ -418,7 +421,7 @@ onMouseOver ptk familyR _ _ = do
     --CC.log $ "over" <> show idx
 
 
-onMouseOut :: forall tk fs pstate repr m. _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOut :: forall tk ps fs sr cr m. _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
     SL.clear
     {- REM

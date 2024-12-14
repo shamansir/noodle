@@ -2,7 +2,7 @@ module StarterTk.Simple.Knob where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -31,10 +31,10 @@ type Outlets = (O "number" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (min :: Number, max :: Number)
 type OutletsRow = (number :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "knob" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "knob" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "knob" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { min: 0.0, max: 0.0 }

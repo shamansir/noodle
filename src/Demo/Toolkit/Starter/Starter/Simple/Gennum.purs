@@ -2,7 +2,7 @@ module StarterTk.Simple.Gennum where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Random (random)
@@ -36,10 +36,10 @@ type Outlets = (O "out" Number :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (out :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "gennum" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "gennum" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "gennum" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "gennum" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "gennum" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "gennum" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}

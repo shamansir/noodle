@@ -21,7 +21,7 @@ import Cli.Keys as Key
 import Cli.Panels (Which(..), load, toggle, logToConsole)
 
 
-sidePanel :: forall tk p fs repr m. SidePanel "console" (State tk p fs repr m) Boolean
+sidePanel :: forall tk p fs sr cr m. SidePanel "console" (State tk p fs sr cr m) Boolean
 sidePanel =
     { title : "console"
     , char : const 'L'
@@ -34,7 +34,7 @@ sidePanel =
     }
 
 
-log :: forall tk p fs repr m mi.  MonadEffect m => String -> BlessedOp (State tk p fs repr mi) m
+log :: forall tk p fs sr cr m mi.  MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
 log s = do
     State.modify_ (withPanels $ logToConsole $ Array.singleton s)
     SP.refresh sidePanel

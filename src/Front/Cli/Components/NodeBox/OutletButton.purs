@@ -62,16 +62,16 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 
 component
-    :: forall tk pstate fs repr m
-     . T.At T.StatusLine repr
-    => T.At T.ChannelLabel repr
+    :: forall tk pstate fs strepr chrepr m
+     . T.At T.StatusLine chrepr
+    => T.At T.ChannelLabel chrepr
     => OutletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.OutletR
     -> Int
-    -> Maybe repr
-    -> Signal repr
+    -> Maybe chrepr
+    -> Signal chrepr
     -- -> Raw.Node
-    -> Core.Blessed (State tk pstate fs repr m)
+    -> Core.Blessed (State tk pstate fs strepr chrepr m)
 component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.outlet idx outletR mbRepr
@@ -94,17 +94,17 @@ component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprS
 
 
 onMouseOver
-    :: forall tk pstate fs repr m
-     . T.At T.StatusLine repr
+    :: forall tk pstate fs strepr chrepr m
+     . T.At T.StatusLine chrepr
     => Id.FamilyR
     -> Id.NodeR
     -> NodeBoxKey
     -> InfoBoxKey
     -> Int
     -> Id.OutletR
-    -> Maybe repr
-    -> Signal repr
-    -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+    -> Maybe chrepr
+    -> Signal chrepr
+    -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox
@@ -123,7 +123,7 @@ onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = d
     --CC.log $ "over" <> show idx
 
 
-onMouseOut :: forall tk pstate fs repr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onMouseOut :: forall tk pstate fs strepr chrepr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onMouseOut infoBox idx _ _ = do
     state <- State.get
     infoBox >~ IB.clear
@@ -136,7 +136,7 @@ onMouseOut infoBox idx _ _ = do
     --CC.log $ "out" <> show idx
 
 
-onPress :: forall tk pstate fs repr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs repr m) Effect
+onPress :: forall tk pstate fs strepr chrepr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onPress idx outletR nodeR nodeBoxKey _ _ = do
     CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey

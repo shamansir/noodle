@@ -77,11 +77,11 @@ registerAll families toolkit =
 
 
 register
-    :: forall tk f state strepr is os chrepr m families families'
+    :: forall tk f fstate strepr is os chrepr m families families'
      . Put (F f state is os chrepr m) families families'
     => IsSymbol f
-    => StRepr state strepr
-    => Family f state is os chrepr m
+    => StRepr fstate strepr
+    => Family f fstate is os chrepr m
     -> Toolkit tk families strepr chrepr m
     -> Toolkit tk families' strepr chrepr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
 register family (Toolkit name families rawFamilies) =

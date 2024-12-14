@@ -2,7 +2,7 @@ module StarterTk.P5.Sketch where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -48,10 +48,10 @@ type InletsRow =
 
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "sketch" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "sketch" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "sketch" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "sketch" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI =

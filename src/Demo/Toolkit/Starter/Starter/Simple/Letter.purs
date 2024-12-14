@@ -2,7 +2,7 @@ module StarterTk.Simple.Letter where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -31,10 +31,10 @@ type Outlets = (O "letter" Char :> TNil) :: Noodle.Outlets
 type InletsRow = (code :: Number)
 type OutletsRow = (letter :: Char)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "letter" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "letter" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "letter" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { code: 0.0 }

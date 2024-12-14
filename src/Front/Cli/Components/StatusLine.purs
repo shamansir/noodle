@@ -28,7 +28,7 @@ import Cli.State (State)
 
 import Noodle.Id as Id
 -- import Noodle.Family.Def as Family
-import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasRepr)
+import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasChRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine)  as T
 import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
@@ -76,29 +76,29 @@ component =
 
 
 familyStatus
-    :: forall tk pstate fs repr m
+    :: forall tk pstate fs strepr chrepr m
      . MarkToolkit tk
-    => HasRepr tk repr
-    => Tagged.At At.StatusLine repr
+    => HasChRepr tk chrepr
+    => Tagged.At At.StatusLine chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
-    -> C.BlessedOp (State tk pstate fs repr m) Effect
+    -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
 familyStatus ptk familyR =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.familyStatusLine ptk familyR
 
 
-inletStatus :: forall tk pstate fs repr m. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.InletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
+inletStatus :: forall tk pstate fs strepr chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> Maybe chrepr -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
 inletStatus family idx inputId maybeRepr =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.inletStatusLine family idx inputId maybeRepr
 
 
-outletStatus :: forall tk pstate fs repr m. Tagged.At At.StatusLine repr => Id.FamilyR -> Int -> Id.OutletR -> Maybe repr -> C.BlessedOp (State tk pstate fs repr m) Effect
+outletStatus :: forall tk pstate fs strepr chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> Maybe chrepr -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
 outletStatus family idx outputId maybeRepr =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.outletStatusLine family idx outputId maybeRepr
 
 
-removeStatus :: forall tk pstate fs repr m. Id.FamilyR -> C.BlessedOp (State tk pstate fs repr m) Effect
+removeStatus :: forall tk pstate fs strepr chrepr m. Id.FamilyR -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
 removeStatus family =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.removeStatusLine family
 

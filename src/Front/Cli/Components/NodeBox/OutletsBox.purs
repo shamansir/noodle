@@ -49,17 +49,17 @@ widthN count = (OutletButton.widthN + 1) * count
 
 
 component
-    :: forall tk pstate fs repr m
+    :: forall tk pstate fs strepr chrepr m
      . HasFallback chrepr
-    => T.At T.StatusLine repr
-    => T.At T.ChannelLabel repr
+    => T.At T.StatusLine chrepr
+    => T.At T.ChannelLabel chrepr
     => Offset
     -> LastKeys
     -> Id.FamilyR -> Id.NodeR
-    -> Signal (OutletsValues repr)
-    -> OrderedOutletsValues repr
+    -> Signal (OutletsValues chrepr)
+    -> OrderedOutletsValues chrepr
     -> Map Id.OutletR OutletButtonKey
-    /\ C.Blessed (State tk pstate fs repr m)
+    /\ C.Blessed (State tk pstate fs strepr chrepr m)
 component offsetY keys familyR nodeR oReprSignal outlets =
     outletsKeys /\
     B.box keys.outletsBox
@@ -87,21 +87,21 @@ component offsetY keys familyR nodeR oReprSignal outlets =
         ]
         outletsButtons
     where
-        outletsArr :: Array ((Int /\ Id.OutletR) /\ repr)
+        outletsArr :: Array ((Int /\ Id.OutletR) /\ chrepr)
         outletsArr = Map.toUnfoldable outlets
         keysArray :: Array OutletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length outletsArr
-        outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs repr m))
+        outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
         outletsButtonsWithKeys = makeOutletButton <$> Array.zip keysArray outletsArr
-        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ repr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs repr m)
+        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ chrepr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
         makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ repr)) =
             (outletR /\ buttonKey)
             /\
             ( OutletButton.component buttonKey keys.nodeBox keys.infoBox familyR nodeR outletR idx (Just repr)
-            $ Signal.filterMap (Map.lookup outletR) (fallback :: repr)
+            $ Signal.filterMap (Map.lookup outletR) (fallback :: chrepr)
             $ oReprSignal
             )
-        outletsButtons :: Array (C.Blessed (State tk pstate fs repr m))
+        outletsButtons :: Array (C.Blessed (State tk pstate fs strepr chrepr m))
         outletsButtons = Tuple.snd <$> outletsButtonsWithKeys
         outletsKeys :: Map Id.OutletR OutletButtonKey
         outletsKeys = Map.fromFoldable (Tuple.fst <$> outletsButtonsWithKeys)

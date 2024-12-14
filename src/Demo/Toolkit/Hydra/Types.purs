@@ -408,9 +408,9 @@ instance HasFallback Ease where fallback = Linear
 instance HasFallback AudioSource where fallback = Silence
 instance HasFallback AudioBin where fallback = AudioBin 0
 
-instance HasFallback Source where fallback = Load R.fallback
-instance HasFallback TOrV where fallback = V R.fallback
-instance HasFallback RenderTarget where fallback = Output R.fallback -- TODO: Four ?
+instance HasFallback Source where fallback = Load HF.fallback
+instance HasFallback TOrV where fallback = V HF.fallback
+instance HasFallback RenderTarget where fallback = Output HF.fallback -- TODO: Four ?
 instance HasFallback DepFn where fallback = NoAction
 instance HasFallback CanBeSource where fallback = defaultCanBeSource
 

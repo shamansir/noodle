@@ -2,7 +2,7 @@ module StarterTk.Spreads.Xsshape where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (StarterRepr)
+import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -43,10 +43,10 @@ type InletsRow =
 
 type OutletsRow = (shape :: PR.Spread PR.Shape)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Node = Noodle.Node "xsshape" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type Family = Noodle.Family "xsshape" StarterRepr InletsRow OutletsRow StarterRepr Effect
-type F = Noodle.F "xsshape" StarterRepr InletsRow OutletsRow StarterRepr Effect
+type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "xsshape" ValueRepr InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { pos: PR.Spread [], color: PR.Spread [], size: PR.Spread [], angle: PR.Spread [] }

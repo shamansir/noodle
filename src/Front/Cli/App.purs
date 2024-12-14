@@ -103,8 +103,8 @@ defaultOptions = JustRun defaultToolkit :: Options
 defaultToolkit = Starter :: SelectedToolkit
 
 
-data App (tk :: ToolkitKey) pstate (fs :: Families) chrepr m
-    = App Options (State tk pstate fs chrepr m)
+data App (tk :: ToolkitKey) pstate (fs :: Families) strepr chrepr m
+    = App Options (State tk pstate fs strepr chrepr m)
 
 
 run :: Effect Unit
@@ -156,17 +156,18 @@ runWith =
 
 
 runBlessedInterface
-    :: forall tk s fs repr
-     . FromToRepr repr repr
-    => Toolkit.HoldsFamilies repr Effect fs
+    :: forall tk s fs strepr chrepr
+     . StRepr strepr strepr
+    => FromToRepr chrepr chrepr
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr Effect
+    => CliFriendly tk fs chrepr Effect
     => s
-    -> Toolkit tk fs repr Effect
-    -> BlessedOp (State tk s fs repr Effect) Effect
+    -> Toolkit tk fs strepr chrepr Effect
+    -> BlessedOp (State tk s fs strepr chrepr Effect) Effect
     -> Effect Unit
 runBlessedInterface pState toolkit andThen = do
-    (initialState :: State tk s fs repr Effect) <- State.init pState toolkit
+    (initialState :: State tk s fs strepr chrepr Effect) <- State.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
@@ -257,7 +258,7 @@ options = ado
         else JustRun selectedToolkit
 
 
-generateToolkit :: forall repr. FCG.CodegenRepr repr => FCG.Options repr -> Id.ToolkitR -> String -> Effect Unit
+generateToolkit :: forall chrepr. FCG.CodegenRepr chrepr => FCG.Options chrepr -> Id.ToolkitR -> String -> Effect Unit
 generateToolkit options toolkitName sourcePath = do
     toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
     let eParsedNdf = P.runParser toolkitText NdfFile.parser

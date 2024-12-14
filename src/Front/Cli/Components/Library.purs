@@ -37,6 +37,7 @@ import Cli.Style (library, libraryBorder) as Style
 
 import Noodle.Id (PatchR, FamilyR, Family) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily) as Toolkit
@@ -59,14 +60,15 @@ import Prelude
 
 
 component
-    :: forall tk p fs repr
-     . FromToRepr repr repr
-    => Toolkit.HoldsFamilies repr Effect fs
+    :: forall tk p fs strepr chrepr
+     . StRepr strepr strepr
+    => FromToChRepr chrepr chrepr
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr Effect
+    => CliFriendly tk fs chrepr Effect
     => HasFallback chrepr
-    => Toolkit tk fs repr Effect
-    -> Core.Blessed (State tk p fs repr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
+    => Toolkit tk fs strepr chrepr Effect
+    -> Core.Blessed (State tk p fs strepr chrepr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
     -- -> BlessedOpM (State tk p fs repr m) m Unit
 component toolkit =
     B.listAnd Key.library
@@ -99,14 +101,15 @@ component toolkit =
 
 
 onFamilySelect
-    :: forall tk pstate fs repr m
+    :: forall tk pstate fs strepr chrepr m
      . Wiring m
-    => FromToRepr repr repr
-    => Toolkit.HoldsFamilies repr m fs
+    => StRepr strepr strepr
+    => FromToChRepr chrepr chrepr
+    => Toolkit.HoldsFamilies strepr chrepr m fs
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => BlessedOp (State tk pstate fs repr m) m
+    => CliFriendly tk fs chrepr m
+    => BlessedOp (State tk pstate fs strepr chrepr m) m
 onFamilySelect =
     do
         state <- State.get
@@ -136,21 +139,22 @@ onFamilySelect =
 
 
 spawnAndRenderRaw
-    :: forall  tk pstate fs repr m
+    :: forall  tk pstate fs strepr chrepr m
      . Wiring m
-    => FromToRepr repr repr
-    => Toolkit.HoldsFamilies repr m fs
+    => StRepr strepr strepr
+    => FromToChRepr chrepr chrepr
+    => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
+    => CliFriendly tk fs chrepr m
     => HasFallback chrepr
-    => Toolkit tk fs repr m
+    => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
     -> Id.FamilyR
     -> { left :: Int, top :: Int }
-    -> Raw.Family repr repr m
-    -> BlessedOp (State tk pstate fs repr m) m
+    -> Raw.Family strepr chrepr m
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
 spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
-    (mbRawNode :: Maybe (Raw.Node repr repr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
+    (mbRawNode :: Maybe (Raw.Node strepr chrepr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
 
     case mbRawNode of
         Just rawNode -> do
@@ -160,20 +164,21 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
 
 spawnAndRender
-    :: forall tk fs pstate f fstate is os repr m
+    :: forall tk fs pstate f fstate is os strepr chrepr m
      . Wiring m
     => IsSymbol f
+    => HasFallback chrepr
     => StRepr fstate strepr
-    => RegisteredFamily (F f fstate is os repr m) fs
+    => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => CliFriendly tk fs repr m
-    => Toolkit tk fs repr m
+    => CliFriendly tk fs chrepr m
+    => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
     -> Id.Family f
     -> { left :: Int, top :: Int }
-    -> Toolkit.Family f fstate is os repr m
-    -> BlessedOp (State tk pstate fs repr m) m
+    -> Toolkit.Family f fstate is os chrepr m
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
 spawnAndRender toolkit patchR family nextPos  _ = do
-    (node :: Noodle.Node f fstate is os repr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
+    (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
     -- TODO: put node instance in the patch
     NodeBox.component nextPos patchR family node

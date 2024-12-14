@@ -19,7 +19,10 @@ import Parsing (Parser)
 import Parsing.String as P
 import Parsing.Extra (marker, foldMarkers)
 
-import Noodle.Repr.ChRepr as CR
+import Noodle.Repr.HasFallback as HF
+import Noodle.Repr.StRepr as SR
+import Noodle.Repr.ChRepr (ChRepr(..))
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, class ReadChRepr, class WriteChRepr, wrap, unwrap, exists) as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -84,268 +87,268 @@ instance HF.HasFallback WrapRepr where
 
 
 instance CR.ToChRepr HT.Value WrapRepr where
-    toChRepr :: HT.Value -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Value
+    toChRepr :: HT.Value -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Value
 
 
 instance CR.ToChRepr Unit WrapRepr where
-    toChRepr :: Unit -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Unit
+    toChRepr :: Unit -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Unit
 
 
 instance CR.ToChRepr HT.Texture WrapRepr where
-    toChRepr :: HT.Texture -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Texture
+    toChRepr :: HT.Texture -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Texture
 
 
 instance CR.ToChRepr HT.SourceN WrapRepr where
-    toChRepr :: HT.SourceN -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< SourceN
+    toChRepr :: HT.SourceN -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< SourceN
 
 
 instance CR.ToChRepr HT.TODO WrapRepr where
-    toChRepr :: HT.TODO -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< TODO
+    toChRepr :: HT.TODO -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< TODO
 
 
 instance CR.ToChRepr HT.Context WrapRepr where
-    toChRepr :: HT.Context -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Context
+    toChRepr :: HT.Context -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Context
 
 
 instance CR.ToChRepr HT.UpdateFn WrapRepr where
-    toChRepr :: HT.UpdateFn -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< UpdateFn
+    toChRepr :: HT.UpdateFn -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< UpdateFn
 
 
 instance CR.ToChRepr HT.Source WrapRepr where
-    toChRepr :: HT.Source -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Source
+    toChRepr :: HT.Source -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Source
 
 
 instance CR.ToChRepr HT.Url WrapRepr where
-    toChRepr :: HT.Url -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Url
+    toChRepr :: HT.Url -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Url
 
 
 instance CR.ToChRepr HT.GlslFn WrapRepr where
-    toChRepr :: HT.GlslFn -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< GlslFn
+    toChRepr :: HT.GlslFn -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< GlslFn
 
 
 instance CR.ToChRepr HT.SourceOptions WrapRepr where
-    toChRepr :: HT.SourceOptions -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< SourceOptions
+    toChRepr :: HT.SourceOptions -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< SourceOptions
 
 
 instance CR.ToChRepr HT.Values WrapRepr where
-    toChRepr :: HT.Values -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Values
+    toChRepr :: HT.Values -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Values
 
 
 instance CR.ToChRepr HT.Ease WrapRepr where
-    toChRepr :: HT.Ease -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Ease
+    toChRepr :: HT.Ease -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Ease
 
 
 instance CR.ToChRepr HT.AudioSource WrapRepr where
-    toChRepr :: HT.AudioSource -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Audio
+    toChRepr :: HT.AudioSource -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Audio
 
 
 instance CR.ToChRepr HT.AudioBin WrapRepr where
-    toChRepr :: HT.AudioBin -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< AudioBin
+    toChRepr :: HT.AudioBin -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< AudioBin
 
 
 instance CR.ToChRepr HT.OutputN WrapRepr where
-    toChRepr :: HT.OutputN -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< OutputN
+    toChRepr :: HT.OutputN -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< OutputN
 
 
 instance CR.ToChRepr HT.ExtSource WrapRepr where
-    toChRepr :: HT.ExtSource -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< ExtSource
+    toChRepr :: HT.ExtSource -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< ExtSource
 
 
 instance CR.ToChRepr HT.RenderTarget WrapRepr where
-    toChRepr :: HT.RenderTarget -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Target
+    toChRepr :: HT.RenderTarget -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Target
 
 
 instance CR.ToChRepr HT.DepFn WrapRepr where
-    toChRepr :: HT.DepFn -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Value <<< HT.Dep
+    toChRepr :: HT.DepFn -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Value <<< HT.Dep
 
 
 instance CR.ToChRepr HT.CanBeSource WrapRepr where
-    toChRepr :: HT.CanBeSource -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< CBS
+    toChRepr :: HT.CanBeSource -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< CBS
 
 
 instance CR.ToChRepr HT.TOrV WrapRepr where
-    toChRepr :: HT.TOrV -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< TOrV
+    toChRepr :: HT.TOrV -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< TOrV
 
 
 {-}
 instance CR.ToChRepr CAI.Products WrapRepr where
-    toChRepr :: CAI.Products -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Products
+    toChRepr :: CAI.Products -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Products
 
 
 instance CR.ToChRepr CAI.Product' WrapRepr where
-    toChRepr :: CAI.Product' -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists <<< Product
+    toChRepr :: CAI.Product' -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists <<< Product
 -}
 
 
 instance CR.ToChRepr WrapRepr WrapRepr where
-    toChRepr :: WrapRepr -> Maybe (R.Repr WrapRepr)
-    toChRepr = R.exists
+    toChRepr :: WrapRepr -> Maybe (ChRepr WrapRepr)
+    toChRepr = CR.exists
 
 
 {- CR.FromChRepr -}
 
 
 instance CR.FromChRepr WrapRepr HT.Value where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Value
-    fromChRepr (R.Repr (Value value)) = Just value
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Value
+    fromChRepr (ChRepr (Value value)) = Just value
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Texture where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Texture
-    fromChRepr (R.Repr (Texture texture)) = Just texture
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Texture
+    fromChRepr (ChRepr (Texture texture)) = Just texture
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.OutputN where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.OutputN
-    fromChRepr (R.Repr (OutputN outN)) = Just outN
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.OutputN
+    fromChRepr (ChRepr (OutputN outN)) = Just outN
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.SourceN where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.SourceN
-    fromChRepr (R.Repr (SourceN srcN)) = Just srcN
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.SourceN
+    fromChRepr (ChRepr (SourceN srcN)) = Just srcN
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.TODO where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.TODO
-    fromChRepr (R.Repr (TODO todo)) = Just todo
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.TODO
+    fromChRepr (ChRepr (TODO todo)) = Just todo
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Context where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Context
-    fromChRepr (R.Repr (Context context)) = Just context
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Context
+    fromChRepr (ChRepr (Context context)) = Just context
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.UpdateFn where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.UpdateFn
-    fromChRepr (R.Repr (UpdateFn updatefn)) = Just updatefn
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.UpdateFn
+    fromChRepr (ChRepr (UpdateFn updatefn)) = Just updatefn
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Source where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Source
-    fromChRepr (R.Repr (Source source)) = Just source
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Source
+    fromChRepr (ChRepr (Source source)) = Just source
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Url where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Url
-    fromChRepr (R.Repr (Url url)) = Just url
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Url
+    fromChRepr (ChRepr (Url url)) = Just url
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.GlslFn where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.GlslFn
-    fromChRepr (R.Repr (GlslFn glslfn)) = Just glslfn
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.GlslFn
+    fromChRepr (ChRepr (GlslFn glslfn)) = Just glslfn
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.SourceOptions where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.SourceOptions
-    fromChRepr (R.Repr (SourceOptions sourceoptions)) = Just sourceoptions
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.SourceOptions
+    fromChRepr (ChRepr (SourceOptions sourceoptions)) = Just sourceoptions
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Values where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Values
-    fromChRepr (R.Repr (Values values)) = Just values
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Values
+    fromChRepr (ChRepr (Values values)) = Just values
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.Ease where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Ease
-    fromChRepr (R.Repr (Ease ease)) = Just ease
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Ease
+    fromChRepr (ChRepr (Ease ease)) = Just ease
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.AudioSource where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.AudioSource
-    fromChRepr (R.Repr (Audio audio)) = Just audio
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.AudioSource
+    fromChRepr (ChRepr (Audio audio)) = Just audio
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.AudioBin where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.AudioBin
-    fromChRepr (R.Repr (AudioBin audiobin)) = Just audiobin
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.AudioBin
+    fromChRepr (ChRepr (AudioBin audiobin)) = Just audiobin
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.ExtSource where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.ExtSource
-    fromChRepr (R.Repr (ExtSource ext)) = Just ext
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.ExtSource
+    fromChRepr (ChRepr (ExtSource ext)) = Just ext
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.RenderTarget where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.RenderTarget
-    fromChRepr (R.Repr (Target trg)) = Just trg
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.RenderTarget
+    fromChRepr (ChRepr (Target trg)) = Just trg
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.DepFn where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.DepFn
-    fromChRepr (R.Repr (DepFn fn)) = Just fn
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.DepFn
+    fromChRepr (ChRepr (DepFn fn)) = Just fn
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr HT.CanBeSource where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.CanBeSource
-    fromChRepr (R.Repr (CBS cbs)) = Just cbs
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.CanBeSource
+    fromChRepr (ChRepr (CBS cbs)) = Just cbs
     fromChRepr _ = Nothing
 
 
 {-
 instance CR.FromChRepr WrapRepr CAI.Products where
-    fromChRepr :: R.Repr WrapRepr -> Maybe CAI.Products
-    fromChRepr (R.Repr (Products products)) = Just products
+    fromChRepr :: ChRepr WrapRepr -> Maybe CAI.Products
+    fromChRepr (ChRepr (Products products)) = Just products
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr CAI.Product' where
-    fromChRepr :: R.Repr WrapRepr -> Maybe CAI.Product'
-    fromChRepr (R.Repr (Product product)) = Just product
+    fromChRepr :: ChRepr WrapRepr -> Maybe CAI.Product'
+    fromChRepr (ChRepr (Product product)) = Just product
     fromChRepr _ = Nothing
 -}
 
 instance CR.FromChRepr WrapRepr HT.TOrV where
-    fromChRepr :: R.Repr WrapRepr -> Maybe HT.TOrV
-    fromChRepr (R.Repr (Value v)) = Just $ HT.V v
-    fromChRepr (R.Repr (Texture tex)) = Just $ HT.T tex
-    fromChRepr (R.Repr (TOrV torv)) = Just torv
+    fromChRepr :: ChRepr WrapRepr -> Maybe HT.TOrV
+    fromChRepr (ChRepr (Value v)) = Just $ HT.V v
+    fromChRepr (ChRepr (Texture tex)) = Just $ HT.T tex
+    fromChRepr (ChRepr (TOrV torv)) = Just torv
     fromChRepr _ = Nothing
 
 
 instance CR.FromChRepr WrapRepr WrapRepr where
-    fromChRepr :: R.Repr WrapRepr -> Maybe WrapRepr
-    fromChRepr (R.Repr w) = Just w
+    fromChRepr :: ChRepr WrapRepr -> Maybe WrapRepr
+    fromChRepr (ChRepr w) = Just w
 
 
 instance Mark WrapRepr where
@@ -481,20 +484,20 @@ instance CanParse HYDRA_V WrapRepr where parser = const wrapParser
 instance FromCode HYDRA_V opts WrapRepr where fromCode = fromParser
 
 
-instance R.ReadRepr WrapRepr where
-    readRepr :: String -> Maybe (R.Repr WrapRepr)
-    readRepr s =
+instance CR.ReadChRepr WrapRepr where
+    readChRepr :: String -> Maybe (ChRepr WrapRepr)
+    readChRepr s =
         if (String.take 4 s == "V N ") then
             case Number.fromString $ String.drop 4 s of
-                Just n -> Just $ R.wrap $ Value $ HT.Number n
+                Just n -> Just $ CR.wrap $ Value $ HT.Number n
                 Nothing -> Nothing
             -- FIXME: parse other kinds of reprs!
         else Nothing
 
 
-instance R.WriteRepr WrapRepr where
-    writeRepr :: R.Repr WrapRepr -> String
-    writeRepr = R.unwrap >>> H._encode
+instance CR.WriteChRepr WrapRepr where
+    writeChRepr :: ChRepr WrapRepr -> String
+    writeChRepr = CR.unwrap >>> H._encode
 
 
 wrapAlias_ = "HW" :: String
@@ -555,21 +558,21 @@ instance CodegenRepr WrapRepr where
     defaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void
     defaultFor = const $ unsafePartial $ \mbType ->
         case NT.unwrap <$> mbType of -- FIXME: use `HasFallback` from the repr somehow
-            Just "Value" -> mkExpression (R.fallback :: HT.Value)
-            Just "Texture" -> mkExpression (R.fallback :: HT.Texture)
-            Just "TODO" -> mkExpression (R.fallback :: HT.TODO)
-            Just "Values" -> mkExpression (R.fallback :: HT.Values)
-            Just "Source" -> mkExpression (R.fallback :: HT.Source)
-            Just "GlslFn" -> mkExpression (R.fallback :: HT.GlslFn)
-            Just "OutputN" -> mkExpression (R.fallback :: HT.OutputN)
-            Just "Audio" -> mkExpression (R.fallback :: HT.AudioSource)
-            Just "RenderTarget" -> mkExpression (R.fallback :: HT.RenderTarget)
-            Just "SourceN" -> mkExpression (R.fallback :: HT.SourceN)
-            Just "SourceOptions" -> mkExpression (R.fallback :: HT.SourceOptions)
-            Just "Url" -> mkExpression (R.fallback :: HT.Url)
-            Just "UpdateFn" -> mkExpression (R.fallback :: HT.UpdateFn)
-            Just "Ease" -> mkExpression (R.fallback :: HT.Ease)
-            Just "AudioBin" -> mkExpression (R.fallback :: HT.AudioBin)
+            Just "Value" -> mkExpression (HF.fallback :: HT.Value)
+            Just "Texture" -> mkExpression (HF.fallback :: HT.Texture)
+            Just "TODO" -> mkExpression (HF.fallback :: HT.TODO)
+            Just "Values" -> mkExpression (HF.fallback :: HT.Values)
+            Just "Source" -> mkExpression (HF.fallback :: HT.Source)
+            Just "GlslFn" -> mkExpression (HF.fallback :: HT.GlslFn)
+            Just "OutputN" -> mkExpression (HF.fallback :: HT.OutputN)
+            Just "Audio" -> mkExpression (HF.fallback :: HT.AudioSource)
+            Just "RenderTarget" -> mkExpression (HF.fallback :: HT.RenderTarget)
+            Just "SourceN" -> mkExpression (HF.fallback :: HT.SourceN)
+            Just "SourceOptions" -> mkExpression (HF.fallback :: HT.SourceOptions)
+            Just "Url" -> mkExpression (HF.fallback :: HT.Url)
+            Just "UpdateFn" -> mkExpression (HF.fallback :: HT.UpdateFn)
+            Just "Ease" -> mkExpression (HF.fallback :: HT.Ease)
+            Just "AudioBin" -> mkExpression (HF.fallback :: HT.AudioBin)
             -- FIXME: implement further
             _ -> exprApp (wrapCtor_ "Value") [ HT.hydraCtor_ "None" ]
     valueFor :: Proxy WrapRepr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void

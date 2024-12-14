@@ -8,7 +8,7 @@ import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR, unsafeGroupR, FamilyR, family, group) as Id
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasRepr, markGroup)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Fn.ToFn (class PossiblyToFn, fn)
@@ -31,8 +31,8 @@ import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
-import Demo.Toolkit.Starter.Repr (StarterRepr)
-import Demo.Toolkit.Starter.Repr (StarterRepr(..)) as R
+import Demo.Toolkit.Starter.Repr (StateRepr, ValueRepr)
+import Demo.Toolkit.Starter.Repr (StateRepr(..), ValueRepr(..)) as R
 
 type StarterFamilies :: Families
 type StarterFamilies =
@@ -55,7 +55,7 @@ type StarterFamilies =
 
 foreign import data STARTER :: ToolkitKey
 
-toolkit :: Toolkit STARTER StarterFamilies StarterRepr Effect
+toolkit :: Toolkit STARTER StarterFamilies StateRepr ValueRepr Effect
 toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Spreads.Xsshape.family
   # Toolkit.register Spreads.Cspread.family
@@ -103,15 +103,15 @@ instance MarkToolkit STARTER where
     _         -> C.crepr Pico8.darkerBlue
   markFamily ptk = const <<< markGroup ptk
 
-instance CliRenderer STARTER StarterFamilies StarterRepr m where
+instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
   cliSizeRaw _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = pure unit
   renderCliRaw _ _ _ _ _ = pure unit
 
-instance HasRepr STARTER StarterRepr
+instance HasChRepr STARTER ValueRepr
 
-instance PossiblyToFn STARTER (Maybe StarterRepr) (Maybe StarterRepr) Id.FamilyR where
+instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
   possiblyToFn _ = Id.family >>> case _ of
     "sketch" -> Just $ fn "sketch" [] [ Fn.out_ "number" $ R.VNumber 0.0 ]
     "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ R.VNumber 0.0 ]
