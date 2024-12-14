@@ -144,7 +144,7 @@ ensureFrom :: forall repr a. FromChRepr repr a => Repr repr -> a
 ensureFrom = fromMaybe fallback <<< fromRepr
 
 
-fallbackByRepr :: forall repr. HasFallback repr => Maybe repr -> Repr repr
+fallbackByRepr :: forall repr. HasFallback chrepr => Maybe repr -> Repr repr
 fallbackByRepr = fallbackBy Repr
 
 

@@ -41,7 +41,7 @@ import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (setId, cancel) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, family, toReprableState) as RawNode
-import Noodle.Repr (class ToRepr, class FromRepr, class FromToRepr, class HasFallback)
+import Noodle.Repr.ChRepr (class ToRepr, class FromRepr, class FromToRepr, class HasFallback)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
@@ -117,7 +117,7 @@ registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
 
 registerRawNode
     :: forall pstate nstate repr m families
-     . FromToRepr nstate repr
+     . StRepr nstate strepr
     => Raw.Node nstate repr m
     -> Patch pstate families repr m
     -> Patch pstate families repr m
@@ -168,7 +168,7 @@ connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) 
 connectRaw
     :: forall m state repr mp families stateA stateB
      . Wiring m
-    => HasFallback repr
+    => HasFallback chrepr
     => Id.OutletR
     -> Id.InletR
     -> Raw.Node stateA repr mp
@@ -255,7 +255,7 @@ nonRawNodes (Patch _ _ _ nodes _ _) =
 mapNodes
     :: forall x pstate families repr m
     .  StoresNodesAt repr m families
-    => (forall f state is os. IsSymbol f => FromToRepr state repr => Node f state is os repr m -> x)
+    => (forall f state is os. IsSymbol f => StRepr state strepr => Node f state is os repr m -> x)
     -> Patch pstate families repr m
     -> Array x
 mapNodes f patch =

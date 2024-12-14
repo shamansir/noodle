@@ -22,8 +22,8 @@ import Data.Tuple.Nested (type (/\), (/\))
 import PureScript.CST.Types as CST
 import Tidy.Codegen
 
-import Noodle.Repr (class HasFallback)
-import Noodle.Repr (fallback) as R
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (Argument, Output, empty) as Fn
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)

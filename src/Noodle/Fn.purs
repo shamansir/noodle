@@ -49,48 +49,51 @@ import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
 import Noodle.Raw.Fn (Fn(..)) as Raw
-import Noodle.Repr (class HasFallback, class FromReprRow, class FromRepr, class ToRepr, class FromToRepr)
-import Noodle.Repr (ensureTo, ensureFrom, wrap, unwrap) as Repr
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.ChRepr (class FromChReprRow, class FromChRepr, class ToChRepr, class FromToChRepr)
+import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
 
-data Fn state (is :: Row Type) (os :: Row Type) repr (m :: Type -> Type) = Fn FnName (Process state is os repr m)
+data Fn state (is :: Row Type) (os :: Row Type) chrepr (m :: Type -> Type) = Fn FnName (Process state is os chrepr m)
 
 
-class ToFn a state is os repr where
-    toFn :: forall m. a -> Fn state is os repr m
+class ToFn a state is os chrepr where
+    toFn :: forall m. a -> Fn state is os chrepr m
 
 
 {- Creating -}
 
 
-make :: forall state is os repr m. FnName -> Process state is os repr m -> Fn state is os repr m
+make :: forall state is os chrepr m. FnName -> Process state is os chrepr m -> Fn state is os chrepr m
 make = Fn
 
 
 {- Mapping -}
 
 
-mapM :: forall state is os repr m m'. (m ~> m') -> Fn state is os repr m -> Fn state is os repr m'
+mapM :: forall state is os chrepr m m'. (m ~> m') -> Fn state is os chrepr m -> Fn state is os chrepr m'
 mapM f (Fn name processM) = Fn name $ Process.mapMM f processM
 
 
-imapState :: forall state state' is os repr m. (state -> state') -> (state' -> state) -> Fn state is os repr m -> Fn state' is os repr m
+imapState :: forall state state' is os chrepr m. (state -> state') -> (state' -> state) -> Fn state is os chrepr m -> Fn state' is os chrepr m
 imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
 
 
-toReprableState :: forall state is os repr m. FromToRepr state repr => Fn state is os repr m -> Fn repr is os repr m
-toReprableState = imapState (Repr.ensureTo >>> Repr.unwrap) (Repr.wrap >>> Repr.ensureFrom)
+toReprableState :: forall state strepr is os chrepr m. StRepr state strepr => Fn state is os chrepr m -> Fn strepr is os chrepr m
+toReprableState = imapState StRepr.to StRepr.from
 
 
 {- Running -}
 
 run
-    :: forall state is os repr m
+    :: forall state is os chrepr m
     .  MonadRec m => MonadEffect m
-    => HasFallback repr
-    => Protocol state is os repr
-    -> Fn state is os repr m
-    -> m ( state /\ Map InletR repr /\ Map OutletR repr )
+    => HasFallback chrepr
+    => Protocol state is os chrepr
+    -> Fn state is os chrepr m
+    -> m ( state /\ Map InletR chrepr /\ Map OutletR chrepr )
 run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ Protocol.getState protocol
@@ -100,13 +103,13 @@ run protocol (Fn _ process) = do
 
 
 runRec
-    :: forall state is os isrl osrl repr m
+    :: forall state is os isrl osrl chrepr m
     .  MonadRec m => MonadEffect m
-    => HasFallback repr
-    => RL.RowToList is isrl => FromReprRow isrl is repr
-    => RL.RowToList os osrl => FromReprRow osrl os repr
-    => Protocol state is os repr
-    -> Fn state is os repr m
+    => HasFallback chrepr
+    => RL.RowToList is isrl => FromChReprRow isrl is chrepr
+    => RL.RowToList os osrl => FromChReprRow osrl os chrepr
+    => Protocol state is os chrepr
+    -> Fn state is os chrepr m
     -> m ( state /\ Record is /\ Record os )
 runRec protocol (Fn _ process) = do
     _ <- Process.runM protocol process
@@ -116,7 +119,7 @@ runRec protocol (Fn _ process) = do
     pure $ nextState /\ nextInlets /\ nextOutlets
 
 
-run' :: forall state is os repr m. MonadRec m => MonadEffect m => HasFallback repr => Protocol state is os repr -> Fn state is os repr m -> m Unit
+run' :: forall state is os chrepr m. MonadRec m => MonadEffect m => HasFallback chrepr => Protocol state is os chrepr -> Fn state is os chrepr m -> m Unit
 run' protocol (Fn _ process) =
     Process.runM protocol process
 
@@ -125,20 +128,20 @@ run' protocol (Fn _ process) =
 
 
 
-name :: forall state is os repr m. Fn state is os repr m -> FnName
+name :: forall state is os chrepr m. Fn state is os chrepr m -> FnName
 name (Fn n _) = n
 
 
-cloneReplace :: forall state is os repr m. Fn state is os repr m -> Process state is os repr m -> Fn state is os repr m
+cloneReplace :: forall state is os chrepr m. Fn state is os chrepr m -> Process state is os chrepr m -> Fn state is os chrepr m
 cloneReplace (Fn name _) newProcessM =
     Fn name newProcessM
 
 
 {- Convert -}
 
-toRaw :: forall state is os repr m. Fn state is os repr m -> Raw.Fn state repr m
+toRaw :: forall state is os chrepr m. Fn state is os chrepr m -> Raw.Fn state chrepr m
 toRaw (Fn name processM) = Raw.Fn name $ Process.toRaw processM
 
 
-toRawWithReprableState :: forall state is os repr m. FromRepr repr state => ToRepr state repr => Fn state is os repr m -> Raw.Fn repr repr m
+toRawWithReprableState :: forall state strepr is os chrepr m. StRepr state strepr => Fn state is os chrepr m -> Raw.Fn strepr chrepr m
 toRawWithReprableState (Fn name processM) = Raw.Fn name $ Process.toRawWithReprableState processM

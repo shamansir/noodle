@@ -11,39 +11,40 @@ import Data.Maybe (Maybe)
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInlet, lastOutlet, state, mapState) as Generic
-import Noodle.Repr (class ToRepr, ensureTo, unwrap)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (to) as StRepr
 
 
-type Tracker state repr = Generic.Tracker state (Map InletR repr) (Map OutletR repr)
+type Tracker state chrepr = Generic.Tracker state (Map InletR chrepr) (Map OutletR chrepr)
 
 
-inlets :: forall state repr. Tracker state repr -> Effect (Map InletR repr)
+inlets :: forall state chrepr. Tracker state chrepr -> Effect (Map InletR chrepr)
 inlets = Generic.inlets
 
 
-outlets :: forall state repr. Tracker state repr -> Effect (Map OutletR repr)
+outlets :: forall state chrepr. Tracker state chrepr -> Effect (Map OutletR chrepr)
 outlets = Generic.outlets
 
 
-lastInlet :: forall state repr. Tracker state repr -> Effect (Maybe InletR)
+lastInlet :: forall state chrepr. Tracker state chrepr -> Effect (Maybe InletR)
 lastInlet = Generic.lastInlet
 
 
-lastOutlet :: forall state repr. Tracker state repr -> Effect (Maybe OutletR)
+lastOutlet :: forall state chrepr. Tracker state chrepr -> Effect (Maybe OutletR)
 lastOutlet = Generic.lastOutlet
 
 
-atInlet :: forall state repr. InletR -> Tracker state repr -> Effect (Maybe repr)
+atInlet :: forall state chrepr. InletR -> Tracker state chrepr -> Effect (Maybe chrepr)
 atInlet inlet tracker = inlets tracker <#> Map.lookup inlet
 
 
-atOutlet :: forall state repr. OutletR -> Tracker state repr -> Effect (Maybe repr)
+atOutlet :: forall state chrepr. OutletR -> Tracker state chrepr -> Effect (Maybe chrepr)
 atOutlet outlet tracker = outlets tracker <#> Map.lookup outlet
 
 
-state :: forall state repr. Tracker state repr -> Effect state
+state :: forall state chrepr. Tracker state chrepr -> Effect state
 state = Generic.state
 
 
-toReprableState :: forall state repr. ToRepr state repr => Tracker state repr -> Tracker repr repr
-toReprableState = Generic.mapState $ ensureTo >>> unwrap
+toReprableState :: forall state strepr chrepr. StRepr state strepr => Tracker state chrepr -> Tracker strepr chrepr
+toReprableState = Generic.mapState StRepr.to

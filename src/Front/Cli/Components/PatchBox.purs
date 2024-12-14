@@ -27,7 +27,7 @@ import Cli.Class.CliFriendly (class CliFriendly)
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id as Id
-import Noodle.Repr (class HasFallback, class FromToRepr)
+import Noodle.Repr.ChRepr (class HasFallback, class FromToRepr)
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies) as Toolkit
 import Noodle.Fn.ToFn (class PossiblyToFn)
@@ -40,9 +40,9 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 component
     :: forall tk p fs repr
-     . HasFallback repr
+     . HasFallback chrepr
     => FromToRepr repr repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies repr Effect fs
     => CliFriendly tk fs repr Effect
     => Toolkit tk fs repr Effect

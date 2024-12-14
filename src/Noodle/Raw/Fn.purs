@@ -14,23 +14,25 @@ import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Process (runM, toReprableState) as RawProcess
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets, toReprableState) as RawProtocol
-import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
+-- import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
 
 
-data Fn state repr (m :: Type -> Type) = Fn FnName (Raw.Process state repr m) -- TODO: move to separate module
+data Fn state chrepr (m :: Type -> Type) = Fn FnName (Raw.Process state chrepr m) -- TODO: move to separate module
 
 
-make :: forall state repr m. FnName -> Raw.Process state repr m -> Fn state repr m
+make :: forall state chrepr m. FnName -> Raw.Process state chrepr m -> Fn state chrepr m
 make = Fn
 
 
 run
-    :: forall state repr m
+    :: forall state chrepr m
     .  MonadRec m => MonadEffect m
-    => HasFallback repr
-    => Raw.Protocol state repr
-    -> Fn state repr m
-    -> m ( state /\ Map InletR repr /\ Map OutletR repr )
+    => HasFallback chrepr
+    => Raw.Protocol state chrepr
+    -> Fn state chrepr m
+    -> m ( state /\ Map InletR chrepr /\ Map OutletR chrepr )
 run protocol (Fn _ process) = do
     _ <- RawProcess.runM protocol process
     nextState <- liftEffect $ RawProtocol.getState protocol
@@ -39,10 +41,10 @@ run protocol (Fn _ process) = do
     pure $ nextState /\ nextInlets /\ nextOutlets
 
 
-run' :: forall state repr m. MonadRec m => MonadEffect m => HasFallback repr => Raw.Protocol state repr -> Fn state repr m -> m Unit
+run' :: forall state chrepr m. MonadRec m => MonadEffect m => HasFallback chrepr => Raw.Protocol state chrepr -> Fn state chrepr m -> m Unit
 run' protocol (Fn _ process) =
     RawProcess.runM protocol process
 
 
-toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => Fn state repr m -> Fn repr repr m
+toReprableState :: forall state strepr chrepr m. StRepr state strepr => Fn state chrepr m -> Fn strepr chrepr m
 toReprableState (Fn name processFn) = Fn name $ RawProcess.toReprableState processFn

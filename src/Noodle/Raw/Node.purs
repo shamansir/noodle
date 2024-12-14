@@ -22,8 +22,10 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
 import Noodle.Fn.Generic.Updates (toRecord) as Updates
-import Noodle.Repr (class HasFallback, class ToRepr, class FromRepr)
-import Noodle.Repr (fallback) as Repr
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (fallback) as HF
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -38,31 +40,31 @@ import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
 
 
-data Node state (repr :: Type) (m :: Type -> Type)
+data Node state (chrepr :: Type) (m :: Type -> Type)
     = Node
         Id.NodeR
         Raw.Shape
-        (Raw.Tracker state repr)
-        (Raw.Protocol state repr)
-        (Raw.Fn state repr m)
+        (Raw.Tracker state chrepr)
+        (Raw.Protocol state chrepr)
+        (Raw.Fn state chrepr m)
 
 
-type InletsValues  repr = Map Id.InletR repr
-type OutletsValues repr = Map Id.OutletR repr
+type InletsValues  chrepr = Map Id.InletR chrepr
+type OutletsValues chrepr = Map Id.OutletR chrepr
 
 
-type OrderedInletsValues  repr = Map (Int /\ Id.InletR) repr
-type OrderedOutletsValues repr = Map (Int /\ Id.OutletR) repr
+type OrderedInletsValues  chrepr = Map (Int /\ Id.InletR)  chrepr
+type OrderedOutletsValues chrepr = Map (Int /\ Id.OutletR) chrepr
 
 
 {- Get info -}
 
 
-family :: forall state repr m. Node state repr m -> Id.FamilyR
+family :: forall state chrepr m. Node state chrepr m -> Id.FamilyR
 family = id >>> Id.familyOf
 
 
-id :: forall state repr m. Node state repr m -> Id.NodeR
+id :: forall state chrepr m. Node state chrepr m -> Id.NodeR
 id (Node nodeR _ _ _ _) = nodeR
 
 
@@ -70,29 +72,29 @@ id (Node nodeR _ _ _ _) = nodeR
 
 
 make
-    :: forall m state repr mp
+    :: forall m state chrepr mp
      . MonadEffect m
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> InletsValues repr
-    -> OutletsValues repr
-    -> Raw.Process state repr mp
-    -> m (Node state repr mp)
+    -> InletsValues  chrepr
+    -> OutletsValues chrepr
+    -> Raw.Process state chrepr mp
+    -> m (Node state chrepr mp)
 make family state rawShape inletsMap outletsMap process = do
     _makeWithFn family state rawShape inletsMap outletsMap $ RawFn.make (Id.family family) process
 
 
 _makeWithFn
-    :: forall m state repr mp
+    :: forall m state chrepr mp
      . MonadEffect m
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> InletsValues repr
-    -> OutletsValues repr
-    -> Raw.Fn state repr mp
-    -> m (Node state repr mp)
+    -> InletsValues  chrepr
+    -> OutletsValues chrepr
+    -> Raw.Fn state chrepr mp
+    -> m (Node state chrepr mp)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
     uniqueHash <- liftEffect $ UH.generate
     let nodeId = Id.nodeR_ family uniqueHash
@@ -105,10 +107,10 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 
 -- TODO: private
 _runOnInletUpdates
-    :: forall state repr m
+    :: forall state chrepr m
     .  Wiring m
-    => HasFallback repr
-    => Node state repr m
+    => HasFallback chrepr
+    => Node state chrepr m
     -> m Unit
 _runOnInletUpdates node =
   SignalX.runSignal $ subscribeInlets node ~> const (run node)
@@ -116,10 +118,10 @@ _runOnInletUpdates node =
 
 -- TODO: private
 _runOnStateUpdates
-    :: forall state repr m
+    :: forall state chrepr m
     .  Wiring m
-    => HasFallback repr
-    => Node state repr m
+    => HasFallback chrepr
+    => Node state chrepr m
     -> m Unit
 _runOnStateUpdates node =
   SignalX.runSignal $ subscribeState node ~> const (run node)
@@ -127,10 +129,10 @@ _runOnStateUpdates node =
 
 --- FIXME: find better name
 _listenUpdatesAndRun
-  :: forall state repr m
+  :: forall state chrepr m
    . Wiring m
-  => HasFallback repr
-  => Node state repr m
+  => HasFallback chrepr
+  => Node state chrepr m
   -> m Unit
 _listenUpdatesAndRun node = do
   _runOnInletUpdates node
@@ -140,38 +142,38 @@ _listenUpdatesAndRun node = do
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 
 
-run :: forall state repr m. MonadRec m => MonadEffect m => HasFallback repr => Node state repr m -> m Unit
+run :: forall state chrepr m. MonadRec m => MonadEffect m => HasFallback chrepr => Node state chrepr m -> m Unit
 run (Node _ _ _ protocol fn) = RawFn.run' protocol fn
 
 
 {- Get Data -}
 
 
-shape :: forall state repr m. Node state repr m -> Raw.Shape
+shape :: forall state chrepr m. Node state chrepr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
 
 
-inlets :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (InletsValues repr)
+inlets :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (InletsValues chrepr)
 inlets node = liftEffect $ RawProtocol.getInlets $ _getProtocol node
 
 
-outlets :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (OutletsValues repr)
+outlets :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (OutletsValues chrepr)
 outlets node = liftEffect $ RawProtocol.getOutlets $ _getProtocol node
 
 
-state :: forall m state repr mp. MonadEffect m => Node state repr mp -> m state
+state :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m state
 state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
-atInlet :: forall m state repr mp. MonadEffect m => Id.InletR -> Node state repr mp -> m (Maybe repr)
+atInlet :: forall m state chrepr mp. MonadEffect m => Id.InletR -> Node state chrepr mp -> m (Maybe chrepr)
 atInlet inlet node = inlets node <#> Map.lookup inlet
 
 
-atOutlet :: forall m state repr mp. MonadEffect m => Id.OutletR -> Node state repr mp -> m (Maybe repr)
+atOutlet :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> Node state chrepr mp -> m (Maybe chrepr)
 atOutlet outlet node = outlets node <#> Map.lookup outlet
 
 
-curChanges :: forall m state repr mp. MonadEffect m => Node state repr mp -> m (NodeChanges state repr)
+curChanges :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (NodeChanges state chrepr)
 curChanges node = do
   is <- inlets node
   os <- outlets node
@@ -182,48 +184,48 @@ curChanges node = do
 {- Private accessors -}
 
 
-_getProtocol :: forall state repr m. Node state repr m -> Raw.Protocol state repr
+_getProtocol :: forall state chrepr m. Node state chrepr m -> Raw.Protocol state chrepr
 _getProtocol (Node _ _ _ protocol _) = protocol
 
 
-_getTracker :: forall state repr m. Node state repr m -> Raw.Tracker state repr
+_getTracker :: forall state chrepr m. Node state chrepr m -> Raw.Tracker state chrepr
 _getTracker (Node _ _ tracker _ _) = tracker
 
 
 {- Subscriptions -}
 
 
-type NodeChanges state repr = { focus :: Fn.UpdateFocus, state :: state, inlets :: InletsValues repr, outlets :: OutletsValues repr }
+type NodeChanges state chrepr = { focus :: Fn.UpdateFocus, state :: state, inlets :: InletsValues chrepr, outlets :: OutletsValues chrepr }
 
 
-subscribeInlet :: forall state repr m. Id.InletR -> Node state repr m -> Signal (Maybe repr)
+subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (Maybe chrepr)
 subscribeInlet input node = Map.lookup input <$> subscribeInlets node
 
 
-subscribeInlets :: forall state repr m. Node state repr m -> Signal (InletsValues repr)
+subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (InletsValues chrepr)
 subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
 
 
-subscribeOutlet :: forall state repr m. Id.OutletR -> Node state repr m -> Signal (Maybe repr)
+subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (Maybe chrepr)
 subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
 
 
-subscribeOutlets :: forall state repr m. Node state repr m -> Signal (OutletsValues repr)
+subscribeOutlets :: forall state chrepr m. Node state chrepr m -> Signal (OutletsValues chrepr)
 subscribeOutlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
 
 
-subscribeState :: forall state repr m. Node state repr m -> Signal state
+subscribeState :: forall state chrepr m. Node state chrepr m -> Signal state
 subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall state repr m. Node state repr m -> Signal (NodeChanges state repr)
+subscribeChanges :: forall state chrepr m. Node state chrepr m -> Signal (NodeChanges state chrepr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
 
 
 {- Send data -}
 
 
-sendIn :: forall m state repr mp. MonadEffect m => Id.InletR -> repr -> Node state repr mp -> m Unit
+sendIn :: forall m state chrepr mp. MonadEffect m => Id.InletR -> chrepr -> Node state chrepr mp -> m Unit
 sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 
 
@@ -237,15 +239,15 @@ sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 
 
 connect
-    :: forall m stateA stateB reprA reprB mp
+    :: forall m stateA stateB chreprA chreprB mp
      . Wiring m
-    => HasFallback reprA
-    => HasFallback reprB
+    => HasFallback chreprA
+    => HasFallback chreprB
     => Id.OutletR
     -> Id.InletR
-    -> (reprA -> reprB)
-    -> Node stateA reprA mp
-    -> Node stateB reprB mp
+    -> (chreprA -> chreprB)
+    -> Node stateA chreprA mp
+    -> Node stateB chreprB mp
     -> m Raw.Link
 connect
     outletA
@@ -256,25 +258,25 @@ connect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: reprB -> m Unit
+            sendToBIfFlagIsOn :: chreprB -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
                   sendIn inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> fromMaybe Repr.fallback ~> convertRepr ~> sendToBIfFlagIsOn
-        (mbReprA :: Maybe reprA) <- atOutlet outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr $ fromMaybe Repr.fallback mbReprA
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> fromMaybe HF.fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        (mbReprA :: Maybe chreprA) <- atOutlet outletA nodeA
+        sendToBIfFlagIsOn $ convertRepr $ fromMaybe HF.fallback mbReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 
 disconnect
-    :: forall m stateA stateB reprA reprB mp
+    :: forall m stateA stateB chreprA chreprB mp
      . MonadEffect m
     => Raw.Link
-    -> Node stateA reprA mp
-    -> Node stateB reprB mp
+    -> Node stateA chreprA mp
+    -> Node stateB chreprB mp
     -> m Boolean
 disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
     if (RawLink.fromNode link == nodeAId) && (RawLink.toNode link == nodeBId) then
@@ -285,25 +287,25 @@ disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
 {- Convert -}
 
 
-orderInlets :: forall repr. Raw.Shape -> InletsValues repr -> OrderedInletsValues repr
+orderInlets :: forall chrepr. Raw.Shape -> InletsValues chrepr -> OrderedInletsValues chrepr
 orderInlets shape ivalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ivalues
   where
     maxN = Array.length $ RawShape.inlets shape
-    resortF :: Array (Id.InletR /\ repr) -> Array ((Int /\ Id.InletR) /\ repr)
+    resortF :: Array (Id.InletR /\ chrepr) -> Array ((Int /\ Id.InletR) /\ chrepr)
     resortF = map (\(inletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup inletR ishapeMap) /\ inletR) /\ repr)
     ishapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.inlets shape
 
 
-orderOutlets :: forall repr. Raw.Shape -> OutletsValues repr -> OrderedOutletsValues repr
+orderOutlets :: forall chrepr. Raw.Shape -> OutletsValues chrepr -> OrderedOutletsValues chrepr
 orderOutlets shape ovalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ovalues
   where
     maxN = Array.length $ RawShape.outlets shape
-    resortF :: Array (Id.OutletR /\ repr) -> Array ((Int /\ Id.OutletR) /\ repr)
+    resortF :: Array (Id.OutletR /\ chrepr) -> Array ((Int /\ Id.OutletR) /\ chrepr)
     resortF = map (\(outletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup outletR oshapeMap) /\ outletR) /\ repr)
     oshapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.outlets shape
 
 
-toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => Node state repr m -> Node repr repr m
+toReprableState :: forall state strepr chrepr m. StRepr state strepr => Node state chrepr m -> Node strepr chrepr m
 toReprableState (Node nodeR shape tracker protocol fn) =
     Node
         nodeR

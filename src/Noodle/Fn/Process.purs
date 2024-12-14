@@ -46,58 +46,60 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
 import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn) as Raw
-import Noodle.Repr (class FromRepr, class HasFallback, class ToRepr)
-import Noodle.Repr (ensureTo, ensureFrom) as Repr
-
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
+import Noodle.Repr.ChRepr (ensureTo, ensureFrom) as ChRepr
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
-newtype ProcessM state is os repr m a = ProcessM (Raw.ProcessM state repr m a)
+newtype ProcessM state is os chrepr m a = ProcessM (Raw.ProcessM state chrepr m a)
 
 
-derive instance Newtype (ProcessM state is os repr m a) _
-derive newtype instance functorProcessM :: Functor (ProcessM state is os repr m)
-derive newtype instance applyProcessM :: Apply (ProcessM state is os repr m)
-derive newtype instance applicativeProcessM :: Applicative (ProcessM state is os repr m)
-derive newtype instance bindProcessM :: Bind (ProcessM state is os repr m)
-derive newtype instance monadProcessM :: Monad (ProcessM state is os repr m)
-derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state is os repr m a)
-derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state is os repr m a)
-derive newtype instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state is os repr m)
-derive newtype instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state is os repr m)
-derive newtype instance monadStateProcessM :: MonadState state (ProcessM state is os repr m)
-derive newtype instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state is os repr m)
-derive newtype instance monadRecProcessM :: MonadRec (ProcessM state is os repr m)
+derive instance Newtype (ProcessM state is os chrepr m a) _
+derive newtype instance functorProcessM :: Functor (ProcessM state is os chrepr m)
+derive newtype instance applyProcessM :: Apply (ProcessM state is os chrepr m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM state is os chrepr m)
+derive newtype instance bindProcessM :: Bind (ProcessM state is os chrepr m)
+derive newtype instance monadProcessM :: Monad (ProcessM state is os chrepr m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state is os chrepr m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state is os chrepr m a)
+derive newtype instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state is os chrepr m)
+derive newtype instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state is os chrepr m)
+derive newtype instance monadStateProcessM :: MonadState state (ProcessM state is os chrepr m)
+derive newtype instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state is os chrepr m)
+derive newtype instance monadRecProcessM :: MonadRec (ProcessM state is os chrepr m)
 
 
 type ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
-type ProcessF state is os repr m a = Raw.ProcessF state repr m a
+type ProcessF state is os chrepr m a = Raw.ProcessF state chrepr m a
 
 
-type Process (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type) = ProcessM state is os repr m Unit
+type Process (state :: Type) (is :: Row Type) (os :: Row Type) (chrepr :: Type) (m :: Type -> Type) = ProcessM state is os chrepr m Unit
 
 
 {- Processing -}
 
-receive :: forall i state is is' os din repr m. FromRepr repr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os repr m din -- RawProcessM state repr m din
+receive :: forall i state is is' os din chrepr m. FromChRepr chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
 receive iid =
-    wrap $ Repr.ensureFrom <$> Raw.receive (inletR iid)
+    wrap $ ChRepr.ensureFrom <$> Raw.receive (inletR iid)
     -- ProcessM $ Free.liftF $ wrap $ Raw.Receive (inletR iid) $ Repr.ensureFrom
 
 
 
-send :: forall o state is os os' dout repr m. ToRepr dout repr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os repr m Unit
+send :: forall o state is os os' dout chrepr m. ToChRepr dout chrepr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os chrepr m Unit
 send oid dout =
-    wrap $ Raw.send (outletR oid) (Repr.ensureTo dout)
+    wrap $ Raw.send (outletR oid) (ChRepr.ensureTo dout)
 
 
 
-sendIn :: forall i din state is is' os repr m. ToRepr din repr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os repr m Unit
+sendIn :: forall i din state is is' os chrepr m. ToChRepr din chrepr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os chrepr m Unit
 sendIn iid din =
-    wrap $ Raw.sendIn (inletR iid) (Repr.ensureTo din)
+    wrap $ Raw.sendIn (inletR iid) (ChRepr.ensureTo din)
 
 
-lift :: forall state is os repr m. m Unit -> ProcessM state is os repr m Unit
+lift :: forall state is os chrepr m. m Unit -> ProcessM state is os chrepr m Unit
 lift = wrap <<< Raw.lift
 
 
@@ -109,15 +111,15 @@ outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List St
 outletsOf = keys
 
 
-join :: forall state is os repr m a. ProcessM state is os repr m a -> ProcessM state is os repr m a
+join :: forall state is os chrepr m a. ProcessM state is os chrepr m a -> ProcessM state is os chrepr m a
 join = wrap <<< Raw.join <<< unwrap
 
 
-mkRunner :: forall state is os repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state is os repr m (ProcessM state is os repr m Unit -> m Unit)
+mkRunner :: forall state is os chrepr m. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state is os chrepr m (ProcessM state is os chrepr m Unit -> m Unit)
 mkRunner = wrap $ Raw.mkRunner <#> \runner -> unwrap >>> runner
 
 
-spawn :: forall state is os repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state is os repr m Unit -> ProcessM state is os repr m (m Unit)
+spawn :: forall state is os chrepr m. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state is os chrepr m Unit -> ProcessM state is os chrepr m (m Unit)
 spawn = wrap <<< Raw.spawn <<< unwrap
 
 
@@ -125,23 +127,23 @@ spawn = wrap <<< Raw.spawn <<< unwrap
 
 
 
-imapMState :: forall state state' is os repr m. (state -> state') -> (state' -> state) -> ProcessM state is os repr m ~> ProcessM state' is os repr m
+imapMState :: forall state state' is os chrepr m. (state -> state') -> (state' -> state) -> ProcessM state is os chrepr m ~> ProcessM state' is os chrepr m
 imapMState f g =
     unwrap >>> Raw.imapMState f g >>> wrap
 
 
-mapMM :: forall state is os repr m m'. (m ~> m') -> ProcessM state is os repr m ~> ProcessM state is os repr m'
+mapMM :: forall state is os chrepr m m'. (m ~> m') -> ProcessM state is os chrepr m ~> ProcessM state is os chrepr m'
 mapMM f =
     unwrap >>> Raw.mapMM f >>> wrap
 
 
 
 {-
-tuplify :: forall ostate istate is os repr m. ostate -> ProcessM istate is os repr m ~> ProcessM (ostate /\ istate) is os repr m
+tuplify :: forall ostate istate is os chrepr m. ostate -> ProcessM istate is os chrepr m ~> ProcessM (ostate /\ istate) is os chrepr m
 tuplify ostate = imapMState ((/\) ostate) Tuple.snd
 
 
-untuple :: forall ostate istate is os repr m. ostate -> ProcessM (ostate /\ istate) is os repr m ~> ProcessM istate is os repr m
+untuple :: forall ostate istate is os chrepr m. ostate -> ProcessM (ostate /\ istate) is os chrepr m ~> ProcessM istate is os chrepr m
 untuple ostate = imapMState Tuple.snd ((/\) ostate)
 -}
 
@@ -154,12 +156,12 @@ runM protocol default stateRef (ProcessM processFree) =
 
 
 runM
-    :: forall state is os repr m
+    :: forall state is os chrepr m
      . MonadEffect m
     => MonadRec m
-    => HasFallback repr
-    => Fn.Protocol state is os repr -- Protocol state is os
-    -> ProcessM state is os repr m
+    => HasFallback chrepr
+    => Fn.Protocol state is os chrepr -- Protocol state is os
+    -> ProcessM state is os chrepr m
     ~> m
 runM protocol processM =
     case toRaw processM of
@@ -167,19 +169,19 @@ runM protocol processM =
 
 
 runFreeM
-    :: forall state is os repr m
+    :: forall state is os chrepr m
      . MonadEffect m
     => MonadRec m
-    => HasFallback repr
-    => Fn.Protocol state is os repr
-    -> Free (Raw.ProcessF state repr m)
+    => HasFallback chrepr
+    => Fn.Protocol state is os chrepr
+    -> Free (Raw.ProcessF state chrepr m)
     ~> m
 runFreeM protocol fn = Raw.runFreeM protocol fn
 
 
-toRaw :: forall state is os m a repr. ProcessM state is os repr m a -> Raw.ProcessM state repr m a
+toRaw :: forall state is os m a chrepr. ProcessM state is os chrepr m a -> Raw.ProcessM state chrepr m a
 toRaw = unwrap
 
 
-toRawWithReprableState :: forall state is os m a repr. FromRepr repr state => ToRepr state repr => ProcessM state is os repr m a -> Raw.ProcessM repr repr m a
+toRawWithReprableState :: forall state strepr is os m a chrepr. StRepr state strepr => ProcessM state is os chrepr m a -> Raw.ProcessM strepr chrepr m a
 toRawWithReprableState = toRaw >>> Raw.toReprableState

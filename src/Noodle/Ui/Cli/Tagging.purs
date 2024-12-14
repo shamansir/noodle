@@ -241,7 +241,7 @@ familyDocs
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At At.Documentation repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -256,7 +256,7 @@ familyStatusLine
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At At.StatusLine repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -271,13 +271,13 @@ familyOnelineSignature
      . MarkToolkit tk
     => HasRepr tk repr
     => Tagged.At at repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy at
     -> Proxy tk
     -> Id.FamilyR
     -> Tag
 familyOnelineSignature pat ptk familyR =
-    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS (Maybe repr) (Maybe repr))) of
+    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS (Maybe chrepr) (Maybe chrepr))) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.crepr Palette.familyName) name
@@ -289,14 +289,14 @@ familyOnelineSignature pat ptk familyR =
             <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
-        tagArgument :: Fn.Argument (Maybe repr) -> Tag
+        tagArgument :: Fn.Argument (Maybe chrepr) -> Tag
         tagArgument arg = T.s "<" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg) <>
             case Fn.argValue arg of
                 Just inVal ->
                     T.s "::" <> (Tagged.at pat) inVal
                 Nothing -> T.nil
             <> T.s "> "
-        tagOut :: Fn.Output (Maybe repr) -> Tag
+        tagOut :: Fn.Output (Maybe chrepr) -> Tag
         tagOut out = T.s "(" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out) <>
             case Fn.outValue out of
                 Just outVal ->

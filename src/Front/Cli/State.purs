@@ -23,7 +23,7 @@ import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (make, id, registerRawNode) as Patch
-import Noodle.Repr (class FromToRepr)
+import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Raw.Node (Node) as Raw
 
 import Blessed.Internal.Core as Core
@@ -147,7 +147,7 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall nstate tk s fs repr m. FromToRepr nstate repr => Id.PatchR -> Raw.Node nstate repr m -> State tk s fs repr m -> State tk s fs repr m
+registerRawNode :: forall nstate tk s fs repr m. StRepr nstate strepr => Id.PatchR -> Raw.Node nstate repr m -> State tk s fs repr m -> State tk s fs repr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 

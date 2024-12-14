@@ -9,5 +9,5 @@ import Prelude
 
 
 class StRepr a repr | a -> repr where
-  to :: repr -> a
-  from :: a -> repr
+  to :: a -> repr
+  from :: repr -> a

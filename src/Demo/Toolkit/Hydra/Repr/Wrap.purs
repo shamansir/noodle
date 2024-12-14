@@ -19,7 +19,7 @@ import Parsing (Parser)
 import Parsing.String as P
 import Parsing.Extra (marker, foldMarkers)
 
-import Noodle.Repr as R
+import Noodle.Repr.ChRepr as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -44,7 +44,7 @@ import Tidy.Codegen
 
 
  -- FIXME: review for excessive wraps. Or maybe separate node state wraps and inputs/outputs wraps
- -- may be join classes IsNodeState/IsChannel with FromRepr/ToRepr and so on
+ -- may be join classes IsNodeState/IsChannel with FromChRepr/ToChRepr and so on
 
 data WrapRepr
     = Value HT.Value
@@ -72,280 +72,280 @@ data WrapRepr
 
 
 -- instance NMF.HasRepr a WrapRepr where
---     toRepr :: forall f i o. InNode f i o -> HT.Value -> WrapRepr
---     toRepr _ a = WrapRepr
+--     toChRepr :: forall f i o. InNode f i o -> HT.Value -> WrapRepr
+--     toChRepr _ a = WrapRepr
 
 
-instance R.HasFallback WrapRepr where
+instance HF.HasFallback WrapRepr where
     fallback = Unit unit
 
 
-{- R.ToRepr -}
+{- CR.ToChRepr -}
 
 
-instance R.ToRepr HT.Value WrapRepr where
-    toRepr :: HT.Value -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Value
+instance CR.ToChRepr HT.Value WrapRepr where
+    toChRepr :: HT.Value -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Value
 
 
-instance R.ToRepr Unit WrapRepr where
-    toRepr :: Unit -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Unit
+instance CR.ToChRepr Unit WrapRepr where
+    toChRepr :: Unit -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Unit
 
 
-instance R.ToRepr HT.Texture WrapRepr where
-    toRepr :: HT.Texture -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Texture
+instance CR.ToChRepr HT.Texture WrapRepr where
+    toChRepr :: HT.Texture -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Texture
 
 
-instance R.ToRepr HT.SourceN WrapRepr where
-    toRepr :: HT.SourceN -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< SourceN
+instance CR.ToChRepr HT.SourceN WrapRepr where
+    toChRepr :: HT.SourceN -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< SourceN
 
 
-instance R.ToRepr HT.TODO WrapRepr where
-    toRepr :: HT.TODO -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< TODO
+instance CR.ToChRepr HT.TODO WrapRepr where
+    toChRepr :: HT.TODO -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< TODO
 
 
-instance R.ToRepr HT.Context WrapRepr where
-    toRepr :: HT.Context -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Context
+instance CR.ToChRepr HT.Context WrapRepr where
+    toChRepr :: HT.Context -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Context
 
 
-instance R.ToRepr HT.UpdateFn WrapRepr where
-    toRepr :: HT.UpdateFn -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< UpdateFn
+instance CR.ToChRepr HT.UpdateFn WrapRepr where
+    toChRepr :: HT.UpdateFn -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< UpdateFn
 
 
-instance R.ToRepr HT.Source WrapRepr where
-    toRepr :: HT.Source -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Source
+instance CR.ToChRepr HT.Source WrapRepr where
+    toChRepr :: HT.Source -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Source
 
 
-instance R.ToRepr HT.Url WrapRepr where
-    toRepr :: HT.Url -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Url
+instance CR.ToChRepr HT.Url WrapRepr where
+    toChRepr :: HT.Url -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Url
 
 
-instance R.ToRepr HT.GlslFn WrapRepr where
-    toRepr :: HT.GlslFn -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< GlslFn
+instance CR.ToChRepr HT.GlslFn WrapRepr where
+    toChRepr :: HT.GlslFn -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< GlslFn
 
 
-instance R.ToRepr HT.SourceOptions WrapRepr where
-    toRepr :: HT.SourceOptions -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< SourceOptions
+instance CR.ToChRepr HT.SourceOptions WrapRepr where
+    toChRepr :: HT.SourceOptions -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< SourceOptions
 
 
-instance R.ToRepr HT.Values WrapRepr where
-    toRepr :: HT.Values -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Values
+instance CR.ToChRepr HT.Values WrapRepr where
+    toChRepr :: HT.Values -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Values
 
 
-instance R.ToRepr HT.Ease WrapRepr where
-    toRepr :: HT.Ease -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Ease
+instance CR.ToChRepr HT.Ease WrapRepr where
+    toChRepr :: HT.Ease -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Ease
 
 
-instance R.ToRepr HT.AudioSource WrapRepr where
-    toRepr :: HT.AudioSource -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Audio
+instance CR.ToChRepr HT.AudioSource WrapRepr where
+    toChRepr :: HT.AudioSource -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Audio
 
 
-instance R.ToRepr HT.AudioBin WrapRepr where
-    toRepr :: HT.AudioBin -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< AudioBin
+instance CR.ToChRepr HT.AudioBin WrapRepr where
+    toChRepr :: HT.AudioBin -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< AudioBin
 
 
-instance R.ToRepr HT.OutputN WrapRepr where
-    toRepr :: HT.OutputN -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< OutputN
+instance CR.ToChRepr HT.OutputN WrapRepr where
+    toChRepr :: HT.OutputN -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< OutputN
 
 
-instance R.ToRepr HT.ExtSource WrapRepr where
-    toRepr :: HT.ExtSource -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< ExtSource
+instance CR.ToChRepr HT.ExtSource WrapRepr where
+    toChRepr :: HT.ExtSource -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< ExtSource
 
 
-instance R.ToRepr HT.RenderTarget WrapRepr where
-    toRepr :: HT.RenderTarget -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Target
+instance CR.ToChRepr HT.RenderTarget WrapRepr where
+    toChRepr :: HT.RenderTarget -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Target
 
 
-instance R.ToRepr HT.DepFn WrapRepr where
-    toRepr :: HT.DepFn -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Value <<< HT.Dep
+instance CR.ToChRepr HT.DepFn WrapRepr where
+    toChRepr :: HT.DepFn -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Value <<< HT.Dep
 
 
-instance R.ToRepr HT.CanBeSource WrapRepr where
-    toRepr :: HT.CanBeSource -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< CBS
+instance CR.ToChRepr HT.CanBeSource WrapRepr where
+    toChRepr :: HT.CanBeSource -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< CBS
 
 
-instance R.ToRepr HT.TOrV WrapRepr where
-    toRepr :: HT.TOrV -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< TOrV
+instance CR.ToChRepr HT.TOrV WrapRepr where
+    toChRepr :: HT.TOrV -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< TOrV
 
 
 {-}
-instance R.ToRepr CAI.Products WrapRepr where
-    toRepr :: CAI.Products -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Products
+instance CR.ToChRepr CAI.Products WrapRepr where
+    toChRepr :: CAI.Products -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Products
 
 
-instance R.ToRepr CAI.Product' WrapRepr where
-    toRepr :: CAI.Product' -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists <<< Product
+instance CR.ToChRepr CAI.Product' WrapRepr where
+    toChRepr :: CAI.Product' -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists <<< Product
 -}
 
 
-instance R.ToRepr WrapRepr WrapRepr where
-    toRepr :: WrapRepr -> Maybe (R.Repr WrapRepr)
-    toRepr = R.exists
+instance CR.ToChRepr WrapRepr WrapRepr where
+    toChRepr :: WrapRepr -> Maybe (R.Repr WrapRepr)
+    toChRepr = R.exists
 
 
-{- R.FromRepr -}
+{- CR.FromChRepr -}
 
 
-instance R.FromRepr WrapRepr HT.Value where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Value
-    fromRepr (R.Repr (Value value)) = Just value
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Value where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Value
+    fromChRepr (R.Repr (Value value)) = Just value
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Texture where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Texture
-    fromRepr (R.Repr (Texture texture)) = Just texture
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Texture where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Texture
+    fromChRepr (R.Repr (Texture texture)) = Just texture
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.OutputN where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.OutputN
-    fromRepr (R.Repr (OutputN outN)) = Just outN
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.OutputN where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.OutputN
+    fromChRepr (R.Repr (OutputN outN)) = Just outN
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.SourceN where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.SourceN
-    fromRepr (R.Repr (SourceN srcN)) = Just srcN
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.SourceN where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.SourceN
+    fromChRepr (R.Repr (SourceN srcN)) = Just srcN
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.TODO where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.TODO
-    fromRepr (R.Repr (TODO todo)) = Just todo
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.TODO where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.TODO
+    fromChRepr (R.Repr (TODO todo)) = Just todo
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Context where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Context
-    fromRepr (R.Repr (Context context)) = Just context
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Context where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Context
+    fromChRepr (R.Repr (Context context)) = Just context
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.UpdateFn where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.UpdateFn
-    fromRepr (R.Repr (UpdateFn updatefn)) = Just updatefn
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.UpdateFn where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.UpdateFn
+    fromChRepr (R.Repr (UpdateFn updatefn)) = Just updatefn
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Source where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Source
-    fromRepr (R.Repr (Source source)) = Just source
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Source where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Source
+    fromChRepr (R.Repr (Source source)) = Just source
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Url where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Url
-    fromRepr (R.Repr (Url url)) = Just url
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Url where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Url
+    fromChRepr (R.Repr (Url url)) = Just url
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.GlslFn where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.GlslFn
-    fromRepr (R.Repr (GlslFn glslfn)) = Just glslfn
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.GlslFn where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.GlslFn
+    fromChRepr (R.Repr (GlslFn glslfn)) = Just glslfn
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.SourceOptions where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.SourceOptions
-    fromRepr (R.Repr (SourceOptions sourceoptions)) = Just sourceoptions
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.SourceOptions where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.SourceOptions
+    fromChRepr (R.Repr (SourceOptions sourceoptions)) = Just sourceoptions
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Values where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Values
-    fromRepr (R.Repr (Values values)) = Just values
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Values where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Values
+    fromChRepr (R.Repr (Values values)) = Just values
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.Ease where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.Ease
-    fromRepr (R.Repr (Ease ease)) = Just ease
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.Ease where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.Ease
+    fromChRepr (R.Repr (Ease ease)) = Just ease
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.AudioSource where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.AudioSource
-    fromRepr (R.Repr (Audio audio)) = Just audio
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.AudioSource where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.AudioSource
+    fromChRepr (R.Repr (Audio audio)) = Just audio
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.AudioBin where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.AudioBin
-    fromRepr (R.Repr (AudioBin audiobin)) = Just audiobin
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.AudioBin where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.AudioBin
+    fromChRepr (R.Repr (AudioBin audiobin)) = Just audiobin
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.ExtSource where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.ExtSource
-    fromRepr (R.Repr (ExtSource ext)) = Just ext
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.ExtSource where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.ExtSource
+    fromChRepr (R.Repr (ExtSource ext)) = Just ext
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.RenderTarget where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.RenderTarget
-    fromRepr (R.Repr (Target trg)) = Just trg
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.RenderTarget where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.RenderTarget
+    fromChRepr (R.Repr (Target trg)) = Just trg
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.DepFn where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.DepFn
-    fromRepr (R.Repr (DepFn fn)) = Just fn
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.DepFn where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.DepFn
+    fromChRepr (R.Repr (DepFn fn)) = Just fn
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr HT.CanBeSource where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.CanBeSource
-    fromRepr (R.Repr (CBS cbs)) = Just cbs
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.CanBeSource where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.CanBeSource
+    fromChRepr (R.Repr (CBS cbs)) = Just cbs
+    fromChRepr _ = Nothing
 
 
 {-
-instance R.FromRepr WrapRepr CAI.Products where
-    fromRepr :: R.Repr WrapRepr -> Maybe CAI.Products
-    fromRepr (R.Repr (Products products)) = Just products
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr CAI.Products where
+    fromChRepr :: R.Repr WrapRepr -> Maybe CAI.Products
+    fromChRepr (R.Repr (Products products)) = Just products
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr CAI.Product' where
-    fromRepr :: R.Repr WrapRepr -> Maybe CAI.Product'
-    fromRepr (R.Repr (Product product)) = Just product
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr CAI.Product' where
+    fromChRepr :: R.Repr WrapRepr -> Maybe CAI.Product'
+    fromChRepr (R.Repr (Product product)) = Just product
+    fromChRepr _ = Nothing
 -}
 
-instance R.FromRepr WrapRepr HT.TOrV where
-    fromRepr :: R.Repr WrapRepr -> Maybe HT.TOrV
-    fromRepr (R.Repr (Value v)) = Just $ HT.V v
-    fromRepr (R.Repr (Texture tex)) = Just $ HT.T tex
-    fromRepr (R.Repr (TOrV torv)) = Just torv
-    fromRepr _ = Nothing
+instance CR.FromChRepr WrapRepr HT.TOrV where
+    fromChRepr :: R.Repr WrapRepr -> Maybe HT.TOrV
+    fromChRepr (R.Repr (Value v)) = Just $ HT.V v
+    fromChRepr (R.Repr (Texture tex)) = Just $ HT.T tex
+    fromChRepr (R.Repr (TOrV torv)) = Just torv
+    fromChRepr _ = Nothing
 
 
-instance R.FromRepr WrapRepr WrapRepr where
-    fromRepr :: R.Repr WrapRepr -> Maybe WrapRepr
-    fromRepr (R.Repr w) = Just w
+instance CR.FromChRepr WrapRepr WrapRepr where
+    fromChRepr :: R.Repr WrapRepr -> Maybe WrapRepr
+    fromChRepr (R.Repr w) = Just w
 
 
 instance Mark WrapRepr where

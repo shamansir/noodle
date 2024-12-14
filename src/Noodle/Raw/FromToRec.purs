@@ -8,13 +8,13 @@ import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
 import Data.Symbol (class IsSymbol)
 
-import Noodle.Repr (Repr(..), class ToReprRow, class FromReprRow)
-import Noodle.Repr (fromMap, toMap, unwrap) as Repr
+import Noodle.Repr.ChRepr (ChRepr(..), class ToChReprRow, class FromChReprRow)
+import Noodle.Repr.ChRepr (fromMap, toMap, unwrap) as ChRepr
 
 
-fromRec :: forall k repr rowl row. ToReprRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k repr
-fromRec toKey = Repr.toMap toKey >>> map Repr.unwrap
+fromRec :: forall k repr rowl row. ToChReprRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k repr
+fromRec toKey = ChRepr.toMap toKey >>> map ChRepr.unwrap
 
 
-toRec :: forall k repr rowl row. FromReprRow rowl row repr => (k -> String) -> Map k repr -> Record row
-toRec toString = map Repr >>> Map.stringifyKeys toString >>> Repr.fromMap
+toRec :: forall k repr rowl row. FromChReprRow rowl row repr => (k -> String) -> Map k repr -> Record row
+toRec toString = map ChRepr >>> Map.stringifyKeys toString >>> ChRepr.fromMap

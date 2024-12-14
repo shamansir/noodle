@@ -27,73 +27,72 @@ import Noodle.Raw.Fn.Protocol as Raw
 -- TODO: import Noodle.Raw.Fn.Protocol as RawExports
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Raw.FromToRec (toRec, fromRec)
-import Noodle.Repr (class ToRepr, class ToReprRow, class FromReprRow)
-import Noodle.Repr (ensureTo, unwrap) as Repr
+import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
+import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
 
 
-type Protocol state (is :: Row Type) (os :: Row Type) repr = Raw.Protocol state repr
+type Protocol state (is :: Row Type) (os :: Row Type) chrepr = Raw.Protocol state chrepr
 
 
 make
-    :: forall state (is :: Row Type) (os :: Row Type) repr m
+    :: forall state (is :: Row Type) (os :: Row Type) chrepr m
     .  MonadEffect m
     => state
-    -> Map InletR repr
-    -> Map OutletR repr
-    -> m (Tracker state is os repr /\ Protocol state is os repr)
+    -> Map InletR chrepr
+    -> Map OutletR chrepr
+    -> m (Tracker state is os chrepr /\ Protocol state is os chrepr)
 make = Raw.make
 
 
 makeRec
-    :: forall state (is :: Row Type) isrl (os :: Row Type) osrl repr m
+    :: forall state (is :: Row Type) isrl (os :: Row Type) osrl chrepr m
     .  MonadEffect m
-    => ToReprRow isrl is InletR repr
-    => ToReprRow osrl os OutletR repr
+    => ToChReprRow isrl is InletR chrepr
+    => ToChReprRow osrl os OutletR chrepr
     => state
     -> Record is
     -> Record os
-    -> m (Tracker state is os repr /\ Protocol state is os repr)
+    -> m (Tracker state is os chrepr /\ Protocol state is os chrepr)
 makeRec state is os = make state (fromRec inletR is) (fromRec outletR os)
 
 
-getState :: forall state is os repr. Protocol state is os repr -> Effect state
+getState :: forall state is os chrepr. Protocol state is os chrepr -> Effect state
 getState = Raw.getState
 
 
-getInlets :: forall state is os repr. Protocol state is os repr -> Effect (Map InletR repr)
+getInlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map InletR chrepr)
 getInlets = Raw.getInlets
 
 
-getOutlets :: forall state is os repr. Protocol state is os repr -> Effect (Map OutletR repr)
+getOutlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map OutletR chrepr)
 getOutlets = Raw.getOutlets
 
 
-getRecInlets :: forall state is isrl os repr. FromReprRow isrl is repr => Protocol state is os repr -> Effect (Record is)
+getRecInlets :: forall state is isrl os chrepr. FromChReprRow isrl is chrepr => Protocol state is os chrepr -> Effect (Record is)
 getRecInlets p = p.getInlets unit <#> Tuple.snd <#> toRec Id.inletRName
 
 
-getRecOutlets :: forall state is os osrl repr. FromReprRow osrl os repr => Protocol state is os repr -> Effect (Record os)
+getRecOutlets :: forall state is os osrl chrepr. FromChReprRow osrl os chrepr => Protocol state is os chrepr -> Effect (Record os)
 getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec Id.outletRName
 
 
-modifyState :: forall state is os repr. (state -> state) -> Protocol state is os repr -> Effect Unit
+modifyState :: forall state is os chrepr. (state -> state) -> Protocol state is os chrepr -> Effect Unit
 modifyState = Raw.modifyState
 
 
 -- private: doesn't check if outlet is in `os`
-_sendOut :: forall o state is os dout repr. IsSymbol o => ToRepr dout repr => Outlet o -> dout -> Protocol state is os repr -> Effect Unit
-_sendOut outlet = Raw.sendOut (outletR outlet) <<< Repr.unwrap <<< Repr.ensureTo
+_sendOut :: forall o state is os dout chrepr. IsSymbol o => ToChRepr dout chrepr => Outlet o -> dout -> Protocol state is os chrepr -> Effect Unit
+_sendOut outlet = Raw.sendOut (outletR outlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
 
 
 -- private: doesn't check if inlet is in `is`
-_sendIn :: forall i state is os dout repr. IsSymbol i => ToRepr dout repr => Inlet i -> dout -> Protocol state is os repr -> Effect Unit
-_sendIn inlet = Raw.sendIn (inletR inlet) <<< Repr.unwrap <<< Repr.ensureTo
+_sendIn :: forall i state is os dout chrepr. IsSymbol i => ToChRepr dout chrepr => Inlet i -> dout -> Protocol state is os chrepr -> Effect Unit
+_sendIn inlet = Raw.sendIn (inletR inlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
 
 
-
-_unsafeSendOut :: forall state is os repr. OutletR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendOut :: forall state is os chrepr. OutletR -> chrepr -> Protocol state is os chrepr -> Effect Unit
 _unsafeSendOut = Raw.sendOut
 
 
-_unsafeSendIn :: forall state is os repr. InletR -> repr -> Protocol state is os repr -> Effect Unit
+_unsafeSendIn :: forall state is os chrepr. InletR -> chrepr -> Protocol state is os chrepr -> Effect Unit
 _unsafeSendIn = Raw.sendIn

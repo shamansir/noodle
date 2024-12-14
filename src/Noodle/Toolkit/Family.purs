@@ -16,60 +16,60 @@ import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class C
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
-import Noodle.Repr (class ToReprRow, class FromToRepr)
+import Noodle.Repr.ChRepr (class ToChReprRow)
 
 import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.FromToRec as ReprCnv
+import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Raw.Toolkit.Family (Family(..)) as Raw
 
 
-data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (repr :: Type) (m :: Type -> Type)
+data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (chrepr :: Type) (m :: Type -> Type)
     = Family
         Raw.Shape
         state
-        (Raw.InletsValues repr)
-        (Raw.OutletsValues repr)
-        (Fn state is os repr m)
+        (Raw.InletsValues chrepr)
+        (Raw.OutletsValues chrepr)
+        (Fn state is os chrepr m)
 
 
 make
-    :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) repr m
+    :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) chrepr m
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
-    => ToReprRow isrl is Id.InletR repr => ToReprRow osrl os Id.OutletR repr
+    => ToChReprRow isrl is Id.InletR chrepr => ToChReprRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => Id.Family f
     -> state
     -> Shape inlets outlets
     -> Record is
     -> Record os
-    -> Process state is os repr m
-    -> Family f state is os repr m
+    -> Process state is os chrepr m
+    -> Family f state is os chrepr m
 make _ state shape inletsRec outletsRec process =
     Family
         (Shape.reflect shape)
         state
-        (ReprCnv.fromRec Id.inletR inletsRec)
-        (ReprCnv.fromRec Id.outletR outletsRec)
+        (ChReprCnv.fromRec Id.inletR inletsRec)
+        (ChReprCnv.fromRec Id.outletR outletsRec)
         $ Fn.make (reflectSymbol (Proxy :: _ f)) process
 
 
 familyIdOf
-    :: forall f state is os repr m
+    :: forall f state is os chrepr m
      . IsSymbol f
-    => Family f state is os repr m
+    => Family f state is os chrepr m
     -> Id.Family f
 familyIdOf _ = Id.Family :: _ f
 
 
 
 spawn ::
-    forall f state is os repr mp m
+    forall f state is os chrepr mp m
      . IsSymbol f
     => MonadEffect m
-    => Family f state is os repr mp
-    -> m (Node f state is os repr mp)
+    => Family f state is os chrepr mp
+    -> m (Node f state is os chrepr mp)
 spawn family@(Family rawShape state inletsMap outletsMap fn) =
     Node._makeWithFn
         (Id.familyR $ familyIdOf family)
@@ -80,10 +80,10 @@ spawn family@(Family rawShape state inletsMap outletsMap fn) =
         fn
 
 
-toRaw :: forall f state is os repr m
+toRaw :: forall f state is os chrepr m
      . IsSymbol f
-    => Family f state is os repr m
-    -> Raw.Family state repr m
+    => Family f state is os chrepr m
+    -> Raw.Family state chrepr m
 toRaw family@(Family rawShape state inletsMap outletsMap fn) =
     Raw.Family
         (Id.familyR $ familyIdOf family)

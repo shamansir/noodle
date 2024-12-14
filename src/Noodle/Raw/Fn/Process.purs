@@ -48,22 +48,26 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
-import Noodle.Repr (class HasFallback, fallbackByRepr, Repr, unwrap, wrap, class ToRepr, class FromRepr, ensureTo, ensureFrom)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
+import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
 
 
 
 data ProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
-data ProcessF state repr m a
+data ProcessF state chrepr m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Join (ProcessF state repr m a)
-    | GetProto (Raw.Protocol state repr -> a)
-    | Send OutletR (Repr repr) a
-    | SendIn InletR (Repr repr) a
-    | Receive InletR (Repr repr -> a)
+    | Join (ProcessF state chrepr m a)
+    | GetProto (Raw.Protocol state chrepr -> a)
+    | Send OutletR (ChRepr chrepr) a
+    | SendIn InletR (ChRepr chrepr) a
+    | Receive InletR (ChRepr chrepr -> a)
 
 
-instance functorProcessF :: Functor m => Functor (ProcessF state repr m) where
+instance functorProcessF :: Functor m => Functor (ProcessF state chrepr m) where
     map f = case _ of
         Join proc ->         Join $ map f proc
         GetProto pf ->       GetProto $ map f pf
@@ -76,39 +80,39 @@ instance functorProcessF :: Functor m => Functor (ProcessF state repr m) where
 
 
 newtype ProcessM :: Type -> Type -> (Type -> Type) -> Type -> Type
-newtype ProcessM state repr m a = ProcessM (Free (ProcessF state repr m) a)
+newtype ProcessM state chrepr m a = ProcessM (Free (ProcessF state chrepr m) a)
 
 
-type Process state repr m = ProcessM state repr m Unit
+type Process state chrepr m = ProcessM state chrepr m Unit
 
 
-derive newtype instance functorProcessM :: Functor (ProcessM state repr m)
-derive newtype instance applyProcessM :: Apply (ProcessM state repr m)
-derive newtype instance applicativeProcessM :: Applicative (ProcessM state repr m)
-derive newtype instance bindProcessM :: Bind (ProcessM state repr m)
-derive newtype instance monadProcessM :: Monad (ProcessM state repr m)
-derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state repr m a)
-derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state repr m a)
---derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state repr m a)
+derive newtype instance functorProcessM :: Functor (ProcessM state chrepr m)
+derive newtype instance applyProcessM :: Apply (ProcessM state chrepr m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM state chrepr m)
+derive newtype instance bindProcessM :: Bind (ProcessM state chrepr m)
+derive newtype instance monadProcessM :: Monad (ProcessM state chrepr m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state chrepr m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state chrepr m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state chrepr m a)
 
 
-instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state repr m) where
+instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state chrepr m) where
   liftEffect = ProcessM <<< Free.liftF <<< Lift <<< liftEffect
 
 
-instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state repr m) where
+instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state chrepr m) where
   liftAff = ProcessM <<< Free.liftF <<< Lift <<< liftAff
 
 
-instance monadStateProcessM :: MonadState state (ProcessM state repr m) where
+instance monadStateProcessM :: MonadState state (ProcessM state chrepr m) where
   state = ProcessM <<< Free.liftF <<< State
 
 
-instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state repr m) where
+instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state chrepr m) where
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecProcessM :: MonadRec (ProcessM state repr m) where
+instance monadRecProcessM :: MonadRec (ProcessM state chrepr m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
@@ -116,22 +120,22 @@ instance monadRecProcessM :: MonadRec (ProcessM state repr m) where
 
 {- Processing -}
 
-receive :: forall state repr m. InletR -> ProcessM state repr m (Repr repr)
+receive :: forall state chrepr m. InletR -> ProcessM state chrepr m (ChRepr chrepr)
 receive inletR =
     ProcessM $ Free.liftF $ Receive inletR $ identity
 
 
-send :: forall state repr m. OutletR -> Repr repr -> ProcessM state repr m Unit
+send :: forall state chrepr m. OutletR -> ChRepr chrepr -> ProcessM state chrepr m Unit
 send outletR orepr =
     ProcessM $ Free.liftF $ Send outletR orepr unit
 
 
-sendIn ∷ forall state repr m. InletR → Repr repr → ProcessM state repr m Unit
+sendIn ∷ forall state chrepr m. InletR → ChRepr chrepr → ProcessM state chrepr m Unit
 sendIn inletR irepr =
     ProcessM $ Free.liftF $ SendIn inletR irepr unit
 
 
-lift :: forall state repr m. m Unit -> ProcessM state repr m Unit
+lift :: forall state chrepr m. m Unit -> ProcessM state chrepr m Unit
 lift m = ProcessM $ Free.liftF $ Lift m
 
 
@@ -143,26 +147,26 @@ outletsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List St
 outletsOf = keys
 
 
-join :: forall state repr m a. ProcessM state repr m a -> ProcessM state repr m a
+join :: forall state chrepr m a. ProcessM state chrepr m a -> ProcessM state chrepr m a
 join (ProcessM free) = ProcessM $ Free.hoistFree Join free
 
 
-getProtocol :: forall state repr m. ProcessM state repr m (Raw.Protocol state repr)
+getProtocol :: forall state chrepr m. ProcessM state chrepr m (Raw.Protocol state chrepr)
 getProtocol = ProcessM $ Free.liftF $ GetProto identity
 
 
-mkRunner :: forall state repr m. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state repr m (ProcessM state repr m Unit -> m Unit)
+mkRunner :: forall state chrepr m. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state chrepr m (ProcessM state chrepr m Unit -> m Unit)
 mkRunner = getProtocol >>= (pure <<< runM)
 
 
-spawn :: forall state repr m a. HasFallback repr => MonadRec m => MonadEffect m => ProcessM state repr m Unit -> ProcessM state repr m (m Unit)
+spawn :: forall state chrepr m a. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state chrepr m Unit -> ProcessM state chrepr m (m Unit)
 spawn proc = mkRunner <#> (#) proc
 
 
 {- Maps -}
 
 
-imapFState :: forall state state' repr m. (state -> state') -> (state' -> state) -> ProcessF state repr m ~> ProcessF state' repr m
+imapFState :: forall state state' chrepr m. (state -> state') -> (state' -> state) -> ProcessF state chrepr m ~> ProcessF state' chrepr m
 imapFState f g =
     case _ of
         Join proc -> Join $ imapFState f g proc
@@ -175,12 +179,12 @@ imapFState f g =
         -- RunEffect effA -> RunEffect effA
 
 
-imapMState :: forall state state' repr m. (state -> state') -> (state' -> state) -> ProcessM state repr m ~> ProcessM state' repr m
+imapMState :: forall state state' chrepr m. (state -> state') -> (state' -> state) -> ProcessM state chrepr m ~> ProcessM state' chrepr m
 imapMState f g (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< imapFState f g) processFree
 
 
-mapFM :: forall state repr m m'. (m ~> m') -> ProcessF state repr m ~> ProcessF state repr m'
+mapFM :: forall state chrepr m m'. (m ~> m') -> ProcessF state chrepr m ~> ProcessF state chrepr m'
 mapFM f =
     case _ of
         Join proc -> mapFM f proc
@@ -193,44 +197,44 @@ mapFM f =
         -- RunEffect effA -> RunEffect effA
 
 
-mapMM :: forall state repr m m'. (m ~> m') -> ProcessM state repr m ~> ProcessM state repr m'
+mapMM :: forall state chrepr m m'. (m ~> m') -> ProcessM state chrepr m ~> ProcessM state chrepr m'
 mapMM f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
 
-toReprableState :: forall state repr m. FromRepr repr state => ToRepr state repr => ProcessM state repr m ~> ProcessM repr repr m
+toReprableState :: forall state strepr chrepr m. StRepr state strepr => ProcessM state chrepr m ~> ProcessM strepr chrepr m
 toReprableState =
-    imapMState (ensureTo >>> unwrap) (ensureFrom <<< wrap)
+    imapMState StRepr.to StRepr.from
 
 
 {- Running -}
 
 
 runM
-    :: forall state repr m
+    :: forall state chrepr m
      . MonadEffect m
     => MonadRec m
-    => HasFallback repr
-    => Raw.Protocol state repr
-    -> ProcessM state repr m
+    => HasFallback chrepr
+    => Raw.Protocol state chrepr
+    -> ProcessM state chrepr m
     ~> m
 runM protocol (ProcessM processFree) =
     runFreeM protocol processFree
 
 
 runFreeM
-    :: forall state repr m
+    :: forall state chrepr m
      . MonadEffect m
     => MonadRec m
-    => HasFallback repr
-    => Raw.Protocol state repr
-    -> Free (ProcessF state repr m)
+    => HasFallback chrepr
+    => Raw.Protocol state chrepr
+    -> Free (ProcessF state chrepr m)
     ~> m
 runFreeM protocol fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
-        go :: forall a. ProcessF state repr m a -> m a
+        go :: forall a. ProcessF state chrepr m a -> m a
         go (Join proc) = do
             runFreeM protocol $ Free.liftF $ proc
         go (GetProto getProto) = do
@@ -261,9 +265,9 @@ runFreeM protocol fn =
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        getInletAt :: InletR -> m (Repr repr)
-        getInletAt iid = liftEffect $ fallbackByRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInlets unit
-        sendToOutlet :: OutletR -> Repr repr -> m Unit
-        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid (unwrap v) >>> (Tuple $ SingleOutlet oid)
-        sendToInlet :: InletR -> Repr repr -> m Unit
-        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid (unwrap v) >>> (Tuple $ SingleInlet iid)
+        getInletAt :: InletR -> m (ChRepr chrepr)
+        getInletAt iid = liftEffect $ fallbackByChRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInlets unit
+        sendToOutlet :: OutletR -> ChRepr chrepr -> m Unit
+        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid (ChRepr.unwrap v) >>> (Tuple $ SingleOutlet oid)
+        sendToInlet :: InletR -> ChRepr chrepr -> m Unit
+        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid (ChRepr.unwrap v) >>> (Tuple $ SingleInlet iid)

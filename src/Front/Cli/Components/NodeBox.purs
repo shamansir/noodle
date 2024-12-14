@@ -53,7 +53,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 -- import Blessed.UI.Line.Li ()
 
-import Noodle.Repr (class HasFallback, class FromRepr, class ToRepr)
+import Noodle.Repr.ChRepr (class HasFallback, class FromRepr, class ToRepr)
 import Noodle.Id as Id
 import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
@@ -117,8 +117,8 @@ nextPos { left, top } =
 _component
     :: forall tk fs nstate pstate repr m
     .  Wiring m
-    => HasFallback repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => HasFallback chrepr
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -275,8 +275,8 @@ _component
 componentRaw
     :: forall tk fs nstate pstate repr m
      . Wiring m
-    => HasFallback repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => HasFallback chrepr
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -299,7 +299,7 @@ component
     => IsSymbol f
     => FromRepr repr nstate => ToRepr nstate repr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -400,7 +400,7 @@ onMouseOver
      . MarkToolkit tk
     => Toolkit.HasRepr tk repr
     => T.At At.StatusLine repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> _

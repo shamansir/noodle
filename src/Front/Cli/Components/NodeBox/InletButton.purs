@@ -56,7 +56,7 @@ import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
 import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
-import Noodle.Repr (class HasFallback)
+import Noodle.Repr.ChRepr (class HasFallback)
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Network as Network
 
@@ -80,7 +80,7 @@ left idx = Offset.px $ idx * (widthN + 1)
 component
     :: forall tk pstate fs repr m
      . Wiring m
-    => HasFallback repr
+    => HasFallback chrepr
     => T.At T.StatusLine repr
     => T.At T.ChannelLabel repr
     => Id.PatchR
@@ -156,7 +156,7 @@ onMouseOut infoBox idx _ _ = do
 onPress
     :: forall tk pstate fs repr m
      . Wiring m
-    => HasFallback repr
+    => HasFallback chrepr
     => Id.PatchR
     -> NodeBoxKey
     -> Int

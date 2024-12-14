@@ -1,4 +1,4 @@
-module Noodle.ChRepr.ChChRepr
+module Noodle.Repr.ChRepr
     ( ChRepr(..)
     , ensureTo, ensureFrom
     , fromEq, toEq

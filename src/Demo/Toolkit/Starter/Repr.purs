@@ -32,12 +32,9 @@ import Tidy.Codegen
     , declImport, declImportAs, importOp, importTypeOp
     )
 
-import Noodle.Repr
-    ( class HasFallback, fallback
-    , wrap, unwrap
-    , class ToRepr, class FromRepr
-    , fromEq, toEq
-    )
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as ChRepr
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen
     ( class CodegenRepr, Options(..)

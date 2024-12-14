@@ -14,41 +14,41 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.FromToRec (toRec)
 import Noodle.Raw.Fn.Tracker as Raw
-import Noodle.Repr (class FromReprRow)
+import Noodle.Repr.ChRepr (class FromChReprRow)
 
 
-type Tracker state (is :: Row Type) (os :: Row Type) repr = Raw.Tracker state repr
+type Tracker state (is :: Row Type) (os :: Row Type) chrepr = Raw.Tracker state chrepr
 
 
-inlets :: forall state is os repr. Tracker state is os repr -> Effect (Map InletR repr)
+inlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map InletR chrepr)
 inlets = Raw.inlets
 
 
-outlets :: forall state is os repr. Tracker state is os repr-> Effect (Map OutletR repr)
+outlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map OutletR chrepr)
 outlets = Raw.outlets
 
 
-lastInlet :: forall state is os repr. Tracker state is os repr -> Effect (Maybe InletR)
+lastInlet :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Maybe InletR)
 lastInlet = Raw.lastInlet
 
 
-lastOutlet :: forall state is os repr. Tracker state is os repr -> Effect (Maybe OutletR)
+lastOutlet :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Maybe OutletR)
 lastOutlet = Raw.lastOutlet
 
 
-inletsRec :: forall state is isrl os repr. RL.RowToList is isrl => FromReprRow isrl is repr => Tracker state is os repr -> Effect (Record is)
+inletsRec :: forall state is isrl os chrepr. RL.RowToList is isrl => FromChReprRow isrl is chrepr => Tracker state is os chrepr -> Effect (Record is)
 inletsRec tracker = Raw.inlets tracker <#> toRec Id.inletRName
 
 
-outletsRec :: forall state is os osrl repr. RL.RowToList os osrl => FromReprRow osrl os repr => Tracker state is os repr -> Effect (Record os)
+outletsRec :: forall state is os osrl chrepr. RL.RowToList os osrl => FromChReprRow osrl os chrepr => Tracker state is os chrepr -> Effect (Record os)
 outletsRec tracker = Raw.outlets tracker <#> toRec Id.outletRName
 
 
-atInlet :: forall state is os repr. InletR -> Tracker state is os repr -> Effect (Maybe repr)
+atInlet :: forall state is os chrepr. InletR -> Tracker state is os chrepr -> Effect (Maybe chrepr)
 atInlet = Raw.atInlet
 
 
-atOutlet :: forall state is os repr. OutletR -> Tracker state is os repr -> Effect (Maybe repr)
+atOutlet :: forall state is os chrepr. OutletR -> Tracker state is os chrepr -> Effect (Maybe chrepr)
 atOutlet = Raw.atOutlet
 
 

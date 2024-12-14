@@ -36,7 +36,8 @@ import Cli.State (withCurrentPatch) as State
 import Cli.Style (library, libraryBorder) as Style
 
 import Noodle.Id (PatchR, FamilyR, Family) as Id
-import Noodle.Repr (class HasFallback, class FromToRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily) as Toolkit
 import Noodle.Toolkit.Family (Family) as Toolkit
@@ -61,9 +62,9 @@ component
     :: forall tk p fs repr
      . FromToRepr repr repr
     => Toolkit.HoldsFamilies repr Effect fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr Effect
-    => HasFallback repr
+    => HasFallback chrepr
     => Toolkit tk fs repr Effect
     -> Core.Blessed (State tk p fs repr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
     -- -> BlessedOpM (State tk p fs repr m) m Unit
@@ -102,8 +103,8 @@ onFamilySelect
      . Wiring m
     => FromToRepr repr repr
     => Toolkit.HoldsFamilies repr m fs
-    => HasFallback repr
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => HasFallback chrepr
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => BlessedOp (State tk pstate fs repr m) m
 onFamilySelect =
@@ -139,9 +140,9 @@ spawnAndRenderRaw
      . Wiring m
     => FromToRepr repr repr
     => Toolkit.HoldsFamilies repr m fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
-    => HasFallback repr
+    => HasFallback chrepr
     => Toolkit tk fs repr m
     -> Id.PatchR
     -> Id.FamilyR
@@ -162,9 +163,9 @@ spawnAndRender
     :: forall tk fs pstate f nstate is os repr m
      . Wiring m
     => IsSymbol f
-    => FromToRepr nstate repr
+    => StRepr nstate strepr
     => RegisteredFamily (F f nstate is os repr m) fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr m
     => Toolkit tk fs repr m
     -> Id.PatchR

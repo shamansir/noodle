@@ -32,7 +32,7 @@ import Cli.Components.NodeBox.OutletButton as OutletButton
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
-import Noodle.Repr (class HasFallback, fallback)
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -50,7 +50,7 @@ widthN count = (OutletButton.widthN + 1) * count
 
 component
     :: forall tk pstate fs repr m
-     . HasFallback repr
+     . HasFallback chrepr
     => T.At T.StatusLine repr
     => T.At T.ChannelLabel repr
     => Offset

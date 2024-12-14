@@ -64,7 +64,8 @@ import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
-import Noodle.Repr (class HasFallback, class FromToRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit) as Toolkit
 import Noodle.Toolkit.Families (Families)
@@ -102,8 +103,8 @@ defaultOptions = JustRun defaultToolkit :: Options
 defaultToolkit = Starter :: SelectedToolkit
 
 
-data App (tk :: ToolkitKey) pstate (fs :: Families) repr m
-    = App Options (State tk pstate fs repr m)
+data App (tk :: ToolkitKey) pstate (fs :: Families) chrepr m
+    = App Options (State tk pstate fs chrepr m)
 
 
 run :: Effect Unit
@@ -158,7 +159,7 @@ runBlessedInterface
     :: forall tk s fs repr
      . FromToRepr repr repr
     => Toolkit.HoldsFamilies repr Effect fs
-    => PossiblyToFn tk (Maybe repr) (Maybe repr) Id.FamilyR
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs repr Effect
     => s
     -> Toolkit tk fs repr Effect
