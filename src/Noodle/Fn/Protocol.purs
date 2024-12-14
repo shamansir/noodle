@@ -27,6 +27,7 @@ import Noodle.Raw.Fn.Protocol as Raw
 -- TODO: import Noodle.Raw.Fn.Protocol as RawExports
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Raw.FromToRec (toRec, fromRec)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
 import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
 
@@ -81,12 +82,12 @@ modifyState = Raw.modifyState
 
 
 -- private: doesn't check if outlet is in `os`
-_sendOut :: forall o state is os dout chrepr. IsSymbol o => ToChRepr dout chrepr => Outlet o -> dout -> Protocol state is os chrepr -> Effect Unit
+_sendOut :: forall o state is os dout chrepr. IsSymbol o => HasFallback chrepr => ToChRepr dout chrepr => Outlet o -> dout -> Protocol state is os chrepr -> Effect Unit
 _sendOut outlet = Raw.sendOut (outletR outlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
 
 
 -- private: doesn't check if inlet is in `is`
-_sendIn :: forall i state is os dout chrepr. IsSymbol i => ToChRepr dout chrepr => Inlet i -> dout -> Protocol state is os chrepr -> Effect Unit
+_sendIn :: forall i state is os dout chrepr. IsSymbol i => HasFallback chrepr => ToChRepr dout chrepr => Inlet i -> dout -> Protocol state is os chrepr -> Effect Unit
 _sendIn inlet = Raw.sendIn (inletR inlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
 
 

@@ -154,6 +154,7 @@ connect
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
+    => HasFallback chrepr
     => FromChRepr chrepr doutA
     => ToChRepr dinB chrepr
     => HasOutlet osA osA' oA doutA

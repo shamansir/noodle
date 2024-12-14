@@ -81,20 +81,20 @@ type Process (state :: Type) (is :: Row Type) (os :: Row Type) (chrepr :: Type) 
 
 {- Processing -}
 
-receive :: forall i state is is' os din chrepr m. FromChRepr chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
+receive :: forall i state is is' os din chrepr m. HasFallback din => FromChRepr chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
 receive iid =
     wrap $ ChRepr.ensureFrom <$> Raw.receive (inletR iid)
     -- ProcessM $ Free.liftF $ wrap $ Raw.Receive (inletR iid) $ Repr.ensureFrom
 
 
 
-send :: forall o state is os os' dout chrepr m. ToChRepr dout chrepr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os chrepr m Unit
+send :: forall o state is os os' dout chrepr m. HasFallback chrepr => ToChRepr dout chrepr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os chrepr m Unit
 send oid dout =
     wrap $ Raw.send (outletR oid) (ChRepr.ensureTo dout)
 
 
 
-sendIn :: forall i din state is is' os chrepr m. ToChRepr din chrepr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os chrepr m Unit
+sendIn :: forall i din state is is' os chrepr m. HasFallback chrepr => ToChRepr din chrepr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os chrepr m Unit
 sendIn iid din =
     wrap $ Raw.sendIn (inletR iid) (ChRepr.ensureTo din)
 

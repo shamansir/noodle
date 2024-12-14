@@ -16,6 +16,7 @@ import Type.Proxy (Proxy(..))
 
 import Data.Bifunctor (bimap)
 
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class ToChRepr)
 import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
 
@@ -260,7 +261,7 @@ extract :: forall x a arg out. ToFn x arg out a => Proxy x -> a -> FnX arg out
 extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn arg out)
 
 
-toReprable :: forall x arg out a repr. ToChRepr arg repr => ToChRepr out repr => ToFn x arg out a => Proxy x -> a -> Fn repr repr
+toReprable :: forall x arg out a repr. HasFallback repr => ToChRepr arg repr => ToChRepr out repr => ToFn x arg out a => Proxy x -> a -> Fn repr repr
 toReprable px a = bimap (ChRepr.ensureTo >>> ChRepr.unwrap) (ChRepr.ensureTo >>> ChRepr.unwrap) (toFn px a :: Fn arg out)
 
 

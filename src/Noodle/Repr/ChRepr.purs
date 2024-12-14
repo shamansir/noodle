@@ -63,11 +63,11 @@ instance Functor ChRepr where
     map f = unwrap >>> f >>> ChRepr
 
 
-class HasFallback repr <= ToChRepr a repr where
+class ToChRepr a repr where
     toChRepr :: a -> Maybe (ChRepr repr)
 
 
-class (HasFallback repr, HasFallback a) <= FromChRepr repr a where
+class FromChRepr repr a where
     fromChRepr :: ChRepr repr -> Maybe a
 
 
@@ -127,11 +127,11 @@ unwrap :: forall repr. ChRepr repr -> repr
 unwrap (ChRepr repr) = repr
 
 
-ensureTo :: forall repr a. ToChRepr a repr => a -> ChRepr repr
+ensureTo :: forall repr a. HasFallback repr => ToChRepr a repr => a -> ChRepr repr
 ensureTo = fromMaybe (ChRepr fallback) <<< toChRepr
 
 
-ensureFrom :: forall repr a. FromChRepr repr a => ChRepr repr -> a
+ensureFrom :: forall repr a. HasFallback a => FromChRepr repr a => ChRepr repr -> a
 ensureFrom = fromMaybe fallback <<< fromChRepr
 
 
@@ -190,6 +190,7 @@ instance toChReprRowBaseNil :: ToChReprRowBase RL.Nil row k repr where
 else instance toChReprRowBaseCons ::
   ( Ord k
   , IsSymbol name
+  , HasFallback repr
   , ToChRepr a repr
   , Row.Cons name a trash row
   , ToChReprRowBase tail row k repr
@@ -264,9 +265,9 @@ toMap :: forall k rl row repr
 toMap toKey record = toChReprRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
 
 
-inbetween :: forall a b reprA reprB. FromChRepr reprA a => ToChRepr b reprB => (a -> b) -> (reprA -> reprB)
+inbetween :: forall a b reprA reprB. HasFallback reprB => FromChRepr reprA a => ToChRepr b reprB => (a -> b) -> (reprA -> reprB)
 inbetween f reprA = fromMaybe fallback $ unwrap <$> (toChRepr =<< f <$> (fromChRepr $ ChRepr reprA))
 
 
-inbetween' :: forall a reprA reprB. FromChRepr reprA a => ToChRepr a reprB => Proxy a -> (reprA -> reprB)
+inbetween' :: forall a reprA reprB. HasFallback reprB => FromChRepr reprA a => ToChRepr a reprB => Proxy a -> (reprA -> reprB)
 inbetween' _ = inbetween (identity :: a -> a)

@@ -319,19 +319,19 @@ infixr 6 sendInOp as #->
 infixr 6 sendOutOp as @->
 
 
-sendIn :: forall m f i state is is' os chrepr mp din. MonadEffect m => ToChRepr din chrepr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os chrepr mp -> m Unit
+sendIn :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => ToChRepr din chrepr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os chrepr mp -> m Unit
 sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 
-sendInOp :: forall m f i state is is' os chrepr mp din. MonadEffect m => ToChRepr din chrepr => HasInlet is is' i din  => Node f state is os chrepr mp -> Id.Inlet i /\ din -> m Unit
+sendInOp :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => ToChRepr din chrepr => HasInlet is is' i din  => Node f state is os chrepr mp -> Id.Inlet i /\ din -> m Unit
 sendInOp node (input /\ din) = sendIn input din node
 
 
-sendOut :: forall m f o state is os os' chrepr mp dout. MonadEffect m => ToChRepr dout chrepr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os chrepr mp -> m Unit
+sendOut :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => ToChRepr dout chrepr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os chrepr mp -> m Unit
 sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
 
 
-sendOutOp :: forall m f o state is os os' chrepr mp dout. MonadEffect m => ToChRepr dout chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o /\ dout -> m Unit
+sendOutOp :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => ToChRepr dout chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o /\ dout -> m Unit
 sendOutOp node (output /\ dout) = sendOut output dout node
 
 
@@ -358,6 +358,7 @@ connect
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
+    => HasFallback chrepr
     => FromChRepr chrepr doutA
     => ToChRepr dinB chrepr
     => HasOutlet osA osA' oA doutA
@@ -376,6 +377,7 @@ connectOp
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
+    => HasFallback chrepr
     => FromChRepr chrepr doutA
     => ToChRepr dinB chrepr
     => HasOutlet osA osA' oA doutA
@@ -394,6 +396,7 @@ connectBySameRepr
     => IsSymbol fB
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
+    => HasFallback chrepr
     => ToChRepr doutA chrepr
     => FromChRepr chrepr dinB
     => Proxy chrepr -- FIXME: Proxy is not needed anymore
@@ -411,6 +414,8 @@ connectByDistinctRepr
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
+    => HasFallback chreprA
+    => HasFallback chreprB
     => FromChRepr chreprA doutA
     => ToChRepr dinB chreprB
     => HasOutlet osA osA' oA doutA
@@ -431,6 +436,7 @@ connectAlike
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
+    => HasFallback chreprA
     => HasFallback chreprB
     => FromChRepr chreprA d
     => ToChRepr d chreprB
