@@ -31,10 +31,10 @@ type Outlets = (O "color" PR.Color :> TNil) :: Noodle.Outlets
 type InletsRow = (r :: Number, g :: Number, b :: Number)
 type OutletsRow = (color :: PR.Color)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "color" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "color" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "color" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "color" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "color" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "color" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { r: 0.0, g: 0.0, b: 0.0 }
@@ -48,7 +48,7 @@ _in_b = Noodle.Inlet :: _ "b"
 _out_color = Noodle.Outlet :: _ "color"
 
 family :: Family
-family = Family.make _color PR.VNone (Noodle.Shape :: Shape) defaultI defaultO colorP
+family = Family.make _color unit (Noodle.Shape :: Shape) defaultI defaultO colorP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

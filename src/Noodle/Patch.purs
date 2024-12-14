@@ -91,7 +91,7 @@ registerNode
     :: forall f pstate fstate strepr chrepr is os m families
      . IsSymbol f
     => MonadEffect m
-    => StRepr fstate strepr
+    => StRepr strepr fstate
     => RegisteredFamily (F f fstate is os chrepr m) families
     => Node f fstate is os chrepr m
     -> Patch pstate families strepr chrepr m
@@ -104,7 +104,7 @@ registerNodeNotFromToolkit
     :: forall pstate f fstate strepr chrepr is os m families
      . IsSymbol f
     => MonadEffect m
-    => StRepr fstate strepr
+    => StRepr strepr fstate
     => Node f fstate is os chrepr m
     -> Patch pstate families strepr chrepr m
     -> Patch pstate families strepr chrepr m
@@ -118,7 +118,7 @@ registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
 
 registerRawNode
     :: forall pstate fstate strepr chrepr m families
-     . StRepr fstate strepr
+     . StRepr strepr fstate
     => Raw.Node fstate chrepr m
     -> Patch pstate families strepr chrepr m
     -> Patch pstate families strepr chrepr m
@@ -256,7 +256,7 @@ nonRawNodes (Patch _ _ _ nodes _ _) =
 mapNodes
     :: forall x pstate families strepr chrepr m
     .  StoresNodesAt strepr chrepr m families
-    => (forall f fstate is os. IsSymbol f => StRepr fstate strepr => Node f fstate is os chrepr m -> x)
+    => (forall f fstate is os. IsSymbol f => StRepr strepr fstate => Node f fstate is os chrepr m -> x)
     -> Patch pstate families strepr chrepr m
     -> Array x
 mapNodes f patch =

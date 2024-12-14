@@ -31,10 +31,10 @@ type Outlets = (O "number" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (min :: Number, max :: Number)
 type OutletsRow = (number :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "knob" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "knob" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "knob" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "knob" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { min: 0.0, max: 0.0 }
@@ -47,7 +47,7 @@ _in_max = Noodle.Inlet :: _ "max"
 _out_number = Noodle.Outlet :: _ "number"
 
 family :: Family
-family = Family.make _knob PR.VNone (Noodle.Shape :: Shape) defaultI defaultO knobP
+family = Family.make _knob unit (Noodle.Shape :: Shape) defaultI defaultO knobP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

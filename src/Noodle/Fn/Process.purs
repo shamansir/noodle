@@ -183,5 +183,5 @@ toRaw :: forall state is os m a chrepr. ProcessM state is os chrepr m a -> Raw.P
 toRaw = unwrap
 
 
-toRawWithReprableState :: forall state strepr is os m a chrepr. StRepr state strepr => ProcessM state is os chrepr m a -> Raw.ProcessM strepr chrepr m a
+toRawWithReprableState :: forall state strepr is os m a chrepr. StRepr strepr state => ProcessM state is os chrepr m a -> Raw.ProcessM strepr chrepr m a
 toRawWithReprableState = toRaw >>> Raw.toReprableState

@@ -202,7 +202,7 @@ mapMM f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
 
-toReprableState :: forall state strepr chrepr m. StRepr state strepr => ProcessM state chrepr m ~> ProcessM strepr chrepr m
+toReprableState :: forall state strepr chrepr m. StRepr strepr state => ProcessM state chrepr m ~> ProcessM strepr chrepr m
 toReprableState =
     imapMState StRepr.to StRepr.from
 

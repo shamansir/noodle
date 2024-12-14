@@ -305,7 +305,7 @@ orderOutlets shape ovalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ova
     oshapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.outlets shape
 
 
-toReprableState :: forall state strepr chrepr m. StRepr state strepr => Node state chrepr m -> Node strepr chrepr m
+toReprableState :: forall state strepr chrepr m. StRepr strepr state => Node state chrepr m -> Node strepr chrepr m
 toReprableState (Node nodeR shape tracker protocol fn) =
     Node
         nodeR

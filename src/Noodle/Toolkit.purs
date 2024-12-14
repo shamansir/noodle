@@ -78,9 +78,9 @@ registerAll families toolkit =
 
 register
     :: forall tk f fstate strepr is os chrepr m families families'
-     . Put (F f state is os chrepr m) families families'
+     . Put (F f fstate is os chrepr m) families families'
     => IsSymbol f
-    => StRepr fstate strepr
+    => StRepr strepr fstate
     => Family f fstate is os chrepr m
     -> Toolkit tk families strepr chrepr m
     -> Toolkit tk families' strepr chrepr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
@@ -89,29 +89,38 @@ register family (Toolkit name families rawFamilies) =
 
 
 registerRaw
-    :: forall tk fstate strepr chrepr m families
-     . StRepr fstate strepr
-    => Raw.Family fstate chrepr m
+    :: forall tk strepr chrepr m families
+     . Raw.Family strepr chrepr m
     -> Toolkit tk families strepr chrepr m
     -> Toolkit tk families strepr chrepr m
 registerRaw rawFamily (Toolkit name families rawFamilies) =
-    Toolkit name families (Map.insert (RawFamily.familyIdOf rawFamily) (RawFamily.toReprableState rawFamily) rawFamilies)
+    Toolkit name families (Map.insert (RawFamily.familyIdOf rawFamily) rawFamily rawFamilies)
+
+
+registerRaw'
+    :: forall tk fstate strepr chrepr m families
+     . StRepr strepr fstate
+    => Raw.Family fstate chrepr m
+    -> Toolkit tk families strepr chrepr m
+    -> Toolkit tk families strepr chrepr m
+registerRaw' rawFamily =
+    registerRaw (RawFamily.toReprableState rawFamily)
 
 
 spawn
-    :: forall m tk f state strepr chrepr is os mp families
+    :: forall m tk f fstate strepr chrepr is os mp families
      . IsSymbol f
     => MonadEffect m
-    => RegisteredFamily (F f state is os chrepr mp) families
+    => RegisteredFamily (F f fstate is os chrepr mp) families
     => Id.Family f
     -> Toolkit tk families strepr chrepr mp
-    -> m (Node f state is os chrepr mp)
+    -> m (Node f fstate is os chrepr mp)
 spawn familyId (Toolkit _ families _) = do
     case Map.lookup (Id.familyR familyId) families of
         Just holdsFamily -> HF.withFamily holdsFamily (spawnNode <<< unsafeCoerce)
         Nothing -> liftEffect $ throw $ "Family is not in the registry: " <> show familyId
     where
-        spawnNode :: Family f state is os chrepr mp -> m (Node f state is os chrepr mp)
+        spawnNode :: Family f fstate is os chrepr mp -> m (Node f fstate is os chrepr mp)
         spawnNode = Family.spawn
 
 
@@ -143,8 +152,8 @@ spawnAnyRaw familyR (Toolkit _ families rawFamilies) = do
 data MapFamilies strepr chrepr m = MapFamilies (Map Id.FamilyR (HoldsFamily strepr chrepr m))
 
 
-instance IsSymbol f => LMap (MapFamilies strepr chrepr m) (F f state is os chrepr m) (Maybe (HoldsFamily strepr chrepr m)) where
-    lmap :: MapFamilies strepr chrepr m -> Proxy (F f state is os chrepr m) -> Maybe (HoldsFamily strepr chrepr m)
+instance IsSymbol f => LMap (MapFamilies strepr chrepr m) (F f fstate is os chrepr m) (Maybe (HoldsFamily strepr chrepr m)) where
+    lmap :: MapFamilies strepr chrepr m -> Proxy (F f fstate is os chrepr m) -> Maybe (HoldsFamily strepr chrepr m)
     lmap (MapFamilies families) _ = Map.lookup (Id.familyR (Proxy :: _ f)) families
 
 
@@ -156,7 +165,7 @@ instance (MapDown (MapFamilies strepr chrepr m) families Array (Maybe (HoldsFami
 mapFamilies
     :: forall x tk families strepr chrepr m
     .  HoldsFamilies strepr chrepr m families
-    => (forall f state is os. IsSymbol f => StRepr state strepr => Family f state is os chrepr m -> x)
+    => (forall f fstate is os. IsSymbol f => StRepr strepr fstate => Family f fstate is os chrepr m -> x)
     -> Toolkit tk families strepr chrepr m
     -> Array x
 mapFamilies f (Toolkit _ families _) =

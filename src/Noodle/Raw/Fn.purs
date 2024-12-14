@@ -46,5 +46,5 @@ run' protocol (Fn _ process) =
     RawProcess.runM protocol process
 
 
-toReprableState :: forall state strepr chrepr m. StRepr state strepr => Fn state chrepr m -> Fn strepr chrepr m
+toReprableState :: forall state strepr chrepr m. StRepr strepr state => Fn state chrepr m -> Fn strepr chrepr m
 toReprableState (Fn name processFn) = Fn name $ RawProcess.toReprableState processFn

@@ -31,10 +31,10 @@ type Outlets = (O "letter" Char :> TNil) :: Noodle.Outlets
 type InletsRow = (code :: Number)
 type OutletsRow = (letter :: Char)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "letter" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "letter" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "letter" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "letter" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { code: 0.0 }
@@ -46,7 +46,7 @@ _in_code = Noodle.Inlet :: _ "code"
 _out_letter = Noodle.Outlet :: _ "letter"
 
 family :: Family
-family = Family.make _letter PR.VNone (Noodle.Shape :: Shape) defaultI defaultO letterP
+family = Family.make _letter unit (Noodle.Shape :: Shape) defaultI defaultO letterP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

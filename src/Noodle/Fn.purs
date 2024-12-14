@@ -81,7 +81,7 @@ imapState :: forall state state' is os chrepr m. (state -> state') -> (state' ->
 imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
 
 
-toReprableState :: forall state strepr is os chrepr m. StRepr state strepr => Fn state is os chrepr m -> Fn strepr is os chrepr m
+toReprableState :: forall state strepr is os chrepr m. StRepr strepr state => Fn state is os chrepr m -> Fn strepr is os chrepr m
 toReprableState = imapState StRepr.to StRepr.from
 
 
@@ -143,5 +143,5 @@ toRaw :: forall state is os chrepr m. Fn state is os chrepr m -> Raw.Fn state ch
 toRaw (Fn name processM) = Raw.Fn name $ Process.toRaw processM
 
 
-toRawWithReprableState :: forall state strepr is os chrepr m. StRepr state strepr => Fn state is os chrepr m -> Raw.Fn strepr chrepr m
+toRawWithReprableState :: forall state strepr is os chrepr m. StRepr strepr state => Fn state is os chrepr m -> Raw.Fn strepr chrepr m
 toRawWithReprableState (Fn name processM) = Raw.Fn name $ Process.toRawWithReprableState processM

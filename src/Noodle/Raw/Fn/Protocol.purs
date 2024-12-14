@@ -70,6 +70,6 @@ modifyState :: forall state chrepr. (state -> state) -> Protocol state chrepr ->
 modifyState = Generic._modifyState
 
 
-toReprableState :: forall state strepr chrepr. StRepr state strepr => Protocol state chrepr -> Protocol strepr chrepr
+toReprableState :: forall state strepr chrepr. StRepr strepr state => Protocol state chrepr -> Protocol strepr chrepr
 toReprableState =
     Generic.imapState StRepr.to StRepr.from

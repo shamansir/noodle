@@ -33,10 +33,10 @@ type Outlets = (O "random" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (bang :: PR.Bang, min :: Number, max :: Number)
 type OutletsRow = (random :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "random" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "random" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "random" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "random" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { bang: PR.Bang, min: 0.0, max: 0.0 }
@@ -50,7 +50,7 @@ _in_max = Noodle.Inlet :: _ "max"
 _out_random = Noodle.Outlet :: _ "random"
 
 family :: Family
-family = Family.make _random PR.VNone (Noodle.Shape :: Shape) defaultI defaultO randomP
+family = Family.make _random unit (Noodle.Shape :: Shape) defaultI defaultO randomP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

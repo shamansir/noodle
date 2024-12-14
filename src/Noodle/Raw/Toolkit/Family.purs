@@ -77,7 +77,7 @@ familyIdOf (Family rawId _ _ _ _ _) = rawId
 
 toReprableState
     :: forall state strepr chrepr m
-     . StRepr state strepr
+     . StRepr strepr state
     => Family state chrepr m
     -> Family strepr chrepr m
 toReprableState (Family familyR rawShape state inletsMap outletsMap fn) =

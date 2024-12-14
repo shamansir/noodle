@@ -8,6 +8,6 @@ import Prelude
 -- import Data.Generic.Rep as GR
 
 
-class StRepr a repr | a -> repr where
+class StRepr repr a | repr -> a where
   to :: a -> repr
   from :: repr -> a

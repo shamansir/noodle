@@ -46,5 +46,5 @@ state :: forall state chrepr. Tracker state chrepr -> Effect state
 state = Generic.state
 
 
-toReprableState :: forall state strepr chrepr. StRepr state strepr => Tracker state chrepr -> Tracker strepr chrepr
+toReprableState :: forall state strepr chrepr. StRepr strepr state => Tracker state chrepr -> Tracker strepr chrepr
 toReprableState = Generic.mapState StRepr.to

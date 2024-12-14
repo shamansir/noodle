@@ -31,10 +31,10 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (what :: PR.Any)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "log" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "log" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "log" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "log" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { what: PR.Any PR.VNone }
@@ -45,7 +45,7 @@ defaultO = {}
 _in_what = Noodle.Inlet :: _ "what"
 
 family :: Family
-family = Family.make _log PR.VNone (Noodle.Shape :: Shape) defaultI defaultO logP
+family = Family.make _log unit (Noodle.Shape :: Shape) defaultI defaultO logP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

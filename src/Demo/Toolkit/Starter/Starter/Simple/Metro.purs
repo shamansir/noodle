@@ -34,10 +34,10 @@ type Outlets = (O "bang" PR.Bang :> TNil) :: Noodle.Outlets
 type InletsRow = (enabled :: Boolean, period :: PR.Time)
 type OutletsRow = (bang :: PR.Bang)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "metro" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "metro" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "metro" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "metro" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { enabled: true, period: PR.Time { seconds: 0 } }
@@ -50,7 +50,7 @@ _in_period = Noodle.Inlet :: _ "period"
 _out_bang = Noodle.Outlet :: _ "bang"
 
 family :: Family
-family = Family.make _metro PR.VNone (Noodle.Shape :: Shape) defaultI defaultO metroP
+family = Family.make _metro unit (Noodle.Shape :: Shape) defaultI defaultO metroP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

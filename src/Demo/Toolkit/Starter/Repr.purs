@@ -34,6 +34,7 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
+import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
 import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as CR
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -48,6 +49,14 @@ import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
 data StateRepr
     = StateRepr
+
+
+instance StRepr StateRepr StateRepr where
+    from = identity
+    to = identity
+else instance StRepr StateRepr Unit where
+    from = const unit
+    to = const StateRepr
 
 
 data ValueRepr

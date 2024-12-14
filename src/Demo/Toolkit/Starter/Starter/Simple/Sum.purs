@@ -31,10 +31,10 @@ type Outlets = (O "sum" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (a :: Number, b :: Number, c :: Number)
 type OutletsRow = (sum :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "sum" ValueRepr InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "sum" Unit InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "sum" Unit InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "sum" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { a: 0.0, b: 0.0, c: 0.0 }
@@ -48,7 +48,7 @@ _in_c = Noodle.Inlet :: _ "c"
 _out_sum = Noodle.Outlet :: _ "sum"
 
 family :: Family
-family = Family.make _sum PR.VNone (Noodle.Shape :: Shape) defaultI defaultO sumP
+family = Family.make _sum unit (Noodle.Shape :: Shape) defaultI defaultO sumP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

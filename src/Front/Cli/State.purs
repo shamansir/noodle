@@ -148,7 +148,7 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall fstate strepr tk ps fs chrepr m. StRepr fstate strepr => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode :: forall fstate strepr tk ps fs chrepr m. StRepr strepr fstate => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 
