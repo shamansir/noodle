@@ -510,7 +510,8 @@ wrapCtor_ s = exprCtor (wrapPrefix_ <> s)
 
 hydraGenOptions :: FCG.Options WrapRepr WrapRepr
 hydraGenOptions = FCG.Options
-    { reprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
+    { streprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
+    , chreprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "Hydra" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family

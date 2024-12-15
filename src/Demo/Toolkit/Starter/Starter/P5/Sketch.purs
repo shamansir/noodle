@@ -53,7 +53,6 @@ type Node = Noodle.Node "sketch" Unit InletsRow OutletsRow ValueRepr Effect
 type Family = Noodle.Family "sketch" Unit InletsRow OutletsRow ValueRepr Effect
 type F = Noodle.F "sketch" Unit InletsRow OutletsRow ValueRepr Effect
 
-
 defaultI :: Record InletsRow
 defaultI =
   { shape: PR.Circle

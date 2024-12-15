@@ -1,6 +1,6 @@
-module Starter.Toolkit where
+module Starter.ToolkitExpected where
 
-import Prelude (($), (#), (>>>), (<<<), pure, unit, const)
+import Prelude (($), (#), (>>>), (<<<), pure, unit, const, negate)
 import Effect (Effect)
 import Color as Color
 import Data.Maybe (Maybe(..))
@@ -32,7 +32,9 @@ import StarterTk.Spreads.Vspread as Spreads.Vspread
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
 import Demo.Toolkit.Starter.Repr (StateRepr, ValueRepr)
-import Demo.Toolkit.Starter.Repr (StateRepr(..), ValueRepr(..)) as R
+import Demo.Toolkit.Starter.Repr (ValueRepr(..)) as VR
+import Demo.Toolkit.Starter.Repr (StateRepr(..)) as SR
+import Demo.Toolkit.Starter.Repr (Color(..), Time(..), Shape(..)) as RV
 
 type StarterFamilies :: Families
 type StarterFamilies =
@@ -114,7 +116,40 @@ instance HasChRepr STARTER ValueRepr
 
 instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
   possiblyToFn _ = Id.family >>> case _ of
-    "sketch" -> Just $ fn "sketch" [] [ Fn.out_ "number" $ R.VNumber 0.0 ]
-    "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ R.VNumber 0.0 ]
-    -- TODO: code-generate
+    "bang" -> Just $ fn "bang" [] [ Fn.outx_ "bang" ]
+    "metro" -> Just $ fn "metro"
+      [ Fn.in_ "enabled" $ VR.VBool true
+      , Fn.in_ "period" $ VR.VTime $ RV.Time { seconds: 0 }
+      ]
+      [ Fn.outx_ "bang" ]
+    "gennum" -> Just $ fn "gennum" [] [ Fn.out_ "out" $ VR.VNumber 0.0 ]
+    "random" -> Just $ fn "random" [ Fn.inx_ "bang", Fn.inx_ "min", Fn.inx_ "max" ]
+      [ Fn.outx_ "random" ]
+    "knob" -> Just $ fn "knob" [ Fn.inx_ "min", Fn.inx_ "max" ] [ Fn.out_ "number" $ VR.VNumber 0.0 ]
+    "color" -> Just $ fn "color" [ Fn.inx_ "r", Fn.inx_ "g", Fn.inx_ "b" ]
+      [ Fn.out_ "color" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 } ]
+    "letter" -> Just $ fn "letter" [ Fn.inx_ "code" ] [ Fn.outx_ "letter" ]
+    "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ VR.VNumber 0.0 ]
+    "log" -> Just $ fn "log" [ Fn.inx_ "what" ] []
+    "shape" -> Just $ fn "shape" [] [ Fn.out_ "shape" $ VR.VShape RV.Circle ]
+    "sketch" -> Just $ fn "sketch"
+      [ Fn.in_ "shape" $ VR.VShape RV.Circle
+      , Fn.in_ "wavescount" $ VR.VNumber 5.0
+      , Fn.in_ "startcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
+      , Fn.in_ "endcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
+      , Fn.in_ "xspasing" $ VR.VNumber 16.0
+      , Fn.in_ "amplitude" $ VR.VNumber 75.0
+      , Fn.in_ "period" $ VR.VNumber 500.0
+      ]
+      []
+    "nspread" -> Just $ fn "nspread"
+      [ Fn.in_ "min" $ VR.VNumber $ -150.0, Fn.in_ "max" $ VR.VNumber 150.0, Fn.in_ "count" $ VR.VNumber 26.0 ]
+      [ Fn.outx_ "spread" ]
+    "vspread" -> Just $ fn "vspread" [ Fn.inx_ "x", Fn.inx_ "y" ] [ Fn.outx_ "spread" ]
+    "cspread" -> Just $ fn "cspread"
+      [ Fn.inx_ "red", Fn.inx_ "green", Fn.inx_ "blue", Fn.inx_ "alpha" ]
+      [ Fn.outx_ "color" ]
+    "xsshape" -> Just $ fn "xsshape"
+      [ Fn.inx_ "pos", Fn.inx_ "color", Fn.inx_ "size", Fn.inx_ "angle" ]
+      [ Fn.outx_ "shape" ]
     _ -> Nothing

@@ -77,20 +77,23 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
     = unsafePartial $ module_ (toolkitModuleName tkName)
         [ ]
         (
-            [ declImport "Prelude" [ importOp "#" ]
+            [ declImport "Prelude" [ ] -- import Prelude (($), (#), (>>>), (<<<), pure, unit, const)
             , declImport "Effect" [ importType "Effect" ]
             , declImportAs "Color" [] "Color"
+            , declImport "Data.Maybe" [ importTypeAll "Maybe" ]
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
-            , declImportAs "Noodle.Id" [ importValue "toolkitR" ] "Id"
+            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR" ] "Id"
+            , declImport "Noodle.Fn.ToFn" [ importValue "fn", importClass "PossiblyToFn" ]
+            , declImportAs "Noodle.Fn.ToFn" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Fn"
             , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
-
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
             ]
             <> (defToModuleImport <$> definitions) <>
-            [ declImport opts.reprAt.module_ [ importType opts.reprAt.type_ ]
+            [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
+            , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
             ]
         )
         [ declTypeSignature familiesCtor $ typeCtor "Families"
@@ -100,7 +103,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             $ typeApp (typeCtor "Toolkit")
                 [ typeCtor toolkitKey
                 , typeCtor familiesCtor
-                , typeCtor opts.reprAt.type_
+                , typeCtor opts.chreprAt.type_
                 , typeCtor $ opts.monadAt.type_
                 ]
         , declValue "toolkit" [] registerFamilies
@@ -171,8 +174,8 @@ generatePossiblyToFnInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr
 generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
     declInstance Nothing [] "PossiblyToFn"
         [ typeCtor toolkitKey
-        , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
-        , typeApp (typeCtor "Maybe") [ typeCtor opts.reprAt.type_ ]
+        , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
+        , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
         , typeCtor "Id.FamilyR"
         ]
         [ instValue "possiblyToFn" [ binderWildcard ]

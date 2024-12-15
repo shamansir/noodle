@@ -105,8 +105,8 @@ instance HasFallback (Spread a) where fallback = Spread []
 
 instance CodegenRepr StateRepr where
     reprModule = const "Demo.Toolkit.Starter.Repr"
-    reprTypeName = const "StateRepr"
-    reprType = const $ unsafePartial $ typeCtor "StateRepr"
+    reprTypeName = const "Unit" -- FIXME: "StateRepr"
+    reprType = const $ unsafePartial $ typeCtor "Unit" -- FIXME: "StateRepr"
     typeFor = const $ unsafePartial $ \(EncodedType _) ->
         typeCtor "Unit"
     defaultFor = const $ unsafePartial $ \mbType ->
@@ -237,7 +237,8 @@ timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ..
 
 options :: Options StateRepr ValueRepr
 options = Options $
-    { reprAt : { module_ : "Demo.Toolkit.Starter.Repr", type_ : "ValueRepr" }
+    { streprAt : { module_ : "Demo.Toolkit.Starter.Repr", type_ : "StateRepr" }
+    , chreprAt : { module_ : "Demo.Toolkit.Starter.Repr", type_ : "ValueRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "StarterTk" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family

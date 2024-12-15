@@ -107,7 +107,8 @@ type OptionsRec strepr chrepr =
   , infoComment :: Maybe (Maybe Source -> Id.GroupR -> Id.FamilyR -> String)
   , pstrepr :: Proxy strepr
   , pchrepr :: Proxy chrepr
-  , reprAt :: { module_ :: String, type_ :: String }
+  , chreprAt :: { module_ :: String, type_ :: String }
+  , streprAt :: { module_ :: String, type_ :: String }
   , imports :: Array (ImportDecl Void)
   }
 
