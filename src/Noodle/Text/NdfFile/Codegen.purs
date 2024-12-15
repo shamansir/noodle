@@ -84,12 +84,13 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
-            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR" ] "Id"
+            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR" ] "Id"
             , declImport "Noodle.Fn.ToFn" [ importValue "fn", importClass "PossiblyToFn" ]
             , declImportAs "Noodle.Fn.ToFn" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Fn"
-            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
+            , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer" ]
             ]
             <> (defToModuleImport <$> definitions) <>
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
@@ -104,27 +105,41 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             $ typeApp (typeCtor "Toolkit")
                 [ typeCtor toolkitKey
                 , typeCtor familiesCtor
+                , typeCtor opts.streprAt.type_
                 , typeCtor opts.chreprAt.type_
                 , typeCtor $ opts.monadAt.type_
                 ]
         , declValue "toolkit" [] registerFamilies
+        , declInstance Nothing [] "HasChRepr" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_ ] []
+        , declInstance Nothing [] "IsTookit" [ typeCtor toolkitKey ]
+            [ instValue "name" [ binderWildcard ]
+                $ exprString $ Id.toolkit tkName
+            , instValue "groupOf" [ binderWildcard, binderWildcard, binderVar "family" ]
+                $ exprOp (exprIdent "Id.family")
+                    [ binaryOp ">>>" $ exprCase [ exprSection ]
+                        [ caseBranch [ binderWildcard ] $ exprString "unknown"
+                        ]
+                    , binaryOp ">>>" $ exprIdent "Id.unsafeGroupR"
+                    ]
+            ]
+        , declInstance Nothing [] "CliRenderer" [ typeCtor toolkitKey ]
+            [ instValue "cliSize" _5binders $ exprCtor "Nothing"
+            , instValue "cliSizeRaw" _5binders $ exprCtor "Nothing"
+            , instValue "renderCli" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]
+            , instValue "renderCliRaw" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]
+            ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
             [ instValue "markGroup" [ binderWildcard, binderVar "group" ]
-                $ exprApp (exprIdent "Color.rgb")
-                    [ exprInt 255
-                    , exprInt 255
-                    , exprInt 255
-                    ]
-            , instValue "markFamily" [ binderWildcard, binderVar "family" ]
-                $ exprApp (exprIdent "Color.rgb")
-                    [ exprInt 255
-                    , exprInt 255
-                    , exprInt 255
-                    ]
+                $ rgbColorExpr 255 255 255
+            , instValue "markFamily" [ binderWildcard, binderWildcard, binderVar "family" ]
+                $ rgbColorExpr 255 255 255
             ]
         , generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
+        _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]
+        rgbColorExpr :: Partial => Int -> Int -> Int -> CST.Expr Void
+        rgbColorExpr r g b = exprApp (exprIdent "Color.rgb") [ exprInt r, exprInt g, exprInt b ]
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         familiesCtor = Id.toolkit tkName <> "Families"
         groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
