@@ -89,9 +89,12 @@ class CodegenRepr repr where
   reprModule :: Proxy repr -> String -- a full path to the module where repr wrapper is located
   reprTypeName :: Proxy repr -> String -- a name of the type of the repr wrapper itself
   reprType :: Proxy repr -> CST.Type Void -- a CST type represntation of the repr wrapper itself
-  typeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for diven encoded type
-  defaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code
-  valueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value
+  fTypeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for given encoded type (full, from root type)
+  fDefaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code (full, from root type)
+  fValueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value (full, from root type)
+  pTypeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for given encoded type (partial, from inner type)
+  pDefaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code (partial, from inner type)
+  pValueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value (partial, from inner type)
 
 
 {- data GenMonad
@@ -178,20 +181,20 @@ generateModule (Options opts) mbSource fdef
     nameOf :: Channel -> String
     nameOf (name /\ _) = name
 
-    qReprType :: Maybe EncodedType -> CST.Type Void
-    qReprType = maybe (reprType opts.pchrepr :: CST.Type Void) (typeFor opts.pchrepr)
-    qReprValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-    qReprValue mbDataType = maybe (defaultFor opts.pchrepr mbDataType) (valueFor opts.pchrepr mbDataType)
+    qPartialReprType :: Maybe EncodedType -> CST.Type Void
+    qPartialReprType = maybe (reprType opts.pchrepr :: CST.Type Void) (pTypeFor opts.pchrepr)
+    qPartialReprValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+    qPartialReprValue mbDataType = maybe (pDefaultFor opts.pchrepr mbDataType) (pValueFor opts.pchrepr mbDataType)
 
-    qStateType :: Maybe EncodedType -> CST.Type Void
-    qStateType = maybe (reprType opts.pstrepr :: CST.Type Void) (typeFor opts.pstrepr)
-    qStateValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-    qStateValue mbDataType = maybe (defaultFor opts.pstrepr mbDataType) (valueFor opts.pstrepr mbDataType)
+    qPartialStateType :: Maybe EncodedType -> CST.Type Void
+    qPartialStateType = maybe (reprType opts.pstrepr :: CST.Type Void) (pTypeFor opts.pstrepr)
+    qPartialStateValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+    qPartialStateValue mbDataType = maybe (pDefaultFor opts.pstrepr mbDataType) (pValueFor opts.pstrepr mbDataType)
 
-    chTypeOf :: Channel -> CST.Type Void
-    chTypeOf (_ /\ ChannelDef { mbType }) = qReprType mbType
-    chDefaultOf :: Channel -> CST.Expr Void
-    chDefaultOf (_ /\ ChannelDef { mbType, mbDefault }) = qReprValue mbType mbDefault
+    chPartialTypeOf :: Channel -> CST.Type Void
+    chPartialTypeOf (_ /\ ChannelDef { mbType }) = qPartialReprType mbType
+    chPartialDefaultOf :: Channel -> CST.Expr Void
+    chPartialDefaultOf (_ /\ ChannelDef { mbType, mbDefault }) = qPartialReprValue mbType mbDefault
 
     inletTypeApp :: Int -> Channel-> CST.Type Void
     inletTypeApp idx chan =
@@ -200,13 +203,13 @@ generateModule (Options opts) mbSource fdef
             , typeCtor $ case Temperament.byIndex opts.temperamentAlgorithm idx of
                 T.Hot -> temper.hot
                 T.Cold -> temper.cold
-            , chTypeOf chan
+            , chPartialTypeOf chan
             ]
     outletTypeApp :: Channel -> CST.Type Void
     outletTypeApp chan =
         typeApp (typeCtor shape.o)
             [ typeString $ nameOf chan
-            , chTypeOf chan
+            , chPartialTypeOf chan
             ]
 
     generateInletsType :: CST.Type Void
@@ -223,10 +226,10 @@ generateModule (Options opts) mbSource fdef
             Nothing -> typeCtor listTnil
 
     channelRow :: Channel -> String /\ CST.Type Void
-    channelRow chan = nameOf chan /\ chTypeOf chan
+    channelRow chan = nameOf chan /\ chPartialTypeOf chan
 
     channelDefault :: Channel -> String /\ CST.Expr Void
-    channelDefault chan = nameOf chan /\ chDefaultOf chan
+    channelDefault chan = nameOf chan /\ chPartialDefaultOf chan
 
     inletDeclr :: Channel -> CST.Declaration Void
     inletDeclr chan =
@@ -279,7 +282,7 @@ generateModule (Options opts) mbSource fdef
 
     , declType "Process" []
         $ typeApp (typeCtor processN)
-            [ qStateType state.mbType
+            [ qPartialStateType state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -289,7 +292,7 @@ generateModule (Options opts) mbSource fdef
     , declType "Node" []
         $ typeApp (typeCtor nodeCtor)
             [ typeString familyName
-            , qStateType state.mbType
+            , qPartialStateType state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -299,7 +302,7 @@ generateModule (Options opts) mbSource fdef
     , declType "Family" []
         $ typeApp (typeCtor tkFamilyN)
             [ typeString familyName
-            , qStateType state.mbType
+            , qPartialStateType state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -309,7 +312,7 @@ generateModule (Options opts) mbSource fdef
     , declType "F" []
         $ typeApp (typeCtor tkF)
             [ typeString familyName
-            , qStateType state.mbType
+            , qPartialStateType state.mbType
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -333,7 +336,7 @@ generateModule (Options opts) mbSource fdef
         $ exprApp
           (exprIdent tkFamilyF.make)
           [ exprIdent $ "_" <> familyName
-          , qStateValue state.mbType state.mbDefault
+          , qPartialStateValue state.mbType state.mbDefault
           , exprParens (exprTyped (exprCtor "Noodle.Shape") (typeCtor "Shape"))
           , exprIdent "defaultI"
           , exprIdent "defaultO"

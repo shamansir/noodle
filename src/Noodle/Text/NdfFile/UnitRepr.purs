@@ -25,9 +25,12 @@ instance CodegenRepr UnitRepr where
     reprModule = const "Noodle.Text.NdfFile.UnitRepr"
     reprTypeName = const "UnitRepr"
     reprType = const $ unsafePartial $ typeCtor "UnitRepr"
-    typeFor = const $ unsafePartial $ const $ typeCtor "UnitRepr"
-    defaultFor = const $ unsafePartial $ const $ exprCtor "UnitRepr"
-    valueFor = const $ const $ const $ unsafePartial $ exprCtor "UnitRepr"
+    pTypeFor = const $ unsafePartial $ const $ typeCtor "UnitRepr"
+    pDefaultFor = const $ unsafePartial $ const $ exprCtor "UnitRepr"
+    pValueFor = const $ const $ const $ unsafePartial $ exprCtor "UnitRepr"
+    fTypeFor = const $ unsafePartial $ const $ typeCtor "UnitRepr"
+    fDefaultFor = const $ unsafePartial $ const $ exprCtor "UnitRepr"
+    fValueFor = const $ const $ const $ unsafePartial $ exprCtor "UnitRepr"
 
 
 options :: Options UnitRepr UnitRepr

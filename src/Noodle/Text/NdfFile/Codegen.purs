@@ -95,6 +95,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
             , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
             ]
+            <> opts.imports
         )
         [ declTypeSignature familiesCtor $ typeCtor "Families"
         , declType familiesCtor [] familiesTList
@@ -182,7 +183,8 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
             $ exprOp (exprIdent "Id.family")
             [ binaryOp ">>>"
                 $ exprCase [ exprSection ]
-                    $ fnDefBranch <$> definitionsArray
+                    $ (fnDefBranch <$> definitionsArray)
+                    <> [ caseBranch [ binderWildcard ] $ exprCtor "Nothing" ]
             ]
         ]
     where
@@ -207,7 +209,7 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                 Just _ ->
                     exprOp
                         (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
-                        [ binaryOp "$" $ qChValue mbType mbDefault ]
+                        [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
                     exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
         outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
@@ -216,11 +218,11 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                 Just _ ->
                     exprOp
                         (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
-                        [ binaryOp "$" $ qChValue mbType mbDefault ]
+                        [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
                     exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
-        qChValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
-        qChValue mbDataType = maybe (FCG.defaultFor opts.pchrepr mbDataType) (FCG.valueFor opts.pchrepr mbDataType)
+        qChFullValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
+        qChFullValue mbDataType = maybe (FCG.fDefaultFor opts.pchrepr mbDataType) (FCG.fValueFor opts.pchrepr mbDataType)
 
 
 

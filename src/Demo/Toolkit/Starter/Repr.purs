@@ -43,6 +43,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen
     , class ValueCodegen
     , mkExpression
     , groupPascalCase, familyPascalCase
+    , pDefaultFor, pValueFor
     )
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
@@ -73,6 +74,9 @@ data ValueRepr
     | VSpreadVec (Spread (Number /\ Number))
     | VSpreadCol (Spread Color)
     | VSpreadShp (Spread Shape)
+
+
+pValue = Proxy :: _ ValueRepr
 
 
 data Any = Any ValueRepr
@@ -106,41 +110,70 @@ instance HasFallback (Spread a) where fallback = Spread []
 instance CodegenRepr StateRepr where
     reprModule = const "Demo.Toolkit.Starter.Repr"
     reprTypeName = const "Unit" -- FIXME: "StateRepr"
-    reprType = const $ unsafePartial $ typeCtor "Unit" -- FIXME: "StateRepr"
-    typeFor = const $ unsafePartial $ \(EncodedType _) ->
-        typeCtor "Unit"
-    defaultFor = const $ unsafePartial $ \mbType ->
-        exprIdent "unit"
-    valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
-        exprIdent "unit"
+    reprType =    const $ unsafePartial $ typeCtor "Unit" -- FIXME: "StateRepr"
+    pTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "Unit"
+    pDefaultFor = const $ unsafePartial $ \_ -> exprIdent "unit"
+    pValueFor =   const $ unsafePartial $ \_ (EncodedValue valueStr) -> exprIdent "unit"
+    fTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "Unit"
+    fDefaultFor = const $ unsafePartial $ \mbType -> exprIdent "unit"
+    fValueFor =   const $ unsafePartial $ \mbType (EncodedValue valueStr) -> exprIdent "unit"
 
 
 instance CodegenRepr ValueRepr where
     reprModule = const "Demo.Toolkit.Starter.Repr"
     reprTypeName = const "ValueRepr"
     reprType = const $ unsafePartial $ typeCtor "ValueRepr"
-    typeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
+    fTypeFor = const $ unsafePartial $ \_ -> typeCtor "ValueRepr"
+    fDefaultFor = const $ unsafePartial $ \mbType ->
+        case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
+            Just "Any"     -> exprCtor "VR.VNone"
+            Just "Bang"    -> exprCtor "VR.VBang"
+            Just "Bool"    -> exprApp (exprCtor "VR.VBool") [ pDefaultFor pValue mbType ]
+            Just "Char"    -> exprApp (exprCtor "VR.VChar") [ pDefaultFor pValue mbType ]
+            Just "Number"  -> exprApp (exprCtor "VR.VNumber") [ pDefaultFor pValue mbType ]
+            Just "Time"    -> exprApp (exprCtor "VR.VTime") [ pDefaultFor pValue mbType ]
+            Just "Color"   -> exprApp (exprCtor "VR.VColor") [ pDefaultFor pValue mbType ]
+            Just "Shape"   -> exprApp (exprCtor "VR.VShape") [ pDefaultFor pValue mbType ]
+            Just "SpreadN" -> exprApp (exprCtor "VR.VSpreadNum") [ pDefaultFor pValue mbType ]
+            Just "SpreadV" -> exprApp (exprCtor "VR.VSpreadVec") [ pDefaultFor pValue mbType ]
+            Just "SpreadC" -> exprApp (exprCtor "VR.VSpreadCol") [ pDefaultFor pValue mbType ]
+            Just "SpreadS" -> exprApp (exprCtor "VR.VSpreadShp") [ pDefaultFor pValue mbType ]
+    fValueFor = const $ unsafePartial $ \mbType encV ->
+        case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
+            Just "Any"     -> exprCtor "VR.VNone"
+            Just "Bang"    -> exprCtor "VR.VBang"
+            Just "Bool"    -> exprApp (exprCtor "VR.VBool")   [ pValueFor pValue mbType encV ]
+            Just "Char"    -> exprApp (exprCtor "VR.VChar")   [ pValueFor pValue mbType encV ]
+            Just "Number"  -> exprApp (exprCtor "VR.VNumber") [ pValueFor pValue mbType encV ]
+            Just "Time"    -> exprApp (exprCtor "VR.VTime")   [ pValueFor pValue mbType encV ]
+            Just "Color"   -> exprApp (exprCtor "VR.VColor")  [ pValueFor pValue mbType encV ]
+            Just "Shape"   -> exprApp (exprCtor "VR.VShape")  [ pValueFor pValue mbType encV ]
+            Just "SpreadN" -> exprApp (exprCtor "VR.VSpreadNum") [ pValueFor pValue mbType encV ]
+            Just "SpreadV" -> exprApp (exprCtor "VR.VSpreadVec") [ pValueFor pValue mbType encV ]
+            Just "SpreadC" -> exprApp (exprCtor "VR.VSpreadCol") [ pValueFor pValue mbType encV ]
+            Just "SpreadS" -> exprApp (exprCtor "VR.VSpreadShp") [ pValueFor pValue mbType encV ]
+    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
             case typeStr of
-                "Any"     -> typeCtor "PR.Any"
-                "Bang"    -> typeCtor "PR.Bang"
+                "Any"     -> typeCtor "VR.Any"
+                "Bang"    -> typeCtor "VR.Bang"
                 "Bool"    -> typeCtor "Boolean"
                 "Char"    -> typeCtor "Char"
                 "Number"  -> typeCtor "Number"
-                "Time"    -> typeCtor "PR.Time"
-                "Color"   -> typeCtor "PR.Color"
-                "Shape"   -> typeCtor "PR.Shape"
-                "SpreadN" -> typeApp (typeCtor "PR.Spread") [ typeCtor "Number" ]
-                "SpreadV" -> typeApp (typeCtor "PR.Spread")
+                "Time"    -> typeCtor "VR.Time"
+                "Color"   -> typeCtor "VR.Color"
+                "Shape"   -> typeCtor "VR.Shape"
+                "SpreadN" -> typeApp (typeCtor "VR.Spread") [ typeCtor "Number" ]
+                "SpreadV" -> typeApp (typeCtor "VR.Spread")
                                 [ typeOp (typeCtor "Number")
                                     [ binaryOp "/\\" $ typeCtor "Number" ]
                                 ]
-                "SpreadC" -> typeApp (typeCtor "PR.Spread") [ typeCtor "PR.Color" ]
-                "SpreadS" -> typeApp (typeCtor "PR.Spread") [ typeCtor "PR.Shape" ]
+                "SpreadC" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Color" ]
+                "SpreadS" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Shape" ]
                 _ -> typeCtor "Unit"
-    defaultFor = const $ unsafePartial $ \mbType ->
+    pDefaultFor = const $ unsafePartial $ \mbType ->
             case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
-                Just "Any"     -> exprApp (exprCtor "PR.Any") [ exprCtor "PR.VNone" ]
-                Just "Bang"    -> exprCtor "PR.Bang"
+                Just "Any"     -> exprApp (exprCtor "VR.Any") [ exprCtor "VR.VNone" ]
+                Just "Bang"    -> exprCtor "VR.Bang"
                 Just "Bool"    -> exprIdent "false"
                 Just "Char"    -> exprChar '-'
                 Just "Number"  -> exprNumber 0.0
@@ -151,8 +184,8 @@ instance CodegenRepr ValueRepr where
                 Just "SpreadV" -> mkExpression (HF.fallback :: Spread (Number /\ Number))
                 Just "SpreadC" -> mkExpression (HF.fallback :: Spread Color)
                 Just "SpreadS" -> mkExpression (HF.fallback :: Spread Shape)
-                _ -> exprCtor "PR.VNone"
-    valueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
+                _ -> exprCtor "VR.VNone"
+    pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
             -- case NT.unwrap <$> mbType of
             --     Just "Bang"    -> const $ mkExpression Bang
                 -- case String 2 valueStr of
@@ -170,7 +203,7 @@ instance CodegenRepr ValueRepr where
                             Nothing -> 0.0
                     "c/" ->
                         case Color.fromHexString after of
-                            Just color -> exprCtor "PR.VNone"
+                            Just color -> exprCtor "VR.VNone"
                             Nothing    -> mkExpression (HF.fallback :: Color)
                     "s/" ->
                         case shapeFromString after of
@@ -180,21 +213,21 @@ instance CodegenRepr ValueRepr where
                         case timeFromString after of
                             Just time -> mkExpression time
                             Nothing   -> mkExpression (HF.fallback :: Time)
-                    _ -> exprCtor "PR.VNone"
+                    _ -> exprCtor "VR.VNone"
 
 
 instance ValueCodegen Shape where
     mkExpression = unsafePartial $ case _ of
-        Circle -> exprCtor "PR.Circle"
-        Rect -> exprCtor "PR.Rect"
-        Cross -> exprCtor "PR.Cross"
-        Diamond -> exprCtor "PR.Diamond"
+        Circle -> exprCtor "VR.Circle"
+        Rect -> exprCtor "VR.Rect"
+        Cross -> exprCtor "VR.Cross"
+        Diamond -> exprCtor "VR.Diamond"
 
 
 instance ValueCodegen Time where
     mkExpression = unsafePartial $ case _ of
         Time { seconds } ->
-            exprApp (exprCtor "PR.Time")
+            exprApp (exprCtor "VR.Time")
                 [ exprRecord
                     [ "seconds" /\ exprInt seconds ]
                 ]
@@ -203,7 +236,7 @@ instance ValueCodegen Time where
 instance ValueCodegen Color where
     mkExpression = unsafePartial $ case _ of
         Color { r, g, b, a } ->
-            exprApp (exprCtor "PR.Color")
+            exprApp (exprCtor "VR.Color")
                 [ exprRecord
                     [ "r" /\ exprInt r
                     , "g" /\ exprInt g
@@ -216,7 +249,7 @@ instance ValueCodegen Color where
 instance ValueCodegen a => ValueCodegen (Spread a) where
     mkExpression = unsafePartial $ case _ of
         Spread items ->
-            exprApp (exprCtor "PR.Spread")
+            exprApp (exprCtor "VR.Spread")
                 [ exprArray $ mkExpression <$> items
                 ]
 
@@ -250,7 +283,7 @@ options = Options $
             Nothing -> ""
     , imports : unsafePartial $
         [ declImport "Data.Tuple.Nested" [ importOp "/\\", importTypeOp "/\\" ]
-        , declImportAs "Demo.Toolkit.Starter.Repr" [] "PR"
+        , declImportAs "Demo.Toolkit.Starter.Repr" [] "VR"
         ]
     }
 
