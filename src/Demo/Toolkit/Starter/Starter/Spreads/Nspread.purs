@@ -39,7 +39,7 @@ type Family = Noodle.Family "nspread" Unit InletsRow OutletsRow ValueRepr Effect
 type F = Noodle.F "nspread" Unit InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { min: -150.0, max: 150.0, count: 26.0 }
+defaultI = { min: (-150.0), max: 150.0, count: 26.0 }
 
 defaultO :: Record OutletsRow
 defaultO = { spread: VR.Spread [] }

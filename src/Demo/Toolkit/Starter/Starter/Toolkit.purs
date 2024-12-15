@@ -70,11 +70,11 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Simple.Bang.family
 
 instance HasChRepr STARTER ValueRepr
-instance IsTookit STARTER where
+instance IsToolkit STARTER where
   name _ = "Starter"
-  groupOf _ _ family = Id.family >>> case _ of _ -> "unknown" >>> Id.unsafeGroupR
+  groupOf _ = Id.family >>> (case _ of _ -> "unknown") >>> Id.unsafeGroupR
 
-instance CliRenderer STARTER where
+instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
   cliSizeRaw _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = pure unit
@@ -112,7 +112,7 @@ instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR whe
       ]
       []
     "nspread" -> Just $ fn "nspread"
-      [ Fn.in_ "min" $ VR.VNumber -150.0
+      [ Fn.in_ "min" $ VR.VNumber (-150.0)
       , Fn.in_ "max" $ VR.VNumber 150.0
       , Fn.in_ "count" $ VR.VNumber 26.0
       ]

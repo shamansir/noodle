@@ -111,18 +111,18 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 ]
         , declValue "toolkit" [] registerFamilies
         , declInstance Nothing [] "HasChRepr" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_ ] []
-        , declInstance Nothing [] "IsTookit" [ typeCtor toolkitKey ]
+        , declInstance Nothing [] "IsToolkit" [ typeCtor toolkitKey ]
             [ instValue "name" [ binderWildcard ]
                 $ exprString $ Id.toolkit tkName
-            , instValue "groupOf" [ binderWildcard, binderWildcard, binderVar "family" ]
+            , instValue "groupOf" [ binderWildcard ]
                 $ exprOp (exprIdent "Id.family")
-                    [ binaryOp ">>>" $ exprCase [ exprSection ]
+                    [ binaryOp ">>>" $ exprParens $ exprCase [ exprSection ]
                         [ caseBranch [ binderWildcard ] $ exprString "unknown"
                         ]
                     , binaryOp ">>>" $ exprIdent "Id.unsafeGroupR"
                     ]
             ]
-        , declInstance Nothing [] "CliRenderer" [ typeCtor toolkitKey ]
+        , declInstance Nothing [] "CliRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
             [ instValue "cliSize" _5binders $ exprCtor "Nothing"
             , instValue "cliSizeRaw" _5binders $ exprCtor "Nothing"
             , instValue "renderCli" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]

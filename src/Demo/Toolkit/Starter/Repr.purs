@@ -26,7 +26,7 @@ import Type.Proxy (Proxy(..))
 import Partial.Unsafe (unsafePartial)
 
 import Tidy.Codegen
-    ( exprCtor, exprApp, exprIdent, exprBool, exprChar, exprNumber, exprRecord, exprInt, exprArray, exprOp
+    ( exprCtor, exprApp, exprIdent, exprBool, exprChar, exprNumber, exprRecord, exprInt, exprArray, exprOp, exprParens
     , binaryOp
     , typeCtor, typeApp, typeOp
     , declImport, declImportAs, importOp, importTypeOp
@@ -198,9 +198,9 @@ instance CodegenRepr ValueRepr where
                             "true"  -> exprBool true
                             "false" -> exprBool false
                     "#/" ->
-                        exprNumber $ case Number.fromString after of
-                            Just n -> n
-                            Nothing -> 0.0
+                        case Number.fromString after of
+                            Just n -> if n >= 0.0 then exprNumber n else exprParens $ exprNumber n
+                            Nothing -> exprNumber 0.0
                     "c/" ->
                         case Color.fromHexString after of
                             Just color -> exprCtor "VR.VNone"

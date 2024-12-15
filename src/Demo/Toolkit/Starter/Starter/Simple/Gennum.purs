@@ -51,4 +51,8 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 gennumP :: Process
-gennumP = pure unit
+gennumP = do
+  sendRandom <- Fn.spawn $ do
+        nextRandom <- liftEffect $ random
+        Noodle.send _out_out nextRandom
+    Noodle.lift $ SignalX.runSignal $ Signal.every 1000.0 ~> const sendRandom
