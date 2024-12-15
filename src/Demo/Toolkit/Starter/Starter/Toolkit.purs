@@ -72,7 +72,27 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
 instance HasChRepr STARTER ValueRepr
 instance IsToolkit STARTER where
   name _ = "Starter"
-  groupOf _ = Id.family >>> (case _ of _ -> "unknown") >>> Id.unsafeGroupR
+  groupOf _ = Id.family
+    >>>
+      ( case _ of
+          "bang" -> "simple"
+          "metro" -> "simple"
+          "gennum" -> "simple"
+          "random" -> "simple"
+          "knob" -> "simple"
+          "color" -> "simple"
+          "letter" -> "simple"
+          "sum" -> "simple"
+          "log" -> "simple"
+          "shape" -> "p5"
+          "sketch" -> "p5"
+          "nspread" -> "spreads"
+          "vspread" -> "spreads"
+          "cspread" -> "spreads"
+          "xsshape" -> "spreads"
+          _ -> "unknown"
+      )
+    >>> Id.unsafeGroupR
 
 instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing

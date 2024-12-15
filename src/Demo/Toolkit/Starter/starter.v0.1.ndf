@@ -15,7 +15,8 @@ starter 0.2 0.1
 : spreads : vspread :: <x:SpreadN -> y:SpreadN> => spread:SpreadV
 : spreads : cspread :: <red:SpreadN -> green:SpreadN -> blue:SpreadN -> alpha:SpreadN> => color:SpreadC
 : spreads : xsshape :: <pos:SpreadN -> color:SpreadC -> size:SpreadV -> angle:SpreadN> => shape:SpreadS
-$ gennum :: /-| sendRandom <- Fn.spawn $ do
-        nextRandom <- liftEffect $ random
-        Noodle.send _out_out nextRandom
-    Noodle.lift $ SignalX.runSignal $ Signal.every 1000.0 ~> const sendRandom |-/
+$ gennum :: /-|
+  sendRandom <- Fn.spawn $ do
+    nextRandom <- liftEffect $ random
+    Noodle.send _out_out nextRandom
+  Noodle.lift $ SignalX.runSignal $ Signal.every 1000.0 ~> const sendRandom |-/

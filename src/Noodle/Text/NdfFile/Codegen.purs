@@ -18,7 +18,7 @@ import Data.String (toUpper) as String
 
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Toolkit (Name) as Toolkit
-import Noodle.Id (toolkit) as Id
+import Noodle.Id (toolkit, group, family) as Id
 import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
 import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
@@ -117,8 +117,8 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , instValue "groupOf" [ binderWildcard ]
                 $ exprOp (exprIdent "Id.family")
                     [ binaryOp ">>>" $ exprParens $ exprCase [ exprSection ]
-                        [ caseBranch [ binderWildcard ] $ exprString "unknown"
-                        ]
+                        $ (groupBranch <$> definitionsArray)
+                        <> [ caseBranch [ binderWildcard ] $ exprString "unknown" ]
                     , binaryOp ">>>" $ exprIdent "Id.unsafeGroupR"
                     ]
             ]
@@ -137,6 +137,8 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         , generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
+        groupBranch :: Partial => FamilyDef -> _
+        groupBranch fdef = caseBranch [ binderString $ Id.family $ FamilyDef.family fdef ] $ exprString $ Id.group $ FamilyDef.group fdef
         _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]
         rgbColorExpr :: Partial => Int -> Int -> Int -> CST.Expr Void
         rgbColorExpr r g b = exprApp (exprIdent "Color.rgb") [ exprInt r, exprInt g, exprInt b ]
