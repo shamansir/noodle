@@ -1,4 +1,4 @@
-module Starter.ToolkitExpected where
+module Starter.Toolkit where
 
 import Prelude (($), (#), (>>>), (<<<), pure, unit, const, negate)
 import Effect (Effect)
