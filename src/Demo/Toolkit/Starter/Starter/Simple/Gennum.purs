@@ -4,8 +4,6 @@ import Prelude
 
 import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
-import Effect.Class (liftEffect)
-import Effect.Random (random)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
 import Noodle.Fn.Shape (I, O)
@@ -19,7 +17,9 @@ import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Data.Tuple.Nested ((/\), type (/\))
-import Demo.Toolkit.Starter.Repr as PR
+import Demo.Toolkit.Starter.Repr as VR
+import Effect.Class (liftEffect)
+import Effect.Random (random)
 import Signal ((~>))
 import Signal.Extra as SignalX
 import Signal.Time (every) as Signal

@@ -165,6 +165,10 @@ comment :: String -> Tag
 comment = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
+markerSymbol :: String -> Tag
+markerSymbol = T.fgc (C.colorOf Pico.darkGrey) <<< T.s
+
+
 value :: String -> Tag
 value = T.fgc (C.colorOf Palette.value) <<< T.s
 
@@ -281,26 +285,27 @@ familyOnelineSignature pat ptk familyR =
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
             T.fgcs (C.colorOf Palette.familyName) name
-            <> T.s " -> "
+            <> T.s " " <> operator "->" <> T.s " "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
-            <> T.s " -> "
+            <> operator "->" <> T.s " "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
-            <> T.s " // "
+            <> operator "//" <> T.s " "
             <> T.fgc (C.colorOf Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
         tagArgument :: Fn.Argument (Maybe chrepr) -> Tag
-        tagArgument arg = T.s "<" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.argName arg) <>
-            case Fn.argValue arg of
+        tagArgument arg = markerSymbol "<"
+            <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.argName arg)
+            <> case Fn.argValue arg of
                 Just inVal ->
-                    T.s "::" <> (Tagged.at pat) inVal
+                    operator "::" <> (Tagged.at pat) inVal
                 Nothing -> T.nil
-            <> T.s "> "
+            <> markerSymbol ">" <> T.s " "
         tagOut :: Fn.Output (Maybe chrepr) -> Tag
-        tagOut out = T.s "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.outName out) <>
+        tagOut out = markerSymbol "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.outName out) <>
             case Fn.outValue out of
                 Just outVal ->
-                    T.s "::" <> (Tagged.at pat) outVal
+                    operator "::" <> (Tagged.at pat) outVal
                 Nothing ->
                     T.nil
-            <> T.s ") "
+            <> markerSymbol ")" <> T.s " "

@@ -1,35 +1,39 @@
 module Noodle.Text.NdfFile.Codegen where
 
 import Prelude
+import Tidy.Codegen
+
+import Color as Color
 
 import Type.Proxy (Proxy(..))
 
 import Partial.Unsafe (unsafePartial)
 
-import Data.Map (Map)
-import Data.Map (empty, insert) as Map
-import Data.Maybe (Maybe(..), maybe)
-import Data.Foldable (foldr)
-import Data.Newtype (unwrap, wrap, class Newtype)
-import Data.Tuple (snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (uncons, reverse, singleton) as Array
-import Data.String (toUpper) as String
-
-import Noodle.Id (FamilyR, GroupR)
-import Noodle.Toolkit (Name) as Toolkit
-import Noodle.Id (toolkit, group, family) as Id
-import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
-import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
-import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
-import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
-import Noodle.Fn.ToFn (Fn, FnS, FnX, toFn)
-import Noodle.Fn.ToFn (Argument, Output, extract, argName, argValue, outName, outValue) as Fn
-
 import PureScript.CST.Types (ImportDecl, Module)
 import PureScript.CST.Types (Type, Expr, Declaration) as CST
 
-import Tidy.Codegen -- hiding (importType, importTypeOp, importValue, importTypeAll)
+import Data.Array (uncons, reverse, singleton, mapWithIndex, index, nub) as Array
+import Data.Foldable (foldr)
+import Data.Map (Map)
+import Data.Map (empty, insert) as Map
+import Data.Maybe (Maybe(..), maybe)
+import Data.Newtype (unwrap, wrap, class Newtype)
+import Data.String (toUpper) as String
+import Data.Text.Format.Org.Construct (b)
+import Data.Tuple (snd) as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
+
+import Noodle.Fn.ToFn (Argument, Output, extract, argName, argValue, outName, outValue) as Fn
+import Noodle.Fn.ToFn (Fn, FnS, FnX, toFn)
+import Noodle.Id (FamilyR, GroupR)
+import Noodle.Id (toolkit, group, family) as Id
+import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
+import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
+import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
+import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
+import Noodle.Toolkit (Name) as Toolkit
+import Noodle.Ui.Cli.Palette.Item (Item, colorOf) as Palette
+import Noodle.Ui.Cli.Palette.AutoColor (group) as AutoColor
 -- import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue)
 
 
@@ -84,10 +88,10 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
-            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR" ] "Id"
+            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR", importValue "group" ] "Id"
             , declImport "Noodle.Fn.ToFn" [ importValue "fn", importClass "PossiblyToFn" ]
             , declImportAs "Noodle.Fn.ToFn" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Fn"
-            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr", importValue "markGroup" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
             , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer" ]
@@ -96,7 +100,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
             , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
             ]
-            <> opts.imports
+            <> opts.tkImports
         )
         [ declTypeSignature familiesCtor $ typeCtor "Families"
         , declType familiesCtor [] familiesTList
@@ -117,7 +121,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , instValue "groupOf" [ binderWildcard ]
                 $ exprOp (exprIdent "Id.family")
                     [ binaryOp ">>>" $ exprParens $ exprCase [ exprSection ]
-                        $ (groupBranch <$> definitionsArray)
+                        $ (groupOfFamilyBranch <$> definitionsArray)
                         <> [ caseBranch [ binderWildcard ] $ exprString "unknown" ]
                     , binaryOp ">>>" $ exprIdent "Id.unsafeGroupR"
                     ]
@@ -129,19 +133,19 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , instValue "renderCliRaw" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]
             ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
-            [ instValue "markGroup" [ binderWildcard, binderVar "group" ]
-                $ rgbColorExpr 255 255 255
-            , instValue "markFamily" [ binderWildcard, binderWildcard, binderVar "family" ]
-                $ rgbColorExpr 255 255 255
+            [ instValue "markGroup" [ binderWildcard ]
+                $ exprOp (exprIdent "Id.group")
+                    [ binaryOp ">>>" $ exprParens $ exprCase [ exprSection ]
+                        $ (Array.mapWithIndex groupColorBranch groupArray)
+                        <> [ caseBranch [ binderWildcard ] $ rgbColorExpr 255 255 255 ]
+                    ]
+            , instValue "markFamily" [ binderVar "ptk" ]
+                $ exprOp (exprIdent "const")
+                [ binaryOp "<<<" $ exprApp (exprIdent "markGroup") [ exprIdent "ptk" ] ]
             ]
         , generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
-        groupBranch :: Partial => FamilyDef -> _
-        groupBranch fdef = caseBranch [ binderString $ Id.family $ FamilyDef.family fdef ] $ exprString $ Id.group $ FamilyDef.group fdef
-        _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]
-        rgbColorExpr :: Partial => Int -> Int -> Int -> CST.Expr Void
-        rgbColorExpr r g b = exprApp (exprIdent "Color.rgb") [ exprInt r, exprInt g, exprInt b ]
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         familiesCtor = Id.toolkit tkName <> "Families"
         groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
@@ -186,6 +190,25 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     <$> referFamily
                     <$> Array.reverse definitions
                 )
+        groupArray :: Array GroupR
+        groupArray = Array.nub $ FamilyDef.group <$> definitionsArray
+        _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]
+        rgbColorExpr :: Partial => Int -> Int -> Int -> CST.Expr Void
+        rgbColorExpr r g b = exprApp (exprIdent "Color.rgb") [ exprInt r, exprInt g, exprInt b ]
+        groupOfFamilyBranch :: Partial => FamilyDef -> _
+        groupOfFamilyBranch fdef =
+            caseBranch
+                [ binderString $ Id.family $ FamilyDef.family fdef ]
+                $ exprString $ Id.group $ FamilyDef.group fdef
+        groupColorBranch :: Partial => Int -> GroupR -> _
+        groupColorBranch idx groupR =
+            caseBranch
+                [ binderString $ Id.group groupR ]
+                $ case Array.index AutoColor.group idx of
+                    Just paletteItem ->
+                        case Color.toRGBA $ Palette.colorOf paletteItem of
+                            { r, g, b, a } -> rgbColorExpr r g b
+                    Nothing -> rgbColorExpr 255 255 255
 
 
 generatePossiblyToFnInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void

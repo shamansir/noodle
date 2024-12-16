@@ -158,4 +158,7 @@ colorOf :: Item -> Color
 colorOf item =
     case item.color of
         Just color -> color
-        Nothing -> Color.black
+        Nothing -> case item.src.rgb of
+            Just { r, g, b } ->
+                Color.rgb r g b
+            Nothing -> Color.black

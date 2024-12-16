@@ -76,6 +76,36 @@ type Flavor =
     }
 
 
+type FlavorP =
+    { rosewater :: P.Item
+    , flamingo :: P.Item
+    , pink :: P.Item
+    , mauve :: P.Item
+    , red :: P.Item
+    , maroon :: P.Item
+    , peach :: P.Item
+    , yellow :: P.Item
+    , green :: P.Item
+    , teal :: P.Item
+    , sky :: P.Item
+    , sapphire :: P.Item
+    , blue :: P.Item
+    , lavender :: P.Item
+    , text :: P.Item
+    , subtext1 :: P.Item
+    , subtext0 :: P.Item
+    , overlay2 :: P.Item
+    , overlay1 :: P.Item
+    , overlay0 :: P.Item
+    , surface2 :: P.Item
+    , surface1 :: P.Item
+    , surface0 :: P.Item
+    , base :: P.Item
+    , mantle :: P.Item
+    , crust :: P.Item
+    }
+
+
 type CPItem =
     { hex :: String
     , rgb :: { r :: Int, g :: Int, b :: Int }
@@ -227,6 +257,37 @@ mocha =
     }
 
 
+toFlavorP :: String -> Flavor -> FlavorP
+toFlavorP fname f =
+    { rosewater : toPaletteItem (fname <> "rosewater") f.rosewater
+    , flamingo : toPaletteItem (fname <> "flamingo") f.flamingo
+    , pink : toPaletteItem (fname <> "pink") f.pink
+    , mauve : toPaletteItem (fname <> "mauve") f.mauve
+    , red : toPaletteItem (fname <> "red") f.red
+    , maroon : toPaletteItem (fname <> "maroon") f.maroon
+    , peach : toPaletteItem (fname <> "peach") f.peach
+    , yellow : toPaletteItem (fname <> "yellow") f.yellow
+    , green : toPaletteItem (fname <> "green") f.green
+    , teal : toPaletteItem (fname <> "teal") f.teal
+    , sky : toPaletteItem (fname <> "sky") f.sky
+    , sapphire : toPaletteItem (fname <> "sapphire") f.sapphire
+    , blue : toPaletteItem (fname <> "blue") f.blue
+    , lavender : toPaletteItem (fname <> "lavender") f.lavender
+    , text : toPaletteItem (fname <> "text") f.text
+    , subtext1 : toPaletteItem (fname <> "subtext1") f.subtext1
+    , subtext0 : toPaletteItem (fname <> "subtext0") f.subtext0
+    , overlay2 : toPaletteItem (fname <> "overlay2") f.overlay2
+    , overlay1 : toPaletteItem (fname <> "overlay1") f.overlay1
+    , overlay0 : toPaletteItem (fname <> "overlay0") f.overlay0
+    , surface2 : toPaletteItem (fname <> "surface2") f.surface2
+    , surface1 : toPaletteItem (fname <> "surface1") f.surface1
+    , surface0 : toPaletteItem (fname <> "surface0") f.surface0
+    , base : toPaletteItem (fname <> "base") f.base
+    , mantle : toPaletteItem (fname <> "mantle") f.mantle
+    , crust : toPaletteItem (fname <> "crust") f.crust
+    }
+
+
 
 toPaletteItem :: String -> CPItem -> P.Item
 toPaletteItem name irec =
@@ -242,6 +303,20 @@ catpuccin ::
     }
 catpuccin =
     { latte, frappe, macchiato, mocha }
+
+
+catpuccinP ::
+    { latte :: FlavorP
+    , frappe :: FlavorP
+    , macchiato :: FlavorP
+    , mocha :: FlavorP
+    }
+catpuccinP =
+    { latte : toFlavorP "latte" latte
+    , frappe : toFlavorP "frappe" frappe
+    , macchiato : toFlavorP "macchiato" macchiato
+    , mocha : toFlavorP "mocha" mocha
+    }
 
 
 catpuccinAll :: Array P.Item

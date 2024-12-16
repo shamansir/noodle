@@ -7,10 +7,10 @@ import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
-import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR) as Id
+import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
 import Noodle.Fn.ToFn (fn, class PossiblyToFn)
 import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Cli.Class.CliRenderer (class CliRenderer)
@@ -101,8 +101,14 @@ instance CliRenderer STARTER StarterFamilies ValueRepr m where
   renderCliRaw _ _ _ _ _ = pure unit
 
 instance MarkToolkit STARTER where
-  markGroup _ group = Color.rgb 255 255 255
-  markFamily _ _ family = Color.rgb 255 255 255
+  markGroup _ = Id.group >>>
+    ( case _ of
+        "simple" -> Color.rgb 6 90 181
+        "p5" -> Color.rgb 255 163 0
+        "spreads" -> Color.rgb 190 18 80
+        _ -> Color.rgb 255 255 255
+    )
+  markFamily ptk = const <<< markGroup ptk
 
 instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
   possiblyToFn _ = Id.family >>> case _ of

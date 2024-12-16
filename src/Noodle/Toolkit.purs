@@ -251,6 +251,7 @@ class IsToolkit (tk :: ToolkitKey) where
 class IsToolkit tk <= MarkToolkit (tk :: ToolkitKey) where
     markGroup  :: Proxy tk -> Id.GroupR -> Color
     markFamily :: Proxy tk -> Id.GroupR -> Id.FamilyR -> Color
+    -- TODO: merge in one method or even get rid of it at all: use auto-generated coloring
 
 
 class HasChRepr (tk :: ToolkitKey) chrepr | tk -> chrepr

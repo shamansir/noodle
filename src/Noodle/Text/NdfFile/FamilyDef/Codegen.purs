@@ -112,7 +112,8 @@ type OptionsRec strepr chrepr =
   , pchrepr :: Proxy chrepr
   , chreprAt :: { module_ :: String, type_ :: String }
   , streprAt :: { module_ :: String, type_ :: String }
-  , imports :: Array (ImportDecl Void)
+  , tkImports :: Array (ImportDecl Void)
+  , familyImports :: Id.FamilyR -> Array (ImportDecl Void)
   }
 
 
@@ -137,7 +138,7 @@ generate opts mbSource fdef = injectProcess fdef.process $ printModule $ generat
 generateModule :: forall strepr chrepr. CodegenRepr strepr => CodegenRepr chrepr => Options strepr chrepr -> Maybe Source -> FamilyDefRec -> Module Void
 generateModule (Options opts) mbSource fdef
   = let (StateDef state) = fdef.state in
-  addUserImports_ opts.imports
+  addUserImports_ (opts.familyImports $ familyOf fdef)
   $ unsafePartial
   $ codegenModule (opts.familyModuleName fdef.group $ familyOf fdef) do
 
