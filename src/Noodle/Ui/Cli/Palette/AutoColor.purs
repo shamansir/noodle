@@ -4,8 +4,8 @@ import Prelude
 
 import Noodle.Ui.Cli.Palette.Item (Item) as Palette
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
-import Noodle.Ui.Cli.Palette.Set.Hydra as Hydra
-import Noodle.Ui.Cli.Palette.Set.Catpuccin as Catpuccin
+import Noodle.Ui.Cli.Palette.Set.Hydra (step) as Hydra
+import Noodle.Ui.Cli.Palette.Set.Catpuccin (catpuccin) as Catpuccin
 
 
 group :: Array Palette.Item
@@ -23,32 +23,32 @@ group =
     , Hydra.step 6 "step-6"
     , Hydra.step 7 "step-7"
     , Hydra.step 8 "step-8"
-    , Catpuccin.catpuccinP.latte.rosewater
-    , Catpuccin.catpuccinP.latte.flamingo
-    , Catpuccin.catpuccinP.latte.pink
-    , Catpuccin.catpuccinP.latte.mauve
-    , Catpuccin.catpuccinP.latte.red
-    , Catpuccin.catpuccinP.latte.maroon
-    , Catpuccin.catpuccinP.latte.peach
-    , Catpuccin.catpuccinP.latte.yellow
-    , Catpuccin.catpuccinP.latte.green
-    , Catpuccin.catpuccinP.latte.teal
-    , Catpuccin.catpuccinP.latte.sky
-    , Catpuccin.catpuccinP.latte.sapphire
-    , Catpuccin.catpuccinP.latte.blue
-    , Catpuccin.catpuccinP.latte.lavender
-    , Catpuccin.catpuccinP.frappe.rosewater
-    , Catpuccin.catpuccinP.frappe.flamingo
-    , Catpuccin.catpuccinP.frappe.pink
-    , Catpuccin.catpuccinP.frappe.mauve
-    , Catpuccin.catpuccinP.frappe.red
-    , Catpuccin.catpuccinP.frappe.maroon
-    , Catpuccin.catpuccinP.frappe.peach
-    , Catpuccin.catpuccinP.frappe.yellow
-    , Catpuccin.catpuccinP.frappe.green
-    , Catpuccin.catpuccinP.frappe.teal
-    , Catpuccin.catpuccinP.frappe.sky
-    , Catpuccin.catpuccinP.frappe.sapphire
-    , Catpuccin.catpuccinP.frappe.blue
-    , Catpuccin.catpuccinP.frappe.lavender
+    , Catpuccin.catpuccin.latte.rosewater
+    , Catpuccin.catpuccin.latte.flamingo
+    , Catpuccin.catpuccin.latte.pink
+    , Catpuccin.catpuccin.latte.mauve
+    , Catpuccin.catpuccin.latte.red
+    , Catpuccin.catpuccin.latte.maroon
+    , Catpuccin.catpuccin.latte.peach
+    , Catpuccin.catpuccin.latte.yellow
+    , Catpuccin.catpuccin.latte.green
+    , Catpuccin.catpuccin.latte.teal
+    , Catpuccin.catpuccin.latte.sky
+    , Catpuccin.catpuccin.latte.sapphire
+    , Catpuccin.catpuccin.latte.blue
+    , Catpuccin.catpuccin.latte.lavender
+    , Catpuccin.catpuccin.frappe.rosewater
+    , Catpuccin.catpuccin.frappe.flamingo
+    , Catpuccin.catpuccin.frappe.pink
+    , Catpuccin.catpuccin.frappe.mauve
+    , Catpuccin.catpuccin.frappe.red
+    , Catpuccin.catpuccin.frappe.maroon
+    , Catpuccin.catpuccin.frappe.peach
+    , Catpuccin.catpuccin.frappe.yellow
+    , Catpuccin.catpuccin.frappe.green
+    , Catpuccin.catpuccin.frappe.teal
+    , Catpuccin.catpuccin.frappe.sky
+    , Catpuccin.catpuccin.frappe.sapphire
+    , Catpuccin.catpuccin.frappe.blue
+    , Catpuccin.catpuccin.frappe.lavender
     ]
