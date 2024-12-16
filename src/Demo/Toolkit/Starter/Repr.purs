@@ -15,7 +15,7 @@ import Data.Text.Format as T
 
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
-import Noodle.Ui.Cli.Palette.Item (crepr) as C
+import Noodle.Ui.Cli.Palette.Item (colorOf) as C
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
@@ -313,24 +313,24 @@ instance ToChRepr (Spread Shape) ValueRepr where toChRepr = Just <<< CR.wrap <<<
 {-
 instance Mark ValueRepr where
     mark = case _ of
-        VNone -> C.crepr $ X11.burlywood
+        VNone -> C.colorOf $ X11.burlywood
         VAny repr -> mark repr
-        VBang -> C.crepr $ X11.aqua
+        VBang -> C.colorOf $ X11.aqua
         VBool bool ->
             if bool
-                then C.crepr $ X11.steelblue2
-                else C.crepr $ X11.steelblue
-            -- T.fgc (C.crepr $ X11.blue) $ T.s $ if bool then "T" else "F"
-        VChar _ -> C.crepr $ X11.aquamarine
-        VNumber _ -> C.crepr $ X11.green
-        VTime _ -> C.crepr $ X11.darkolivegreen4
+                then C.colorOf $ X11.steelblue2
+                else C.colorOf $ X11.steelblue
+            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar _ -> C.colorOf $ X11.aquamarine
+        VNumber _ -> C.colorOf $ X11.green
+        VTime _ -> C.colorOf $ X11.darkolivegreen4
         VColor clr -> toNativeColor clr
         VShape _ ->
-            C.crepr $ X11.firebrick1
-        VSpreadNum _ -> C.crepr $ X11.darkolivegreen3
-        VSpreadVec _ -> C.crepr $ X11.darkolivegreen3
-        VSpreadCol _ -> C.crepr $ X11.darkolivegreen3
-        VSpreadShp _ -> C.crepr $ X11.darkolivegreen3
+            C.colorOf $ X11.firebrick1
+        VSpreadNum _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadVec _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadCol _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadShp _ -> C.colorOf $ X11.darkolivegreen3
         where
             toNativeColor :: Color -> Color.Color
             toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
@@ -340,20 +340,20 @@ instance Mark ValueRepr where
 -- x == ChannelLabel
 instance At x ValueRepr where
     at _ = case _ of
-        VNone -> T.fgc (C.crepr $ X11.burlywood) $ T.s "∅"
+        VNone -> T.fgc (C.colorOf $ X11.burlywood) $ T.s "∅"
         VAny repr -> at (Proxy :: _ x) repr
-        VBang -> T.fgc (C.crepr $ X11.aqua) $ T.s "⊚" -- ⌾ ⏺
+        VBang -> T.fgc (C.colorOf $ X11.aqua) $ T.s "⊚" -- ⌾ ⏺
         VBool bool ->
             if bool
-                then T.fgc (C.crepr $ X11.steelblue2) $ T.s "T"
-                else T.fgc (C.crepr $ X11.steelblue)  $ T.s "F"
-            -- T.fgc (C.crepr $ X11.blue) $ T.s $ if bool then "T" else "F"
-        VChar ch -> T.fgc (C.crepr $ X11.aquamarine) $ T.s $ show ch
-        VNumber num -> T.fgc (C.crepr $ X11.green) $ T.s $ show num
-        VTime t -> T.fgc (C.crepr $ X11.darkolivegreen4) $ T.s $ show t
+                then T.fgc (C.colorOf $ X11.steelblue2) $ T.s "T"
+                else T.fgc (C.colorOf $ X11.steelblue)  $ T.s "F"
+            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar ch -> T.fgc (C.colorOf $ X11.aquamarine) $ T.s $ show ch
+        VNumber num -> T.fgc (C.colorOf $ X11.green) $ T.s $ show num
+        VTime t -> T.fgc (C.colorOf $ X11.darkolivegreen4) $ T.s $ show t
         VColor clr -> T.fgc (toNativeColor clr) $ T.s "■"
         VShape shape ->
-            T.fgc (C.crepr $ X11.firebrick1) $ T.s $ case shape of -- TODO: replace with Unicode shapes if possible
+            T.fgc (C.colorOf $ X11.firebrick1) $ T.s $ case shape of -- TODO: replace with Unicode shapes if possible
                 Circle -> "⏺"
                 Rect -> "■"
                 Cross -> "⨯"
@@ -364,7 +364,7 @@ instance At x ValueRepr where
         VSpreadShp spread -> channelSpread spread
         where
             channelSpread :: forall a. Spread a -> T.Tag
-            channelSpread (Spread arr) = T.fgc (C.crepr $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
+            channelSpread (Spread arr) = T.fgc (C.colorOf $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
             toNativeColor :: Color -> Color.Color
             toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
 

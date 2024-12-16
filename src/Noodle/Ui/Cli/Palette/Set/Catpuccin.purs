@@ -1,83 +1,89 @@
-module Catpuccin where
+module Noodle.Ui.Cli.Palette.Set.Catpuccin where
 
 import Prelude
 
+import Data.Tuple (uncurry)
+import Data.Tuple.Nested ((/\), type (/\))
 
-data FlavorK
-    = Latte
-    | Frappe
-    | Macciato
-    | Mocha
+import Noodle.Ui.Cli.Palette.Item (Item, hexRgbHsl) as P
 
 
-collectFlavor :: Flavor -> Array Item
+-- data FlavorK
+--     = Latte
+--     | Frappe
+--     | Macciato
+--     | Mocha
+
+
+collectFlavor :: Flavor -> Array (String /\ CPItem)
 collectFlavor r =
-    [ r.rosewater
-    , r.flamingo
-    , r.pink
-    , r.mauve
-    , r.red
-    , r.maroon
-    , r.peach
-    , r.yellow
-    , r.green
-    , r.teal
-    , r.sky
-    , r.sapphire
-    , r.blue
-    , r.lavender
-    , r.text
-    , r.subtext1
-    , r.subtext0
-    , r.overlay2
-    , r.overlay1
-    , r.overlay0
-    , r.surface2
-    , r.surface1
-    , r.surface0
-    , r.base
-    , r.mantle
-    , r.crust
+    [ "rosewater" /\ r.rosewater
+    , "flamingo" /\ r.flamingo
+    , "pink" /\ r.pink
+    , "mauve" /\ r.mauve
+    , "red" /\ r.red
+    , "maroon" /\ r.maroon
+    , "peach" /\ r.peach
+    , "yellow" /\ r.yellow
+    , "green" /\ r.green
+    , "teal" /\ r.teal
+    , "sky" /\ r.sky
+    , "sapphire" /\ r.sapphire
+    , "blue" /\ r.blue
+    , "lavender" /\ r.lavender
+    , "text" /\ r.text
+    , "subtext1" /\ r.subtext1
+    , "subtext0" /\ r.subtext0
+    , "overlay2" /\ r.overlay2
+    , "overlay1" /\ r.overlay1
+    , "overlay0" /\ r.overlay0
+    , "surface2" /\ r.surface2
+    , "surface1" /\ r.surface1
+    , "surface0" /\ r.surface0
+    , "base" /\ r.base
+    , "mantle" /\ r.mantle
+    , "crust" /\ r.crust
     ]
 
 
 type Flavor =
-    { rosewater :: Item
-    , flamingo :: Item
-    , pink :: Item
-    , mauve :: Item
-    , red :: Item
-    , maroon :: Item
-    , peach :: Item
-    , yellow :: Item
-    , green :: Item
-    , teal :: Item
-    , sky :: Item
-    , sapphire :: Item
-    , blue :: Item
-    , lavender :: Item
-    , text :: Item
-    , subtext1 :: Item
-    , subtext0 :: Item
-    , overlay2 :: Item
-    , overlay1 :: Item
-    , overlay0 :: Item
-    , surface2 :: Item
-    , surface1 :: Item
-    , surface0 :: Item
-    , base :: Item
-    , mantle :: Item
-    , crust :: Item
+    { rosewater :: CPItem
+    , flamingo :: CPItem
+    , pink :: CPItem
+    , mauve :: CPItem
+    , red :: CPItem
+    , maroon :: CPItem
+    , peach :: CPItem
+    , yellow :: CPItem
+    , green :: CPItem
+    , teal :: CPItem
+    , sky :: CPItem
+    , sapphire :: CPItem
+    , blue :: CPItem
+    , lavender :: CPItem
+    , text :: CPItem
+    , subtext1 :: CPItem
+    , subtext0 :: CPItem
+    , overlay2 :: CPItem
+    , overlay1 :: CPItem
+    , overlay0 :: CPItem
+    , surface2 :: CPItem
+    , surface1 :: CPItem
+    , surface0 :: CPItem
+    , base :: CPItem
+    , mantle :: CPItem
+    , crust :: CPItem
     }
 
 
-type Item =
+type CPItem =
     { hex :: String
     , rgb :: { r :: Int, g :: Int, b :: Int }
     , hsl :: { h :: Int, s :: Int, l :: Int }
     }
 
 
+q :: String -> Int -> Int -> Int -> Int -> Int -> Int -> CPItem
 q hex r g b h s l = { hex, rgb : { r, g, b }, hsl : { h, s, l } }
 
 
@@ -222,14 +228,25 @@ mocha =
 
 
 
--- (\w+)\s+#([\w\d]{6})\s+rgb\((\d+),\s(\d+),\s(\d+)\)\s+hsl\((\d+),\s(\d+)%,\s(\d+)%\)
---     , "\L$1"  : q "$2"    $3 $4 $5   $6 $7 $8
+toPaletteItem :: String -> CPItem -> P.Item
+toPaletteItem name irec =
+    P.hexRgbHsl ("#" <> irec.hex) irec.rgb.r irec.rgb.g irec.rgb.b irec.hsl.h irec.hsl.s irec.hsl.l name
 
 
 
+catpuccin ::
+    { latte :: Flavor
+    , frappe :: Flavor
+    , macchiato :: Flavor
+    , mocha :: Flavor
+    }
+catpuccin =
+    { latte, frappe, macchiato, mocha }
 
 
-{-
-type Item =
-    { kind :: }
--}
+catpuccinAll :: Array P.Item
+catpuccinAll
+    =  (uncurry toPaletteItem <$> collectFlavor latte)
+    <> (uncurry toPaletteItem <$> collectFlavor frappe)
+    <> (uncurry toPaletteItem <$> collectFlavor macchiato)
+    <> (uncurry toPaletteItem <$> collectFlavor mocha)

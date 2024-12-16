@@ -1,11 +1,11 @@
 module Noodle.Ui.Cli.Palette where
 
-import Noodle.Ui.Cli.Palette.Item (Item, qitem, repr, rgb)
+import Noodle.Ui.Cli.Palette.Item (Item, reprName, reprOf, rgb)
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 
 
-networkBg = qitem "#111" "background" :: Item
+networkBg = reprName "#111" "background" :: Item
 itemNotSelected = Pico.trueBlue :: Item
 itemSelected = Pico.blue :: Item
 -- border = X11.darkgray :: Item
@@ -19,7 +19,7 @@ nodeFg = Pico.white :: Item
 nodeBorder = X11.gray25 :: Item
 nodeSelection = Pico.lightPeach :: Item
 linkFg = Pico.lightPeach :: Item
-focusedBorder = qitem "white" "focusedBorder" :: Item
+focusedBorder = reprName "white" "focusedBorder" :: Item
 fg = Pico.white :: Item
 secondaryFg = Pico.lightGrey :: Item
 patchBg = Pico.darkerGrey :: Item
@@ -48,24 +48,24 @@ orderSplit = Pico.brown :: Item
 filePath = Pico.darkerPurple :: Item
 
 
-networkBg' = repr networkBg :: String
-itemNotSelected' = repr itemNotSelected :: String
-itemSelected' = repr itemSelected :: String
-border' = repr border :: String
-libraryBg' = repr libraryBg :: String
-libraryFg' = repr libraryFg :: String
-libraryBorder' = repr libraryBorder :: String
-librarySelection' = repr librarySelection :: String
-nodeBg' = repr nodeBg :: String
-nodeFg' = repr nodeFg :: String
-nodeBorder' = repr nodeBorder :: String
-nodeSelection' = repr nodeSelection :: String
-linkFg' = repr linkFg :: String
-focusedBorder' = repr focusedBorder :: String
-fg' = repr fg :: String
-secondaryFg' = repr secondaryFg :: String
-patchBg' = repr patchBg :: String
-nodeHlBg' = repr nodeHlBg :: String
+networkBg' = reprOf networkBg :: String
+itemNotSelected' = reprOf itemNotSelected :: String
+itemSelected' = reprOf itemSelected :: String
+border' = reprOf border :: String
+libraryBg' = reprOf libraryBg :: String
+libraryFg' = reprOf libraryFg :: String
+libraryBorder' = reprOf libraryBorder :: String
+librarySelection' = reprOf librarySelection :: String
+nodeBg' = reprOf nodeBg :: String
+nodeFg' = reprOf nodeFg :: String
+nodeBorder' = reprOf nodeBorder :: String
+nodeSelection' = reprOf nodeSelection :: String
+linkFg' = reprOf linkFg :: String
+focusedBorder' = reprOf focusedBorder :: String
+fg' = reprOf fg :: String
+secondaryFg' = reprOf secondaryFg :: String
+patchBg' = reprOf patchBg :: String
+nodeHlBg' = reprOf nodeHlBg :: String
 
 
 asArray :: Array Item

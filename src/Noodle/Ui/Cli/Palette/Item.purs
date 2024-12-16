@@ -6,6 +6,7 @@ import Prelude ((<$>), (<>), show)
 import Color (Color)
 import Color as Color
 
+import Data.Int (toNumber) as Int
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
@@ -13,43 +14,65 @@ import Data.Tuple.Nested ((/\), type (/\))
 type Item =
     { color :: Maybe Color
     , repr :: String
+    , src ::
+        { hex :: Maybe String
+        , rgb :: Maybe { r :: Int, g :: Int, b :: Int }
+        , hsl :: Maybe { h :: Number, s :: Number, l :: Number }
+        }
     , label :: String
     , index :: Maybe (Int /\ Maybe Int)
     }
 
 
-item :: Int -> String -> Int -> Int -> Int -> String -> Item
-item idx hex r g b name =
-    let color = Color.rgb r g b
-    in { index : Just (idx /\ Nothing), color : Just color, repr : hex, label : name }
+justName :: String -> Item
+justName color =
+    reprName color color
 
 
-item' :: Int -> Int -> String -> Int -> Int -> Int -> String -> Item
-item' idx idx' hex r g b name =
-    let color = Color.rgb r g b
-    in { index : Just (idx /\ Just idx'), color : Just color, repr : hex, label : name }
-
-
-qitem :: String -> String -> Item
-qitem color label =
-    { index : Nothing, color : Nothing, repr : color, label }
-
-
-qitem' :: String -> Item
-qitem' color =
-    qitem color color
+reprName :: String -> String -> Item
+reprName color label =
+    { index : Nothing
+    , color : Nothing
+    , repr : color
+    , src :
+        { hex : Nothing
+        , rgb : Nothing
+        , hsl : Nothing
+        }
+    , label
+    }
 
 
 rgb :: Int -> Int -> Int -> String -> Item
 rgb r g b name =
     let color = Color.rgb r g b
-    in { index : Nothing, color : Just color, repr : Color.toHexString color, label : name }
+    in
+        { index : Nothing
+        , repr : Color.toHexString color
+        , color : Just color
+        , src :
+            { hex : Nothing
+            , rgb : Just { r, g, b }
+            , hsl : Nothing
+            }
+        , label : name
+        }
 
 
 hsl :: Number -> Number -> Number -> String -> Item
 hsl h s l name =
     let color = Color.hsl h s l
-    in { index : Nothing, color : Just color, repr : Color.toHexString color, label : name }
+    in
+        { index : Nothing
+        , repr : Color.toHexString color
+        , color : Just color
+        , src :
+            { hex : Nothing
+            , rgb : Nothing
+            , hsl : Just { h, s, l }
+            }
+        , label : name
+        }
 
 
 rgbStr :: Item -> String
@@ -57,6 +80,59 @@ rgbStr item =
     case Color.toRGBA <$> item.color of
         Just { r, g, b } -> show r <> " " <> show g <> " " <> show b
         Nothing -> "? ? ?"
+
+
+idxHexRgb :: Int -> String -> Int -> Int -> Int -> String -> Item
+idxHexRgb idx hex r g b name =
+    let color = Color.rgb r g b
+    in
+        { index : Just (idx /\ Nothing)
+        , color : Just color
+        , repr : hex
+        , src :
+            { hex : Just hex
+            , rgb : Just { r, g, b }
+            , hsl : Nothing
+            }
+        , label : name
+        }
+
+
+idx2HexRgb :: Int -> Int -> String -> Int -> Int -> Int -> String -> Item
+idx2HexRgb idx idx2 hex r g b name =
+    let color = Color.rgb r g b
+    in
+        { index : Just (idx /\ Just idx2)
+        , color : Just color
+        , repr : hex
+        , src :
+            { hex : Just hex
+            , rgb : Just { r, g, b }
+            , hsl : Nothing
+            }
+        , label : name
+        }
+
+
+hexRgbHsl :: String -> Int -> Int -> Int -> Int -> Int -> Int -> String -> Item
+hexRgbHsl hex r g b h s l name =
+    let color = Color.rgb r g b
+    in
+        { index : Nothing
+        , color : Just color
+        , repr : hex
+        , src :
+            { hex : Just hex
+            , rgb : Just { r, g, b }
+            , hsl : Just
+                { h : Int.toNumber h -- FIXME: Convert units
+                , s : Int.toNumber s -- FIXME: Convert units
+                , l : Int.toNumber l -- FIXME: Convert units
+                }
+            }
+        , label : name
+        }
+
 
 
 fullInfo :: Item -> String
@@ -71,15 +147,15 @@ fullInfo item =
                 Nothing /\ Nothing -> ""
 
 
-repr :: Item -> String
-repr item =
+reprOf :: Item -> String
+reprOf item =
     case Color.toHexString <$> item.color of
         Just hex -> hex
         Nothing -> item.repr
 
 
-crepr :: Item -> Color
-crepr item =
+colorOf :: Item -> Color
+colorOf item =
     case item.color of
         Just color -> color
         Nothing -> Color.black

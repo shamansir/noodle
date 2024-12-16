@@ -100,10 +100,10 @@ instance IsToolkit STARTER where
 
 instance MarkToolkit STARTER where
   markGroup  _ = Id.group >>> case _ of
-    "simple"  -> C.crepr Pico8.trueBlue
-    "spreads" -> C.crepr Pico8.orange
-    "p5"      -> C.crepr Pico8.darkRed
-    _         -> C.crepr Pico8.darkerBlue
+    "simple"  -> C.colorOf Pico8.trueBlue
+    "spreads" -> C.colorOf Pico8.orange
+    "p5"      -> C.colorOf Pico8.darkRed
+    _         -> C.colorOf Pico8.darkerBlue
   markFamily ptk = const <<< markGroup ptk
 
 instance CliRenderer STARTER StarterFamilies ValueRepr m where

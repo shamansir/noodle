@@ -21,7 +21,7 @@ import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) a
 import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasChRepr, markGroup, markFamily, groupOf)
 
 import Noodle.Ui.Cli.Palette as Palette
-import Noodle.Ui.Cli.Palette.Item (crepr) as C
+import Noodle.Ui.Cli.Palette.Item (colorOf) as C
 import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
@@ -31,20 +31,20 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNo
 
 inlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr  => Int -> Id.InletR -> Maybe chrepr -> Tag
 inlet idx inletId (Just repr) =
-    -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
+    -- TODO : from `inletId`` :: -- T.fgc (C.colorOf Palette.inletId) <<< T.s
     At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inlet idx inletId Nothing = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
 inletInfoBox :: Id.InletR -> Tag
 inletInfoBox inletR =
-    T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletR
+    T.fgcs (C.colorOf Palette.inletId) $ Id.inletRName inletR
 
 
 inletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> Maybe chrepr -> Tag
 inletStatusLine familyR idx inletId (Just repr) =
     -- TODO: show node id and group as well
-    (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 inletStatusLine familyR idx inletId Nothing =
     T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
@@ -58,13 +58,13 @@ outlet idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 outletInfoBox :: Id.OutletR -> Tag
 outletInfoBox outletR =
-    T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletR
+    T.fgcs (C.colorOf Palette.outletId) $ Id.outletRName outletR
 
 
 outletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> Maybe chrepr -> Tag
 outletStatusLine familyR idx outletId (Just repr) =
     -- TODO: show group as well
-    (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.crepr Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
@@ -72,32 +72,32 @@ outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <>
 
 nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 nodeLabel ptk familyR =
-    T.bgc (C.crepr Palette.nodeBg) $ T.fgc (markFamily ptk (groupOf ptk familyR) familyR) $ T.s $ Id.family familyR
+    T.bgc (C.colorOf Palette.nodeBg) $ T.fgc (markFamily ptk (groupOf ptk familyR) familyR) $ T.s $ Id.family familyR
 
 
-{- T.fgcs (C.crepr Palette.familyName) (reflect family)
+{- T.fgcs (C.colorOf Palette.familyName) (reflect family)
     <> T.s " ==== "
     <> -}
 
 
 removeButtonOut ∷ Tag
 removeButtonOut =
-    T.fgcs (C.crepr Pico.blue) "⨯"
+    T.fgcs (C.colorOf Pico.blue) "⨯"
 
 
 removeButtonOver ∷ Tag
 removeButtonOver =
-    T.fgcs (C.crepr Pico.red) "⨯" -- "╳"
+    T.fgcs (C.colorOf Pico.red) "⨯" -- "╳"
 
 
 removeInfoBox ∷ Tag
 removeInfoBox =
-    T.fgcs (C.crepr Pico.red) "remove"
+    T.fgcs (C.colorOf Pico.red) "remove"
 
 
 removeStatusLine :: Id.FamilyR -> Tag
 removeStatusLine familyR =
-    T.fgcs (C.crepr Pico.red) "remove" <> T.space <> (T.fgcs (C.crepr Palette.familyName) $ Id.family familyR)
+    T.fgcs (C.colorOf Pico.red) "remove" <> T.space <> (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR)
 
 
 libraryItem :: forall (tk :: ToolkitKey). MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
@@ -108,7 +108,7 @@ libraryItem ptk familyR =
 {- TODO
 glslFnItem :: H.GlslFn -> Tag
 glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
-    T.fgc (C.crepr Pico.blue) $ T.s $ HFn.name glslFn
+    T.fgc (C.colorOf Pico.blue) $ T.s $ HFn.name glslFn
     -}
 
     {-
@@ -134,86 +134,86 @@ paletteItem item =
 -- Commands
 
 toolkit :: String -> Tag
-toolkit = T.fgc (C.crepr Palette.toolkit) <<< T.s
+toolkit = T.fgc (C.colorOf Palette.toolkit) <<< T.s
 
 
 tkVersion :: Number -> Tag
-tkVersion = T.fgc (C.crepr Palette.tkVersion) <<< T.s <<< show
+tkVersion = T.fgc (C.colorOf Palette.tkVersion) <<< T.s <<< show
 
 
 ndfVersion :: Number -> Tag
-ndfVersion = T.fgc (C.crepr Palette.ndfVersion) <<< T.s <<< show
+ndfVersion = T.fgc (C.colorOf Palette.ndfVersion) <<< T.s <<< show
 
 
 family :: String -> Tag
-family = T.fgc (C.crepr Palette.familyName) <<< T.s
+family = T.fgc (C.colorOf Palette.familyName) <<< T.s
 
 
 someGroup :: String -> Tag
-someGroup = T.fgc (C.crepr Palette.someGroup) <<< T.s
+someGroup = T.fgc (C.colorOf Palette.someGroup) <<< T.s
 
 
 nodeId :: String -> Tag
-nodeId = T.fgc (C.crepr Palette.nodeId) <<< T.s
+nodeId = T.fgc (C.colorOf Palette.nodeId) <<< T.s
 
 
 operator :: String -> Tag
-operator = T.fgc (C.crepr Palette.operator) <<< T.s
+operator = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 comment :: String -> Tag
-comment = T.fgc (C.crepr Palette.operator) <<< T.s
+comment = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 value :: String -> Tag
-value = T.fgc (C.crepr Palette.value) <<< T.s
+value = T.fgc (C.colorOf Palette.value) <<< T.s
 
 
 coord :: Int -> Tag
-coord = T.fgc (C.crepr Palette.coord) <<< T.s <<< show
+coord = T.fgc (C.colorOf Palette.coord) <<< T.s <<< show
 
 
 inletIdx :: Int -> Tag
-inletIdx = T.fgc (C.crepr Palette.inletIdx) <<< T.s <<< show
+inletIdx = T.fgc (C.colorOf Palette.inletIdx) <<< T.s <<< show
 
 
 outletIdx :: Int -> Tag
-outletIdx = T.fgc (C.crepr Palette.outletIdx) <<< T.s <<< show
+outletIdx = T.fgc (C.colorOf Palette.outletIdx) <<< T.s <<< show
 
 
 inletId :: String -> Tag
-inletId = T.fgc (C.crepr Palette.inletId) <<< T.s
+inletId = T.fgc (C.colorOf Palette.inletId) <<< T.s
 
 
 outletId :: String -> Tag
-outletId = T.fgc (C.crepr Palette.outletId) <<< T.s
+outletId = T.fgc (C.colorOf Palette.outletId) <<< T.s
 
 
 type_ :: String -> Tag
-type_ = T.fgc (C.crepr Palette.type_) <<< T.s
+type_ = T.fgc (C.colorOf Palette.type_) <<< T.s
 
 
 buttonToggle ::String -> Boolean -> Tag
-buttonToggle repr true = T.fgc (C.crepr Palette.positive) $ T.s repr
-buttonToggle repr false = T.fgc (C.crepr Palette.neutral) $ T.s repr
+buttonToggle repr true = T.fgc (C.colorOf Palette.positive) $ T.s repr
+buttonToggle repr false = T.fgc (C.colorOf Palette.neutral) $ T.s repr
 
 
 buttonConnection :: Either String Int -> Tag
-buttonConnection (Left s) = T.fgc (C.crepr Palette.negative) $ T.s s
-buttonConnection (Right 0) = T.fgc (C.crepr Palette.neutral) $ T.s "0"
-buttonConnection (Right n) = T.fgc (C.crepr Palette.positive) $ T.s $ show n
+buttonConnection (Left s) = T.fgc (C.colorOf Palette.negative) $ T.s s
+buttonConnection (Right 0) = T.fgc (C.colorOf Palette.neutral) $ T.s "0"
+buttonConnection (Right n) = T.fgc (C.colorOf Palette.positive) $ T.s $ show n
 
 
 outletHover :: Tag
-outletHover = T.fgc (C.crepr Palette.neutral) $ T.s "🮧"
+outletHover = T.fgc (C.colorOf Palette.neutral) $ T.s "🮧"
 
 
 outletSelect :: Tag
-outletSelect = T.fgc (C.crepr Palette.positive) $ T.s "~"
+outletSelect = T.fgc (C.colorOf Palette.positive) $ T.s "~"
 
 
 inletHover :: Tag
-inletHover = T.fgc (C.crepr Palette.neutral) $ T.s "🮦"
+inletHover = T.fgc (C.colorOf Palette.neutral) $ T.s "🮦"
 
 
 infoNode :: forall repr. Tagged.At At.InfoNode repr => repr -> Tag
@@ -221,19 +221,19 @@ infoNode = At.infoNode
 
 
 selected :: String -> Tag
-selected = T.fgc (C.crepr Palette.positive) <<< T.s
+selected = T.fgc (C.colorOf Palette.positive) <<< T.s
 
 
 orderItem :: String -> Tag
-orderItem = T.fgc (C.crepr Palette.orderItem) <<< T.s
+orderItem = T.fgc (C.colorOf Palette.orderItem) <<< T.s
 
 
 orderSplit :: String -> Tag
-orderSplit = T.fgc (C.crepr Palette.orderSplit) <<< T.s
+orderSplit = T.fgc (C.colorOf Palette.orderSplit) <<< T.s
 
 
 filePath :: String -> Tag
-filePath = T.fgc (C.crepr Palette.filePath) <<< T.s
+filePath = T.fgc (C.colorOf Palette.filePath) <<< T.s
 
 
 familyDocs
@@ -280,24 +280,24 @@ familyOnelineSignature pat ptk familyR =
     case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS (Maybe chrepr) (Maybe chrepr))) of
         Just (name /\ args /\ outs) ->
             -- TODO: add familyDocs
-            T.fgcs (C.crepr Palette.familyName) name
+            T.fgcs (C.colorOf Palette.familyName) name
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
             <> T.s " -> "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> T.s " // "
-            <> T.fgc (C.crepr Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
+            <> T.fgc (C.colorOf Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
         Nothing -> T.s "?"
     where
         tagArgument :: Fn.Argument (Maybe chrepr) -> Tag
-        tagArgument arg = T.s "<" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.argName arg) <>
+        tagArgument arg = T.s "<" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.argName arg) <>
             case Fn.argValue arg of
                 Just inVal ->
                     T.s "::" <> (Tagged.at pat) inVal
                 Nothing -> T.nil
             <> T.s "> "
         tagOut :: Fn.Output (Maybe chrepr) -> Tag
-        tagOut out = T.s "(" <> T.fgcs (C.crepr Pico.darkGreen) (Fn.outName out) <>
+        tagOut out = T.s "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.outName out) <>
             case Fn.outValue out of
                 Just outVal ->
                     T.s "::" <> (Tagged.at pat) outVal

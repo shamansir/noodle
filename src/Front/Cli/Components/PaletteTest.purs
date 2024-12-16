@@ -35,6 +35,7 @@ import Noodle.Ui.Cli.Palette as P
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Hydra as Hydra
+import Noodle.Ui.Cli.Palette.Set.Catpuccin as Catpuccin
 import Noodle.Ui.Cli.Palette.Item as Palette
 
 import Starter.Toolkit (STARTER)
@@ -81,6 +82,10 @@ buildPalette =
     (T.paletteFg <$> Hydra.hydraFns) <>
     [ T.s "]] Hydra fn-s / BG :: [[ " ] <>
     (T.paletteBg <$> Hydra.hydraFns) <>
+    [ T.s "]] CPCN / FG :: [[" ] <>
+    (T.paletteFg <$> Catpuccin.catpuccinAll) <>
+    [ T.s "]] CPCN / BG :: [[ " ] <>
+    (T.paletteBg <$> Catpuccin.catpuccinAll) <>
     [ T.s "]] X11 / FG :: [[" ] <>
     (T.paletteFg <$> X11.x11colors) <>
     [ T.s "]] X11 / BG :: [[ " ] <>
@@ -158,16 +163,16 @@ qt n = T.wraps (n <> "<") ">"
 
 
 qbg :: String -> Palette.Item -> Tag
-qbg n c = qt n $ T.bgcs (Palette.crepr c) n
+qbg n c = qt n $ T.bgcs (Palette.colorOf c) n
 
 
 qfg :: String -> Palette.Item -> Tag
-qfg n c = qt n $ T.fgcs (Palette.crepr c) n
+qfg n c = qt n $ T.fgcs (Palette.colorOf c) n
 
 
 qchrepr :: forall repr. At At.ChannelLabel repr => repr -> Tag
 qchrepr repr =
-    -- TODO : from `inletId`` :: -- T.fgc (C.crepr Palette.inletId) <<< T.s
+    -- TODO : from `inletId`` :: -- T.fgc (C.colorOf Palette.inletId) <<< T.s
     At.channelLabel repr
 
 
