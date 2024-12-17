@@ -147,6 +147,9 @@ _runOnInletUpdates node =
 
 
 -- TODO: private
+-- FIXME: running this function with a node that modifies or even gets its state in processing function
+--        cases Maximum Stack exeeded error, at least in Blessed. Could be because we store state in a `Ref`,
+--        could be something else... May be this method has no sense at all...
 _runOnStateUpdates
     :: forall f state (is :: Row Type) (os :: Row Type) chrepr m
     .  Wiring m
@@ -155,6 +158,7 @@ _runOnStateUpdates
     -> m Unit
 _runOnStateUpdates node =
   SignalX.runSignal $ subscribeState node ~> const (run node)
+
 
 
 --- FIXME: find better name

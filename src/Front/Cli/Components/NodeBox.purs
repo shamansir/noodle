@@ -143,7 +143,6 @@ _component
     let (updates :: Signal (Raw.NodeChanges fstate chrepr)) = RawNode.subscribeChanges rawNode
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
-    _ <- Blessed.lift $ RawNode._runOnStateUpdates rawNode
 
     let top  = Offset.px pos.top
     let left = Offset.px pos.left
