@@ -31,10 +31,11 @@ import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
-import Demo.Toolkit.Starter.Repr (StateRepr, ValueRepr)
-import Demo.Toolkit.Starter.Repr (ValueRepr(..)) as VR
-import Demo.Toolkit.Starter.Repr (StateRepr(..)) as SR
-import Demo.Toolkit.Starter.Repr (Color(..), Time(..), Shape(..)) as RV
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr(..)) as VR
+import Demo.Toolkit.Starter.Repr.ChRepr (Color(..), Time(..), Shape(..)) as RV
+import Demo.Toolkit.Starter.Repr.StRepr (StateRepr)
+import Demo.Toolkit.Starter.Repr.StRepr (StateRepr(..)) as SR
 
 type StarterFamilies :: Families
 type StarterFamilies =

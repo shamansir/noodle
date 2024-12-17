@@ -18,6 +18,7 @@ import Data.Map (Map)
 import Data.Map (insert) as Map
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (fromMaybe)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
@@ -26,8 +27,9 @@ import Noodle.Id (InletR, OutletR)
 
 import Noodle.Raw.Fn.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
 import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
@@ -70,6 +72,6 @@ modifyState :: forall state chrepr. (state -> state) -> Protocol state chrepr ->
 modifyState = Generic._modifyState
 
 
-toReprableState :: forall state strepr chrepr. StRepr strepr state => Protocol state chrepr -> Protocol strepr chrepr
+toReprableState :: forall state strepr chrepr. HasFallback state => StRepr state strepr => Protocol state chrepr -> Protocol strepr chrepr
 toReprableState =
-    Generic.imapState StRepr.to StRepr.from
+    Generic.imapState StRepr.to StRepr.ensureFrom

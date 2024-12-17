@@ -81,7 +81,7 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 import Cli.Class.CliFriendly (class CliFriendly)
 
 import Starter.Toolkit (toolkit) as Starter
-import Demo.Toolkit.Starter.Repr (options) as Starter
+import Demo.Toolkit.Starter.Repr.Options (options) as Starter
 
 
 data SelectedToolkit

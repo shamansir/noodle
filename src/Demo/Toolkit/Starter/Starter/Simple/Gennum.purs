@@ -2,7 +2,8 @@ module StarterTk.Simple.Gennum where
 
 import Prelude
 
-import Demo.Toolkit.Starter.Repr (ValueRepr)
+
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -14,13 +15,15 @@ import Noodle.Node as Noodle
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
+import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Data.Tuple.Nested ((/\), type (/\))
-import Demo.Toolkit.Starter.Repr as VR
+import Demo.Toolkit.Starter.Repr.ChRepr as VR
 import Effect.Class (liftEffect)
 import Effect.Random (random)
-import Signal ((~>))
+import Noodle.Repr.HasFallback (class HasFallback)
+import Signal (Signal, (~>))
 import Signal.Extra as SignalX
 import Signal.Time (every) as Signal
 
@@ -31,15 +34,22 @@ import Signal.Time (every) as Signal
 _gennum :: NId.Family "gennum"
 _gennum = NId.Family
 
+newtype State = State { signal :: Maybe (Signal Number) }
+
+initialState = State { signal : Nothing } :: State
+
+instance HasFallback State where
+  fallback = initialState
+
 type Inlets = TNil :: Noodle.Inlets
 type Outlets = (O "out" Number :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (out :: Number)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
-type Node = Noodle.Node "gennum" Unit InletsRow OutletsRow ValueRepr Effect
-type Family = Noodle.Family "gennum" Unit InletsRow OutletsRow ValueRepr Effect
-type F = Noodle.F "gennum" Unit InletsRow OutletsRow ValueRepr Effect
+type Process = Noodle.Process State InletsRow OutletsRow ValueRepr Effect
+type Node = Noodle.Node "gennum" State InletsRow OutletsRow ValueRepr Effect
+type Family = Noodle.Family "gennum" State InletsRow OutletsRow ValueRepr Effect
+type F = Noodle.F "gennum" State InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -50,7 +60,7 @@ defaultO = { out: 0.0 }
 _out_out = Noodle.Outlet :: _ "out"
 
 family :: Family
-family = Family.make _gennum unit (Noodle.Shape :: Shape) defaultI defaultO gennumP
+family = Family.make _gennum initialState (Noodle.Shape :: Shape) defaultI defaultO gennumP
 
 makeNode :: Effect Node
 makeNode = Family.spawn family

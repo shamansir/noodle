@@ -25,6 +25,7 @@ import Noodle.Patch (Patch)
 import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node) as Raw
 
 import Blessed.Internal.Core as Core
@@ -153,7 +154,7 @@ registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 
 
-registerRawNode' :: forall fstate strepr tk ps fs chrepr m. StRepr strepr fstate => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode' :: forall fstate strepr tk ps fs chrepr m. HasFallback fstate => StRepr fstate strepr => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
 registerRawNode' patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode' rawNode) }
 

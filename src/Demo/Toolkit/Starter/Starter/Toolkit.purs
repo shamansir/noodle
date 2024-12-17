@@ -29,10 +29,10 @@ import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
-import Demo.Toolkit.Starter.Repr (StateRepr)
-import Demo.Toolkit.Starter.Repr (ValueRepr)
+import Demo.Toolkit.Starter.Repr.StRepr (StateRepr)
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
 import Data.Tuple.Nested ((/\), type (/\))
-import Demo.Toolkit.Starter.Repr as VR
+import Demo.Toolkit.Starter.Repr.ChRepr as VR
 
 type StarterFamilies :: Families
 type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Gennum.F :> Simple.Random.F

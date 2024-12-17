@@ -303,7 +303,7 @@ component
     .  Wiring m
     => IsSymbol f
     => HasFallback chrepr
-    => StRepr strepr fstate
+    => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m

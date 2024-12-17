@@ -29,6 +29,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
+import Data.Maybe (fromMaybe)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -48,9 +49,9 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
 import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
 
@@ -202,9 +203,9 @@ mapMM f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
 
-toReprableState :: forall state strepr chrepr m. StRepr strepr state => ProcessM state chrepr m ~> ProcessM strepr chrepr m
+toReprableState :: forall state strepr chrepr m. HasFallback state => StRepr state strepr => ProcessM state chrepr m ~> ProcessM strepr chrepr m
 toReprableState =
-    imapMState StRepr.to StRepr.from
+    imapMState StRepr.to StRepr.ensureFrom
 
 
 {- Running -}

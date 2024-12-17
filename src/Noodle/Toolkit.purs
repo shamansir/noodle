@@ -32,6 +32,7 @@ import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as Family
 import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RawFamily
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Ui.Cli.Palette.Mark (class Mark)
@@ -80,7 +81,8 @@ register
     :: forall tk f fstate strepr is os chrepr m families families'
      . Put (F f fstate is os chrepr m) families families'
     => IsSymbol f
-    => StRepr strepr fstate
+    => HasFallback fstate
+    => StRepr fstate strepr
     => Family f fstate is os chrepr m
     -> Toolkit tk families strepr chrepr m
     -> Toolkit tk families' strepr chrepr m -- FIXME: `Put` typeclass puts new family before the others instead of putting it in the end (rename `Cons` / `Snoc` ?)
@@ -99,7 +101,8 @@ registerRaw rawFamily (Toolkit name families rawFamilies) =
 
 registerRaw'
     :: forall tk fstate strepr chrepr m families
-     . StRepr strepr fstate
+     . HasFallback fstate
+    => StRepr fstate strepr
     => Raw.Family fstate chrepr m
     -> Toolkit tk families strepr chrepr m
     -> Toolkit tk families strepr chrepr m
@@ -165,7 +168,7 @@ instance (MapDown (MapFamilies strepr chrepr m) families Array (Maybe (HoldsFami
 mapFamilies
     :: forall x tk families strepr chrepr m
     .  HoldsFamilies strepr chrepr m families
-    => (forall f fstate is os. IsSymbol f => StRepr strepr fstate => Family f fstate is os chrepr m -> x)
+    => (forall f fstate is os. IsSymbol f => StRepr fstate strepr => Family f fstate is os chrepr m -> x)
     -> Toolkit tk families strepr chrepr m
     -> Array x
 mapFamilies f (Toolkit _ families _) =

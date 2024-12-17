@@ -41,8 +41,8 @@ import Noodle.Ui.Cli.Palette.Item as Palette
 import Starter.Toolkit (STARTER)
 import StarterTk.Simple.Sum as Starter.Sum
 import StarterTk.Simple.Color as Starter.Color
-import Demo.Toolkit.Starter.Repr (ValueRepr)
-import Demo.Toolkit.Starter.Repr (ValueRepr(..), Time(..), Shape(..), Color(..), Spread(..)) as Sr
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr(..), Time(..), Shape(..), Color(..), Spread(..)) as Sr
 
 
 type MainScreenKey = Screen <^> "main"

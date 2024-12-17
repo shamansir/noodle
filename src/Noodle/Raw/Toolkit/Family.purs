@@ -7,6 +7,7 @@ import Data.Map (Map)
 import Effect.Class (class MonadEffect)
 
 import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
 import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
@@ -77,7 +78,8 @@ familyIdOf (Family rawId _ _ _ _ _) = rawId
 
 toReprableState
     :: forall state strepr chrepr m
-     . StRepr strepr state
+     . HasFallback state
+    => StRepr state strepr
     => Family state chrepr m
     -> Family strepr chrepr m
 toReprableState (Family familyR rawShape state inletsMap outletsMap fn) =

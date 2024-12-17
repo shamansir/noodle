@@ -51,7 +51,7 @@ import Noodle.Fn.Protocol as Protocol
 import Noodle.Raw.Fn (Fn(..)) as Raw
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (from, to) as StRepr
+import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 import Noodle.Repr.ChRepr (class FromChReprRow, class FromChRepr, class ToChRepr, class FromToChRepr)
 import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
@@ -81,8 +81,8 @@ imapState :: forall state state' is os chrepr m. (state -> state') -> (state' ->
 imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
 
 
-toReprableState :: forall state strepr is os chrepr m. StRepr strepr state => Fn state is os chrepr m -> Fn strepr is os chrepr m
-toReprableState = imapState StRepr.to StRepr.from
+toReprableState :: forall state strepr is os chrepr m. HasFallback state => StRepr state strepr => Fn state is os chrepr m -> Fn strepr is os chrepr m
+toReprableState = imapState StRepr.to StRepr.ensureFrom
 
 
 {- Running -}
@@ -143,5 +143,5 @@ toRaw :: forall state is os chrepr m. Fn state is os chrepr m -> Raw.Fn state ch
 toRaw (Fn name processM) = Raw.Fn name $ Process.toRaw processM
 
 
-toRawWithReprableState :: forall state strepr is os chrepr m. StRepr strepr state => Fn state is os chrepr m -> Raw.Fn strepr chrepr m
+toRawWithReprableState :: forall state strepr is os chrepr m. HasFallback state => StRepr state strepr => Fn state is os chrepr m -> Raw.Fn strepr chrepr m
 toRawWithReprableState (Fn name processM) = Raw.Fn name $ Process.toRawWithReprableState processM
