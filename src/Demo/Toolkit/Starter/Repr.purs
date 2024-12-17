@@ -36,7 +36,7 @@ import Noodle.Id (family) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, fromChRepr)
 import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as CR
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen
@@ -322,6 +322,13 @@ instance ToChRepr (Spread Number) ValueRepr where toChRepr = Just <<< CR.wrap <<
 instance ToChRepr (Spread (Number /\ Number)) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadVec
 instance ToChRepr (Spread Color) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadCol
 instance ToChRepr (Spread Shape) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadShp
+
+instance FromChRepr ValueRepr Number
+    where
+        fromChRepr = CR.unwrap >>> case _ of
+            VNumber num -> Just num
+            VAny (VNumber num) -> Just num
+            _ -> Nothing
 
 
 {-

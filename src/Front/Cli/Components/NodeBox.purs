@@ -93,6 +93,7 @@ import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
 -- REM import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 -- REM import Cli.Components.FullInfoBox as FI
+import Cli.Components.SidePanel.Console as CC
 import Cli.Bounds as Bounds
 
 
@@ -223,8 +224,10 @@ _component
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
+    -- state <- State.get
     (nodeState :: fstate) <- RawNode.state rawNode
 
+    -- Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM state <<< CC.log <<< ?wh)
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 

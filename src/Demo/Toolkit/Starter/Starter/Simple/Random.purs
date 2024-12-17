@@ -4,6 +4,8 @@ import Prelude
 
 import Demo.Toolkit.Starter.Repr (ValueRepr)
 import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Random (random) as Eff
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
 import Noodle.Fn.Shape (I, O)
@@ -56,4 +58,8 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 randomP :: Process
-randomP = pure unit
+randomP = do
+  min <- Noodle.receive _in_min
+  max <- Noodle.receive _in_max
+  randomVal <- liftEffect Eff.random
+  Noodle.send _out_random $ min + (randomVal * (max - min))
