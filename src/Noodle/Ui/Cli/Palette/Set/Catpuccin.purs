@@ -17,6 +17,25 @@ import Noodle.Ui.Cli.Palette.Item (Item, hexRgbHsl) as P
 
 collectFlavor :: Flavor -> Array P.Item
 collectFlavor r =
+    collectColors r
+    <>
+    [ r.text
+    , r.subtext1
+    , r.subtext0
+    , r.overlay2
+    , r.overlay1
+    , r.overlay0
+    , r.surface2
+    , r.surface1
+    , r.surface0
+    , r.base
+    , r.mantle
+    , r.crust
+    ]
+
+
+collectColors :: Flavor -> Array P.Item
+collectColors r =
     [ r.rosewater
     , r.flamingo
     , r.pink
@@ -31,18 +50,6 @@ collectFlavor r =
     , r.sapphire
     , r.blue
     , r.lavender
-    , r.text
-    , r.subtext1
-    , r.subtext0
-    , r.overlay2
-    , r.overlay1
-    , r.overlay0
-    , r.surface2
-    , r.surface1
-    , r.surface0
-    , r.base
-    , r.mantle
-    , r.crust
     ]
 
 

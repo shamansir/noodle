@@ -3,6 +3,7 @@ module Noodle.Ui.Cli.Palette.Set.Hydra where
 import Prelude
 
 import Data.Int (toNumber)
+import Data.Array (range)
 
 import Noodle.Ui.Cli.Palette.Item (Item, hsl)
 
@@ -47,3 +48,8 @@ hydraFns =
     , array
     , audio
     ]
+
+
+steps :: Int -> (Int -> String) -> Array Item
+steps count namef =
+    range 0 count <#> \idx -> step idx $ namef idx
