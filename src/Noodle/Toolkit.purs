@@ -251,6 +251,10 @@ class IsToolkit (tk :: ToolkitKey) where
     groupOf :: Proxy tk -> Id.FamilyR -> Id.GroupR
 
 
+class FromPatchState (tk :: ToolkitKey) pstate strepr where
+    loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> Maybe strepr
+
+
 class IsToolkit tk <= MarkToolkit (tk :: ToolkitKey) where
     markGroup  :: Proxy tk -> Id.GroupR -> Color
     markFamily :: Proxy tk -> Id.GroupR -> Id.FamilyR -> Color

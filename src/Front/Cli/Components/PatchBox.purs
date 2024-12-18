@@ -31,7 +31,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
-import Noodle.Toolkit (class HoldsFamilies) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
@@ -41,13 +41,14 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 
 component
-    :: forall tk p fs strepr chrepr
+    :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => Toolkit.FromPatchState tk ps strepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
-    -> Core.Blessed (State tk p fs strepr chrepr Effect)
+    -> Core.Blessed (State tk ps fs strepr chrepr Effect)
 component toolkit =
     B.boxAnd Key.patchBox
 

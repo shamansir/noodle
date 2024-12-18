@@ -58,13 +58,14 @@ import Cli.Components.StatusLine as StatusLine
 
 -- TODO: take toolkit here
 component
-    :: forall tk p fs strepr chrepr
+    :: forall tk ps fs strepr chrepr
     .  HasFallback chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
+    => Toolkit.FromPatchState tk ps strepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
-    => State tk p fs strepr chrepr Effect
-    -> Core.Blessed (State tk p fs strepr chrepr Effect)
+    => State tk ps fs strepr chrepr Effect
+    -> Core.Blessed (State tk ps fs strepr chrepr Effect)
 component initialState =
     B.screenAnd Key.mainScreen
 

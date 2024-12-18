@@ -10,7 +10,7 @@ import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
 import Noodle.Fn.ToFn (fn, class PossiblyToFn)
 import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Cli.Class.CliRenderer (class CliRenderer)
@@ -109,6 +109,11 @@ instance MarkToolkit STARTER where
         _ -> Color.rgb 255 255 255
     )
   markFamily ptk = const <<< markGroup ptk
+
+instance FromPatchState STARTER Unit StateRepr where
+  loadFromPatch :: Proxy _ -> Id.FamilyR -> Unit -> Maybe StateRepr
+  loadFromPatch _ _ _ = Nothing
+
 
 instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
   possiblyToFn _ = Id.family >>> case _ of

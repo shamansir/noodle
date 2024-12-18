@@ -31,7 +31,7 @@ import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape (inlets, outlets) as RawShape
-import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn) as RawProtocol
+import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
@@ -228,11 +228,32 @@ subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
 {- Send data -}
 
 
+infixr 6 sendInOp as #->
+infixr 6 sendOutOp as @->
+
+
 sendIn :: forall m state chrepr mp. MonadEffect m => Id.InletR -> chrepr -> Node state chrepr mp -> m Unit
 sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
 
 
--- TODO:
+sendInOp :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> Id.InletR /\ chrepr -> m Unit
+sendInOp node (input /\ din) = sendIn input din node
+
+
+sendOut :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> chrepr -> Node state chrepr mp -> m Unit
+sendOut output dout = liftEffect <<< RawProtocol.sendOut output dout <<< _getProtocol
+
+
+sendOutOp :: forall m state chrepr mp. MonadEffect m =>  Node state chrepr mp -> Id.OutletR /\ chrepr -> m Unit
+sendOutOp node (output /\ dout) = sendOut output dout node
+
+
+modifyState :: forall m state chrepr mp. MonadEffect m => (state -> state) -> Node state chrepr mp -> m Unit
+modifyState f = liftEffect <<< RawProtocol.modifyState f <<< _getProtocol
+
+
+setState :: forall m state chrepr mp. MonadEffect m => state -> Node state chrepr mp -> m Unit
+setState = modifyState <<< const
 
 
 {- Connecting -}

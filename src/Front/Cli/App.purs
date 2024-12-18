@@ -68,7 +68,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
@@ -160,6 +160,7 @@ runBlessedInterface
     :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
+    => Toolkit.FromPatchState tk ps strepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => ps

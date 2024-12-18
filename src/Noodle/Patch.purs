@@ -24,7 +24,10 @@ import Unsafe.Coerce (unsafeCoerce)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Signal (Signal)
+import Signal (get) as Signal
 import Signal.Channel (Channel, channel)
+import Signal.Channel (subscribe) as Channel
 
 import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, setId, cancel) as Link
@@ -339,3 +342,11 @@ withAnyNodes f familyR (Patch _ _ _ nodes rawNodes _) =
                 Nothing -> []
     where
         toRawCnv hn = HN.withNode hn (Node.toRaw >>> RawNode.toReprableState)
+
+
+subscribeState :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Signal pstate
+subscribeState (Patch _ _ stchan _ _ _) = Channel.subscribe stchan
+
+
+getState :: forall pstate families strepr chrepr mi m. MonadEffect m => Patch pstate families strepr chrepr mi -> m pstate
+getState = liftEffect <<< Signal.get <<< subscribeState

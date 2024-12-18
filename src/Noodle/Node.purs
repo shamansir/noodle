@@ -351,6 +351,10 @@ modifyState :: forall m f state is os chrepr mp. MonadEffect m => (state -> stat
 modifyState f = liftEffect <<< Protocol.modifyState f <<< _getProtocol
 
 
+setState :: forall m f state is os chrepr mp. MonadEffect m => state -> Node f state is os chrepr mp -> m Unit
+setState = modifyState <<< const
+
+
 {- Connecting -}
 
 

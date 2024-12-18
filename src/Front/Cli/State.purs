@@ -10,6 +10,7 @@ import Data.Map (Map)
 import Data.Map (empty, insert) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
+import Data.Traversable (traverse)
 
 import Type.Proxy (Proxy(..))
 
@@ -18,6 +19,7 @@ import Web.Socket.Server as WSS
 import Noodle.Id as Id
 import Noodle.Network (Network)
 import Noodle.Network (init, patch, addPatch, withPatch, patchesCount, toolkit) as Network
+import Noodle.Patch (getState) as Patch
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
@@ -149,7 +151,7 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall fstate strepr tk ps fs chrepr m. Id.PatchR -> Raw.Node strepr chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode :: forall strepr tk ps fs chrepr m. Id.PatchR -> Raw.Node strepr chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 
@@ -165,6 +167,10 @@ patch patchR = _.network >>> Network.patch patchR
 
 currentPatch :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 currentPatch s = s.currentPatch <#> _.id >>= flip patch s
+
+
+currentPatchState :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Maybe ps)
+currentPatchState = traverse Patch.getState <<< currentPatch
 
 
 withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
