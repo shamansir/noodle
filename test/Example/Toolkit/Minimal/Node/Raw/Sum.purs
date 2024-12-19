@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr (Repr(..))
+import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
@@ -52,8 +52,8 @@ process :: Raw.Process MinimalRepr MinimalRepr Effect
 process = do
     mbA <- RawFn.receive $ Id.inletR "a"
     mbB <- RawFn.receive $ Id.inletR "b"
-    RawFn.send (Id.outletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
-        (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> a + b
+    RawFn.send (Id.outletR "sum") $ ChRepr $ MinimalRepr.Int $ case mbA /\ mbB of
+        (ChRepr (MinimalRepr.Int a) /\ ChRepr (MinimalRepr.Int b)) -> a + b
         _ -> 0
 
 

@@ -33,6 +33,8 @@ import Demo.Toolkit.Starter.Repr.StRepr (StateRepr)
 import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
 import Data.Tuple.Nested ((/\), type (/\))
 import Demo.Toolkit.Starter.Repr.ChRepr as VR
+import Demo.Toolkit.Starter.Starter.Patch (PState)
+
 
 type StarterFamilies :: Families
 type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Gennum.F :> Simple.Random.F
@@ -110,8 +112,9 @@ instance MarkToolkit STARTER where
     )
   markFamily ptk = const <<< markGroup ptk
 
-instance FromPatchState STARTER Unit StateRepr where
-  loadFromPatch :: Proxy _ -> Id.FamilyR -> Unit -> Maybe StateRepr
+
+instance FromPatchState STARTER PState StateRepr where
+  loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
   loadFromPatch _ _ _ = Nothing
 
 

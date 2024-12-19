@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr (Repr(..))
+import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
@@ -56,11 +56,11 @@ process = do
     mbLeft  <- RawFn.receive $ Id.inletR "left"
     mbRight <- RawFn.receive $ Id.inletR "right"
     case mbLeft /\ mbRight of
-        (Repr (MinimalRepr.Str left) /\ Repr (MinimalRepr.Str right)) ->
+        (ChRepr (MinimalRepr.Str left) /\ ChRepr (MinimalRepr.Str right)) ->
             let combined = left <> right
             in do
-                RawFn.send (Id.outletR "str") $ Repr $ MinimalRepr.Str combined
-                RawFn.send (Id.outletR "len") $ Repr $ MinimalRepr.Int $ String.length combined
+                RawFn.send (Id.outletR "str") $ ChRepr $ MinimalRepr.Str combined
+                RawFn.send (Id.outletR "len") $ ChRepr $ MinimalRepr.Int $ String.length combined
         _ -> pure unit
 
 

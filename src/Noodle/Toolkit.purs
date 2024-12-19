@@ -252,7 +252,7 @@ class IsToolkit (tk :: ToolkitKey) where
 
 
 class FromPatchState (tk :: ToolkitKey) pstate strepr where
-    loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> Maybe strepr
+    loadFromPatch :: Proxy tk -> Id.FamilyR -> {- TODO : pass current state? : strepr -> -} pstate -> Maybe strepr
 
 
 class IsToolkit tk <= MarkToolkit (tk :: ToolkitKey) where

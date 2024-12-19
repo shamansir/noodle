@@ -36,7 +36,7 @@ type MyFamilies
     :> TNil
 
 
-type Toolkit = Noodle.Toolkit MINIMAL MyFamilies MinimalRepr Effect
+type Toolkit = Noodle.Toolkit MINIMAL MyFamilies MinimalRepr MinimalRepr Effect
 
 
 {-

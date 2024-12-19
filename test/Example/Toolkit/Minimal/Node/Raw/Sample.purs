@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr (Repr(..))
+import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
@@ -59,9 +59,9 @@ process = do
     mbBar  <- RawFn.receive $ Id.inletR "c"
     mbC    <- RawFn.receive $ Id.inletR "bar"
     case mbFoo /\ mbBar /\ mbC of
-        (Repr (MinimalRepr.Int foo) /\ Repr (MinimalRepr.Str bar) /\ Repr (MinimalRepr.Int c)) -> do
-            RawFn.send (Id.outletR "foo") $ Repr $ MinimalRepr.Str $ show (foo + c) <> bar
-            RawFn.send (Id.outletR "bar") $ Repr $ MinimalRepr.Int $ foo - c
+        (ChRepr (MinimalRepr.Int foo) /\ ChRepr (MinimalRepr.Str bar) /\ ChRepr (MinimalRepr.Int c)) -> do
+            RawFn.send (Id.outletR "foo") $ ChRepr $ MinimalRepr.Str $ show (foo + c) <> bar
+            RawFn.send (Id.outletR "bar") $ ChRepr $ MinimalRepr.Int $ foo - c
         _ -> pure unit
 
 

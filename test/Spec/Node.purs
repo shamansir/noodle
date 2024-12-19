@@ -9,7 +9,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr (Repr(..))
+import Noodle.Repr.ChRepr (ChRepr(..))
 
 import Test.Spec (Spec, describe, it, itOnly)
 import Test.Spec.Assertions (shouldEqual)
@@ -302,8 +302,8 @@ spec = do
                     $ do
                         mbA <- RawFn.receive $ inletR "a"
                         mbB <- RawFn.receive $ inletR "b"
-                        RawFn.send (outletR "sum") $ Repr $ MinimalRepr.Int $ case mbA /\ mbB of
-                            (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> a + b
+                        RawFn.send (outletR "sum") $ ChRepr $ MinimalRepr.Int $ case mbA /\ mbB of
+                            (ChRepr (MinimalRepr.Int a) /\ ChRepr (MinimalRepr.Int b)) -> a + b
                             _ -> 0
 
             rawNode # RawNode.run

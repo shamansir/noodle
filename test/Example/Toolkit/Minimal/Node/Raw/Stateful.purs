@@ -7,7 +7,7 @@ import Effect (Effect)
 import Control.Monad.State.Class (modify_) as State
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr (Repr(..))
+import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
@@ -56,12 +56,12 @@ process = do
     mbA <- RawFn.receive $ Id.inletR "a"
     mbB <- RawFn.receive $ Id.inletR "b"
     case mbA /\ mbB of
-        (Repr (MinimalRepr.Int a) /\ Repr (MinimalRepr.Int b)) -> do
+        (ChRepr (MinimalRepr.Int a) /\ ChRepr (MinimalRepr.Int b)) -> do
             State.modify_
                 \srepr -> case srepr of
                     MinimalRepr.Str s -> MinimalRepr.Str $ s <> "-" <> show (a + b)
                     _ -> srepr
-            RawFn.send (Id.outletR "out") $ Repr $ MinimalRepr.Int $ a + b
+            RawFn.send (Id.outletR "out") $ ChRepr $ MinimalRepr.Int $ a + b
         _ -> pure unit
 
 

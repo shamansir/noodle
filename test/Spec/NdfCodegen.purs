@@ -54,18 +54,21 @@ import Hydra.Repr.Wrap (WrapRepr, hydraGenOptions)
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
-minimalGenOptions :: FCG.Options MinimalRepr
+minimalGenOptions :: FCG.Options MinimalRepr MinimalRepr
 minimalGenOptions = FCG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
-  , reprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
+  , chreprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
+  , streprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalRepr" }
   , familyModuleName : MCG.moduleName' modulePrefix $ Id.toolkitR "Test"
-  , prepr : (Proxy :: _ MinimalRepr)
+  , pstrepr : (Proxy :: _ MinimalRepr)
+  , pchrepr : (Proxy :: _ MinimalRepr)
   , infoComment : Nothing
-  , imports : unsafePartial $
+  , tkImports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
     , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalRepr" ]
     ]
+  , familyImports : const []
   }
 
 
@@ -135,7 +138,7 @@ spec = do
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
-customHydraGenOptions :: FCG.Options WrapRepr
+customHydraGenOptions :: FCG.Options WrapRepr WrapRepr
 customHydraGenOptions =
   FCG.withOptions hydraGenOptions $ \opts -> opts
       { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
@@ -149,7 +152,7 @@ inputDir  = MCG.GenRootPath "./test/Files/Input"  :: MCG.GenRootPath
 outputDir = MCG.GenRootPath "./test/Files/Output" :: MCG.GenRootPath
 
 
-testSingleFamilyDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr -> FD.FamilyDef -> m Unit
+testSingleFamilyDef :: forall m repr. Bind m => MonadEffect m => MonadThrow _ m => FCG.CodegenRepr repr => Toolkit.Name -> FCG.Options repr repr -> FD.FamilyDef -> m Unit
 testSingleFamilyDef tkName genOptions familyDef =
   let
     filePath = MCG.moduleFile (MCG.GenRootPath "") tkName familyDef

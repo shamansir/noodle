@@ -7,8 +7,9 @@ import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
-import Noodle.Repr (class ToRepr, class FromRepr, class HasFallback, wrap, unwrap)
-import Noodle.Repr (wrap, unwrap) as Repr
+import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (wrap, unwrap) as Repr
 import Data.Newtype (wrap) as NT
 
 import Type.Proxy (Proxy(..))
@@ -63,8 +64,8 @@ data MyRepr
 
 instance Show MyRepr where show = case _ of MyRepr n -> show n
 instance HasFallback MyRepr where fallback = MyRepr 0
-instance ToRepr Int MyRepr where toRepr = Just <<< Repr.wrap <<< MyRepr
-instance FromRepr MyRepr Int where fromRepr = Repr.unwrap >>> case _ of MyRepr n -> Just n
+instance ToChRepr Int MyRepr where toChRepr = Just <<< Repr.wrap <<< MyRepr
+instance FromChRepr MyRepr Int where fromChRepr = Repr.unwrap >>> case _ of MyRepr n -> Just n
 
 
 spec :: Spec Unit

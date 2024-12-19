@@ -31,7 +31,11 @@ import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
 import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
 import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit, MINIMAL,  minimalTk) as My
+
+
+type MinimalTk fs m = Toolkit My.MINIMAL fs MinimalRepr MinimalRepr m
 
 
 spec :: Spec Unit
@@ -41,10 +45,10 @@ spec = do
 
         it "registers family" $ do
             let
-                (_ :: Toolkit My.MINIMAL (Concat.F :> TNil) _ _) =
+                (_ :: MinimalTk (Concat.F :> TNil) _) =
                     Toolkit.empty My.minimalTk (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
-                (_ :: Toolkit My.MINIMAL (Sum.F :> Concat.F :> TNil) _ _) =
+                (_ :: MinimalTk (Sum.F :> Concat.F :> TNil) _) =
                     Toolkit.empty My.minimalTk (Id.toolkitR "Test")
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
@@ -83,13 +87,12 @@ spec = do
 
         it "it is possible to register family and immediately spawn the node that belongs to it" $ liftEffect $ do
             (concatNode :: Concat.Node) <-
-                    Toolkit.empty My.minimalTk (Id.toolkitR "test")
+                    (Toolkit.empty My.minimalTk (Id.toolkitR "test") :: MinimalTk _ _)
                         # Toolkit.register Concat.family
                         # Toolkit.spawn Concat._concat
             concatNode # Node.run
             atOut <- concatNode <=@ _.out
             atOut `shouldEqual` ""
-
 
     describe "iterating through families" $ do
 
@@ -105,7 +108,7 @@ spec = do
                         # Toolkit.mapFamilies familyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =
-                    Toolkit.empty My.minimalTk (Id.toolkitR "test-2")
+                    (Toolkit.empty My.minimalTk (Id.toolkitR "test-2") :: MinimalTk _ _)
                         # Toolkit.register ModifiesPatch.family
                         # Toolkit.register Concat.family
                         # Toolkit.register Sum.family
@@ -115,7 +118,7 @@ spec = do
 
         it "it is possible to iterate through all raw families" $ liftEffect $ do
             let emptyTkArray =
-                    Toolkit.empty My.minimalTk (Id.toolkitR "test")
+                    (Toolkit.empty My.minimalTk (Id.toolkitR "test") :: MinimalTk _ _ )
                         # Toolkit.mapRawFamilies rawFamilyToString
             emptyTkArray `shouldEqual` []
             let nonEmptyTkArray =

@@ -81,7 +81,9 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 import Cli.Class.CliFriendly (class CliFriendly)
 
 import Starter.Toolkit (toolkit) as Starter
+
 import Demo.Toolkit.Starter.Repr.Options (options) as Starter
+import Demo.Toolkit.Starter.Starter.Patch as Stater.Patch
 
 
 data SelectedToolkit
@@ -123,11 +125,11 @@ runWith =
     case _ of
         JustRun tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface unit Starter.toolkit $ pure unit
+                Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ pure unit
                 User _  -> pure unit
         LoadNetworkFrom fromFile tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface unit Starter.toolkit $ postFix fromFile
+                Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ postFix fromFile
                 User _  -> pure unit
         GenerateToolkitFrom fromFile tkKey -> do
             case tkKey of

@@ -3,7 +3,7 @@ module Example.Toolkit.Minimal.PatchState where
 import Prelude
 
 import Data.Newtype (class Newtype)
-import Noodle.Repr (class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback)
 
 
 newtype State =

@@ -9,12 +9,14 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
+import Noodle.Patch (Patch)
 import Noodle.Patch (make, fromToolkit, registerNodeNotFromToolkit, registerNode, registerRawNode, mapAllNodes, connect, disconnect) as Patch
 import Noodle.Node (run) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
 
 import Example.Toolkit.Minimal.Toolkit as MinimalToolkit
+import Example.Toolkit.Minimal.Repr (MinimalRepr)
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
@@ -29,7 +31,7 @@ spec = do
             emptyPatch <- Patch.make "test" unit
             concatNode <- Concat.makeNode
             let
-                patchWithNodes =
+                (patchWithNodes :: Patch _ _ MinimalRepr MinimalRepr _) =
                     emptyPatch
                         # Patch.registerNodeNotFromToolkit concatNode
                 nodesInPatch =
