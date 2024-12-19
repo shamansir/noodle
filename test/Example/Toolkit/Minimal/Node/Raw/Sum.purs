@@ -18,8 +18,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
-import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
@@ -35,20 +35,20 @@ shape =
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues MinimalRepr
+defaultInlets :: Raw.InletsValues MinimalVRepr
 defaultInlets =
     Map.empty
         # Map.insert (Id.inletR "a") (MinimalRepr.Int 0)
         # Map.insert (Id.inletR "b") (MinimalRepr.Int 0)
 
 
-defaultOutlets :: Raw.OutletsValues MinimalRepr
+defaultOutlets :: Raw.OutletsValues MinimalVRepr
 defaultOutlets =
     Map.empty
         # Map.insert (Id.outletR "sum") (MinimalRepr.Int 0)
 
 
-process :: Raw.Process MinimalRepr MinimalRepr Effect
+process :: Raw.Process MinimalStRepr MinimalVRepr Effect
 process = do
     mbA <- RawFn.receive $ Id.inletR "a"
     mbB <- RawFn.receive $ Id.inletR "b"
@@ -57,16 +57,16 @@ process = do
         _ -> 0
 
 
-makeNode :: Effect (Raw.Node MinimalRepr MinimalRepr Effect)
+makeNode :: Effect (Raw.Node MinimalStRepr MinimalVRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family MinimalRepr MinimalRepr Effect
+family :: Raw.Family MinimalStRepr MinimalVRepr Effect
 family =
     RawFamily.make
         (Id.familyR "sumR")
-        MinimalRepr.None
+        MinimalRepr.NoSt
         shape
         defaultInlets
         defaultOutlets

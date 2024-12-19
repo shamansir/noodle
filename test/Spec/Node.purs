@@ -27,8 +27,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
-import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
 import Example.Toolkit.Minimal.Node.Sample as Sample
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
@@ -288,9 +288,9 @@ spec = do
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
-            (rawNode :: Raw.Node MinimalRepr MinimalRepr Effect) <-
+            (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
                 RawNode.make (Id.familyR "myRawNode")
-                    MinimalRepr.None
+                    MinimalRepr.NoSt
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
                         # Map.insert (inletR "a") (MinimalRepr.Int 5)

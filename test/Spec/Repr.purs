@@ -11,7 +11,7 @@ import Data.Symbol (reflectSymbol)
 
 import Noodle.Raw.FromToRec as RR
 
-import Example.Toolkit.Minimal.Repr (MinimalRepr(..))
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
 
 
 {-
