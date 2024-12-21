@@ -14,9 +14,9 @@ import Effect.Ref (new, read, write) as Ref
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
 import Data.Map (lookup) as Map
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.UniqueHash (generate) as UH
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Record (get) as Record
@@ -33,11 +33,11 @@ import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
 import Noodle.Fn.Tracker (Tracker)
-import Noodle.Fn.Updates (UpdateFocus) as Fn
+import Noodle.Fn.Updates (UpdateFocus, InletsUpdate(..)) as Fn
 import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (inletRName, outletRName) as RShape
+import Noodle.Raw.Fn.Shape (inletRName, outletRName, hasHotInlets, isHotInlet) as RShape
 import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
@@ -132,6 +132,7 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 
 {- Running -}
 
+
 -- TODO: Try distinguishing outer monad from inner one here as well (as we did for other methods)
 --       Could be not possible because running the node' processing function requires the same monad environment
 
@@ -143,7 +144,13 @@ _runOnInletUpdates
     => Node f state is os chrepr m
     -> m Unit
 _runOnInletUpdates node =
-  SignalX.runSignal $ subscribeInletsRaw node ~> const (run node)
+    -- FIXME: use the same method from RawNode
+    SignalX.runSignal $ _subscribeInletsRaw node ~> isHotUpdate ~> runOnlyIfHasHotInlet
+    where
+        runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
+        isHotUpdate = Tuple.fst >>> case _ of
+            Fn.AllInlets          -> RShape.hasHotInlets $ shape node
+            Fn.SingleInlet inletR -> fromMaybe false $ RShape.isHotInlet inletR $ shape node
 
 
 -- TODO: private
@@ -198,6 +205,10 @@ subscribeInlet_ fn node = fn <$> subscribeInlets node
 
 subscribeInletsRaw :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (Raw.InletsValues chrepr)
 subscribeInletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
+
+
+_subscribeInletsRaw :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (Fn.InletsUpdate /\ Raw.InletsValues chrepr)
+_subscribeInletsRaw (Node _ _ tracker _ _) = tracker.inlets
 
 
 subscribeInlets :: forall f state is isrl os chrepr m. RL.RowToList is isrl => FromChReprRow isrl is chrepr => Node f state is os chrepr m -> Signal (Record is)

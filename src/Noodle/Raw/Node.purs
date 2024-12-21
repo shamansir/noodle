@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
 import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 
@@ -20,7 +20,7 @@ import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
-import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
+import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
 import Noodle.Fn.Generic.Updates (toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
@@ -30,7 +30,7 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (inlets, outlets) as RawShape
+import Noodle.Raw.Fn.Shape (inlets, outlets, hasHotInlets, isHotInlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
@@ -113,7 +113,12 @@ _runOnInletUpdates
     => Node state chrepr m
     -> m Unit
 _runOnInletUpdates node =
-  SignalX.runSignal $ subscribeInlets node ~> const (run node)
+  SignalX.runSignal $ _subscribeInlets node ~> isHotUpdate ~> runOnlyIfHasHotInlet
+  where
+    runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
+    isHotUpdate = Tuple.fst >>> case _ of
+        Fn.AllInlets          -> RawShape.hasHotInlets $ shape node
+        Fn.SingleInlet inletR -> fromMaybe false $ RawShape.isHotInlet inletR $ shape node
 
 
 -- TODO: private
@@ -207,6 +212,10 @@ subscribeInlet input node = Map.lookup input <$> subscribeInlets node
 
 subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (InletsValues chrepr)
 subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
+
+
+_subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (Fn.InletsUpdate /\ InletsValues chrepr)
+_subscribeInlets (Node _ _ tracker _ _) = tracker.inlets
 
 
 subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (Maybe chrepr)

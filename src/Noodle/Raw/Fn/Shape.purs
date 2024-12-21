@@ -5,8 +5,11 @@ import Prelude
 import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Type.Proxy (Proxy(..))
+import Data.Array as Array
+import Data.Maybe (Maybe, maybe)
 
 import Noodle.Fn.Shape.Temperament (Temperament)
+import Noodle.Fn.Shape.Temperament (Temperament(..)) as Temp
 
 
 -- | `InletR` stores rawified inlet name as String.
@@ -118,6 +121,26 @@ make { inlets, outlets } =
         { inlets : Inlets $ InletDefR <$> inlets
         , outlets : Outlets $ OutletDefR <$> outlets
         }
+
+
+hasHotInlets :: Shape -> Boolean
+hasHotInlets = unwrap >>> _.inlets >>> unwrap >>> Array.any _isHotInlet
+
+
+findInletDef :: InletR -> Shape -> Maybe InletDefR
+findInletDef inletR = unwrap >>> _.inlets >>> unwrap >>> Array.find (unwrap >>> _.name >>> (_ == inletR))
+
+
+findOutletDef :: OutletR -> Shape -> Maybe OutletDefR
+findOutletDef ouletR = unwrap >>> _.outlets >>> unwrap >>> Array.find (unwrap >>> _.name >>> (_ == ouletR))
+
+
+isHotInlet :: InletR -> Shape -> Maybe Boolean
+isHotInlet inletR = findInletDef inletR >>> map _isHotInlet
+
+
+_isHotInlet :: InletDefR -> Boolean
+_isHotInlet = unwrap >>> _.temp >>> (_ == Temp.Hot)
 
 
 -- the types below are sometimes helpful to distinguich inlet index from outlet index in function calls
