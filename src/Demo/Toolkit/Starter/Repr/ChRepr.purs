@@ -82,6 +82,141 @@ instance HasFallback Color where fallback = Color { r : 0, g : 0, b : 0, a : 255
 instance HasFallback (Spread a) where fallback = Spread []
 
 
+shapeFromString :: String -> Maybe Shape
+shapeFromString = case _ of
+    "circle" -> Just Circle
+    "rect" -> Just Rect
+    "cross" -> Just Cross
+    "diamond" -> Just Diamond
+    _ -> Nothing
+
+
+timeFromString :: String -> Maybe Time
+timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ...
+    Just $ Time { seconds : fromMaybe 0 $ Int.fromString $ String.drop 1 str }
+
+
+instance HasFallback ValueRepr where
+    fallback = VNone
+
+
+instance FromChRepr ValueRepr ValueRepr where fromChRepr = CR.fromEq
+instance ToChRepr   ValueRepr ValueRepr where toChRepr   = CR.toEq
+
+
+instance ToChRepr Any     ValueRepr where toChRepr = Just <<< CR.wrap <<< case _ of Any pr -> pr
+instance ToChRepr Bang    ValueRepr where toChRepr = Just <<< CR.wrap <<< const VBang
+instance ToChRepr Boolean ValueRepr where toChRepr = Just <<< CR.wrap <<< VBool
+instance ToChRepr Char    ValueRepr where toChRepr = Just <<< CR.wrap <<< VChar
+instance ToChRepr Number  ValueRepr where toChRepr = Just <<< CR.wrap <<< VNumber
+instance ToChRepr Time    ValueRepr where toChRepr = Just <<< CR.wrap <<< VTime
+instance ToChRepr Shape   ValueRepr where toChRepr = Just <<< CR.wrap <<< VShape
+instance ToChRepr Color   ValueRepr where toChRepr = Just <<< CR.wrap <<< VColor
+instance ToChRepr (Spread Number) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadNum
+instance ToChRepr (Spread (Number /\ Number)) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadVec
+instance ToChRepr (Spread Color) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadCol
+instance ToChRepr (Spread Shape) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadShp
+
+instance FromChRepr ValueRepr Number
+    where
+        fromChRepr = CR.unwrap >>> _tryAny
+            (case _ of
+                VNumber num -> Just num
+                _ -> Nothing
+            )
+
+
+instance FromChRepr ValueRepr Boolean
+    where
+        fromChRepr = CR.unwrap >>> _tryAny
+            (case _ of
+                VBool bool -> Just bool
+                _ -> Nothing
+            )
+
+
+instance FromChRepr ValueRepr Time
+    where
+        fromChRepr = CR.unwrap >>> _tryAny
+            (case _ of
+                VTime time -> Just time
+                _ -> Nothing
+            )
+
+
+_tryAny :: forall a. (ValueRepr -> Maybe a) -> ValueRepr -> Maybe a
+_tryAny f = case _ of
+    VAny vrepr -> f vrepr -- not going deeper -- why we need Any Any-Way?
+    vrepr      -> f vrepr
+
+
+{-
+instance Mark ValueRepr where
+    mark = case _ of
+        VNone -> C.colorOf $ X11.burlywood
+        VAny repr -> mark repr
+        VBang -> C.colorOf $ X11.aqua
+        VBool bool ->
+            if bool
+                then C.colorOf $ X11.steelblue2
+                else C.colorOf $ X11.steelblue
+            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar _ -> C.colorOf $ X11.aquamarine
+        VNumber _ -> C.colorOf $ X11.green
+        VTime _ -> C.colorOf $ X11.darkolivegreen4
+        VColor clr -> toNativeColor clr
+        VShape _ ->
+            C.colorOf $ X11.firebrick1
+        VSpreadNum _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadVec _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadCol _ -> C.colorOf $ X11.darkolivegreen3
+        VSpreadShp _ -> C.colorOf $ X11.darkolivegreen3
+        where
+            toNativeColor :: Color -> Color.Color
+            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
+-}
+
+
+-- x == ChannelLabel
+instance At x ValueRepr where
+    at _ = case _ of
+        VNone -> T.fgc (C.colorOf $ X11.burlywood) $ T.s "∅"
+        VAny repr -> at (Proxy :: _ x) repr
+        VBang -> T.fgc (C.colorOf $ X11.aqua) $ T.s "⊚" -- ⌾ ⏺
+        VBool bool ->
+            if bool
+                then T.fgc (C.colorOf $ X11.steelblue2) $ T.s "T"
+                else T.fgc (C.colorOf $ X11.steelblue)  $ T.s "F"
+            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
+        VChar ch -> T.fgc (C.colorOf $ X11.aquamarine) $ T.s $ show ch
+        VNumber num -> T.fgc (C.colorOf $ X11.green) $ T.s $ show num
+        VTime t -> T.fgc (C.colorOf $ X11.darkolivegreen4) $ T.s $ show t
+        VColor clr -> T.fgc (toNativeColor clr) $ T.s "■"
+        VShape shape ->
+            T.fgc (C.colorOf $ X11.firebrick1) $ T.s $ case shape of -- TODO: replace with Unicode shapes if possible
+                Circle -> "⏺"
+                Rect -> "■"
+                Cross -> "⨯"
+                Diamond -> "◇"
+        VSpreadNum spread -> channelSpread spread
+        VSpreadVec spread -> channelSpread spread
+        VSpreadCol spread -> channelSpread spread
+        VSpreadShp spread -> channelSpread spread
+        where
+            channelSpread :: forall a. Spread a -> T.Tag
+            channelSpread (Spread arr) = T.fgc (C.colorOf $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
+            toNativeColor :: Color -> Color.Color
+            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
+
+
+-- instance At a ValueRepr where
+--     at _ _ = T.nil
+
+
+instance Show Time where
+    show (Time { seconds }) = show seconds <> "s"
+
+
 instance CodegenRepr ValueRepr where
     reprModule = const "Demo.Toolkit.Starter.Repr"
     reprTypeName = const "ValueRepr"
@@ -215,113 +350,3 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
             exprApp (exprCtor "VR.Spread")
                 [ exprArray $ mkExpression <$> items
                 ]
-
-
-shapeFromString :: String -> Maybe Shape
-shapeFromString = case _ of
-    "circle" -> Just Circle
-    "rect" -> Just Rect
-    "cross" -> Just Cross
-    "diamond" -> Just Diamond
-    _ -> Nothing
-
-
-timeFromString :: String -> Maybe Time
-timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ...
-    Just $ Time { seconds : fromMaybe 0 $ Int.fromString $ String.drop 1 str }
-
-
-instance HasFallback ValueRepr where
-    fallback = VNone
-
-
-instance FromChRepr ValueRepr ValueRepr where fromChRepr = CR.fromEq
-instance ToChRepr   ValueRepr ValueRepr where toChRepr   = CR.toEq
-
-
-instance ToChRepr Any     ValueRepr where toChRepr = Just <<< CR.wrap <<< case _ of Any pr -> pr
-instance ToChRepr Bang    ValueRepr where toChRepr = Just <<< CR.wrap <<< const VBang
-instance ToChRepr Boolean ValueRepr where toChRepr = Just <<< CR.wrap <<< VBool
-instance ToChRepr Char    ValueRepr where toChRepr = Just <<< CR.wrap <<< VChar
-instance ToChRepr Number  ValueRepr where toChRepr = Just <<< CR.wrap <<< VNumber
-instance ToChRepr Time    ValueRepr where toChRepr = Just <<< CR.wrap <<< VTime
-instance ToChRepr Shape   ValueRepr where toChRepr = Just <<< CR.wrap <<< VShape
-instance ToChRepr Color   ValueRepr where toChRepr = Just <<< CR.wrap <<< VColor
-instance ToChRepr (Spread Number) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadNum
-instance ToChRepr (Spread (Number /\ Number)) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadVec
-instance ToChRepr (Spread Color) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadCol
-instance ToChRepr (Spread Shape) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadShp
-
-instance FromChRepr ValueRepr Number
-    where
-        fromChRepr = CR.unwrap >>> case _ of
-            VNumber num -> Just num
-            VAny (VNumber num) -> Just num
-            _ -> Nothing
-
-
-{-
-instance Mark ValueRepr where
-    mark = case _ of
-        VNone -> C.colorOf $ X11.burlywood
-        VAny repr -> mark repr
-        VBang -> C.colorOf $ X11.aqua
-        VBool bool ->
-            if bool
-                then C.colorOf $ X11.steelblue2
-                else C.colorOf $ X11.steelblue
-            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
-        VChar _ -> C.colorOf $ X11.aquamarine
-        VNumber _ -> C.colorOf $ X11.green
-        VTime _ -> C.colorOf $ X11.darkolivegreen4
-        VColor clr -> toNativeColor clr
-        VShape _ ->
-            C.colorOf $ X11.firebrick1
-        VSpreadNum _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadVec _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadCol _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadShp _ -> C.colorOf $ X11.darkolivegreen3
-        where
-            toNativeColor :: Color -> Color.Color
-            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
--}
-
-
--- x == ChannelLabel
-instance At x ValueRepr where
-    at _ = case _ of
-        VNone -> T.fgc (C.colorOf $ X11.burlywood) $ T.s "∅"
-        VAny repr -> at (Proxy :: _ x) repr
-        VBang -> T.fgc (C.colorOf $ X11.aqua) $ T.s "⊚" -- ⌾ ⏺
-        VBool bool ->
-            if bool
-                then T.fgc (C.colorOf $ X11.steelblue2) $ T.s "T"
-                else T.fgc (C.colorOf $ X11.steelblue)  $ T.s "F"
-            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
-        VChar ch -> T.fgc (C.colorOf $ X11.aquamarine) $ T.s $ show ch
-        VNumber num -> T.fgc (C.colorOf $ X11.green) $ T.s $ show num
-        VTime t -> T.fgc (C.colorOf $ X11.darkolivegreen4) $ T.s $ show t
-        VColor clr -> T.fgc (toNativeColor clr) $ T.s "■"
-        VShape shape ->
-            T.fgc (C.colorOf $ X11.firebrick1) $ T.s $ case shape of -- TODO: replace with Unicode shapes if possible
-                Circle -> "⏺"
-                Rect -> "■"
-                Cross -> "⨯"
-                Diamond -> "◇"
-        VSpreadNum spread -> channelSpread spread
-        VSpreadVec spread -> channelSpread spread
-        VSpreadCol spread -> channelSpread spread
-        VSpreadShp spread -> channelSpread spread
-        where
-            channelSpread :: forall a. Spread a -> T.Tag
-            channelSpread (Spread arr) = T.fgc (C.colorOf $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
-            toNativeColor :: Color -> Color.Color
-            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
-
-
--- instance At a ValueRepr where
---     at _ _ = T.nil
-
-
-instance Show Time where
-    show (Time { seconds }) = show seconds <> "s"

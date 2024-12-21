@@ -14,18 +14,25 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
 import StarterTk.Simple.Gennum as Gennum
+import StarterTk.Simple.Metro as Metro
 
 
 data StateRepr
     = StateRepr
     | Gennum Gennum.State
+    | Metro Metro.State
 
 
 instance StRepr Gennum.State StateRepr where
     from = case _ of
-        StateRepr -> Nothing
         Gennum gn -> Just gn
+        _ -> Nothing
     to = Gennum
+instance StRepr Metro.State StateRepr where
+    from = case _ of
+        Metro ms -> Just ms
+        _ -> Nothing
+    to = Metro
 -- else instance StRepr StateRepr NoState where
 --     from = const NoState
 --     to = const StateRepr
