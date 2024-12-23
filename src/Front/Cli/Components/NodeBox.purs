@@ -43,7 +43,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, runM, runM') as Blessed
+import Blessed.Internal.BlessedOp (lift, runM, runM', getStateRef) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -226,9 +226,12 @@ _component
     -- state <- State.get
     (nodeState :: fstate) <- RawNode.state rawNode
 
+    -- stateRef <- Blessed.getStateRef
+
     -- Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM state <<< CC.log <<< ?wh)
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
-    -- REM liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
+    -- REM Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< logUpdateToConsole) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+    -- REM Blessed.lift $ SignalX.runSignal $ updates ~> logDataCommand stateRef -- TODO: only inlude changes from node editors and node body
 
     -- REM liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
@@ -360,6 +363,19 @@ updateCodeFor stateRef family update = do
         Nothing -> pure unit
     -}
     pure unit
+
+
+{- REM
+logUpdateToConsole :: forall tk fs pstate fstate strepr chrepr m
+     . MonadEffect m
+    => Show fstate
+    => Show chrepr
+    => Raw.NodeChanges fstate chrepr
+    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
+logUpdateToConsole updates =
+    CC.log $ show updates
+-}
+
 
 
 logDataCommand
