@@ -37,12 +37,12 @@ import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys (PatchBoxKey, NodeBoxKey, RemoveButtonKey, InfoBoxKey)
-import Cli.Keys (mainScreen, statusLine) as Key
+import Cli.Keys (mainScreen, statusLine, patchBox) as Key
 import Cli.Style as Style
 import Noodle.Ui.Cli.Tagging as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Cli.State (State)
-import Cli.State (currentPatch, replacePatch) as CState
+import Cli.State (currentPatch, replacePatch, LastKeys) as CState
 import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
@@ -64,13 +64,10 @@ component
     => Offset
     -> Id.FamilyR
     -> Raw.Node fstate chrepr m
-    -> PatchBoxKey
-    -> NodeBoxKey
-    -> InfoBoxKey
-    -> RemoveButtonKey
+    -> CState.LastKeys
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component topOffset family node patchBoxKey nodeBoxKey infoBoxKey remButtonKey =
-    B.button remButtonKey
+component topOffset family node keys =
+    B.button keys.removeButton
         [ Box.content $ T.singleLine $ T.removeButtonOut
         , Box.top topOffset
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3
@@ -89,15 +86,15 @@ component topOffset family node patchBoxKey nodeBoxKey infoBoxKey remButtonKey =
                         nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo (RawNode.id node) currentPatch
                         State.modify_ (\s ->
                             let
-                                nextLinksFrom /\ nextLinksTo = CLink.forgetAllFromTo nodeBoxKey (s.linksFrom /\ s.linksTo)
+                                nextLinksFrom /\ nextLinksTo = CLink.forgetAllFromTo keys.nodeBox (s.linksFrom /\ s.linksTo)
                             in s
                                 # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
                                 # _ { linksFrom = nextLinksFrom
                                     , linksTo = nextLinksTo
                                     }
                         )
-                        CLink.runB $ CLink.removeAllOf nodeBoxKey patchBoxKey state.linksFrom state.linksTo
-                        nodeBoxKey >~ Node.detach
+                        CLink.runB $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
+                        keys.nodeBox >~ Node.detach
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
                 pure unit
@@ -127,16 +124,16 @@ component topOffset family node patchBoxKey nodeBoxKey infoBoxKey remButtonKey =
                 -}
         , Core.on Element.MouseOver
             \_ _ -> do
-                remButtonKey >~ Box.setContent $ T.singleLine $ T.removeButtonOver
-                infoBoxKey >~ IB.removeInfo
+                keys.removeButton >~ Box.setContent $ T.singleLine $ T.removeButtonOver
+                keys.infoBox >~ IB.removeInfo
                 SL.removeStatus family
                 -- REM -- FI.removeStatus family
                 Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         , Core.on Element.MouseOut
             \_ _ -> do
-                remButtonKey >~ Box.setContent $ T.singleLine $ T.removeButtonOut
+                keys.removeButton >~ Box.setContent $ T.singleLine $ T.removeButtonOut
                 -- Info box : delete this node
-                infoBoxKey >~ IB.clear
+                keys.infoBox >~ IB.clear
                 SL.clear
                 -- REM -- FI.clear
                 Key.mainScreen >~ Screen.render -- FIXME: refresh only the area

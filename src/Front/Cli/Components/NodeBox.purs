@@ -85,7 +85,7 @@ import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.InletButton as InletButton
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
--- REM import Cli.Components.NodeBox.RemoveButton as RemoveButton
+import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
@@ -195,10 +195,8 @@ _component
             OutletsBox.component outletsTopOffset keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
             InfoBox.component keys.infoBox $ boxWidth - 2
-        {- REM
         removeButtonN =
-            RemoveButton.component removeButtonOffset family node nextNodeBox nextInfoBox nextRemoveButton
-        -}
+            RemoveButton.component removeButtonOffset familyR rawNode keys
         nextNodeBoxN =
             B.box keys.nodeBox
                 [ Box.draggable true
@@ -242,9 +240,7 @@ _component
     keys.nodeBox >~ Node.append inletsBoxN
     keys.nodeBox >~ Node.append outletsBoxN
     keys.nodeBox >~ Node.append infoBoxN
-    {- REM
-    nextNodeBox >~ Node.append removeButtonN
-     -}
+    keys.nodeBox >~ Node.append removeButtonN
 
     -- REM? mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
 
