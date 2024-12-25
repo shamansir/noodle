@@ -24,7 +24,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (lift') as Blessed
+import Blessed.Internal.BlessedOp (lift', runOnUnit) as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
@@ -93,7 +93,7 @@ component topOffset family node keys =
                                     , linksTo = nextLinksTo
                                     }
                         )
-                        CLink.runB $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
+                        Blessed.runOnUnit $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
                         keys.nodeBox >~ Node.detach
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit

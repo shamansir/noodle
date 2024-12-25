@@ -285,15 +285,3 @@ removeAllOf nbKey pnk linksFrom linksTo = do
     let rawNk = NodeKey.toRaw nbKey
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksFrom) $ flip remove pnk
     for_ (fromMaybe Map.empty $ Map.lookup rawNk linksTo) $ flip remove pnk
-
-
-{-
-toUnit :: forall s. LinkState s -> LinkState Unit
-toUnit (LinkState s) = LinkState $ s
-    { blessed = { a : Blessed.imapState ?wh ?wh ?wh, b : ?wh, c : ?wh  }
-    }
--}
-
-
-runB :: forall s m. MonadRec m => MonadEffect m => BlessedOp Unit m -> BlessedOp s m
-runB = Blessed.lift <<< Blessed.runM unit

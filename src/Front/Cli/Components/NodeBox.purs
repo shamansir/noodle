@@ -43,7 +43,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, runM, runM', getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, runM, runM', getStateRef, runOnUnit) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -404,7 +404,7 @@ onMove nodeId nodeKey _ _ = do
     let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
     state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
-    CLink.runB $ do
+    Blessed.runOnUnit $ do
         for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update
         for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) CLink.update
     pure unit
