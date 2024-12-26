@@ -28,7 +28,7 @@ import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (Node, NodeChanges) as Raw
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
@@ -43,11 +43,13 @@ import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox
 import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
 
 
+-- tkey patch-state families node-state-repr channel-value-repr m
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { network :: Network tk ps fs sr cr m
     , initPatchesFrom :: ps
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
+    , lastUpdate :: Map Id.NodeR (Raw.NodeChanges sr cr)
     , lastShift :: { left :: Int, top :: Int }
     , lastClickedOutlet :: Maybe OutletInfo
     , lastLink :: Maybe (LinkState Unit)
@@ -95,6 +97,7 @@ init state toolkit = do
         , currentPatch : Just { index : 0, id : Patch.id firstPatch }
         , initPatchesFrom : state
         , wsServer : Nothing
+        , lastUpdate : Map.empty
         , lastShift : { left : 0, top : 0 }
         , lastKeys :
             { nodeBox : Key.nodeBox
@@ -215,3 +218,7 @@ lastPatchIndex s = Network.patchesCount s.network
 
 withPanels :: forall tk ps fs sr cr m. (SidePanels -> SidePanels) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 withPanels f s = s { panels = f s.panels }
+
+
+storeNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> Raw.NodeChanges sr cr -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+storeNodeUpdate nodeR changes s = s { lastUpdate = Map.insert nodeR changes s.lastUpdate  }

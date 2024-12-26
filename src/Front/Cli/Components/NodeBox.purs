@@ -43,7 +43,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, runM, runM', getStateRef, runOnUnit) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runM, runM', getStateRef, runOnUnit, runOn, runOver') as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -55,6 +55,7 @@ import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (to) as StRepr
 import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
 import Noodle.Id as Id
 import Noodle.Toolkit (class MarkToolkit)
@@ -62,6 +63,7 @@ import Noodle.Toolkit as Toolkit
 import Noodle.Node (toRaw) as Node
 import Noodle.Node (Node) as Noodle
 import Noodle.Fn.Updates (UpdateFocus(..))
+import Noodle.Fn.Generic.Updates (toRecord, fromRecord, mergedMapState) as Updates
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node as RawNode
@@ -76,7 +78,7 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.State (LastKeys, nextKeys) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
+import Cli.State (LastKeys, nextKeys, storeNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
 
 import Cli.Components.Link as CLink
@@ -126,10 +128,10 @@ _component
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node fstate chrepr m
+    -> Raw.Node strepr chrepr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
-    -> BlessedOp fstate m
+    -> BlessedOp strepr m
     -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 _component
     pos
@@ -140,7 +142,7 @@ _component
     mbBodySize
     nodeOp
     = do
-    let (updates :: Signal (Raw.NodeChanges fstate chrepr)) = RawNode.subscribeChanges rawNode
+    let (updates :: Signal (Raw.NodeChanges strepr chrepr)) = RawNode.subscribeChanges rawNode
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
 
@@ -216,17 +218,18 @@ _component
                    $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges fstate chrepr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: forall a. Raw.NodeChanges strepr chrepr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
     -- state <- State.get
-    (nodeState :: fstate) <- RawNode.state rawNode
+    (nodeState :: strepr) <- RawNode.state rawNode
 
-    -- stateRef <- Blessed.getStateRef
+    stateRef <- Blessed.getStateRef
 
     -- Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM state <<< CC.log <<< ?wh)
+    Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< storeNodeUpdate nodeR)
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< logUpdateToConsole) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM Blessed.lift $ SignalX.runSignal $ updates ~> logDataCommand stateRef -- TODO: only inlude changes from node editors and node body
@@ -246,7 +249,7 @@ _component
 
     -- REM X liftEffect $ renderNodeUpdate $ Everything /\ nodeState /\ is /\ os
 
-    (nodeStateRef :: Ref fstate) <- liftEffect $ Ref.new nodeState
+    (nodeStateRef :: Ref strepr) <- liftEffect $ Ref.new nodeState
 
     Blessed.lift $ Blessed.runM' nodeStateRef $ nodeOp
 
@@ -284,7 +287,7 @@ componentRaw
     => { left :: Int, top :: Int }
     -> Id.PatchR
     -> Id.FamilyR
-    -> Raw.Node fstate chrepr m
+    -> Raw.Node strepr chrepr m
     -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 componentRaw pos curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
@@ -301,6 +304,7 @@ component
     .  Wiring m
     => IsSymbol f
     => HasFallback chrepr
+    => HasFallback fstate
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
@@ -311,7 +315,20 @@ component
     -> Noodle.Node f fstate is os chrepr m
     -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 component pos curPatchR family =
-    componentRaw pos curPatchR (Id.familyR family) <<< Node.toRaw
+    componentRaw pos curPatchR (Id.familyR family) <<< RawNode.toReprableState <<< Node.toRaw
+
+
+storeNodeUpdate
+    :: forall tk fs pstate strepr chrepr m
+     . Id.NodeR
+    -> Raw.NodeChanges strepr chrepr
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+storeNodeUpdate nodeR =
+    State.modify_
+        <<< State.storeNodeUpdate nodeR
+        -- <<< Updates.toRecord
+        -- <<< Updates.mergedMapState StRepr.to
+        -- <<< Updates.fromRecord
 
 
 renderUpdate
