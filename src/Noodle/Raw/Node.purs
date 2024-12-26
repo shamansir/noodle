@@ -11,17 +11,19 @@ import Data.Map (Map)
 import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
 import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (curry, uncurry)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+import Data.Bifunctor (lmap)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
+import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_, inletRName, outletRName) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
-import Noodle.Fn.Generic.Updates (toRecord) as Updates
+import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
@@ -36,6 +38,8 @@ import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
+import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
+import Noodle.Fn.ToFn (Fn)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
 
@@ -203,7 +207,7 @@ _getTracker (Node _ _ tracker _ _) = tracker
 {- Subscriptions -}
 
 
-type NodeChanges state chrepr = { focus :: Fn.UpdateFocus, state :: state, inlets :: InletsValues chrepr, outlets :: OutletsValues chrepr }
+type NodeChanges state chrepr = Updates.MergedUpdateRec state (InletsValues chrepr) (OutletsValues chrepr)
 
 
 subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (Maybe chrepr)
@@ -232,6 +236,10 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 subscribeChanges :: forall state chrepr m. Node state chrepr m -> Signal (NodeChanges state chrepr)
 subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
+
+
+subscribeChangesAsFn :: forall state chrepr m. Node state chrepr m -> Signal (Fn chrepr chrepr)
+subscribeChangesAsFn (Node nodeR _ tracker _ _) = tracker.all <#> RawUpdates.toFn nodeR
 
 
 {- Send data -}
