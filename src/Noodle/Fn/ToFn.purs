@@ -6,7 +6,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Tuple (snd, uncurry) as Tuple
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (length) as Array
+import Data.Array (length, sortWith) as Array
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
@@ -263,6 +263,14 @@ extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn a
 
 toReprable :: forall x arg out a repr. HasFallback repr => ToChRepr arg repr => ToChRepr out repr => ToFn x arg out a => Proxy x -> a -> Fn repr repr
 toReprable px a = bimap (ChRepr.ensureTo >>> ChRepr.unwrap) (ChRepr.ensureTo >>> ChRepr.unwrap) (toFn px a :: Fn arg out)
+
+
+reorder :: forall a b arg out. Ord a => Ord b => (ArgumentName -> a) -> (OutputName -> b) -> Fn arg out -> Fn arg out
+reorder farg fout = _reorder (argName >>> farg) (outName >>> fout)
+
+
+_reorder :: forall a b arg out. Ord a => Ord b => (Argument arg -> a) -> (Output out -> b) -> Fn arg out -> Fn arg out
+_reorder farg fout (Fn (name /\ args /\ outs)) = Fn (name /\ Array.sortWith farg args /\ Array.sortWith fout outs)
 
 
 instance ToFn Void arg out (Fn arg out) where

@@ -11,6 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
 import Data.Newtype (unwrap)
 import Data.Bifunctor (bimap)
+import Data.UniqueHash as UH
 
 
 import Data.Text.Format (Tag)
@@ -80,7 +81,7 @@ nodeLabel ptk familyR =
 
 
 nodeStatusLine :: forall tk strepr chrepr. MarkToolkit tk => Tagged.At At.StatusLine chrepr => HasChRepr tk chrepr => Proxy tk -> Id.NodeR -> Raw.NodeChanges strepr chrepr -> Tag
-nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< bimap pure pure <<< Updates.toFn nodeR <<< Updates.fromRecord
+nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< bimap pure pure <<< Updates.orderedToFn nodeR <<< Updates.fromRecord
 
 
 {- T.fgcs (C.colorOf Palette.familyName) (reflect family)
@@ -290,17 +291,22 @@ _fnOnelineSignature
 _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
     (name /\ args /\ outs) ->
         let
-            tail =
+            -- tagName = T.fgcs (C.colorOf Palette.familyName) name
+            tagFamily familyR = T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR
+            prefix =
                 case eNodeR of
-                    Right nodeR -> T.s "?"
-                    Left familyR -> T.fgc (C.colorOf Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR) -- FIXME: probably won't needed because duplicates information, `MarkToolkit` not needed as well
-        in T.fgcs (C.colorOf Palette.familyName) name
-            <> T.s " " <> operator "->" <> T.s " "
+                    Right nodeR -> tagFamily $ Id.familyOf nodeR
+                    Left familyR -> tagFamily familyR
+            postfix =
+                case eNodeR of
+                    Right nodeR -> operator "//" <> T.s " " <> (T.fgcs (C.colorOf Pico.darkerGrey) $ UH.toString $ Id.hashOf nodeR)
+                    Left _ -> T.nil
+        in prefix
+            <> T.s " " <> operator "=>" <> T.s " "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
             <> operator "->" <> T.s " "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
-            <> operator "//" <> T.s " "
-            <> tail
+            <> postfix
     where
         tagArgument :: Fn.Argument (Maybe chrepr) -> Tag
         tagArgument arg = markerSymbol "<"

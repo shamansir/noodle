@@ -17,10 +17,12 @@ import Control.Monad.State (get, modify, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Map.Extra as Map
 import Data.Array as Array
 import Data.Foldable (for_)
 -- REM import Data.KeyHolder as KH
@@ -341,12 +343,12 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
     _ <- traverseWithIndex updateOutlet update.outlets
     Key.mainScreen >~ Screen.render
     where
-        updateInlet inletR repr =
+        updateInlet (_ /\ inletR) repr =
             case Map.lookup inletR inletsKeysMap of
                 Just inletKey -> do
                     inletKey >~ Box.setContent $ T.singleLine $ T.inlet 0 inletR $ Just repr
                 Nothing -> pure unit
-        updateOutlet outletR repr =
+        updateOutlet (_ /\ outletR) repr =
             case Map.lookup outletR outletsKeysMap of
                 Just outletKey -> do
                     outletKey >~ Box.setContent $ T.singleLine $ T.outlet 0 outletR $ Just repr
@@ -396,14 +398,14 @@ logDataCommand
 logDataCommand stateRef update =
     case update.focus of
         InletUpdate inletR ->
-            case Map.lookup inletR update.inlets of
+            case Map.lookup inletR $ Map.mapKeys Tuple.snd update.inlets of
                 Just wrapRepr -> do
                     -- REM flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inletAlias $ reflect' inlet) $ Cmd.encodedValue $ encode wrapRepr
                     -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
                     pure unit
                 Nothing -> pure unit
         OutletUpdate outletR ->
-            case Map.lookup outletR update.outlets of
+            case Map.lookup outletR $ Map.mapKeys Tuple.snd update.outlets of
                 Just wrapRepr -> do
                     -- REM flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outletAlias $ reflect' outlet) $ Cmd.encodedValue $ encode wrapRepr
                     -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`

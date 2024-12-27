@@ -50,7 +50,7 @@ import Noodle.Repr.ChRepr (inbetween, inbetween') as ChRepr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
-import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues, NodeChanges) as Raw
+import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues, NodeChanges, orderInlets, orderOutlets) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
@@ -244,7 +244,13 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
 subscribeChanges :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (Raw.NodeChanges state chrepr)
-subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
+subscribeChanges (Node _ shape tracker _ _) =
+    tracker.all
+        <#> Updates.toRecord
+        <#> \chs -> chs
+        { inlets = Raw.orderInlets shape chs.inlets
+        , outlets = Raw.orderOutlets shape chs.outlets
+        }
 
 
 subscribeChangesAsFn :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (ToFn.Fn chrepr chrepr)

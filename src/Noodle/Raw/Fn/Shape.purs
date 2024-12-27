@@ -143,6 +143,14 @@ _isHotInlet :: InletDefR -> Boolean
 _isHotInlet = unwrap >>> _.temp >>> (_ == Temp.Hot)
 
 
+indexOfInlet :: InletR -> Shape -> Maybe Int
+indexOfInlet inletR = findInletDef inletR >>> map (unwrap >>> _.order)
+
+
+indexOfOutlet :: OutletR -> Shape -> Maybe Int
+indexOfOutlet outletR = findOutletDef outletR >>> map (unwrap >>> _.order)
+
+
 -- the types below are sometimes helpful to distinguich inlet index from outlet index in function calls
 
 
