@@ -78,7 +78,7 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.State (LastKeys, nextKeys, storeNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
+import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
 
 import Cli.Components.Link as CLink
@@ -213,7 +213,7 @@ _component
                 , Core.on Element.Move
                     $ onMove nodeR keys.nodeBox
                 , Core.on Element.MouseOver
-                    $ onMouseOver (Proxy :: _ tk) familyR
+                    $ onMouseOver (Proxy :: _ tk) familyR nodeR
                 , Core.on Element.MouseOut
                    $ onMouseOut
                 ]
@@ -324,11 +324,7 @@ storeNodeUpdate
     -> Raw.NodeChanges strepr chrepr
     -> BlessedOp (State tk pstate fs strepr chrepr m) m
 storeNodeUpdate nodeR =
-    State.modify_
-        <<< State.storeNodeUpdate nodeR
-        -- <<< Updates.toRecord
-        -- <<< Updates.mergedMapState StRepr.to
-        -- <<< Updates.fromRecord
+    State.modify_ <<< State.storeNodeUpdate nodeR
 
 
 renderUpdate
@@ -437,14 +433,18 @@ onMouseOver
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
+    -> Id.NodeR
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onMouseOver ptk familyR _ _ = do
+onMouseOver ptk familyR nodeR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
+    state <- State.get
+    case State.lastNodeUpdate nodeR state of
+        Just update -> SL.nodeStatus ptk nodeR update
+        Nothing -> SL.familyStatus ptk familyR
 
-    SL.familyStatus ptk familyR
     {-
     FI.familyStatus family
      -}

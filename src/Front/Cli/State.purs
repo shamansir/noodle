@@ -7,7 +7,7 @@ import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
-import Data.Map (empty, insert) as Map
+import Data.Map (empty, insert, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
 import Data.Traversable (traverse)
@@ -222,3 +222,7 @@ withPanels f s = s { panels = f s.panels }
 
 storeNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> Raw.NodeChanges sr cr -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 storeNodeUpdate nodeR changes s = s { lastUpdate = Map.insert nodeR changes s.lastUpdate  }
+
+
+lastNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> State tk ps fs sr cr m -> Maybe (Raw.NodeChanges sr cr)
+lastNodeUpdate nodeR = _.lastUpdate >>> Map.lookup nodeR
