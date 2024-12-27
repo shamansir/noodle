@@ -9,6 +9,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
 import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
+import Data.Map.Extra as Map
 import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (curry, uncurry)
@@ -348,24 +349,22 @@ disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
 {- Convert -}
 
 
- -- FIXME: Find faster way to do it, see Map.Extra for `mapKeys`
+ -- FIXME: Find a faster way to do it
 orderInlets :: forall chrepr. Raw.Shape -> InletsValues chrepr -> OrderedInletsValues chrepr
-orderInlets shape ivalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ivalues
+orderInlets shape = Map.mapKeys toKey
   where
+    toKey inletR = qiindex inletR /\ inletR
+    qiindex inletR = fromMaybe maxN $ RawShape.indexOfInlet inletR shape
     maxN = Array.length $ RawShape.inlets shape
-    resortF :: Array (Id.InletR /\ chrepr) -> Array ((Int /\ Id.InletR) /\ chrepr)
-    resortF = map (\(inletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup inletR ishapeMap) /\ inletR) /\ repr)
-    ishapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.inlets shape
 
 
- -- FIXME: Find faster way to do it, see Map.Extra for `mapKeys`
+ -- FIXME: Find a faster way to do it
 orderOutlets :: forall chrepr. Raw.Shape -> OutletsValues chrepr -> OrderedOutletsValues chrepr
-orderOutlets shape ovalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ovalues
+orderOutlets shape = Map.mapKeys toKey
   where
+    toKey outletR = qoindex outletR /\ outletR
+    qoindex outletR = fromMaybe maxN $ RawShape.indexOfOutlet outletR shape
     maxN = Array.length $ RawShape.outlets shape
-    resortF :: Array (Id.OutletR /\ chrepr) -> Array ((Int /\ Id.OutletR) /\ chrepr)
-    resortF = map (\(outletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup outletR oshapeMap) /\ outletR) /\ repr)
-    oshapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.outlets shape
 
 
 toReprableState :: forall state strepr chrepr m. HasFallback state => StRepr state strepr => Node state chrepr m -> Node strepr chrepr m

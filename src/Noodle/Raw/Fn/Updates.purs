@@ -36,6 +36,6 @@ orderedToFn :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Fn 
 orderedToFn nodeR = Generic.toFn nodeR inletsToArgs outletsToArgs
   where
     inletsToArgs  :: Map (Int /\ InletR) repr -> Array (Fn.Argument repr)
-    inletsToArgs   = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.inletRName) >>> uncurry Fn.arg) -- (bimap ?wn Id.inletRName >>> uncurry Fn.arg)
+    inletsToArgs   = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.inletRName) >>> uncurry Fn.arg)
     outletsToArgs :: Map (Int /\ OutletR) repr -> Array (Fn.Output repr)
-    outletsToArgs  = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.outletRName) >>> uncurry Fn.out) -- (bimap ?wh Id.outletRName >>> uncurry Fn.out)
+    outletsToArgs  = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.outletRName) >>> uncurry Fn.out)

@@ -4,7 +4,6 @@ module Data.Map.Extra
     , lookupBy'
     , stringifyKeys
     , mapKeys
-    , mapMaybe
     , mapKeysMaybe
     ) where
 
@@ -41,13 +40,16 @@ stringifyKeys f = foldrWithIndex (Map.insert <<< f) Map.empty
 -- below, from https://raw.githubusercontent.com/colehaus/purescript-probability/refs/tags/v5.2.0/src/Data/Map/Extras.purs
 
 
+{-
 mapMaybe :: forall k v u. Ord k => (v -> Maybe u) -> Map k v -> Map k u
-mapMaybe f = mapMaybeWithKey (const f)
+mapMaybe f = Map.mapMaybeWithKey (const f)
+
 
 mapMaybeWithKey :: forall k v u. Ord k => (k -> v -> Maybe u) -> Map k v -> Map k u
 mapMaybeWithKey f m = foldlWithIndex f' Map.empty m
   where
     f' k acc v = maybe acc (flip (Map.insert k) acc) $ f k v
+-}
 
 mapKeys :: forall j k v. Ord j => Ord k => (k -> j) -> Map k v -> Map j v
 mapKeys f = mapKeysMaybeWithValueWith (Just <<< f) (\k v _ -> Just (Tuple (f k) v))

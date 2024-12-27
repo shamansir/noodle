@@ -292,7 +292,8 @@ _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
     (name /\ args /\ outs) ->
         let
             -- tagName = T.fgcs (C.colorOf Palette.familyName) name
-            tagFamily familyR = T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR
+            tagGroup familyR = T.fgcs (markGroup ptk $ groupOf ptk familyR) $ Id.group $ groupOf ptk familyR
+            tagFamily familyR = (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR) <> T.s " " <> (T.wrap (operator "(") (operator ")") $ tagGroup familyR)
             prefix =
                 case eNodeR of
                     Right nodeR -> tagFamily $ Id.familyOf nodeR
