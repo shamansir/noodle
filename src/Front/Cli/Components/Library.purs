@@ -29,11 +29,14 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
 import Blessed.UI.Lists.List.Option (items, keys, mouse) as List
 import Blessed.UI.Lists.List.Property (selected) as List
+import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.State (State)
-import Cli.State (withCurrentPatch, currentPatchState) as State
+import Cli.State (withCurrentPatch, currentPatchState, withPanels) as State
 import Cli.Style (library, libraryBorder) as Style
+import Cli.Panels as Panels
+import Cli.Class.CliFriendly (class CliFriendly)
 
 import Noodle.Id (PatchR, FamilyR, Family, familyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -49,14 +52,17 @@ import Noodle.Ui.Cli.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Node (Node) as Noodle
-import Noodle.Node (setState) as Node
+import Noodle.Node (id, setState) as Node
 import Noodle.Patch (registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (setState) as RawNode
+import Noodle.Raw.Node (id, setState) as RawNode
 import Noodle.Raw.Toolkit.Family (Family) as Raw
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 import Cli.Components.NodeBox as NodeBox
-import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Components.SidePanel as SP
+import Cli.Components.SidePanel.CommandLog as CommandLog
+
 
 
 import Prelude
@@ -166,7 +172,12 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
                 Nothing -> pure unit
 
             State.modify_ $ State.withCurrentPatch $ Patch.registerRawNode rawNode
+
             NodeBox.componentRaw nextPos patchR familyR rawNode
+
+            CommandLog.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
+
+            Key.mainScreen >~ Screen.render
         Nothing -> pure unit
 
 
@@ -195,4 +206,9 @@ spawnAndRender toolkit patchR family nextPos  _ = do
     traverse_ (flip Node.setState node) $ StRepr.from =<< mbNodeState
 
     State.modify_ $ State.withCurrentPatch $ Patch.registerNode node
+
     NodeBox.component nextPos patchR family node
+
+    CommandLog.trackCommand $ QOp.makeNode (Node.id node) nextPos
+
+    Key.mainScreen >~ Screen.render

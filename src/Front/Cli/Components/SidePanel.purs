@@ -105,16 +105,16 @@ button offset sidePanel =
         initV = Tuple.fst $ sidePanel.init
 
 
+refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
+refresh sidePanel =
+    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
+
+
 refreshWith :: forall id s m v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> BlessedOp s m
 refreshWith (nextV /\ nextContent) sidePanel = do
     sidePanel.panelKey  >~ Box.setContent $ T.multiLine  $ T.stack nextContent
     sidePanel.buttonKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton $ sidePanel.char nextV) $ sidePanel.isOn nextV
     -- Key.mainScreen >~ Screen.render
-
-
-refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
-refresh sidePanel =
-    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
 
 
 toggle :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m

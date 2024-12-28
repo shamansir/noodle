@@ -5,8 +5,6 @@ import Prelude
 import Data.String as String
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\), type (/\))
 
 import Data.Text.Format as T
 
@@ -15,19 +13,18 @@ import Type.Proxy (Proxy)
 import Foreign (F, Foreign)
 import Yoga.JSON (class ReadForeign, class WriteForeign, writeImpl)
 
-import Noodle.Id (FamilyR)
-import Noodle.Id (family) as Id
+import Noodle.Id (FamilyR, family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
-import Noodle.Text.NdfFile.Types
+import Noodle.Text.NdfFile.Types (Coord(..), EncodedValue(..), InletId(..), NodeInstanceId(..), OutletId(..))
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign)
 import Noodle.Text.NdfFile.FamilyDef (ndfLinesCount, processAssignNdfLinesCount) as FD
 
 
 
 -- TODO: type FamiliesOrder = Array (GroupR /\ Array FamilyR)
-type FamiliesOrder = Array (Array FamilyR)
+type FamiliesOrder = Array (Array Id.FamilyR)
 
 
 -- TODO: store Command source line and position in every command instead of just `FamilyDef`
@@ -35,7 +32,7 @@ type FamiliesOrder = Array (Array FamilyR)
 data CommandOp
     = DefineFamily FamilyDef
     | AssignProcess ProcessAssign
-    | MakeNode FamilyR Coord Coord NodeInstanceId
+    | MakeNode Id.FamilyR Coord Coord NodeInstanceId
     | Move NodeInstanceId Coord Coord
     | Connect NodeInstanceId OutletId NodeInstanceId InletId
     | Send NodeInstanceId InletId EncodedValue

@@ -31,7 +31,7 @@ type SidePanels =
 
 initPanels :: SidePanels
 initPanels =
-    { commands : false /\ Ndf.init "noodle" 1.0
+    { commands : false /\ initCommands
     , wsServer : false
     -- , hydraCode : false
     , documentation : false /\ []
@@ -39,12 +39,16 @@ initPanels =
     }
 
 
+initCommands :: NdfFile
+initCommands = Ndf.init "noodle" 1.0
+
+
 insertDocs :: Array T.Tag -> SidePanels -> SidePanels
 insertDocs docs s = s { documentation = docs <$ s.documentation }
 
 
 clearCommands :: SidePanels -> SidePanels
-clearCommands s = s { commands = Ndf.init "noodle" 1.0 <$ s.console }
+clearCommands s = s { commands = initCommands <$ s.console }
 
 
 appendCommand :: Ndf.CommandOp -> SidePanels -> SidePanels

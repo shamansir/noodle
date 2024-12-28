@@ -82,6 +82,7 @@ import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
+import Cli.Panels (appendCommand) as Panels
 
 import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -122,7 +123,7 @@ nextPos { left, top } =
 
 
 _component
-    :: forall tk fs fstate pstate strepr chrepr m
+    :: forall tk fs pstate strepr chrepr m
     .  Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
@@ -274,14 +275,12 @@ _component
         }
     )
 
-    Key.mainScreen >~ Screen.render
-
     pure unit -- REM { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
 
 
 
 componentRaw
-    :: forall tk fs fstate pstate strepr chrepr m
+    :: forall tk fs pstate strepr chrepr m
      . Wiring m
     => HasFallback chrepr
     => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR

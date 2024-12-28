@@ -34,7 +34,7 @@ sidePanel =
     }
 
 
-log :: forall tk p fs sr cr m mi.  MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
+log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
 log s = do
     State.modify_ (withPanels $ logToConsole $ Array.singleton s)
     SP.refresh sidePanel
