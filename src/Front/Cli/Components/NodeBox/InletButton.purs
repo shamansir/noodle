@@ -53,6 +53,8 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
 import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
 import Cli.Components.SidePanel.Console as CC
+import Cli.Components.SidePanel.CommandLog as CL
+
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -64,6 +66,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Network as Network
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -237,6 +240,8 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                     State.modify_ $ State.replacePatch patchR nextPatch'
 
                                     Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn state <<< onLinkClick patchR rawLink lstate) linkState
+
+                                    CL.trackCommand $ QOp.connect rawLink
 
                                     -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
 

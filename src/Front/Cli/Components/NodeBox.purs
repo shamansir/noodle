@@ -72,6 +72,7 @@ import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At) as T
@@ -99,6 +100,7 @@ import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
 import Cli.Components.StatusLine as SL
 -- REM import Cli.Components.FullInfoBox as FI
 import Cli.Components.SidePanel.Console as CC
+import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Bounds as Bounds
 
 
@@ -388,6 +390,7 @@ logUpdateToConsole updates =
 
 
 
+{- REM
 logDataCommand
     :: forall tk fs pstate fstate strepr chrepr m
      . MonadEffect m
@@ -411,6 +414,7 @@ logDataCommand stateRef update =
                     pure unit
                 Nothing -> pure unit
         _ -> pure unit
+-}
 
 
 onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
@@ -421,7 +425,7 @@ onMove nodeId nodeKey _ _ = do
     Blessed.runOnUnit $ do
         for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update
         for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) CLink.update
-    pure unit
+    CL.trackCommand $ QOp.moveNode nodeId { left : newBounds.left, top : newBounds.top }
     where
         updatePos nb = Just <<< Bounds.move nb
 

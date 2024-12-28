@@ -61,7 +61,7 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.SidePanel as SP
-import Cli.Components.SidePanel.CommandLog as CommandLog
+import Cli.Components.SidePanel.CommandLog as CL
 
 
 
@@ -175,7 +175,7 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
             NodeBox.componentRaw nextPos patchR familyR rawNode
 
-            CommandLog.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
+            CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
 
             Key.mainScreen >~ Screen.render
         Nothing -> pure unit
@@ -209,6 +209,6 @@ spawnAndRender toolkit patchR family nextPos  _ = do
 
     NodeBox.component nextPos patchR family node
 
-    CommandLog.trackCommand $ QOp.makeNode (Node.id node) nextPos
+    CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
 
     Key.mainScreen >~ Screen.render
