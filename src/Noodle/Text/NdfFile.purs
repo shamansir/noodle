@@ -25,6 +25,7 @@ import Noodle.Id (family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
 import Noodle.Text.NdfFile.Command (priority, op, fromOp) as Command
+import Noodle.Text.NdfFile.Command (optimize) as Commands
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
@@ -103,6 +104,13 @@ from_ :: { toolkit :: String
 from_ header = NdfFile (Header header) []
 
 
+infixl 6 snoc as :->
+infixr 6 cons as <-:
+
+infixl 6 snocOp as &->
+infixr 6 consOp as <-&
+
+
 cons :: Command -> NdfFile -> NdfFile
 cons cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd : cmds
 
@@ -154,6 +162,11 @@ normalize (NdfFile header failedCommands commands) =
 
 normalizeCommands :: Array Command -> Array Command
 normalizeCommands = Array.sortWith Command.priority
+
+
+optimize :: NdfFile -> NdfFile
+optimize (NdfFile header failedCommands commands) =
+    NdfFile header failedCommands $ Commands.optimize commands
 
 
 definitionsFromCommands_ :: Array Command -> Array (Maybe Source /\ FamilyDef)

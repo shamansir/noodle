@@ -4,7 +4,9 @@ import Prelude
 
 import Data.String as String
 import Data.Array as Array
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.Foldable (foldl)
 
 import Data.Text.Format as T
 
@@ -40,6 +42,7 @@ data CommandOp
     | Order FamiliesOrder
     | Import String
     | Comment String
+    -- TODO: | Disconnect
     -- TODO: | Documentation FamilyR String
 
 
@@ -101,7 +104,22 @@ toTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
 
 
 optimize :: Array CommandOp -> Array CommandOp
-optimize = identity -- TODO : remove duplicating commands or the ones that can be merged into a single one
+optimize =
+    _.optimizedCmds <<< foldl foldF { mbPrevCmd : Nothing, optimizedCmds : [] }
+    where
+        foldF { mbPrevCmd, optimizedCmds } curCmd =
+            { mbPrevCmd : Just curCmd
+            , optimizedCmds : case mbPrevCmd of
+                Just prevCmd ->
+                    if overrides prevCmd curCmd then
+                        Array.snoc (Array.dropEnd 1 optimizedCmds) curCmd
+                    else
+                        Array.snoc optimizedCmds curCmd
+                Nothing ->
+                    Array.snoc optimizedCmds curCmd
+            }
+        overrides (Move instanceA _ _) (Move instanceB _ _) = instanceA == instanceB
+        overrides _ _ = false
 
 
 ndfLinesCount :: CommandOp -> Int

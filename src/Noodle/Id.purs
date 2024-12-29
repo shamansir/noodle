@@ -3,7 +3,7 @@
 module Noodle.Id
     ( module FromShape
     , Node, NodeR
-    , nodeR, nodeFamily, nodeR_
+    , nodeR, nodeFamily, nodeR_, unsafeNodeR
     , Family(..), FamilyR
     , family, familyR, familyOf, unsafeFamilyR
     , PatchR, PatchName, patchR
@@ -89,6 +89,10 @@ instance Ord NodeR where
 
 nodeR :: forall family. IsSymbol family => Node family -> NodeR
 nodeR (Node { hash }) = NodeR { family : reflectSymbol (Proxy :: _ family), hash }
+
+
+unsafeNodeR :: FamilyR -> UniqueHash -> NodeR
+unsafeNodeR familyR uniqueHash = NodeR { hash : uniqueHash, family : family familyR }
 
 
 family :: FamilyR -> String

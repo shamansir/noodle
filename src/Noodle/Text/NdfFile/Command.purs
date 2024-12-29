@@ -58,7 +58,10 @@ commandsToTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize
 
 
 optimize :: Array Command -> Array Command
-optimize = identity -- TODO : remove duplicating commands or the ones that can be merged into a single one
+optimize cmdsBefore = fromOp <$> (Op.optimize $ op <$> cmdsBefore)
+    -- FIXME: should keep the source, this implementation is wrong since optimized array is smaller
+    -- Array.zipWith keepSource (Op.optimize $ op <$> cmdsBefore) cmdsBefore
+    -- where keepSource newOp (Command mbSource _) = Command mbSource newOp
 
 
 ndfLinesCount :: Command -> Int

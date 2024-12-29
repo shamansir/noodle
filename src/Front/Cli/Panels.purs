@@ -10,7 +10,7 @@ import Data.Array (singleton) as Array
 
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile (NdfFile)
-import Noodle.Text.NdfFile (init, snocOp, toTaggedNdfCode) as Ndf
+import Noodle.Text.NdfFile (init, snocOp, toTaggedNdfCode, optimize) as Ndf
 
 
 data Which
@@ -53,7 +53,7 @@ clearCommands s = s { commands = initCommands <$ s.console }
 
 appendCommand :: Ndf.CommandOp -> SidePanels -> SidePanels
 appendCommand cmdop s =
-    s { commands = flip Ndf.snocOp cmdop <$> s.commands }
+    s { commands = Ndf.optimize <$> flip Ndf.snocOp cmdop <$> s.commands }
 
 
 clearLog :: SidePanels -> SidePanels
