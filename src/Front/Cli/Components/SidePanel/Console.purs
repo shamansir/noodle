@@ -38,3 +38,7 @@ log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk
 log s = do
     State.modify_ (withPanels $ logToConsole $ Array.singleton s)
     SP.refresh sidePanel
+
+
+logError :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
+logError errorStr = log $ "Error : " <> errorStr

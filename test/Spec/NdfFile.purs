@@ -94,7 +94,8 @@ $ mouse :: %┤ do
 : stated : stated2 :: [Unit {unit}] <> => <>
 : test2 : family2 :: <> => <>
 @ stated : A node with some state
-@ stated2 : A node with some state, version 2"""
+@ stated2 : A node with some state, version 2
+"""
 
 
 familyR :: String -> Id.FamilyR

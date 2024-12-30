@@ -58,10 +58,10 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Cli.State (State)
-import Cli.State (init) as State
-import Cli.State (informWsInitialized) as State
+import Cli.State (init, appendNdf, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
+import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -93,10 +93,13 @@ data SelectedToolkit
     | User String
 
 
+newtype NdfFilePath = NdfFilePath String
+
+
 data Options
     = JustRun SelectedToolkit
-    | LoadNetworkFrom String SelectedToolkit
-    | GenerateToolkitFrom String SelectedToolkit
+    | LoadNetworkFrom NdfFilePath SelectedToolkit
+    | GenerateToolkitFrom NdfFilePath SelectedToolkit
     | PaletteTest SelectedToolkit
 
 
@@ -127,11 +130,11 @@ runWith =
             case tkKey of
                 Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ pure unit
                 User _  -> pure unit
-        LoadNetworkFrom fromFile tkKey ->
+        LoadNetworkFrom (NdfFilePath fromFile) tkKey ->
             case tkKey of
                 Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ postFix fromFile
                 User _  -> pure unit
-        GenerateToolkitFrom fromFile tkKey -> do
+        GenerateToolkitFrom (NdfFilePath fromFile) tkKey -> do
             case tkKey of
                 -- FIXME: even though `Starter` is the actual toolkit name, it mixes up modules names when we want them to be different.
                 -- FIXME: Also, it puts families into `Starter.Starter` directory
@@ -150,12 +153,13 @@ runWith =
         applyFile (Right fileContents) = do
             case P.runParser fileContents NdfFile.parser of
                 Right ndfFile ->
-                    pure unit
-                    -- FIXME: NdfFile.apply ndfFile
-                Left parsingError ->
-                    pure unit
-        applyFile (Left error) =
-            pure unit
+                    State.modify_ $ CState.appendNdf ndfFile
+                Left parsingError -> do
+                    liftEffect $ Console.log $ "Error : " <> show parsingError
+                    CC.logError $ show parsingError
+        applyFile (Left error) = do
+            liftEffect $ Console.log $ "Error : " <> show error
+            CC.logError $ show error
 
 
 runBlessedInterface
@@ -170,7 +174,7 @@ runBlessedInterface
     -> BlessedOp (State tk ps fs strepr chrepr Effect) Effect
     -> Effect Unit
 runBlessedInterface pState toolkit andThen = do
-    (initialState :: State tk ps fs strepr chrepr Effect) <- State.init pState toolkit
+    (initialState :: State tk ps fs strepr chrepr Effect) <- CState.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
@@ -182,7 +186,7 @@ runBlessedInterface pState toolkit andThen = do
             , handleError : hErr
             , handleStart : hStart
             }
-        State.modify_ $ State.informWsInitialized wss
+        State.modify_ $ CState.informWsInitialized wss
         mainScreen >~ Screen.render
         -- productsCallback <- Blessed.impair1 storeProducts
         --liftEffect $ runAff_ productsCallback CAI.requestProducts
@@ -256,8 +260,8 @@ options = ado
 
     in
         if paletteTest then PaletteTest selectedToolkit
-        else if (genFromFile /= "") then GenerateToolkitFrom genFromFile selectedToolkit
-        else if (nwFromFile /= "") then LoadNetworkFrom nwFromFile selectedToolkit
+        else if (genFromFile /= "") then GenerateToolkitFrom (NdfFilePath genFromFile) selectedToolkit
+        else if (nwFromFile /= "")  then LoadNetworkFrom     (NdfFilePath nwFromFile)  selectedToolkit
         else JustRun selectedToolkit
 
 

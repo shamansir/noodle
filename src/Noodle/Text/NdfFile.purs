@@ -127,6 +127,14 @@ snocOp :: NdfFile -> CommandOp -> NdfFile
 snocOp (NdfFile header failedLines cmds) cmdop = NdfFile header failedLines $ cmds `Array.snoc` Command.fromOp cmdop
 
 
+prepend :: NdfFile -> NdfFile -> NdfFile
+prepend = flip append
+
+
+append :: NdfFile -> NdfFile -> NdfFile
+append (NdfFile _ failedLinesA cmdsA) (NdfFile headerB failedLinesB cmdsB) = NdfFile headerB (failedLinesA <> failedLinesB) $ cmdsA <> cmdsB
+
+
 toNdfCode :: NdfFile -> String
 toNdfCode (NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) _ commands) =
     toolkit <> " "

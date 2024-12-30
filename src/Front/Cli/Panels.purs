@@ -10,7 +10,7 @@ import Data.Array (singleton) as Array
 
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile (NdfFile)
-import Noodle.Text.NdfFile (init, snocOp, toTaggedNdfCode, optimize) as Ndf
+import Noodle.Text.NdfFile (init, snocOp, toTaggedNdfCode, optimize, append) as Ndf
 
 
 data Which
@@ -20,6 +20,7 @@ data Which
     | Console
 
 
+-- FIXME: by logic, those are just parts of the `State`, may be make them a direct members and store only toggles here
 type SidePanels =
     { commands :: Boolean /\ NdfFile
     , wsServer :: Boolean
@@ -54,6 +55,11 @@ clearCommands s = s { commands = initCommands <$ s.console }
 appendCommand :: Ndf.CommandOp -> SidePanels -> SidePanels
 appendCommand cmdop s =
     s { commands = Ndf.optimize <$> flip Ndf.snocOp cmdop <$> s.commands }
+
+
+appendNdf :: NdfFile -> SidePanels -> SidePanels
+appendNdf ndfFile s =
+    s { commands = Ndf.optimize <$> Ndf.append ndfFile <$> s.commands }
 
 
 clearLog :: SidePanels -> SidePanels

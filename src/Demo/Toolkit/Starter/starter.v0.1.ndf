@@ -16,6 +16,24 @@ starter 0.2 0.1
 : spreads : vspread :: <x:SpreadN -> y:SpreadN> => spread:SpreadV
 : spreads : cspread :: <red:SpreadN -> green:SpreadN -> blue:SpreadN -> alpha:SpreadN> => color:SpreadC
 : spreads : xsshape :: <pos:SpreadN -> color:SpreadC -> size:SpreadV -> angle:SpreadN> => shape:SpreadS
+@ gennum : Generates a random number every second
+@ sum : Gives a sum of numbers given as inputs
+@ log : (TODO) Logs to its body any value that was given in its input
+@ color : Returns a color built from R (red), G (green) and B (blue) values. Values are treated in range 0..1, so 1 means full presence of color component and 0 means no presence
+@ knob : (TODO) A control that produces a number when you drag it
+@ metro : Every period of seconds produces a Bang value on the output, but only if enabled (see first input)
+@ lerp : Take a value from `v` input and project it between `min` and `max` values:
+@ lerp :     v:0   min:5 max:10 -> 5
+@ lerp :     v:0.5 min:5 max:10 -> 7.5
+@ lerp :     v:1   min:5 max:10 -> 10
+@ lerp :     -----------------------
+@ lerp :     v:0   min:0 max:255 -> 0
+@ lerp :     v:0.787 min:0 max:255 -> 200.685
+@ lerp :     v:1   min:0 max:255 -> 255
+@ letter : (TODO) Produce a character using its ASCII code
+@ bang : (TODO) Produce a bang when clicked inside the node
+@ shape : (TODO) Produce a shape that was selected in the node
+@ xsshape : (TODO) Take a spread of positions, a spread of colors, a spread of sizes and a spread of angles and produce a spread of shapes
 $ gennum :: /-|
   sendRandom <- Fn.spawn $ do
     nextRandom <- liftEffect $ random

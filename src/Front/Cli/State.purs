@@ -29,6 +29,8 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
+import Noodle.Text.NdfFile (NdfFile)
+import Noodle.Text.NdfFile (extractCommands) as Ndf
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
@@ -36,6 +38,7 @@ import Blessed.Internal.NodeKey (RawNodeKey)
 
 -- import Cli.WsServer as WSS
 import Cli.Panels (SidePanels, initPanels)
+import Cli.Panels (appendNdf) as Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
@@ -226,3 +229,7 @@ storeNodeUpdate nodeR changes s = s { lastUpdate = Map.insert nodeR changes s.la
 
 lastNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> State tk ps fs sr cr m -> Maybe (Raw.NodeChanges sr cr)
 lastNodeUpdate nodeR = _.lastUpdate >>> Map.lookup nodeR
+
+
+appendNdf :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+appendNdf ndfFile = withPanels $ Panels.appendNdf ndfFile
