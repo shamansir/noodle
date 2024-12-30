@@ -6,7 +6,7 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat, snoc) as Array
+import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat, snoc, filter) as Array
 import Data.Array.Extra (sortUsing) as Array
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
@@ -20,8 +20,7 @@ import Data.Text.Format (Tag, nl, space) as T
 import Foreign (F, Foreign)
 import Yoga.JSON (class ReadForeign, class WriteForeign)
 
-import Noodle.Id (FamilyR)
-import Noodle.Id (family) as Id
+import Noodle.Id (FamilyR, family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
 import Noodle.Text.NdfFile.Command (_priority, op, fromOp) as Command
@@ -185,7 +184,7 @@ definitionsFromCommands_ =
         >>> Map.values
         >>> Array.fromFoldable
     where
-        applyCommand :: Map FamilyR (Maybe Source /\ FamilyDef) -> Command -> Map FamilyR (Maybe Source /\ FamilyDef)
+        applyCommand :: Map Id.FamilyR (Maybe Source /\ FamilyDef) -> Command -> Map Id.FamilyR (Maybe Source /\ FamilyDef)
         applyCommand theMap =
             case _ of
                 Command mbSource (DefineFamily familyDef) ->
@@ -218,6 +217,13 @@ loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders Nothing
                         Just mergedOrders -> Just $ mergedOrders <> nextOrders
                         Nothing -> Just nextOrders
                 _ -> mbMergedOrders
+
+
+documentationFor :: Id.FamilyR -> NdfFile -> Array String
+documentationFor familyR = extractCommands >>> map Command.op >>> foldl extractDocs []
+    where
+        extractDocs docs (Documentation familyR' docLine) | familyR' == familyR = Array.snoc docs docLine
+        extractDocs docs _  = docs
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?

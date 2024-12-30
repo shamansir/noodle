@@ -101,6 +101,7 @@ import Cli.Components.StatusLine as SL
 -- REM import Cli.Components.FullInfoBox as FI
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
+import Cli.Components.SidePanel.Documentation as DP
 import Cli.Bounds as Bounds
 
 
@@ -449,7 +450,7 @@ onMouseOver ptk familyR nodeR _ _ = do
     case State.lastNodeUpdate nodeR state of
         Just update -> SL.nodeStatus ptk nodeR update
         Nothing -> SL.familyStatus ptk familyR
-
+    DP.showDocumentationFor familyR
     {-
     FI.familyStatus family
      -}
