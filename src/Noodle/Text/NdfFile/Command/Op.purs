@@ -42,7 +42,7 @@ data CommandOp
     | Order FamiliesOrder
     | Import String
     | Comment String
-    -- TODO: | Disconnect
+    | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
     -- TODO: | Documentation FamilyR String
 
 
@@ -57,19 +57,18 @@ instance ToCode NDF opts CommandOp where
                 toCode pndf opts familyDef
             AssignProcess processAssign ->
                 toCode pndf opts processAssign
-            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
-            Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
-            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
-            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
-            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
-            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
+            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId)       -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
+            Move  (NodeInstanceId nodeId) (Coord top) (Coord left)                  -> ". " <> show top <> " " <> show left <> " " <> nodeId
+            Send  (NodeInstanceId nodeId) (InletId eInletId)  (EncodedValue value)  -> "-> " <> nodeId <> " " <> eitherToCode eInletId <> " " <> value
+            SendO (NodeInstanceId nodeId) (OutletId eOutletId) (EncodedValue value) -> "~> " <> nodeId <> " " <> eitherToCode eOutletId <> " " <> value
+            Connect (NodeInstanceId fromNode) (OutletId eOutletId) (NodeInstanceId toNode) (InletId eInletId)    -> "<> " <> fromNode <> " " <> eitherToCode eOutletId <> " " <> toNode <> " " <> eitherToCode eInletId
+            Disconnect (NodeInstanceId fromNode) (OutletId eOutletId) (NodeInstanceId toNode) (InletId eInletId) -> ">< " <> fromNode <> " " <> eitherToCode eOutletId <> " " <> toNode <> " " <> eitherToCode eInletId
             Comment content -> "# " <> content
             Import path -> "i " <> path
             Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> map Id.family <$> items) <> " |"
+        where
+            eitherToCode (Right index) = show index
+            eitherToCode (Left  name)  = name
 
 
 instance ToTaggedCode NDF opts CommandOp where
@@ -82,18 +81,18 @@ instance ToTaggedCode NDF opts CommandOp where
                 toTaggedCode pndf opts processAssign
             MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
             Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
-            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
-            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
-            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            Send  (NodeInstanceId nodeId) eInletId  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> eInletToCode eInletId   <> T.space <> F.value value
+            SendO (NodeInstanceId nodeId) eOutletId (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> eOutletToCode eOutletId <> T.space <> F.value value
+            Connect    (NodeInstanceId fromNode) eOutletId (NodeInstanceId toNode) eInletId -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> eOutletToCode eOutletId <> T.space <> F.nodeId toNode <> T.space <> eInletToCode eInletId
+            Disconnect (NodeInstanceId fromNode) eOutletId (NodeInstanceId toNode) eInletId -> F.operator "><" <> T.space <> F.nodeId fromNode <> T.space <> eOutletToCode eOutletId <> T.space <> F.nodeId toNode <> T.space <> eInletToCode eInletId
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
             Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map (Id.family >>> F.orderItem) <$> items)
-
+        where
+            eInletToCode  (InletId  (Right iindex)) = F.inletIdx iindex
+            eInletToCode  (InletId  (Left  iname))  = F.inletId iname
+            eOutletToCode (OutletId (Right iindex)) = F.outletIdx iindex
+            eOutletToCode (OutletId (Left  iname))  = F.outletId iname
 
 toNdf :: Array CommandOp -> String
 toNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize cmds)
@@ -129,18 +128,20 @@ ndfLinesCount = case _ of
     _ -> 1
 
 
-priority :: CommandOp -> Int
-priority = case _ of
+_priority :: CommandOp -> Int
+_priority = case _ of
     Import _ -> 0
     Order _ -> 1
     DefineFamily _ -> 2
-    AssignProcess _ -> 3
+    AssignProcess _ -> 3 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
+    -- all the commands below should keep their order in file
     MakeNode _ _ _ _ -> 4
     Move _ _ _ -> 4
     Connect _ _ _ _ -> 4
+    Disconnect _ _ _ _ -> 4
     Send _ _ _ -> 4
     SendO _ _ _ -> 4
-    Comment _ -> 5
+    Comment _ -> 4 -- to keep comments where they belong
 
 
 reviewOrder_ :: FamiliesOrder -> FamiliesOrder

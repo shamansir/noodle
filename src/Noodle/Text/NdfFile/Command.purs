@@ -72,8 +72,8 @@ op :: Command -> CommandOp
 op (Command _ op) = op
 
 
-priority :: Command -> Int
-priority = op >>> Op.priority
+_priority :: Command -> Int
+_priority = op >>> Op._priority
 
 
 reviewOrder_ :: Op.FamiliesOrder -> Op.FamiliesOrder

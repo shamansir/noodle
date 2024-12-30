@@ -28,13 +28,17 @@ import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..), ndfLinesCount, reviewOrder_) as Cmd
 import Noodle.Text.NdfFile.Command.Op (CommandOp)
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Cmd
-import Noodle.Text.NdfFile.Types (nodeInstanceId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue) as C
+import Noodle.Text.NdfFile.Types (nodeInstanceId, coord, inletAlias, inletIndex, outletAlias, outletIndex, encodedValue, OutletId, InletId, NodeInstanceId, EncodedValue) as C
 
 import Noodle.Text.NdfFile (NdfFile(..), Header(..), FailedLine(..))
 import Noodle.Text.NdfFile.FamilyDef.Parser (parser, assignmentParser) as FamilyDef
 
 
-createCommandOp :: P.Parser String CommandOp
+type SParser a = P.Parser String a
+type OpParser = P.Parser String CommandOp
+
+
+createCommandOp :: OpParser
 createCommandOp = do
     family <- P.tokenTill P.space
     _ <- P.many P.space
@@ -46,113 +50,63 @@ createCommandOp = do
     pure $ Cmd.MakeNode (Id.unsafeFamilyR family) (C.coord x) (C.coord y) (C.nodeInstanceId instanceId)
 
 
-connectCommandOpII :: P.Parser String CommandOp
-connectCommandOpII = do
-    _ <- P.string "<>"
-    _ <- P.many1 P.space
-    instanceFromId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletIndex <- P.intDecimal
-    _ <- P.many1 P.space
-    instanceToId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletIndex <- P.intDecimal
-    P.eol
-    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
+connectCommandOpII :: OpParser
+connectCommandOpII =
+    _command2OpHelper "<>" (P.intDecimal <#> C.outletIndex) true (P.intDecimal <#> C.inletIndex) true Cmd.Connect
 
 
-connectCommandOpSS :: P.Parser String CommandOp
+connectCommandOpSS :: OpParser
 connectCommandOpSS = do
-    _ <- P.string "<>"
-    _ <- P.many1 P.space
-    instanceFromId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletId <- P.tokenTill P.space
-    _ <- P.many P.space
-    instanceToId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletId <- P.tokenTill P.eol
-    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
+    _command2OpHelper "<>" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Connect
 
 
-connectCommandOpIS :: P.Parser String CommandOp
+connectCommandOpIS :: OpParser
 connectCommandOpIS = do
-    _ <- P.string "<>"
-    _ <- P.many1 P.space
-    instanceFromId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletIndex <- P.intDecimal
-    _ <- P.many1 P.space
-    instanceToId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletId <- P.tokenTill P.eol
-    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletIndex outletIndex) (C.nodeInstanceId instanceToId) (C.inletAlias inletId)
+    _command2OpHelper "<>" (P.intDecimal <#> C.outletIndex) true (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Connect
 
 
-connectCommandOpSI :: P.Parser String CommandOp
+connectCommandOpSI :: OpParser
 connectCommandOpSI = do
-    _ <- P.string "<>"
-    _ <- P.many1 P.space
-    instanceFromId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletId <- P.tokenTill P.space
-    _ <- P.many P.space
-    instanceToId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletIndex <- P.intDecimal
-    P.eol
-    pure $ Cmd.Connect (C.nodeInstanceId instanceFromId) (C.outletAlias outletId) (C.nodeInstanceId instanceToId) (C.inletIndex inletIndex)
+    _command2OpHelper "<>" (P.tokenTill P.space <#> C.outletAlias) false (P.intDecimal <#> C.inletIndex) true Cmd.Connect
 
 
-sendCommandOpI :: P.Parser String CommandOp
-sendCommandOpI = do
-    _ <- P.string "->"
-    _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletIndex <- P.intDecimal
-    _ <- P.many1 P.space
-    valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletIndex inletIndex) (C.encodedValue valueStr)
+disconnectCommandOpII :: OpParser
+disconnectCommandOpII =
+    _command2OpHelper "><" (P.intDecimal <#> C.outletIndex) true (P.intDecimal <#> C.inletIndex) true Cmd.Disconnect
 
 
-sendCommandOpS :: P.Parser String CommandOp
-sendCommandOpS = do
-    _ <- P.string "->"
-    _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.space
-    _ <- P.many P.space
-    inletId <- P.tokenTill P.space
-    _ <- P.many P.space
-    valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.Send (C.nodeInstanceId instanceId) (C.inletAlias inletId) (C.encodedValue valueStr)
+disconnectCommandOpSS :: OpParser
+disconnectCommandOpSS = do
+    _command2OpHelper "><" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Disconnect
 
 
-sendOCommandOpI :: P.Parser String CommandOp
-sendOCommandOpI = do
-    _ <- P.string "~>"
-    _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletIndex <- P.intDecimal
-    _ <- P.many1 P.space
-    valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.SendO (C.nodeInstanceId instanceId) (C.outletIndex outletIndex) (C.encodedValue valueStr)
+disconnectCommandOpIS :: OpParser
+disconnectCommandOpIS = do
+    _command2OpHelper "><" (P.intDecimal <#> C.outletIndex) true (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Disconnect
 
 
-sendOCommandOpS :: P.Parser String CommandOp
-sendOCommandOpS = do
-    _ <- P.string "~>"
-    _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.space
-    _ <- P.many P.space
-    outletId <- P.tokenTill P.space
-    _ <- P.many P.space
-    valueStr <- Tuple.fst <$> P.anyTill P.eol
-    pure $ Cmd.SendO(C.nodeInstanceId instanceId) (C.outletAlias outletId) (C.encodedValue valueStr)
+disconnectCommandOpSI :: OpParser
+disconnectCommandOpSI = do
+    _command2OpHelper "><" (P.tokenTill P.space <#> C.outletAlias) false (P.intDecimal <#> C.inletIndex) true Cmd.Disconnect
 
 
-moveCommandOp :: P.Parser String CommandOp
+sendCommandOpI :: OpParser
+sendCommandOpI = _command1OpHelper "->" (P.intDecimal <#> C.inletIndex) true Cmd.Send
+
+
+sendCommandOpS :: OpParser
+sendCommandOpS = _command1OpHelper "->" (P.tokenTill P.space <#> C.inletAlias) false Cmd.Send
+
+
+sendOCommandOpI :: OpParser
+sendOCommandOpI = _command1OpHelper "~>" (P.intDecimal <#> C.outletIndex) true Cmd.SendO
+
+
+sendOCommandOpS :: OpParser
+sendOCommandOpS = _command1OpHelper "~>" (P.tokenTill P.space <#> C.outletAlias) false Cmd.SendO
+
+
+moveCommandOp :: OpParser
 moveCommandOp = do
     _ <- P.string "."
     _ <- P.many1 P.space
@@ -164,7 +118,7 @@ moveCommandOp = do
     pure $ Cmd.Move (C.nodeInstanceId instanceId) (C.coord x) (C.coord y)
 
 
-comment :: P.Parser String CommandOp
+comment :: OpParser
 comment = do
     _ <- P.string "#"
     _ <- P.space
@@ -172,7 +126,7 @@ comment = do
     pure $ Cmd.Comment content
 
 
-orderCommandOp :: P.Parser String CommandOp
+orderCommandOp :: OpParser
 orderCommandOp = do
     _ <- P.string "*"
     _ <- P.space
@@ -189,7 +143,7 @@ orderCommandOp = do
        <$> String.split (Pattern " | ") content
 
 
-importCommandOp :: P.Parser String CommandOp
+importCommandOp :: OpParser
 importCommandOp = do
     _ <- P.string "i"
     _ <- P.space
@@ -197,7 +151,7 @@ importCommandOp = do
     pure $ Cmd.Import path
 
 
-commandOp :: P.Parser String CommandOp
+commandOp :: OpParser
 commandOp =
   P.try (FamilyDef.parser <#> Cmd.DefineFamily) <?> "node definition"
   <|> P.try (FamilyDef.assignmentParser <#> Cmd.AssignProcess) <?> "process assign"
@@ -205,6 +159,10 @@ commandOp =
   <|> P.try connectCommandOpSS <?> "connect command"
   <|> P.try connectCommandOpIS <?> "connect command"
   <|> P.try connectCommandOpSI <?> "connect command"
+  <|> P.try disconnectCommandOpII <?> "disconnect command"
+  <|> P.try disconnectCommandOpSS <?> "disconnect command"
+  <|> P.try disconnectCommandOpIS <?> "disconnect command"
+  <|> P.try disconnectCommandOpSI <?> "disconnect command"
   <|> P.try sendCommandOpI <?> "send command"
   <|> P.try sendCommandOpS <?> "send command"
   <|> P.try sendOCommandOpI <?> "send command"
@@ -216,7 +174,7 @@ commandOp =
   <|> P.try comment <?> "comment"
 
 
-command :: P.Parser String Command
+command :: SParser Command
 command = do
   source /\ pos <- P.sourceAt
   cmdOp <- commandOp
@@ -235,7 +193,7 @@ command = do
     cmdOp
 
 
-parser :: P.Parser String NdfFile
+parser :: SParser NdfFile
 parser = do
   source <- P.source
   toolkit <- P.tokenTill P.space
@@ -248,3 +206,38 @@ parser = do
     -- one line as a header + parsed cmds, usually one per line, but processCode may take longer
     failedLines = FailedLine <$> (Array.drop (1 + (F.sum $ Cmd.ndfLinesCount <$> cmdsArray)) $ String.lines source)
   pure $ NdfFile (Header { toolkit, toolkitVersion, ndfVersion }) failedLines cmdsArray
+
+
+_command2OpHelper :: forall oi ii. String -> SParser oi -> Boolean -> SParser ii -> Boolean -> (C.NodeInstanceId -> oi -> C.NodeInstanceId -> ii -> CommandOp) -> OpParser
+_command2OpHelper marker pOutletId requireSpace pInletId withEol constructF = do
+    _ <- P.string marker
+    _ <- P.many1 P.space
+    instanceFromId <- P.tokenTill P.space
+    _ <- P.many P.space
+    outletId <- pOutletId
+    if (requireSpace)
+        then P.many1 P.space *> pure unit
+        else P.many  P.space *> pure unit
+    instanceToId <- P.tokenTill P.space
+    _ <- P.many P.space
+    if withEol then do
+        inletId <- pInletId
+        P.eol
+        pure $ constructF (C.nodeInstanceId instanceFromId) outletId (C.nodeInstanceId instanceToId) inletId
+    else do
+        inletId <- pInletId
+        pure $ constructF (C.nodeInstanceId instanceFromId) outletId (C.nodeInstanceId instanceToId) inletId
+
+
+_command1OpHelper :: forall subj. String -> SParser subj -> Boolean -> (C.NodeInstanceId -> subj -> C.EncodedValue -> CommandOp) -> OpParser
+_command1OpHelper marker pSubj requireSpace constructF = do
+    _ <- P.string marker
+    _ <- P.many1 P.space
+    instanceId <- P.tokenTill P.space
+    _ <- P.many P.space
+    subj <- pSubj
+    if (requireSpace)
+        then P.many1 P.space *> pure unit
+        else P.many  P.space *> pure unit
+    valueStr <- Tuple.fst <$> P.anyTill P.eol
+    pure $ constructF (C.nodeInstanceId instanceId) subj (C.encodedValue valueStr)

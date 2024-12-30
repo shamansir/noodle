@@ -24,7 +24,7 @@ import Noodle.Id (FamilyR)
 import Noodle.Id (family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
-import Noodle.Text.NdfFile.Command (priority, op, fromOp) as Command
+import Noodle.Text.NdfFile.Command (_priority, op, fromOp) as Command
 import Noodle.Text.NdfFile.Command (optimize) as Commands
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
@@ -155,13 +155,15 @@ hasFailedLines :: NdfFile -> Boolean
 hasFailedLines = failedLines >>> Array.length >>> (_ > 0)
 
 
-normalize :: NdfFile -> NdfFile
-normalize (NdfFile header failedCommands commands) =
-    NdfFile header failedCommands $ normalizeCommands commands
+-- TODO: used when loading NDF file, to place imports before commands and process assignment after family definitions, but may be just ask user to order the file properly?
+_normalize :: NdfFile -> NdfFile
+_normalize (NdfFile header failedCommands commands) =
+    NdfFile header failedCommands $ _normalizeCommands commands
 
 
-normalizeCommands :: Array Command -> Array Command
-normalizeCommands = Array.sortWith Command.priority
+-- TODO: used when loading NDF file, to place imports before commands and process assignment after family definitions, but may be just ask user to order the file properly?
+_normalizeCommands :: Array Command -> Array Command
+_normalizeCommands = Array.sortWith Command._priority
 
 
 optimize :: NdfFile -> NdfFile
@@ -189,7 +191,7 @@ loadDefinitions :: NdfFile -> Array (Maybe Source /\ FamilyDef) -- a) TODO: Use 
 loadDefinitions ndfFile =
     ndfFile
         # extractCommands
-        # normalizeCommands
+        # _normalizeCommands
         # definitionsFromCommands_
         # Array.sortWith (Tuple.fst >>> map _.lineIndex)
         # case loadOrder ndfFile of
