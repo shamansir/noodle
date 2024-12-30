@@ -30,3 +30,13 @@ connect :: Raw.Link -> Op.CommandOp
 connect link =
     case RawLink.from link /\ RawLink.to link of
         (fromNodeR /\ outletR) /\ (toNodeR /\ inletR) -> Op.Connect (instanceIdFor fromNodeR) (T.fromOutletR outletR) (instanceIdFor toNodeR) (T.fromInletR inletR)
+
+
+disconnect :: Raw.Link -> Op.CommandOp
+disconnect link =
+    case RawLink.from link /\ RawLink.to link of
+        (fromNodeR /\ outletR) /\ (toNodeR /\ inletR) -> Op.Disconnect (instanceIdFor fromNodeR) (T.fromOutletR outletR) (instanceIdFor toNodeR) (T.fromInletR inletR)
+
+
+removeNode :: Id.NodeR -> Op.CommandOp
+removeNode = instanceIdFor >>> Op.RemoveNode

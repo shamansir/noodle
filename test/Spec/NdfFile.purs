@@ -48,9 +48,6 @@ number 40 40 num-0
 -> osc-0 foo N 20.0
 ~> num-0 bar N 40.0
 . 20 30 pi-0
->< num-0 0 osc-0 1
->< pi-0 foo osc-0 bar
->< pi-0 0 osc-0 0
 """
 
 
@@ -74,6 +71,8 @@ number 40 40 num-0
 >< num-0 0 osc-0 1
 >< pi-0 foo osc-0 bar
 >< pi-0 0 osc-0 0
+x pi-0
+x osc-0
 """
 
 
@@ -120,9 +119,6 @@ expected_0_1_Ndf =
         , C.Send (C.nodeInstanceId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
         , C.SendO (C.nodeInstanceId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
         , C.Move (C.nodeInstanceId "pi-0") (C.coord 20) (C.coord 30)
-        , C.Disconnect (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 1)
-        , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletAlias "foo") (C.nodeInstanceId "osc-0") (C.inletAlias "bar")
-        , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 0)
         ]
 
 
@@ -147,6 +143,8 @@ expected_0_2_Ndf_OnlyCmds =
         , C.Disconnect (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 1)
         , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletAlias "foo") (C.nodeInstanceId "osc-0") (C.inletAlias "bar")
         , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 0)
+        , C.RemoveNode (C.nodeInstanceId "pi-0")
+        , C.RemoveNode (C.nodeInstanceId "osc-0")
         ]
 
 

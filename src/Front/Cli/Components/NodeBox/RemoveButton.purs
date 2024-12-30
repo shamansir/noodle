@@ -47,6 +47,7 @@ import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.SidePanel.Documentation as Doc
+import Cli.Components.SidePanel.CommandLog as CL
 
 import Noodle.Id as Id
 import Noodle.Patch as Patch
@@ -54,8 +55,10 @@ import Noodle.Network as Network
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id) as RawNode
 import Noodle.Wiring (class Wiring)
+import Noodle.Text.NdfFile.Command.Quick as QOp
 -- import Noodle.Node (unsafeDisconnect) as Node
 -- import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
+
 
 
 component
@@ -95,6 +98,7 @@ component topOffset family node keys =
                         )
                         Blessed.runOnUnit $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
                         keys.nodeBox >~ Node.detach
+                        CL.trackCommand $ QOp.removeNode (RawNode.id node)
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
                 pure unit

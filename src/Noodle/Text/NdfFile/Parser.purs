@@ -167,6 +167,14 @@ documentationCommandOp = do
     pure $ Cmd.Documentation (Id.unsafeFamilyR family) content
 
 
+removeCommandOp :: OpParser
+removeCommandOp = do
+    _ <- P.string "x"
+    _ <- P.space
+    instanceId <- P.tokenTill eoi
+    pure $ Cmd.RemoveNode $ C.nodeInstanceId instanceId
+
+
 commandOp :: OpParser
 commandOp =
   P.try (FamilyDef.parser <#> Cmd.DefineFamily) <?> "node definition"
@@ -183,11 +191,12 @@ commandOp =
   <|> P.try sendCommandOpS <?> "send command"
   <|> P.try sendOCommandOpI <?> "send command"
   <|> P.try sendOCommandOpS <?> "send command"
-  <|> P.try createCommandOp <?> "create command"
+  <|> P.try createCommandOp <?> "create node command"
   <|> P.try moveCommandOp <?> "move command"
   <|> P.try orderCommandOp <?> "order command"
   <|> P.try importCommandOp <?> "import command"
   <|> P.try documentationCommandOp <?> "documentation command"
+  <|> P.try removeCommandOp <?> "remove node command"
   <|> P.try comment <?> "comment"
 
 

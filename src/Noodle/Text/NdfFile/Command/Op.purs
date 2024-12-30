@@ -43,6 +43,7 @@ data CommandOp
     | Import String
     | Comment String
     | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
+    | RemoveNode NodeInstanceId
     | Documentation Id.FamilyR String -- TODO: make `FamilyR` optional and treat documentation before family definition as belonging to this family
 
 
@@ -58,6 +59,7 @@ instance ToCode NDF opts CommandOp where
             AssignProcess processAssign ->
                 toCode pndf opts processAssign
             MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId)       -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
+            RemoveNode (NodeInstanceId nodeId)                                      -> "x " <> nodeId
             Move  (NodeInstanceId nodeId) (Coord top) (Coord left)                  -> ". " <> show top <> " " <> show left <> " " <> nodeId
             Send  (NodeInstanceId nodeId) (InletId eInletId)  (EncodedValue value)  -> "-> " <> nodeId <> " " <> eitherToCode eInletId <> " " <> value
             SendO (NodeInstanceId nodeId) (OutletId eOutletId) (EncodedValue value) -> "~> " <> nodeId <> " " <> eitherToCode eOutletId <> " " <> value
@@ -81,6 +83,7 @@ instance ToTaggedCode NDF opts CommandOp where
             AssignProcess processAssign ->
                 toTaggedCode pndf opts processAssign
             MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            RemoveNode (NodeInstanceId nodeId) -> F.operator "x" <> T.space <> F.nodeId nodeId
             Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
             Send  (NodeInstanceId nodeId) eInletId  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> eInletToCode eInletId   <> T.space <> F.value value
             SendO (NodeInstanceId nodeId) eOutletId (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> eOutletToCode eOutletId <> T.space <> F.value value
@@ -104,6 +107,9 @@ toTaggedNdf :: Array CommandOp -> T.Tag
 toTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
 
 
+-- TODO: - remove disconnect after the same immediate connect
+-- TODO: - remove disconnect after the same connect before and without sending values
+-- TODO: - remove removing nodes w/o connecting them to anything
 optimize :: Array CommandOp -> Array CommandOp
 optimize =
     _.optimizedCmds <<< foldl foldF { mbPrevCmd : Nothing, optimizedCmds : [] }
@@ -138,6 +144,7 @@ _priority = case _ of
     AssignProcess _ -> 5 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
     -- all the commands below should keep their order in file
     MakeNode _ _ _ _ -> 4
+    RemoveNode _ -> 4
     Move _ _ _ -> 4
     Connect _ _ _ _ -> 4
     Disconnect _ _ _ _ -> 4

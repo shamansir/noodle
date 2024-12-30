@@ -203,6 +203,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                             CC.log "disconnect previous"
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
+                                            CL.trackCommand $ QOp.disconnect rawLink
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 
@@ -325,5 +326,6 @@ onLinkClick patchR rawLink linkState _ = do
                     nextLinksFrom /\ nextLinksTo = CLink.forget linkState (s.linksFrom /\ s.linksTo)
                 in s { linksFrom = nextLinksFrom, linksTo = nextLinksTo }
             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
+            CL.trackCommand $ QOp.disconnect rawLink
             Key.mainScreen >~ Screen.render
         Nothing -> pure unit
