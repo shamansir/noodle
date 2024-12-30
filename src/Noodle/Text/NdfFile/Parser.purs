@@ -13,12 +13,12 @@ import Data.Maybe (Maybe(..))
 import Data.Foldable (sum) as F
 
 import Parsing (Parser, Position(..)) as P
-import Parsing.String (char, string, anyTill) as P
+import Parsing.String (char, string, anyTill, eof) as P
 import Parsing.String.Basic (alphaNum, space, number, intDecimal) as P
 import Parsing.Combinators (many1, many1Till, try, option) as P
 import Parsing.Combinators ((<?>))
 import Parsing.Extra (source, sourceAt) as P
-import Parsing.String.Extra (tokenTill, eol) as P
+import Parsing.String.Extra (token, tokenTill, eol) as P
 import Control.Alt ((<|>))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
@@ -38,6 +38,10 @@ type SParser a = P.Parser String a
 type OpParser = P.Parser String CommandOp
 
 
+eoi :: SParser Unit
+eoi = P.eol <|> P.eof
+
+
 createCommandOp :: OpParser
 createCommandOp = do
     family <- P.tokenTill P.space
@@ -46,7 +50,7 @@ createCommandOp = do
     _ <- P.many1 P.space
     y <- P.intDecimal
     _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.eol
+    instanceId <- P.tokenTill eoi
     pure $ Cmd.MakeNode (Id.unsafeFamilyR family) (C.coord x) (C.coord y) (C.nodeInstanceId instanceId)
 
 
@@ -57,12 +61,12 @@ connectCommandOpII =
 
 connectCommandOpSS :: OpParser
 connectCommandOpSS = do
-    _command2OpHelper "<>" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Connect
+    _command2OpHelper "<>" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill eoi <#> C.inletAlias) false Cmd.Connect
 
 
 connectCommandOpIS :: OpParser
 connectCommandOpIS = do
-    _command2OpHelper "<>" (P.intDecimal <#> C.outletIndex) true (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Connect
+    _command2OpHelper "<>" (P.intDecimal <#> C.outletIndex) true (P.tokenTill eoi <#> C.inletAlias) false Cmd.Connect
 
 
 connectCommandOpSI :: OpParser
@@ -77,12 +81,12 @@ disconnectCommandOpII =
 
 disconnectCommandOpSS :: OpParser
 disconnectCommandOpSS = do
-    _command2OpHelper "><" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Disconnect
+    _command2OpHelper "><" (P.tokenTill P.space <#> C.outletAlias) false (P.tokenTill eoi <#> C.inletAlias) false Cmd.Disconnect
 
 
 disconnectCommandOpIS :: OpParser
 disconnectCommandOpIS = do
-    _command2OpHelper "><" (P.intDecimal <#> C.outletIndex) true (P.tokenTill P.eol <#> C.inletAlias) false Cmd.Disconnect
+    _command2OpHelper "><" (P.intDecimal <#> C.outletIndex) true (P.tokenTill eoi <#> C.inletAlias) false Cmd.Disconnect
 
 
 disconnectCommandOpSI :: OpParser
@@ -114,7 +118,7 @@ moveCommandOp = do
     _ <- P.many1 P.space
     y <- P.intDecimal
     _ <- P.many1 P.space
-    instanceId <- P.tokenTill P.eol
+    instanceId <- P.tokenTill eoi
     pure $ Cmd.Move (C.nodeInstanceId instanceId) (C.coord x) (C.coord y)
 
 
@@ -122,7 +126,7 @@ comment :: OpParser
 comment = do
     _ <- P.string "#"
     _ <- P.space
-    content <- Tuple.fst <$> P.anyTill P.eol
+    content <- Tuple.fst <$> P.anyTill eoi
     pure $ Cmd.Comment content
 
 
@@ -131,9 +135,9 @@ orderCommandOp = do
     _ <- P.string "*"
     _ <- P.space
     -- _ <- P.string "| "
-    content <- Tuple.fst <$> P.anyTill P.eol -- (P.anyTill $ P.string " |")
+    content <- Tuple.fst <$> P.anyTill eoi -- (P.anyTill $ P.string " |")
     -- _ <- P.string " |"
-    -- P.eol
+    -- eoi
     pure
         $ Cmd.Order
         $ Cmd.reviewOrder_
@@ -147,8 +151,20 @@ importCommandOp :: OpParser
 importCommandOp = do
     _ <- P.string "i"
     _ <- P.space
-    path <- Tuple.fst <$> P.anyTill P.eol
+    path <- Tuple.fst <$> P.anyTill eoi
     pure $ Cmd.Import path
+
+
+documentationCommandOp :: OpParser
+documentationCommandOp = do
+    _ <- P.string "@"
+    _ <- P.space
+    family <- P.token
+    _ <- P.space
+    _ <- P.string ":"
+    _ <- P.space
+    content <- Tuple.fst <$> P.anyTill eoi
+    pure $ Cmd.Documentation (Id.unsafeFamilyR family) content
 
 
 commandOp :: OpParser
@@ -171,6 +187,7 @@ commandOp =
   <|> P.try moveCommandOp <?> "move command"
   <|> P.try orderCommandOp <?> "order command"
   <|> P.try importCommandOp <?> "import command"
+  <|> P.try documentationCommandOp <?> "documentation command"
   <|> P.try comment <?> "comment"
 
 
@@ -199,7 +216,7 @@ parser = do
   toolkit <- P.tokenTill P.space
   toolkitVersion <- P.number
   ndfVersion <- P.option 0.1 $ P.try $ P.many1 P.space *> P.number
-  P.eol
+  eoi
   cmds <- P.many1 command
   let
     cmdsArray = NEL.toUnfoldable cmds
@@ -209,7 +226,7 @@ parser = do
 
 
 _command2OpHelper :: forall oi ii. String -> SParser oi -> Boolean -> SParser ii -> Boolean -> (C.NodeInstanceId -> oi -> C.NodeInstanceId -> ii -> CommandOp) -> OpParser
-_command2OpHelper marker pOutletId requireSpace pInletId withEol constructF = do
+_command2OpHelper marker pOutletId requireSpace pInletId withEoi constructF = do
     _ <- P.string marker
     _ <- P.many1 P.space
     instanceFromId <- P.tokenTill P.space
@@ -220,9 +237,9 @@ _command2OpHelper marker pOutletId requireSpace pInletId withEol constructF = do
         else P.many  P.space *> pure unit
     instanceToId <- P.tokenTill P.space
     _ <- P.many P.space
-    if withEol then do
+    if withEoi then do
         inletId <- pInletId
-        P.eol
+        eoi
         pure $ constructF (C.nodeInstanceId instanceFromId) outletId (C.nodeInstanceId instanceToId) inletId
     else do
         inletId <- pInletId
@@ -239,5 +256,5 @@ _command1OpHelper marker pSubj requireSpace constructF = do
     if (requireSpace)
         then P.many1 P.space *> pure unit
         else P.many  P.space *> pure unit
-    valueStr <- Tuple.fst <$> P.anyTill P.eol
+    valueStr <- Tuple.fst <$> P.anyTill eoi
     pure $ constructF (C.nodeInstanceId instanceId) subj (C.encodedValue valueStr)

@@ -31,6 +31,7 @@ someGroup = Pico.green :: Item -- FIXME: use `mark`
 familyName = Pico.blue :: Item -- FIXME: use `mark`
 operator = Pico.blueGreen :: Item -- FIXME: use `mark`
 comment = Pico.darkGrey :: Item -- FIXME: use `mark`
+documentation = Pico.darkBrown :: Item -- FIXME: use `mark`
 nodeId = Pico.lavender :: Item -- FIXME: use `mark`
 coord = Pico.green :: Item -- FIXME: use `mark`
 value = Pico.brown :: Item -- FIXME: use `mark`

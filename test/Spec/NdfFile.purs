@@ -93,7 +93,9 @@ $ mouse :: %┤ do
 ├%
 : stated : stated :: [Unit] <in:Value {Number 0.0}> => num:Value {Number 1.0}
 : stated : stated2 :: [Unit {unit}] <> => <>
-: test2 : family2 :: <> => <>"""
+: test2 : family2 :: <> => <>
+@ stated : A node with some state
+@ stated2 : A node with some state, version 2"""
 
 
 familyR :: String -> Id.FamilyR
@@ -242,6 +244,8 @@ expected_0_2_Ndf_OnlyDefs =
             , state : ND.stv "unit"
             } -}
         , C.DefineFamily $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
+        , C.Documentation (familyR "stated") "A node with some state"
+        , C.Documentation (familyR "stated2") "A node with some state, version 2"
         ]
 
 

@@ -171,7 +171,11 @@ operator = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 comment :: String -> Tag
-comment = T.fgc (C.colorOf Palette.operator) <<< T.s
+comment = T.fgc (C.colorOf Palette.comment) <<< T.s
+
+
+documentation :: String -> Tag
+documentation = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 markerSymbol :: String -> Tag

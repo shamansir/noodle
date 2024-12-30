@@ -43,7 +43,7 @@ data CommandOp
     | Import String
     | Comment String
     | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
-    -- TODO: | Documentation FamilyR String
+    | Documentation Id.FamilyR String -- TODO: make `FamilyR` optional and treat documentation before family definition as belonging to this family
 
 
 derive instance Eq CommandOp
@@ -66,6 +66,7 @@ instance ToCode NDF opts CommandOp where
             Comment content -> "# " <> content
             Import path -> "i " <> path
             Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> map Id.family <$> items) <> " |"
+            Documentation familyR docLine -> "@ " <> show familyR <> " : " <> docLine
         where
             eitherToCode (Right index) = show index
             eitherToCode (Left  name)  = name
@@ -88,6 +89,7 @@ instance ToTaggedCode NDF opts CommandOp where
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
             Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map (Id.family >>> F.orderItem) <$> items)
+            Documentation familyR docLine -> F.operator "@" <> T.space <> F.family (Id.family familyR) <> T.space <> F.operator ":" <> T.space <> F.documentation docLine
         where
             eInletToCode  (InletId  (Right iindex)) = F.inletIdx iindex
             eInletToCode  (InletId  (Left  iname))  = F.inletId iname
@@ -133,7 +135,7 @@ _priority = case _ of
     Import _ -> 0
     Order _ -> 1
     DefineFamily _ -> 2
-    AssignProcess _ -> 3 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
+    AssignProcess _ -> 5 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
     -- all the commands below should keep their order in file
     MakeNode _ _ _ _ -> 4
     Move _ _ _ -> 4
@@ -142,6 +144,7 @@ _priority = case _ of
     Send _ _ _ -> 4
     SendO _ _ _ -> 4
     Comment _ -> 4 -- to keep comments where they belong
+    Documentation _ _ -> 3 -- while documentation lines are bound to the respecting FamilyR each, we can move it over the file
 
 
 reviewOrder_ :: FamiliesOrder -> FamiliesOrder
