@@ -12,7 +12,7 @@ import Data.Array as Array
 import Control.Monad.State (modify_) as State
 
 import Cli.State (State)
-import Cli.State (withPanels) as State
+import Cli.State (withPanels) as CState
 import Cli.Components.SidePanel (SidePanel)
 import Cli.Components.SidePanel (refresh) as SP
 -- import Cli.Components.SidePanel as SidePanel
@@ -34,11 +34,17 @@ sidePanel =
     , buttonKey : Key.commandLogButton
     , init : false /\ (Array.singleton $ toTaggedNdfCode Panels.initCommands)
     , next : _.panels >>> Panels.load P.Commands
-    , onToggle : State.withPanels $ Panels.toggle P.Commands
+    , onToggle : CState.withPanels $ Panels.toggle P.Commands
     }
 
 
 trackCommand :: forall tk p fs sr cr m mi. MonadEffect m => CommandOp -> BlessedOp (State tk p fs sr cr mi) m
 trackCommand cmdOp = do
-    State.modify_ $ State.withPanels $ Panels.appendCommand cmdOp
+    State.modify_ $ CState.withPanels $ Panels.appendCommand cmdOp
+    SP.refresh sidePanel
+
+
+clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
+clear = do
+    State.modify_ $ CState.withPanels $ \s -> s { commands = Panels.initCommands <$ s.commands }
     SP.refresh sidePanel

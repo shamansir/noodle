@@ -461,6 +461,7 @@ onMouseOver ptk familyR nodeR _ _ = do
 onMouseOut :: forall tk ps fs sr cr m. _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
     SL.clear
+    DP.clear
     {- REM
     FI.clear
     -}

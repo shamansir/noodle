@@ -46,3 +46,9 @@ showDocumentationFor familyR = do
                     (T.s <$> (Ndf.documentationFor familyR $ Tuple.snd $ s.commands))
                 }
     SP.refresh sidePanel
+
+
+clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
+clear = do
+    State.modify_ $ CState.withPanels $ \s -> s { documentation = [] <$ s.documentation }
+    SP.refresh sidePanel

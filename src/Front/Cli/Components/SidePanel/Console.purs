@@ -13,7 +13,8 @@ import Data.Array (singleton) as Array
 
 import Blessed.Internal.BlessedOp (BlessedOp)
 
-import Cli.State (State, withPanels)
+import Cli.State (State)
+import Cli.State (withPanels) as CState
 import Cli.Components.SidePanel (SidePanel)
 import Cli.Components.SidePanel (refresh) as SP
 -- import Cli.Components.SidePanel as SidePanel
@@ -30,15 +31,21 @@ sidePanel =
     , buttonKey : Key.consoleButton
     , init : false /\ []
     , next : _.panels >>> load Console
-    , onToggle : withPanels $ toggle Console
+    , onToggle : CState.withPanels $ toggle Console
     }
 
 
 log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
 log s = do
-    State.modify_ (withPanels $ logToConsole $ Array.singleton s)
+    State.modify_ (CState.withPanels $ logToConsole $ Array.singleton s)
     SP.refresh sidePanel
 
 
 logError :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
 logError errorStr = log $ "Error : " <> errorStr
+
+
+clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
+clear = do
+    State.modify_ $ CState.withPanels $ \s -> s { console = [] <$ s.console }
+    SP.refresh sidePanel
