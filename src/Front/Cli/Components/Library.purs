@@ -33,7 +33,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.State (State)
-import Cli.State (withCurrentPatch, currentPatchState, withPanels) as State
+import Cli.State (withCurrentPatch, currentPatchState) as CState
 import Cli.Style (library, libraryBorder) as Style
 import Cli.Panels as Panels
 import Cli.Class.CliFriendly (class CliFriendly)
@@ -164,14 +164,14 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
     case mbRawNode of
         Just rawNode -> do
-            (mbPatchState :: Maybe pstate) <- State.currentPatchState =<< State.get
+            (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
             let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
 
             case mbNodeState of
                 Just nextState -> rawNode # RawNode.setState nextState
                 Nothing -> pure unit
 
-            State.modify_ $ State.withCurrentPatch $ Patch.registerRawNode rawNode
+            State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 
             NodeBox.componentRaw nextPos patchR familyR rawNode
 
@@ -200,12 +200,12 @@ spawnAndRender
     -> BlessedOp (State tk pstate fs strepr chrepr m) m
 spawnAndRender toolkit patchR family nextPos  _ = do
     (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
-    (mbPatchState :: Maybe pstate) <- State.currentPatchState =<< State.get
+    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
     let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR family)
 
     traverse_ (flip Node.setState node) $ StRepr.from =<< mbNodeState
 
-    State.modify_ $ State.withCurrentPatch $ Patch.registerNode node
+    State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
 
     NodeBox.component nextPos patchR family node
 

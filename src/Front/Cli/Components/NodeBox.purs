@@ -83,7 +83,6 @@ import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
-import Cli.Panels (appendCommand) as Panels
 
 import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InletsBox as InletsBox

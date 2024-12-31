@@ -11,6 +11,8 @@ import Data.Map (empty, insert, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
 import Data.Traversable (traverse)
+import Data.Array (singleton, snoc) as Array
+import Data.Text.Format as T
 
 import Type.Proxy (Proxy(..))
 
@@ -30,15 +32,17 @@ import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Text.NdfFile (NdfFile)
-import Noodle.Text.NdfFile (extractCommands) as Ndf
+import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
+import Noodle.Text.NdfFile.Command (Command, op) as Ndf
+import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
 import Blessed.Internal.NodeKey (RawNodeKey)
 
 -- import Cli.WsServer as WSS
-import Cli.Panels (SidePanels, initPanels)
-import Cli.Panels (appendNdf) as Panels
+import Cli.Panels (SidePanelsOnOff, initPanelsOnOff)
+import Cli.Panels (Which(..), toggle, isOn) as Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
@@ -62,10 +66,12 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , patchIdToIndex :: Map Id.PatchR Int
     , nodeKeysMap :: Map Id.NodeR K.NodeBoxKey
     , patchKeysMap :: Map Id.PatchR K.PatchBoxKey
-    -- TODO, commandLog :: NdfFile
+    , history :: NdfFile
+    , developmentLog :: Array String
+    , currentDocumentation :: Array String
     -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
-    , panels :: SidePanels
+    , panelsOnOff :: SidePanelsOnOff
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     -- TODO, , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
@@ -116,11 +122,13 @@ init state toolkit = do
         , patchIdToIndex : Map.empty # Map.insert (Patch.id firstPatch) 0
         , nodeKeysMap : Map.empty
         , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
-        -- , commandLog : NdfFile.init "hydra" 0.1
+        , history : Ndf.init "noodle" 2.0
+        , developmentLog : []
+        , currentDocumentation : []
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances
-        , panels : initPanels
+        , panelsOnOff : initPanelsOnOff
         -- , editors : Map.empty
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
@@ -219,10 +227,6 @@ lastPatchIndex :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Int
 lastPatchIndex s = Network.patchesCount s.network
 
 
-withPanels :: forall tk ps fs sr cr m. (SidePanels -> SidePanels) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-withPanels f s = s { panels = f s.panels }
-
-
 storeNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> Raw.NodeChanges sr cr -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 storeNodeUpdate nodeR changes s = s { lastUpdate = Map.insert nodeR changes s.lastUpdate  }
 
@@ -231,5 +235,50 @@ lastNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> State tk ps fs sr cr m ->
 lastNodeUpdate nodeR = _.lastUpdate >>> Map.lookup nodeR
 
 
-appendNdf :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-appendNdf ndfFile = withPanels $ Panels.appendNdf ndfFile
+isPanelOn :: forall tk ps fs sr cr m. Panels.Which -> State tk ps fs sr cr m -> Boolean
+isPanelOn which = _.panelsOnOff >>> Panels.isOn which
+
+
+togglePanel :: forall tk ps fs sr cr m. Panels.Which -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+togglePanel which s = s { panelsOnOff = Panels.toggle which s.panelsOnOff }
+
+
+trackCommand :: forall tk ps fs sr cr m. Ndf.Command -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+trackCommand = trackCommandOp <<< Ndf.op
+
+
+trackCommandOp :: forall tk ps fs sr cr m. Ndf.CommandOp -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+trackCommandOp cmdop s =
+    s { history = Ndf.optimize $ flip Ndf.snocOp cmdop $ s.history }
+
+
+formatHistory :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Array T.Tag
+formatHistory = _.history >>> Ndf.optimize >>> Ndf.toTaggedNdfCode >>> Array.singleton
+
+
+clearHistory :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearHistory = _ { history = Ndf.init "noodle" 2.0 }
+
+
+appendHistory :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+appendHistory ndfFile s = s { history = Ndf.append s.history ndfFile }
+
+
+prependHistory :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }
+
+
+switchDocumentation :: forall tk ps fs sr cr m. Id.FamilyR -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+switchDocumentation familyR s = s { currentDocumentation = s.history # Ndf.documentationFor familyR }
+
+
+clearDocumentation :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearDocumentation = _ { currentDocumentation = [] }
+
+
+appendToLog :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+appendToLog line s = s { developmentLog = Array.snoc s.developmentLog line }
+
+
+clearLog :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearLog = _ { developmentLog = [] }

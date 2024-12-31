@@ -10,16 +10,17 @@ import Control.Monad.State (modify_) as State
 
 import Data.Tuple.Nested ((/\))
 import Data.Array (singleton) as Array
+import Data.Text.Format as T
 
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Cli.State (State)
-import Cli.State (withPanels) as CState
+import Cli.State (togglePanel, isPanelOn, appendToLog, clearLog) as CState
 import Cli.Components.SidePanel (SidePanel)
 import Cli.Components.SidePanel (refresh) as SP
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
-import Cli.Panels (Which(..), load, toggle, logToConsole)
+import Cli.Panels (Which(..)) as P
 
 
 sidePanel :: forall tk p fs sr cr m. SidePanel "console" (State tk p fs sr cr m) Boolean
@@ -29,15 +30,14 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.consoleBox
     , buttonKey : Key.consoleButton
-    , init : false /\ []
-    , next : _.panels >>> load Console
-    , onToggle : CState.withPanels $ toggle Console
+    , next : (\s -> CState.isPanelOn P.Console s /\ (T.s <$> s.developmentLog))
+    , onToggle : CState.togglePanel P.Console
     }
 
 
 log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
-log s = do
-    State.modify_ (CState.withPanels $ logToConsole $ Array.singleton s)
+log line = do
+    State.modify_ $ CState.appendToLog line
     SP.refresh sidePanel
 
 
@@ -47,5 +47,5 @@ logError errorStr = log $ "Error : " <> errorStr
 
 clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
 clear = do
-    State.modify_ $ CState.withPanels $ \s -> s { console = [] <$ s.console }
+    State.modify_ CState.clearLog
     SP.refresh sidePanel

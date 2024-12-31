@@ -58,7 +58,7 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Cli.State (State)
-import Cli.State (init, appendNdf, informWsInitialized) as CState
+import Cli.State (init, appendHistory, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
@@ -153,7 +153,7 @@ runWith =
         applyFile (Right fileContents) = do
             case P.runParser fileContents NdfFile.parser of
                 Right ndfFile ->
-                    State.modify_ $ CState.appendNdf ndfFile
+                    State.modify_ $ CState.appendHistory ndfFile
                 Left parsingError -> do
                     liftEffect $ Console.log $ "Error : " <> show parsingError
                     CC.logError $ show parsingError
