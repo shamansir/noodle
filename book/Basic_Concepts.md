@@ -51,23 +51,38 @@ Patch can also have some drawing target on its background, behind the nodes, whi
 
 Node is a minimal block in the visual programming concept. 
 
-We think the best analogue for the node is a function in textual programming, but even much closer example is a function in pure functional programming, where it is a strict rule of always producing the same value in the output(s) for the same values in inputs, except for the cases when it produces a side-effect.
+We think the best analogue for the node is a function in textual programming, but even much closer example is a function in _pure functional_ programming, where it is a strict rule of always producing the same value in the output(s) for the same values in inputs, _except_ for the cases when it also produces a side-effect.
 
-But yes, in both imperative and functional programming function can have maximum of one output, the `return` value (here we will close our eyes on the nuances of this not very correct statement regarding FP). Node, on the other hand, can have none or many outputs, however it just can be represented as a single value containing a record with named fields. 
+But yes, while in both imperative and functional programming function can have maximum of one output, the `return` value (here we will close our eyes on the nuances of this not very correct statement regarding FP), nodes in Noodle, on the other hand, can have none or many outputs, however you can  just can be represented as a single value containing a record with named fields. 
 
 Another similarity with FP is that all the inputs and outputs of a node should have their types specified in the definition (by a programmer for a user) as well as function/node inner code (processing function, see below) should comply and conform all these types.
 
 TODO picture
 
-The difference is the visual and interactivity part: nodes are _tangible_: they may be connected to other nodes in any of the incoming point (such as inlet), or outgoing point (such as outlet), they also can have a body where the result of the function call is displayed and/or can be tuned with controllers. 
+The difference is the visual and interactivity part: nodes are _tangible_: they may be connected to other nodes in any of the incoming point (such as inlet), or outgoing point (such as outlet), they also can have a visual body where the result of the function call is displayed, and/or processing can be tuned with controllers. 
 
 ## Channels: Inlets & Outlets
 
+The integral part of a node is its channels: inlets and outlets (or just inputs and outputs, respectively). They look similar to each other, but direction of the data flow is what distinguishes them. Data comes inside through one or several inlets, gets processed, and then goes further away through the outlets, to the inlets of the other nodes, if they are connected, or just stays on the outer edge if there are no outgoing connections. 
+
+TODO picture
+
+As  noted above, the processing function inside the node could produce _effects_, e.g. some random-number producing node, so it’s not always can be guaranteed that the same inputs values always convert to the same outputs, but often it is the case.
+
+Because data goes inside through inlets, they have some more parameters to control on how they receive data:
+
 ### Temperature
+
+Temperature 
+
 ### Editors
 ## Body
 ## Function
 ## Processing
+
+Usual processing function of the node is collecting data from all or some inlets, does some inner calculations or other magic, and sends data to its outlets. In some cases, nodes don’t have any inlets or any outlets or both.
+
+Since we support streams or signals of data …
 
 # Link
 # Repr
