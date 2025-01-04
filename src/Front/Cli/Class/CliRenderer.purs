@@ -25,5 +25,5 @@ class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
     renderCliRaw :: forall fstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node fstate repr m -> BlessedOp fstate m
 
 
-class MonadState repr m <= CliEditor (tk :: ToolkitKey) repr m | tk -> repr where
+class CliEditor (tk :: ToolkitKey) repr m | tk -> repr where
     editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> Maybe repr -> Maybe (BlessedOp' repr m repr)
