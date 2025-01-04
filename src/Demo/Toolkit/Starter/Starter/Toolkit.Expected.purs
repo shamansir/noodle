@@ -7,13 +7,14 @@ import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
+import Control.Monad.State (class MonadState)
 import Noodle.Id (toolkitR, unsafeGroupR, FamilyR, family, group) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Fn.ToFn (class PossiblyToFn, fn)
 import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
-import Cli.Class.CliRenderer (class CliRenderer)
+import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Cli.Palette.Item as C
 import StarterTk.Simple.Bang as Simple.Bang
@@ -112,6 +113,10 @@ instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSizeRaw _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = pure unit
   renderCliRaw _ _ _ _ _ = pure unit
+
+
+instance MonadState ValueRepr m => CliEditor STARTER ValueRepr m where
+  editorFor _ _ _ _ _ _ = Nothing
 
 instance HasChRepr STARTER ValueRepr
 

@@ -101,7 +101,6 @@ component topOffset family node keys =
                         CL.trackCommand $ QOp.removeNode (RawNode.id node)
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
-                pure unit
                 {-
                 state <- State.get
                 mbCurrentPatch <- CState.currentPatch state
