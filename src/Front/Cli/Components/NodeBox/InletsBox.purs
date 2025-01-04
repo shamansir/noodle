@@ -27,6 +27,7 @@ import Cli.Keys (InletButtonKey)
 import Cli.Style as Style
 import Cli.State (State, LastKeys)
 import Cli.Components.NodeBox.InletButton as InletButton
+import Cli.Class.CliRenderer (class CliEditor)
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -52,6 +53,7 @@ component
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
+    => CliEditor tk chrepr m
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr
     => Id.PatchR

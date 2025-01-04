@@ -74,7 +74,8 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , panelsOnOff :: SidePanelsOnOff
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
-    -- TODO, , linkWasMadeHack :: Boolean -- hack because inputs / outputs get double click event somehow FIXME: get rid of
+    , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
+    , inletEditorIsOpen :: Boolean
     , locations :: Map Id.NodeR Bounds
     }
 
@@ -96,6 +97,18 @@ type LastKeys =
     , infoBox :: K.InfoBoxKey
     , removeButton :: K.RemoveButtonKey
     }
+
+
+{- TODO,
+data Focus
+    = Patch
+    | Library (Maybe Id.FamilyR)
+    | Node Id.NodeR
+    | Inlet Id.NodeR Id.InletR
+    | Outlet Id.NodeR Id.InletR
+    | Link Id.Link
+    | SidePanel Which
+-}
 
 
 init :: forall tk ps fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> m (State tk ps fs sr cr m)
@@ -125,6 +138,8 @@ init state toolkit = do
         , history : Ndf.init "noodle" 2.0
         , developmentLog : []
         , currentDocumentation : []
+        , blockInletEditor : false
+        , inletEditorIsOpen : false
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances

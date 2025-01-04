@@ -99,6 +99,7 @@ instance (FromChRepr repr a, ToChRepr a repr) => FromToChRepr a repr
 instance ToChRepr Unit Unit     where toChRepr = toEq
 instance ToChRepr Int Int       where toChRepr = toEq
 instance ToChRepr String String where toChRepr = toEq
+instance ToChRepr (Maybe a) a   where toChRepr = map ChRepr
 instance FromChRepr Unit Unit     where fromChRepr = fromEq
 instance FromChRepr Int Int       where fromChRepr = fromEq
 instance FromChRepr String String where fromChRepr = fromEq

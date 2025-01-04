@@ -3,12 +3,15 @@ module Cli.Components.NodeBox.InletButton where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
 import Unsafe.Coerce (unsafeCoerce)
 
+import Type.Proxy (Proxy(..))
+
 import Control.Monad.State (get, modify_) as State
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
@@ -29,8 +32,8 @@ import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
-import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit) as Blessed
+import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
@@ -47,6 +50,7 @@ import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
 import Cli.State (patch, replacePatch) as State
 import Cli.Style (inletsOutlets) as Style
+import Cli.Class.CliRenderer (class CliEditor, editorFor)
 
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
@@ -56,17 +60,20 @@ import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 
 
-import Noodle.Ui.Cli.Tagging (inlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
+import Noodle.Repr.ChRepr (unwrap, ensureTo) as Repr
 import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
+
+import Noodle.Ui.Cli.Tagging (inlet) as T
+import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
+
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -87,13 +94,13 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs strepr chrepr m
-     . Wiring m
-    => HasFallback chrepr
+     . HasFallback chrepr
     => T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
+    => CliEditor tk chrepr m
     => Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
-    -> Id.FamilyR -> Id.NodeR -> Id.InletR
+    -> Id.FamilyR -> Id.NodeR -> Id.InletR -- TODO: we have `FamilyR` inside `NodeR`
     -> Int
     -> Maybe chrepr
     -> Signal chrepr
@@ -110,8 +117,8 @@ component patchR buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR inletIdx m
         , Box.tags true
         , Button.mouse true
         , Style.inletsOutlets
-        , Core.on Button.Press
-            $ onPress patchR nodeBoxKey inletIdx nodeR inletR -- REM Hydra.editorIdOf =<< maybeRepr
+        , Core.on Element.Click -- Button.Press
+            $ onPress patchR nodeBoxKey inletIdx familyR nodeR inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
             $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
         , Core.on Element.MouseOut
@@ -165,15 +172,18 @@ onPress
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
+    => CliEditor tk chrepr m
     => Id.PatchR
     -> NodeBoxKey
     -> Int
+    -> Id.FamilyR
     -> Id.NodeR
     -> Id.InletR
+    -> Maybe chrepr
     -> _
     -> _
-    -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
@@ -200,7 +210,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                 in
                                     case curPatch # Patch.findRawLink prevLinkId of
                                         Just rawLink -> do
-                                            CC.log "disconnect previous"
+                                            -- CC.log "disconnect previous"
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
                                             CL.trackCommand $ QOp.disconnect rawLink
@@ -211,12 +221,12 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
 
                     case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of
                         Just rawNodeSrc /\ Just rawNodeTrg -> do
-                            CC.log "both nodes were found"
+                            -- CC.log "both nodes were found"
                             nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
 
                             case RawLink.id rawLink of
                                 Just rawLinkId -> do
-                                    CC.log $ "RawLink ID is set: " <> show rawLinkId
+                                    -- CC.log $ "RawLink ID is set: " <> show rawLinkId
                                     (linkState :: LinkState Unit)
                                         <- CLink.create
                                                 rawLinkId
@@ -245,6 +255,7 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                     CL.trackCommand $ QOp.connect rawLink
 
                                     -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
+                                    State.modify_ $ _ { blockInletEditor = true }
 
                                     pure unit
                                 Nothing -> pure unit
@@ -272,7 +283,19 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                     pure unit
                 else pure unit
             _ -> do
-                pure unit
+                if not state.blockInletEditor && not state.inletEditorIsOpen then do
+                    CC.log "Call editor"
+                    -- TODO: also don't call if there is at least one link incoming
+                    let (mbEditorOp :: Maybe (BlessedOp' chrepr m chrepr)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
+                    case mbEditorOp of
+                        Just editorOp -> do
+                          _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr m) m _)
+                          pure unit
+                        Nothing -> pure unit
+                    State.modify_ $ _ { blockInletEditor = false, inletEditorIsOpen = true }
+                else
+                    CC.log "Editor was blocked"
+                State.modify_ $ _ { blockInletEditor = false }
                 {- REM
                 case mbEditorId of
                     Just editorId ->
@@ -304,11 +327,16 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                     Nothing ->
                         pure unit
                 -}
+
         State.modify_
             (_ { lastClickedOutlet = Nothing })
 
-        CC.log "render screen"
+        -- CC.log "render screen"
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
+
+
+_blessedHelper :: forall s m a. MonadRec m => MonadEffect m => s -> BlessedOpM s Effect a -> BlessedOpM s m a
+_blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s
 
 
 
