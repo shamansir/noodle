@@ -115,7 +115,7 @@ instance CliRenderer STARTER StarterFamilies ValueRepr m where
   renderCliRaw _ _ _ _ _ = pure unit
 
 
-instance MonadState ValueRepr m => CliEditor STARTER ValueRepr m where
+instance CliEditor STARTER ValueRepr m where
   editorFor _ _ _ _ _ _ = Nothing
 
 instance HasChRepr STARTER ValueRepr
