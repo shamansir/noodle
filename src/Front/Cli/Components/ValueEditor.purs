@@ -20,7 +20,7 @@ import Noodle.Repr.ChRepr (wrap, unwrap) as Repr
 newtype EditorId = EditorId String
 
 
-type ValueEditor v state m = (MonadEffect m => v -> (v -> Effect Unit) -> NK.RawNodeKey /\ BlessedOp state m)
+type ValueEditor v state m = v -> (v -> Effect Unit) -> NK.RawNodeKey /\ BlessedOp state m
 
 
 imap :: forall a b state m. (a -> b) -> (b -> a) -> ValueEditor a state m -> ValueEditor b state m

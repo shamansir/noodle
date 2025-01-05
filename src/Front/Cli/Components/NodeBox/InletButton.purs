@@ -17,7 +17,7 @@ import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 import Data.Map (lookup) as Map
 import Data.Newtype (unwrap)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Signal (Signal)
 import Signal (get) as Signal
@@ -290,12 +290,14 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
                     CC.log "Call editor"
                     -- TODO: also don't call if there is at least one link incoming
 
-
+                    let (sendF :: chrepr -> Effect Unit) = const $ pure unit
                     let (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
-                    let (mbEditorOp :: Maybe (BlessedOp' chrepr Effect chrepr)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
-                    case mbEditorOp of
-                        Just editorOp -> do
-                            _ <- Blessed.runOn curValue $ _blessedHelper curValue editorOp
+                    let (mbValueEditor   :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
+                    let (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
+                    case mbValueEditorOp of
+                        Just (editorKey /\ editorOp) -> do
+                            CC.log "Call exact editor"
+                            _ <- Blessed.runOnUnit $ _blessedHelper unit editorOp
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
 
@@ -347,7 +349,6 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
 
 _blessedHelper :: forall s m a. MonadRec m => MonadEffect m => s -> BlessedOpM s Effect a -> BlessedOpM s m a
 _blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s
-
 
 
 onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo

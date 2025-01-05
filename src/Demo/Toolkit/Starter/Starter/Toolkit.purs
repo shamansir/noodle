@@ -109,7 +109,8 @@ instance CliRenderer STARTER StarterFamilies ValueRepr m where
 
 
 instance CliEditor STARTER ValueRepr where
-  editorFor _ _ _ _ _ _ = Nothing
+  editorFor _ _ _ _ _ = VR.editorFor
+
 
 instance MarkToolkit STARTER where
   markGroup _ = Id.group >>>

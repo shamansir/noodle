@@ -2,6 +2,8 @@ module Demo.Toolkit.Starter.Repr.ChRepr where
 
 import Prelude
 
+import Effect (Effect)
+
 import Color as Color
 
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -18,6 +20,10 @@ import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
+import Cli.Components.ValueEditor (ValueEditor)
+import Cli.Components.ValueEditor (imap, toReprable) as VE
+import Cli.Components.Editor.Numeric as VNumeric
+import Cli.Components.Editor.Textual as VTextual
 
 import Type.Proxy (Proxy(..))
 
@@ -28,7 +34,7 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, toChRepr, fromChRepr)
 import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as CR
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
@@ -350,3 +356,9 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
             exprApp (exprCtor "VR.Spread")
                 [ exprArray $ mkExpression <$> items
                 ]
+
+
+editorFor :: Maybe ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
+editorFor Nothing = Nothing
+editorFor (Just (VNumber _)) = Just $ VE.imap (map VNumber >>> fromMaybe HF.fallback) (CR.wrap >>> fromChRepr) VNumeric.editor
+editorFor _ = Nothing
