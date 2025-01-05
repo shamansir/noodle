@@ -197,7 +197,7 @@ _component
                     Just { height } -> height
                     Nothing -> 3
         inletsKeys /\ inletsBoxN =
-            InletsBox.component patchR keys familyR nodeR (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
+            InletsBox.component patchR keys rawNode (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =

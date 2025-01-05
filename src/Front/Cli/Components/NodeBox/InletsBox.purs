@@ -38,6 +38,7 @@ import Noodle.Wiring (class Wiring)
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
 
+import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (InletsValues, OrderedInletsValues)
 
 
@@ -58,12 +59,12 @@ component
     => T.At T.StatusLine chrepr
     => Id.PatchR
     -> LastKeys
-    -> Id.FamilyR -> Id.NodeR
+    -> Raw.Node strepr chrepr m
     -> Signal (OrderedInletsValues chrepr)
     -> OrderedInletsValues chrepr
     -> Map Id.InletR InletButtonKey
     /\ C.Blessed (State tk pstate fs strepr chrepr m)
-component patchR keys familyR nodeR iReprSignal inlets =
+component patchR keys rawNode iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
         [ Box.width $ width $ Map.size inlets -- * InletButton.widthN
@@ -99,7 +100,7 @@ component patchR keys familyR nodeR iReprSignal inlets =
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
             (inletR /\ buttonKey)
             /\
-            ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
+            ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx (Just repr)
             $ Signal.filterMap (Map.lookup inletR) (fallback :: chrepr)
             $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal

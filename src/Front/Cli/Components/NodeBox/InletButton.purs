@@ -5,6 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
+import Effect.Ref (modify_) as Ref
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -33,16 +34,17 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, getStateRef) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
+import Blessed.UI.Base.Element.Method (show, setFront, focus) as Element
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
+import Blessed.UI.Forms.TextArea.Method (setValue) as TextArea
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Base.Element.Method (show, focus) as Element
-
 
 import Cli.Bounds (collect, inletPos) as Bounds
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey)
@@ -58,7 +60,7 @@ import Cli.Components.Link (LinkState)
 import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
-
+import Cli.Components.Editor.Textual (tveKey) as VEditor
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -68,6 +70,8 @@ import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Pat
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (id, sendIn) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
 
@@ -102,13 +106,13 @@ component
     => CliEditor tk chrepr
     => Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
-    -> Id.FamilyR -> Id.NodeR -> Id.InletR -- TODO: we have `FamilyR` inside `NodeR`
-    -> Int
+    -> Raw.Node strepr chrepr m
+    -> Id.InletR -> Int
     -> Maybe chrepr
     -> Signal chrepr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component patchR buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR inletIdx mbRepr reprSignal =
+component patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx mbRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR mbRepr
         , Box.top $ Offset.px 0
@@ -120,9 +124,9 @@ component patchR buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR inletIdx m
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Element.Click -- Button.Press
-            $ onPress patchR nodeBoxKey inletIdx familyR nodeR inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
+            $ onPress patchR nodeBoxKey inletIdx rawNode inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
+            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey inletIdx
         ]
@@ -133,8 +137,7 @@ onMouseOver
     :: forall tk pstate fs strepr chrepr mi mo
      . T.At T.StatusLine chrepr
     => Wiring mo
-    => Id.FamilyR
-    -> Id.NodeR
+    => Id.NodeR
     -> NodeBoxKey
     -> InfoBoxKey
     -> Int
@@ -142,13 +145,13 @@ onMouseOver
     -> Maybe chrepr
     -> Signal chrepr
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
+onMouseOver nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.inletInfo inletR
-    SL.inletStatus familyR idx inletR mbRepr
+    SL.inletStatus (Id.familyOf nodeIdR) idx inletR mbRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
     case state.lastClickedOutlet of
         Just _ -> pure unit
@@ -179,14 +182,13 @@ onPress
     => Id.PatchR
     -> NodeBoxKey
     -> Int
-    -> Id.FamilyR
-    -> Id.NodeR
+    -> Raw.Node strepr chrepr mi
     -> Id.InletR
     -> Maybe chrepr
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ = do
+onPress patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
@@ -203,7 +205,7 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
                         nodeSrcR = lco.nodeId
                         nodeSrcBoxKey = lco.nodeKey
                         outletIdx = lco.index
-
+                        nodeTrgR = RawNode.id rawNodeTrg
 
                     nextPatch /\ isDisconnected <-
                         case mbPrevLink of
@@ -222,7 +224,7 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
 
                             Nothing -> pure (curPatch /\ false)
 
-                    case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of
+                    case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of -- FIXME: we already have target node here, no need to search for it
                         Just rawNodeSrc /\ Just rawNodeTrg -> do
                             -- CC.log "both nodes were found"
                             nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
@@ -289,18 +291,31 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
                 if not state.blockInletEditor && not state.inletEditorIsOpen then do
                     CC.log "Call editor"
                     -- TODO: also don't call if there is at least one link incoming
+                    stateRef <- Blessed.getStateRef
 
-                    let (sendF :: chrepr -> Effect Unit) = const $ pure unit
-                    let (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
-                    let (mbValueEditor   :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
-                    let (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
+                    let
+                        nodeTrgR = RawNode.id rawNodeTrg
+                        familyTrgR = Id.familyOf nodeTrgR
+                        (sendF :: chrepr -> Effect Unit) =
+                            \reprV -> do
+                                stateRef # Ref.modify_ (_ { inletEditorIsOpen = false }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
+                                RawNode.sendIn inletTrgR reprV rawNodeTrg
+                        (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
+                        (mbValueEditor   :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
+                        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
+
                     case mbValueEditorOp of
-                        Just (editorKey /\ editorOp) -> do
+                        Just (editor /\ editorOp) -> do
                             CC.log "Call exact editor"
                             _ <- Blessed.runOnUnit $ _blessedHelper unit editorOp
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
-
+                            -- VEditor.tveKey >~ TextArea.setValue ""
+                            VEditor.tveKey >~ Element.setTop $ Offset.px $ 20 -- inodeBounds.top - 1
+                            VEditor.tveKey >~ Element.setLeft $ Offset.px $ 20 -- inodeBounds.left
+                            VEditor.tveKey >~ Element.setFront
+                            VEditor.tveKey >~ Element.show
+                            VEditor.tveKey >~ Element.focus
                             pure unit
                         Nothing -> pure unit
 
