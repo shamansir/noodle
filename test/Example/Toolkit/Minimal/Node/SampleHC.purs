@@ -1,4 +1,4 @@
-module Example.Toolkit.Minimal.Node.Sample where
+module Example.Toolkit.Minimal.Node.SampleHC where
 
 import Prelude
 
@@ -19,16 +19,17 @@ import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
 import Example.Toolkit.Minimal.Repr (MinimalVRepr)
+import Example.Toolkit.Minimal.Node.Sample as Src
 
 
-_sample :: NId.Family "sample"
-_sample  = NId.Family
+_sampleHC :: NId.Family "sampleHC"
+_sampleHC  = NId.Family
 
 
 type Inlets =
     (  I "foo" Hot Int
     :> I "c" Hot Int
-    :> I "bar" Hot String
+    :> I "bar" Cold String -- it's cold, unlike in the source
     :> TNil
     ) :: Noodle.Inlets
 
@@ -38,37 +39,31 @@ type Outlets =
     :> TNil
     ) :: Noodle.Outlets
 
-type InletsRow =
-    ( foo :: Int
-    , c :: Int
-    , bar :: String
-    )
 
-type OutletsRow =
-    ( foo :: String
-    , bar :: Int
-    )
+type InletsRow = Src.InletsRow
+
+type OutletsRow = Src.OutletsRow
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow MinimalVRepr Effect
-type Node    = Noodle.Node   "sample" Unit InletsRow OutletsRow MinimalVRepr Effect
-type Family  = Noodle.Family "sample" Unit InletsRow OutletsRow MinimalVRepr Effect
-type F       = Noodle.F      "sample" Unit InletsRow OutletsRow MinimalVRepr Effect
+type Process = Src.Process
+type Node    = Noodle.Node   "sampleHC" Unit InletsRow OutletsRow MinimalVRepr Effect
+type Family  = Noodle.Family "sampleHC" Unit InletsRow OutletsRow MinimalVRepr Effect
+type F       = Noodle.F      "sampleHC" Unit InletsRow OutletsRow MinimalVRepr Effect
 
 
 defaultI :: Record InletsRow
-defaultI = { foo : 1, c : 2, bar : "5" }
+defaultI = Src.defaultI
 defaultO :: Record OutletsRow
-defaultO = { foo : "1", bar : 12 }
+defaultO = Src.defaultO
 
 
-foo_in  = Noodle.Inlet :: _ "foo"
-bar_in  = Noodle.Inlet :: _ "bar"
-c_in    = Noodle.Inlet :: _ "c"
+foo_in  = Src.foo_in :: _ "foo"
+bar_in  = Src.bar_in :: _ "bar"
+c_in    = Src.c_in   :: _ "c"
 
-foo_out = Noodle.Outlet :: _ "foo"
-bar_out = Noodle.Outlet :: _ "bar"
+foo_out = Src.foo_out :: _ "foo"
+bar_out = Src.bar_out :: _ "bar"
 
 
 family :: Family
@@ -79,7 +74,7 @@ family =
 family' :: Process -> Family
 family' =
     Family.make
-        _sample
+        _sampleHC
         unit
         (Noodle.Shape :: Shape)
         defaultI
@@ -97,10 +92,4 @@ makeNode' =
 
 
 combineAll :: Process
-combineAll = do
-    foo <- Fn.receive foo_in
-    bar <- Fn.receive bar_in
-    c <- Fn.receive c_in
-    -- liftEffect $ Console.log $ "run : <foo> " <> show foo <> " <bar> " <> show bar <> " <c> " <> show c
-    Fn.send foo_out $ show (foo + c) <> bar
-    Fn.send bar_out $ foo - c
+combineAll = Src.combineAll

@@ -19,8 +19,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
-import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
@@ -29,8 +29,8 @@ shape =
         { inlets :
             [ { name : Id.inletR "foo", temp : Hot, order : 0 }
             , { name : Id.inletR "c", temp : Hot, order : 1 }
-            , { name : Id.inletR "bar", temp : Cold, order : 1 }
-            ] -- FIXME: order is not necessary here due to the fact we have index
+            , { name : Id.inletR "bar", temp : Hot, order : 2 }
+            ] -- FIXME: order should not be necessary here due to the fact we have index
         , outlets :
             [ { name : Id.outletR "foo", order : 0 }
             , { name : Id.outletR "bar", order : 1 }
@@ -38,7 +38,7 @@ shape =
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues MinimalRepr
+defaultInlets :: Raw.InletsValues MinimalVRepr
 defaultInlets =
     Map.empty
         # Map.insert (Id.inletR "foo") (MinimalRepr.Int 1)
@@ -46,14 +46,14 @@ defaultInlets =
         # Map.insert (Id.inletR "c")   (MinimalRepr.Int 2)
 
 
-defaultOutlets :: Raw.OutletsValues MinimalRepr
+defaultOutlets :: Raw.OutletsValues MinimalVRepr
 defaultOutlets =
     Map.empty
         # Map.insert (Id.outletR "foo") (MinimalRepr.Str "1")
         # Map.insert (Id.outletR "bar") (MinimalRepr.Int 12)
 
 
-process :: Raw.Process MinimalRepr MinimalRepr Effect
+process :: Raw.Process MinimalStRepr MinimalVRepr Effect
 process = do
     mbFoo  <- RawFn.receive $ Id.inletR "foo"
     mbBar  <- RawFn.receive $ Id.inletR "c"
@@ -65,16 +65,16 @@ process = do
         _ -> pure unit
 
 
-makeNode :: Effect (Raw.Node MinimalRepr MinimalRepr Effect)
+makeNode :: Effect (Raw.Node MinimalStRepr MinimalVRepr Effect)
 makeNode =
     RawFamily.spawn family
 
 
-family :: Raw.Family MinimalRepr MinimalRepr Effect
+family :: Raw.Family MinimalStRepr MinimalVRepr Effect
 family =
     RawFamily.make
         (Id.familyR "sampleR")
-        MinimalRepr.None
+        MinimalRepr.NoSt
         shape
         defaultInlets
         defaultOutlets

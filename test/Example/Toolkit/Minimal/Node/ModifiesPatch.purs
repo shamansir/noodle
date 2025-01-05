@@ -23,7 +23,7 @@ import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
 import Example.Toolkit.Minimal.PatchState (State(..), default) as Patch
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr)
 
 
 
@@ -53,10 +53,10 @@ type State = String
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process (Patch.State /\ State) InletsRow OutletsRow MinimalRepr Effect
-type Node    = Noodle.Node   "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalRepr Effect
-type Family  = Noodle.Family "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalRepr Effect
-type F       = Noodle.F      "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalRepr Effect
+type Process = Noodle.Process (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
+type Node    = Noodle.Node   "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
+type Family  = Noodle.Family "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
+type F       = Noodle.F      "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
 
 
 defaultI :: Record InletsRow

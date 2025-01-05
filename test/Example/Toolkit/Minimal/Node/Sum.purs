@@ -19,7 +19,7 @@ import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr)
 
 
 _sum :: NId.Family "sum"
@@ -45,10 +45,10 @@ type OutletsRow =
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process Unit InletsRow OutletsRow MinimalRepr Effect
-type Node    = Noodle.Node   "sum" Unit InletsRow OutletsRow MinimalRepr Effect
-type Family  = Noodle.Family "sum" Unit InletsRow OutletsRow MinimalRepr Effect
-type F       = Noodle.F      "sum" Unit InletsRow OutletsRow MinimalRepr Effect
+type Process = Noodle.Process Unit InletsRow OutletsRow MinimalVRepr Effect
+type Node    = Noodle.Node   "sum" Unit InletsRow OutletsRow MinimalVRepr Effect
+type Family  = Noodle.Family "sum" Unit InletsRow OutletsRow MinimalVRepr Effect
+type F       = Noodle.F      "sum" Unit InletsRow OutletsRow MinimalVRepr Effect
 
 
 defaultI :: Record InletsRow

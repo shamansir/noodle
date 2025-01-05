@@ -10,10 +10,11 @@ class HasFallback a where
     fallback :: a
 
 
-instance HasFallback Unit   where fallback = unit
-instance HasFallback Int    where fallback = 0
-instance HasFallback Number where fallback = 0.0
-instance HasFallback String where fallback = ""
+instance HasFallback Unit    where fallback = unit
+instance HasFallback Int     where fallback = 0
+instance HasFallback Number  where fallback = 0.0
+instance HasFallback Boolean where fallback = false
+instance HasFallback String  where fallback = ""
 instance (HasFallback a, HasFallback b) => HasFallback (Tuple a b) where fallback = Tuple fallback fallback
 
 

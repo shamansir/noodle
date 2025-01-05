@@ -3,11 +3,17 @@ module Noodle.Fn.Generic.Updates where
 import Prelude
 
 
+import Type.Proxy (Proxy(..))
+
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Newtype (class Newtype)
 
-import Noodle.Id (InletR, OutletR)
+import Noodle.Id (NodeR, InletR, OutletR)
+import Noodle.Id (family, familyOf) as Id
+import Noodle.Fn.ToFn (Fn, class PossiblyToFn)
+import Noodle.Fn.ToFn (Argument, Output, fn) as Fn
+
 
 
 data InletsUpdate
@@ -124,7 +130,11 @@ toTuple (MergedUpdate { focus, state, inlets, outlets }) = focus /\ state /\ inl
 
 
 toRecord :: forall state inlets outlets. MergedUpdate state inlets outlets -> MergedUpdateRec state inlets outlets
-toRecord (MergedUpdate rec) = rec -- unwrap
+toRecord (MergedUpdate rec) = rec -- unwrap?
+
+
+fromRecord :: forall state inlets outlets. MergedUpdateRec state inlets outlets -> MergedUpdate state inlets outlets
+fromRecord = MergedUpdate
 
 
 mapState :: forall state state' inlets outlets. (state -> state') -> Update state inlets outlets -> Update state' inlets outlets
@@ -164,3 +174,7 @@ mergedMapInlets f (MergedUpdate { focus, state, inlets, outlets }) =
 mergedMapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> MergedUpdate state inlets outlets -> MergedUpdate state inlets outlets'
 mergedMapOutlets f (MergedUpdate { focus, state, inlets, outlets }) =
     MergedUpdate { focus, state, inlets, outlets : f outlets }
+
+
+toFn :: forall repr state inlets outlets. NodeR -> (inlets -> Array (Fn.Argument repr)) -> (outlets -> Array (Fn.Output repr)) -> MergedUpdate state inlets outlets -> Fn repr repr
+toFn inNode inletsToArgs outletsToOutputs (MergedUpdate { inlets, outlets }) = Fn.fn (Id.family $ Id.familyOf inNode) (inletsToArgs inlets) (outletsToOutputs outlets)

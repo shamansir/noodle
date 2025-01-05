@@ -60,7 +60,6 @@ data Algorithm
     | AllCold
 
 
-
 defaultAlgorithm :: Algorithm
 defaultAlgorithm = AllHot
 

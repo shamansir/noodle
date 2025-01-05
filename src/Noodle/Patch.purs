@@ -18,6 +18,7 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes, find) as Array
+import Data.Traversable (traverse_)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -39,7 +40,7 @@ import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
 import Noodle.Raw.Node (connect) as RawNode
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw) as Links
+import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo) as Links
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (setId, cancel) as RawLink
 import Noodle.Raw.Node (Node) as Raw
@@ -58,7 +59,7 @@ data Patch state (families :: Families) strepr chrepr m =
     Id.PatchR
     -- Toolkit families repr m
     (Channel state)
-    (Map Id.FamilyR (Array (HoldsNode strepr chrepr m))) -- FIXME: consider storing all the nodes in Raw format since, all the type data is in `families :: Families` and can be extracted
+    (Map Id.FamilyR (Array (HoldsNode strepr chrepr m))) -- FIXME: consider storing all the nodes in Raw format since, all the type data is in `families :: Families` and can be extracted. The only problem is may be spawning new nodes?
     (Map Id.FamilyR (Array (Raw.Node strepr chrepr m))) -- use `Channel` as well?
     Links -- use `Channel` as well?
 
@@ -236,6 +237,42 @@ disconnectRaw rawLink (Patch name id chState nodes rawNodes links) = do
         nextLinks = links # Links.forgetRaw rawLink
         nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure (nextPatch /\ true)
+
+
+disconnectAllFromTo
+    :: forall m pstate strepr chrepr mp families
+     . Wiring m
+    => Id.NodeR
+    -> Patch pstate families strepr chrepr mp
+    -> m (Patch pstate families strepr chrepr mp)
+disconnectAllFromTo nodeR patch =
+    disconnectAllFrom nodeR patch >>= disconnectAllTo nodeR
+
+
+disconnectAllFrom
+    :: forall m pstate strepr chrepr mp families
+     . Wiring m
+    => Id.NodeR
+    -> Patch pstate families strepr chrepr mp
+    -> m (Patch pstate families strepr chrepr mp)
+disconnectAllFrom nodeR (Patch name id chState nodes rawNodes links) = do
+    let (nextLinks /\ allLinksFrom)  = Links.forgetAllFrom nodeR links
+    liftEffect $ traverse_ RawLink.cancel allLinksFrom
+    let nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure nextPatch
+
+
+disconnectAllTo
+    :: forall m pstate strepr chrepr mp families
+     . Wiring m
+    => Id.NodeR
+    -> Patch pstate families strepr chrepr mp
+    -> m (Patch pstate families strepr chrepr mp)
+disconnectAllTo nodeR (Patch name id chState nodes rawNodes links) = do
+    let (nextLinks /\ allLinksTo)  = Links.forgetAllTo nodeR links
+    liftEffect $ traverse_ RawLink.cancel allLinksTo
+    let nextPatch = Patch name id chState nodes rawNodes nextLinks
+    pure nextPatch
 
 
 findRawLink

@@ -16,7 +16,7 @@ import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
 
 import Example.Toolkit.Minimal.Toolkit as MinimalToolkit
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
@@ -31,7 +31,7 @@ spec = do
             emptyPatch <- Patch.make "test" unit
             concatNode <- Concat.makeNode
             let
-                (patchWithNodes :: Patch _ _ MinimalRepr MinimalRepr _) =
+                (patchWithNodes :: Patch _ _ MinimalStRepr MinimalVRepr _) =
                     emptyPatch
                         # Patch.registerNodeNotFromToolkit concatNode
                 nodesInPatch =

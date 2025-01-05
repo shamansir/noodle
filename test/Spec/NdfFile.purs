@@ -6,26 +6,29 @@ import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.UniqueHash as UH
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 
-import Test.Spec (Spec, describe, it, pending')
+import Test.Spec (Spec, describe, it, pending', describeOnly)
 import Test.Spec.Util.Parsing (parses)
-import Test.Spec.Assertions (fail)
+import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
 import Parsing (runParser) as P
 
 import Noodle.Id (FamilyR, unsafeFamilyR) as Id
-import Noodle.Text.NdfFile (NdfFile)
+import Noodle.Raw.Id (nodeR, familyR) as Id
+import Noodle.Text.NdfFile (NdfFile, (&->), (<-&))
 import Noodle.Text.NdfFile.Command (Command(..)) as C
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as C
 import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, nodeInstanceId, outletAlias, outletIndex) as C
-import Noodle.Text.NdfFile (from_, init_, toNdfCode) as NdfFile
+import Noodle.Text.NdfFile (from_, init, init_, toNdfCode, optimize) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef as ND
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as ND
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
+import Noodle.Text.NdfFile.Command.Quick as Q
 
 
 sampleNdf_0_1_Text :: String
@@ -65,6 +68,11 @@ number 40 40 num-0
 -> osc-0 foo N 20.0
 ~> num-0 bar N 40.0
 . 20 30 pi-0
+>< num-0 0 osc-0 1
+>< pi-0 foo osc-0 bar
+>< pi-0 0 osc-0 0
+x pi-0
+x osc-0
 """
 
 
@@ -84,7 +92,10 @@ $ mouse :: %┤ do
 ├%
 : stated : stated :: [Unit] <in:Value {Number 0.0}> => num:Value {Number 1.0}
 : stated : stated2 :: [Unit {unit}] <> => <>
-: test2 : family2 :: <> => <>"""
+: test2 : family2 :: <> => <>
+@ stated : A node with some state
+@ stated2 : A node with some state, version 2
+"""
 
 
 familyR :: String -> Id.FamilyR
@@ -130,6 +141,11 @@ expected_0_2_Ndf_OnlyCmds =
         , C.Send (C.nodeInstanceId "osc-0") (C.inletAlias "foo") (C.encodedValue "N 20.0")
         , C.SendO (C.nodeInstanceId "num-0") (C.outletAlias "bar") (C.encodedValue "N 40.0")
         , C.Move (C.nodeInstanceId "pi-0") (C.coord 20) (C.coord 30)
+        , C.Disconnect (C.nodeInstanceId "num-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 1)
+        , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletAlias "foo") (C.nodeInstanceId "osc-0") (C.inletAlias "bar")
+        , C.Disconnect (C.nodeInstanceId "pi-0") (C.outletIndex 0) (C.nodeInstanceId "osc-0") (C.inletIndex 0)
+        , C.RemoveNode (C.nodeInstanceId "pi-0")
+        , C.RemoveNode (C.nodeInstanceId "osc-0")
         ]
 
 
@@ -227,6 +243,8 @@ expected_0_2_Ndf_OnlyDefs =
             , state : ND.stv "unit"
             } -}
         , C.DefineFamily $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
+        , C.Documentation (familyR "stated") "A node with some state"
+        , C.Documentation (familyR "stated2") "A node with some state, version 2"
         ]
 
 
@@ -258,3 +276,41 @@ spec = do
           -- liftEffect $ writeTextFile UTF8 "./src/Hydra/hydra.v0.2.ndf" result
         Left error ->
           fail $ "failed to parse hydra.v0.3.ndf: " <> show error
+
+  describe "optimization" $ do
+
+      it "keeps the commands that does not need to be optimized" $ do
+        node1hash <- liftEffect $ UH.generate
+        node2hash <- liftEffect $ UH.generate
+        let node1R = Id.nodeR (Id.familyR "family-1") node1hash
+        let node2R = Id.nodeR (Id.familyR "family-2") node2hash
+        let srcNdfFile =
+              NdfFile.init "test" 1.0
+                &-> Q.makeNode node1R { left : 10, top : 5 }
+                &-> Q.makeNode node2R { left : 12, top : 5 }
+            trgNdfFile =
+              NdfFile.optimize srcNdfFile
+        trgNdfFile `shouldEqual` srcNdfFile
+
+      it "merges repetetive move commands" $ do
+        node1hash <- liftEffect $ UH.generate
+        node2hash <- liftEffect $ UH.generate
+        let node1R = Id.nodeR (Id.familyR "family-1") node1hash
+        let node2R = Id.nodeR (Id.familyR "family-2") node2hash
+        let srcNdfFile =
+              NdfFile.init "test" 1.0
+                &-> Q.makeNode node1R { left : 10, top : 5 }
+                &-> Q.moveNode node1R { left : 20, top : 7 }
+                &-> Q.moveNode node1R { left : 20, top : 17 }
+                &-> Q.makeNode node2R { left : 12, top : 5 }
+                &-> Q.moveNode node2R { left : 6, top : 11 }
+                &-> Q.moveNode node2R { left : 7, top : 15 }
+            trgNdfFile =
+              NdfFile.optimize srcNdfFile
+            expNdFile =
+              NdfFile.init "test" 1.0
+                &-> Q.makeNode node1R { left : 10, top : 5 }
+                &-> Q.moveNode node1R { left : 20, top : 17 }
+                &-> Q.makeNode node2R { left : 12, top : 5 }
+                &-> Q.moveNode node2R { left : 7, top : 15 }
+        trgNdfFile `shouldEqual` expNdFile

@@ -4,9 +4,9 @@ import Prelude
 
 import Data.String as String
 import Data.Array as Array
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Either (Either(..))
+import Data.Foldable (foldl)
 
 import Data.Text.Format as T
 
@@ -15,19 +15,18 @@ import Type.Proxy (Proxy)
 import Foreign (F, Foreign)
 import Yoga.JSON (class ReadForeign, class WriteForeign, writeImpl)
 
-import Noodle.Id (FamilyR)
-import Noodle.Id (family) as Id
+import Noodle.Id (FamilyR, family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
 import Noodle.Ui.Cli.Tagging as F
-import Noodle.Text.NdfFile.Types
+import Noodle.Text.NdfFile.Types (Coord(..), EncodedValue(..), InletId(..), NodeInstanceId(..), OutletId(..))
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign)
 import Noodle.Text.NdfFile.FamilyDef (ndfLinesCount, processAssignNdfLinesCount) as FD
 
 
 
 -- TODO: type FamiliesOrder = Array (GroupR /\ Array FamilyR)
-type FamiliesOrder = Array (Array FamilyR)
+type FamiliesOrder = Array (Array Id.FamilyR)
 
 
 -- TODO: store Command source line and position in every command instead of just `FamilyDef`
@@ -35,7 +34,7 @@ type FamiliesOrder = Array (Array FamilyR)
 data CommandOp
     = DefineFamily FamilyDef
     | AssignProcess ProcessAssign
-    | MakeNode FamilyR Coord Coord NodeInstanceId
+    | MakeNode Id.FamilyR Coord Coord NodeInstanceId
     | Move NodeInstanceId Coord Coord
     | Connect NodeInstanceId OutletId NodeInstanceId InletId
     | Send NodeInstanceId InletId EncodedValue
@@ -43,7 +42,9 @@ data CommandOp
     | Order FamiliesOrder
     | Import String
     | Comment String
-    -- TODO: | Documentation FamilyR String
+    | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
+    | RemoveNode NodeInstanceId
+    | Documentation Id.FamilyR String -- TODO: make `FamilyR` optional and treat documentation before family definition as belonging to this family
 
 
 derive instance Eq CommandOp
@@ -57,19 +58,20 @@ instance ToCode NDF opts CommandOp where
                 toCode pndf opts familyDef
             AssignProcess processAssign ->
                 toCode pndf opts processAssign
-            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
-            Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> ". " <> show top <> " " <> show left <> " " <> nodeId
-            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> "-> " <> nodeId <> " " <> show iindex <> " " <> value
-            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> "-> " <> nodeId <> " " <> iname <> " " <> value
-            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> "~> " <> nodeId <> " " <> show oindex <> " " <> value
-            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> "~> " <> nodeId <> " " <> oname <> " " <> value
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> show iindex
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> iname
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> "<> " <> fromNode <> " " <> show oindex <> " " <> toNode <> " " <> iname
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> "<> " <> fromNode <> " " <> oname <> " " <> toNode <> " " <> show iindex
+            MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId)       -> show familyR <> " " <> show top <> " " <> show left <> " " <> nodeId
+            RemoveNode (NodeInstanceId nodeId)                                      -> "x " <> nodeId
+            Move  (NodeInstanceId nodeId) (Coord top) (Coord left)                  -> ". " <> show top <> " " <> show left <> " " <> nodeId
+            Send  (NodeInstanceId nodeId) (InletId eInletId)  (EncodedValue value)  -> "-> " <> nodeId <> " " <> eitherToCode eInletId <> " " <> value
+            SendO (NodeInstanceId nodeId) (OutletId eOutletId) (EncodedValue value) -> "~> " <> nodeId <> " " <> eitherToCode eOutletId <> " " <> value
+            Connect (NodeInstanceId fromNode) (OutletId eOutletId) (NodeInstanceId toNode) (InletId eInletId)    -> "<> " <> fromNode <> " " <> eitherToCode eOutletId <> " " <> toNode <> " " <> eitherToCode eInletId
+            Disconnect (NodeInstanceId fromNode) (OutletId eOutletId) (NodeInstanceId toNode) (InletId eInletId) -> ">< " <> fromNode <> " " <> eitherToCode eOutletId <> " " <> toNode <> " " <> eitherToCode eInletId
             Comment content -> "# " <> content
             Import path -> "i " <> path
             Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> map Id.family <$> items) <> " |"
+            Documentation familyR docLine -> "@ " <> show familyR <> " : " <> docLine
+        where
+            eitherToCode (Right index) = show index
+            eitherToCode (Left  name)  = name
 
 
 instance ToTaggedCode NDF opts CommandOp where
@@ -81,19 +83,21 @@ instance ToTaggedCode NDF opts CommandOp where
             AssignProcess processAssign ->
                 toTaggedCode pndf opts processAssign
             MakeNode familyR (Coord top) (Coord left) (NodeInstanceId nodeId) -> F.family (Id.family familyR) <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
+            RemoveNode (NodeInstanceId nodeId) -> F.operator "x" <> T.space <> F.nodeId nodeId
             Move  (NodeInstanceId nodeId) (Coord top) (Coord left) -> F.operator "." <> T.space <> F.coord top <> T.space <> F.coord left <> T.space <> F.nodeId nodeId
-            Send  (NodeInstanceId nodeId) (InletId (Right iindex))  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletIdx iindex  <> T.space <> F.value value
-            Send  (NodeInstanceId nodeId) (InletId (Left iname))    (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> F.inletId iname    <> T.space <> F.value value
-            SendO (NodeInstanceId nodeId) (OutletId (Right oindex)) (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletIdx oindex <> T.space <> F.value value
-            SendO (NodeInstanceId nodeId) (OutletId (Left oname))   (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> F.outletId oname   <> T.space <> F.value value
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeInstanceId fromNode) (OutletId (Right oindex)) (NodeInstanceId toNode) (InletId (Left iname))   -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletIdx oindex <> T.space <> F.nodeId toNode <> T.space <> F.inletId iname
-            Connect (NodeInstanceId fromNode) (OutletId (Left oname))   (NodeInstanceId toNode) (InletId (Right iindex)) -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> F.outletId oname <> T.space <> F.nodeId toNode <> T.space <> F.inletIdx iindex
+            Send  (NodeInstanceId nodeId) eInletId  (EncodedValue value) -> F.operator "->" <> T.space <> F.nodeId nodeId <> T.space <> eInletToCode eInletId   <> T.space <> F.value value
+            SendO (NodeInstanceId nodeId) eOutletId (EncodedValue value) -> F.operator "~>" <> T.space <> F.nodeId nodeId <> T.space <> eOutletToCode eOutletId <> T.space <> F.value value
+            Connect    (NodeInstanceId fromNode) eOutletId (NodeInstanceId toNode) eInletId -> F.operator "<>" <> T.space <> F.nodeId fromNode <> T.space <> eOutletToCode eOutletId <> T.space <> F.nodeId toNode <> T.space <> eInletToCode eInletId
+            Disconnect (NodeInstanceId fromNode) eOutletId (NodeInstanceId toNode) eInletId -> F.operator "><" <> T.space <> F.nodeId fromNode <> T.space <> eOutletToCode eOutletId <> T.space <> F.nodeId toNode <> T.space <> eInletToCode eInletId
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
             Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map (Id.family >>> F.orderItem) <$> items)
-
+            Documentation familyR docLine -> F.operator "@" <> T.space <> F.family (Id.family familyR) <> T.space <> F.operator ":" <> T.space <> F.documentation docLine
+        where
+            eInletToCode  (InletId  (Right iindex)) = F.inletIdx iindex
+            eInletToCode  (InletId  (Left  iname))  = F.inletId iname
+            eOutletToCode (OutletId (Right iindex)) = F.outletIdx iindex
+            eOutletToCode (OutletId (Left  iname))  = F.outletId iname
 
 toNdf :: Array CommandOp -> String
 toNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize cmds)
@@ -103,8 +107,26 @@ toTaggedNdf :: Array CommandOp -> T.Tag
 toTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
 
 
+-- TODO: - remove disconnect after the same immediate connect
+-- TODO: - remove disconnect after the same connect before and without sending values
+-- TODO: - remove removing nodes w/o connecting them to anything
 optimize :: Array CommandOp -> Array CommandOp
-optimize = identity -- TODO : remove duplicating commands or the ones that can be merged into a single one
+optimize =
+    _.optimizedCmds <<< foldl foldF { mbPrevCmd : Nothing, optimizedCmds : [] }
+    where
+        foldF { mbPrevCmd, optimizedCmds } curCmd =
+            { mbPrevCmd : Just curCmd
+            , optimizedCmds : case mbPrevCmd of
+                Just prevCmd ->
+                    if overrides prevCmd curCmd then
+                        Array.snoc (Array.dropEnd 1 optimizedCmds) curCmd
+                    else
+                        Array.snoc optimizedCmds curCmd
+                Nothing ->
+                    Array.snoc optimizedCmds curCmd
+            }
+        overrides (Move instanceA _ _) (Move instanceB _ _) = instanceA == instanceB
+        overrides _ _ = false
 
 
 ndfLinesCount :: CommandOp -> Int
@@ -114,18 +136,22 @@ ndfLinesCount = case _ of
     _ -> 1
 
 
-priority :: CommandOp -> Int
-priority = case _ of
+_priority :: CommandOp -> Int
+_priority = case _ of
     Import _ -> 0
     Order _ -> 1
     DefineFamily _ -> 2
-    AssignProcess _ -> 3
+    AssignProcess _ -> 5 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
+    -- all the commands below should keep their order in file
     MakeNode _ _ _ _ -> 4
+    RemoveNode _ -> 4
     Move _ _ _ -> 4
     Connect _ _ _ _ -> 4
+    Disconnect _ _ _ _ -> 4
     Send _ _ _ -> 4
     SendO _ _ _ -> 4
-    Comment _ -> 5
+    Comment _ -> 4 -- to keep comments where they belong
+    Documentation _ _ -> 3 -- while documentation lines are bound to the respecting FamilyR each, we can move it over the file
 
 
 reviewOrder_ :: FamiliesOrder -> FamiliesOrder

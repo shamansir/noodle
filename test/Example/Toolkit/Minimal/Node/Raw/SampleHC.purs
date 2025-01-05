@@ -1,4 +1,4 @@
-module Example.Toolkit.Minimal.Node.Raw.Sum where
+module Example.Toolkit.Minimal.Node.Raw.SampleHC where
 
 import Prelude
 
@@ -7,6 +7,7 @@ import Effect (Effect)
 import Data.Map (empty, insert) as Map
 import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
+import Data.String (length) as String
 
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
@@ -18,7 +19,8 @@ import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
+import Example.Toolkit.Minimal.Node.Raw.Sample as Src
+import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
 import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
 
 
@@ -26,35 +28,27 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : Id.inletR "a", temp : Hot, order : 0 }
-            , { name : Id.inletR "b", temp : Hot, order : 1 }
-            ] -- FIXME: order is not necessary here due to the fact we have index
+            [ { name : Id.inletR "foo", temp : Hot, order : 0 }
+            , { name : Id.inletR "c", temp : Hot, order : 1 }
+            , { name : Id.inletR "bar", temp : Cold, order : 2 } -- it's cold, unlike in the source
+            ] -- FIXME: order should not be necessary here due to the fact we have index
         , outlets :
-            [ { name : Id.outletR "sum", order : 0 }
+            [ { name : Id.outletR "foo", order : 0 }
+            , { name : Id.outletR "bar", order : 1 }
             ]
         } -- TODO
 
 
 defaultInlets :: Raw.InletsValues MinimalVRepr
-defaultInlets =
-    Map.empty
-        # Map.insert (Id.inletR "a") (MinimalRepr.Int 0)
-        # Map.insert (Id.inletR "b") (MinimalRepr.Int 0)
+defaultInlets = Src.defaultInlets
 
 
 defaultOutlets :: Raw.OutletsValues MinimalVRepr
-defaultOutlets =
-    Map.empty
-        # Map.insert (Id.outletR "sum") (MinimalRepr.Int 0)
+defaultOutlets = Src.defaultOutlets
 
 
 process :: Raw.Process MinimalStRepr MinimalVRepr Effect
-process = do
-    mbA <- RawFn.receive $ Id.inletR "a"
-    mbB <- RawFn.receive $ Id.inletR "b"
-    RawFn.send (Id.outletR "sum") $ ChRepr $ MinimalRepr.Int $ case mbA /\ mbB of
-        (ChRepr (MinimalRepr.Int a) /\ ChRepr (MinimalRepr.Int b)) -> a + b
-        _ -> 0
+process = Src.process
 
 
 makeNode :: Effect (Raw.Node MinimalStRepr MinimalVRepr Effect)
@@ -65,7 +59,7 @@ makeNode =
 family :: Raw.Family MinimalStRepr MinimalVRepr Effect
 family =
     RawFamily.make
-        (Id.familyR "sumR")
+        (Id.familyR "sampleHCR")
         MinimalRepr.NoSt
         shape
         defaultInlets

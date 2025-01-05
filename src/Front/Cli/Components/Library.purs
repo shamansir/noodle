@@ -29,11 +29,14 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
 import Blessed.UI.Lists.List.Option (items, keys, mouse) as List
 import Blessed.UI.Lists.List.Property (selected) as List
+import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.State (State)
-import Cli.State (withCurrentPatch, currentPatchState) as State
+import Cli.State (withCurrentPatch, currentPatchState) as CState
 import Cli.Style (library, libraryBorder) as Style
+import Cli.Panels as Panels
+import Cli.Class.CliFriendly (class CliFriendly)
 
 import Noodle.Id (PatchR, FamilyR, Family, familyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -49,14 +52,17 @@ import Noodle.Ui.Cli.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Node (Node) as Noodle
-import Noodle.Node (setState) as Node
+import Noodle.Node (id, setState) as Node
 import Noodle.Patch (registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (setState) as RawNode
+import Noodle.Raw.Node (id, setState) as RawNode
 import Noodle.Raw.Toolkit.Family (Family) as Raw
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 import Cli.Components.NodeBox as NodeBox
-import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Components.SidePanel as SP
+import Cli.Components.SidePanel.CommandLog as CL
+
 
 
 import Prelude
@@ -158,15 +164,20 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
     case mbRawNode of
         Just rawNode -> do
-            (mbPatchState :: Maybe pstate) <- State.currentPatchState =<< State.get
+            (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
             let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
 
             case mbNodeState of
                 Just nextState -> rawNode # RawNode.setState nextState
                 Nothing -> pure unit
 
-            State.modify_ $ State.withCurrentPatch $ Patch.registerRawNode rawNode
+            State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+
             NodeBox.componentRaw nextPos patchR familyR rawNode
+
+            CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
+
+            Key.mainScreen >~ Screen.render
         Nothing -> pure unit
 
 
@@ -189,10 +200,15 @@ spawnAndRender
     -> BlessedOp (State tk pstate fs strepr chrepr m) m
 spawnAndRender toolkit patchR family nextPos  _ = do
     (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
-    (mbPatchState :: Maybe pstate) <- State.currentPatchState =<< State.get
+    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
     let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR family)
 
     traverse_ (flip Node.setState node) $ StRepr.from =<< mbNodeState
 
-    State.modify_ $ State.withCurrentPatch $ Patch.registerNode node
+    State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
+
     NodeBox.component nextPos patchR family node
+
+    CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
+
+    Key.mainScreen >~ Screen.render

@@ -2,19 +2,23 @@ module Test.Spec.Node where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
-
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console as Console
 
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
 import Data.Map (empty, insert) as Map
-import Noodle.Repr.ChRepr (ChRepr(..))
+
+import Signal (runSignal) as Signal
+import Signal ((~>))
+
 
 import Test.Spec (Spec, describe, it, itOnly)
 import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Id (InletR, OutletR) as Id
+import Noodle.Repr.ChRepr (ChRepr(..))
 import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
@@ -22,14 +26,15 @@ import Noodle.Raw.Fn.Shape (inlets, outlets, make) as RawShape
 import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
-import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR) as Node
+import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR, logUpdates) as Node
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
-import Example.Toolkit.Minimal.Repr (MinimalRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
 import Example.Toolkit.Minimal.Node.Sample as Sample
+import Example.Toolkit.Minimal.Node.SampleHC as SampleHC
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
 import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
@@ -51,7 +56,7 @@ spec = do
         it "properly instantiates / reflects shape" $ do
             let
                 rawShape =
-                    Shape.reflect (Shape :: Sample.Shape)
+                    Shape.reflect (Shape :: SampleHC.Shape)
             RawShape.inlets rawShape `shouldEqual`
                 [ { name : inletR "foo", order : 0, temp : Hot }
                 , { name : inletR "c"  , order : 1, temp : Hot }
@@ -127,12 +132,24 @@ spec = do
             liftEffect $ do
                 myNode <- liftEffect Sample.makeNode
                 myNode # Node._listenUpdatesAndRun
-                --Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
+                -- Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
                 myNode #-> Sample.foo_in /\ 7
                 myNode #-> Sample.bar_in /\ "bar"
                 foo <- myNode <-@ Sample.foo_out
                 bar <- myNode <-@ Sample.bar_out
                 foo `shouldEqual` "9bar"
+                bar `shouldEqual` 5
+
+        it "running node with hot/cold outlets using some function (listen to updates and send some of the values)" $
+            liftEffect $ do
+                myNode <- liftEffect SampleHC.makeNode
+                myNode # Node._listenUpdatesAndRun
+                -- Signal.runSignal $ (myNode # Node.logUpdates) ~> Console.log
+                myNode #-> SampleHC.foo_in /\ 7
+                myNode #-> SampleHC.bar_in /\ "bar"
+                foo <- myNode <-@ SampleHC.foo_out
+                bar <- myNode <-@ SampleHC.bar_out
+                foo `shouldEqual` "95"
                 bar `shouldEqual` 5
 
     describe "connecting & disconnecting" $ do
@@ -288,9 +305,9 @@ spec = do
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
-            (rawNode :: Raw.Node MinimalRepr MinimalRepr Effect) <-
+            (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
                 RawNode.make (Id.familyR "myRawNode")
-                    MinimalRepr.None
+                    MinimalRepr.NoSt
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
                         # Map.insert (inletR "a") (MinimalRepr.Int 5)

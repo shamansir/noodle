@@ -7,7 +7,7 @@ import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Newtype (class Newtype)
 
-import Noodle.Id (GroupR, FamilyR, unsafeFamilyR)
+import Noodle.Id (GroupR, FamilyR, unsafeFamilyR, InletR, inletRName, OutletR, outletRName) as Id
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (name) as Fn
@@ -15,7 +15,7 @@ import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
 
 
 type FamilyDefRec =
-    { group :: GroupR
+    { group :: Id.GroupR
     , fn :: Fn ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
@@ -87,6 +87,14 @@ encodedValue :: String -> EncodedValue
 encodedValue = EncodedValue
 
 
+fromInletR :: Id.InletR -> InletId
+fromInletR = Id.inletRName >>> Left >>> InletId
+
+
+fromOutletR :: Id.OutletR -> OutletId
+fromOutletR = Id.outletRName >>> Left >>> OutletId
+
+
 emptyDefAndType :: DefaultAndType
 emptyDefAndType = { mbType : Nothing, mbDefault : Nothing }
 
@@ -99,5 +107,5 @@ emptyChannelDef :: ChannelDef
 emptyChannelDef = ChannelDef emptyDefAndType
 
 
-familyOf :: FamilyDefRec -> FamilyR
-familyOf = _.fn >>> Fn.name >>> unsafeFamilyR
+familyOf :: FamilyDefRec -> Id.FamilyR
+familyOf = _.fn >>> Fn.name >>> Id.unsafeFamilyR

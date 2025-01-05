@@ -30,7 +30,8 @@ import Noodle.Id as Id
 -- import Noodle.Family.Def as Family
 import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasChRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn)
-import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine)  as T
+import Noodle.Raw.Node as Raw
+import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine, nodeStatusLine)  as T
 import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine) as At
 
@@ -86,6 +87,19 @@ familyStatus
     -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
 familyStatus ptk familyR =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.familyStatusLine ptk familyR
+
+
+nodeStatus
+    :: forall tk pstate fs strepr chrepr m
+     . MarkToolkit tk
+    => HasChRepr tk chrepr
+    => Tagged.At At.StatusLine chrepr
+    => Proxy tk
+    -> Id.NodeR
+    -> Raw.NodeChanges strepr chrepr
+    -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect
+nodeStatus ptk nodeR changes =
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.nodeStatusLine ptk nodeR changes
 
 
 inletStatus :: forall tk pstate fs strepr chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> Maybe chrepr -> C.BlessedOp (State tk pstate fs strepr chrepr m) Effect

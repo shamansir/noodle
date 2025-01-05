@@ -48,7 +48,7 @@ data Toolkit (tk :: ToolkitKey) (families :: Families) strepr chrepr m =
     Toolkit
         Name
         (Map Id.FamilyR (HoldsFamily strepr chrepr m)) -- FIXME: consider storing all the families in Raw format since, all the type data is in `families :: Families` and can be extracted
-        (Map Id.FamilyR (Raw.Family strepr chrepr m))
+        (Map Id.FamilyR (Raw.Family  strepr chrepr m))
 
 
 empty :: forall tk strepr chrepr m. Proxy tk -> Name -> Toolkit tk TNil strepr chrepr m

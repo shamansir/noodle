@@ -29,7 +29,7 @@ _random :: NId.Family "random"
 _random = NId.Family
 
 type Inlets =
-  (I "bang" Hot VR.Bang :> I "min" Hot Number :> I "max" Hot Number :> TNil) :: Noodle.Inlets
+  (I "bang" Hot VR.Bang :> I "min" Cold Number :> I "max" Cold Number :> TNil) :: Noodle.Inlets
 
 type Outlets = (O "random" Number :> TNil) :: Noodle.Outlets
 type InletsRow = (bang :: VR.Bang, min :: Number, max :: Number)

@@ -6,6 +6,7 @@ import Effect (Effect)
 
 import Data.List (toUnfoldable) as List
 import Data.Maybe (Maybe)
+import Data.Tuple.Nested ((/\))
 
 import Blessed ((>~))
 import Blessed as B
@@ -32,6 +33,8 @@ import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
+import Cli.State (formatHistory, isPanelOn) as CState
+import Cli.Panels (Which(..)) as P
 import Cli.Class.CliFriendly (class CliFriendly)
 
 import Cli.Components.SidePanel as SP
@@ -83,17 +86,17 @@ component initialState =
         , AddPatchButton.component
         , PatchBox.component $ Network.toolkit initialState.network
         -- , LoadFileButton.component
-        , SP.button 9 Doc.sidePanel
-        , SP.button 7 CL.sidePanel
-        , SP.button 5 Console.sidePanel
+        , SP.button 9 (isOnByDefault P.Documentation) Doc.sidePanel
+        , SP.button 7 (isOnByDefault P.Commands)      CL.sidePanel
+        , SP.button 5 (isOnByDefault P.Console)       Console.sidePanel
         -- , SP.button 2 HC.sidePanel
-        , SP.button 3 WS.sidePanel
+        , SP.button 3 (isOnByDefault P.WsServer)      WS.sidePanel
         -- -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
-        , SP.panel Doc.sidePanel
-        , SP.panel CL.sidePanel
-        , SP.panel Console.sidePanel
-        , SP.panel WS.sidePanel
+        , SP.panel (isOnByDefault P.Documentation /\ []) Doc.sidePanel
+        , SP.panel (isOnByDefault P.Commands      /\ initialCommands) CL.sidePanel
+        , SP.panel (isOnByDefault P.Console       /\ []) Console.sidePanel
+        , SP.panel (isOnByDefault P.WsServer      /\ []) WS.sidePanel
         -- , SP.panel HC.sidePanel
         ]
         )
@@ -102,3 +105,6 @@ component initialState =
             PatchesListbar.selectPatch 1
             -- Key.library >~ Box.focus
             Key.mainScreen >~ Screen.render
+    where
+        initialCommands = CState.formatHistory initialState
+        isOnByDefault which = CState.isPanelOn which initialState

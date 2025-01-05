@@ -37,15 +37,6 @@ import Signal.Time (every) as Signal
 _gennum :: NId.Family "gennum"
 _gennum = NId.Family
 
-newtype State = State { signal :: Maybe (Signal (Effect Unit)) }
-
-derive instance Newtype State _
-
-initialState = State { signal : Nothing } :: State
-
-instance HasFallback State where
-  fallback = initialState
-
 type Inlets = TNil :: Noodle.Inlets
 type Outlets = (O "out" Number :> TNil) :: Noodle.Outlets
 type InletsRow = ()
@@ -72,13 +63,22 @@ makeNode = Family.spawn family
 
 gennumP :: Process
 gennumP = do
-  curState <- State.get
-  case _.signal $ unwrap curState of
-    Just _ -> pure unit
-    Nothing -> do
-      sendRandom <- Fn.spawn $ do
-        nextRandom <- liftEffect $ random
-        Noodle.send _out_out nextRandom
-      let genSignal = Signal.every 1000.0 ~> const sendRandom
-      State.modify_ $ unwrap >>> _ { signal = Just genSignal } >>> wrap
-      Noodle.lift $ Signal.runSignal genSignal
+    curState <- State.get
+    case _.signal $ unwrap curState of
+        Just _ -> pure unit
+        Nothing -> do
+            sendRandom <- Fn.spawn $ do
+                nextRandom <- liftEffect $ random
+                Noodle.send _out_out nextRandom
+            let genSignal = Signal.every 1000.0 ~> const sendRandom
+            State.modify_ $ unwrap >>> _ { signal = Just genSignal } >>> wrap
+            Noodle.lift $ Signal.runSignal genSignal
+
+newtype State = State { signal :: Maybe (Signal (Effect Unit)) }
+
+derive instance Newtype State _
+
+initialState = State { signal : Nothing } :: State
+
+instance HasFallback State where
+  fallback = initialState

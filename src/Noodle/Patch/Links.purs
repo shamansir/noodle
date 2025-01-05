@@ -2,11 +2,13 @@ module Noodle.Patch.Links where
 
 import Prelude
 
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
 import Data.Map (empty, insert, alter, delete, lookup) as Map
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (singleton, cons) as Array
+import Data.Array (singleton, cons, catMaybes) as Array
+import Data.Foldable (foldr)
 
 import Noodle.Id (Link(..), NodeR) as Id
 import Noodle.Link (FromId, ToId, toRaw) as Link
@@ -89,3 +91,35 @@ forgetRaw rawLink { lastId, from, to, byNode, byId } =
 findRaw :: Id.Link -> Links -> Maybe Raw.Link
 findRaw linkId =
   _.byId >>> Map.lookup linkId
+
+
+findAllFrom :: Id.NodeR -> Links -> Array Raw.Link
+findAllFrom nodeR links =
+  let
+    (allFrom :: Array Link.FromId) =
+      links.byNode # Map.lookup nodeR # fromMaybe [] # map Tuple.fst
+  in allFrom
+      <#> flip Map.lookup links.from
+       # Array.catMaybes
+
+
+findAllTo :: Id.NodeR -> Links -> Array Raw.Link
+findAllTo nodeR links =
+  let
+    (allTo :: Array Link.ToId) =
+      links.byNode # Map.lookup nodeR # fromMaybe [] # map Tuple.snd
+  in allTo
+      <#> flip Map.lookup links.to
+       # Array.catMaybes
+
+
+forgetAllFrom :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
+forgetAllFrom nodeR links =
+  let (allFrom :: Array Raw.Link) = links # findAllFrom nodeR
+  in (allFrom # foldr forgetRaw links) /\ allFrom
+
+
+forgetAllTo :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
+forgetAllTo nodeR links =
+  let (allTo :: Array Raw.Link) = links # findAllTo nodeR
+  in (allTo # foldr forgetRaw links) /\ allTo

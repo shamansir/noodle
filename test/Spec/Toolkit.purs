@@ -31,11 +31,11 @@ import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
 import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit, MINIMAL,  minimalTk) as My
 
 
-type MinimalTk fs m = Toolkit My.MINIMAL fs MinimalRepr MinimalRepr m
+type MinimalTk fs m = Toolkit My.MINIMAL fs MinimalStRepr MinimalVRepr m
 
 
 spec :: Spec Unit
@@ -99,7 +99,7 @@ spec = do
         let
             familyToString :: forall f state is os repr m. IsSymbol f => Family f state is os repr m -> String
             familyToString = Family.familyIdOf >>> Id.familyR >>> Id.family
-            rawFamilyToString :: forall repr m. Raw.Family repr repr m -> String
+            rawFamilyToString :: forall strepr chrepr m. Raw.Family strepr chrepr m -> String
             rawFamilyToString = RawFamily.familyIdOf >>> \familyR -> Id.family familyR
 
         it "it is possible to iterate through all typed families" $ liftEffect $ do

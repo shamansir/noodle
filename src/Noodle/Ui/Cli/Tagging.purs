@@ -10,14 +10,19 @@ import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (foldl)
 import Data.Newtype (unwrap)
+import Data.Bifunctor (bimap)
+import Data.UniqueHash as UH
 
 
 import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
 import Noodle.Id as Id
-import Noodle.Fn.ToFn (class PossiblyToFn, FnS, possiblyToFn)
+import Noodle.Fn.ToFn (class PossiblyToFn, Fn, FnS, possiblyToFn)
 import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
+import Noodle.Raw.Node (NodeChanges) as Raw
+import Noodle.Raw.Fn.Updates as Updates
+import Noodle.Fn.Generic.Updates (fromRecord) as Updates
 import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasChRepr, markGroup, markFamily, groupOf)
 
 import Noodle.Ui.Cli.Palette as Palette
@@ -73,6 +78,10 @@ outletStatusLine familyR idx outletId Nothing = T.s "⋰" <> (T.s $ show idx) <>
 nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
 nodeLabel ptk familyR =
     T.bgc (C.colorOf Palette.nodeBg) $ T.fgc (markFamily ptk (groupOf ptk familyR) familyR) $ T.s $ Id.family familyR
+
+
+nodeStatusLine :: forall tk strepr chrepr. MarkToolkit tk => Tagged.At At.StatusLine chrepr => HasChRepr tk chrepr => Proxy tk -> Id.NodeR -> Raw.NodeChanges strepr chrepr -> Tag
+nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< bimap pure pure <<< Updates.orderedToFn nodeR <<< Updates.fromRecord
 
 
 {- T.fgcs (C.colorOf Palette.familyName) (reflect family)
@@ -162,7 +171,11 @@ operator = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 comment :: String -> Tag
-comment = T.fgc (C.colorOf Palette.operator) <<< T.s
+comment = T.fgc (C.colorOf Palette.comment) <<< T.s
+
+
+documentation :: String -> Tag
+documentation = T.fgc (C.colorOf Palette.operator) <<< T.s
 
 
 markerSymbol :: String -> Tag
@@ -270,28 +283,35 @@ familyStatusLine ptk familyR =
         <> T.space <> familyOnelineSignature (Proxy :: _ At.StatusLine) ptk familyR
 
 
-familyOnelineSignature
+_fnOnelineSignature
     :: forall at tk chrepr
      . MarkToolkit tk
     => HasChRepr tk chrepr
     => Tagged.At at chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
-    => Proxy at
-    -> Proxy tk
-    -> Id.FamilyR
+    => Proxy at -> Proxy tk
+    -> Either Id.FamilyR Id.NodeR
+    -> Fn (Maybe chrepr) (Maybe chrepr)
     -> Tag
-familyOnelineSignature pat ptk familyR =
-    case (unwrap <$> possiblyToFn ptk familyR :: Maybe (FnS (Maybe chrepr) (Maybe chrepr))) of
-        Just (name /\ args /\ outs) ->
-            -- TODO: add familyDocs
-            T.fgcs (C.colorOf Palette.familyName) name
-            <> T.s " " <> operator "->" <> T.s " "
+_fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
+    (name /\ args /\ outs) ->
+        let
+            -- tagName = T.fgcs (C.colorOf Palette.familyName) name
+            tagGroup familyR = T.fgcs (markGroup ptk $ groupOf ptk familyR) $ Id.group $ groupOf ptk familyR
+            tagFamily familyR = (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR) <> T.s " " <> (T.wrap (operator "(") (operator ")") $ tagGroup familyR)
+            prefix =
+                case eNodeR of
+                    Right nodeR -> tagFamily $ Id.familyOf nodeR
+                    Left familyR -> tagFamily familyR
+            postfix =
+                case eNodeR of
+                    Right nodeR -> operator "//" <> T.s " " <> (T.fgcs (C.colorOf Pico.darkerGrey) $ UH.toString $ Id.hashOf nodeR)
+                    Left _ -> T.nil
+        in prefix
+            <> T.s " " <> operator "=>" <> T.s " "
             <> foldl (<>) (T.s "") (tagArgument <$> args)
             <> operator "->" <> T.s " "
             <> foldl (<>) (T.s "") (tagOut <$> outs)
-            <> operator "//" <> T.s " "
-            <> T.fgc (C.colorOf Pico.lavender) (T.fgcs (markFamily ptk (groupOf ptk familyR) familyR) $ Id.family familyR)
-        Nothing -> T.s "?"
+            <> postfix
     where
         tagArgument :: Fn.Argument (Maybe chrepr) -> Tag
         tagArgument arg = markerSymbol "<"
@@ -309,3 +329,18 @@ familyOnelineSignature pat ptk familyR =
                 Nothing ->
                     T.nil
             <> markerSymbol ")" <> T.s " "
+
+
+familyOnelineSignature
+    :: forall at tk chrepr
+     . MarkToolkit tk
+    => HasChRepr tk chrepr
+    => Tagged.At at chrepr
+    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => Proxy at -> Proxy tk
+    -> Id.FamilyR
+    -> Tag
+familyOnelineSignature pat ptk familyR =
+    case (possiblyToFn ptk familyR :: Maybe (Fn (Maybe chrepr) (Maybe chrepr))) of
+        Just fn -> _fnOnelineSignature pat ptk (Left familyR) fn
+        Nothing -> T.s "?"

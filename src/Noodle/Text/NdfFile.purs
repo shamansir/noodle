@@ -6,7 +6,7 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..))
 import Data.Array ((:))
-import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat, snoc) as Array
+import Data.Array (sortWith, length, fromFoldable, mapWithIndex, concat, snoc, filter) as Array
 import Data.Array.Extra (sortUsing) as Array
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
@@ -20,11 +20,11 @@ import Data.Text.Format (Tag, nl, space) as T
 import Foreign (F, Foreign)
 import Yoga.JSON (class ReadForeign, class WriteForeign)
 
-import Noodle.Id (FamilyR)
-import Noodle.Id (family) as Id
+import Noodle.Id (FamilyR, family) as Id
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Text.NdfFile.Command (Command(..), commandsToNdf, commandsToTaggedNdf, FamiliesOrder)
-import Noodle.Text.NdfFile.Command (priority, op, fromOp) as Command
+import Noodle.Text.NdfFile.Command (_priority, op, fromOp) as Command
+import Noodle.Text.NdfFile.Command (optimize) as Commands
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..))
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
@@ -103,6 +103,13 @@ from_ :: { toolkit :: String
 from_ header = NdfFile (Header header) []
 
 
+infixl 6 snoc as :->
+infixr 6 cons as <-:
+
+infixl 6 snocOp as &->
+infixr 6 consOp as <-&
+
+
 cons :: Command -> NdfFile -> NdfFile
 cons cmd (NdfFile header failedLines cmds) = NdfFile header failedLines $ cmd : cmds
 
@@ -117,6 +124,14 @@ consOp cmdop (NdfFile header failedLines cmds) = NdfFile header failedLines $ Co
 
 snocOp :: NdfFile -> CommandOp -> NdfFile
 snocOp (NdfFile header failedLines cmds) cmdop = NdfFile header failedLines $ cmds `Array.snoc` Command.fromOp cmdop
+
+
+prepend :: NdfFile -> NdfFile -> NdfFile
+prepend = flip append
+
+
+append :: NdfFile -> NdfFile -> NdfFile
+append (NdfFile _ failedLinesA cmdsA) (NdfFile headerB failedLinesB cmdsB) = NdfFile headerB (failedLinesA <> failedLinesB) $ cmdsA <> cmdsB
 
 
 toNdfCode :: NdfFile -> String
@@ -147,13 +162,20 @@ hasFailedLines :: NdfFile -> Boolean
 hasFailedLines = failedLines >>> Array.length >>> (_ > 0)
 
 
-normalize :: NdfFile -> NdfFile
-normalize (NdfFile header failedCommands commands) =
-    NdfFile header failedCommands $ normalizeCommands commands
+-- TODO: used when loading NDF file, to place imports before commands and process assignment after family definitions, but may be just ask user to order the file properly?
+_normalize :: NdfFile -> NdfFile
+_normalize (NdfFile header failedCommands commands) =
+    NdfFile header failedCommands $ _normalizeCommands commands
 
 
-normalizeCommands :: Array Command -> Array Command
-normalizeCommands = Array.sortWith Command.priority
+-- TODO: used when loading NDF file, to place imports before commands and process assignment after family definitions, but may be just ask user to order the file properly?
+_normalizeCommands :: Array Command -> Array Command
+_normalizeCommands = Array.sortWith Command._priority
+
+
+optimize :: NdfFile -> NdfFile
+optimize (NdfFile header failedCommands commands) =
+    NdfFile header failedCommands $ Commands.optimize commands
 
 
 definitionsFromCommands_ :: Array Command -> Array (Maybe Source /\ FamilyDef)
@@ -162,7 +184,7 @@ definitionsFromCommands_ =
         >>> Map.values
         >>> Array.fromFoldable
     where
-        applyCommand :: Map FamilyR (Maybe Source /\ FamilyDef) -> Command -> Map FamilyR (Maybe Source /\ FamilyDef)
+        applyCommand :: Map Id.FamilyR (Maybe Source /\ FamilyDef) -> Command -> Map Id.FamilyR (Maybe Source /\ FamilyDef)
         applyCommand theMap =
             case _ of
                 Command mbSource (DefineFamily familyDef) ->
@@ -176,7 +198,7 @@ loadDefinitions :: NdfFile -> Array (Maybe Source /\ FamilyDef) -- a) TODO: Use 
 loadDefinitions ndfFile =
     ndfFile
         # extractCommands
-        # normalizeCommands
+        # _normalizeCommands
         # definitionsFromCommands_
         # Array.sortWith (Tuple.fst >>> map _.lineIndex)
         # case loadOrder ndfFile of
@@ -195,6 +217,13 @@ loadOrder = extractCommands >>> map Command.op >>> foldl mergeOrders Nothing
                         Just mergedOrders -> Just $ mergedOrders <> nextOrders
                         Nothing -> Just nextOrders
                 _ -> mbMergedOrders
+
+
+documentationFor :: Id.FamilyR -> NdfFile -> Array String
+documentationFor familyR = extractCommands >>> map Command.op >>> foldl extractDocs []
+    where
+        extractDocs docs (Documentation familyR' docLine) | familyR' == familyR = Array.snoc docs docLine
+        extractDocs docs _  = docs
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?

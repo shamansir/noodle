@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Map.Extra as Map
 import Data.Tuple as Tuple
 import Signal (Signal)
 import Signal as Signal
@@ -56,7 +57,7 @@ component
     => Id.PatchR
     -> LastKeys
     -> Id.FamilyR -> Id.NodeR
-    -> Signal (InletsValues chrepr)
+    -> Signal (OrderedInletsValues chrepr)
     -> OrderedInletsValues chrepr
     -> Map Id.InletR InletButtonKey
     /\ C.Blessed (State tk pstate fs strepr chrepr m)
@@ -98,6 +99,7 @@ component patchR keys familyR nodeR iReprSignal inlets =
             /\
             ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox familyR nodeR inletR idx (Just repr)
             $ Signal.filterMap (Map.lookup inletR) (fallback :: chrepr)
+            $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal
             )
         inletsButtons :: Array (C.Blessed (State tk pstate fs strepr chrepr m))

@@ -3,16 +3,17 @@
 module Noodle.Id
     ( module FromShape
     , Node, NodeR
-    , nodeR, nodeFamily, nodeR_
+    , nodeR, nodeFamily, nodeR_, unsafeNodeR
     , Family(..), FamilyR
     , family, familyR, familyOf, unsafeFamilyR
-    , PatchR, PatchName, patchR, hashOf
+    , PatchR, PatchName, patchR
     , FnName
     , Link(..)
     , Group(..), GroupR
     , group, groupR, unsafeGroupR
     , ToolkitR
     , toolkit, toolkitR
+    , class HasUniqueHash, hashOf
     )
     where
 
@@ -90,6 +91,10 @@ nodeR :: forall family. IsSymbol family => Node family -> NodeR
 nodeR (Node { hash }) = NodeR { family : reflectSymbol (Proxy :: _ family), hash }
 
 
+unsafeNodeR :: FamilyR -> UniqueHash -> NodeR
+unsafeNodeR familyR uniqueHash = NodeR { hash : uniqueHash, family : family familyR }
+
+
 family :: FamilyR -> String
 family (FamilyR { family }) = family
 
@@ -138,10 +143,6 @@ instance Show PatchR where show (PatchR { hash }) = "<Patch::" <> show hash <> "
 
 patchR :: UniqueHash -> PatchR
 patchR hash = PatchR { hash }
-
-
-hashOf :: PatchR -> UniqueHash
-hashOf (PatchR { hash }) = hash
 
 
 data Group :: Symbol -> Type
@@ -194,3 +195,15 @@ toolkitR toolkit = ToolkitR { toolkit }
 
 toolkit :: ToolkitR -> String
 toolkit (ToolkitR { toolkit }) = toolkit -- unwrap >>> _.toolkit
+
+
+class HasUniqueHash a where
+    hashOf :: a -> UniqueHash
+
+
+instance HasUniqueHash NodeR where
+    hashOf (NodeR { hash }) = hash
+
+
+instance HasUniqueHash PatchR where
+    hashOf (PatchR { hash }) = hash

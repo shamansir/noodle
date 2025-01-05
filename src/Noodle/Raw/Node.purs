@@ -9,19 +9,23 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
 import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
+import Data.Map.Extra as Map
 import Data.UniqueHash (generate) as UH
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (curry, uncurry)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+import Data.Bifunctor (lmap)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_) as Id
-import Noodle.Fn.Generic.Updates (UpdateFocus(..)) as Fn
-import Noodle.Fn.Generic.Updates (toRecord) as Updates
+import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_, inletRName, outletRName) as Id
+import Noodle.Raw.Id (inletR, outletR) as Id
+import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
+import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
@@ -30,12 +34,15 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (inlets, outlets) as RawShape
+import Noodle.Raw.Fn.Shape (inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
+import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
+import Noodle.Fn.ToFn (Fn)
+import Noodle.Fn.ToFn (reorder) as Fn
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
 
@@ -113,7 +120,12 @@ _runOnInletUpdates
     => Node state chrepr m
     -> m Unit
 _runOnInletUpdates node =
-  SignalX.runSignal $ subscribeInlets node ~> const (run node)
+  SignalX.runSignal $ _subscribeInlets node ~> isHotUpdate ~> runOnlyIfHasHotInlet
+  where
+    runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
+    isHotUpdate = Tuple.fst >>> case _ of
+        Fn.AllInlets          -> RawShape.hasHotInlets $ shape node
+        Fn.SingleInlet inletR -> fromMaybe false $ RawShape.isHotInlet inletR $ shape node
 
 
 -- TODO: private
@@ -178,10 +190,16 @@ atOutlet outlet node = outlets node <#> Map.lookup outlet
 
 curChanges :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (NodeChanges state chrepr)
 curChanges node = do
+  let nshape = shape node
   is <- inlets node
   os <- outlets node
   s  <- state node
-  pure { focus : Fn.Everything, state : s, inlets : is, outlets : os }
+  pure
+    { focus : Fn.Everything
+    , state : s
+    , inlets : is # orderInlets nshape
+    , outlets : os # orderOutlets nshape
+    }
 
 
 {- Private accessors -}
@@ -198,23 +216,27 @@ _getTracker (Node _ _ tracker _ _) = tracker
 {- Subscriptions -}
 
 
-type NodeChanges state chrepr = { focus :: Fn.UpdateFocus, state :: state, inlets :: InletsValues chrepr, outlets :: OutletsValues chrepr }
+type NodeChanges state chrepr = Updates.MergedUpdateRec state (OrderedInletsValues chrepr) (OrderedOutletsValues chrepr)
 
 
 subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (Maybe chrepr)
-subscribeInlet input node = Map.lookup input <$> subscribeInlets node
+subscribeInlet input (Node _ _ tracker _ _) = Map.lookup input <$> Tuple.snd <$> tracker.inlets
 
 
-subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (InletsValues chrepr)
-subscribeInlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.inlets
+subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedInletsValues chrepr)
+subscribeInlets (Node _ shape tracker _ _) = Tuple.snd <$> tracker.inlets <#> orderInlets shape
+
+
+_subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (Fn.InletsUpdate /\ OrderedInletsValues chrepr)
+_subscribeInlets (Node _ shape tracker _ _) = tracker.inlets <#> map (orderInlets shape)
 
 
 subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (Maybe chrepr)
-subscribeOutlet output node = Map.lookup output <$> subscribeOutlets node
+subscribeOutlet output (Node _ shape tracker _ _) = Map.lookup output <$> Tuple.snd <$> tracker.outlets
 
 
-subscribeOutlets :: forall state chrepr m. Node state chrepr m -> Signal (OutletsValues chrepr)
-subscribeOutlets (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
+subscribeOutlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedOutletsValues chrepr)
+subscribeOutlets (Node _ shape tracker _ _) = Tuple.snd <$> tracker.outlets <#> orderOutlets shape
 
 
 subscribeState :: forall state chrepr m. Node state chrepr m -> Signal state
@@ -222,7 +244,23 @@ subscribeState (Node _ _ tracker _ _) = tracker.state
 
 
 subscribeChanges :: forall state chrepr m. Node state chrepr m -> Signal (NodeChanges state chrepr)
-subscribeChanges (Node _ _ tracker _ _) = tracker.all <#> Updates.toRecord
+subscribeChanges (Node _ shape tracker _ _) =
+  tracker.all
+    <#> Updates.toRecord
+    <#> \chs -> chs
+      { inlets = orderInlets shape chs.inlets
+      , outlets = orderOutlets shape chs.outlets
+      }
+
+
+subscribeChangesAsFn :: forall state chrepr m. Node state chrepr m -> Signal (Fn chrepr chrepr)
+subscribeChangesAsFn (Node nodeR shape tracker _ _) =
+  tracker.all
+    <#> RawUpdates.toFn nodeR
+    <#> Fn.reorder
+      (Id.inletR >>> flip RawShape.indexOfInlet shape)
+      (Id.outletR >>> flip RawShape.indexOfOutlet shape)
+
 
 
 {- Send data -}
@@ -311,22 +349,22 @@ disconnect link (Node nodeAId _ _ _ _) (Node nodeBId _ _ _ _) =
 {- Convert -}
 
 
+ -- FIXME: Find a faster way to do it
 orderInlets :: forall chrepr. Raw.Shape -> InletsValues chrepr -> OrderedInletsValues chrepr
-orderInlets shape ivalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ivalues
+orderInlets shape = Map.mapKeys toKey
   where
+    toKey inletR = qiindex inletR /\ inletR
+    qiindex inletR = fromMaybe maxN $ RawShape.indexOfInlet inletR shape
     maxN = Array.length $ RawShape.inlets shape
-    resortF :: Array (Id.InletR /\ chrepr) -> Array ((Int /\ Id.InletR) /\ chrepr)
-    resortF = map (\(inletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup inletR ishapeMap) /\ inletR) /\ repr)
-    ishapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.inlets shape
 
 
+ -- FIXME: Find a faster way to do it
 orderOutlets :: forall chrepr. Raw.Shape -> OutletsValues chrepr -> OrderedOutletsValues chrepr
-orderOutlets shape ovalues = Map.fromFoldable $ resortF $ Map.toUnfoldable $ ovalues
+orderOutlets shape = Map.mapKeys toKey
   where
+    toKey outletR = qoindex outletR /\ outletR
+    qoindex outletR = fromMaybe maxN $ RawShape.indexOfOutlet outletR shape
     maxN = Array.length $ RawShape.outlets shape
-    resortF :: Array (Id.OutletR /\ chrepr) -> Array ((Int /\ Id.OutletR) /\ chrepr)
-    resortF = map (\(outletR /\ repr) -> ((fromMaybe maxN $ _.order <$> Map.lookup outletR oshapeMap) /\ outletR) /\ repr)
-    oshapeMap = Map.fromFoldable $ (\v -> v.name /\ v) <$> RawShape.outlets shape
 
 
 toReprableState :: forall state strepr chrepr m. HasFallback state => StRepr state strepr => Node state chrepr m -> Node strepr chrepr m

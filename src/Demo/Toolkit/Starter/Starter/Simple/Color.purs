@@ -2,6 +2,7 @@ module StarterTk.Simple.Color where
 
 import Prelude
 
+import Data.Int (floor)
 import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
 import Effect (Effect)
 import Noodle.Fn.Process as Fn
@@ -54,4 +55,14 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 colorP :: Process
-colorP = pure unit
+colorP = do
+    r <- Noodle.receive _in_r
+    g <- Noodle.receive _in_g
+    b <- Noodle.receive _in_b
+    Noodle.send _out_color $
+         VR.Color
+            { r : floor $ r * 255.0
+            , g : floor $ g * 255.0
+            , b : floor $ b * 255.0
+            , a: 255
+            }

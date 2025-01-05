@@ -52,15 +52,14 @@ type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of 
     , isOn :: v -> Boolean
     , panelKey :: NodeKey Subj.Box id
     , buttonKey :: NodeKey Subj.Button id
-    , init :: v /\ Array T.Tag
     , next :: (s -> v /\ Array T.Tag)
     , onToggle :: (s -> s)
     }
 
 
 panel
-    :: forall id s v. IsSymbol id => SidePanel id s v -> C.Blessed s
-panel sidePanel =
+    :: forall id s v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> C.Blessed s
+panel initial sidePanel =
     B.boxAnd sidePanel.panelKey
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
         , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 5
@@ -74,12 +73,12 @@ panel sidePanel =
         , Style.sidePanelBorder
         ]
         [ ]
-        $ const $ refreshWith sidePanel.init sidePanel
+        $ const $ refreshWith initial sidePanel
 
 
 button
-    ∷ forall id s v. IsSymbol id => Int -> SidePanel id s v -> C.Blessed s
-button offset sidePanel =
+    ∷ forall id s v. IsSymbol id => Int -> v -> SidePanel id s v -> C.Blessed s
+button offset initV sidePanel =
     B.button sidePanel.buttonKey
         [ Box.content $ T.singleLine $ T.buttonToggle (CU.singleton $ sidePanel.char initV) $ sidePanel.isOn initV
         , Box.top $ Offset.px 0
@@ -101,8 +100,11 @@ button offset sidePanel =
         -}
         ]
         []
-    where
-        initV = Tuple.fst $ sidePanel.init
+
+
+refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
+refresh sidePanel =
+    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
 
 
 refreshWith :: forall id s m v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> BlessedOp s m
@@ -110,11 +112,6 @@ refreshWith (nextV /\ nextContent) sidePanel = do
     sidePanel.panelKey  >~ Box.setContent $ T.multiLine  $ T.stack nextContent
     sidePanel.buttonKey >~ Box.setContent $ T.singleLine $ T.buttonToggle (CU.singleton $ sidePanel.char nextV) $ sidePanel.isOn nextV
     -- Key.mainScreen >~ Screen.render
-
-
-refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
-refresh sidePanel =
-    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
 
 
 toggle :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m

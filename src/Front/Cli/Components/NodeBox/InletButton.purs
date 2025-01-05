@@ -23,12 +23,16 @@ import Blessed as B
 import Blessed ((>~))
 
 import Blessed.Internal.NodeKey (toRaw) as NodeKey
+import Blessed.Internal.NodeKey (type (<^>))
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit) as Blessed
+import Blessed.Internal.BlessedSubj (Line)
+import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Forms.Button.Option (mouse) as Button
@@ -38,8 +42,8 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 
 
 import Cli.Bounds (collect, inletPos) as Bounds
-import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, mainScreen)
-import Cli.Keys (patchBox) as Key
+import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey)
+import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
 import Cli.State (patch, replacePatch) as State
 import Cli.Style (inletsOutlets) as Style
@@ -47,8 +51,10 @@ import Cli.Style (inletsOutlets) as Style
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
-import Cli.Components.Link (create, remove, store, append, runB) as CLink
+import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
 import Cli.Components.SidePanel.Console as CC
+import Cli.Components.SidePanel.CommandLog as CL
+
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -57,8 +63,10 @@ import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
 import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
 import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Network as Network
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -138,7 +146,7 @@ onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = d
             pure unit
             -- REM II.move { x : inletPos.x, y : inletPos.y - 1 }
             -- REM II.updateStatus II.Hover
-    mainScreen >~ Screen.render
+    Key.mainScreen >~ Screen.render
 
 
 onMouseOut :: forall tk pstate fs strepr chrepr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
@@ -150,7 +158,7 @@ onMouseOut infoBox idx _ _ = do
     case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> pure unit -- REM II.hide
-    mainScreen >~ Screen.render
+    Key.mainScreen >~ Screen.render
 
 
 onPress
@@ -194,7 +202,8 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                         Just rawLink -> do
                                             CC.log "disconnect previous"
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
-                                            CLink.runB $ Key.patchBox >~ CLink.remove prevLinkState
+                                            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
+                                            CL.trackCommand $ QOp.disconnect rawLink
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 
@@ -227,9 +236,15 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                                                 , lastLink = Just linkState
                                                 }
 
-                                    CLink.runB $ Key.patchBox >~ CLink.append linkState
+                                    Blessed.runOnUnit $ Key.patchBox >~ CLink.append linkState
 
                                     State.modify_ $ State.replacePatch patchR nextPatch'
+
+                                    Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn state <<< onLinkClick patchR rawLink lstate) linkState
+
+                                    CL.trackCommand $ QOp.connect rawLink
+
+                                    -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
 
                                     pure unit
                                 Nothing -> pure unit
@@ -248,9 +263,9 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
                         { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network
                         , linkWasMadeHack = true
                         }
+                    -}
 
-                    linkCmp # Link.on Element.Click (onLinkClick holdsLink)
-
+                    {- REM
                     OI.hide
                     -}
 
@@ -293,4 +308,24 @@ onPress patchR nodeTrgBoxKey inletIdx nodeTrgR inletTrgR _ _ = do
             (_ { lastClickedOutlet = Nothing })
 
         CC.log "render screen"
-        mainScreen >~ Screen.render -- FIXME: only re-render patchBox
+        Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
+
+
+
+onLinkClick :: forall id tk pstate fs strepr chrepr m. Wiring m => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr m) Effect
+onLinkClick patchR rawLink linkState _ = do
+    CC.log $ "Click link"
+    curState <- State.get
+    let mbPatch = State.patch patchR curState
+    case mbPatch of
+        Just patch -> do
+            (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
+            State.modify_ $ State.replacePatch patchR nextPatch
+            State.modify_ \s ->
+                let
+                    nextLinksFrom /\ nextLinksTo = CLink.forget linkState (s.linksFrom /\ s.linksTo)
+                in s { linksFrom = nextLinksFrom, linksTo = nextLinksTo }
+            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
+            CL.trackCommand $ QOp.disconnect rawLink
+            Key.mainScreen >~ Screen.render
+        Nothing -> pure unit

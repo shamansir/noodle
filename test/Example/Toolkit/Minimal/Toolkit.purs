@@ -18,7 +18,7 @@ import Example.Toolkit.Minimal.Node.Sample as Sample
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
-import Example.Toolkit.Minimal.Repr (MinimalRepr)
+import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 
 
 foreign import data MINIMAL :: Noodle.ToolkitKey
@@ -36,7 +36,7 @@ type MyFamilies
     :> TNil
 
 
-type Toolkit = Noodle.Toolkit MINIMAL MyFamilies MinimalRepr MinimalRepr Effect
+type Toolkit = Noodle.Toolkit MINIMAL MyFamilies MinimalStRepr MinimalVRepr Effect
 
 
 {-

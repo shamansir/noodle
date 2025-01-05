@@ -17,7 +17,7 @@ import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, toChRepr, fromChRep
 import Noodle.Repr.ChRepr (fromEq, toEq, wrap, unwrap, ensureTo, ensureFrom) as Repr
 import Noodle.Repr.StRepr (class StRepr)
 
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, exprOp, typeCtor, typeOp, binaryOp)
 
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefaultFor, pValueFor)
@@ -26,124 +26,140 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefa
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
 
 
-data MinimalRepr
+data MinimalVRepr
     = None
     | UnitV
     | Int Int
     | Str String
-    | Tup MinimalRepr MinimalRepr -- FIXME: Store just Int & String for Patch instead, no overcomplication
 
 
-derive instance Eq MinimalRepr
+data MinimalStRepr
+    = NoSt
+    | UnitSt
+    | StrSt String
+    | PState ((Int /\ String) /\ String)
 
 
-instance FromChRepr MinimalRepr MinimalRepr where fromChRepr = Repr.fromEq
-instance ToChRepr   MinimalRepr MinimalRepr where toChRepr   = Repr.toEq
+derive instance Eq MinimalVRepr
 
 
-instance Show MinimalRepr where
+instance FromChRepr MinimalVRepr MinimalVRepr where fromChRepr = Repr.fromEq
+instance ToChRepr   MinimalVRepr MinimalVRepr where toChRepr   = Repr.toEq
+
+
+instance Show MinimalVRepr where
     show =
         case _ of
             None -> "<None>"
             Int n -> show n
             Str str -> str
             UnitV -> "<Unit>"
-            Tup reprA reprB -> show reprA <> " /\\ " <> show reprB
 
 
-instance HasFallback MinimalRepr where
+instance HasFallback MinimalVRepr where
     fallback = None
 
 
-instance ToChRepr Int MinimalRepr where toChRepr = Just <<< Repr.wrap <<< Int
-instance ToChRepr String MinimalRepr where toChRepr = Just <<< Repr.wrap <<< Str
-instance ToChRepr Unit MinimalRepr where toChRepr = Just <<< Repr.wrap <<< const UnitV
+instance ToChRepr Int MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< Int
+instance ToChRepr String MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< Str
+instance ToChRepr Unit MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< const UnitV
 
-instance ToChRepr Patch.State MinimalRepr where
-    toChRepr = NT.unwrap >>> \{ intVal, strVal } -> toChRepr $ intVal /\ strVal
 
-instance StRepr Unit MinimalRepr where
-    to = const UnitV
+instance StRepr Unit MinimalStRepr where
+    to = const UnitSt
     from = case _ of
-        UnitV -> Just unit
+        UnitSt -> Just unit
         _ -> Nothing
-instance StRepr String MinimalRepr where
-    to = Str
+instance StRepr String MinimalStRepr where
+    to = StrSt
     from = case _ of
-        Str str -> Just str
+        StrSt str -> Just str
         _ -> Nothing
-instance StRepr (Tuple Patch.State String) MinimalRepr where
-    to :: Patch.State /\ String -> MinimalRepr
-    to = bimap (NT.unwrap >>> packP) Str >>> uncurry Tup
-        where packP { intVal, strVal } = Tup (Int intVal) (Str strVal)
-    from :: MinimalRepr -> Maybe (Patch.State /\ String)
+instance StRepr (Tuple Patch.State String) MinimalStRepr where
+    to :: Patch.State /\ String -> MinimalStRepr
+    to = bimap (NT.unwrap >>> unpackP) identity >>> PState
+        where unpackP { intVal, strVal } = intVal /\ strVal
+    from :: MinimalStRepr -> Maybe (Patch.State /\ String)
     from = case _ of
-        Tup (Tup (Int intVal) (Str strVal)) (Str nodeVal) -> Just $ (NT.wrap { intVal, strVal }) /\ nodeVal
+        PState ((intVal /\ strVal) /\ nodeVal) -> Just $ (NT.wrap { intVal, strVal }) /\ nodeVal
         _ -> Nothing
 
-instance
-    ( ToChRepr a MinimalRepr
-    , ToChRepr b MinimalRepr
-    )
-    => ToChRepr (Tuple a b) MinimalRepr where
-    toChRepr = Just <<< Repr.wrap <<<
-        \(a /\ b) ->
-            Tup
-                (Repr.unwrap $ Repr.ensureTo a)
-                (Repr.unwrap $ Repr.ensureTo b)
 
-
-instance FromChRepr MinimalRepr Int where
+instance FromChRepr MinimalVRepr Int where
     fromChRepr = Repr.unwrap >>>
         case _ of
             Int n -> Just n
             _ -> Nothing
-instance FromChRepr MinimalRepr String where
+instance FromChRepr MinimalVRepr String where
     fromChRepr = Repr.unwrap >>>
         case _ of
             Str str -> Just str
             _ -> Nothing
-instance FromChRepr MinimalRepr Unit where
+instance FromChRepr MinimalVRepr Unit where
     fromChRepr = Repr.unwrap >>>
         case _ of
             UnitV -> Just unit
             _ -> Nothing
-instance FromChRepr MinimalRepr Patch.State where
-    fromChRepr = Repr.unwrap >>>
-        case _ of
-            Tup (Int intVal) (Str strVal) -> Just $ Patch.State { intVal, strVal }
-            _ -> Nothing
-instance (FromChRepr MinimalRepr a, FromChRepr MinimalRepr b) => FromChRepr MinimalRepr (Tuple a b) where
-    fromChRepr = Repr.unwrap >>>
-        case _ of
-            Tup reprA reprB -> (/\) <$> fromChRepr (ChRepr reprA) <*> fromChRepr (ChRepr reprB)
-            _ -> Nothing
 
 
-instance CodegenRepr MinimalRepr where
+instance CodegenRepr MinimalVRepr where
     reprModule = const "Example.Toolkit.Minimal.Repr"
-    reprTypeName = const "MinimalRepr"
-    reprType = const $ unsafePartial $ typeCtor "MinimalRepr"
+    reprTypeName = const "MinimalVRepr"
+    reprType = const $ unsafePartial $ typeCtor "MinimalVRepr"
     pDefaultFor = const $ unsafePartial $ \mbType ->
         case NT.unwrap <$> mbType of
             Just "Int" -> exprInt 0
             Just "String" -> exprString ""
             Just "Unit" -> exprIdent "unit"
-            -- TODO: Tup default
             _ -> exprCtor "None"
     pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                   case typeStr of
                     "Int" -> typeCtor "Int"
                     "String" -> typeCtor "String"
                     "Unit" -> typeCtor "Unit"
-                    -- TODO: Tup type
-                    _ -> typeCtor "MinimalRepr"
+                    _ -> typeCtor "MinimalVRepr"
     pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
                      Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
                      Just "String" -> exprString valueStr
                      Just "Unit" -> exprIdent "unit"
-                     -- TODO: tuple value
+                     _ -> if (valueStr == "unit")
+                                then exprIdent "unit"
+                                else exprCtor "None"
+    fTypeFor prepr = pTypeFor prepr
+    fDefaultFor prepr = pDefaultFor prepr
+    fValueFor prepr = pValueFor prepr
+
+
+instance CodegenRepr MinimalStRepr where
+    reprModule = const "Example.Toolkit.Minimal.Repr"
+    reprTypeName = const "MinimalStRepr"
+    reprType = const $ unsafePartial $ typeCtor "MinimalStRepr"
+    pDefaultFor = const $ unsafePartial $ \mbType ->
+        case NT.unwrap <$> mbType of
+            Just "UnitSt" -> exprIdent "unit"
+            Just "StrSt" -> exprString ""
+            Just "PState" ->
+                exprOp (exprInt 0)
+                    [ binaryOp "/\\" $ exprString ""
+                    , binaryOp "/\\" $ exprString ""
+                    ]
+            _ -> exprCtor "NoSt"
+    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
+                  case typeStr of
+                    "StrSt" -> typeCtor "String"
+                    "UnitSt" -> typeCtor "Unit"
+                    "PState" ->
+                        typeOp (typeCtor "Int")
+                            [ binaryOp "/\\" $ typeCtor "String"
+                            , binaryOp "/\\" $ typeCtor "String"
+                            ]
+                    _ -> typeCtor "MinimalStRepr"
+    pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
+                  case NT.unwrap <$> mbType of
+                     Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
+                     Just "String" -> exprString valueStr
+                     Just "Unit" -> exprIdent "unit"
                      _ -> if (valueStr == "unit")
                                 then exprIdent "unit"
                                 else exprCtor "None"

@@ -54,4 +54,8 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 sumP :: Process
-sumP = pure unit
+sumP = do
+    a <- Noodle.receive _in_a
+    b <- Noodle.receive _in_b
+    c <- Noodle.receive _in_c
+    Noodle.send _out_sum $ a + b + c

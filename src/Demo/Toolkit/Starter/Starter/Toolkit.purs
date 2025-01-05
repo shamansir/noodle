@@ -22,6 +22,7 @@ import StarterTk.Simple.Knob as Simple.Knob
 import StarterTk.Simple.Color as Simple.Color
 import StarterTk.Simple.Letter as Simple.Letter
 import StarterTk.Simple.Sum as Simple.Sum
+import StarterTk.Simple.Lerp as Simple.Lerp
 import StarterTk.Simple.Log as Simple.Log
 import StarterTk.P5.Shape as P5.Shape
 import StarterTk.P5.Sketch as P5.Sketch
@@ -42,6 +43,7 @@ type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Gennum.F :> Sim
   :> Simple.Color.F
   :> Simple.Letter.F
   :> Simple.Sum.F
+  :> Simple.Lerp.F
   :> Simple.Log.F
   :> P5.Shape.F
   :> P5.Sketch.F
@@ -62,6 +64,7 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register P5.Sketch.family
   # Toolkit.register P5.Shape.family
   # Toolkit.register Simple.Log.family
+  # Toolkit.register Simple.Lerp.family
   # Toolkit.register Simple.Sum.family
   # Toolkit.register Simple.Letter.family
   # Toolkit.register Simple.Color.family
@@ -85,6 +88,7 @@ instance IsToolkit STARTER where
           "color" -> "simple"
           "letter" -> "simple"
           "sum" -> "simple"
+          "lerp" -> "simple"
           "log" -> "simple"
           "shape" -> "p5"
           "sketch" -> "p5"
@@ -133,6 +137,8 @@ instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR whe
     "letter" -> Just $ fn "letter" [ Fn.inx_ "code" ] [ Fn.outx_ "letter" ]
     "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ]
       [ Fn.out_ "sum" $ VR.VNumber 0.0 ]
+    "lerp" -> Just $ fn "lerp" [ Fn.inx_ "v", Fn.inx_ "min", Fn.in_ "max" $ VR.VNumber 100.0 ]
+      [ Fn.out_ "v" $ VR.VNumber 0.0 ]
     "log" -> Just $ fn "log" [ Fn.inx_ "what" ] []
     "shape" -> Just $ fn "shape" [] [ Fn.out_ "shape" $ VR.VShape VR.Circle ]
     "sketch" -> Just $ fn "sketch"
