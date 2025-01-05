@@ -17,6 +17,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Toolkit (ToolkitKey)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 
+import Cli.Components.ValueEditor (ValueEditor)
+
 
 class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
     cliSize :: forall (f :: Symbol) fstate is os. RegisteredFamily (F f fstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f fstate is os repr m -> Maybe { width :: Int, height :: Int }
@@ -25,5 +27,6 @@ class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
     renderCliRaw :: forall fstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node fstate repr m -> BlessedOp fstate m
 
 
-class CliEditor (tk :: ToolkitKey) repr m | tk -> repr where
-    editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> Maybe repr -> Maybe (BlessedOp' repr m repr)
+class CliEditor (tk :: ToolkitKey) repr | tk -> repr where
+    -- TODO editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> Maybe repr -> Maybe (ValueEditor repr Unit Effect)
+    editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> Maybe repr -> Maybe (BlessedOp' repr Effect repr)

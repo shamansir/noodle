@@ -53,7 +53,7 @@ component
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CliEditor tk chrepr m
+    => CliEditor tk chrepr
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr
     => Id.PatchR

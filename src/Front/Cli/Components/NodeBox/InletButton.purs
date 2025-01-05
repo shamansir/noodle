@@ -74,6 +74,7 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
+import Cli.Components.ValueEditor (ValueEditor)
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -98,7 +99,7 @@ component
     => T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
     => Wiring m
-    -- => CliEditor tk chrepr m
+    => CliEditor tk chrepr
     => Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.InletR -- TODO: we have `FamilyR` inside `NodeR`
@@ -129,9 +130,9 @@ component patchR buttonKey nodeBoxKey infoBoxKey familyR nodeR inletR inletIdx m
 
 
 onMouseOver
-    :: forall tk pstate fs strepr chrepr m m'
+    :: forall tk pstate fs strepr chrepr mi mo
      . T.At T.StatusLine chrepr
-    => Wiring m
+    => Wiring mo
     => Id.FamilyR
     -> Id.NodeR
     -> NodeBoxKey
@@ -140,7 +141,7 @@ onMouseOver
     -> Id.InletR
     -> Maybe chrepr
     -> Signal chrepr
-    -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m') m
+    -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
@@ -158,7 +159,7 @@ onMouseOver familyR nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = d
     Key.mainScreen >~ Screen.render
 
 
-onMouseOut :: forall tk pstate fs strepr chrepr m m'. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m') m
+onMouseOut :: forall tk pstate fs strepr chrepr mi mo. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onMouseOut infoBox idx _ _ = do
     state <- State.get
     infoBox >~ IB.clear
@@ -171,10 +172,10 @@ onMouseOut infoBox idx _ _ = do
 
 
 onPress
-    :: forall tk pstate fs strepr chrepr m m'
-     . Wiring m
+    :: forall tk pstate fs strepr chrepr mi mo
+     . Wiring mo
     => HasFallback chrepr
-    -- => CliEditor tk chrepr m
+    => CliEditor tk chrepr
     => Id.PatchR
     -> NodeBoxKey
     -> Int
@@ -184,7 +185,7 @@ onPress
     -> Maybe chrepr
     -> _
     -> _
-    -> BlessedOp (State tk pstate fs strepr chrepr m') m
+    -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
@@ -290,14 +291,16 @@ onPress patchR nodeTrgBoxKey inletIdx familyTrgR nodeTrgR inletTrgR mbRepr _ _ =
                     -- TODO: also don't call if there is at least one link incoming
 
 
-                    {- REM }
-                    let (mbEditorOp :: Maybe (BlessedOp' chrepr m chrepr)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
+                    let (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
+                    let (mbEditorOp :: Maybe (BlessedOp' chrepr Effect chrepr)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
                     case mbEditorOp of
                         Just editorOp -> do
-                          _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr m) m _)
-                          pure unit
+                            _ <- Blessed.runOn curValue $ _blessedHelper curValue editorOp
+                            -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
+                            --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
+
+                            pure unit
                         Nothing -> pure unit
-                    -}
 
                     State.modify_ $ _ { blockInletEditor = false, inletEditorIsOpen = true }
                 else
@@ -347,7 +350,7 @@ _blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s
 
 
 
-onLinkClick :: forall id tk pstate fs strepr chrepr m m'. Wiring m => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr m') m
+onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onLinkClick patchR rawLink linkState _ = do
     CC.log $ "Click link"
     curState <- State.get

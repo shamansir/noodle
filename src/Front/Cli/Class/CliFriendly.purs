@@ -14,7 +14,7 @@ import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 
 class
     ( CliRenderer tk fs chrepr m
-    , CliEditor tk chrepr m
+    , CliEditor tk chrepr
     , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
     , T.At At.ChannelLabel chrepr
@@ -24,7 +24,7 @@ class
 
 instance
     ( CliRenderer tk fs chrepr m
-    , CliEditor tk chrepr m
+    , CliEditor tk chrepr
     , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
     , T.At At.ChannelLabel chrepr

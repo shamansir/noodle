@@ -108,7 +108,7 @@ instance CliRenderer STARTER StarterFamilies ValueRepr m where
   renderCliRaw _ _ _ _ _ = pure unit
 
 
-instance CliEditor STARTER ValueRepr m where
+instance CliEditor STARTER ValueRepr where
   editorFor _ _ _ _ _ _ = Nothing
 
 instance MarkToolkit STARTER where
