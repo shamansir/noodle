@@ -35,6 +35,7 @@ import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
+import Noodle.Raw.Node (Node) as Raw
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
@@ -75,7 +76,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
-    , inletEditorIsOpen :: Boolean
+    , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , locations :: Map Id.NodeR Bounds
     }
 
@@ -139,7 +140,7 @@ init state toolkit = do
         , developmentLog : []
         , currentDocumentation : []
         , blockInletEditor : false
-        , inletEditorIsOpen : false
+        , inletEditorOpenedFrom : Nothing
         -- , program : Map.empty
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances

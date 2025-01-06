@@ -5,7 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
-import Effect.Ref (modify_) as Ref
+import Effect.Ref (Ref)
+import Effect.Ref (read, modify_) as Ref
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -14,10 +15,11 @@ import Type.Proxy (Proxy(..))
 import Control.Monad.State (get, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Text.Output.Blessed (singleLine) as T
 import Data.Map (lookup) as Map
 import Data.Newtype (unwrap)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Signal (Signal)
@@ -104,7 +106,8 @@ component
     => T.At T.ChannelLabel chrepr
     => Wiring m
     => CliEditor tk chrepr
-    => Id.PatchR
+    => Ref (State tk pstate fs strepr chrepr m)
+    -> Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Raw.Node strepr chrepr m
     -> Id.InletR -> Int
@@ -112,8 +115,23 @@ component
     -> Signal chrepr
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx mbRepr reprSignal =
-    B.button buttonKey
+component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx mbRepr reprSignal =
+    let
+        nodeR = RawNode.id rawNode
+        familyR = Id.familyOf nodeR
+        (sendF :: chrepr -> Effect Unit) =
+            \reprV -> do
+                state <- Ref.read stateRef
+                case state.inletEditorOpenedFrom of
+                    Just (editorRawNode /\ editorInletR) -> do
+                        stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
+                        RawNode.sendIn editorInletR reprV editorRawNode
+                    Nothing ->
+                        pure unit
+        (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
+        (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR mbRepr
+        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
+    in B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR mbRepr
         , Box.top $ Offset.px 0
         , Box.left $ left inletIdx
@@ -124,7 +142,7 @@ component patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx mbRepr 
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Element.Click -- Button.Press
-            $ onPress patchR nodeBoxKey inletIdx rawNode inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
+            $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
             $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
         , Core.on Element.MouseOut
@@ -179,7 +197,8 @@ onPress
      . Wiring mo
     => HasFallback chrepr
     => CliEditor tk chrepr
-    => Id.PatchR
+    => Maybe (_ /\ BlessedOp Unit Effect)
+    -> Id.PatchR
     -> NodeBoxKey
     -> Int
     -> Raw.Node strepr chrepr mi
@@ -188,7 +207,7 @@ onPress
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onPress patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
+onPress mbValueEditorOp patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
@@ -288,21 +307,9 @@ onPress patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
                     pure unit
                 else pure unit
             _ -> do
-                if not state.blockInletEditor && not state.inletEditorIsOpen then do
+                if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
                     CC.log "Call editor"
                     -- TODO: also don't call if there is at least one link incoming
-                    stateRef <- Blessed.getStateRef
-
-                    let
-                        nodeTrgR = RawNode.id rawNodeTrg
-                        familyTrgR = Id.familyOf nodeTrgR
-                        (sendF :: chrepr -> Effect Unit) =
-                            \reprV -> do
-                                stateRef # Ref.modify_ (_ { inletEditorIsOpen = false }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
-                                RawNode.sendIn inletTrgR reprV rawNodeTrg
-                        (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
-                        (mbValueEditor   :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyTrgR nodeTrgBoxKey nodeTrgR inletTrgR mbRepr
-                        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
 
                     case mbValueEditorOp of
                         Just (editor /\ editorOp) -> do
@@ -319,7 +326,7 @@ onPress patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
                             pure unit
                         Nothing -> pure unit
 
-                    State.modify_ $ _ { blockInletEditor = false, inletEditorIsOpen = true }
+                    State.modify_ $ _ { blockInletEditor = false, inletEditorOpenedFrom = Just (rawNodeTrg /\ inletTrgR) }
                 else
                     CC.log "Editor was blocked"
                 State.modify_ $ _ { blockInletEditor = false }
