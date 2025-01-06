@@ -2,6 +2,8 @@ module Cli.Components.NodeBox.InletsBox where
 
 import Prelude
 
+import Effect.Ref (Ref)
+
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..))
 import Data.Array (length, zip) as Array
@@ -57,14 +59,15 @@ component
     => CliEditor tk chrepr
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr
-    => Id.PatchR
+    => Ref (State tk pstate fs strepr chrepr m)
+    -> Id.PatchR
     -> LastKeys
     -> Raw.Node strepr chrepr m
     -> Signal (OrderedInletsValues chrepr)
     -> OrderedInletsValues chrepr
     -> Map Id.InletR InletButtonKey
     /\ C.Blessed (State tk pstate fs strepr chrepr m)
-component patchR keys rawNode iReprSignal inlets =
+component stateRef patchR keys rawNode iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
         [ Box.width $ width $ Map.size inlets -- * InletButton.widthN
@@ -100,7 +103,7 @@ component patchR keys rawNode iReprSignal inlets =
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
             (inletR /\ buttonKey)
             /\
-            ( InletButton.component patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx (Just repr)
+            ( InletButton.component stateRef patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx (Just repr)
             $ Signal.filterMap (Map.lookup inletR) (fallback :: chrepr)
             $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal

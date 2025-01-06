@@ -167,6 +167,8 @@ _component
     isValues <- RawNode.inlets rawNode  -- Sort using shape in the node?
     osValues <- RawNode.outlets rawNode -- Sort using shape in the node?
 
+    stateRef <- Blessed.getStateRef
+
     -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Inlet' / Outlet' instances, we will probably be able to connect things
     --       or not Repr but some fold over inlets / outlets shape
     --       but the question remains: when we have some selected inlet for the receiving node in the handler, wherefrom do we get the node id of the outlet?
@@ -197,7 +199,7 @@ _component
                     Just { height } -> height
                     Nothing -> 3
         inletsKeys /\ inletsBoxN =
-            InletsBox.component patchR keys rawNode (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
+            InletsBox.component stateRef patchR keys rawNode (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
             OutletsBox.component outletsTopOffset keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
