@@ -1,4 +1,4 @@
-Here we will list all the basic concepts, from the bottom layer to the top one, since Noodle could be treated as a Lasagna of concepts:
+Here we will list all the basic concepts, from the top layer to the bottom one, since Noodle could be treated as a Lasagna of concepts:
 
 TODO picture
 
@@ -73,17 +73,37 @@ Because data goes inside through inlets, they have some more parameters to contr
 
 ### Temperature
 
-Temperature 
+Temperature of the node’s inlets is what decides when its processing is triggered in the moment when new data has arrived on some of them:
 
-### Editors
+* If all inlets are hot (and all the values are accepted), processing fuction is triggered on any change in them right away;
+* If some of these inlets are cold, the new data is received there but the latest received value is kept inside until one of the hot inlets would trigger the processing, no matter if it could never happen;
+* If all the inlets of some node happened to be cold, no processing ever happens in such node;
+
+In general, there are two distinct types of temperature rules used for toolkits:
+
+* All the inlets of the nodes are cold;
+* The first inlet if any node is hot, other ones are cold;
+
+Usually it depends on the subject of the toolkit, keeping the first inlet hold while others cold is more common to the toolkits that generate music, where first inlet usually receives the audio signal.
+
+### Value Editors
 ## Body
 ## Function
 ## Processing
 
-Usual processing function of the node is collecting data from all or some inlets, does some inner calculations or other magic, and sends data to its outlets. In some cases, nodes don’t have any inlets or any outlets or both.
+Usual processing function of the node is collecting data from all or some inlets, does some inner calculations (or any other magic), and sends data to its outlets. In some cases, nodes don’t have any inlets or any outlets or both, so they collect all the data inside and manage it by themselves or, opposite, give  everything away, or are totally independent.
 
-Since we support streams or signals of data …
+Since we support streams or signals of data, it means the data could flow very fast through the connection, like electricity does through the wires, sometimes processing function could operate with such flow and merge them or filter them or pass them as they are.
 
 # Link
+
+Link is what connects some outlet to some inlet. It makes all the data from this outlet to be transferred to the connected inlet. Inlet cam decline some data, though, becase it doesn’t conform the expected type or by any other reason.
+
+TODO picture
+
+For the moment in Noodle no recursive connections are possible, so it the outlet and the inlet should be from different nodes and also does not send anything back in the flow; 
+
+Also, currently you can have only one link incoming  at some specific inlet, so when you connect the same outle and inlet again, the previous link is cancelled and new one is created, as well as on connection to some inlet that already has some link,  the previous one gets disconnected in favor of the new one;
+
 # Repr
 # Signal
