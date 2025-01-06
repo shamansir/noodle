@@ -163,13 +163,15 @@ onMouseOver
     -> Maybe chrepr
     -> Signal chrepr
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onMouseOver nodeIdR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
+onMouseOver nodeR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
     state <- State.get
-    nodeBounds <- Bounds.collect nodeIdR nodeBox -- FIXME: load from state.locations
+    nodeBounds <- case Map.lookup nodeR state.locations of
+                        Just bounds -> pure bounds
+                        Nothing -> Bounds.collect nodeR nodeBox
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.inletInfo inletR
-    SL.inletStatus (Id.familyOf nodeIdR) idx inletR mbRepr
+    SL.inletStatus (Id.familyOf nodeR) idx inletR mbRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
     case state.lastClickedOutlet of
         Just _ -> pure unit
@@ -321,7 +323,9 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = d
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             -- VEditor.tveKey >~ TextArea.setValue ""
-                            nodeBounds <- Bounds.collect nodeR nodeBoxKey -- FIXME: load from state.locations
+                            nodeBounds <- case Map.lookup nodeR state.locations of
+                                            Just bounds -> pure bounds
+                                            Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
                             VEditor.tveKey >~ Element.setTop $ Offset.px $ inletPos.y - 1 -- inodeBounds.top - 1
                             VEditor.tveKey >~ Element.setLeft $ Offset.px $ inletPos.x -- inodeBounds.left
