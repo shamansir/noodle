@@ -51,7 +51,8 @@ import Noodle.Repr.HasFallback (class HasFallback, fallback, fallbackBy)
 {-
 data ChRepr a
   = Accept a
-  | Decline
+  | Decline { declined :: a, current :: a }
+  | Empty
 -}
 
 

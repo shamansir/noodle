@@ -262,8 +262,8 @@ _component
 
     let
         location =
-            { left : pos.left
-            , top : pos.top
+            { left : pos.left + 1
+            , top : pos.top + 1
             , width : boxWidth
             , height : boxHeight
             }
