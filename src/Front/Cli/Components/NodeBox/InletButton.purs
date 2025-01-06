@@ -207,24 +207,26 @@ onPress
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onPress mbValueEditorOp patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRepr _ _ = do
+onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
             Just lco /\ Just curPatch ->
-                if nodeTrgBoxKey /= lco.nodeKey then do
+                if nodeBoxKey /= lco.nodeKey then do
 
                     CC.log "inlet press"
 
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
-                            Map.lookup (NodeKey.toRaw nodeTrgBoxKey) state.linksTo
+                            Map.lookup (NodeKey.toRaw nodeBoxKey) state.linksTo
                             >>= Map.lookup (Id.InletIndex inletIdx)
                         outletSrcR = lco.outletId
                         nodeSrcR = lco.nodeId
                         nodeSrcBoxKey = lco.nodeKey
                         outletIdx = lco.index
-                        nodeTrgR = RawNode.id rawNodeTrg
+                        inletTrgR = inletR
+                        nodeTrgR = RawNode.id rawNode
+                        nodeTrgBoxKey = nodeBoxKey
 
                     nextPatch /\ isDisconnected <-
                         case mbPrevLink of
@@ -310,6 +312,7 @@ onPress mbValueEditorOp patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRep
                 if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
                     CC.log "Call editor"
                     -- TODO: also don't call if there is at least one link incoming
+                    let nodeR = RawNode.id rawNode
 
                     case mbValueEditorOp of
                         Just (editor /\ editorOp) -> do
@@ -318,15 +321,17 @@ onPress mbValueEditorOp patchR nodeTrgBoxKey inletIdx rawNodeTrg inletTrgR mbRep
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             -- VEditor.tveKey >~ TextArea.setValue ""
-                            VEditor.tveKey >~ Element.setTop $ Offset.px $ 20 -- inodeBounds.top - 1
-                            VEditor.tveKey >~ Element.setLeft $ Offset.px $ 20 -- inodeBounds.left
+                            nodeBounds <- Bounds.collect nodeR nodeBoxKey -- FIXME: load from state.locations
+                            let inletPos = Bounds.inletPos nodeBounds inletIdx
+                            VEditor.tveKey >~ Element.setTop $ Offset.px $ inletPos.y - 1 -- inodeBounds.top - 1
+                            VEditor.tveKey >~ Element.setLeft $ Offset.px $ inletPos.x -- inodeBounds.left
                             VEditor.tveKey >~ Element.setFront
                             VEditor.tveKey >~ Element.show
                             VEditor.tveKey >~ Element.focus
                             pure unit
                         Nothing -> pure unit
 
-                    State.modify_ $ _ { blockInletEditor = false, inletEditorOpenedFrom = Just (rawNodeTrg /\ inletTrgR) }
+                    State.modify_ $ _ { blockInletEditor = false, inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                 else
                     CC.log "Editor was blocked"
                 State.modify_ $ _ { blockInletEditor = false }
