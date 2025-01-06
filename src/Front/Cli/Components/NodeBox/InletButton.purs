@@ -36,7 +36,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', getStateRef) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
@@ -124,6 +124,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                 state <- Ref.read stateRef
                 case state.inletEditorOpenedFrom of
                     Just (editorRawNode /\ editorInletR) -> do
+                        Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
                         stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
                         RawNode.sendIn editorInletR reprV editorRawNode
                     Nothing ->
@@ -312,13 +313,13 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = d
                 else pure unit
             _ -> do
                 if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
-                    CC.log "Call editor"
+                    CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
                     -- TODO: also don't call if there is at least one link incoming
                     let nodeR = RawNode.id rawNode
 
                     case mbValueEditorOp of
                         Just (editor /\ editorOp) -> do
-                            CC.log "Call exact editor"
+                            CC.log "Exact editor was found, call it"
                             _ <- Blessed.runOnUnit $ _blessedHelper unit editorOp
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
@@ -332,12 +333,14 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = d
                             VEditor.tveKey >~ Element.setFront
                             VEditor.tveKey >~ Element.show
                             VEditor.tveKey >~ Element.focus
-                            pure unit
-                        Nothing -> pure unit
 
-                    State.modify_ $ _ { blockInletEditor = false, inletEditorOpenedFrom = Just (rawNode /\ inletR) }
+                            CC.log "Remember the source node & inlet of the opened editor"
+                            State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
+                        Nothing ->
+                            CC.log "No matching editor was found, skip"
                 else
-                    CC.log "Editor was blocked"
+                    CC.log "Editor is either blocked or opened already, don't call it"
+                CC.log "And don't block opening editor anymore"
                 State.modify_ $ _ { blockInletEditor = false }
                 {- REM
                 case mbEditorId of
