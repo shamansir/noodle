@@ -9,6 +9,8 @@ module Noodle.Repr.ChRepr
     , class ToValueInChannelRow, class ToValueInChannelRowBase, toValueInChannelRowBuilder
     , class FromValueInChannelRow, class FromValueInChannelRowBase, fromValueInChannelRowBase
     , class ValuesToReprRow, valuesToReprRowBuilder
+    , LiftMethod, AcceptAll, DeclineAll, class LiftAllValuesRow, liftAllValuesRowBuilder
+    , acceptAll, declineAll
     -- , class DataFromFromValueInChannelRow
     , class ReadChannelRepr, readChannelRepr
     , class WriteChannelRepr, writeChannelRepr
@@ -79,7 +81,7 @@ class ToValueInChannel repr a where
 
 
 class FromValueInChannel a repr where
-    fromValueInChannel :: a -> Maybe repr
+    fromValueInChannel :: a -> repr
 
 
 class ReadChannelRepr repr where
@@ -117,11 +119,29 @@ empty :: forall a. ValueInChannel a
 empty = Empty
 
 
-{- TODO:
-class AcceptAllValuesRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class AcceptAllValuesRow rl row repr from to | rl -> row from to, repr -> row from to where
-  acceptAllValuesRowBuilder :: Proxy repr -> Proxy rl -> Record row -> Builder { | from } { | to }
--}
+data LiftMethod
+
+
+foreign import data AcceptAll :: LiftMethod
+foreign import data DeclineAll :: LiftMethod
+
+
+class Lifter :: LiftMethod -> Type -> Constraint
+class Lifter method a where
+  liftValue :: Proxy method -> a -> ValueInChannel a
+
+
+instance Lifter AcceptAll a where
+  liftValue = const accept
+
+
+instance Lifter DeclineAll a where
+  liftValue = const $ const decline
+
+
+class LiftAllValuesRow :: LiftMethod -> RL.RowList Type -> Row Type -> Row Type -> Row Type -> Constraint
+class LiftAllValuesRow method rl row from to | rl -> row from to, method -> row from to where
+  liftAllValuesRowBuilder :: Proxy method -> Proxy rl -> Record row -> Builder { | from } { | to }
 
 
 class ValuesToReprRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
@@ -136,7 +156,7 @@ class ReprToValueRow rl row repr from to | rl -> row from to, repr -> row from t
 
 class FromValueInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Type -> Constraint
 class FromValueInChannelRowBase rl row k repr | rl -> row, repr -> row where
-  fromValueInChannelRowBase :: Proxy repr -> Proxy rl -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (Maybe repr) -> Map k (Maybe repr)
+  fromValueInChannelRowBase :: Proxy repr -> Proxy rl -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (ValueInChannel repr) -> Map k (ValueInChannel repr)
 
 
 class ToValueInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
@@ -159,7 +179,7 @@ else instance valueToReprRowCons ::
   , FromValueInChannel a repr
   , Row.Cons name a trash row
   , Row.Lacks name from'
-  , Row.Cons name (Maybe repr) from' to
+  , Row.Cons name repr from' to
   , ValuesToReprRow tail row repr from from'
   ) => ValuesToReprRow (RL.Cons name a tail) row repr from to where
   valuesToReprRowBuilder _ _ rec =
@@ -169,6 +189,42 @@ else instance valueToReprRowCons ::
       val = fromValueInChannel $ R.get nameP rec
       rest = valuesToReprRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) rec
       first = Builder.insert nameP val
+
+
+instance liftAllValuesRowNil :: LiftAllValuesRow method RL.Nil row () () where
+  liftAllValuesRowBuilder _ _ _ = identity
+else instance liftAllValuesRowNilCons ::
+  ( IsSymbol name
+  , Lifter method a
+  , Row.Cons name a trash row
+  , Row.Lacks name from'
+  , Row.Cons name (ValueInChannel a) from' to
+  , LiftAllValuesRow method tail row from from'
+  ) => LiftAllValuesRow method (RL.Cons name a tail) row from to where
+  liftAllValuesRowBuilder pmethod _ rec =
+    first <<< rest
+    where
+      nameP = Proxy :: _ name
+      val = liftValue pmethod $ R.get nameP rec
+      rest = liftAllValuesRowBuilder (Proxy :: _ method) (Proxy :: _ tail) rec
+      first = Builder.insert nameP val
+
+
+instance fromChannelReprRowBaseNil :: FromValueInChannelRowBase RL.Nil row k repr where
+    fromValueInChannelRowBase _ _ _ _ _ = Map.empty
+else instance fromValueInChannelRowBaseCons ::
+  ( Ord k
+  , IsSymbol name
+  , FromValueInChannel a repr
+  , Row.Cons name (ValueInChannel a) trash row
+  , FromValueInChannelRowBase tail row k repr
+  ) => FromValueInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row k repr where
+    fromValueInChannelRowBase prepr _ toKey rec prev =
+      Map.insert (toKey nameP) value rest
+      where
+        nameP = Proxy :: _ name
+        value = fromValueInChannel <$> R.get nameP rec
+        rest = fromValueInChannelRowBase prepr (Proxy :: _ tail) toKey rec prev
 
 
 instance toValueInChannelRowBaseNil :: ToValueInChannelRowBase RL.Nil row repr () () where
@@ -193,31 +249,6 @@ else instance toValueInChannelRowBaseCons ::
       first = Builder.insert nameP val
 
 
-instance fromChannelReprRowBaseNil :: FromValueInChannelRowBase RL.Nil row k repr where
-    fromValueInChannelRowBase _ _ _ _ _ = Map.empty
-else instance fromValueInChannelRowBaseCons ::
-  ( Ord k
-  , IsSymbol name
-  , FromValueInChannel a repr
-  , Row.Cons name (ValueInChannel a) trash row
-  , FromValueInChannelRowBase tail row k repr
-  ) => FromValueInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row k repr where
-    fromValueInChannelRowBase prepr _ toKey rec prev =
-      Map.insert (toKey nameP) value rest
-      where
-        nameP = Proxy :: _ name
-        value = fromValueInChannel =<< (_toMaybe $ R.get nameP rec)
-        rest = fromValueInChannelRowBase prepr (Proxy :: _ tail) toKey rec prev
-
-
-_toMaybe :: forall a. ValueInChannel a -> Maybe a
-_toMaybe = case _ of
-  Accepted a -> Just a
-  Declined -> Nothing
-  MissingKey _ -> Nothing
-  Empty -> Nothing
-
-
 fromMap :: forall row rl repr
    . ToValueInChannelRow rl row repr
   => Map String repr
@@ -232,7 +263,7 @@ toMap :: forall k rl row repr
    . FromValueInChannelRow rl row k repr
   => (forall s. IsSymbol s => Proxy s -> k)
   -> Record row
-  -> Map k (Maybe repr)
+  -> Map k (ValueInChannel repr)
 toMap toKey record = fromValueInChannelRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
 
 
@@ -244,6 +275,26 @@ recordWithValuesToRepr :: forall row rl repr row'
 recordWithValuesToRepr r = Builder.build builder {}
   where
     builder = valuesToReprRowBuilder (Proxy :: _ repr) (Proxy :: _ rl) r
+
+
+acceptAll :: forall row rl row'
+   . RL.RowToList row rl
+  => LiftAllValuesRow AcceptAll rl row () row'
+  => Record row
+  -> Record row'
+acceptAll r = Builder.build builder {}
+  where
+    builder = liftAllValuesRowBuilder (Proxy :: _ AcceptAll) (Proxy :: _ rl) r
+
+
+declineAll :: forall row rl row'
+   . RL.RowToList row rl
+  => LiftAllValuesRow DeclineAll rl row () row'
+  => Record row
+  -> Record row'
+declineAll r = Builder.build builder {}
+  where
+    builder = liftAllValuesRowBuilder (Proxy :: _ DeclineAll) (Proxy :: _ rl) r
 
 
 {- TODO
