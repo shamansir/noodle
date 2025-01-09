@@ -30,7 +30,8 @@ import Noodle.Raw.FromToRec (toRec, fromRec)
 import Noodle.Repr.HasFallback (class HasFallback)
 -- import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
 -- import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
-import Noodle.Repr.ChRepr (ValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
+import Noodle.Repr.ChRepr (ValueInChannel, class ToValueInChannel, class FromValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
+import Noodle.Repr.ChRepr (accept, fromValueInChannel) as ViC
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) chrepr = Raw.Protocol state chrepr
@@ -62,11 +63,11 @@ getState :: forall state is os chrepr. Protocol state is os chrepr -> Effect sta
 getState = Raw.getState
 
 
-getInlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map InletR chrepr)
+getInlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map InletR (ValueInChannel chrepr))
 getInlets = Raw.getInlets
 
 
-getOutlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map OutletR chrepr)
+getOutlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (Map OutletR (ValueInChannel chrepr))
 getOutlets = Raw.getOutlets
 
 
@@ -83,18 +84,18 @@ modifyState = Raw.modifyState
 
 
 -- private: doesn't check if outlet is in `os`
-_sendOut :: forall o state is os dout chrepr. IsSymbol o => HasFallback chrepr => ToChRepr dout chrepr => Outlet o -> dout -> Protocol state is os chrepr -> Effect Unit
-_sendOut outlet = Raw.sendOut (outletR outlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
+_sendOut :: forall o state is os dout chrepr. IsSymbol o => FromValueInChannel dout chrepr => Outlet o -> dout -> Protocol state is os chrepr -> Effect Unit
+_sendOut outlet = Raw.sendOut (outletR outlet) <<< ViC.accept <<< ViC.fromValueInChannel
 
 
 -- private: doesn't check if inlet is in `is`
-_sendIn :: forall i state is os dout chrepr. IsSymbol i => HasFallback chrepr => ToChRepr dout chrepr => Inlet i -> dout -> Protocol state is os chrepr -> Effect Unit
-_sendIn inlet = Raw.sendIn (inletR inlet) <<< ChRepr.unwrap <<< ChRepr.ensureTo
+_sendIn :: forall i state is os din chrepr. IsSymbol i => FromValueInChannel din chrepr => Inlet i -> din -> Protocol state is os chrepr -> Effect Unit
+_sendIn inlet = Raw.sendIn (inletR inlet) <<< ViC.accept <<< ViC.fromValueInChannel
 
 
-_unsafeSendOut :: forall state is os chrepr. OutletR -> chrepr -> Protocol state is os chrepr -> Effect Unit
+_unsafeSendOut :: forall state is os chrepr. OutletR -> ValueInChannel chrepr -> Protocol state is os chrepr -> Effect Unit
 _unsafeSendOut = Raw.sendOut
 
 
-_unsafeSendIn :: forall state is os chrepr. InletR -> chrepr -> Protocol state is os chrepr -> Effect Unit
+_unsafeSendIn :: forall state is os chrepr. InletR -> ValueInChannel chrepr -> Protocol state is os chrepr -> Effect Unit
 _unsafeSendIn = Raw.sendIn

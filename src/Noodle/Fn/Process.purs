@@ -26,6 +26,7 @@ import Data.List (List)
 import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (fromMaybe)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -46,11 +47,11 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
 import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn) as Raw
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from, to) as StRepr
-import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
-import Noodle.Repr.ChRepr (ensureTo, ensureFrom) as ChRepr
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ChRepr (accept, toValueInChannel, fromValueInChannel, toMaybe, _backToValue) as ViC
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type
@@ -81,22 +82,22 @@ type Process (state :: Type) (is :: Row Type) (os :: Row Type) (chrepr :: Type) 
 
 {- Processing -}
 
-receive :: forall i state is is' os din chrepr m. HasFallback din => FromChRepr chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
+-- FIXME: don't require HasFallback here
+receive :: forall i state is is' os din chrepr m. HasFallback din => ToValueInChannel chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
 receive iid =
-    wrap $ ChRepr.ensureFrom <$> Raw.receive (inletR iid)
-    -- ProcessM $ Free.liftF $ wrap $ Raw.Receive (inletR iid) $ Repr.ensureFrom
+    wrap $ (ViC._backToValue >>> ViC.toMaybe >>> fromMaybe fallback) <$> Raw.receive (inletR iid)
 
 
 
-send :: forall o state is os os' dout chrepr m. HasFallback chrepr => ToChRepr dout chrepr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os chrepr m Unit
+send :: forall o state is os os' dout chrepr m. FromValueInChannel dout chrepr => IsSymbol o => Cons o dout os' os => Outlet o -> dout -> ProcessM state is os chrepr m Unit
 send oid dout =
-    wrap $ Raw.send (outletR oid) (ChRepr.ensureTo dout)
+    wrap $ Raw.send (outletR oid) $ ViC.accept $ ViC.fromValueInChannel dout
 
 
 
-sendIn :: forall i din state is is' os chrepr m. HasFallback chrepr => ToChRepr din chrepr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os chrepr m Unit
+sendIn :: forall i din state is is' os chrepr m. FromValueInChannel din chrepr => IsSymbol i => Cons i din is' is => Inlet i -> din -> ProcessM state is os chrepr m Unit
 sendIn iid din =
-    wrap $ Raw.sendIn (inletR iid) (ChRepr.ensureTo din)
+    wrap $ Raw.sendIn (inletR iid) $ ViC.accept $ ViC.fromValueInChannel din
 
 
 lift :: forall state is os chrepr m. m Unit -> ProcessM state is os chrepr m Unit

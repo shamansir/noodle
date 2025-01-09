@@ -1,6 +1,6 @@
 module Noodle.Repr.ChRepr
     ( ValueInChannel
-    , accept, decline, empty, _missingKey
+    , accept, decline, empty, _missingKey, _backToValue
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
     , class FromToValueInChannel

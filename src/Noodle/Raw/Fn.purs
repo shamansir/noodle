@@ -13,10 +13,10 @@ import Noodle.Id (FnName, InletR, OutletR)
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Process (runM, toReprableState) as RawProcess
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
-import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets, toReprableState) as RawProtocol
+import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets) as RawProtocol
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
--- import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
+import Noodle.Repr.ChRepr (ValueInChannel)
 
 
 data Fn state chrepr (m :: Type -> Type) = Fn FnName (Raw.Process state chrepr m) -- TODO: move to separate module
@@ -32,7 +32,7 @@ run
     => HasFallback chrepr
     => Raw.Protocol state chrepr
     -> Fn state chrepr m
-    -> m ( state /\ Map InletR chrepr /\ Map OutletR chrepr )
+    -> m ( state /\ Map InletR (ValueInChannel chrepr) /\ Map OutletR (ValueInChannel chrepr) )
 run protocol (Fn _ process) = do
     _ <- RawProcess.runM protocol process
     nextState <- liftEffect $ RawProtocol.getState protocol
