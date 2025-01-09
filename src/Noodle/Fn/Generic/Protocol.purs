@@ -21,7 +21,8 @@ import Noodle.Fn.Generic.Updates as U
 
 
 type Protocol state inlets outlets =
-    { getInlets :: Unit -> Effect (U.InletsUpdate /\ inlets)
+    { initial :: { state :: state, inlets :: inlets, outlets :: outlets }
+    , getInlets :: Unit -> Effect (U.InletsUpdate /\ inlets)
     , getOutlets :: Unit -> Effect (U.OutletsUpdate /\ outlets)
     , getState :: Unit -> Effect state
     , modifyInlets :: (inlets -> U.InletsUpdate /\ inlets) -> Effect Unit
@@ -73,12 +74,13 @@ make state inlets outlets =
 
             protocol :: Protocol state inlets outlets
             protocol =
-                { getInlets : const $ Signal.get inletsSig
+                { initial   : { state, inlets, outlets }
+                , getInlets :  const $ Signal.get inletsSig
                 , getOutlets : const $ Signal.get outletsSig
-                , getState : const $ Signal.get stateSig
-                , modifyInlets : \f -> Signal.get inletsSig >>= (Tuple.snd >>> f) >>> Channel.send inletsCh -- TODO: use Signal.sampleOn?
+                , getState :   const $ Signal.get stateSig
+                , modifyInlets :  \f -> Signal.get inletsSig  >>= (Tuple.snd >>> f) >>> Channel.send inletsCh  -- TODO: use Signal.sampleOn?
                 , modifyOutlets : \f -> Signal.get outletsSig >>= (Tuple.snd >>> f) >>> Channel.send outletsCh -- TODO: use Signal.sampleOn?
-                , modifyState : \f -> Signal.get stateSig  >>= f >>> Channel.send stateCh
+                , modifyState :   \f -> Signal.get stateSig   >>= f                 >>> Channel.send stateCh
                 }
 
         pure $ tracker /\ protocol
@@ -105,8 +107,13 @@ _modifyState = flip _.modifyState
 
 
 imapState :: forall state state' inlets outlets. (state -> state') -> (state' -> state) -> Protocol state inlets outlets -> Protocol state' inlets outlets
-imapState f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
-    { getInlets
+imapState f g { initial, getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { initial :
+        { state   : f initial.state
+        , inlets  : initial.inlets
+        , outlets : initial.outlets
+        }
+    , getInlets
     , getOutlets
     , getState : map f <$> getState
     , modifyInlets
@@ -116,8 +123,13 @@ imapState f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, mo
 
 
 imapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> (inlets' -> inlets) -> Protocol state inlets outlets -> Protocol state inlets' outlets
-imapInlets f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
-    { getInlets : map (map f) <$> getInlets
+imapInlets f g { initial, getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { initial :
+        { state   : initial.state
+        , inlets  : f initial.inlets
+        , outlets : initial.outlets
+        }
+    , getInlets : map (map f) <$> getInlets
     , getOutlets
     , getState
     , modifyInlets : \modifyF -> modifyInlets (map g <<< modifyF <<< f)
@@ -127,11 +139,20 @@ imapInlets f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, m
 
 
 imapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> (outlets' -> outlets) -> Protocol state inlets outlets -> Protocol state inlets outlets'
-imapOutlets f g { getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
-    { getInlets
+imapOutlets f g { initial, getInlets, getOutlets, getState, modifyInlets, modifyOutlets, modifyState } =
+    { initial :
+        { state   : initial.state
+        , inlets  : initial.inlets
+        , outlets : f initial.outlets
+        }
+    , getInlets
     , getOutlets : map (map f) <$> getOutlets
     , getState
     , modifyInlets
     , modifyOutlets : \modifyF -> modifyOutlets (map g <<< modifyF <<< f)
     , modifyState
     }
+
+
+initial :: forall state inlets outlets. Protocol state inlets outlets -> { state :: state, inlets :: inlets, outlets :: outlets }
+initial = _.initial

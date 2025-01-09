@@ -41,8 +41,8 @@ make
     :: forall state (is :: Row Type) (os :: Row Type) chrepr m
     .  MonadEffect m
     => state
-    -> Map InletR  (ValueInChannel chrepr)
-    -> Map OutletR (ValueInChannel chrepr)
+    -> Map InletR  chrepr
+    -> Map OutletR chrepr
     -> m (Tracker state is os chrepr /\ Protocol state is os chrepr)
 make = Raw.make
 
@@ -56,7 +56,8 @@ makeRec
     -> Record is
     -> Record os
     -> m (Tracker state is os chrepr /\ Protocol state is os chrepr)
-makeRec state is os = make state (fromRec inletR is) (fromRec outletR os)
+makeRec state is os =
+    Raw.make' state (fromRec inletR is) (fromRec outletR os)
 
 
 getState :: forall state is os chrepr. Protocol state is os chrepr -> Effect state

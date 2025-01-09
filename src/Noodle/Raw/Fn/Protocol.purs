@@ -1,6 +1,6 @@
 module Noodle.Raw.Fn.Protocol
   ( Protocol
-  , make
+  , make, make'
   , getState
   , getInlets, getOutlets
   , sendOut
@@ -27,6 +27,7 @@ import Noodle.Raw.Fn.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (accept) as ViC
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 
@@ -38,11 +39,21 @@ make
     :: forall state chrepr m
     .  MonadEffect m
     => state
-    -> Map InletR  (ValueInChannel chrepr)
-    -> Map OutletR (ValueInChannel chrepr)
+    -> Map InletR  chrepr -- FIXME: initial values should always be accepted
+    -> Map OutletR chrepr -- FIXME: initial values should always be accepted
     -> m (Tracker state chrepr /\ Protocol state chrepr)
 make state is os =
-  Generic.make state is os
+  make' state (ViC.accept <$> is) (ViC.accept <$> os)
+
+
+make'
+    :: forall state chrepr m
+    .  MonadEffect m
+    => state
+    -> Map InletR  (ValueInChannel chrepr) -- FIXME: initial values should always be accepted
+    -> Map OutletR (ValueInChannel chrepr) -- FIXME: initial values should always be accepted
+    -> m (Tracker state chrepr /\ Protocol state chrepr)
+make' = Generic.make
 
 
 getState :: forall state chrepr. Protocol state chrepr -> Effect state

@@ -26,7 +26,8 @@ import Data.List (List)
 import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Map (lookup) as Map
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -46,7 +47,7 @@ import Noodle.Id (Inlet, Outlet, inletR, outletR)
 -- import Noodle.Raw.Fn.Protocol (InletsUpdate, OutletsUpdate) as Raw
 import Noodle.Fn.Protocol (Protocol) as Fn
 import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
-import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn) as Raw
+import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn, initial) as Raw
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from, to) as StRepr
@@ -82,10 +83,21 @@ type Process (state :: Type) (is :: Row Type) (os :: Row Type) (chrepr :: Type) 
 
 {- Processing -}
 
--- FIXME: don't require HasFallback here
+-- FIXME: don't require HasFallback here, also very complicated now
 receive :: forall i state is is' os din chrepr m. HasFallback din => ToValueInChannel chrepr din => IsSymbol i => Cons i din is' is => Inlet i -> ProcessM state is os chrepr m din -- RawProcessM state chrepr m din
 receive iid =
-    wrap $ (ViC._backToValue >>> ViC.toMaybe >>> fromMaybe fallback) <$> Raw.receive (inletR iid)
+    wrap $ do
+        vicRepr <- Raw.receive (inletR iid)
+        case ViC.toMaybe $ ViC._backToValue vicRepr of
+            Just val -> pure val
+            Nothing -> do
+                initialInlets <- _.inlets <$> Raw.initial
+                let mbInitialRepr = Map.lookup (inletR iid) initialInlets
+                pure $ case mbInitialRepr of
+                    Just initVicRepr -> ViC._backToValue initVicRepr # ViC.toMaybe # fromMaybe fallback
+                    Nothing -> fallback -- should never be the case, because we 'ViC.accept' all initial values
+
+    -- wrap $ (ViC._backToValue >>> ViC.toMaybe >>> fromMaybe fallback) <$> Raw.receive (inletR iid)
 
 
 

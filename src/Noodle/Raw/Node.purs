@@ -29,7 +29,7 @@ import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -56,12 +56,17 @@ data Node state (chrepr :: Type) (m :: Type -> Type)
         (Raw.Fn state chrepr m)
 
 
-type InletsValues  chrepr = Map Id.InletR chrepr
-type OutletsValues chrepr = Map Id.OutletR chrepr
+
+type InitialInletsValues  chrepr = Map Id.InletR  chrepr
+type InitialOutletsValues chrepr = Map Id.OutletR chrepr
 
 
-type OrderedInletsValues  chrepr = Map (Int /\ Id.InletR)  chrepr
-type OrderedOutletsValues chrepr = Map (Int /\ Id.OutletR) chrepr
+type InletsValues  chrepr = Map Id.InletR  (ValueInChannel chrepr)
+type OutletsValues chrepr = Map Id.OutletR (ValueInChannel chrepr)
+
+
+type OrderedInletsValues  chrepr = Map (Int /\ Id.InletR)  (ValueInChannel chrepr)
+type OrderedOutletsValues chrepr = Map (Int /\ Id.OutletR) (ValueInChannel chrepr)
 
 
 {- Get info -}
@@ -84,8 +89,8 @@ make
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> InletsValues  chrepr
-    -> OutletsValues chrepr
+    -> InitialInletsValues  chrepr
+    -> InitialOutletsValues chrepr
     -> Raw.Process state chrepr mp
     -> m (Node state chrepr mp)
 make family state rawShape inletsMap outletsMap process = do
@@ -98,8 +103,8 @@ _makeWithFn
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> InletsValues  chrepr
-    -> OutletsValues chrepr
+    -> InitialInletsValues  chrepr
+    -> InitialOutletsValues chrepr
     -> Raw.Fn state chrepr mp
     -> m (Node state chrepr mp)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do

@@ -18,12 +18,15 @@ module Noodle.Raw.Fn.Process
   , join
   , mkRunner
   , spawn
+  , initial
+--   , getProtocol -- TODO: is it ok to expose?
   )
   where
 
 import Prelude
 
 import Data.Bifunctor (lmap)
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
@@ -159,11 +162,15 @@ getProtocol :: forall state chrepr m. ProcessM state chrepr m (Raw.Protocol stat
 getProtocol = ProcessM $ Free.liftF $ GetProto identity
 
 
+initial :: forall state chrepr m. ProcessM state chrepr m { state :: state, inlets :: Map InletR (ValueInChannel chrepr), outlets :: Map OutletR (ValueInChannel chrepr) }
+initial = getProtocol >>= (_.initial >>> pure)
+
+
 mkRunner :: forall state chrepr m. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state chrepr m (ProcessM state chrepr m Unit -> m Unit)
 mkRunner = getProtocol >>= (pure <<< runM)
 
 
-spawn :: forall state chrepr m a. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state chrepr m Unit -> ProcessM state chrepr m (m Unit)
+spawn :: forall state chrepr m. HasFallback chrepr => MonadRec m => MonadEffect m => ProcessM state chrepr m Unit -> ProcessM state chrepr m (m Unit)
 spawn proc = mkRunner <#> (#) proc
 
 
