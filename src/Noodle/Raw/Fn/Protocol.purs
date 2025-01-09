@@ -12,8 +12,6 @@ module Noodle.Raw.Fn.Protocol
 
 import Prelude
 
-import Debug as Debug
-
 import Data.Map (Map)
 import Data.Map (insert) as Map
 import Data.Tuple (snd) as Tuple
@@ -28,21 +26,20 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Raw.Fn.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (ValueInChannel)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
-import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
-import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
 
-type Protocol state chrepr = Generic.Protocol state (Map InletR chrepr) (Map OutletR chrepr)
+type Protocol state chrepr = Generic.Protocol state (Map InletR (ValueInChannel chrepr)) (Map OutletR (ValueInChannel chrepr))
 
 
 make
     :: forall state chrepr m
     .  MonadEffect m
     => state
-    -> Map InletR chrepr
-    -> Map OutletR chrepr
+    -> Map InletR  (ValueInChannel chrepr)
+    -> Map OutletR (ValueInChannel chrepr)
     -> m (Tracker state chrepr /\ Protocol state chrepr)
 make state is os =
   Generic.make state is os
@@ -52,19 +49,19 @@ getState :: forall state chrepr. Protocol state chrepr -> Effect state
 getState p = p.getState unit
 
 
-getInlets :: forall state chrepr. Protocol state chrepr -> Effect (Map InletR chrepr)
+getInlets :: forall state chrepr. Protocol state chrepr -> Effect (Map InletR (ValueInChannel chrepr))
 getInlets p = p.getInlets unit <#> Tuple.snd
 
 
-getOutlets :: forall state chrepr. Protocol state chrepr -> Effect (Map OutletR chrepr)
+getOutlets :: forall state chrepr. Protocol state chrepr -> Effect (Map OutletR (ValueInChannel chrepr))
 getOutlets p = p.getOutlets unit <#> Tuple.snd
 
 
-sendOut :: forall state chrepr. OutletR -> chrepr -> Protocol state chrepr -> Effect Unit
+sendOut :: forall state chrepr. OutletR -> ValueInChannel chrepr -> Protocol state chrepr -> Effect Unit
 sendOut outlet = flip Generic._modifyOutlet outlet <<< Map.insert outlet
 
 
-sendIn :: forall state chrepr. InletR -> chrepr -> Protocol state chrepr -> Effect Unit
+sendIn :: forall state chrepr. InletR -> ValueInChannel chrepr -> Protocol state chrepr -> Effect Unit
 sendIn inlet = flip Generic._modifyInlet inlet <<< Map.insert inlet
 
 

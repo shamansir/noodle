@@ -29,7 +29,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -46,14 +46,17 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 
 import Noodle.Id (InletR, OutletR)
+import Noodle.Id (inletRName) as Id
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
-import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
-import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (_missingKey) as ViC
+-- import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
+-- import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
 
 
 
@@ -63,9 +66,9 @@ data ProcessF state chrepr m a
     | Lift (m a)
     | Join (ProcessF state chrepr m a)
     | GetProto (Raw.Protocol state chrepr -> a)
-    | Send OutletR (ChRepr chrepr) a
-    | SendIn InletR (ChRepr chrepr) a
-    | Receive InletR (ChRepr chrepr -> a)
+    | Send    OutletR (ValueInChannel chrepr) a
+    | SendIn  InletR  (ValueInChannel chrepr) a
+    | Receive InletR  (ValueInChannel chrepr -> a)
 
 
 instance functorProcessF :: Functor m => Functor (ProcessF state chrepr m) where
@@ -121,17 +124,17 @@ instance monadRecProcessM :: MonadRec (ProcessM state chrepr m) where
 
 {- Processing -}
 
-receive :: forall state chrepr m. InletR -> ProcessM state chrepr m (ChRepr chrepr)
+receive :: forall state chrepr m. InletR -> ProcessM state chrepr m (ValueInChannel chrepr)
 receive inletR =
     ProcessM $ Free.liftF $ Receive inletR $ identity
 
 
-send :: forall state chrepr m. OutletR -> ChRepr chrepr -> ProcessM state chrepr m Unit
+send :: forall state chrepr m. OutletR -> ValueInChannel chrepr -> ProcessM state chrepr m Unit
 send outletR orepr =
     ProcessM $ Free.liftF $ Send outletR orepr unit
 
 
-sendIn ∷ forall state chrepr m. InletR → ChRepr chrepr → ProcessM state chrepr m Unit
+sendIn ∷ forall state chrepr m. InletR -> ValueInChannel chrepr -> ProcessM state chrepr m Unit
 sendIn inletR irepr =
     ProcessM $ Free.liftF $ SendIn inletR irepr unit
 
@@ -266,9 +269,13 @@ runFreeM protocol fn =
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
-        getInletAt :: InletR -> m (ChRepr chrepr)
-        getInletAt iid = liftEffect $ fallbackByChRepr <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInlets unit
-        sendToOutlet :: OutletR -> ChRepr chrepr -> m Unit
-        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid (ChRepr.unwrap v) >>> (Tuple $ SingleOutlet oid)
-        sendToInlet :: InletR -> ChRepr chrepr -> m Unit
-        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid (ChRepr.unwrap v) >>> (Tuple $ SingleInlet iid)
+        trackMissingInlet :: InletR -> Maybe (ValueInChannel chrepr) -> ValueInChannel chrepr
+        trackMissingInlet key = case _ of
+            Just viC -> viC
+            Nothing -> ViC._missingKey $ Id.inletRName key
+        getInletAt :: InletR -> m (ValueInChannel chrepr)
+        getInletAt iid = liftEffect $ trackMissingInlet iid <$> Map.lookup iid <$> Tuple.snd <$> protocol.getInlets unit
+        sendToOutlet :: OutletR -> ValueInChannel chrepr -> m Unit
+        sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid v >>> (Tuple $ SingleOutlet oid)
+        sendToInlet :: InletR -> ValueInChannel chrepr -> m Unit
+        sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid v >>> (Tuple $ SingleInlet iid)

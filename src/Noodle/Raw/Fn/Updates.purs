@@ -16,26 +16,28 @@ import Noodle.Fn.Generic.Updates as Generic
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (Argument, Output, arg, out) as Fn
 
-
-type Update state repr = Generic.Update state (Map InletR repr) (Map OutletR repr)
-type MergedUpdate state repr = Generic.MergedUpdate state (Map InletR repr) (Map OutletR repr)
-type OrderedMergedUpdate state repr = Generic.MergedUpdate state (Map (Int /\ InletR) repr) (Map (Int /\ OutletR) repr)
+import Noodle.Repr.ChRepr (ValueInChannel)
 
 
-toFn :: forall state repr. NodeR -> MergedUpdate state repr -> Fn repr repr
+type Update state repr              = Generic.Update       state (Map InletR (ValueInChannel repr))          (Map OutletR (ValueInChannel repr))
+type MergedUpdate state repr        = Generic.MergedUpdate state (Map InletR (ValueInChannel repr))          (Map OutletR (ValueInChannel repr))
+type OrderedMergedUpdate state repr = Generic.MergedUpdate state (Map (Int /\ InletR) (ValueInChannel repr)) (Map (Int /\ OutletR) (ValueInChannel repr))
+
+
+toFn :: forall state repr. NodeR -> MergedUpdate state repr -> Fn (ValueInChannel repr) (ValueInChannel repr)
 toFn nodeR = Generic.toFn nodeR inletsToArgs outletsToArgs
   where
-    inletsToArgs  :: Map InletR repr -> Array (Fn.Argument repr)
+    inletsToArgs  :: Map InletR (ValueInChannel repr) -> Array (Fn.Argument (ValueInChannel repr))
     inletsToArgs   = Map.toUnfoldable >>> map (lmap Id.inletRName >>> uncurry Fn.arg)
-    outletsToArgs :: Map OutletR repr -> Array (Fn.Output repr)
+    outletsToArgs :: Map OutletR (ValueInChannel repr) -> Array (Fn.Output (ValueInChannel repr))
     outletsToArgs  = Map.toUnfoldable >>> map (lmap Id.outletRName >>> uncurry Fn.out)
 
 
 
-orderedToFn :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Fn repr repr
+orderedToFn :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Fn (ValueInChannel repr) (ValueInChannel repr)
 orderedToFn nodeR = Generic.toFn nodeR inletsToArgs outletsToArgs
   where
-    inletsToArgs  :: Map (Int /\ InletR) repr -> Array (Fn.Argument repr)
+    inletsToArgs  :: Map (Int /\ InletR) (ValueInChannel repr) -> Array (Fn.Argument (ValueInChannel repr))
     inletsToArgs   = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.inletRName) >>> uncurry Fn.arg)
-    outletsToArgs :: Map (Int /\ OutletR) repr -> Array (Fn.Output repr)
+    outletsToArgs :: Map (Int /\ OutletR) (ValueInChannel repr) -> Array (Fn.Output (ValueInChannel repr))
     outletsToArgs  = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.outletRName) >>> uncurry Fn.out)

@@ -3,18 +3,15 @@ module Cli.Components.ValueEditor where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe)
 import Data.Maybe (fromMaybe) as M
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Blessed.Internal.NodeKey as NK
-import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
+import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.ChRepr (class FromToChRepr, toChRepr, fromChRepr)
-import Noodle.Repr.ChRepr (wrap, unwrap) as Repr
 
 
 newtype EditorId = EditorId String
@@ -37,9 +34,18 @@ fromMaybe :: forall v state m. HasFallback v => ValueEditor (Maybe v) state m ->
 fromMaybe = imap (M.fromMaybe fallback) pure
 
 
-toReprable :: forall v state repr m. HasFallback repr => HasFallback v => FromToChRepr v repr => ValueEditor v state m -> ValueEditor repr state m
-toReprable = fromMaybe <<< toMaybeReprable
+{-
+toReprable :: forall v state repr m. HasFallback repr => HasFallback v => FromToValueInChannel v repr => ValueEditor v state m -> ValueEditor repr state m
+toReprable = fromMaybe <<< toChanneledRepr
 
 
-toMaybeReprable :: forall v state repr m. HasFallback v => FromToChRepr v repr => ValueEditor v state m -> ValueEditor (Maybe repr) state m
-toMaybeReprable = imap (flip bind toChRepr >>> map Repr.unwrap) (map Repr.wrap >>> flip bind fromChRepr) <<< toMaybe
+toChanneledRepr :: forall v state repr m. FromToValueInChannel v repr => ValueEditor (Maybe v) state m -> ValueEditor (ValueInChannel repr) state m
+toChanneledRepr = imap fromValue toValue
+    where
+        fromValue :: Maybe v -> ValueInChannel repr
+        fromValue mbV = case (fromValueInChannel <$> mbV) of
+            Just repr -> ViC.accept repr
+            Nothing -> ViC.decline
+        toValue :: ValueInChannel repr -> Maybe v
+        toValue = ViC.toMaybe >>> map toValueInChannel >>> flip bind ViC.toMaybe
+-}

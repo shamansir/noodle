@@ -1,21 +1,21 @@
 module Noodle.Repr.ChRepr
     ( ValueInChannel
-    , accept, decline, empty
+    , accept, decline, empty, _missingKey
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
     , class FromToValueInChannel
     -- , exists, wrap, unwrap
-    -- , class DataFromValueInChannelRow, dataFromValueInChannelRow, dataFromValueInChannelRowBuilder
-    , class ToValueInChannelRow, class ToValueInChannelRowBase, toValueInChannelRowBuilder
-    , class FromValueInChannelRow, class FromValueInChannelRowBase, fromValueInChannelRowBase
+    -- , class DataFromValuesInChannelRow, dataFromValuesInChannelRow, dataFromValuesInChannelRowBuilder
+    , class ToValuesInChannelRow, class ToValuesInChannelRowBase, toValuesInChannelRowBuilder
+    , class FromValuesInChannelRow, class FromValuesInChannelRowBase, fromValuesInChannelRowBase
     , class ValuesToReprRow, valuesToReprRowBuilder
     , LiftMethod, AcceptAll, DeclineAll, class LiftAllValuesRow, liftAllValuesRowBuilder
     , acceptAll, declineAll
-    -- , class DataFromFromValueInChannelRow
+    -- , class DataFromFromValuesInChannelRow
     , class ReadChannelRepr, readChannelRepr
     , class WriteChannelRepr, writeChannelRepr
     , class ReadWriteChannelRepr
-    , fromMap, toMap
+    , fromMap, toMap, toMaybe
     , recordWithValuesToRepr
     -- , inbetween, inbetween'
     )
@@ -64,7 +64,6 @@ data ValueInChannel a
 derive instance Functor ValueInChannel
 
 
-
 {- newtype Tag = Tag String
 
 
@@ -103,8 +102,8 @@ class    (ReadChannelRepr repr, WriteChannelRepr repr) <= ReadWriteChannelRepr r
 instance (ReadChannelRepr repr, WriteChannelRepr repr) => ReadWriteChannelRepr repr
 
 
-class    (FromValueInChannel repr a, ToValueInChannel a repr) <= FromToValueInChannel a repr
-instance (FromValueInChannel repr a, ToValueInChannel a repr) => FromToValueInChannel a repr
+class    (FromValueInChannel a repr, ToValueInChannel repr a) <= FromToValueInChannel a repr
+instance (FromValueInChannel a repr, ToValueInChannel repr a) => FromToValueInChannel a repr
 
 
 accept :: forall a. a -> ValueInChannel a
@@ -119,10 +118,29 @@ empty :: forall a. ValueInChannel a
 empty = Empty
 
 
+_missingKey :: forall a. String -> ValueInChannel a
+_missingKey = MissingKey
+
+
+_backToValue :: forall a repr. ToValueInChannel repr a => ValueInChannel repr -> ValueInChannel a
+_backToValue = case _ of
+  Accepted repr -> toValueInChannel repr
+  Declined -> Declined
+  MissingKey key -> MissingKey key
+  Empty -> Empty
+
+
+toMaybe :: forall a. ValueInChannel a -> Maybe a
+toMaybe =
+    case _ of
+        Accepted a -> Just a
+        _ -> Nothing
+
+
 data LiftMethod
 
 
-foreign import data AcceptAll :: LiftMethod
+foreign import data AcceptAll  :: LiftMethod
 foreign import data DeclineAll :: LiftMethod
 
 
@@ -154,22 +172,22 @@ class ReprToValueRow rl row repr from to | rl -> row from to, repr -> row from t
   reprToValueRowBuilder :: Proxy repr -> Proxy rl -> Record row -> Builder { | from } { | to }
 
 
-class FromValueInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Type -> Constraint
-class FromValueInChannelRowBase rl row k repr | rl -> row, repr -> row where
-  fromValueInChannelRowBase :: Proxy repr -> Proxy rl -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (ValueInChannel repr) -> Map k (ValueInChannel repr)
+class FromValuesInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Type -> Constraint
+class FromValuesInChannelRowBase rl row k repr | rl -> row, repr -> row where
+  fromValuesInChannelRowBase :: Proxy repr -> Proxy rl -> (forall field. IsSymbol field => Proxy field -> k) -> Record row -> Map k (ValueInChannel repr) -> Map k (ValueInChannel repr)
 
 
-class ToValueInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
-class ToValueInChannelRowBase rl row repr from to | rl -> row from to, repr -> row from to where
-  toValueInChannelRowBuilder :: Proxy repr -> Proxy rl -> Map String repr -> Builder { | from } { | to }
+class ToValuesInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
+class ToValuesInChannelRowBase rl row repr from to | rl -> row from to, repr -> row from to where
+  toValuesInChannelRowBuilder :: Proxy repr -> Proxy rl -> Map String (ValueInChannel repr) -> Builder { | from } { | to }
 
 
-class    (RL.RowToList row rl, Record.Keys rl, FromValueInChannelRowBase rl row k repr) <= FromValueInChannelRow rl row k repr
-instance (RL.RowToList row rl, Record.Keys rl, FromValueInChannelRowBase rl row k repr) => FromValueInChannelRow rl row k repr
+class    (RL.RowToList row rl, Record.Keys rl, FromValuesInChannelRowBase rl row k repr) <= FromValuesInChannelRow rl row k repr
+instance (RL.RowToList row rl, Record.Keys rl, FromValuesInChannelRowBase rl row k repr) => FromValuesInChannelRow rl row k repr
 
 
-class    (RL.RowToList row rl, Record.Keys rl, ToValueInChannelRowBase rl row repr () row) <= ToValueInChannelRow rl row repr
-instance (RL.RowToList row rl, Record.Keys rl, ToValueInChannelRowBase rl row repr () row) => ToValueInChannelRow rl row repr
+class    (RL.RowToList row rl, Record.Keys rl, ToValuesInChannelRowBase rl row repr () row) <= ToValuesInChannelRow rl row repr
+instance (RL.RowToList row rl, Record.Keys rl, ToValuesInChannelRowBase rl row repr () row) => ToValuesInChannelRow rl row repr
 
 
 instance valueToReprRowNil :: ValuesToReprRow RL.Nil row repr () () where
@@ -210,61 +228,61 @@ else instance liftAllValuesRowNilCons ::
       first = Builder.insert nameP val
 
 
-instance fromChannelReprRowBaseNil :: FromValueInChannelRowBase RL.Nil row k repr where
-    fromValueInChannelRowBase _ _ _ _ _ = Map.empty
-else instance fromValueInChannelRowBaseCons ::
+instance fromChannelReprRowBaseNil :: FromValuesInChannelRowBase RL.Nil row k repr where
+    fromValuesInChannelRowBase _ _ _ _ _ = Map.empty
+else instance fromValuesInChannelRowBaseCons ::
   ( Ord k
   , IsSymbol name
   , FromValueInChannel a repr
   , Row.Cons name (ValueInChannel a) trash row
-  , FromValueInChannelRowBase tail row k repr
-  ) => FromValueInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row k repr where
-    fromValueInChannelRowBase prepr _ toKey rec prev =
+  , FromValuesInChannelRowBase tail row k repr
+  ) => FromValuesInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row k repr where
+    fromValuesInChannelRowBase prepr _ toKey rec prev =
       Map.insert (toKey nameP) value rest
       where
         nameP = Proxy :: _ name
         value = fromValueInChannel <$> R.get nameP rec
-        rest = fromValueInChannelRowBase prepr (Proxy :: _ tail) toKey rec prev
+        rest = fromValuesInChannelRowBase prepr (Proxy :: _ tail) toKey rec prev
 
 
-instance toValueInChannelRowBaseNil :: ToValueInChannelRowBase RL.Nil row repr () () where
-  toValueInChannelRowBuilder _ _ _ = identity
-else instance toValueInChannelRowBaseCons ::
+instance toValuesInChannelRowBaseNil :: ToValuesInChannelRowBase RL.Nil row repr () () where
+  toValuesInChannelRowBuilder _ _ _ = identity
+else instance toValuesInChannelRowBaseCons ::
   ( IsSymbol name
   , ToValueInChannel repr a
   , Row.Cons name (ValueInChannel a) trash row
   , Row.Lacks name from'
   , Row.Cons name (ValueInChannel a) from' to
-  , ToValueInChannelRowBase tail row repr from from'
-  ) => ToValueInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row repr from to where
-  toValueInChannelRowBuilder _ _ map =
+  , ToValuesInChannelRowBase tail row repr from from'
+  ) => ToValuesInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row repr from to where
+  toValuesInChannelRowBuilder _ _ map =
     first <<< rest
     where
       nameP = Proxy :: _ name
       (val :: ValueInChannel a) =
         case Map.lookup (reflectSymbol nameP) map of
-          Just repr -> toValueInChannel repr
+          Just repr -> _backToValue repr
           Nothing -> MissingKey $ reflectSymbol nameP
-      rest = toValueInChannelRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) map
+      rest = toValuesInChannelRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) map
       first = Builder.insert nameP val
 
 
 fromMap :: forall row rl repr
-   . ToValueInChannelRow rl row repr
-  => Map String repr
+   . ToValuesInChannelRow rl row repr
+  => Map String (ValueInChannel repr)
   -> Record row
-fromMap map = Builder.build builder {}
+fromMap theMap = Builder.build builder {}
   where
     builder :: Builder (Record ()) (Record row)
-    builder = toValueInChannelRowBuilder (Proxy :: _ repr) (Proxy :: _ rl) map
+    builder = toValuesInChannelRowBuilder (Proxy :: _ repr) (Proxy :: _ rl) theMap
 
 
 toMap :: forall k rl row repr
-   . FromValueInChannelRow rl row k repr
+   . FromValuesInChannelRow rl row k repr
   => (forall s. IsSymbol s => Proxy s -> k)
   -> Record row
   -> Map k (ValueInChannel repr)
-toMap toKey record = fromValueInChannelRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
+toMap toKey record = fromValuesInChannelRowBase (Proxy :: _ repr) (Proxy :: _ rl) toKey record Map.empty
 
 
 recordWithValuesToRepr :: forall row rl repr row'

@@ -8,13 +8,13 @@ import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
 import Data.Symbol (class IsSymbol)
 
-import Noodle.Repr.ChRepr (ChRepr(..), class ToChReprRow, class FromChReprRow)
-import Noodle.Repr.ChRepr (fromMap, toMap, unwrap) as ChRepr
+import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
+import Noodle.Repr.ChRepr (fromMap, toMap) as VsiC
 
 
-fromRec :: forall k repr rowl row. ToChReprRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k repr
-fromRec toKey = ChRepr.toMap toKey >>> map ChRepr.unwrap
+fromRec :: forall k repr rowl row. FromValuesInChannelRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k (ValueInChannel repr)
+fromRec toKey = VsiC.toMap toKey
 
 
-toRec :: forall k repr rowl row. FromChReprRow rowl row repr => (k -> String) -> Map k repr -> Record row
-toRec toString = map ChRepr >>> Map.stringifyKeys toString >>> ChRepr.fromMap
+toRec :: forall k repr rowl row. ToValuesInChannelRow rowl row repr => (k -> String) -> Map k (ValueInChannel repr) -> Record row
+toRec toString = Map.stringifyKeys toString >>> VsiC.fromMap

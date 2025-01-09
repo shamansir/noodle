@@ -28,8 +28,9 @@ import Noodle.Raw.Fn.Protocol as Raw
 import Noodle.Fn.Tracker (Tracker)
 import Noodle.Raw.FromToRec (toRec, fromRec)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
-import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
+-- import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
+-- import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) chrepr = Raw.Protocol state chrepr
@@ -39,8 +40,8 @@ make
     :: forall state (is :: Row Type) (os :: Row Type) chrepr m
     .  MonadEffect m
     => state
-    -> Map InletR chrepr
-    -> Map OutletR chrepr
+    -> Map InletR  (ValueInChannel chrepr)
+    -> Map OutletR (ValueInChannel chrepr)
     -> m (Tracker state is os chrepr /\ Protocol state is os chrepr)
 make = Raw.make
 
@@ -48,8 +49,8 @@ make = Raw.make
 makeRec
     :: forall state (is :: Row Type) isrl (os :: Row Type) osrl chrepr m
     .  MonadEffect m
-    => ToChReprRow isrl is InletR chrepr
-    => ToChReprRow osrl os OutletR chrepr
+    => FromValuesInChannelRow isrl is InletR chrepr
+    => FromValuesInChannelRow osrl os OutletR chrepr
     => state
     -> Record is
     -> Record os
@@ -69,11 +70,11 @@ getOutlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (
 getOutlets = Raw.getOutlets
 
 
-getRecInlets :: forall state is isrl os chrepr. FromChReprRow isrl is chrepr => Protocol state is os chrepr -> Effect (Record is)
+getRecInlets :: forall state is isrl os chrepr. ToValuesInChannelRow isrl is chrepr => Protocol state is os chrepr -> Effect (Record is)
 getRecInlets p = p.getInlets unit <#> Tuple.snd <#> toRec Id.inletRName
 
 
-getRecOutlets :: forall state is os osrl chrepr. FromChReprRow osrl os chrepr => Protocol state is os chrepr -> Effect (Record os)
+getRecOutlets :: forall state is os osrl chrepr. ToValuesInChannelRow osrl os chrepr => Protocol state is os chrepr -> Effect (Record os)
 getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec Id.outletRName
 
 

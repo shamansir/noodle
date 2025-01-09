@@ -14,17 +14,17 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.FromToRec (toRec)
 import Noodle.Raw.Fn.Tracker as Raw
-import Noodle.Repr.ChRepr (class FromChReprRow)
+import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
 
 
 type Tracker state (is :: Row Type) (os :: Row Type) chrepr = Raw.Tracker state chrepr
 
 
-inlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map InletR chrepr)
+inlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map InletR (ValueInChannel chrepr))
 inlets = Raw.inlets
 
 
-outlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map OutletR chrepr)
+outlets :: forall state is os chrepr. Tracker state is os chrepr -> Effect (Map OutletR (ValueInChannel chrepr))
 outlets = Raw.outlets
 
 
@@ -36,19 +36,19 @@ lastOutlet :: forall state is os chrepr. Tracker state is os chrepr -> Effect (M
 lastOutlet = Raw.lastOutlet
 
 
-inletsRec :: forall state is isrl os chrepr. RL.RowToList is isrl => FromChReprRow isrl is chrepr => Tracker state is os chrepr -> Effect (Record is)
+inletsRec :: forall state is isrl os chrepr. ToValuesInChannelRow isrl is chrepr => Tracker state is os chrepr -> Effect (Record is)
 inletsRec tracker = Raw.inlets tracker <#> toRec Id.inletRName
 
 
-outletsRec :: forall state is os osrl chrepr. RL.RowToList os osrl => FromChReprRow osrl os chrepr => Tracker state is os chrepr -> Effect (Record os)
+outletsRec :: forall state is os osrl chrepr. ToValuesInChannelRow osrl os chrepr => Tracker state is os chrepr -> Effect (Record os)
 outletsRec tracker = Raw.outlets tracker <#> toRec Id.outletRName
 
 
-atInlet :: forall state is os chrepr. InletR -> Tracker state is os chrepr -> Effect (Maybe chrepr)
+atInlet :: forall state is os chrepr. InletR -> Tracker state is os chrepr -> Effect (Maybe (ValueInChannel chrepr))
 atInlet = Raw.atInlet
 
 
-atOutlet :: forall state is os chrepr. OutletR -> Tracker state is os chrepr -> Effect (Maybe chrepr)
+atOutlet :: forall state is os chrepr. OutletR -> Tracker state is os chrepr -> Effect (Maybe (ValueInChannel chrepr))
 atOutlet = Raw.atOutlet
 
 
