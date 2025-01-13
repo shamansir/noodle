@@ -34,7 +34,6 @@ import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RawFami
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 

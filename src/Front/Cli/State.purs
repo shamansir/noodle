@@ -28,7 +28,6 @@ import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Text.NdfFile (NdfFile)

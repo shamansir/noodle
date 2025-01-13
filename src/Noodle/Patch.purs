@@ -47,7 +47,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, family, toReprableState) as RawNode
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, class FromToChRepr)
+import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel, class FromToValueInChannel)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
@@ -162,8 +162,8 @@ connect
     => IsSymbol fA
     => IsSymbol fB
     => HasFallback chrepr
-    => FromChRepr chrepr doutA
-    => ToChRepr dinB chrepr
+    => ToValueInChannel chrepr doutA
+    => FromValueInChannel dinB chrepr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => RegisteredFamily (F fA fstateA isA osA chrepr mp) families

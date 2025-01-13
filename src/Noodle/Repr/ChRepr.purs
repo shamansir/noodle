@@ -1,5 +1,5 @@
 module Noodle.Repr.ChRepr
-    ( ValueInChannel
+    ( ValueInChannel(..) -- FIXME: close the constructors?
     , accept, decline, empty, _missingKey, _backToValue, _bind, toFallback
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
