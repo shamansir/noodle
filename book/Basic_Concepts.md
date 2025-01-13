@@ -87,6 +87,15 @@ In general, there are two distinct types of temperature rules used for toolkits:
 Usually it depends on the subject of the toolkit, keeping the first inlet hold while others cold is more common to the toolkits that generate music, where first inlet usually receives the audio signal.
 
 ### Value Editors
+
+When a user clicks on some inlet, there’s a chance that it is possible to send a custom value to this inlet, if the type of the data that flows inside it can be represented by a string or tuned using some supported control. 
+
+The control that appears is called _Value Editor_.
+
+If user somehow entered an incorrect data (but it’s muxh bettet for the editor to prevent such cases using its own UX) it could not be accepted and so either value of the inlet will be erased and it will wait until some correct value will be sent there, or the value will be declined and to revive the inlet it would be required (as well) just to send new value there or, if the inlet has default fallback value, it could be used as a temporary replacement not to break the flow of the node.
+
+There’s a chance that outlets could also have value editors on them at some point.
+
 ## Body
 ## Function
 ## Processing
