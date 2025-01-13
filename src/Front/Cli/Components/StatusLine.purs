@@ -103,14 +103,14 @@ nodeStatus ptk nodeR changes =
     Key.statusLine >~ Box.setContent $ T.singleLine $ T.nodeStatusLine ptk nodeR changes
 
 
-inletStatus :: forall state chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> Maybe chrepr -> C.BlessedOp state m
-inletStatus family idx inputId maybeRepr =
-    Key.statusLine >~ Box.setContent $ T.singleLine $ T.inletStatusLine family idx inputId maybeRepr
+inletStatus :: forall state chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> ValueInChannel chrepr -> C.BlessedOp state m
+inletStatus family idx inputId vicRepr =
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.inletStatusLine family idx inputId vicRepr
 
 
-outletStatus :: forall state chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> Maybe chrepr -> C.BlessedOp state m
-outletStatus family idx outputId maybeRepr =
-    Key.statusLine >~ Box.setContent $ T.singleLine $ T.outletStatusLine family idx outputId maybeRepr
+outletStatus :: forall state chrepr m. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> ValueInChannel chrepr -> C.BlessedOp state m
+outletStatus family idx outputId vicRepr =
+    Key.statusLine >~ Box.setContent $ T.singleLine $ T.outletStatusLine family idx outputId vicRepr
 
 
 removeStatus :: forall state m. Id.FamilyR -> C.BlessedOp state m

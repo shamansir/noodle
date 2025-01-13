@@ -34,6 +34,8 @@ import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (_reportMissingKey) as ChRepr
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -88,18 +90,18 @@ component offsetY keys familyR nodeR oReprSignal outlets =
         ]
         outletsButtons
     where
-        outletsArr :: Array ((Int /\ Id.OutletR) /\ chrepr)
+        outletsArr :: Array ((Int /\ Id.OutletR) /\ ValueInChannel chrepr)
         outletsArr = Map.toUnfoldable outlets
         keysArray :: Array OutletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length outletsArr
         outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
         outletsButtonsWithKeys = makeOutletButton <$> Array.zip keysArray outletsArr
-        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ chrepr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
-        makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ repr)) =
+        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ ValueInChannel chrepr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
+        makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ vicRepr)) =
             (outletR /\ buttonKey)
             /\
-            ( OutletButton.component buttonKey keys.nodeBox keys.infoBox familyR nodeR outletR idx (Just repr)
-            $ Signal.filterMap (Map.lookup outletR) (fallback :: chrepr)
+            ( OutletButton.component buttonKey keys.nodeBox keys.infoBox familyR nodeR outletR idx vicRepr
+            $ map (Map.lookup outletR >>> (ChRepr._reportMissingKey $ Id.outletRName outletR))
             $ map (Map.mapKeys Tuple.snd)
             $ oReprSignal
             )

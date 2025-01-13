@@ -58,7 +58,8 @@ import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
-import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel)
 import Noodle.Id as Id
 import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
@@ -128,7 +129,7 @@ _component
     :: forall tk fs pstate strepr chrepr m
     .  Wiring m
     => HasFallback chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -287,7 +288,7 @@ componentRaw
     :: forall tk fs pstate strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -312,7 +313,7 @@ component
     => HasFallback fstate
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -346,15 +347,15 @@ renderUpdate _ inletsKeysMap outletsKeysMap update = do
     _ <- traverseWithIndex updateOutlet update.outlets
     Key.mainScreen >~ Screen.render
     where
-        updateInlet (_ /\ inletR) repr =
+        updateInlet (_ /\ inletR) vicRepr =
             case Map.lookup inletR inletsKeysMap of
                 Just inletKey -> do
-                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet 0 inletR $ Just repr
+                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet 0 inletR vicRepr
                 Nothing -> pure unit
-        updateOutlet (_ /\ outletR) repr =
+        updateOutlet (_ /\ outletR) vicRepr =
             case Map.lookup outletR outletsKeysMap of
                 Just outletKey -> do
-                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet 0 outletR $ Just repr
+                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet 0 outletR vicRepr
                 Nothing -> pure unit
 
 
@@ -437,7 +438,7 @@ onMouseOver
      . MarkToolkit tk
     => Toolkit.HasChRepr tk chrepr
     => T.At At.StatusLine chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Id.NodeR

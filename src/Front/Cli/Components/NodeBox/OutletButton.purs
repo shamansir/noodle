@@ -41,6 +41,7 @@ import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
+import Noodle.Repr.ChRepr (ValueInChannel)
 import Noodle.Ui.Cli.Tagging (outlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
@@ -68,13 +69,13 @@ component
     => OutletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Id.FamilyR -> Id.NodeR -> Id.OutletR
     -> Int
-    -> Maybe chrepr
-    -> Signal chrepr
+    -> ValueInChannel chrepr
+    -> Signal (ValueInChannel chrepr)
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprSignal =
+component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx vicRepr reprSignal =
     B.button buttonKey
-        [ Box.content $ T.singleLine $ T.outlet idx outletR mbRepr
+        [ Box.content $ T.singleLine $ T.outlet idx outletR vicRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -86,7 +87,7 @@ component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx mbRepr reprS
         , Core.on Button.Press
             $ onPress idx outletR nodeR nodeBoxKey
         , Core.on Element.MouseOver
-            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx outletR mbRepr reprSignal
+            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx outletR vicRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey idx
         ]
@@ -102,16 +103,16 @@ onMouseOver
     -> InfoBoxKey
     -> Int
     -> Id.OutletR
-    -> Maybe chrepr
-    -> Signal chrepr
+    -> ValueInChannel chrepr
+    -> Signal (ValueInChannel chrepr)
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onMouseOver family nodeIdR nodeBox infoBox idx outletR mbRepr reprSignal _ _ = do
+onMouseOver family nodeIdR nodeBox infoBox idx outletR vicRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- Bounds.collect nodeIdR nodeBox
     let outletPos = Bounds.outletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.outletInfo outletR
-    SL.outletStatus family idx outletR mbRepr
+    SL.outletStatus family idx outletR vicRepr
     -- REM FI.outputStatus family idx outputId maybeRepr
     case state.lastClickedOutlet of
         Just _ -> pure unit

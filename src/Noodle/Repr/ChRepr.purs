@@ -1,6 +1,6 @@
 module Noodle.Repr.ChRepr
     ( ValueInChannel(..) -- FIXME: close the constructors?
-    , accept, decline, empty, _missingKey, _backToValue, _bind, toFallback
+    , accept, decline, empty, _missingKey, _backToValue, _bind, _reportMissingKey, toFallback
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
     , class FromToValueInChannel
@@ -157,6 +157,13 @@ _bind f = case _ of
 
 _backToValue :: forall a repr. ToValueInChannel repr a => ValueInChannel repr -> ValueInChannel a
 _backToValue = _bind toValueInChannel
+
+
+_reportMissingKey :: forall a. String -> Maybe (ValueInChannel a) -> ValueInChannel a
+_reportMissingKey key =
+  case _ of
+    Just vicVal -> vicVal
+    Nothing -> _missingKey key
 
 
 toFallback :: forall a. HasFallback a => ValueInChannel a -> a

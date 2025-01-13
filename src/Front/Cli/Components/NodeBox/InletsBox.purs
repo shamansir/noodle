@@ -36,6 +36,8 @@ import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Wiring (class Wiring)
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (_reportMissingKey) as ChRepr
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -93,18 +95,18 @@ component stateRef patchR keys rawNode iReprSignal inlets =
         ]
         inletsButtons
     where
-        inletsArr :: Array ((Int /\ Id.InletR) /\ chrepr)
+        inletsArr :: Array ((Int /\ Id.InletR) /\ ValueInChannel chrepr)
         inletsArr = Map.toUnfoldable inlets
         keysArray :: Array InletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length inletsArr
         inletsButtonsWithKeys :: Array ((Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
         inletsButtonsWithKeys = makeInletButton <$> Array.zip keysArray inletsArr
-        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ chrepr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
-        makeInletButton (buttonKey /\ ((idx /\ inletR) /\ repr)) =
+        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ ValueInChannel chrepr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
+        makeInletButton (buttonKey /\ ((idx /\ inletR) /\ vicRepr)) =
             (inletR /\ buttonKey)
             /\
-            ( InletButton.component stateRef patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx (Just repr)
-            $ Signal.filterMap (Map.lookup inletR) (fallback :: chrepr)
+            ( InletButton.component stateRef patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx vicRepr
+            $ map (Map.lookup inletR >>> (ChRepr._reportMissingKey $ Id.inletRName inletR))
             $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal
             )

@@ -46,11 +46,11 @@ import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
-import Noodle.Repr.ChRepr (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback) as ChRepr
+import Noodle.Repr.ChRepr (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback, _reportMissingKey) as ChRepr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
-import Noodle.Raw.Node (Node(..), InletsValues, InitialInletsValues, OutletsValues, InitialOutletsValues, NodeChanges, orderInlets, orderOutlets, _reportIfMissingAt) as Raw
+import Noodle.Raw.Node (Node(..), InletsValues, InitialInletsValues, OutletsValues, InitialOutletsValues, NodeChanges, orderInlets, orderOutlets) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
@@ -198,7 +198,7 @@ run (Node _ _ _ protocol fn) = Fn.run' protocol fn
 
 
 subscribeInletR :: forall f state is os chrepr m. Id.InletR -> Node f state is os chrepr m -> Signal (ValueInChannel chrepr)
-subscribeInletR inletR node = (Raw._reportIfMissingAt $ Id.inletRName inletR) <$> Map.lookup inletR <$> subscribeInletsRaw node
+subscribeInletR inletR node = (ChRepr._reportMissingKey $ Id.inletRName inletR) <$> Map.lookup inletR <$> subscribeInletsRaw node
 
 
 subscribeInlet :: forall f i state is is' isrl os chrepr m din. RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr m -> Signal din
@@ -222,7 +222,7 @@ subscribeInlets (Node _ _ tracker _ _) = ChReprCnv.toRec RawShape.inletRName <$>
 
 
 subscribeOutletR :: forall f state is os chrepr m. Id.OutletR -> Node f state is os chrepr m -> Signal (ValueInChannel chrepr)
-subscribeOutletR outletR node = (Raw._reportIfMissingAt $ Id.outletRName outletR) <$> Map.lookup outletR <$> subscribeOutletsRaw node
+subscribeOutletR outletR node = (ChRepr._reportMissingKey $ Id.outletRName outletR) <$> Map.lookup outletR <$> subscribeOutletsRaw node
 
 
 subscribeOutlet :: forall f o state is os os' osrl chrepr m dout. RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr m -> Signal dout
@@ -320,11 +320,11 @@ atOutletFlipped = flip atOutlet
 
 
 atInletR :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
-atInletR inletR node = inletsRaw node <#> Map.lookup inletR <#> (Raw._reportIfMissingAt $ Id.inletRName inletR)
+atInletR inletR node = inletsRaw node <#> Map.lookup inletR <#> (ChRepr._reportMissingKey $ Id.inletRName inletR)
 
 
 atOutletR :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
-atOutletR outletR node = outletsRaw node <#> Map.lookup outletR <#> (Raw._reportIfMissingAt $ Id.outletRName outletR)
+atOutletR outletR node = outletsRaw node <#> Map.lookup outletR <#> (ChRepr._reportMissingKey $ Id.outletRName outletR)
 
 
 getFromInlets :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr mp -> m din

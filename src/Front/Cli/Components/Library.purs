@@ -42,7 +42,7 @@ import Noodle.Id (PatchR, FamilyR, Family, familyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
-import Noodle.Repr.ChRepr (class FromToChRepr)
+import Noodle.Repr.ChRepr (ValueInChannel, class ToValueInChannel)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
 import Noodle.Toolkit.Family (Family) as Toolkit
@@ -71,7 +71,7 @@ import Prelude
 component
     :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
@@ -112,7 +112,7 @@ onFamilySelect
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
@@ -149,7 +149,7 @@ spawnAndRenderRaw
     :: forall  tk pstate fs strepr chrepr m
      . Wiring m
     => Toolkit.HoldsFamilies strepr chrepr m fs
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => HasFallback chrepr
@@ -189,7 +189,7 @@ spawnAndRender
     => HasFallback fstate
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => Toolkit tk fs strepr chrepr m

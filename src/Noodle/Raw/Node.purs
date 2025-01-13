@@ -30,7 +30,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
-import Noodle.Repr.ChRepr (accept, _missingKey) as ViC
+import Noodle.Repr.ChRepr (accept, _missingKey, _reportMissingKey) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -187,11 +187,11 @@ state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
 atInlet :: forall m state chrepr mp. MonadEffect m => Id.InletR -> Node state chrepr mp -> m (ValueInChannel chrepr)
-atInlet inletR node = inlets node <#> Map.lookup inletR <#> (_reportIfMissingAt $ Id.inletRName inletR)
+atInlet inletR node = inlets node <#> Map.lookup inletR <#> (ViC._reportMissingKey $ Id.inletRName inletR)
 
 
 atOutlet :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> Node state chrepr mp -> m (ValueInChannel chrepr)
-atOutlet outletR node = outlets node <#> Map.lookup outletR <#> (_reportIfMissingAt $ Id.outletRName outletR)
+atOutlet outletR node = outlets node <#> Map.lookup outletR <#> (ViC._reportMissingKey $ Id.outletRName outletR)
 
 
 curChanges :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (NodeChanges state chrepr)
@@ -225,15 +225,8 @@ _getTracker (Node _ _ tracker _ _) = tracker
 type NodeChanges state chrepr = Updates.MergedUpdateRec state (OrderedInletsValues chrepr) (OrderedOutletsValues chrepr)
 
 
-_reportIfMissingAt :: forall a. String -> Maybe (ValueInChannel a) -> ValueInChannel a
-_reportIfMissingAt key =
-  case _ of
-    Just vicVal -> vicVal
-    Nothing -> ViC._missingKey key
-
-
 subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (ValueInChannel chrepr)
-subscribeInlet inletR (Node _ _ tracker _ _) = (_reportIfMissingAt $ Id.inletRName inletR) <$> Map.lookup inletR <$> Tuple.snd <$> tracker.inlets
+subscribeInlet inletR (Node _ _ tracker _ _) = (ViC._reportMissingKey $ Id.inletRName inletR) <$> Map.lookup inletR <$> Tuple.snd <$> tracker.inlets
 
 
 subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedInletsValues chrepr)
@@ -245,7 +238,7 @@ _subscribeInlets (Node _ shape tracker _ _) = tracker.inlets <#> map (orderInlet
 
 
 subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (ValueInChannel chrepr)
-subscribeOutlet outletR (Node _ shape tracker _ _) = (_reportIfMissingAt $ Id.outletRName outletR) <$> Map.lookup outletR <$> Tuple.snd <$> tracker.outlets
+subscribeOutlet outletR (Node _ shape tracker _ _) = (ViC._reportMissingKey $ Id.outletRName outletR) <$> Map.lookup outletR <$> Tuple.snd <$> tracker.outlets
 
 
 subscribeOutlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedOutletsValues chrepr)

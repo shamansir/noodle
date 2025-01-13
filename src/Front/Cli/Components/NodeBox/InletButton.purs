@@ -67,7 +67,6 @@ import Cli.Components.Editor.Textual (tveKey) as VEditor
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
-import Noodle.Repr.ChRepr (unwrap, ensureTo) as Repr
 import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
@@ -76,6 +75,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, sendIn) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (toFallback) as ChRepr
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -104,6 +105,7 @@ component
      . HasFallback chrepr
     => T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
+    => HasFallback chrepr
     => Wiring m
     => CliEditor tk chrepr
     => Ref (State tk pstate fs strepr chrepr m)
@@ -111,11 +113,11 @@ component
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Raw.Node strepr chrepr m
     -> Id.InletR -> Int
-    -> Maybe chrepr
-    -> Signal chrepr
+    -> ValueInChannel chrepr
+    -> Signal (ValueInChannel chrepr)
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx mbRepr reprSignal =
+component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx vicRepr reprSignal =
     let
         nodeR = RawNode.id rawNode
         familyR = Id.familyOf nodeR
@@ -129,11 +131,10 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                         RawNode.sendIn editorInletR reprV editorRawNode
                     Nothing ->
                         pure unit
-        (curValue :: chrepr) = Repr.unwrap $ Repr.ensureTo mbRepr
-        (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR mbRepr
-        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f curValue sendF) <$> mbValueEditor
+        (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
+        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f (ChRepr.toFallback vicRepr) sendF) <$> mbValueEditor
     in B.button buttonKey
-        [ Box.content $ T.singleLine $ T.inlet inletIdx inletR mbRepr
+        [ Box.content $ T.singleLine $ T.inlet inletIdx inletR vicRepr
         , Box.top $ Offset.px 0
         , Box.left $ left inletIdx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -143,9 +144,9 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Element.Click -- Button.Press
-            $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr-- REM Hydra.editorIdOf =<< maybeRepr
+            $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx inletR mbRepr reprSignal
+            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx inletR vicRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey inletIdx
         ]
@@ -161,10 +162,10 @@ onMouseOver
     -> InfoBoxKey
     -> Int
     -> Id.InletR
-    -> Maybe chrepr
-    -> Signal chrepr
+    -> ValueInChannel chrepr
+    -> Signal (ValueInChannel chrepr)
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onMouseOver nodeR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
+onMouseOver nodeR nodeBox infoBox idx inletR vicRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- case Map.lookup nodeR state.locations of
                         Just bounds -> pure bounds
@@ -172,7 +173,7 @@ onMouseOver nodeR nodeBox infoBox idx inletR mbRepr reprSignal _ _ = do
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.inletInfo inletR
-    SL.inletStatus (Id.familyOf nodeR) idx inletR mbRepr
+    SL.inletStatus (Id.familyOf nodeR) idx inletR vicRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
     case state.lastClickedOutlet of
         Just _ -> pure unit
@@ -206,11 +207,11 @@ onPress
     -> Int
     -> Raw.Node strepr chrepr mi
     -> Id.InletR
-    -> Maybe chrepr
+    -> ValueInChannel chrepr
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = do
+onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
@@ -321,8 +322,8 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR mbRepr _ _ = d
                         Just (editor /\ editorOp) -> do
                             CC.log "Exact editor was found, call it"
                             _ <- Blessed.runOnUnit $ _blessedHelper unit editorOp
-                            -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
-                            --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo mbRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
+                            -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
+                            --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             -- VEditor.tveKey >~ TextArea.setValue ""
                             nodeBounds <- case Map.lookup nodeR state.locations of
                                             Just bounds -> pure bounds

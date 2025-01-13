@@ -25,7 +25,7 @@ import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class FromToChRepr)
+import Noodle.Repr.ChRepr (ValueInChannel)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Tagging.At as T
@@ -65,7 +65,7 @@ component
     .  HasFallback chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => State tk ps fs strepr chrepr Effect
     -> Core.Blessed (State tk ps fs strepr chrepr Effect)

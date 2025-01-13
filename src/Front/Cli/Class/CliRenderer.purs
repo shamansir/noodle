@@ -11,11 +11,13 @@ import Cli.Keys (NodeBoxKey)
 import Control.Monad.State (class MonadState)
 
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp')
+
 import Noodle.Id (Family, FamilyR, NodeR, InletR) as Id
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Toolkit (ToolkitKey)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Repr.ChRepr (ValueInChannel)
 
 import Cli.Components.ValueEditor (ValueEditor)
 
@@ -28,4 +30,4 @@ class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
 
 
 class CliEditor (tk :: ToolkitKey) repr | tk -> repr where
-    editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> Maybe repr -> Maybe (ValueEditor repr Unit Effect)
+    editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)
