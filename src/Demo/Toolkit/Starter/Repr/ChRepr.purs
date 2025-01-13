@@ -6,7 +6,7 @@ import Effect (Effect)
 
 import Color as Color
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap) as NT
 import Data.String (splitAt, drop) as String
 import Data.Number (fromString) as Number
@@ -21,7 +21,7 @@ import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
 import Cli.Components.ValueEditor (ValueEditor)
-import Cli.Components.ValueEditor (imap, toReprable) as VE
+import Cli.Components.ValueEditor (imap) as VE
 import Cli.Components.Editor.Numeric as VNumeric
 import Cli.Components.Editor.Textual as VTextual
 
@@ -34,8 +34,8 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, toChRepr, fromChRepr)
-import Noodle.Repr.ChRepr (wrap, unwrap, fromEq, toEq) as CR
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
+import Noodle.Repr.ChRepr (accept, decline) as CR
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
@@ -106,51 +106,52 @@ instance HasFallback ValueRepr where
     fallback = VNone
 
 
-instance FromChRepr ValueRepr ValueRepr where fromChRepr = CR.fromEq
-instance ToChRepr   ValueRepr ValueRepr where toChRepr   = CR.toEq
+instance FromValueInChannel ValueRepr ValueRepr where fromValueInChannel = identity
+instance ToValueInChannel   ValueRepr ValueRepr where toValueInChannel   = CR.accept
 
 
-instance ToChRepr Any     ValueRepr where toChRepr = Just <<< CR.wrap <<< case _ of Any pr -> pr
-instance ToChRepr Bang    ValueRepr where toChRepr = Just <<< CR.wrap <<< const VBang
-instance ToChRepr Boolean ValueRepr where toChRepr = Just <<< CR.wrap <<< VBool
-instance ToChRepr Char    ValueRepr where toChRepr = Just <<< CR.wrap <<< VChar
-instance ToChRepr Number  ValueRepr where toChRepr = Just <<< CR.wrap <<< VNumber
-instance ToChRepr Time    ValueRepr where toChRepr = Just <<< CR.wrap <<< VTime
-instance ToChRepr Shape   ValueRepr where toChRepr = Just <<< CR.wrap <<< VShape
-instance ToChRepr Color   ValueRepr where toChRepr = Just <<< CR.wrap <<< VColor
-instance ToChRepr (Spread Number) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadNum
-instance ToChRepr (Spread (Number /\ Number)) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadVec
-instance ToChRepr (Spread Color) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadCol
-instance ToChRepr (Spread Shape) ValueRepr where toChRepr = Just <<< CR.wrap <<< VSpreadShp
+instance FromValueInChannel Any     ValueRepr where fromValueInChannel = case _ of Any pr -> pr
+instance FromValueInChannel Bang    ValueRepr where fromValueInChannel = const VBang
+instance FromValueInChannel Boolean ValueRepr where fromValueInChannel = VBool
+instance FromValueInChannel Char    ValueRepr where fromValueInChannel = VChar
+instance FromValueInChannel Number  ValueRepr where fromValueInChannel = VNumber
+instance FromValueInChannel Time    ValueRepr where fromValueInChannel = VTime
+instance FromValueInChannel Shape   ValueRepr where fromValueInChannel = VShape
+instance FromValueInChannel Color   ValueRepr where fromValueInChannel = VColor
+instance FromValueInChannel (Spread Number) ValueRepr where fromValueInChannel = VSpreadNum
+instance FromValueInChannel (Spread (Number /\ Number)) ValueRepr where fromValueInChannel = VSpreadVec
+instance FromValueInChannel (Spread Color) ValueRepr where fromValueInChannel = VSpreadCol
+instance FromValueInChannel (Spread Shape) ValueRepr where fromValueInChannel = VSpreadShp
 
-instance FromChRepr ValueRepr Number
+
+instance ToValueInChannel ValueRepr Number
     where
-        fromChRepr = CR.unwrap >>> _tryAny
+        toValueInChannel = _tryAny
             (case _ of
-                VNumber num -> Just num
-                _ -> Nothing
+                VNumber num -> CR.accept num
+                _ -> CR.decline
             )
 
 
-instance FromChRepr ValueRepr Boolean
+instance ToValueInChannel ValueRepr Boolean
     where
-        fromChRepr = CR.unwrap >>> _tryAny
+        toValueInChannel = _tryAny
             (case _ of
-                VBool bool -> Just bool
-                _ -> Nothing
+                VBool bool -> CR.accept bool
+                _ -> CR.decline
             )
 
 
-instance FromChRepr ValueRepr Time
+instance ToValueInChannel ValueRepr Time
     where
-        fromChRepr = CR.unwrap >>> _tryAny
+        toValueInChannel = _tryAny
             (case _ of
-                VTime time -> Just time
-                _ -> Nothing
+                VTime time -> CR.accept time
+                _ -> CR.decline
             )
 
 
-_tryAny :: forall a. (ValueRepr -> Maybe a) -> ValueRepr -> Maybe a
+_tryAny :: forall a. (ValueRepr -> ValueInChannel a) -> ValueRepr -> ValueInChannel a
 _tryAny f = case _ of
     VAny vrepr -> f vrepr -- not going deeper -- FIXME: why we need Any Any-Way? ... uh, it is for `Log` node input, to log everything that goes inside...
     vrepr      -> f vrepr
@@ -360,5 +361,10 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
 
 editorFor :: Maybe ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
 editorFor Nothing = Nothing
-editorFor (Just (VNumber _)) = Just $ VE.imap (map VNumber >>> fromMaybe HF.fallback) (CR.wrap >>> fromChRepr) VNumeric.editor
+editorFor (Just (VNumber _)) =
+    Just $ VE.imap (maybe VNone VNumber) extractNum VNumeric.editor
+        where
+            extractNum = case _ of -- reuse `ValueInChannel`?
+                VNumber num -> Just num
+                _ -> Nothing
 editorFor _ = Nothing

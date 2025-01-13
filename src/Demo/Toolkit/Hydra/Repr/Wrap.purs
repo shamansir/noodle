@@ -21,8 +21,8 @@ import Parsing.Extra (marker, foldMarkers)
 
 import Noodle.Repr.HasFallback as HF
 import Noodle.Repr.StRepr as SR
-import Noodle.Repr.ChRepr (ChRepr(..))
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, class ReadChRepr, class WriteChRepr, wrap, unwrap, exists) as CR
+import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel, class ReadChannelRepr, class WriteChannelRepr, accept, decline) as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -75,280 +75,280 @@ data WrapRepr
 
 
 -- instance NMF.HasRepr a WrapRepr where
---     toChRepr :: forall f i o. InNode f i o -> HT.Value -> WrapRepr
---     toChRepr _ a = WrapRepr
+--     fromValueInChannel :: forall f i o. InNode f i o -> HT.Value -> WrapRepr
+--     fromValueInChannel _ a = WrapRepr
 
 
 instance HF.HasFallback WrapRepr where
     fallback = Unit unit
 
 
-{- CR.ToChRepr -}
+{- CR.FromValueInChannel -}
 
 
-instance CR.ToChRepr HT.Value WrapRepr where
-    toChRepr :: HT.Value -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Value
+instance CR.FromValueInChannel HT.Value WrapRepr where
+    fromValueInChannel :: HT.Value -> WrapRepr
+    fromValueInChannel = Value
 
 
-instance CR.ToChRepr Unit WrapRepr where
-    toChRepr :: Unit -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Unit
+instance CR.FromValueInChannel Unit WrapRepr where
+    fromValueInChannel :: Unit -> WrapRepr
+    fromValueInChannel = Unit
 
 
-instance CR.ToChRepr HT.Texture WrapRepr where
-    toChRepr :: HT.Texture -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Texture
+instance CR.FromValueInChannel HT.Texture WrapRepr where
+    fromValueInChannel :: HT.Texture -> WrapRepr
+    fromValueInChannel = Texture
 
 
-instance CR.ToChRepr HT.SourceN WrapRepr where
-    toChRepr :: HT.SourceN -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< SourceN
+instance CR.FromValueInChannel HT.SourceN WrapRepr where
+    fromValueInChannel :: HT.SourceN -> WrapRepr
+    fromValueInChannel = SourceN
 
 
-instance CR.ToChRepr HT.TODO WrapRepr where
-    toChRepr :: HT.TODO -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< TODO
+instance CR.FromValueInChannel HT.TODO WrapRepr where
+    fromValueInChannel :: HT.TODO -> WrapRepr
+    fromValueInChannel = TODO
 
 
-instance CR.ToChRepr HT.Context WrapRepr where
-    toChRepr :: HT.Context -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Context
+instance CR.FromValueInChannel HT.Context WrapRepr where
+    fromValueInChannel :: HT.Context -> WrapRepr
+    fromValueInChannel = Context
 
 
-instance CR.ToChRepr HT.UpdateFn WrapRepr where
-    toChRepr :: HT.UpdateFn -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< UpdateFn
+instance CR.FromValueInChannel HT.UpdateFn WrapRepr where
+    fromValueInChannel :: HT.UpdateFn -> WrapRepr
+    fromValueInChannel = UpdateFn
 
 
-instance CR.ToChRepr HT.Source WrapRepr where
-    toChRepr :: HT.Source -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Source
+instance CR.FromValueInChannel HT.Source WrapRepr where
+    fromValueInChannel :: HT.Source -> WrapRepr
+    fromValueInChannel = Source
 
 
-instance CR.ToChRepr HT.Url WrapRepr where
-    toChRepr :: HT.Url -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Url
+instance CR.FromValueInChannel HT.Url WrapRepr where
+    fromValueInChannel :: HT.Url -> WrapRepr
+    fromValueInChannel = Url
 
 
-instance CR.ToChRepr HT.GlslFn WrapRepr where
-    toChRepr :: HT.GlslFn -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< GlslFn
+instance CR.FromValueInChannel HT.GlslFn WrapRepr where
+    fromValueInChannel :: HT.GlslFn -> WrapRepr
+    fromValueInChannel = GlslFn
 
 
-instance CR.ToChRepr HT.SourceOptions WrapRepr where
-    toChRepr :: HT.SourceOptions -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< SourceOptions
+instance CR.FromValueInChannel HT.SourceOptions WrapRepr where
+    fromValueInChannel :: HT.SourceOptions -> WrapRepr
+    fromValueInChannel = SourceOptions
 
 
-instance CR.ToChRepr HT.Values WrapRepr where
-    toChRepr :: HT.Values -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Values
+instance CR.FromValueInChannel HT.Values WrapRepr where
+    fromValueInChannel :: HT.Values -> WrapRepr
+    fromValueInChannel = Values
 
 
-instance CR.ToChRepr HT.Ease WrapRepr where
-    toChRepr :: HT.Ease -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Ease
+instance CR.FromValueInChannel HT.Ease WrapRepr where
+    fromValueInChannel :: HT.Ease -> WrapRepr
+    fromValueInChannel = Ease
 
 
-instance CR.ToChRepr HT.AudioSource WrapRepr where
-    toChRepr :: HT.AudioSource -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Audio
+instance CR.FromValueInChannel HT.AudioSource WrapRepr where
+    fromValueInChannel :: HT.AudioSource -> WrapRepr
+    fromValueInChannel = Audio
 
 
-instance CR.ToChRepr HT.AudioBin WrapRepr where
-    toChRepr :: HT.AudioBin -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< AudioBin
+instance CR.FromValueInChannel HT.AudioBin WrapRepr where
+    fromValueInChannel :: HT.AudioBin -> WrapRepr
+    fromValueInChannel = AudioBin
 
 
-instance CR.ToChRepr HT.OutputN WrapRepr where
-    toChRepr :: HT.OutputN -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< OutputN
+instance CR.FromValueInChannel HT.OutputN WrapRepr where
+    fromValueInChannel :: HT.OutputN -> WrapRepr
+    fromValueInChannel = OutputN
 
 
-instance CR.ToChRepr HT.ExtSource WrapRepr where
-    toChRepr :: HT.ExtSource -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< ExtSource
+instance CR.FromValueInChannel HT.ExtSource WrapRepr where
+    fromValueInChannel :: HT.ExtSource -> WrapRepr
+    fromValueInChannel = ExtSource
 
 
-instance CR.ToChRepr HT.RenderTarget WrapRepr where
-    toChRepr :: HT.RenderTarget -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Target
+instance CR.FromValueInChannel HT.RenderTarget WrapRepr where
+    fromValueInChannel :: HT.RenderTarget -> WrapRepr
+    fromValueInChannel = Target
 
 
-instance CR.ToChRepr HT.DepFn WrapRepr where
-    toChRepr :: HT.DepFn -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Value <<< HT.Dep
+instance CR.FromValueInChannel HT.DepFn WrapRepr where
+    fromValueInChannel :: HT.DepFn -> WrapRepr
+    fromValueInChannel = Value <<< HT.Dep
 
 
-instance CR.ToChRepr HT.CanBeSource WrapRepr where
-    toChRepr :: HT.CanBeSource -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< CBS
+instance CR.FromValueInChannel HT.CanBeSource WrapRepr where
+    fromValueInChannel :: HT.CanBeSource -> WrapRepr
+    fromValueInChannel = CBS
 
 
-instance CR.ToChRepr HT.TOrV WrapRepr where
-    toChRepr :: HT.TOrV -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< TOrV
+instance CR.FromValueInChannel HT.TOrV WrapRepr where
+    fromValueInChannel :: HT.TOrV -> WrapRepr
+    fromValueInChannel = TOrV
 
 
 {-}
-instance CR.ToChRepr CAI.Products WrapRepr where
-    toChRepr :: CAI.Products -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Products
+instance CR.FromValueInChannel CAI.Products WrapRepr where
+    fromValueInChannel :: CAI.Products -> WrapRepr
+    fromValueInChannel = Products
 
 
-instance CR.ToChRepr CAI.Product' WrapRepr where
-    toChRepr :: CAI.Product' -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists <<< Product
+instance CR.FromValueInChannel CAI.Product' WrapRepr where
+    fromValueInChannel :: CAI.Product' -> WrapRepr
+    fromValueInChannel = Product
 -}
 
 
-instance CR.ToChRepr WrapRepr WrapRepr where
-    toChRepr :: WrapRepr -> Maybe (ChRepr WrapRepr)
-    toChRepr = CR.exists
+instance CR.FromValueInChannel WrapRepr WrapRepr where
+    fromValueInChannel :: WrapRepr -> WrapRepr
+    fromValueInChannel = identity
 
 
-{- CR.FromChRepr -}
+{- CR.ToValueInChannel -}
 
 
-instance CR.FromChRepr WrapRepr HT.Value where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Value
-    fromChRepr (ChRepr (Value value)) = Just value
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Value where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Value
+    toValueInChannel (Value value) = CR.accept value
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Texture where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Texture
-    fromChRepr (ChRepr (Texture texture)) = Just texture
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Texture where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Texture
+    toValueInChannel (Texture texture) = CR.accept texture
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.OutputN where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.OutputN
-    fromChRepr (ChRepr (OutputN outN)) = Just outN
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.OutputN where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.OutputN
+    toValueInChannel (OutputN outN) = CR.accept outN
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.SourceN where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.SourceN
-    fromChRepr (ChRepr (SourceN srcN)) = Just srcN
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.SourceN where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.SourceN
+    toValueInChannel (SourceN srcN) = CR.accept srcN
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.TODO where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.TODO
-    fromChRepr (ChRepr (TODO todo)) = Just todo
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.TODO where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.TODO
+    toValueInChannel (TODO todo) = CR.accept todo
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Context where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Context
-    fromChRepr (ChRepr (Context context)) = Just context
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Context where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Context
+    toValueInChannel (Context context) = CR.accept context
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.UpdateFn where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.UpdateFn
-    fromChRepr (ChRepr (UpdateFn updatefn)) = Just updatefn
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.UpdateFn where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.UpdateFn
+    toValueInChannel (UpdateFn updatefn) = CR.accept updatefn
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Source where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Source
-    fromChRepr (ChRepr (Source source)) = Just source
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Source where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Source
+    toValueInChannel (Source source) = CR.accept source
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Url where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Url
-    fromChRepr (ChRepr (Url url)) = Just url
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Url where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Url
+    toValueInChannel (Url url) = CR.accept url
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.GlslFn where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.GlslFn
-    fromChRepr (ChRepr (GlslFn glslfn)) = Just glslfn
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.GlslFn where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.GlslFn
+    toValueInChannel (GlslFn glslfn) = CR.accept glslfn
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.SourceOptions where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.SourceOptions
-    fromChRepr (ChRepr (SourceOptions sourceoptions)) = Just sourceoptions
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.SourceOptions where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.SourceOptions
+    toValueInChannel (SourceOptions sourceoptions) = CR.accept sourceoptions
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Values where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Values
-    fromChRepr (ChRepr (Values values)) = Just values
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Values where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Values
+    toValueInChannel (Values values) = CR.accept values
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.Ease where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.Ease
-    fromChRepr (ChRepr (Ease ease)) = Just ease
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.Ease where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.Ease
+    toValueInChannel (Ease ease) = CR.accept ease
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.AudioSource where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.AudioSource
-    fromChRepr (ChRepr (Audio audio)) = Just audio
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.AudioSource where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.AudioSource
+    toValueInChannel (Audio audio) = CR.accept audio
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.AudioBin where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.AudioBin
-    fromChRepr (ChRepr (AudioBin audiobin)) = Just audiobin
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.AudioBin where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.AudioBin
+    toValueInChannel (AudioBin audiobin) = CR.accept audiobin
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.ExtSource where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.ExtSource
-    fromChRepr (ChRepr (ExtSource ext)) = Just ext
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.ExtSource where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.ExtSource
+    toValueInChannel (ExtSource ext) = CR.accept ext
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.RenderTarget where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.RenderTarget
-    fromChRepr (ChRepr (Target trg)) = Just trg
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.RenderTarget where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.RenderTarget
+    toValueInChannel (Target trg) = CR.accept trg
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.DepFn where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.DepFn
-    fromChRepr (ChRepr (DepFn fn)) = Just fn
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.DepFn where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.DepFn
+    toValueInChannel (DepFn fn) = CR.accept fn
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr HT.CanBeSource where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.CanBeSource
-    fromChRepr (ChRepr (CBS cbs)) = Just cbs
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.CanBeSource where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.CanBeSource
+    toValueInChannel (CBS cbs) = CR.accept cbs
+    toValueInChannel _ = CR.decline
 
 
 {-
-instance CR.FromChRepr WrapRepr CAI.Products where
-    fromChRepr :: ChRepr WrapRepr -> Maybe CAI.Products
-    fromChRepr (ChRepr (Products products)) = Just products
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr CAI.Products where
+    toValueInChannel :: WrapRepr -> ValueInChannel CAI.Products
+    toValueInChannel (Products products) = CR.accept products
+    toValueInChannel _ = Nothing
 
 
-instance CR.FromChRepr WrapRepr CAI.Product' where
-    fromChRepr :: ChRepr WrapRepr -> Maybe CAI.Product'
-    fromChRepr (ChRepr (Product product)) = Just product
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr CAI.Product' where
+    toValueInChannel :: WrapRepr -> ValueInChannel CAI.Product'
+    toValueInChannel (Product product) = CR.accept product
+    toValueInChannel _ = Nothing
 -}
 
-instance CR.FromChRepr WrapRepr HT.TOrV where
-    fromChRepr :: ChRepr WrapRepr -> Maybe HT.TOrV
-    fromChRepr (ChRepr (Value v)) = Just $ HT.V v
-    fromChRepr (ChRepr (Texture tex)) = Just $ HT.T tex
-    fromChRepr (ChRepr (TOrV torv)) = Just torv
-    fromChRepr _ = Nothing
+instance CR.ToValueInChannel WrapRepr HT.TOrV where
+    toValueInChannel :: WrapRepr -> ValueInChannel HT.TOrV
+    toValueInChannel (Value v) = CR.accept $ HT.V v
+    toValueInChannel (Texture tex) = CR.accept $ HT.T tex
+    toValueInChannel (TOrV torv) = CR.accept torv
+    toValueInChannel _ = CR.decline
 
 
-instance CR.FromChRepr WrapRepr WrapRepr where
-    fromChRepr :: ChRepr WrapRepr -> Maybe WrapRepr
-    fromChRepr (ChRepr w) = Just w
+instance CR.ToValueInChannel WrapRepr WrapRepr where
+    toValueInChannel :: WrapRepr -> ValueInChannel WrapRepr
+    toValueInChannel = CR.accept
 
 
 instance Mark WrapRepr where
@@ -484,20 +484,20 @@ instance CanParse HYDRA_V WrapRepr where parser = const wrapParser
 instance FromCode HYDRA_V opts WrapRepr where fromCode = fromParser
 
 
-instance CR.ReadChRepr WrapRepr where
-    readChRepr :: String -> Maybe (ChRepr WrapRepr)
-    readChRepr s =
+instance CR.ReadChannelRepr WrapRepr where
+    readChannelRepr :: String -> Maybe WrapRepr
+    readChannelRepr s =
         if (String.take 4 s == "V N ") then
             case Number.fromString $ String.drop 4 s of
-                Just n -> Just $ CR.wrap $ Value $ HT.Number n
+                Just n -> Just $ Value $ HT.Number n
                 Nothing -> Nothing
             -- FIXME: parse other kinds of reprs!
         else Nothing
 
 
-instance CR.WriteChRepr WrapRepr where
-    writeChRepr :: ChRepr WrapRepr -> String
-    writeChRepr = CR.unwrap >>> H._encode
+instance CR.WriteChannelRepr WrapRepr where
+    writeChannelRepr :: WrapRepr -> String
+    writeChannelRepr = H._encode
 
 
 wrapAlias_ = "HW" :: String
