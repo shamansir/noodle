@@ -46,7 +46,7 @@ import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
-import Noodle.Repr.ChRepr (inbetween, inbetween') as ChRepr
+import Noodle.Repr.ChRepr (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback) as ChRepr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
@@ -83,7 +83,9 @@ make
     :: forall m f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) chrepr mp
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
-    => FromValuesInChannelRow isrl is Id.InletR chrepr => FromValuesInChannelRow osrl os Id.OutletR chrepr
+    => HasFallback chrepr
+    => FromValuesInChannelRow isrl is Id.InletR chrepr
+    => FromValuesInChannelRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => MonadEffect m
     => Id.Family f
@@ -98,8 +100,8 @@ make family state shape inletsRec outletsRec process =
         (Id.familyR family)
         state
         (Shape.reflect shape)
-        (ChReprCnv.fromRec Id.inletR inletsRec)
-        (ChReprCnv.fromRec Id.outletR outletsRec)
+        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec) -- FIXME: may be could manage without `fallback`` here?
+        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec) -- FIXME: may be could manage without `fallback`` here?
         process
 
 
@@ -318,11 +320,11 @@ atOutletFlipped = flip atOutlet
 
 
 atInletR :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
-atInletR iid node = inletsRaw node <#> Map.lookup iid
+atInletR inletR node = inletsRaw node <#> Map.lookup inletR <#> (Raw._reportIfMissingAt $ Id.inletRName inletR)
 
 
 atOutletR :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
-atOutletR oid node = outletsRaw node <#> Map.lookup oid
+atOutletR outletR node = outletsRaw node <#> Map.lookup outletR <#> (Raw._reportIfMissingAt $ Id.outletRName outletR)
 
 
 getFromInlets :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr mp -> m din
@@ -364,11 +366,11 @@ sendOutOp :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFa
 sendOutOp node (output /\ dout) = sendOut output dout node
 
 
-unsafeSendIn :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> chrepr -> Node f state is os chrepr mp -> m Unit
+unsafeSendIn :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> ValueInChannel chrepr -> Node f state is os chrepr mp -> m Unit
 unsafeSendIn input chrepr = liftEffect <<< Protocol._unsafeSendIn input chrepr <<< _getProtocol
 
 
-unsafeSendOut :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> chrepr -> Node f state is os chrepr mp -> m Unit
+unsafeSendOut :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> ValueInChannel chrepr -> Node f state is os chrepr mp -> m Unit
 unsafeSendOut output chrepr = liftEffect <<< Protocol._unsafeSendOut output chrepr <<< _getProtocol
 
 
@@ -401,7 +403,9 @@ connect
     -> Node fB stateB isB osB chrepr mp
     -> m (Link fA fB oA iB)
 connect outletA inletB nodeA nodeB =
-    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) ChRepr.accept nodeA nodeB <#> Link.fromRaw
+    -- FIXME: we always use `ChRepr.accept` here...
+    -- FIXME: same as `connectBySameRepr`
 
 
 connectOp
@@ -437,7 +441,8 @@ connectBySameRepr
     -> Node fB stateB isB osB chrepr mp
     -> m (Link fA fB oA iB)
 connectBySameRepr _ outletA inletB nodeA nodeB =
-    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) identity nodeA nodeB <#> Link.fromRaw
+    -- FIXME: we always use `ChRepr.accept` here...
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) ChRepr.accept nodeA nodeB <#> Link.fromRaw
 
 
 connectByDistinctRepr
@@ -451,12 +456,12 @@ connectByDistinctRepr
     => HasInlet isB isB' iB dinB
     => Id.Outlet oA
     -> Id.Inlet iB
-    -> (doutA -> dinB)
+    -> (doutA -> ValueInChannel dinB)
     -> Node fA stateA isA osA chreprA mp
     -> Node fB stateB isB osB chreprB mp
     -> m (Link fA fB oA iB)
 connectByDistinctRepr outletA inletB convertF nodeA nodeB =
-    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (ChRepr.inbetween convertF) nodeA nodeB <#> Link.fromRaw
+    unsafeConnect (Id.outletR outletA) (Id.inletR inletB) (ChRepr.inbetweenB convertF) nodeA nodeB <#> Link.fromRaw
 
 
 
@@ -485,7 +490,7 @@ unsafeConnect
     => IsSymbol fB
     => Id.OutletR
     -> Id.InletR
-    -> (chreprA -> chreprB)
+    -> (chreprA -> ValueInChannel chreprB)
     -> Node fA stateA isA osA chreprA mp
     -> Node fB stateB isB osB chreprB mp
     -> m Raw.Link
@@ -506,9 +511,9 @@ unsafeConnect
                   unsafeSendIn inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        SignalX.runSignal $ subscribeOutletR outletA nodeA ~> fromMaybe HF.fallback ~> convertRepr ~> sendToBIfFlagIsOn
+        SignalX.runSignal $ subscribeOutletR outletA nodeA ~> (=<<) convertRepr ~> sendToBIfFlagIsOn
         (vicReprA :: ValueInChannel chreprA) <- atOutletR outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr <$> vicReprA
+        sendToBIfFlagIsOn $ convertRepr =<< vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 

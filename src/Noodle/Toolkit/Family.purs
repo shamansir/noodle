@@ -16,9 +16,11 @@ import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class C
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
-import Noodle.Repr.ChRepr (class ToChReprRow)
+import Noodle.Repr.ChRepr (class FromValuesInChannelRow)
+import Noodle.Repr.ChRepr (toFallback) as ChRepr
+import Noodle.Repr.HasFallback (class HasFallback)
 
-import Noodle.Raw.Node (InletsValues, OutletsValues) as Raw
+import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Raw.Toolkit.Family (Family(..)) as Raw
@@ -28,16 +30,18 @@ data Family (f :: Symbol) (state :: Type) (is :: Row Type) (os :: Row Type) (chr
     = Family
         Raw.Shape
         state
-        (Raw.InletsValues chrepr)
-        (Raw.OutletsValues chrepr)
+        (Raw.InitialInletsValues chrepr)
+        (Raw.InitialOutletsValues chrepr)
         (Fn state is os chrepr m)
 
 
 make
     :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) chrepr m
      . IsSymbol f
+    => HasFallback chrepr
     => InletsDefs inlets => OutletsDefs outlets
-    => ToChReprRow isrl is Id.InletR chrepr => ToChReprRow osrl os Id.OutletR chrepr
+    => FromValuesInChannelRow isrl is Id.InletR chrepr
+    => FromValuesInChannelRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => Id.Family f
     -> state
@@ -50,8 +54,8 @@ make _ state shape inletsRec outletsRec process =
     Family
         (Shape.reflect shape)
         state
-        (ChReprCnv.fromRec Id.inletR inletsRec)
-        (ChReprCnv.fromRec Id.outletR outletsRec)
+        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec)
+        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec)
         $ Fn.make (reflectSymbol (Proxy :: _ f)) process
 
 

@@ -10,7 +10,7 @@ import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
-import Noodle.Raw.Node (InletsValues, OutletsValues)
+import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode
 import Noodle.Raw.Fn.Shape (Shape) as Raw
@@ -24,8 +24,8 @@ data Family state (chrepr :: Type) (m :: Type -> Type)
         Id.FamilyR
         Raw.Shape
         state
-        (InletsValues chrepr)
-        (OutletsValues chrepr)
+        (InitialInletsValues chrepr)
+        (InitialOutletsValues chrepr)
         (Raw.Fn state chrepr m)
 
 
@@ -38,8 +38,8 @@ make
      . Id.FamilyR
     -> state
     -> Raw.Shape
-    -> InletsValues chrepr
-    -> OutletsValues chrepr
+    -> InitialInletsValues chrepr
+    -> InitialOutletsValues chrepr
     -> Raw.Process state chrepr m
     -> Family state chrepr m
 make familyR state rawShape inletsMap outletsMap process = do

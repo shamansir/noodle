@@ -1,6 +1,6 @@
 module Noodle.Repr.ChRepr
     ( ValueInChannel
-    , accept, decline, empty, _missingKey, _backToValue
+    , accept, decline, empty, _missingKey, _backToValue, _bind, toFallback
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
     , class FromToValueInChannel
@@ -17,7 +17,7 @@ module Noodle.Repr.ChRepr
     , class ReadWriteChannelRepr
     , fromMap, toMap, toMaybe
     , recordWithValuesToRepr
-    , inbetween, inbetween'
+    , inbetween, inbetween', inbetweenB
     )
     where
 
@@ -91,6 +91,16 @@ class WriteChannelRepr repr where
     writeChannelRepr :: repr -> String
 
 
+instance Apply ValueInChannel where -- TODO: should be ensured to align with `Apply` laws
+  apply :: forall a b. ValueInChannel (a -> b) -> ValueInChannel a -> ValueInChannel b
+  apply = _apply
+
+
+instance Bind ValueInChannel where -- TODO: should be ensured to align with `Bind` laws
+  bind :: forall a b. ValueInChannel a -> (a -> ValueInChannel b) -> ValueInChannel b
+  bind = flip _bind
+
+
 instance Show a => Show (ValueInChannel a) where
     show (Accepted r) = "✓ " <> show r
     show Declined = "𐄂"
@@ -122,12 +132,35 @@ _missingKey :: forall a. String -> ValueInChannel a
 _missingKey = MissingKey
 
 
-_backToValue :: forall a repr. ToValueInChannel repr a => ValueInChannel repr -> ValueInChannel a
-_backToValue = case _ of
-  Accepted repr -> toValueInChannel repr
+ -- TODO: should be ensured to align with `Apply` laws
+_apply :: forall a b. ValueInChannel (a -> b) -> ValueInChannel a -> ValueInChannel b
+_apply vicf = case _ of
+    Accepted a ->
+      case vicf of
+        Accepted f -> Accepted $ f a
+        Declined -> Declined
+        MissingKey key -> MissingKey key
+        Empty -> Empty
+    Declined -> Declined
+    MissingKey key -> MissingKey key
+    Empty -> Empty
+
+
+ -- TODO: should be ensured to align with `Bind` and `Apply` laws
+_bind :: forall a b. (a -> ValueInChannel b) -> ValueInChannel a -> ValueInChannel b
+_bind f = case _ of
+  Accepted a -> f a
   Declined -> Declined
   MissingKey key -> MissingKey key
   Empty -> Empty
+
+
+_backToValue :: forall a repr. ToValueInChannel repr a => ValueInChannel repr -> ValueInChannel a
+_backToValue = _bind toValueInChannel
+
+
+toFallback :: forall a. HasFallback a => ValueInChannel a -> a
+toFallback = toMaybe >>> fromMaybe fallback
 
 
 toMaybe :: forall a. ValueInChannel a -> Maybe a
@@ -135,7 +168,6 @@ toMaybe =
     case _ of
         Accepted a -> Just a
         _ -> Nothing
-
 
 data LiftMethod
 
@@ -315,19 +347,14 @@ declineAll r = Builder.build builder {}
     builder = liftAllValuesRowBuilder (Proxy :: _ DeclineAll) (Proxy :: _ rl) r
 
 
+
 inbetween :: forall a b reprA reprB. ToValueInChannel reprA a => FromValueInChannel b reprB => (a -> b) -> (reprA -> ValueInChannel reprB)
 inbetween f reprA = fromValueInChannel <$> f <$> (toValueInChannel reprA :: ValueInChannel a)
 
 
 inbetween' :: forall a reprA reprB. ToValueInChannel reprA a => FromValueInChannel a reprB => Proxy a -> (reprA -> ValueInChannel reprB)
-inbetween' f = inbetween (identity :: a -> a)
-
-
-{- TODO
-inbetween :: forall a b reprA reprB. HasFallback reprB => FromChannelRepr reprA a => ToChannelRepr b reprB => (a -> b) -> (reprA -> reprB)
-inbetween f reprA = fromMaybe fallback $ unwrap <$> (toChannelRepr =<< f <$> (fromChannelRepr $ ChannelRepr reprA))
-
-
-inbetween' :: forall a reprA reprB. HasFallback reprB => FromChannelRepr reprA a => ToChannelRepr a reprB => Proxy a -> (reprA -> reprB)
 inbetween' _ = inbetween (identity :: a -> a)
--}
+
+
+inbetweenB :: forall a b reprA reprB. ToValueInChannel reprA a => FromValueInChannel b reprB => (a -> ValueInChannel b) -> (reprA -> ValueInChannel reprB)
+inbetweenB f reprA = fromValueInChannel <$> (f =<< (toValueInChannel reprA :: ValueInChannel a))
