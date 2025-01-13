@@ -5,7 +5,6 @@ module Noodle.Repr.ChRepr
     , class FromValueInChannel, fromValueInChannel
     , class FromToValueInChannel
     -- , exists, wrap, unwrap
-    -- , class DataFromValuesInChannelRow, dataFromValuesInChannelRow, dataFromValuesInChannelRowBuilder
     , class ToValuesInChannelRow, class ToValuesInChannelRowBase, toValuesInChannelRowBuilder
     , class FromValuesInChannelRow, class FromValuesInChannelRowBase, fromValuesInChannelRowBase
     , class ValuesToReprRow, valuesToReprRowBuilder
@@ -176,6 +175,7 @@ toMaybe =
         Accepted a -> Just a
         _ -> Nothing
 
+
 data LiftMethod
 
 
@@ -190,7 +190,6 @@ class Lifter method a where
 
 instance Lifter AcceptAll a where
   liftValue = const accept
-
 
 instance Lifter DeclineAll a where
   liftValue = const $ const decline
@@ -273,14 +272,14 @@ else instance fromValuesInChannelRowBaseCons ::
   ( Ord k
   , IsSymbol name
   , FromValueInChannel a repr
-  , Row.Cons name (ValueInChannel a) trash row
+  , Row.Cons name a trash row
   , FromValuesInChannelRowBase tail row k repr
-  ) => FromValuesInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row k repr where
+  ) => FromValuesInChannelRowBase (RL.Cons name a tail) row k repr where
     fromValuesInChannelRowBase prepr _ toKey rec prev =
       Map.insert (toKey nameP) value rest
       where
         nameP = Proxy :: _ name
-        value = fromValueInChannel <$> R.get nameP rec
+        value = Accepted $ fromValueInChannel $ R.get nameP rec
         rest = fromValuesInChannelRowBase prepr (Proxy :: _ tail) toKey rec prev
 
 

@@ -34,7 +34,7 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
+import Noodle.Repr.ChRepr (ValueInChannel(..), class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
 import Noodle.Repr.ChRepr (accept, decline) as CR
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
@@ -359,9 +359,8 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
                 ]
 
 
-editorFor :: Maybe ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
-editorFor Nothing = Nothing
-editorFor (Just (VNumber _)) =
+editorFor :: ValueInChannel ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
+editorFor (Accepted (VNumber _)) =
     Just $ VE.imap (maybe VNone VNumber) extractNum VNumeric.editor
         where
             extractNum = case _ of -- reuse `ValueInChannel`?

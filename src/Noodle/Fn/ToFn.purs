@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Tuple (snd, uncurry) as Tuple
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Array ((:))
 import Data.Array (length, sortWith) as Array
 import Data.Newtype (class Newtype, unwrap, wrap)
@@ -17,8 +17,8 @@ import Type.Proxy (Proxy(..))
 import Data.Bifunctor (bimap)
 
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class FromValueInChannel)
-import Noodle.Repr.ChRepr (fromValueInChannel) as ViC
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel)
+import Noodle.Repr.ChRepr (fromValueInChannel, accept, empty) as ViC
 
 -- import Toolkit.Hydra.Types
 -- import Toolkit.Hydra.Repr.Wrap (WrapRepr)
@@ -263,6 +263,10 @@ extract px a = bimap (map argValue) (map outValue) <$> unwrap (toFn px a :: Fn a
 
 toReprable :: forall x arg out a repr. FromValueInChannel arg repr => FromValueInChannel out repr => ToFn x arg out a => Proxy x -> a -> Fn repr repr
 toReprable px a = bimap ViC.fromValueInChannel ViC.fromValueInChannel (toFn px a :: Fn arg out)
+
+
+toChanneled :: forall arg out. Fn (Maybe arg) (Maybe out) -> Fn (ValueInChannel arg) (ValueInChannel out)
+toChanneled = bimap (maybe ViC.empty ViC.accept) (maybe ViC.empty ViC.accept)
 
 
 reorder :: forall a b arg out. Ord a => Ord b => (ArgumentName -> a) -> (OutputName -> b) -> Fn arg out -> Fn arg out

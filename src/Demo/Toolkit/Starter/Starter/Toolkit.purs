@@ -10,10 +10,11 @@ import Type.Proxy (Proxy(..))
 import Control.Monad.State (class MonadState)
 import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
 import Noodle.Fn.ToFn (fn, class PossiblyToFn)
-import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
+import Noodle.Fn.ToFn (in_, inx_, out_, outx_, toChanneled) as Fn
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Repr.ChRepr (ValueInChannel)
 import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Metro as Simple.Metro
@@ -128,7 +129,7 @@ instance FromPatchState STARTER PState StateRepr where
   loadFromPatch _ _ _ = Nothing
 
 
-instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
+instance PossiblyToFn STARTER (ValueInChannel ValueRepr) (ValueInChannel ValueRepr) Id.FamilyR where
   possiblyToFn _ = Id.family >>> case _ of
     "bang" -> Just $ fn "bang" [] [ Fn.outx_ "bang" ]
     "metro" -> Just $ fn "metro"
@@ -171,3 +172,4 @@ instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR whe
       [ Fn.inx_ "pos", Fn.inx_ "color", Fn.inx_ "size", Fn.inx_ "angle" ]
       [ Fn.outx_ "shape" ]
     _ -> Nothing
+    >>> map Fn.toChanneled

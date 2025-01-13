@@ -37,6 +37,7 @@ import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Palette.Set.Hydra as Hydra
 import Noodle.Ui.Cli.Palette.Set.Catpuccin as Catpuccin
 import Noodle.Ui.Cli.Palette.Item as Palette
+import Noodle.Repr.ChRepr (ValueInChannel(..))
 
 import Starter.Toolkit (STARTER)
 import StarterTk.Simple.Sum as Starter.Sum
@@ -91,21 +92,21 @@ buildPalette =
     [ T.s "]] X11 / BG :: [[ " ] <>
     (T.paletteBg <$> X11.x11colors) <>
     [ T.s "]]"
-    , qt "empty-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) (Nothing :: Maybe ValueRepr)
-    , qt "empty-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) (Nothing :: Maybe ValueRepr)
-    , qt "num-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) $ Just $ Sr.VNumber 10.0
-    , qt "num-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VNumber 20.0
-    , qt "char-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VChar 'a'
+    , qt "empty-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) (Declined :: ValueInChannel ValueRepr)
+    , qt "empty-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) (Declined :: ValueInChannel ValueRepr)
+    , qt "num-i-0" $ T.inlet 0 (Id.inletR Starter.Sum._in_a) $ Accepted $ Sr.VNumber 10.0
+    , qt "num-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Accepted $ Sr.VNumber 20.0
+    , qt "char-i-1" $ T.inlet 1 (Id.inletR Starter.Sum._in_b) $ Accepted $ Sr.VChar 'a'
     , qt "i-infobox" $ T.inletInfoBox (Id.inletR Starter.Sum._in_b)
-    , qt "empty-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) (Nothing :: Maybe ValueRepr)
-    , qt "num-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) $ Just $ Sr.VNumber 20.0
-    , qt "empty-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) (Nothing :: Maybe ValueRepr)
-    , qt "empty-o-1" $ T.outlet 0 (Id.outletR Starter.Color._out_color) (Nothing :: Maybe ValueRepr)
-    , qt "num-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VNumber 10.0
-    , qt "char-o-1" $ T.outlet 1 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VChar 'a'
+    , qt "empty-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) (Declined :: ValueInChannel ValueRepr)
+    , qt "num-i-sl" $ T.inletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.inletR Starter.Sum._in_b) $ Accepted $ Sr.VNumber 20.0
+    , qt "empty-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) (Declined :: ValueInChannel ValueRepr)
+    , qt "empty-o-1" $ T.outlet 0 (Id.outletR Starter.Color._out_color) (Declined :: ValueInChannel ValueRepr)
+    , qt "num-o-0" $ T.outlet 0 (Id.outletR Starter.Sum._out_sum) $ Accepted $ Sr.VNumber 10.0
+    , qt "char-o-1" $ T.outlet 1 (Id.outletR Starter.Sum._out_sum) $ Accepted $ Sr.VChar 'a'
     , qt "o-infobox" $ T.outletInfoBox (Id.outletR Starter.Sum._out_sum)
-    , qt "empty-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) (Nothing :: Maybe ValueRepr)
-    , qt "num-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) $ Just $ Sr.VNumber 20.0
+    , qt "empty-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) (Declined :: ValueInChannel ValueRepr)
+    , qt "num-o-sl" $ T.outletStatusLine (Id.familyR Starter.Sum._sum) 1 (Id.outletR Starter.Sum._out_sum) $ Accepted $ Sr.VNumber 20.0
     -- TODO , qt "node-lbl-1" $ T.nodeLabel (Id.familyR Starter.Sum._sum)
     -- TODO , qt "node-lbl-2" $ T.nodeLabel Starter.Color._color
     , qt "rembtn-out" $ T.removeButtonOut

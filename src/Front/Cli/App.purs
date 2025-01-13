@@ -64,9 +64,9 @@ import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
+import Noodle.Repr.ChRepr (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (class FromToChRepr)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
@@ -167,7 +167,7 @@ runBlessedInterface
      . HasFallback chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
-    => PossiblyToFn tk (Maybe chrepr) (Maybe chrepr) Id.FamilyR
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => ps
     -> Toolkit tk fs strepr chrepr Effect

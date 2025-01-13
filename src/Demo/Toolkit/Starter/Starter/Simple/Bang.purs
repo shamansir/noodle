@@ -28,9 +28,9 @@ _bang :: NId.Family "bang"
 _bang = NId.Family
 
 type Inlets = TNil :: Noodle.Inlets
-type Outlets = (O "bang" (CR.ValueInChannel VR.Bang) :> TNil) :: Noodle.Outlets
+type Outlets = (O "bang" VR.Bang :> TNil) :: Noodle.Outlets
 type InletsRow = ()
-type OutletsRow = (bang :: CR.ValueInChannel VR.Bang)
+type OutletsRow = (bang :: VR.Bang)
 type Shape = Noodle.Shape Inlets Outlets
 type Process = Noodle.Process Unit InletsRow OutletsRow ValueRepr Effect
 type Node = Noodle.Node "bang" Unit InletsRow OutletsRow ValueRepr Effect
@@ -41,7 +41,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { bang: CR.Accepted VR.Bang }
+defaultO = { bang: VR.Bang }
 
 _out_bang = Noodle.Outlet :: _ "bang"
 
