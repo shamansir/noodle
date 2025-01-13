@@ -45,12 +45,12 @@ import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
 import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Repr.ChRepr (class ToChReprRow, class FromChRepr, class ToChRepr, class FromChReprRow)
+import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
 import Noodle.Repr.ChRepr (inbetween, inbetween') as ChRepr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
-import Noodle.Raw.Node (Node(..), InletsValues, OutletsValues, NodeChanges, orderInlets, orderOutlets) as Raw
+import Noodle.Raw.Node (Node(..), InletsValues, InitialInletsValues, OutletsValues, InitialOutletsValues, NodeChanges, orderInlets, orderOutlets, _reportIfMissingAt) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make) as RawLink
 import Noodle.Wiring (class Wiring)
@@ -83,7 +83,7 @@ make
     :: forall m f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) chrepr mp
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
-    => ToChReprRow isrl is Id.InletR chrepr => ToChReprRow osrl os Id.OutletR chrepr
+    => FromValuesInChannelRow isrl is Id.InletR chrepr => FromValuesInChannelRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => MonadEffect m
     => Id.Family f
@@ -109,8 +109,8 @@ make_ -- TODO: private
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> Raw.InletsValues  chrepr
-    -> Raw.OutletsValues chrepr
+    -> Raw.InitialInletsValues  chrepr
+    -> Raw.InitialOutletsValues chrepr
     -> Process state is os chrepr mp
     -> m (Node f state is os chrepr mp)
 make_ family state rawShape inletsMap outletsMap process = do
@@ -123,8 +123,8 @@ _makeWithFn -- TODO: private
     => Id.FamilyR
     -> state
     -> Raw.Shape
-    -> Raw.InletsValues  chrepr
-    -> Raw.OutletsValues chrepr
+    -> Raw.InitialInletsValues  chrepr
+    -> Raw.InitialOutletsValues chrepr
     -> Fn state is os chrepr mp
     -> m (Node f state is os chrepr mp)
 _makeWithFn family state rawShape inletsMap outletsMap fn = do
@@ -195,15 +195,15 @@ run (Node _ _ _ protocol fn) = Fn.run' protocol fn
 {- Subscriptions -}
 
 
-subscribeInletR :: forall f state is os chrepr m. Id.InletR -> Node f state is os chrepr m -> Signal (Maybe chrepr)
-subscribeInletR input node = Map.lookup input <$> subscribeInletsRaw node
+subscribeInletR :: forall f state is os chrepr m. Id.InletR -> Node f state is os chrepr m -> Signal (ValueInChannel chrepr)
+subscribeInletR inletR node = (Raw._reportIfMissingAt $ Id.inletRName inletR) <$> Map.lookup inletR <$> subscribeInletsRaw node
 
 
-subscribeInlet :: forall f i state is is' isrl os chrepr m din. RL.RowToList is isrl => FromChReprRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr m -> Signal din
+subscribeInlet :: forall f i state is is' isrl os chrepr m din. RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr m -> Signal din
 subscribeInlet _ = subscribeInlet_ $ Record.get (Proxy :: _ i)
 
 
-subscribeInlet_ :: forall f state is isrl os chrepr m din. RL.RowToList is isrl => FromChReprRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr m -> Signal din
+subscribeInlet_ :: forall f state is isrl os chrepr m din. RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr m -> Signal din
 subscribeInlet_ fn node = fn <$> subscribeInlets node
 
 
@@ -215,19 +215,19 @@ _subscribeInletsRaw :: forall f state is os chrepr m. Node f state is os chrepr 
 _subscribeInletsRaw (Node _ _ tracker _ _) = tracker.inlets
 
 
-subscribeInlets :: forall f state is isrl os chrepr m. RL.RowToList is isrl => FromChReprRow isrl is chrepr => Node f state is os chrepr m -> Signal (Record is)
+subscribeInlets :: forall f state is isrl os chrepr m. RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr => Node f state is os chrepr m -> Signal (Record is)
 subscribeInlets (Node _ _ tracker _ _) = ChReprCnv.toRec RawShape.inletRName <$> Tuple.snd <$> tracker.inlets
 
 
-subscribeOutletR :: forall f state is os chrepr m. Id.OutletR -> Node f state is os chrepr m -> Signal (Maybe chrepr)
-subscribeOutletR output node = Map.lookup output <$> subscribeOutletsRaw node
+subscribeOutletR :: forall f state is os chrepr m. Id.OutletR -> Node f state is os chrepr m -> Signal (ValueInChannel chrepr)
+subscribeOutletR outletR node = (Raw._reportIfMissingAt $ Id.outletRName outletR) <$> Map.lookup outletR <$> subscribeOutletsRaw node
 
 
-subscribeOutlet :: forall f o state is os os' osrl chrepr m dout. RL.RowToList os osrl => FromChReprRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr m -> Signal dout
+subscribeOutlet :: forall f o state is os os' osrl chrepr m dout. RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr m -> Signal dout
 subscribeOutlet _ = subscribeOutlet_ $ Record.get (Proxy :: _ o)
 
 
-subscribeOutlet_ :: forall f state is os osrl chrepr m dout. RL.RowToList os osrl => FromChReprRow osrl os chrepr => (Record os -> dout) -> Node f state is os chrepr m -> Signal dout
+subscribeOutlet_ :: forall f state is os osrl chrepr m dout. RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr => (Record os -> dout) -> Node f state is os chrepr m -> Signal dout
 subscribeOutlet_ fn node = fn <$> subscribeOutlets node
 
 
@@ -235,7 +235,7 @@ subscribeOutletsRaw :: forall f state is os chrepr m. Node f state is os chrepr 
 subscribeOutletsRaw (Node _ _ tracker _ _) = Tuple.snd <$> tracker.outlets
 
 
-subscribeOutlets :: forall f state is os osrl chrepr m. RL.RowToList os osrl => FromChReprRow osrl os chrepr => Node f state is os chrepr m -> Signal (Record os)
+subscribeOutlets :: forall f state is os osrl chrepr m. RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr => Node f state is os chrepr m -> Signal (Record os)
 subscribeOutlets (Node _ _ tracker _ _) = ChReprCnv.toRec RawShape.outletRName <$> Tuple.snd <$> tracker.outlets
 
 
@@ -253,7 +253,7 @@ subscribeChanges (Node _ shape tracker _ _) =
         }
 
 
-subscribeChangesAsFn :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (ToFn.Fn chrepr chrepr)
+subscribeChangesAsFn :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (ToFn.Fn (ValueInChannel chrepr) (ValueInChannel chrepr))
 subscribeChangesAsFn (Node nodeR _ tracker _ _) = tracker.all <#> RawUpdates.toFn nodeR
 
 
@@ -264,11 +264,11 @@ shape :: forall f state is os chrepr m. Node f state is os chrepr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
 
 
-inlets :: forall m f state is isrl os chrepr mp. MonadEffect m => FromChReprRow isrl is chrepr => Node f state is os chrepr mp -> m (Record is)
+inlets :: forall m f state is isrl os chrepr mp. MonadEffect m => ToValuesInChannelRow isrl is chrepr => Node f state is os chrepr mp -> m (Record is)
 inlets node = liftEffect $ Protocol.getRecInlets $ _getProtocol node
 
 
-outlets :: forall m f state is os osrl chrepr mp. MonadEffect m => FromChReprRow osrl os chrepr => Node f state is os chrepr mp -> m (Record os)
+outlets :: forall m f state is os osrl chrepr mp. MonadEffect m => ToValuesInChannelRow osrl os chrepr => Node f state is os chrepr mp -> m (Record os)
 outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
 
 
@@ -301,43 +301,43 @@ infixr 6 getFromInletsFlipped as <=#
 infixr 6 getFromOutletsFlipped as <=@
 
 
-atInlet :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => FromChReprRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr mp -> m din
+atInlet :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr mp -> m din
 atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
 
 
-atInletFlipped :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => FromChReprRow isrl is chrepr => HasInlet is is' i din => Node f state is os chrepr mp -> Id.Inlet i -> m din
+atInletFlipped :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Node f state is os chrepr mp -> Id.Inlet i -> m din
 atInletFlipped = flip atInlet
 
 
-atOutlet :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => FromChReprRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr mp -> m dout
+atOutlet :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr mp -> m dout
 atOutlet _ = getFromOutlets $ Record.get (Proxy :: _ o)
 
 
-atOutletFlipped :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => FromChReprRow osrl os chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o -> m dout
+atOutletFlipped :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o -> m dout
 atOutletFlipped = flip atOutlet
 
 
-atInletR :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> Node f state is os chrepr mp -> m (Maybe chrepr)
+atInletR :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
 atInletR iid node = inletsRaw node <#> Map.lookup iid
 
 
-atOutletR :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> Node f state is os chrepr mp -> m (Maybe chrepr)
+atOutletR :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
 atOutletR oid node = outletsRaw node <#> Map.lookup oid
 
 
-getFromInlets :: forall m f state is isrl os chrepr mp din. MonadEffect m => FromChReprRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr mp -> m din
+getFromInlets :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr mp -> m din
 getFromInlets getter node = inlets node <#> getter
 
 
-getFromInletsFlipped :: forall m f state is isrl os chrepr mp din. MonadEffect m => FromChReprRow isrl is chrepr => Node f state is os chrepr mp -> (Record is -> din) -> m din
+getFromInletsFlipped :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => Node f state is os chrepr mp -> (Record is -> din) -> m din
 getFromInletsFlipped = flip getFromInlets
 
 
-getFromOutlets :: forall m f state is os osrl chrepr mp dout. MonadEffect m => FromChReprRow osrl os chrepr => (Record os -> dout) -> Node f state is os chrepr mp -> m dout
+getFromOutlets :: forall m f state is os osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => (Record os -> dout) -> Node f state is os chrepr mp -> m dout
 getFromOutlets getter node = outlets node <#> getter
 
 
-getFromOutletsFlipped :: forall m f state is os osrl chrepr mp dout. MonadEffect m => FromChReprRow osrl os chrepr => Node f state is os chrepr mp -> (Record os -> dout) -> m dout
+getFromOutletsFlipped :: forall m f state is os osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => Node f state is os chrepr mp -> (Record os -> dout) -> m dout
 getFromOutletsFlipped = flip getFromOutlets
 
 
@@ -348,19 +348,19 @@ infixr 6 sendInOp as #->
 infixr 6 sendOutOp as @->
 
 
-sendIn :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => ToChRepr din chrepr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os chrepr mp -> m Unit
+sendIn :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => FromValueInChannel din chrepr => HasInlet is is' i din  => Id.Inlet i -> din -> Node f state is os chrepr mp -> m Unit
 sendIn input din = liftEffect <<< Protocol._sendIn input din <<< _getProtocol
 
 
-sendInOp :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => ToChRepr din chrepr => HasInlet is is' i din  => Node f state is os chrepr mp -> Id.Inlet i /\ din -> m Unit
+sendInOp :: forall m f i state is is' os chrepr mp din. MonadEffect m => HasFallback chrepr => FromValueInChannel din chrepr => HasInlet is is' i din  => Node f state is os chrepr mp -> Id.Inlet i /\ din -> m Unit
 sendInOp node (input /\ din) = sendIn input din node
 
 
-sendOut :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => ToChRepr dout chrepr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os chrepr mp -> m Unit
+sendOut :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => FromValueInChannel dout chrepr => HasOutlet os os' o dout => Id.Outlet o -> dout -> Node f state is os chrepr mp -> m Unit
 sendOut output dout = liftEffect <<< Protocol._sendOut output dout <<< _getProtocol
 
 
-sendOutOp :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => ToChRepr dout chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o /\ dout -> m Unit
+sendOutOp :: forall m f o state is os os' chrepr mp dout. MonadEffect m => HasFallback chrepr => FromValueInChannel dout chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o /\ dout -> m Unit
 sendOutOp node (output /\ dout) = sendOut output dout node
 
 
@@ -391,9 +391,8 @@ connect
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
-    => HasFallback chrepr
-    => FromChRepr chrepr doutA
-    => ToChRepr dinB chrepr
+    => ToValueInChannel chrepr doutA
+    => FromValueInChannel dinB chrepr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => Id.Outlet oA
@@ -410,9 +409,8 @@ connectOp
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
-    => HasFallback chrepr
-    => FromChRepr chrepr doutA
-    => ToChRepr dinB chrepr
+    => ToValueInChannel chrepr doutA
+    => FromValueInChannel dinB chrepr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => Node fA stateA isA osA chrepr mp /\ Id.Outlet oA
@@ -430,8 +428,8 @@ connectBySameRepr
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => HasFallback chrepr
-    => ToChRepr doutA chrepr
-    => FromChRepr chrepr dinB
+    => FromValueInChannel doutA chrepr
+    => ToValueInChannel chrepr dinB
     => Proxy chrepr -- FIXME: Proxy is not needed anymore
     -> Id.Outlet oA
     -> Id.Inlet iB
@@ -447,10 +445,8 @@ connectByDistinctRepr
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
-    => HasFallback chreprA
-    => HasFallback chreprB
-    => FromChRepr chreprA doutA
-    => ToChRepr dinB chreprB
+    => ToValueInChannel chreprA doutA
+    => FromValueInChannel dinB chreprB
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => Id.Outlet oA
@@ -469,10 +465,8 @@ connectAlike
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
-    => HasFallback chreprA
-    => HasFallback chreprB
-    => FromChRepr chreprA d
-    => ToChRepr d chreprB
+    => ToValueInChannel chreprA d
+    => FromValueInChannel d chreprB
     => HasOutlet osA osA' oA d
     => HasInlet isB isB' iB d
     => Id.Outlet oA
@@ -489,8 +483,6 @@ unsafeConnect
      . Wiring m
     => IsSymbol fA
     => IsSymbol fB
-    => HasFallback chreprA
-    => HasFallback chreprB
     => Id.OutletR
     -> Id.InletR
     -> (chreprA -> chreprB)
@@ -506,7 +498,8 @@ unsafeConnect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: chreprB -> m Unit
+            -- FIXME: no value check is performed here
+            sendToBIfFlagIsOn :: ValueInChannel chreprB -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
@@ -514,8 +507,8 @@ unsafeConnect
                 --   run nodeB
                 else pure unit
         SignalX.runSignal $ subscribeOutletR outletA nodeA ~> fromMaybe HF.fallback ~> convertRepr ~> sendToBIfFlagIsOn
-        (mbReprA :: Maybe chreprA) <- atOutletR outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr $ fromMaybe HF.fallback mbReprA
+        (vicReprA :: ValueInChannel chreprA) <- atOutletR outletA nodeA
+        sendToBIfFlagIsOn $ convertRepr <$> vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 

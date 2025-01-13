@@ -10,8 +10,6 @@ import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
-import Noodle.Repr.ChRepr (class FromChRepr, class ToChRepr)
-import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
 import Noodle.Raw.Node (InletsValues, OutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode

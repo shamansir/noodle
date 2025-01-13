@@ -52,8 +52,8 @@ import Noodle.Raw.Fn (Fn(..)) as Raw
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
-import Noodle.Repr.ChRepr (class FromChReprRow, class FromChRepr, class ToChRepr, class FromToChRepr)
-import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
+import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow)
+-- import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
 
 data Fn state (is :: Row Type) (os :: Row Type) chrepr (m :: Type -> Type) = Fn FnName (Process state is os chrepr m)
@@ -93,7 +93,7 @@ run
     => HasFallback chrepr
     => Protocol state is os chrepr
     -> Fn state is os chrepr m
-    -> m ( state /\ Map InletR chrepr /\ Map OutletR chrepr )
+    -> m ( state /\ Map InletR (ValueInChannel chrepr) /\ Map OutletR (ValueInChannel chrepr) )
 run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ Protocol.getState protocol
@@ -106,8 +106,8 @@ runRec
     :: forall state is os isrl osrl chrepr m
     .  MonadRec m => MonadEffect m
     => HasFallback chrepr
-    => RL.RowToList is isrl => FromChReprRow isrl is chrepr
-    => RL.RowToList os osrl => FromChReprRow osrl os chrepr
+    => RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr
+    => RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr
     => Protocol state is os chrepr
     -> Fn state is os chrepr m
     -> m ( state /\ Record is /\ Record os )

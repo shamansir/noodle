@@ -17,7 +17,7 @@ module Noodle.Repr.ChRepr
     , class ReadWriteChannelRepr
     , fromMap, toMap, toMaybe
     , recordWithValuesToRepr
-    -- , inbetween, inbetween'
+    , inbetween, inbetween'
     )
     where
 
@@ -313,6 +313,14 @@ declineAll :: forall row rl row'
 declineAll r = Builder.build builder {}
   where
     builder = liftAllValuesRowBuilder (Proxy :: _ DeclineAll) (Proxy :: _ rl) r
+
+
+inbetween :: forall a b reprA reprB. ToValueInChannel reprA a => FromValueInChannel b reprB => (a -> b) -> (reprA -> ValueInChannel reprB)
+inbetween f reprA = fromValueInChannel <$> f <$> (toValueInChannel reprA :: ValueInChannel a)
+
+
+inbetween' :: forall a reprA reprB. ToValueInChannel reprA a => FromValueInChannel a reprB => Proxy a -> (reprA -> ValueInChannel reprB)
+inbetween' f = inbetween (identity :: a -> a)
 
 
 {- TODO

@@ -30,6 +30,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ChRepr (accept, _missingKey) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -185,12 +186,12 @@ state :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m st
 state node = liftEffect $ RawProtocol.getState $ _getProtocol node
 
 
-atInlet :: forall m state chrepr mp. MonadEffect m => Id.InletR -> Node state chrepr mp -> m (Maybe chrepr)
-atInlet inlet node = inlets node <#> Map.lookup inlet
+atInlet :: forall m state chrepr mp. MonadEffect m => Id.InletR -> Node state chrepr mp -> m (ValueInChannel chrepr)
+atInlet inletR node = inlets node <#> Map.lookup inletR <#> (_reportIfMissingAt $ Id.inletRName inletR)
 
 
-atOutlet :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> Node state chrepr mp -> m (Maybe chrepr)
-atOutlet outlet node = outlets node <#> Map.lookup outlet
+atOutlet :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> Node state chrepr mp -> m (ValueInChannel chrepr)
+atOutlet outletR node = outlets node <#> Map.lookup outletR <#> (_reportIfMissingAt $ Id.outletRName outletR)
 
 
 curChanges :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (NodeChanges state chrepr)
@@ -224,8 +225,15 @@ _getTracker (Node _ _ tracker _ _) = tracker
 type NodeChanges state chrepr = Updates.MergedUpdateRec state (OrderedInletsValues chrepr) (OrderedOutletsValues chrepr)
 
 
-subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (Maybe chrepr)
-subscribeInlet input (Node _ _ tracker _ _) = Map.lookup input <$> Tuple.snd <$> tracker.inlets
+_reportIfMissingAt :: forall a. String -> Maybe (ValueInChannel a) -> ValueInChannel a
+_reportIfMissingAt key =
+  case _ of
+    Just vicVal -> vicVal
+    Nothing -> ViC._missingKey key
+
+
+subscribeInlet :: forall state chrepr m. Id.InletR -> Node state chrepr m -> Signal (ValueInChannel chrepr)
+subscribeInlet inletR (Node _ _ tracker _ _) = (_reportIfMissingAt $ Id.inletRName inletR) <$> Map.lookup inletR <$> Tuple.snd <$> tracker.inlets
 
 
 subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedInletsValues chrepr)
@@ -236,8 +244,8 @@ _subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (Fn.Inl
 _subscribeInlets (Node _ shape tracker _ _) = tracker.inlets <#> map (orderInlets shape)
 
 
-subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (Maybe chrepr)
-subscribeOutlet output (Node _ shape tracker _ _) = Map.lookup output <$> Tuple.snd <$> tracker.outlets
+subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (ValueInChannel chrepr)
+subscribeOutlet outletR (Node _ shape tracker _ _) = (_reportIfMissingAt $ Id.outletRName outletR) <$> Map.lookup outletR <$> Tuple.snd <$> tracker.outlets
 
 
 subscribeOutlets :: forall state chrepr m. Node state chrepr m -> Signal (OrderedOutletsValues chrepr)
@@ -258,7 +266,7 @@ subscribeChanges (Node _ shape tracker _ _) =
       }
 
 
-subscribeChangesAsFn :: forall state chrepr m. Node state chrepr m -> Signal (Fn chrepr chrepr)
+subscribeChangesAsFn :: forall state chrepr m. Node state chrepr m -> Signal (Fn (ValueInChannel chrepr) (ValueInChannel chrepr))
 subscribeChangesAsFn (Node nodeR shape tracker _ _) =
   tracker.all
     <#> RawUpdates.toFn nodeR
@@ -276,7 +284,11 @@ infixr 6 sendOutOp as @->
 
 
 sendIn :: forall m state chrepr mp. MonadEffect m => Id.InletR -> chrepr -> Node state chrepr mp -> m Unit
-sendIn input din = liftEffect <<< RawProtocol.sendIn input din <<< _getProtocol
+sendIn inletR repr = sendIn_ inletR $ ViC.accept repr
+
+
+sendIn_ :: forall m state chrepr mp. MonadEffect m => Id.InletR -> ValueInChannel chrepr -> Node state chrepr mp -> m Unit
+sendIn_ inletR vicRepr = liftEffect <<< RawProtocol.sendIn inletR vicRepr <<< _getProtocol
 
 
 sendInOp :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> Id.InletR /\ chrepr -> m Unit
@@ -284,7 +296,11 @@ sendInOp node (input /\ din) = sendIn input din node
 
 
 sendOut :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> chrepr -> Node state chrepr mp -> m Unit
-sendOut output dout = liftEffect <<< RawProtocol.sendOut output dout <<< _getProtocol
+sendOut outletR repr = sendOut_ outletR $ ViC.accept repr
+
+
+sendOut_ :: forall m state chrepr mp. MonadEffect m => Id.OutletR -> ValueInChannel chrepr -> Node state chrepr mp -> m Unit
+sendOut_ outletR vicRepr = liftEffect <<< RawProtocol.sendOut outletR vicRepr <<< _getProtocol
 
 
 sendOutOp :: forall m state chrepr mp. MonadEffect m =>  Node state chrepr mp -> Id.OutletR /\ chrepr -> m Unit
@@ -308,8 +324,6 @@ setState = modifyState <<< const
 connect
     :: forall m stateA stateB chreprA chreprB mp
      . Wiring m
-    => HasFallback chreprA
-    => HasFallback chreprB
     => Id.OutletR
     -> Id.InletR
     -> (chreprA -> chreprB)
@@ -325,16 +339,17 @@ connect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            sendToBIfFlagIsOn :: chreprB -> m Unit
+            -- FIXME: no value check is performed here
+            sendToBIfFlagIsOn :: ValueInChannel chreprB -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
-                  sendIn inletB reprB nodeB
+                  sendIn_ inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> fromMaybe HF.fallback ~> convertRepr ~> sendToBIfFlagIsOn
-        (mbReprA :: Maybe chreprA) <- atOutlet outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr $ fromMaybe HF.fallback mbReprA
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> map convertRepr ~> sendToBIfFlagIsOn
+        (vicReprA :: ValueInChannel chreprA) <- atOutlet outletA nodeA
+        sendToBIfFlagIsOn $ convertRepr <$> vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 
