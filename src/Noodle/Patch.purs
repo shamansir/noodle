@@ -6,6 +6,8 @@ import Prim.Boolean (True, False)
 import Prim.Row as R
 import Prim.RowList as RL
 
+import Debug as Debug
+
 import Type.Data.List (class IsMember)
 import Type.Data.List.Extra (class LMap, class MapDown, mapDown)
 import Type.Proxy (Proxy(..))
@@ -47,7 +49,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, family, toReprableState) as RawNode
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel, class FromToValueInChannel)
+import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel, class FromToValueInChannel)
+import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
@@ -162,8 +165,8 @@ connect
     => IsSymbol fA
     => IsSymbol fB
     => HasFallback chrepr
-    => ToValueInChannel chrepr doutA
     => FromValueInChannel dinB chrepr
+    => ToValueInChannel chrepr dinB
     => HasOutlet osA osA' oA doutA
     => HasInlet isB isB' iB dinB
     => RegisteredFamily (F fA fstateA isA osA chrepr mp) families
@@ -194,7 +197,7 @@ connectRaw
     -> Patch pstate families strepr chrepr mp
     -> m (Patch pstate families strepr chrepr mp /\ Raw.Link)
 connectRaw outletRA inletRB nodeRA nodeRB (Patch name id chState nodes rawNodes links) = do
-    rawLink <- RawNode.connect outletRA inletRB identity nodeRA nodeRB
+    rawLink <- RawNode.connect outletRA inletRB ViC.accept nodeRA nodeRB
     let
       rawLinkWithId = rawLink # RawLink.setId (Links.nextId links)
       nextLinks = links # Links.trackRaw rawLinkWithId

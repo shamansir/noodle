@@ -4,18 +4,11 @@ import Prelude
 
 import Effect (Effect)
 
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
-
-import Type.Proxy (Proxy(..))
-
 import Blessed as B
-import Blessed.Core.Border (type_, _line) as Border
 import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.Core as Core
 import Blessed.UI.Boxes.Box.Option as Box
 
@@ -25,16 +18,13 @@ import Cli.Style (patchBox, patchBoxBorder) as Style
 import Cli.Components.Library as Library
 import Cli.Class.CliFriendly (class CliFriendly)
 
-import Noodle.Wiring (class Wiring)
 import Noodle.Id as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.ToFn (class PossiblyToFn)
-import Noodle.Ui.Cli.Tagging.At as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 -- import Cli.Components.InputIndicator as InputIndicator
 -- import Cli.Components.OutputIndicator as OutputIndicator

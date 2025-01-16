@@ -26,8 +26,8 @@ import Noodle.Id (InletR, OutletR)
 import Noodle.Raw.Fn.Tracker (Tracker)
 import Noodle.Fn.Generic.Protocol as Generic
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (accept) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 

@@ -24,7 +24,8 @@ import Noodle.Raw.Node (NodeChanges) as Raw
 import Noodle.Raw.Fn.Updates as Updates
 import Noodle.Fn.Generic.Updates (fromRecord) as Updates
 import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasChRepr, markGroup, markFamily, groupOf)
-import Noodle.Repr.ChRepr (ValueInChannel(..))
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (resolve) as ViC
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (colorOf) as C
@@ -36,10 +37,17 @@ import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNo
 
 
 inlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr  => Int -> Id.InletR -> ValueInChannel chrepr -> Tag
-inlet idx inletId (Accepted repr) =
+inlet idx inletId =
+    ViC.resolve
+        { accept : \repr ->
+            At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+            -- FIXME: show other values in ViC
+        , decline : empty
+        , missingKey : const empty
+        , empty : empty
+        }
+    where empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
     -- TODO : from `inletId`` :: -- T.fgc (C.colorOf Palette.inletId) <<< T.s
-    At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-inlet idx inletId _ = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
 inletInfoBox :: Id.InletR -> Tag
@@ -48,18 +56,31 @@ inletInfoBox inletR =
 
 
 inletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.InletR -> ValueInChannel chrepr -> Tag
-inletStatusLine familyR idx inletId (Accepted repr) =
+inletStatusLine familyR idx inletId =
     -- TODO: show node id and group as well
-    (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-inletStatusLine familyR idx inletId _ =
-    T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
+    ViC.resolve
+        { accept : \repr ->
+            (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+            -- FIXME: show other values in ViC
+        , decline : empty
+        , missingKey : const empty
+        , empty : empty
+        }
+    where empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
 outlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr => Int -> Id.OutletR -> ValueInChannel chrepr -> Tag
-outlet idx outletId (Accepted repr) =
-    At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+outlet idx outletId =
+    ViC.resolve
+        { accept : \repr ->
+            At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+            -- FIXME: show other values in ViC
+        , decline : empty
+        , missingKey : const empty
+        , empty : empty
+        }
+    where empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-outlet idx outletId _ = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
 outletInfoBox :: Id.OutletR -> Tag
@@ -68,12 +89,20 @@ outletInfoBox outletR =
 
 
 outletStatusLine :: forall chrepr. Tagged.At At.StatusLine chrepr => Id.FamilyR -> Int -> Id.OutletR -> ValueInChannel chrepr -> Tag
-outletStatusLine familyR idx outletId (Accepted repr) =
+outletStatusLine familyR idx outletId =
+    -- TODO: show node id and group as well
+    ViC.resolve
+        { accept : \repr ->
+            (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+            -- FIXME: show other values in ViC
+        , decline : empty
+        , missingKey : const empty
+        , empty : empty
+        }
+    where empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
     -- TODO: show group as well
-    (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-outletStatusLine familyR idx outletId _ = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
 nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
@@ -317,19 +346,27 @@ _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
         tagArgument :: Fn.Argument (ValueInChannel chrepr) -> Tag
         tagArgument arg = markerSymbol "<"
             <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.argName arg)
-            <> case Fn.argValue arg of
-                Accepted inVal ->
-                    operator "::" <> (Tagged.at pat) inVal
-                _ -> -- FIXME: show other values in ViC
-                    T.nil
+            <>  (Fn.argValue arg # ViC.resolve
+                    { accept : \inVal ->
+                        operator "::" <> (Tagged.at pat) inVal
+                     -- FIXME: show other values in ViC
+                    , decline : T.nil
+                    , missingKey : const T.nil
+                    , empty : T.nil
+                    }
+                )
             <> markerSymbol ">" <> T.s " "
         tagOut :: Fn.Output (ValueInChannel chrepr) -> Tag
         tagOut out = markerSymbol "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.outName out) <>
-            case Fn.outValue out of
-                Accepted outVal ->
+            (Fn.outValue out # ViC.resolve
+                { accept : \outVal ->
                     operator "::" <> (Tagged.at pat) outVal
-                _ -> -- FIXME: show other values in ViC
-                    T.nil
+                    -- FIXME: show other values in ViC
+                , decline : T.nil
+                , missingKey : const T.nil
+                , empty : T.nil
+                }
+            )
             <> markerSymbol ")" <> T.s " "
 
 

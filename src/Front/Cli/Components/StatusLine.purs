@@ -31,7 +31,7 @@ import Noodle.Id as Id
 import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasChRepr)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Raw.Node as Raw
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine, nodeStatusLine)  as T
 import Noodle.Ui.Cli.Tagging.At (class At) as Tagged
 import Noodle.Ui.Cli.Tagging.At (StatusLine) as At

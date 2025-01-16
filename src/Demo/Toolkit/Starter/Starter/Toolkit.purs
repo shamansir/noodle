@@ -14,7 +14,7 @@ import Noodle.Fn.ToFn (in_, inx_, out_, outx_, toChanneled) as Fn
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Metro as Simple.Metro

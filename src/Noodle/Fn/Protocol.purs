@@ -30,8 +30,8 @@ import Noodle.Raw.FromToRec (toRec, fromRec)
 import Noodle.Repr.HasFallback (class HasFallback)
 -- import Noodle.Repr.ChRepr (class ToChRepr, class ToChReprRow, class FromChReprRow)
 -- import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValueInChannel, class FromValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
-import Noodle.Repr.ChRepr (accept, fromValueInChannel) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
+import Noodle.Repr.ValueInChannel (accept, fromValueInChannel) as ViC
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) chrepr = Raw.Protocol state chrepr

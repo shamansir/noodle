@@ -36,8 +36,8 @@ import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Wiring (class Wiring)
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (_reportMissingKey) as ChRepr
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (_reportMissingKey) as ViC
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -106,7 +106,7 @@ component stateRef patchR keys rawNode iReprSignal inlets =
             (inletR /\ buttonKey)
             /\
             ( InletButton.component stateRef patchR buttonKey keys.nodeBox keys.infoBox rawNode inletR idx vicRepr
-            $ map (Map.lookup inletR >>> (ChRepr._reportMissingKey $ Id.inletRName inletR))
+            $ map (Map.lookup inletR >>> (ViC._reportMissingKey $ Id.inletRName inletR))
             $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal
             )

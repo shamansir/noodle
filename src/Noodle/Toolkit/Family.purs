@@ -16,8 +16,8 @@ import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class C
 import Noodle.Fn.Shape (reflect) as Shape
 import Noodle.Node (Node)
 import Noodle.Node (_makeWithFn) as Node
-import Noodle.Repr.ChRepr (class FromValuesInChannelRow)
-import Noodle.Repr.ChRepr (toFallback) as ChRepr
+import Noodle.Repr.ValueInChannel (class FromValuesInChannelRow)
+import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Repr.HasFallback (class HasFallback)
 
 import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues) as Raw
@@ -54,8 +54,8 @@ make _ state shape inletsRec outletsRec process =
     Family
         (Shape.reflect shape)
         state
-        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec)
-        (ChRepr.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec)
+        (ViC.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec)
+        (ViC.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec)
         $ Fn.make (reflectSymbol (Proxy :: _ f)) process
 
 

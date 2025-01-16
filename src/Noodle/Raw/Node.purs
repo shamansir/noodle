@@ -29,8 +29,8 @@ import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
-import Noodle.Repr.ChRepr (accept, _missingKey, _reportMissingKey) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (accept, _reportMissingKey) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -319,7 +319,7 @@ connect
      . Wiring m
     => Id.OutletR
     -> Id.InletR
-    -> (chreprA -> chreprB)
+    -> (chreprA -> ValueInChannel chreprB)
     -> Node stateA chreprA mp
     -> Node stateB chreprB mp
     -> m Raw.Link
@@ -340,9 +340,9 @@ connect
                   sendIn_ inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> map convertRepr ~> sendToBIfFlagIsOn
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> (=<<) convertRepr ~> sendToBIfFlagIsOn
         (vicReprA :: ValueInChannel chreprA) <- atOutlet outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr <$> vicReprA
+        sendToBIfFlagIsOn $ convertRepr =<< vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
 
 

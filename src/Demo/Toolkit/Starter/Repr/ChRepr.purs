@@ -34,8 +34,8 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Repr.ChRepr (ValueInChannel(..), class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
-import Noodle.Repr.ChRepr (accept, decline) as CR
+import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
+import Noodle.Repr.ValueInChannel (accept, decline, toMaybe) as ViC
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
@@ -107,7 +107,7 @@ instance HasFallback ValueRepr where
 
 
 instance FromValueInChannel ValueRepr ValueRepr where fromValueInChannel = identity
-instance ToValueInChannel   ValueRepr ValueRepr where toValueInChannel   = CR.accept
+instance ToValueInChannel   ValueRepr ValueRepr where toValueInChannel   = ViC.accept
 
 
 instance FromValueInChannel Any     ValueRepr where fromValueInChannel = case _ of Any pr -> pr
@@ -128,8 +128,8 @@ instance ToValueInChannel ValueRepr Number
     where
         toValueInChannel = _tryAny
             (case _ of
-                VNumber num -> CR.accept num
-                _ -> CR.decline
+                VNumber num -> ViC.accept num
+                _ -> ViC.decline
             )
 
 
@@ -137,8 +137,8 @@ instance ToValueInChannel ValueRepr Boolean
     where
         toValueInChannel = _tryAny
             (case _ of
-                VBool bool -> CR.accept bool
-                _ -> CR.decline
+                VBool bool -> ViC.accept bool
+                _ -> ViC.decline
             )
 
 
@@ -146,8 +146,8 @@ instance ToValueInChannel ValueRepr Time
     where
         toValueInChannel = _tryAny
             (case _ of
-                VTime time -> CR.accept time
-                _ -> CR.decline
+                VTime time -> ViC.accept time
+                _ -> ViC.decline
             )
 
 
@@ -360,10 +360,11 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
 
 
 editorFor :: ValueInChannel ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
-editorFor (Accepted (VNumber _)) =
-    Just $ VE.imap (maybe VNone VNumber) extractNum VNumeric.editor
-        where
-            extractNum = case _ of -- reuse `ValueInChannel`?
-                VNumber num -> Just num
-                _ -> Nothing
-editorFor _ = Nothing
+editorFor = ViC.toMaybe >>> case _ of
+    Just (VNumber _) ->
+        Just $ VE.imap (maybe VNone VNumber) extractNum VNumeric.editor
+            where
+                extractNum = case _ of -- reuse `ValueInChannel`?
+                    VNumber num -> Just num
+                    _ -> Nothing
+    _ -> Nothing

@@ -25,7 +25,7 @@ import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 
 import Noodle.Ui.Cli.Tagging.At as T

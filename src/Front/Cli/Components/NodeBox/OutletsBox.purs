@@ -34,8 +34,8 @@ import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (_reportMissingKey) as ChRepr
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (_reportMissingKey) as ViC
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -101,7 +101,7 @@ component offsetY keys familyR nodeR oReprSignal outlets =
             (outletR /\ buttonKey)
             /\
             ( OutletButton.component buttonKey keys.nodeBox keys.infoBox familyR nodeR outletR idx vicRepr
-            $ map (Map.lookup outletR >>> (ChRepr._reportMissingKey $ Id.outletRName outletR))
+            $ map (Map.lookup outletR >>> (ViC._reportMissingKey $ Id.outletRName outletR))
             $ map (Map.mapKeys Tuple.snd)
             $ oReprSignal
             )

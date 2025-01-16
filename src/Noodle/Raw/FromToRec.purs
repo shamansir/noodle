@@ -8,8 +8,8 @@ import Data.Map (Map)
 import Data.Map.Extra (stringifyKeys) as Map
 import Data.Symbol (class IsSymbol)
 
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
-import Noodle.Repr.ChRepr (fromMap, toMap) as VsiC
+import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
+import Noodle.Repr.ValueInChannel (fromMap, toMap) as VsiC
 
 
 fromRec :: forall k repr rowl row. FromValuesInChannelRow rowl row k repr => (forall s. IsSymbol s => Proxy s -> k) -> Record row -> Map k (ValueInChannel repr)
