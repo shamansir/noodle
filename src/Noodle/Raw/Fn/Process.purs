@@ -53,11 +53,11 @@ import Noodle.Id (inletRName) as Id
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
-import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (_missingKey) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (_missingKey) as ViC
 -- import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
 -- import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
 

@@ -16,7 +16,7 @@ import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Protocol (getState, getInlets, getOutlets) as RawProtocol
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 
 data Fn state chrepr (m :: Type -> Type) = Fn FnName (Raw.Process state chrepr m) -- TODO: move to separate module

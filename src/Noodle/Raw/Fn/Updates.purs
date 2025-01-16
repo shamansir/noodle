@@ -16,7 +16,7 @@ import Noodle.Fn.Generic.Updates as Generic
 import Noodle.Fn.ToFn (Fn)
 import Noodle.Fn.ToFn (Argument, Output, arg, out) as Fn
 
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 
 type Update state repr              = Generic.Update       state (Map InletR (ValueInChannel repr))          (Map OutletR (ValueInChannel repr))

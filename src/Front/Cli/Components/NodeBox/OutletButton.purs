@@ -41,7 +41,7 @@ import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Ui.Cli.Tagging (outlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 

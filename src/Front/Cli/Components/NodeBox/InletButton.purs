@@ -75,8 +75,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, sendIn) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (toFallback) as ChRepr
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (toFallback) as ViC
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -132,7 +132,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                     Nothing ->
                         pure unit
         (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
-        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f (ChRepr.toFallback vicRepr) sendF) <$> mbValueEditor
+        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
     in B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR vicRepr
         , Box.top $ Offset.px 0

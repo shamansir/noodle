@@ -6,15 +6,13 @@ import Data.Map (Map)
 
 import Effect (Effect)
 
-import Prim.RowList as RL
-
 import Data.Maybe (Maybe)
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.FromToRec (toRec)
 import Noodle.Raw.Fn.Tracker as Raw
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow)
+import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValuesInChannelRow)
 
 
 type Tracker state (is :: Row Type) (os :: Row Type) chrepr = Raw.Tracker state chrepr

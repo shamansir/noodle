@@ -17,8 +17,8 @@ import Type.Proxy (Proxy(..))
 import Data.Bifunctor (bimap)
 
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel)
-import Noodle.Repr.ChRepr (fromValueInChannel, accept, empty) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel)
+import Noodle.Repr.ValueInChannel (fromValueInChannel, accept, empty) as ViC
 
 -- import Toolkit.Hydra.Types
 -- import Toolkit.Hydra.Repr.Wrap (WrapRepr)

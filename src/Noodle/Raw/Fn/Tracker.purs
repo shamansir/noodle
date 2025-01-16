@@ -11,7 +11,7 @@ import Data.Maybe (Maybe)
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Tracker (Tracker, inlets, outlets, lastInlet, lastOutlet, state, mapState) as Generic
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
 

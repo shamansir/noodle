@@ -45,7 +45,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runM, runM', getStateRef, runOnUnit, runOn, runOver') as Blessed
+import Blessed.Internal.BlessedOp (getStateRef, lift, runM, runM', runOnUnit) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -57,17 +57,13 @@ import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (to) as StRepr
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Id as Id
 import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Node (toRaw) as Node
 import Noodle.Node (Node) as Noodle
-import Noodle.Fn.Updates (UpdateFocus(..))
-import Noodle.Fn.Generic.Updates (toRecord, fromRecord, mergedMapState) as Updates
-import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
+import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
@@ -99,7 +95,7 @@ import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
 -- REM import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 -- REM import Cli.Components.FullInfoBox as FI
-import Cli.Components.SidePanel.Console as CC
+-- import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Documentation as DP
 import Cli.Bounds as Bounds

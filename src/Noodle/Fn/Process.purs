@@ -51,8 +51,8 @@ import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from, to) as StRepr
-import Noodle.Repr.ChRepr (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
-import Noodle.Repr.ChRepr (accept, toValueInChannel, fromValueInChannel, toMaybe, _backToValue) as ViC
+import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (accept, fromValueInChannel, toMaybe, _backToValue) as ViC
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> Type -> (Type -> Type) -> Type -> Type

@@ -10,7 +10,7 @@ import Noodle.Fn.ToFn (Fn)
 
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..), UpdateFocus(..), toRecord, fromRecord) as GenericUpdates
 
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 
 import Noodle.Raw.Fn.Updates as Raw

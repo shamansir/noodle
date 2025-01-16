@@ -12,8 +12,8 @@ import Partial.Unsafe (unsafePartial)
 import Tidy.Codegen (exprCtor, typeCtor, declImport)
 
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel)
-import Noodle.Repr.ChRepr (accept) as ChRepr
+import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), groupPascalCase, familyPascalCase)
 
@@ -64,4 +64,4 @@ instance FromValueInChannel UnitRepr UnitRepr
 
 
 instance ToValueInChannel UnitRepr UnitRepr
-    where toValueInChannel = ChRepr.accept
+    where toValueInChannel = ViC.accept

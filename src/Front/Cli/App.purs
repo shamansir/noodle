@@ -64,7 +64,7 @@ import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Toolkit (Toolkit, ToolkitKey)

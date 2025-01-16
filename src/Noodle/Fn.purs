@@ -16,33 +16,16 @@ import Prelude
 
 import Prim.RowList as RL
 
-import Data.Newtype (class Newtype, unwrap)
-
-import Data.Array as Array
-import Data.Bifunctor (lmap, rmap, bimap)
-import Data.Functor.Invariant (class Invariant)
-import Data.Maybe (Maybe)
-import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.List (List)
-import Data.List (length, filter) as List
 import Data.Map (Map)
 -- import Data.SOrder (SOrder, class HasSymbolsOrder)
 -- import Data.SOrder (instantiate) as SOrder
 
-import Type.Proxy (Proxy(..))
-
-import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Aff (Aff)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
 
 import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.State.Class (class MonadState)
-import Control.Monad.State as State
 
-import Noodle.Id (FnName, Inlet, Outlet, InletR, OutletR)
+import Noodle.Id (FnName, InletR, OutletR)
 -- import Noodle.Node.Has (class HasInletsAt, class HasOutletsAt)
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Process as Process
@@ -52,7 +35,7 @@ import Noodle.Raw.Fn (Fn(..)) as Raw
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValuesInChannelRow)
+import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValuesInChannelRow)
 -- import Noodle.Repr.ChRepr (ensureTo, ensureFrom, wrap, unwrap) as ChRepr
 
 

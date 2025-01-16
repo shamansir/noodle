@@ -42,7 +42,7 @@ import Noodle.Id (PatchR, FamilyR, Family, familyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
-import Noodle.Repr.ChRepr (ValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValueInChannel)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
 import Noodle.Toolkit.Family (Family) as Toolkit

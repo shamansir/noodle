@@ -21,8 +21,9 @@ import Parsing.Extra (marker, foldMarkers)
 
 import Noodle.Repr.HasFallback as HF
 import Noodle.Repr.StRepr as SR
-import Noodle.Repr.ChRepr (ValueInChannel)
-import Noodle.Repr.ChRepr (class FromValueInChannel, class ToValueInChannel, class ReadChannelRepr, class WriteChannelRepr, accept, decline) as CR
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel, accept, decline) as ViC
+import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr) as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -83,272 +84,272 @@ instance HF.HasFallback WrapRepr where
     fallback = Unit unit
 
 
-{- CR.FromValueInChannel -}
+{- ViC.FromValueInChannel -}
 
 
-instance CR.FromValueInChannel HT.Value WrapRepr where
+instance ViC.FromValueInChannel HT.Value WrapRepr where
     fromValueInChannel :: HT.Value -> WrapRepr
     fromValueInChannel = Value
 
 
-instance CR.FromValueInChannel Unit WrapRepr where
+instance ViC.FromValueInChannel Unit WrapRepr where
     fromValueInChannel :: Unit -> WrapRepr
     fromValueInChannel = Unit
 
 
-instance CR.FromValueInChannel HT.Texture WrapRepr where
+instance ViC.FromValueInChannel HT.Texture WrapRepr where
     fromValueInChannel :: HT.Texture -> WrapRepr
     fromValueInChannel = Texture
 
 
-instance CR.FromValueInChannel HT.SourceN WrapRepr where
+instance ViC.FromValueInChannel HT.SourceN WrapRepr where
     fromValueInChannel :: HT.SourceN -> WrapRepr
     fromValueInChannel = SourceN
 
 
-instance CR.FromValueInChannel HT.TODO WrapRepr where
+instance ViC.FromValueInChannel HT.TODO WrapRepr where
     fromValueInChannel :: HT.TODO -> WrapRepr
     fromValueInChannel = TODO
 
 
-instance CR.FromValueInChannel HT.Context WrapRepr where
+instance ViC.FromValueInChannel HT.Context WrapRepr where
     fromValueInChannel :: HT.Context -> WrapRepr
     fromValueInChannel = Context
 
 
-instance CR.FromValueInChannel HT.UpdateFn WrapRepr where
+instance ViC.FromValueInChannel HT.UpdateFn WrapRepr where
     fromValueInChannel :: HT.UpdateFn -> WrapRepr
     fromValueInChannel = UpdateFn
 
 
-instance CR.FromValueInChannel HT.Source WrapRepr where
+instance ViC.FromValueInChannel HT.Source WrapRepr where
     fromValueInChannel :: HT.Source -> WrapRepr
     fromValueInChannel = Source
 
 
-instance CR.FromValueInChannel HT.Url WrapRepr where
+instance ViC.FromValueInChannel HT.Url WrapRepr where
     fromValueInChannel :: HT.Url -> WrapRepr
     fromValueInChannel = Url
 
 
-instance CR.FromValueInChannel HT.GlslFn WrapRepr where
+instance ViC.FromValueInChannel HT.GlslFn WrapRepr where
     fromValueInChannel :: HT.GlslFn -> WrapRepr
     fromValueInChannel = GlslFn
 
 
-instance CR.FromValueInChannel HT.SourceOptions WrapRepr where
+instance ViC.FromValueInChannel HT.SourceOptions WrapRepr where
     fromValueInChannel :: HT.SourceOptions -> WrapRepr
     fromValueInChannel = SourceOptions
 
 
-instance CR.FromValueInChannel HT.Values WrapRepr where
+instance ViC.FromValueInChannel HT.Values WrapRepr where
     fromValueInChannel :: HT.Values -> WrapRepr
     fromValueInChannel = Values
 
 
-instance CR.FromValueInChannel HT.Ease WrapRepr where
+instance ViC.FromValueInChannel HT.Ease WrapRepr where
     fromValueInChannel :: HT.Ease -> WrapRepr
     fromValueInChannel = Ease
 
 
-instance CR.FromValueInChannel HT.AudioSource WrapRepr where
+instance ViC.FromValueInChannel HT.AudioSource WrapRepr where
     fromValueInChannel :: HT.AudioSource -> WrapRepr
     fromValueInChannel = Audio
 
 
-instance CR.FromValueInChannel HT.AudioBin WrapRepr where
+instance ViC.FromValueInChannel HT.AudioBin WrapRepr where
     fromValueInChannel :: HT.AudioBin -> WrapRepr
     fromValueInChannel = AudioBin
 
 
-instance CR.FromValueInChannel HT.OutputN WrapRepr where
+instance ViC.FromValueInChannel HT.OutputN WrapRepr where
     fromValueInChannel :: HT.OutputN -> WrapRepr
     fromValueInChannel = OutputN
 
 
-instance CR.FromValueInChannel HT.ExtSource WrapRepr where
+instance ViC.FromValueInChannel HT.ExtSource WrapRepr where
     fromValueInChannel :: HT.ExtSource -> WrapRepr
     fromValueInChannel = ExtSource
 
 
-instance CR.FromValueInChannel HT.RenderTarget WrapRepr where
+instance ViC.FromValueInChannel HT.RenderTarget WrapRepr where
     fromValueInChannel :: HT.RenderTarget -> WrapRepr
     fromValueInChannel = Target
 
 
-instance CR.FromValueInChannel HT.DepFn WrapRepr where
+instance ViC.FromValueInChannel HT.DepFn WrapRepr where
     fromValueInChannel :: HT.DepFn -> WrapRepr
     fromValueInChannel = Value <<< HT.Dep
 
 
-instance CR.FromValueInChannel HT.CanBeSource WrapRepr where
+instance ViC.FromValueInChannel HT.CanBeSource WrapRepr where
     fromValueInChannel :: HT.CanBeSource -> WrapRepr
     fromValueInChannel = CBS
 
 
-instance CR.FromValueInChannel HT.TOrV WrapRepr where
+instance ViC.FromValueInChannel HT.TOrV WrapRepr where
     fromValueInChannel :: HT.TOrV -> WrapRepr
     fromValueInChannel = TOrV
 
 
 {-}
-instance CR.FromValueInChannel CAI.Products WrapRepr where
+instance ViC.FromValueInChannel CAI.Products WrapRepr where
     fromValueInChannel :: CAI.Products -> WrapRepr
     fromValueInChannel = Products
 
 
-instance CR.FromValueInChannel CAI.Product' WrapRepr where
+instance ViC.FromValueInChannel CAI.Product' WrapRepr where
     fromValueInChannel :: CAI.Product' -> WrapRepr
     fromValueInChannel = Product
 -}
 
 
-instance CR.FromValueInChannel WrapRepr WrapRepr where
+instance ViC.FromValueInChannel WrapRepr WrapRepr where
     fromValueInChannel :: WrapRepr -> WrapRepr
     fromValueInChannel = identity
 
 
-{- CR.ToValueInChannel -}
+{- ViC.ToValueInChannel -}
 
 
-instance CR.ToValueInChannel WrapRepr HT.Value where
+instance ViC.ToValueInChannel WrapRepr HT.Value where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Value
-    toValueInChannel (Value value) = CR.accept value
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Value value) = ViC.accept value
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Texture where
+instance ViC.ToValueInChannel WrapRepr HT.Texture where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Texture
-    toValueInChannel (Texture texture) = CR.accept texture
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Texture texture) = ViC.accept texture
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.OutputN where
+instance ViC.ToValueInChannel WrapRepr HT.OutputN where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.OutputN
-    toValueInChannel (OutputN outN) = CR.accept outN
-    toValueInChannel _ = CR.decline
+    toValueInChannel (OutputN outN) = ViC.accept outN
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.SourceN where
+instance ViC.ToValueInChannel WrapRepr HT.SourceN where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.SourceN
-    toValueInChannel (SourceN srcN) = CR.accept srcN
-    toValueInChannel _ = CR.decline
+    toValueInChannel (SourceN srcN) = ViC.accept srcN
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.TODO where
+instance ViC.ToValueInChannel WrapRepr HT.TODO where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.TODO
-    toValueInChannel (TODO todo) = CR.accept todo
-    toValueInChannel _ = CR.decline
+    toValueInChannel (TODO todo) = ViC.accept todo
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Context where
+instance ViC.ToValueInChannel WrapRepr HT.Context where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Context
-    toValueInChannel (Context context) = CR.accept context
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Context context) = ViC.accept context
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.UpdateFn where
+instance ViC.ToValueInChannel WrapRepr HT.UpdateFn where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.UpdateFn
-    toValueInChannel (UpdateFn updatefn) = CR.accept updatefn
-    toValueInChannel _ = CR.decline
+    toValueInChannel (UpdateFn updatefn) = ViC.accept updatefn
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Source where
+instance ViC.ToValueInChannel WrapRepr HT.Source where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Source
-    toValueInChannel (Source source) = CR.accept source
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Source source) = ViC.accept source
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Url where
+instance ViC.ToValueInChannel WrapRepr HT.Url where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Url
-    toValueInChannel (Url url) = CR.accept url
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Url url) = ViC.accept url
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.GlslFn where
+instance ViC.ToValueInChannel WrapRepr HT.GlslFn where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.GlslFn
-    toValueInChannel (GlslFn glslfn) = CR.accept glslfn
-    toValueInChannel _ = CR.decline
+    toValueInChannel (GlslFn glslfn) = ViC.accept glslfn
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.SourceOptions where
+instance ViC.ToValueInChannel WrapRepr HT.SourceOptions where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.SourceOptions
-    toValueInChannel (SourceOptions sourceoptions) = CR.accept sourceoptions
-    toValueInChannel _ = CR.decline
+    toValueInChannel (SourceOptions sourceoptions) = ViC.accept sourceoptions
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Values where
+instance ViC.ToValueInChannel WrapRepr HT.Values where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Values
-    toValueInChannel (Values values) = CR.accept values
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Values values) = ViC.accept values
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.Ease where
+instance ViC.ToValueInChannel WrapRepr HT.Ease where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.Ease
-    toValueInChannel (Ease ease) = CR.accept ease
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Ease ease) = ViC.accept ease
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.AudioSource where
+instance ViC.ToValueInChannel WrapRepr HT.AudioSource where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.AudioSource
-    toValueInChannel (Audio audio) = CR.accept audio
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Audio audio) = ViC.accept audio
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.AudioBin where
+instance ViC.ToValueInChannel WrapRepr HT.AudioBin where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.AudioBin
-    toValueInChannel (AudioBin audiobin) = CR.accept audiobin
-    toValueInChannel _ = CR.decline
+    toValueInChannel (AudioBin audiobin) = ViC.accept audiobin
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.ExtSource where
+instance ViC.ToValueInChannel WrapRepr HT.ExtSource where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.ExtSource
-    toValueInChannel (ExtSource ext) = CR.accept ext
-    toValueInChannel _ = CR.decline
+    toValueInChannel (ExtSource ext) = ViC.accept ext
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.RenderTarget where
+instance ViC.ToValueInChannel WrapRepr HT.RenderTarget where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.RenderTarget
-    toValueInChannel (Target trg) = CR.accept trg
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Target trg) = ViC.accept trg
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.DepFn where
+instance ViC.ToValueInChannel WrapRepr HT.DepFn where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.DepFn
-    toValueInChannel (DepFn fn) = CR.accept fn
-    toValueInChannel _ = CR.decline
+    toValueInChannel (DepFn fn) = ViC.accept fn
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr HT.CanBeSource where
+instance ViC.ToValueInChannel WrapRepr HT.CanBeSource where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.CanBeSource
-    toValueInChannel (CBS cbs) = CR.accept cbs
-    toValueInChannel _ = CR.decline
+    toValueInChannel (CBS cbs) = ViC.accept cbs
+    toValueInChannel _ = ViC.decline
 
 
 {-
-instance CR.ToValueInChannel WrapRepr CAI.Products where
+instance ViC.ToValueInChannel WrapRepr CAI.Products where
     toValueInChannel :: WrapRepr -> ValueInChannel CAI.Products
-    toValueInChannel (Products products) = CR.accept products
+    toValueInChannel (Products products) = ViC.accept products
     toValueInChannel _ = Nothing
 
 
-instance CR.ToValueInChannel WrapRepr CAI.Product' where
+instance ViC.ToValueInChannel WrapRepr CAI.Product' where
     toValueInChannel :: WrapRepr -> ValueInChannel CAI.Product'
-    toValueInChannel (Product product) = CR.accept product
+    toValueInChannel (Product product) = ViC.accept product
     toValueInChannel _ = Nothing
 -}
 
-instance CR.ToValueInChannel WrapRepr HT.TOrV where
+instance ViC.ToValueInChannel WrapRepr HT.TOrV where
     toValueInChannel :: WrapRepr -> ValueInChannel HT.TOrV
-    toValueInChannel (Value v) = CR.accept $ HT.V v
-    toValueInChannel (Texture tex) = CR.accept $ HT.T tex
-    toValueInChannel (TOrV torv) = CR.accept torv
-    toValueInChannel _ = CR.decline
+    toValueInChannel (Value v) = ViC.accept $ HT.V v
+    toValueInChannel (Texture tex) = ViC.accept $ HT.T tex
+    toValueInChannel (TOrV torv) = ViC.accept torv
+    toValueInChannel _ = ViC.decline
 
 
-instance CR.ToValueInChannel WrapRepr WrapRepr where
+instance ViC.ToValueInChannel WrapRepr WrapRepr where
     toValueInChannel :: WrapRepr -> ValueInChannel WrapRepr
-    toValueInChannel = CR.accept
+    toValueInChannel = ViC.accept
 
 
 instance Mark WrapRepr where

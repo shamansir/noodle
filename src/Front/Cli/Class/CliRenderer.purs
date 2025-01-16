@@ -17,7 +17,7 @@ import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Toolkit (ToolkitKey)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Repr.ChRepr (ValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 import Cli.Components.ValueEditor (ValueEditor)
 
