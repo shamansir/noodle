@@ -51,6 +51,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel, class FromToValueInChannel)
 import Noodle.Repr.ValueInChannel (accept) as ViC
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
@@ -189,7 +190,7 @@ connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) 
 connectRaw
     :: forall m pstate strepr chrepr mp families fstateA fstateB
      . Wiring m
-    => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => Id.OutletR
     -> Id.InletR
     -> Raw.Node fstateA chrepr mp

@@ -10,6 +10,7 @@ import Noodle.Id (FamilyR, InletR, OutletR, family) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (to) as StRepr
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode
@@ -55,6 +56,7 @@ make familyR state rawShape inletsMap outletsMap process = do
 spawn ::
     forall m state chrepr mp
      . MonadEffect m
+    => ChRepr.Tagged chrepr
     => Family state chrepr mp
     -> m (Raw.Node state chrepr mp)
 spawn (Family familyR rawShape state inletsMap outletsMap fn) =

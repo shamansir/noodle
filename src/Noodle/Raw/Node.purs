@@ -29,8 +29,10 @@ import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.Tag (class Tagged, tag) as CT
+import Noodle.Repr.Tag (inlet, outlet) as Path
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.ValueInChannel (accept, _reportMissingKey) as ViC
+import Noodle.Repr.ValueInChannel (accept, _reportMissingKey, resolve, empty, decline, _missingKey) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -87,6 +89,7 @@ id (Node nodeR _ _ _ _) = nodeR
 make
     :: forall m state chrepr mp
      . MonadEffect m
+    => CT.Tagged chrepr
     => Id.FamilyR
     -> state
     -> Raw.Shape
@@ -101,6 +104,7 @@ make family state rawShape inletsMap outletsMap process = do
 _makeWithFn
     :: forall m state chrepr mp
      . MonadEffect m
+    => CT.Tagged chrepr
     => Id.FamilyR
     -> state
     -> Raw.Shape
@@ -315,35 +319,46 @@ setState = modifyState <<< const
 
 
 connect
-    :: forall m stateA stateB chreprA chreprB mp
+    :: forall m stateA stateB chrepr mp
      . Wiring m
+    => CT.Tagged chrepr
     => Id.OutletR
     -> Id.InletR
-    -> (chreprA -> ValueInChannel chreprB)
-    -> Node stateA chreprA mp
-    -> Node stateB chreprB mp
+    -> (chrepr -> ValueInChannel chrepr)
+    -> Node stateA chrepr mp
+    -> Node stateB chrepr mp
     -> m Raw.Link
 connect
     outletA
     inletB
-    convertRepr
+    _
     nodeA@(Node nodeAId _ _ _ _)
     nodeB@(Node nodeBId _ _ _ _) =
     do
         flagRef <- liftEffect $ Ref.new true
         let
             -- FIXME: no value check is performed here
-            sendToBIfFlagIsOn :: ValueInChannel chreprB -> m Unit
+            sendToBIfFlagIsOn :: ValueInChannel chrepr -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
                   sendIn_ inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> (=<<) convertRepr ~> sendToBIfFlagIsOn
-        (vicReprA :: ValueInChannel chreprA) <- atOutlet outletA nodeA
-        sendToBIfFlagIsOn $ convertRepr =<< vicReprA
+        (vicReprA :: ValueInChannel chrepr) <- atOutlet outletA nodeA
+        (vicReprB :: ValueInChannel chrepr) <- atInlet inletB nodeB -- FIXME: replace with the `Tag` data from the `Node` (or `Shape``)
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> (=<<) (convertRepr vicReprB) ~> sendToBIfFlagIsOn
+
+        sendToBIfFlagIsOn $ convertRepr vicReprB =<< vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
+    where
+      convertRepr :: ValueInChannel chrepr -> chrepr -> ValueInChannel chrepr
+      convertRepr vicReprB reprA =
+        bind vicReprB \reprB ->
+          if CT.tag (Path.outlet nodeAId outletA) reprA
+          == CT.tag (Path.inlet  nodeBId inletB ) reprB
+            then ViC.accept reprA
+            else ViC.decline
 
 
 disconnect

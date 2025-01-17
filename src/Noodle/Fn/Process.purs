@@ -24,8 +24,6 @@ import Prelude
 import Data.Symbol (class IsSymbol)
 import Data.List (List)
 import Data.Newtype (class Newtype, wrap, unwrap)
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (lookup) as Map
 
@@ -50,7 +48,6 @@ import Noodle.Raw.Fn.Process (ProcessM(..), ProcessF) as Raw
 import Noodle.Raw.Fn.Process (imapMState, mapMM, runFreeM, receive, send, sendIn, lift, toReprableState, join, mkRunner, spawn, initial) as Raw
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (from, to) as StRepr
 import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, fromValueInChannel, toMaybe, _backToValue) as ViC
 

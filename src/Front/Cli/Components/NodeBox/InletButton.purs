@@ -77,6 +77,7 @@ import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -102,10 +103,10 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 component
     :: forall tk pstate fs strepr chrepr m
-     . HasFallback chrepr
-    => T.At T.StatusLine chrepr
+     . T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
     => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => Wiring m
     => CliEditor tk chrepr
     => Ref (State tk pstate fs strepr chrepr m)
@@ -199,7 +200,8 @@ onMouseOut infoBox idx _ _ = do
 onPress
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
-    => HasFallback chrepr
+    -- => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => CliEditor tk chrepr
     => Maybe (_ /\ BlessedOp Unit Effect)
     -> Id.PatchR
