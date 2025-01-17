@@ -36,8 +36,9 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline, toMaybe) as ViC
-import Noodle.Repr.Tag (class Tagged, Tag)
-import Noodle.Repr.Tag (Path, use) as Tag
+import Noodle.Repr.Tagged (class Tagged)
+import Noodle.Repr.Tagged (Path) as Tag
+import Noodle.Raw.Fn.Shape (Tag, tagAs)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
@@ -155,7 +156,7 @@ instance ToValueInChannel ValueRepr Time
 
 instance Tagged ValueRepr where
     tag :: Tag.Path -> ValueRepr -> Tag
-    tag = const $ Tag.use <<< case _ of
+    tag = const $ tagAs <<< case _ of
         VNone -> "None"
         VBang -> "Bang"
         VBool _ -> "Bool"

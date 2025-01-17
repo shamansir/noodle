@@ -63,11 +63,11 @@ unsafeOutletR = wrap
 
 
 -- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype InletDefR = InletDefR { name :: InletR, order :: Int, temp :: Temperament }
+newtype InletDefR = InletDefR { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
 
 
 -- | `OutletDefR` stores rawified outlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int }
+newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int, tag :: Tag }
 
 
 instance Show InletDefR where
@@ -103,17 +103,17 @@ newtype Shape = Shape { inlets :: InletsShape, outlets :: OutletsShape }
 derive instance Newtype Shape _
 
 
-inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament }
+inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
 inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
 
 
-outlets :: Shape -> Array { name :: OutletR, order :: Int }
+outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: Tag }
 outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
 
 
 make ::
-    { inlets  :: Array { name :: InletR, order :: Int, temp :: Temperament }
-    , outlets :: Array { name :: OutletR, order :: Int }
+    { inlets  :: Array { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
+    , outlets :: Array { name :: OutletR, order :: Int, tag :: Tag }
     }
     -> Shape
 make { inlets, outlets } =
@@ -163,3 +163,27 @@ derive instance Ord InletIndex
 
 derive instance Eq OutletIndex
 derive instance Ord OutletIndex
+
+
+newtype Tag = Tag String
+
+derive instance Newtype Tag _
+derive newtype instance Eq Tag
+derive newtype instance Ord Tag
+instance Show Tag where show (Tag tag) = "<" <> tag <> ">"
+
+
+tagAs :: String -> Tag
+tagAs = Tag
+
+
+failed :: Tag
+failed = Tag "FAIL-X"
+
+
+tagOfInlet :: InletR -> Shape -> Maybe Tag
+tagOfInlet inletR = findInletDef inletR >>> map (unwrap >>> _.tag)
+
+
+tagOfOutlet :: OutletR -> Shape -> Maybe Tag
+tagOfOutlet outletR = findOutletDef outletR >>> map (unwrap >>> _.tag)

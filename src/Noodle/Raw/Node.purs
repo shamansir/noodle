@@ -8,15 +8,13 @@ import Effect.Ref (new, read, write) as Ref
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
-import Data.Map (lookup, fromFoldable, toUnfoldable, mapMaybeWithKey) as Map
-import Data.Map.Extra as Map
+import Data.Map (lookup) as Map
+import Data.Map.Extra (mapKeys) as Map
 import Data.UniqueHash (generate) as UH
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (curry, uncurry)
+import Data.Maybe (fromMaybe)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
-import Data.Bifunctor (lmap)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
@@ -27,17 +25,16 @@ import Noodle.Raw.Id (inletR, outletR) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
 import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.Tag (class Tagged, tag) as CT
-import Noodle.Repr.Tag (inlet, outlet) as Path
+import Noodle.Repr.Tagged (class Tagged, tag) as CT
+import Noodle.Repr.Tagged (inletN, outletN) as Path
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.ValueInChannel (accept, _reportMissingKey, resolve, empty, decline, _missingKey) as ViC
+import Noodle.Repr.ValueInChannel (_reportMissingKey, accept, decline) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
-import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet) as RawShape
+import Noodle.Raw.Fn.Shape (Shape, Tag, failed) as Raw
+import Noodle.Raw.Fn.Shape (inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
@@ -319,45 +316,45 @@ setState = modifyState <<< const
 
 
 connect
-    :: forall m stateA stateB chrepr mp
+    :: forall m stateA stateB chreprA chreprB mp
      . Wiring m
-    => CT.Tagged chrepr
+    => CT.Tagged chreprA => CT.Tagged chreprB
     => Id.OutletR
     -> Id.InletR
-    -> (chrepr -> ValueInChannel chrepr)
-    -> Node stateA chrepr mp
-    -> Node stateB chrepr mp
+    -> (chreprA -> chreprB)
+    -> Node stateA chreprA mp
+    -> Node stateB chreprB mp
     -> m Raw.Link
 connect
     outletA
     inletB
-    _
-    nodeA@(Node nodeAId _ _ _ _)
-    nodeB@(Node nodeBId _ _ _ _) =
+    toReprB
+    nodeA@(Node nodeAId nodeAShape _ _ _)
+    nodeB@(Node nodeBId nodeBShape _ _ _) =
     do
         flagRef <- liftEffect $ Ref.new true
         let
             -- FIXME: no value check is performed here
-            sendToBIfFlagIsOn :: ValueInChannel chrepr -> m Unit
+            sendToBIfFlagIsOn :: ValueInChannel chreprB -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
                 if flagOn then do
                   sendIn_ inletB reprB nodeB
                 --   run nodeB
                 else pure unit
-        (vicReprA :: ValueInChannel chrepr) <- atOutlet outletA nodeA
-        (vicReprB :: ValueInChannel chrepr) <- atInlet inletB nodeB -- FIXME: replace with the `Tag` data from the `Node` (or `Shape``)
-        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> (=<<) (convertRepr vicReprB) ~> sendToBIfFlagIsOn
+        (vicReprA :: ValueInChannel chreprA) <- atOutlet outletA nodeA
 
-        sendToBIfFlagIsOn $ convertRepr vicReprB =<< vicReprA
+        SignalX.runSignal $ subscribeOutlet outletA nodeA ~> (=<<) convertRepr ~> sendToBIfFlagIsOn
+
+        sendToBIfFlagIsOn $ convertRepr =<< vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
     where
-      convertRepr :: ValueInChannel chrepr -> chrepr -> ValueInChannel chrepr
-      convertRepr vicReprB reprA =
-        bind vicReprB \reprB ->
-          if CT.tag (Path.outlet nodeAId outletA) reprA
-          == CT.tag (Path.inlet  nodeBId inletB ) reprB
-            then ViC.accept reprA
+      (outletATag :: Raw.Tag) = RawShape.tagOfOutlet outletA nodeAShape # fromMaybe Raw.failed
+      (inletBTag  :: Raw.Tag) = RawShape.tagOfInlet  inletB  nodeBShape # fromMaybe Raw.failed
+      convertRepr :: chreprA -> ValueInChannel chreprB
+      convertRepr reprA =
+          if outletATag == inletBTag
+            then ViC.accept $ toReprB reprA
             else ViC.decline
 
 
