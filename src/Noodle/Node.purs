@@ -47,6 +47,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow, fromValueInChannel, toValueInChannel)
 import Noodle.Repr.ValueInChannel (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback, _reportMissingKey) as ViC
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link

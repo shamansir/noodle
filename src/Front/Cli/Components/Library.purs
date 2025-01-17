@@ -58,6 +58,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, setState) as RawNode
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.SidePanel as SP
@@ -75,6 +76,7 @@ component
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
+    => ChRepr.Tagged chrepr
     => Toolkit tk fs strepr chrepr Effect
     -> Core.Blessed (State tk ps fs strepr chrepr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
     -- -> BlessedOpM (State tk p fs repr m) m Unit
@@ -116,6 +118,7 @@ onFamilySelect
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
+    => ChRepr.Tagged chrepr
     => BlessedOp (State tk pstate fs strepr chrepr m) m
 onFamilySelect =
     do
@@ -153,6 +156,7 @@ spawnAndRenderRaw
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
     -> Id.FamilyR
@@ -192,6 +196,7 @@ spawnAndRender
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
+    => ChRepr.Tagged chrepr
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
     -> Id.Family f

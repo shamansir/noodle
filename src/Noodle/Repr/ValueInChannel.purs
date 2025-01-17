@@ -1,6 +1,6 @@
 module Noodle.Repr.ValueInChannel
     ( ValueInChannel
-    , accept, decline, empty, _missingKey, _backToValue, _bind, _reportMissingKey, toFallback
+    , accept, decline, empty, _missingKey, _reportMissingKey, toFallback, _backToValue
     , resolve
     , class ToValueInChannel, toValueInChannel
     , class FromValueInChannel, fromValueInChannel
@@ -19,8 +19,6 @@ module Noodle.Repr.ValueInChannel
     where
 
 import Prelude
-
-import Data.Newtype (class Newtype)
 
 import Type.Proxy (Proxy(..))
 import Type.Equality (class TypeEquals, from, to)
@@ -76,13 +74,6 @@ instance Show a => Show (ValueInChannel a) where
     show Declined = "𐄂"
     show (MissingKey key) = "?:" <> key
     show Empty = "∅"
-
-
-newtype Tag = Tag String
-
-derive instance Newtype Tag _
-derive newtype instance Eq Tag
-derive newtype instance Ord Tag
 
 
 class    (FromValueInChannel a repr, ToValueInChannel repr a) <= FromToValueInChannel a repr

@@ -70,7 +70,9 @@ import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 
+ -- FIXME: `Repr.Tag` and `Format.Tag` are very different things, find a way to make it clear (name it `Style`?)
 import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
@@ -125,6 +127,7 @@ _component
     :: forall tk fs pstate strepr chrepr m
     .  Wiring m
     => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
@@ -284,6 +287,7 @@ componentRaw
     :: forall tk fs pstate strepr chrepr m
      . Wiring m
     => HasFallback chrepr
+    => ChRepr.Tagged chrepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
@@ -308,6 +312,7 @@ component
     => HasFallback chrepr
     => HasFallback fstate
     => StRepr fstate strepr
+    => ChRepr.Tagged chrepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m

@@ -5,14 +5,11 @@ import Prelude
 import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Either (Either(..))
 import Data.Map as Map
-import Data.String (length, joinWith) as String
+import Data.String (length, joinWith, split, Pattern(..)) as String
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (take, dropEnd) as Array
 import Data.Foldable (fold)
 import Data.Traversable (traverse_)
-import Data.String (split, Pattern(..)) as String
-
-import Type.Proxy (Proxy(..))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -28,29 +25,21 @@ import Node.FS.Sync (readTextFile, stat, exists, mkdir', writeTextFile) as Sync
 import Node.FS.Aff (readTextFile, stat) as Async
 import Node.FS.Perms (permsReadWrite)
 
-import Cli.State (State)
--- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
--- import Cli.WsServer as WSS
-import Cli.Keys (mainScreen, wsStatusButton)
--- import Cli.Ndf.Apply (apply) as NdfFile
-
--- import Cli.Components.MainScreen as MainScreen
--- import Cli.Components.WsStatusButton as WsButton
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp as Blessed
+import Blessed.Internal.BlessedOp (impair1, impair2) as Blessed
 import Blessed.Internal.Core (Blessed)
 import Blessed ((>~))
 import Blessed (run, runAnd) as Blessed
 import Blessed.UI.Base.Screen.Method as Screen
 
-import Web.Socket.Server as WSS
+import Web.Socket.Server (WebSocketConnection, WebSocketMessage(..), sendMessage) as WSS
 
-import Cli.WsServer as WSS
+import Cli.WsServer (start) as WSS
 
-import Noodle.Text.NdfFile as NdfFile
-import Noodle.Text.NdfFile.Parser as NdfFile
-import Noodle.Text.NdfFile.Apply as NdfFile
+import Noodle.Text.NdfFile (codegen, failedLines, hasFailedLines) as NdfFile
+import Noodle.Text.NdfFile.Parser (parser)  as NdfFile
+import Noodle.Repr.Tag (class Tagged) as ChRepr
 
 import Parsing (runParser) as P
 
@@ -62,21 +51,24 @@ import Cli.State (init, appendHistory, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
+-- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
+-- import Cli.WsServer as WSS
+import Cli.Keys (mainScreen, wsStatusButton)
+-- import Cli.Ndf.Apply (apply) as NdfFile
+
+-- import Cli.Components.MainScreen as MainScreen
+-- import Cli.Components.WsStatusButton as WsButton
+
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class HoldsFamilies, class MarkToolkit, class FromPatchState) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Fn.ToFn (class PossiblyToFn)
-import Noodle.Text.NdfFile.UnitRepr (options) as UnitRepr
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options) as FCG
-
-import Noodle.Ui.Cli.Tagging.At as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
 
 import Cli.Class.CliFriendly (class CliFriendly)
 
@@ -168,6 +160,7 @@ runBlessedInterface
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => ChRepr.Tagged chrepr
     => CliFriendly tk fs chrepr Effect
     => ps
     -> Toolkit tk fs strepr chrepr Effect
