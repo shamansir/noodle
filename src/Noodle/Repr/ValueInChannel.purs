@@ -170,9 +170,11 @@ class ValuesToReprRow rl row repr from to | rl -> row from to, repr -> row from 
   valuesToReprRowBuilder :: Proxy repr -> Proxy rl -> Record row -> Builder { | from } { | to }
 
 
+{-
 class ReprToValueRow :: RL.RowList Type -> Row Type -> Type -> Row Type -> Row Type -> Constraint
 class ReprToValueRow rl row repr from to | rl -> row from to, repr -> row from to where
   reprToValueRowBuilder :: Proxy repr -> Proxy rl -> Record row -> Builder { | from } { | to }
+-}
 
 
 class FromValuesInChannelRowBase :: RL.RowList Type -> Row Type -> Type -> Type -> Constraint

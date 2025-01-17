@@ -7,17 +7,17 @@ import Prim.Row as Row
 import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.Reflectable (class Reflectable, reflectType)
-import Data.Array ((:), mapWithIndex)
+import Data.Reflectable (class Reflectable)
+import Data.Array (mapWithIndex)
 -- import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown, ByReflect(..))
 
-import Noodle.Raw.Fn.Shape (InletR(..), OutletR(..), InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..)) as Raw
+import Noodle.Raw.Fn.Shape (InletR(..), OutletR(..), InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..), Tag) as Raw
 import Noodle.Fn.Shape.Temperament (TemperamentK(..), Hot, Cold, Temperament(..), class IsTemperament, reflectTemperament)
+
 
 
 -- | Inlet ID is used to reference corresponding inlet on a type-level by its name (e.g. as a record key)
@@ -80,23 +80,23 @@ instance IsSymbol sym => Reflectable (O sym t) String where
 
 
 class InletsDefs (inlets :: Inlets) where
-    reflectInlets :: Proxy inlets -> Raw.InletsShape
+    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.Tag) -> Raw.InletsShape
 
 
 instance MapDown ByReflect inlets Array (Temperament /\ String) => InletsDefs inlets where
-    reflectInlets :: Proxy inlets -> Raw.InletsShape
-    reflectInlets _ = Raw.Inlets $ mapWithIndex makeInletDef (mapDown ByReflect (Proxy :: _ inlets) :: Array (Temperament /\ String))
-        where makeInletDef order (temp /\ name) = Raw.InletDefR { name : Raw.InletR name, order, temp }
+    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.Tag) -> Raw.InletsShape
+    reflectInlets _ toTag = Raw.Inlets $ mapWithIndex makeInletDef (mapDown ByReflect (Proxy :: _ inlets) :: Array (Temperament /\ String))
+        where makeInletDef order (temp /\ name) = Raw.InletDefR { name : Raw.InletR name, order, temp , tag : toTag $ Raw.InletR name}
 
 
 class OutletsDefs (outlets :: Outlets) where
-    reflectOutlets :: Proxy outlets -> Raw.OutletsShape
+    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.Tag) -> Raw.OutletsShape
 
 
 instance MapDown ByReflect outlets Array String => OutletsDefs outlets where
-    reflectOutlets :: Proxy outlets -> Raw.OutletsShape
-    reflectOutlets _ = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown ByReflect (Proxy :: _ outlets) :: Array String)
-        where makeOutletDef order name = Raw.OutletDefR { name : Raw.OutletR name, order }
+    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.Tag) -> Raw.OutletsShape
+    reflectOutlets _ toTag = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown ByReflect (Proxy :: _ outlets) :: Array String)
+        where makeOutletDef order name = Raw.OutletDefR { name : Raw.OutletR name, order, tag : toTag $ Raw.OutletR name }
 
 
 class ContainsAllInlets (row :: Row Type) (inlets :: Inlets) -- | inlets -> row, row -> inlets
@@ -107,7 +107,6 @@ else instance
   ( Row.Cons name din rowtail row
   , ContainsAllInlets rowtail itail
   ) => ContainsAllInlets row (I name temp din :> itail)
-
 
 
 class ContainsAllOutlets (row :: Row Type) (outlets :: Outlets) -- | inlets -> row, row -> inlets
@@ -123,8 +122,12 @@ else instance
 data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
 
 
-reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => Shape inlets outlets -> Raw.Shape
-reflect _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets), outlets : reflectOutlets (Proxy :: _ outlets) }
+-- FIXME: Find a way to load `Raw.Tag` from `Inlets` & `Output` defitinions for each value. We use this function by ourself, don't expose it because we can't be sure maps are corresponding to the actual values
+
+
+_reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => (Raw.InletR -> Raw.Tag) -> (Raw.OutletR -> Raw.Tag) -> Shape inlets outlets -> Raw.Shape
+_reflect inletToTag outletToTag _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets) inletToTag, outlets : reflectOutlets (Proxy :: _ outlets) outletToTag }
+
 
 
 newtype Link = Link Int

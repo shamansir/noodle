@@ -30,7 +30,7 @@ import Noodle.Id (Inlet, Outlet, Family(..), NodeR, InletR, OutletR, FamilyR, fa
 import Noodle.Fn (Fn)
 import Noodle.Fn (make, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
-import Noodle.Fn.Shape (reflect) as Shape
+import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Fn.ToFn (Fn, Argument, Output, arg, out) as ToFn
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
@@ -39,7 +39,7 @@ import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Updates (UpdateFocus, InletsUpdate(..)) as Fn
 import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
-import Noodle.Raw.Fn.Shape (Shape) as Raw
+import Noodle.Raw.Fn.Shape (Shape, Tag, tagAs, failed) as Raw
 import Noodle.Raw.Fn.Shape (inletRName, outletRName, hasHotInlets, isHotInlet) as RawShape
 import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
 import Noodle.Raw.FromToRec as ChReprCnv
@@ -47,7 +47,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow, fromValueInChannel, toValueInChannel)
 import Noodle.Repr.ValueInChannel (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback, _reportMissingKey) as ViC
-import Noodle.Repr.Tag (class Tagged) as ChRepr
+import Noodle.Repr.Tagged (class Tagged, tag, inlet, outlet) as CT
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
@@ -85,7 +85,8 @@ make
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
     => HasFallback chrepr
-    => FromValuesInChannelRow isrl is Id.InletR chrepr
+    => CT.Tagged chrepr
+    => FromValuesInChannelRow isrl is Id.InletR  chrepr
     => FromValuesInChannelRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
     => MonadEffect m
@@ -96,14 +97,15 @@ make
     -> Record os
     -> Process state is os chrepr mp
     -> m (Node f state is os chrepr mp)
-make family state shape inletsRec outletsRec process =
-    make_
-        (Id.familyR family)
-        state
-        (Shape.reflect shape)
-        (ViC.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec) -- FIXME: may be could manage without `fallback`` here?
-        (ViC.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec) -- FIXME: may be could manage without `fallback`` here?
-        process
+make family state shape inletsRec outletsRec =
+    make_ familyR state rawShape inletsValues outletsValues
+    where
+        familyR = Id.familyR family
+        (inletsValues  :: Raw.InitialInletsValues chrepr ) = ViC.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec   -- FIXME: may be could manage without `fallback`` here?
+        (outletsValues :: Raw.InitialOutletsValues chrepr) = ViC.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec -- FIXME: may be could manage without `fallback`` here?
+        inletToTag inletR   = Map.lookup inletR inletsValues   <#> CT.tag (CT.inlet  familyR inletR)  # fromMaybe Raw.failed
+        outletToTag outletR = Map.lookup outletR outletsValues <#> CT.tag (CT.outlet familyR outletR) # fromMaybe Raw.failed
+        (rawShape :: Raw.Shape) = Shape._reflect inletToTag outletToTag shape
 
 
 make_ -- TODO: private

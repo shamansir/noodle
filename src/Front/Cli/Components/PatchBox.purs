@@ -22,7 +22,7 @@ import Noodle.Id as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.Tag (class Tagged) as ChRepr
+import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.ToFn (class PossiblyToFn)
@@ -34,10 +34,10 @@ import Noodle.Fn.ToFn (class PossiblyToFn)
 component
     :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
+    => CT.Tagged chrepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk ps strepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
-    => ChRepr.Tagged chrepr
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
     -> Core.Blessed (State tk ps fs strepr chrepr Effect)
