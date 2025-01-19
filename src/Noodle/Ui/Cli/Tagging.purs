@@ -42,11 +42,14 @@ inlet idx inletId =
         { accept : \repr ->
             At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
             -- FIXME: show other values in ViC
-        , decline : empty
-        , missingKey : const empty
-        , empty : empty
+        , decline
+        , missingKey
+        , empty
         }
-    where empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
+    where
+        missingKey key = T.s "⋱" <> T.fgcs (C.colorOf X11.lightyellow) "?" <> T.s "⋰"
+        decline = T.s "⋱" <> T.fgcs (C.colorOf X11.red2) "x" <> T.s "⋰"
+        empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
     -- TODO : from `inletId`` :: -- T.fgc (C.colorOf Palette.inletId) <<< T.s
 
 
@@ -62,11 +65,14 @@ inletStatusLine familyR idx inletId =
         { accept : \repr ->
             (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.inletId) $ Id.inletRName inletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
             -- FIXME: show other values in ViC
-        , decline : empty
-        , missingKey : const empty
-        , empty : empty
+        , decline
+        , missingKey
+        , empty
         }
-    where empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
+    where
+        missingKey key = T.s "⋱" <> T.fgcs (C.colorOf X11.lightyellow) "?" <> T.s "⋰"
+        decline = T.s "⋱" <> T.fgcs (C.colorOf X11.red2) "x" <> T.s "⋰"
+        empty = T.s "⋱" <> (T.s $ show idx) <> T.s "⋰"
 
 
 outlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr => Int -> Id.OutletR -> ValueInChannel chrepr -> Tag
@@ -75,12 +81,14 @@ outlet idx outletId =
         { accept : \repr ->
             At.channelLabel repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
             -- FIXME: show other values in ViC
-        , decline : empty
-        , missingKey : const empty
-        , empty : empty
+        , decline
+        , missingKey
+        , empty
         }
-    where empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
-    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
+    where
+        missingKey _ = T.s "⋰" <> T.fgcs (C.colorOf X11.lightyellow) "?" <> T.s "⋱"
+        decline = T.s "⋰" <> T.fgcs (C.colorOf X11.red2) "x" <> T.s "⋱"
+        empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
 outletInfoBox :: Id.OutletR -> Tag
@@ -95,14 +103,14 @@ outletStatusLine familyR idx outletId =
         { accept : \repr ->
             (T.fgcs (C.colorOf Palette.familyName) $ Id.family familyR) <> T.space <> (T.fgcs (C.colorOf Palette.outletId) $ Id.outletRName outletId) <> T.space <> At.statusLine repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
             -- FIXME: show other values in ViC
-        , decline : empty
-        , missingKey : const empty
-        , empty : empty
+        , decline
+        , missingKey
+        , empty
         }
-    where empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
-    -- TODO: show group as well
-    --T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
+    where
+        missingKey _ = T.s "⋰" <> T.fgcs (C.colorOf X11.lightyellow) "?" <> T.s "⋱"
+        decline = T.s "⋰" <> T.fgcs (C.colorOf X11.red2) "x" <> T.s "⋱"
+        empty = T.s "⋰" <> (T.s $ show idx) <> T.s "⋱"
 
 
 nodeLabel :: forall tk. MarkToolkit tk => Proxy tk -> Id.FamilyR -> Tag
@@ -382,4 +390,4 @@ familyOnelineSignature
 familyOnelineSignature pat ptk familyR =
     case (possiblyToFn ptk familyR :: Maybe (Fn (ValueInChannel chrepr) (ValueInChannel chrepr))) of
         Just fn -> _fnOnelineSignature pat ptk (Left familyR) fn
-        Nothing -> T.s "?"
+        Nothing -> T.fgcs (C.colorOf X11.lightyellow) "?"
