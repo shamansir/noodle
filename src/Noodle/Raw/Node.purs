@@ -334,7 +334,6 @@ connect
     do
         flagRef <- liftEffect $ Ref.new true
         let
-            -- FIXME: no value check is performed here
             sendToBIfFlagIsOn :: ValueInChannel chreprB -> m Unit
             sendToBIfFlagIsOn reprB = do -- TODO: Monad.whenM
                 flagOn <- liftEffect $ Ref.read flagRef
