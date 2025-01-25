@@ -4,7 +4,8 @@ import Prelude
 
 import Effect (Effect)
 
-import Color as Color
+import Color (Color) as Native
+import Color (rgba, fromHexString, toRGBA) as NativeColor
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap) as NT
@@ -22,8 +23,9 @@ import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
 import Cli.Components.ValueEditor (ValueEditor)
 import Cli.Components.ValueEditor (imap) as VE
-import Cli.Components.Editor.Numeric as VNumeric
 import Cli.Components.Editor.Textual as VTextual
+import Cli.Components.Editor.Numeric as VNumeric
+import Cli.Components.Editor.Color as VColor
 
 import Type.Proxy (Proxy(..))
 
@@ -233,8 +235,8 @@ instance At x ValueRepr where
         where
             channelSpread :: forall a. Spread a -> T.Tag
             channelSpread (Spread arr) = T.fgc (C.colorOf $ X11.darkolivegreen3) $ T.wraps "[" "]" $ T.s $ show $ Array.length arr
-            toNativeColor :: Color -> Color.Color
-            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
+            toNativeColor :: Color -> Native.Color
+            toNativeColor (Color { r, g, b, a }) = NativeColor.rgba r g b $ Int.toNumber a / 255.0
 
 
 -- instance At a ValueRepr where
@@ -328,7 +330,7 @@ instance CodegenRepr ValueRepr where
                             Just n -> if n >= 0.0 then exprNumber n else exprParens $ exprNumber n
                             Nothing -> exprNumber 0.0
                     "c/" ->
-                        case Color.fromHexString after of
+                        case NativeColor.fromHexString after of
                             Just color -> exprCtor "VR.VNone"
                             Nothing    -> mkExpression (HF.fallback :: Color)
                     "s/" ->
@@ -387,5 +389,16 @@ editorFor = ViC.toMaybe >>> case _ of
             where
                 extractNum = case _ of -- reuse `ValueInChannel`?
                     VNumber num -> Just num
+                    _ -> Nothing
+    Just (VColor _) ->
+        Just $ VE.imap (maybe VNone VColor <<< map fromNativeColor) extractColor VColor.editor
+            where
+                fromNativeColor :: Native.Color -> Color
+                fromNativeColor = NativeColor.toRGBA >>> (\{ r, g, b, a } -> Color { r, g, b, a : 255 })
+                toNativeColor :: Color -> Native.Color
+                toNativeColor (Color { r, g, b, a }) = NativeColor.rgba r g b $ Int.toNumber a / 255.0
+                extractColor :: ValueRepr -> Maybe Native.Color
+                extractColor = case _ of -- reuse `ValueInChannel`?
+                    VColor color -> Just $ toNativeColor color
                     _ -> Nothing
     _ -> Nothing
