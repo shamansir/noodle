@@ -38,7 +38,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runEffect, getStateRef) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
@@ -201,7 +201,7 @@ onMouseOut infoBox idx _ _ = do
 
 
 onPress
-    :: forall tk vekey pstate fs strepr chrepr mi mo
+    :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
     -- => HasFallback chrepr
     => CT.Tagged chrepr
@@ -296,21 +296,6 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                                 Nothing -> pure unit
                         _ -> pure unit
 
-
-                    {- REM
-
-                    let onodeId = Id.withNodeId lco.nodeId reflect'
-
-                    logNdfCommandM $ Cmd.Connect (C.nodeId onodeId) (C.outputIndex lco.index) (C.nodeId $ reflect' inodeId) (C.inputIndex idx) -- TODO: log somewhere else in a special place
-                    state' <- State.get
-                    Key.commandLogBox >~ Box.setContent $ T.singleLine $ NdfFile.toTaggedNdfCode state'.commandLog
-
-                    State.modify_  $ \s -> s
-                        { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network
-                        , linkWasMadeHack = true
-                        }
-                    -}
-
                     {- REM
                     OI.hide
                     -}
@@ -324,22 +309,14 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     let nodeR = RawNode.id rawNode
 
                     case mbValueEditorOp of
-                        Just { spawn, move } -> do
+                        Just { create, transpose } -> do
                             CC.log "Exact editor was found, call it"
-                            _ <- Blessed.runOnUnit $ _blessedHelper unit spawn
-                            -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
-                            --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
-                            -- VEditor.tveKey >~ TextArea.setValue ""
+                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
                             nodeBounds <- case Map.lookup nodeR state.locations of
                                             Just bounds -> pure bounds
                                             Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
-                            _ <- Blessed.runOnUnit $ _blessedHelper unit $ move { x : inletPos.x, y : inletPos.y - 1 }
-                            -- editorKey >~ Element.setTop  $ Offset.px $ inletPos.y - 1 -- inodeBounds.top - 1
-                            -- editorKey >~ Element.setLeft $ Offset.px $ inletPos.x -- inodeBounds.left
-                            -- editorKey >~ Element.setFront
-                            -- editorKey >~ Element.show
-                            -- editorKey >~ Element.focus
+                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y - 1 }
 
                             CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
@@ -349,47 +326,12 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     CC.log "Editor is either blocked or opened already, don't call it"
                 CC.log "And don't block opening editor anymore"
                 State.modify_ $ _ { blockInletEditor = false }
-                {- REM
-                case mbEditorId of
-                    Just editorId ->
-                        -- FIXME: press handler triggers twice
-                        if not state.linkWasMadeHack then do
-                            let editor = Key.numValueEditor
-                            inodeBounds <- Bounds.collect (Id.nodeIdR inodeId) inodeKey -- FIXME: use state.locations
-                            State.modify_
-                                (\s -> s
-                                    { editors =
-                                        Map.insert
-                                            editorId
-                                            (Just $ \wr ->
-                                                case fromRepr $ wrap wr of
-                                                    Just val -> Node.sendIn inode inputId val
-                                                    Nothing -> pure unit
-                                            )
-                                            s.editors
-                                    }
-                                )
-                            editor >~ Element.setTop $ Offset.px $ inodeBounds.top - 1
-                            editor >~ Element.setLeft $ Offset.px $ inodeBounds.left
-                            editor >~ TextArea.setValue ""
-                            editor >~ Element.setFront
-                            editor >~ Element.show
-                            State.modify_  (_ { linkWasMadeHack = false })
-                        else
-                            State.modify_  (_ { linkWasMadeHack = false })
-                    Nothing ->
-                        pure unit
-                -}
 
         State.modify_
             (_ { lastClickedOutlet = Nothing })
 
         -- CC.log "render screen"
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
-
-
-_blessedHelper :: forall s m a. MonadRec m => MonadEffect m => s -> BlessedOpM s Effect a -> BlessedOpM s m a
-_blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s -- Replace with `BlessedOp.runEffect`
 
 
 onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo

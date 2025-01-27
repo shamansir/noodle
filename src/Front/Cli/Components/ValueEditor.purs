@@ -19,8 +19,8 @@ newtype EditorId = EditorId String
 
 
 type ValueEditorComp state m =
-    { spawn :: BlessedOp state m
-    , move :: { x :: Int, y :: Int } -> BlessedOp state m
+    { create :: BlessedOp state m
+    , transpose :: { x :: Int, y :: Int } -> BlessedOp state m
     }
 
 

@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Data.Array ((!!))
 import Data.Traversable (traverse_)
-
+import Data.Map (empty) as Map
 import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed as B
@@ -33,12 +33,12 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.State (State)
-import Cli.State (withCurrentPatch, currentPatchState) as CState
+import Cli.State (withCurrentPatch, currentPatchState, currentPatch) as CState
 import Cli.Style (library, libraryBorder) as Style
 import Cli.Panels as Panels
 import Cli.Class.CliFriendly (class CliFriendly)
 
-import Noodle.Id (PatchR, FamilyR, Family, familyR) as Id
+import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR) as Id
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
@@ -53,9 +53,10 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Fn.ToFn (class PossiblyToFn)
 import Noodle.Node (Node) as Noodle
 import Noodle.Node (id, setState) as Node
-import Noodle.Patch (registerNode, registerRawNode) as Patch
+import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, setState) as RawNode
+import Noodle.Raw.Node (id, make, setState) as RawNode
+import Noodle.Raw.Fn.Shape (empty) as RawShape
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.Tagged (class Tagged) as CT
@@ -105,7 +106,21 @@ component toolkit =
             \_ _ -> onFamilySelect
         ]
         []
-        \_ ->
+        \_ -> do
+            state <- State.get
+            let mbCurrentPatch = CState.currentPatch state
+            (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
+            case Patch.id <$> mbCurrentPatch of
+                Just patchR -> do
+                    let familyR = Id.unsafeFamilyR "custom"
+                    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+                    case mbNodeState of
+                        Just nodeState -> do
+                            (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState RawShape.empty Map.empty Map.empty $ pure unit
+                            spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
+                        Nothing -> pure unit
+                Nothing ->
+                    pure unit
             pure unit
 
 
@@ -149,7 +164,7 @@ onFamilySelect =
 
 
 spawnAndRenderRaw
-    :: forall  tk pstate fs strepr chrepr m
+    :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
@@ -175,14 +190,34 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
                 Just nextState -> rawNode # RawNode.setState nextState
                 Nothing -> pure unit
 
-            State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
-
-            NodeBox.componentRaw nextPos patchR familyR rawNode
-
-            CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
-
-            Key.mainScreen >~ Screen.render
+            spawnAndRenderGivenRawNode patchR nextPos rawNode
         Nothing -> pure unit
+
+
+spawnAndRenderGivenRawNode
+    :: forall tk pstate fs strepr chrepr m
+     . Wiring m
+    => HasFallback chrepr
+    => CT.Tagged chrepr
+    -- => Toolkit.HoldsFamilies strepr chrepr m fs
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    -- => Toolkit.FromPatchState tk pstate strepr
+    => CliFriendly tk fs chrepr m
+    -- => Toolkit tk fs strepr chrepr m
+    => Id.PatchR
+    -> { left :: Int, top :: Int }
+    -> Raw.Node strepr chrepr m
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+spawnAndRenderGivenRawNode patchR nextPos rawNode = do
+    let familyR = Id.familyOf $ RawNode.id rawNode
+
+    State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+
+    NodeBox.componentRaw nextPos patchR familyR rawNode
+
+    CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
+
+    Key.mainScreen >~ Screen.render
 
 
 spawnAndRender

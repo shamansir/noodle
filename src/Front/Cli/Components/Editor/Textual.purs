@@ -2,6 +2,7 @@ module Cli.Components.Editor.Textual where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Exception (Error)
 
 import Type.Data.Symbol (class IsSymbol)
@@ -43,42 +44,46 @@ tveKey = Key.textValueEditor
 
 
 editor :: forall state m. MonadThrow Error m => ValueEditor String state m
-editor = boundTo tveKey
+editor = fromKey tveKey
 
 
-boundTo :: forall key state m. MonadThrow Error m => IsSymbol key => Key.ValueEditorKey key -> ValueEditor String state m
-boundTo editorKey curValue sendValue =
-    { spawn : do
-        let
-            innerText =
-                B.textBox editorKey
-                    [ Box.top $ Offset.px 0
-                    , Box.left $ Offset.px 0
-                    , Box.width $ Dimension.px 10
-                    , Box.height $ Dimension.px 1
-                    -- , Box.index 1
-                    , Style.chInputBox
-                    , TextArea.mouse true
-                    , Box.content curValue
-                    , TextArea.inputOnFocus true
-                    , Core.on TextArea.Submit
-                        \_ _ -> do
-                            content <- TextArea.value ~< editorKey
-                            Blessed.lift $ sendValue content
-                            editorKey >~ Element.hide
-                            Key.mainScreen >~ Screen.render
-                    ]
-                    [  ]
-        --nodeBoxKey >~ Node.append innerText
-        Key.patchBox >~ Node.append innerText
-        editorKey >~ Element.setFront
-        editorKey >~ Element.hide
-    , move : move editorKey
+fromKey :: forall key state m. MonadThrow Error m => IsSymbol key => Key.ValueEditorKey key -> ValueEditor String state m
+fromKey editorKey initialValue sendValue =
+    { create : create editorKey initialValue sendValue
+    , transpose : transpose editorKey
     }
 
 
-move :: forall key state m. IsSymbol key => MonadThrow Error m => Key.ValueEditorKey key -> { x :: Int, y :: Int } -> BlessedOp state m
-move editorKey { x, y } = do
+create :: forall key state m. IsSymbol key => Key.ValueEditorKey key -> String -> (String -> Effect Unit) -> BlessedOp state m
+create editorKey initialValue sendValue = do
+    let
+        innerText =
+            B.textBox editorKey
+                [ Box.top $ Offset.px 0
+                , Box.left $ Offset.px 0
+                , Box.width $ Dimension.px 10
+                , Box.height $ Dimension.px 1
+                -- , Box.index 1
+                , Style.chInputBox
+                , TextArea.mouse true
+                , Box.content initialValue
+                , TextArea.inputOnFocus true
+                , Core.on TextArea.Submit
+                    \_ _ -> do
+                        content <- TextArea.value ~< editorKey
+                        Blessed.lift $ sendValue content
+                        editorKey >~ Element.hide
+                        Key.mainScreen >~ Screen.render
+                ]
+                [  ]
+    --nodeBoxKey >~ Node.append innerText
+    Key.patchBox >~ Node.append innerText
+    editorKey >~ Element.setFront
+    editorKey >~ Element.hide
+
+
+transpose :: forall key state m. IsSymbol key => MonadThrow Error m => Key.ValueEditorKey key -> { x :: Int, y :: Int } -> BlessedOp state m
+transpose editorKey { x, y } = do
     editorKey >~ Element.setTop  $ Offset.px $ y -- inodeBounds.top - 1
     editorKey >~ Element.setLeft $ Offset.px $ x -- inodeBounds.left
     editorKey >~ Element.setFront
