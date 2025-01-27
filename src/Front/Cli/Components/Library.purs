@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Data.Array ((!!))
 import Data.Traversable (traverse_)
-import Data.Map (empty) as Map
+import Data.Map (empty, insert) as Map
 import Data.Text.Output.Blessed (singleLine) as T
 
 import Blessed as B
@@ -38,8 +38,9 @@ import Cli.Style (library, libraryBorder) as Style
 import Cli.Panels as Panels
 import Cli.Class.CliFriendly (class CliFriendly)
 
-import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR) as Id
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Fn.Shape.Temperament (Temperament(..))
+import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR, unsafeInletR, unsafeOutletR) as Id
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValueInChannel)
@@ -56,7 +57,7 @@ import Noodle.Node (id, setState) as Node
 import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, make, setState) as RawNode
-import Noodle.Raw.Fn.Shape (empty) as RawShape
+import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.Tagged (class Tagged) as CT
@@ -116,7 +117,19 @@ component toolkit =
                     let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
                     case mbNodeState of
                         Just nodeState -> do
-                            (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState RawShape.empty Map.empty Map.empty $ pure unit
+                            let
+                                shape =
+                                    RawShape.make
+                                        { inlets :
+                                            [ { name : Id.unsafeInletR "foo", order : 0, temp : Hot, tag : RawShape.tagAs "Number" }
+                                            , { name : Id.unsafeInletR "bar", order : 1, temp : Hot, tag : RawShape.tagAs "Number" }
+                                            ]
+                                        , outlets : []
+                                        }
+                            let inletsMap = Map.empty
+                                                # Map.insert (Id.unsafeInletR "foo") fallback
+                                                # Map.insert (Id.unsafeInletR "bar") fallback
+                            (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState shape inletsMap Map.empty $ pure unit
                             spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
                         Nothing -> pure unit
                 Nothing ->
