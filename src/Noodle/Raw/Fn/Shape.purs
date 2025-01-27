@@ -123,6 +123,10 @@ make { inlets, outlets } =
         }
 
 
+empty :: Shape
+empty = make { inlets : [], outlets : [] }
+
+
 hasHotInlets :: Shape -> Boolean
 hasHotInlets = unwrap >>> _.inlets >>> unwrap >>> Array.any _isHotInlet
 

@@ -106,10 +106,10 @@ registerNode
     -> Patch pstate families strepr chrepr m
     -> Patch pstate families strepr chrepr m
 registerNode =
-    registerNodeNotFromToolkit -- it just has no `IsMember` constraint
+    registerGivenNode -- it just has no `IsMember` constraint
 
 
-registerNodeNotFromToolkit
+registerGivenNode
     :: forall pstate f fstate strepr chrepr is os m families
      . IsSymbol f
     => MonadEffect m
@@ -118,7 +118,7 @@ registerNodeNotFromToolkit
     => Node f fstate is os chrepr m
     -> Patch pstate families strepr chrepr m
     -> Patch pstate families strepr chrepr m
-registerNodeNotFromToolkit node (Patch name id chState nodes rawNodes links) =
+registerGivenNode node (Patch name id chState nodes rawNodes links) =
     Patch name id chState (Map.alter (insertOrInit $ holdNode node) (Id.familyR $ Node.family node) nodes) rawNodes links
     where
       insertOrInit :: HoldsNode strepr chrepr m -> Maybe (Array (HoldsNode strepr chrepr m)) -> Maybe (Array (HoldsNode strepr chrepr m))

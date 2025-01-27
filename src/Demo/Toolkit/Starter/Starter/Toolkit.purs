@@ -1,42 +1,43 @@
 module Starter.Toolkit where
 
 import Prelude
-import Effect (Effect)
+
+import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import Color as Color
-import Data.Maybe (Maybe(..))
-import Type.Data.List (type (:>))
-import Type.Data.List.Extra (TNil, class Put)
-import Type.Proxy (Proxy(..))
 import Control.Monad.State (class MonadState)
-import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
+import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
+import Demo.Toolkit.Starter.Repr.ChRepr as VR
+import Demo.Toolkit.Starter.Repr.StRepr (StateRepr(..))
+import Demo.Toolkit.Starter.Starter.Patch (PState)
+import Effect (Effect)
 import Noodle.Fn.ToFn (fn, class PossiblyToFn)
 import Noodle.Fn.ToFn (in_, inx_, out_, outx_, toChanneled) as Fn
+import Noodle.Id (FamilyR, family, group, toolkitR, unsafeGroupR) as Id
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
-import StarterTk.Simple.Bang as Simple.Bang
-import StarterTk.Simple.Metro as Simple.Metro
-import StarterTk.Simple.Gennum as Simple.Gennum
-import StarterTk.Simple.Random as Simple.Random
-import StarterTk.Simple.Knob as Simple.Knob
-import StarterTk.Simple.Color as Simple.Color
-import StarterTk.Simple.Letter as Simple.Letter
-import StarterTk.Simple.Sum as Simple.Sum
-import StarterTk.Simple.Lerp as Simple.Lerp
-import StarterTk.Simple.Log as Simple.Log
 import StarterTk.P5.Shape as P5.Shape
 import StarterTk.P5.Sketch as P5.Sketch
+import StarterTk.Simple.Bang as Simple.Bang
+import StarterTk.Simple.Color as Simple.Color
+import StarterTk.Simple.Gennum as Simple.Gennum
+import StarterTk.Simple.Knob as Simple.Knob
+import StarterTk.Simple.Lerp as Simple.Lerp
+import StarterTk.Simple.Letter as Simple.Letter
+import StarterTk.Simple.Log as Simple.Log
+import StarterTk.Simple.Metro as Simple.Metro
+import StarterTk.Simple.Random as Simple.Random
+import StarterTk.Simple.Sum as Simple.Sum
+import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
-import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Xsshape as Spreads.Xsshape
-import Demo.Toolkit.Starter.Repr.StRepr (StateRepr)
-import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
-import Data.Tuple.Nested ((/\), type (/\))
-import Demo.Toolkit.Starter.Repr.ChRepr as VR
-import Demo.Toolkit.Starter.Starter.Patch (PState)
+import Type.Data.List (type (:>))
+import Type.Data.List.Extra (TNil, class Put)
+import Type.Proxy (Proxy(..))
 
 
 type StarterFamilies :: Families
@@ -126,7 +127,9 @@ instance MarkToolkit STARTER where
 
 instance FromPatchState STARTER PState StateRepr where
   loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
-  loadFromPatch _ _ _ = Nothing
+  loadFromPatch _ familyR _ = case Id.family familyR of
+    "custom" -> Just StateRepr
+    _ -> Nothing
 
 
 instance PossiblyToFn STARTER (ValueInChannel ValueRepr) (ValueInChannel ValueRepr) Id.FamilyR where
