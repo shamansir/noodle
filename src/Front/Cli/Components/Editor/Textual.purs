@@ -2,6 +2,12 @@ module Cli.Components.Editor.Textual where
 
 import Prelude
 
+import Effect.Exception (Error)
+
+import Type.Data.Symbol (class IsSymbol)
+
+import Control.Monad.Error.Class (class MonadThrow)
+
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Blessed as B
@@ -14,10 +20,12 @@ import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core as Core
 
+import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
 -- import Blessed.UI.Base.Element.Option (index) as Element
-import Blessed.UI.Base.Element.Method (focus, setFront, hide) as Element
+import Blessed.UI.Base.Element.Method (focus, setFront, hide, show) as Element
+import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 -- import Blessed.UI.Boxes.Box.Method (focus) as Box
 import Blessed.UI.Forms.TextArea.Option (inputOnFocus, mouse) as TextArea
@@ -26,7 +34,7 @@ import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 
 import Cli.Style as Style
 
-import Cli.Keys (mainScreen, patchBox, textValueEditor, TextValueEditorKey) as Key
+import Cli.Keys (mainScreen, patchBox, textValueEditor, TextValueEditorKey, ValueEditorKey) as Key
 import Cli.Components.ValueEditor (ValueEditor)
 
 
@@ -34,18 +42,57 @@ tveKey :: Key.TextValueEditorKey
 tveKey = Key.textValueEditor
 
 
--- render :: forall m. NodeBoxKey -> Node m -> BlessedOp FNumber.State m
--- editor :: forall f m i din is' is state os
---      . MonadEffect m => NodeBoxKey -> Number -> (Number -> Effect Unit) -> BlessedOp Number m
-editor :: forall state m. ValueEditor String state m
--- render :: NodeBoxKey -> Node Effect -> BlessedOp FNumber.State Effect
-editor curValue sendValue =
-    NK.toRaw tveKey /\ do
+editor :: forall state m. MonadThrow Error m => ValueEditor String state m
+editor = boundTo tveKey
+
+
+boundTo :: forall key state m. MonadThrow Error m => IsSymbol key => Key.ValueEditorKey key -> ValueEditor String state m
+boundTo editorKey curValue sendValue =
+    { spawn : do
+        let
+            innerText =
+                B.textBox editorKey
+                    [ Box.top $ Offset.px 0
+                    , Box.left $ Offset.px 0
+                    , Box.width $ Dimension.px 10
+                    , Box.height $ Dimension.px 1
+                    -- , Box.index 1
+                    , Style.chInputBox
+                    , TextArea.mouse true
+                    , Box.content curValue
+                    , TextArea.inputOnFocus true
+                    , Core.on TextArea.Submit
+                        \_ _ -> do
+                            content <- TextArea.value ~< editorKey
+                            Blessed.lift $ sendValue content
+                            editorKey >~ Element.hide
+                            Key.mainScreen >~ Screen.render
+                    ]
+                    [  ]
+        --nodeBoxKey >~ Node.append innerText
+        Key.patchBox >~ Node.append innerText
+        editorKey >~ Element.setFront
+        editorKey >~ Element.hide
+    , move : move editorKey
+    }
+
+
+move :: forall key state m. IsSymbol key => MonadThrow Error m => Key.ValueEditorKey key -> { x :: Int, y :: Int } -> BlessedOp state m
+move editorKey { x, y } = do
+    editorKey >~ Element.setTop  $ Offset.px $ y -- inodeBounds.top - 1
+    editorKey >~ Element.setLeft $ Offset.px $ x -- inodeBounds.left
+    editorKey >~ Element.setFront
+    editorKey >~ Element.show
+    editorKey >~ Element.focus
+
+
+{-
+editor' :: forall key state m. IsSymbol key => Key.ValueEditorKey key -> ValueEditor String state m
+editor' editorKey curValue sendValue =
+    editorKey /\ do
     let
-        --(rootTextBoxKey :: NETextBoxKey) = NK.first -- FIXME, find the next one from state or as passed to the node
-        -- neTextBoxKey = NK.append patchBoxKey rootTextBoxKey
         innerText =
-            B.textBox tveKey
+            B.textBox editorKey
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.px 10
@@ -57,19 +104,19 @@ editor curValue sendValue =
                 , TextArea.inputOnFocus true
                 , Core.on TextArea.Submit
                     \_ _ -> do
-                        content <- TextArea.value ~< tveKey
+                        content <- TextArea.value ~< editorKey
                         Blessed.lift $ sendValue content
-                        tveKey >~ Element.hide
+                        editorKey >~ Element.hide
                         Key.mainScreen >~ Screen.render
                 ]
                 [  ]
     --nodeBoxKey >~ Node.append innerText
     Key.patchBox >~ Node.append innerText
-    tveKey >~ Element.setFront
-    tveKey >~ Element.hide
+    editorKey >~ Element.setFront
+    editorKey >~ Element.hide
     -- neTextBoxKey >~ Element.focus
     -- pure textBoxKey
-
+-}
 
 
 

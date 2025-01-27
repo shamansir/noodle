@@ -5,8 +5,8 @@ import Prelude
 import Effect (Effect)
 
 import Type.Proxy (Proxy)
+import Type.Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe)
-import Cli.Keys (NodeBoxKey)
 
 import Control.Monad.State (class MonadState)
 
@@ -19,6 +19,7 @@ import Noodle.Toolkit (ToolkitKey)
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
+import Cli.Keys (NodeBoxKey)
 import Cli.Components.ValueEditor (ValueEditor)
 
 

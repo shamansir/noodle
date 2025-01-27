@@ -15,7 +15,12 @@ type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
 type RemoveButtonKey = Button <^> "remove-button"
 -- type TextBoxKey = TextBox <^> "text-box"
-type TextValueEditorKey = TextBox <^> "text-value-editor"
+
+
+type ValueEditorKey sym = TextBox <^> sym
+type TextValueEditorKey = ValueEditorKey "text-value-editor"
+type NumberValueEditorKey = ValueEditorKey "number-value-editor"
+type ColorValueEditorKey = ValueEditorKey "color-value-editor"
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -47,6 +52,8 @@ outletIndicator = nk :: Button <^> "outlet-led"
 
 
 textValueEditor = nk :: TextValueEditorKey
+numberValueEditor = nk :: NumberValueEditorKey
+colorValueEditor = nk :: ColorValueEditorKey
 
 
 {- For links -}
