@@ -22,6 +22,8 @@ import Data.Newtype (unwrap)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Type.Data.Symbol (class IsSymbol)
+
 import Signal (Signal)
 import Signal (get) as Signal
 
@@ -49,7 +51,7 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Boxes.Box.Option as Box
 
 import Cli.Bounds (collect, inletPos) as Bounds
-import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey)
+import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, ValueEditorKey)
 import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
 import Cli.State (patch, replacePatch) as State
@@ -78,11 +80,12 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Toolkit (ToolkitKey)
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
-import Cli.Components.ValueEditor (ValueEditor)
+import Cli.Components.ValueEditor (ValueEditor, ValueEditorComp)
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -102,7 +105,7 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 
 component
-    :: forall tk pstate fs strepr chrepr m
+    :: forall (tk :: ToolkitKey) (vekey :: Symbol) pstate fs strepr chrepr m
      . T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
     => HasFallback chrepr
@@ -133,7 +136,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                     Nothing ->
                         pure unit
         (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
-        (mbValueEditorOp :: Maybe (_ /\ BlessedOp Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
+        (mbValueEditorOp :: Maybe (ValueEditorComp Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
     in B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR vicRepr
         , Box.top $ Offset.px 0
@@ -198,12 +201,12 @@ onMouseOut infoBox idx _ _ = do
 
 
 onPress
-    :: forall tk pstate fs strepr chrepr mi mo
+    :: forall tk vekey pstate fs strepr chrepr mi mo
      . Wiring mo
     -- => HasFallback chrepr
     => CT.Tagged chrepr
     => CliEditor tk chrepr
-    => Maybe (_ /\ BlessedOp Unit Effect)
+    => Maybe (ValueEditorComp Unit Effect)
     -> Id.PatchR
     -> NodeBoxKey
     -> Int
@@ -321,9 +324,9 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     let nodeR = RawNode.id rawNode
 
                     case mbValueEditorOp of
-                        Just (editor /\ editorOp) -> do
+                        Just { spawn, move } -> do
                             CC.log "Exact editor was found, call it"
-                            _ <- Blessed.runOnUnit $ _blessedHelper unit editorOp
+                            _ <- Blessed.runOnUnit $ _blessedHelper unit spawn
                             -- _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             --   _ <- ((Blessed.runOver (Repr.unwrap $ Repr.ensureTo vicRepr) $ editorOp) :: BlessedOp' (State tk pstate fs strepr chrepr mi) mo _)
                             -- VEditor.tveKey >~ TextArea.setValue ""
@@ -331,11 +334,12 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                                             Just bounds -> pure bounds
                                             Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
-                            VEditor.tveKey >~ Element.setTop $ Offset.px $ inletPos.y - 1 -- inodeBounds.top - 1
-                            VEditor.tveKey >~ Element.setLeft $ Offset.px $ inletPos.x -- inodeBounds.left
-                            VEditor.tveKey >~ Element.setFront
-                            VEditor.tveKey >~ Element.show
-                            VEditor.tveKey >~ Element.focus
+                            _ <- Blessed.runOnUnit $ _blessedHelper unit $ move { x : inletPos.x, y : inletPos.y - 1 }
+                            -- editorKey >~ Element.setTop  $ Offset.px $ inletPos.y - 1 -- inodeBounds.top - 1
+                            -- editorKey >~ Element.setLeft $ Offset.px $ inletPos.x -- inodeBounds.left
+                            -- editorKey >~ Element.setFront
+                            -- editorKey >~ Element.show
+                            -- editorKey >~ Element.focus
 
                             CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
@@ -385,7 +389,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
 
 
 _blessedHelper :: forall s m a. MonadRec m => MonadEffect m => s -> BlessedOpM s Effect a -> BlessedOpM s m a
-_blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s
+_blessedHelper s = Blessed.lift' <<< liftEffect <<< Blessed.runM s -- Replace with `BlessedOp.runEffect`
 
 
 onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo

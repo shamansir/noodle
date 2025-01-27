@@ -8,7 +8,8 @@ import Data.Maybe (Maybe)
 import Data.Maybe (fromMaybe) as M
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Blessed.Internal.NodeKey as NK
+import Cli.Keys (ValueEditorKey)
+
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
@@ -17,7 +18,16 @@ import Noodle.Repr.HasFallback (class HasFallback, fallback)
 newtype EditorId = EditorId String
 
 
-type ValueEditor v state m = v -> (v -> Effect Unit) -> NK.RawNodeKey /\ BlessedOp state m
+type ValueEditorComp state m =
+    { spawn :: BlessedOp state m
+    , move :: { x :: Int, y :: Int } -> BlessedOp state m
+    }
+
+
+type ValueEditor v state m
+    =  v -- initial value
+    -> (v -> Effect Unit) -- send value
+    -> ValueEditorComp state m
 
 
 imap :: forall a b state m. (a -> b) -> (b -> a) -> ValueEditor a state m -> ValueEditor b state m
