@@ -8,25 +8,27 @@ import Effect.Ref (new, read, write) as Ref
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
-import Data.Map (lookup) as Map
+import Data.Map (lookup, fromFoldable) as Map
 import Data.Map.Extra (mapKeys) as Map
 import Data.UniqueHash (generate) as UH
 import Data.Maybe (fromMaybe)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+import Data.Bifunctor (lmap)
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_, inletRName, outletRName) as Id
+import Noodle.Id (NodeR, FamilyR, InletR, OutletR, family, familyOf, nodeR_, inletRName, outletRName, unsafeInletR, unsafeOutletR) as Id
 import Noodle.Raw.Id (inletR, outletR) as Id
 import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
 import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.Tagged (class Tagged, tag) as CT
+import Noodle.Repr.Tagged (class Tagged, tag, Path(..)) as CT
 import Noodle.Repr.Tagged (inletN, outletN) as Path
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (_reportMissingKey, accept, decline) as ViC
@@ -34,7 +36,7 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape, Tag, failed) as Raw
-import Noodle.Raw.Fn.Shape (inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
+import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
@@ -42,9 +44,10 @@ import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
 import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (reorder) as Fn
+import Noodle.Fn.ToFn (reorder, args, outs) as Fn
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
+import Noodle.Fn.Shape.Temperament as Temp
 
 
 data Node state (chrepr :: Type) (m :: Type -> Type)
@@ -85,7 +88,6 @@ id (Node nodeR _ _ _ _) = nodeR
 make
     :: forall m state chrepr mp
      . MonadEffect m
-    => CT.Tagged chrepr
     => Id.FamilyR
     -> state
     -> Raw.Shape
@@ -100,7 +102,6 @@ make family state rawShape inletsMap outletsMap process = do
 _makeWithFn
     :: forall m state chrepr mp
      . MonadEffect m
-    => CT.Tagged chrepr
     => Id.FamilyR
     -> state
     -> Raw.Shape
@@ -113,6 +114,34 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
     let nodeId = Id.nodeR_ family uniqueHash
     tracker /\ protocol <- RawProtocol.make state inletsMap outletsMap
     pure $ Node nodeId rawShape tracker protocol fn
+
+
+
+_fromSignature
+    :: forall m state chrepr mp
+     . MonadEffect m
+    => CT.Tagged chrepr
+    => Id.FamilyR
+    -> state
+    -> Fn chrepr chrepr
+    -> Raw.Process state chrepr mp
+    -> m (Node state chrepr mp)
+_fromSignature family state sig =
+    make family state
+      (RawShape.make
+        { inlets  : mapWithIndex inletDef  $ Fn.args sig
+        , outlets : mapWithIndex outletDef $ Fn.outs sig
+        }
+      )
+      (Map.fromFoldable $ lmap Id.unsafeInletR  <$> Fn.args sig)
+      (Map.fromFoldable $ lmap Id.unsafeOutletR <$> Fn.outs sig)
+    where
+      inletDef  idx (inletS  /\ repr) =
+        let inletR = Id.unsafeInletR inletS
+        in { name : inletR, order : idx,  tag : CT.tag (CT.Inlet family inletR) repr, temp : Temp.Hot }
+      outletDef idx (outletS /\ repr) =
+        let outletR = Id.unsafeOutletR outletS
+        in { name : outletR, order : idx, tag : CT.tag (CT.Outlet family outletR) repr }
 
 
 {- Running -}
@@ -317,7 +346,6 @@ setState = modifyState <<< const
 connect
     :: forall m stateA stateB chreprA chreprB mp
      . Wiring m
-    => CT.Tagged chreprA => CT.Tagged chreprB
     => Id.OutletR
     -> Id.InletR
     -> (chreprA -> chreprB)
