@@ -7,7 +7,6 @@ import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
@@ -24,7 +23,7 @@ import Blessed.Core.Dimension as Dimension
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (lift', runEffect) as Blessed
+import Blessed.Internal.BlessedOp (lift') as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
@@ -36,7 +35,6 @@ import Cli.Keys as Key
 import Cli.State (State)
 import Cli.State (withCurrentPatch, currentPatchState, currentPatch) as CState
 import Cli.Style (library, libraryBorder) as Style
-import Cli.Panels as Panels
 import Cli.Class.CliFriendly (class CliFriendly)
 
 import Noodle.Fn.Shape.Temperament (Temperament(..))
@@ -44,7 +42,7 @@ import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR, uns
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
-import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
 import Noodle.Toolkit.Family (Family) as Toolkit
@@ -64,7 +62,6 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.Tagged (class Tagged) as CT
 
 import Cli.Components.NodeBox as NodeBox
-import Cli.Components.SidePanel as SP
 import Cli.Components.SidePanel.CommandLog as CL
 
 
@@ -108,8 +105,7 @@ component toolkit =
             \_ _ -> onFamilySelect
         ]
         []
-        \_ -> do
-            spawnCustomNodeDemo
+        \_ -> pure unit
 
 
 
@@ -240,42 +236,3 @@ spawnAndRender toolkit patchR family nextPos  _ = do
     CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
 
     Key.mainScreen >~ Screen.render
-
-
--- FIXME: Temporary, remove
-spawnCustomNodeDemo
-    :: forall tk fs pstate strepr chrepr
-     . HasFallback chrepr
-    => CT.Tagged chrepr
-    => Toolkit.FromPatchState tk pstate strepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => CliFriendly tk fs chrepr Effect
-    => BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
-spawnCustomNodeDemo = do
-    state <- State.get
-    let mbCurrentPatch = CState.currentPatch state
-    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
-    case Patch.id <$> mbCurrentPatch of
-        Just patchR -> do
-            let familyR = Id.unsafeFamilyR "custom"
-            let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
-            case mbNodeState of
-                Just nodeState -> do
-                    let
-                        shape =
-                            RawShape.make
-                                { inlets :
-                                    [ { name : Id.unsafeInletR "foo", order : 0, temp : Hot, tag : RawShape.tagAs "Number" }
-                                    , { name : Id.unsafeInletR "bar", order : 1, temp : Hot, tag : RawShape.tagAs "Number" }
-                                    ]
-                                , outlets : []
-                                }
-                    let inletsMap = Map.empty
-                                        # Map.insert (Id.unsafeInletR "foo") fallback
-                                        # Map.insert (Id.unsafeInletR "bar") fallback
-                    (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState shape inletsMap Map.empty $ pure unit
-                    spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
-                    pure unit
-                Nothing -> pure unit
-        Nothing ->
-            pure unit

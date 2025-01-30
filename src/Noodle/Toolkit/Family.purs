@@ -11,7 +11,7 @@ import Data.Maybe (fromMaybe)
 
 import Type.Proxy (Proxy(..))
 
-import Noodle.Id (Family(..), InletR, OutletR, familyR, inletR, outletR) as Id
+import Noodle.Id (Family(..), FamilyR, InletR, OutletR, familyR, inletR, outletR) as Id
 import Noodle.Fn (Fn)
 import Noodle.Fn (make, toRaw) as Fn
 import Noodle.Fn.Process (Process)
@@ -81,6 +81,13 @@ familyIdOf
 familyIdOf _ = Id.Family :: _ f
 
 
+familyROf :: forall f state is os chrepr m
+     . IsSymbol f
+    => Family f state is os chrepr m
+    -> Id.FamilyR
+familyROf = familyIdOf >>> Id.familyR
+
+
 
 spawn ::
     forall f state is os chrepr mp m
@@ -90,7 +97,7 @@ spawn ::
     -> m (Node f state is os chrepr mp)
 spawn family@(Family rawShape state inletsMap outletsMap fn) =
     Node._makeWithFn
-        (Id.familyR $ familyIdOf family)
+        (familyROf family)
         state
         rawShape
         inletsMap
@@ -104,7 +111,7 @@ toRaw :: forall f state is os chrepr m
     -> Raw.Family state chrepr m
 toRaw family@(Family rawShape state inletsMap outletsMap fn) =
     Raw.Family
-        (Id.familyR $ familyIdOf family)
+        (familyROf family)
         rawShape
         state
         inletsMap

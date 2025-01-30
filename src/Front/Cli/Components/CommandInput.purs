@@ -7,7 +7,11 @@ import Effect.Exception (Error)
 import Effect.Console (log) as Console
 import Effect.Class (liftEffect)
 
+import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
+
+import Data.Maybe (Maybe(..))
+import Data.Map (empty, insert) as Map
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
@@ -17,7 +21,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Blessed as B
 import Blessed ((>~), (~<))
 import Blessed.Internal.NodeKey as NK
-import Blessed.Internal.BlessedOp (lift) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift') as Blessed
 
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
@@ -38,18 +42,43 @@ import Blessed.UI.Forms.TextArea.Option (inputOnFocus, mouse) as TextArea
 import Blessed.UI.Forms.TextArea.Event (TextAreaEvent(..)) as TextArea
 import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 
+
+import Noodle.Id (FamilyR, unsafeFamilyR, unsafeInletR) as Id
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Fn.Shape.Temperament (Temperament(..))
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (make) as RawNode
+import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
+import Noodle.Patch (id, registerNode, registerRawNode) as Patch
+import Noodle.Toolkit (isKnownFamily) as Toolkit
+import Noodle.Network (toolkit) as Network
+import Noodle.Text.NdfFile.Parser as NdfParser
+
+import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
-
+import Cli.State (currentPatchState, currentPatch) as CState
+import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Style as Style
-
-import Cli.Keys (mainScreen, patchBox, commandInput, CommandInputKey) as Key
+import Cli.Components.Library as Library
+import Cli.Components.NodeBox as NodeBox
 
 
 commandInputKey :: Key.CommandInputKey
 commandInputKey = Key.commandInput
 
 
-component :: forall tk ps fs sr cr m. Core.Blessed (State tk ps fs sr cr m)
+component :: forall tk pstate fs strepr chrepr
+    .  HasFallback chrepr
+    => CT.Tagged chrepr
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
+    => Toolkit.FromPatchState tk pstate strepr
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => CliFriendly tk fs chrepr Effect
+    => Core.Blessed (State tk pstate fs strepr chrepr Effect)
 component =
     B.textBoxAnd commandInputKey
         [ Box.top $ Offset.center
@@ -64,9 +93,7 @@ component =
         , Core.on TextArea.Submit
             \_ _ -> do
                 content <- TextArea.value ~< commandInputKey
-                -- liftEffect $ Console.log content
-                -- Blessed.lift $ sendValue content
-                -- commandInputKey >~ Element.setFront
+                tryExecute content
                 hide
         ]
         [  ]
@@ -97,3 +124,63 @@ toggle =
             hide
         else
             show
+
+
+tryExecute
+    :: forall tk fs pstate strepr chrepr
+     . HasFallback chrepr
+    => CT.Tagged chrepr
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
+    => Toolkit.FromPatchState tk pstate strepr
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => CliFriendly tk fs chrepr Effect
+    => String -> BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
+tryExecute command = do
+    state <- State.get
+    let toolkit = Network.toolkit state.network
+    let mbCurrentPatch = CState.currentPatch state
+    case (/\) <$> Toolkit.isKnownFamily command toolkit <*> (Patch.id <$> mbCurrentPatch) of
+        Just (familyR /\ curPatchR) ->
+            case Toolkit.withAnyFamily
+                    (Library.spawnAndRenderRaw
+                        toolkit
+                        curPatchR
+                        familyR
+                        $ NodeBox.nextPos state.lastShift)
+                    familyR
+                    toolkit
+                of
+                Just op -> op
+                Nothing -> pure unit
+        Nothing -> pure unit
+    pure unit
+
+    {-
+    state <- State.get
+    let mbCurrentPatch = CState.currentPatch state
+    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
+    case Patch.id <$> mbCurrentPatch of
+        Just patchR -> do
+            let familyR = Id.unsafeFamilyR "custom"
+            let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+            case mbNodeState of
+                Just nodeState -> do
+                    let
+                        shape =
+                            RawShape.make
+                                { inlets :
+                                    [ { name : Id.unsafeInletR "foo", order : 0, temp : Hot, tag : RawShape.tagAs "Number" }
+                                    , { name : Id.unsafeInletR "bar", order : 1, temp : Hot, tag : RawShape.tagAs "Number" }
+                                    ]
+                                , outlets : []
+                                }
+                    let inletsMap = Map.empty
+                                        # Map.insert (Id.unsafeInletR "foo") fallback
+                                        # Map.insert (Id.unsafeInletR "bar") fallback
+                    (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState shape inletsMap Map.empty $ pure unit
+                    Library.spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
+                    pure unit
+                Nothing -> pure unit
+        Nothing ->
+            pure unit
+    -}
