@@ -97,6 +97,11 @@ class CodegenRepr repr where
   pValueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value (partial, from inner type)
 
 
+class ParseableRepr a where -- FIXME: use `ParseableRepr` + `ValueCodegen` + `TypeCodegen` in `CodegenRepr`
+  toDefault :: EncodedType -> a
+  toRepr :: EncodedType -> EncodedValue -> Maybe a
+
+
 {- data GenMonad
   = MEffect
   | MAff -}

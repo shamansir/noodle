@@ -26,7 +26,7 @@ import Parsing.Combinators ((<?>))
 
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (unsafeFamilyR, unsafeGroupR) as Id
-import Noodle.Fn.ToFn (fn') as Fn
+import Noodle.Fn.ToFn (Fn, fn') as Fn
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..), ProcessAssign(..))
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
@@ -41,20 +41,28 @@ parser = do
   tag <- P.alphaNumToken <?> "tag"
   _ <- sep $ P.char ':'
   family <- P.alphaNumToken <?> "family"
+  state /\ fn <- fnSignature family -- :: [<state>] <inputs> => <outputs>
+  _ <- Array.many P.space
+  maybeImpl <- P.optionMaybe PC.parser
+  pure $ FamilyDef
+    { group : Id.unsafeGroupR tag
+    , state
+    , fn
+    , process : fromMaybe NoneSpecified maybeImpl
+    }
+
+
+fnSignature :: String -> P.Parser String (StateDef /\ Fn.Fn ChannelDef ChannelDef)
+fnSignature family = do
   _ <- sep $ P.string "::"
   mbState <- P.try maybeState
   _ <- Array.many P.space
   inputs <- P.option [] channels <?> "inputs"
   _ <- sep $ P.string "=>"
   outputs <- results
-  _ <- Array.many P.space
-  maybeImpl <- P.optionMaybe PC.parser
-  pure $ FamilyDef
-    { group : Id.unsafeGroupR tag
-    , state : fromMaybe emptyStateDef mbState
-    , fn : Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
-    , process : fromMaybe NoneSpecified maybeImpl
-    }
+  pure $
+    fromMaybe emptyStateDef mbState
+    /\ Fn.fn' family (Array.catMaybes inputs) (Array.catMaybes outputs)
 
 
 maybeState :: P.Parser String (Maybe StateDef)

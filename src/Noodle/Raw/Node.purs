@@ -56,7 +56,6 @@ data Node state (chrepr :: Type) (m :: Type -> Type)
         (Raw.Fn state chrepr m)
 
 
-
 type InitialInletsValues  chrepr = Map Id.InletR  chrepr
 type InitialOutletsValues chrepr = Map Id.OutletR chrepr
 
