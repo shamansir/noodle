@@ -25,12 +25,12 @@ import Data.Foldable (foldl)
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
-import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR) as Id
+import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR, unsafeFamilyR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily)
 import Noodle.Toolkit.HoldsFamily (withFamily) as HF
 import Noodle.Toolkit.Family (Family)
-import Noodle.Toolkit.Family (familyIdOf, spawn, toRaw) as Family
-import Noodle.Raw.Toolkit.Family (familyIdOf, spawn, toReprableState) as RawFamily
+import Noodle.Toolkit.Family (familyROf, familyIdOf, spawn, toRaw) as Family
+import Noodle.Raw.Toolkit.Family (id, familyIdOf, spawn, toReprableState) as RawFamily
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
@@ -245,6 +245,16 @@ withAnyFamily f familyR (Toolkit _ families rawFamilies) =
         Nothing ->
             case Map.lookup familyR families of
                 Just hf -> Just $ HF.withFamily hf (Family.toRaw >>> RawFamily.toReprableState >>> f)
+                Nothing -> Nothing
+
+
+isKnownFamily :: forall tk families strepr chrepr m. String -> Toolkit tk families strepr chrepr m -> Maybe Id.FamilyR
+isKnownFamily familyStr (Toolkit _ families rawFamilies) =
+    case Map.lookup (Id.unsafeFamilyR familyStr) rawFamilies of
+        Just rawFamily -> Just $ RawFamily.id rawFamily
+        Nothing ->
+            case Map.lookup (Id.unsafeFamilyR familyStr) families of
+                Just hf -> Just $ HF.withFamily hf Family.familyROf
                 Nothing -> Nothing
 
 
