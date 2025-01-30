@@ -7,6 +7,7 @@ import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
@@ -23,7 +24,7 @@ import Blessed.Core.Dimension as Dimension
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (lift') as Blessed
+import Blessed.Internal.BlessedOp (lift', runEffect) as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
@@ -56,7 +57,7 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Node (id, setState) as Node
 import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, make, setState) as RawNode
+import Noodle.Raw.Node (id, make, setState, sendIn) as RawNode
 import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
@@ -108,33 +109,7 @@ component toolkit =
         ]
         []
         \_ -> do
-            state <- State.get
-            let mbCurrentPatch = CState.currentPatch state
-            (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
-            case Patch.id <$> mbCurrentPatch of
-                Just patchR -> do
-                    let familyR = Id.unsafeFamilyR "custom"
-                    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
-                    case mbNodeState of
-                        Just nodeState -> do
-                            let
-                                shape =
-                                    RawShape.make
-                                        { inlets :
-                                            [ { name : Id.unsafeInletR "foo", order : 0, temp : Hot, tag : RawShape.tagAs "Number" }
-                                            , { name : Id.unsafeInletR "bar", order : 1, temp : Hot, tag : RawShape.tagAs "Number" }
-                                            ]
-                                        , outlets : []
-                                        }
-                            let inletsMap = Map.empty
-                                                # Map.insert (Id.unsafeInletR "foo") fallback
-                                                # Map.insert (Id.unsafeInletR "bar") fallback
-                            (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState shape inletsMap Map.empty $ pure unit
-                            spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
-                        Nothing -> pure unit
-                Nothing ->
-                    pure unit
-            pure unit
+            spawnCustomNodeDemo
 
 
 
@@ -265,3 +240,42 @@ spawnAndRender toolkit patchR family nextPos  _ = do
     CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
 
     Key.mainScreen >~ Screen.render
+
+
+-- FIXME: Temporary, remove
+spawnCustomNodeDemo
+    :: forall tk fs pstate strepr chrepr
+     . HasFallback chrepr
+    => CT.Tagged chrepr
+    => Toolkit.FromPatchState tk pstate strepr
+    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => CliFriendly tk fs chrepr Effect
+    => BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
+spawnCustomNodeDemo = do
+    state <- State.get
+    let mbCurrentPatch = CState.currentPatch state
+    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
+    case Patch.id <$> mbCurrentPatch of
+        Just patchR -> do
+            let familyR = Id.unsafeFamilyR "custom"
+            let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+            case mbNodeState of
+                Just nodeState -> do
+                    let
+                        shape =
+                            RawShape.make
+                                { inlets :
+                                    [ { name : Id.unsafeInletR "foo", order : 0, temp : Hot, tag : RawShape.tagAs "Number" }
+                                    , { name : Id.unsafeInletR "bar", order : 1, temp : Hot, tag : RawShape.tagAs "Number" }
+                                    ]
+                                , outlets : []
+                                }
+                    let inletsMap = Map.empty
+                                        # Map.insert (Id.unsafeInletR "foo") fallback
+                                        # Map.insert (Id.unsafeInletR "bar") fallback
+                    (rawNode :: Raw.Node strepr chrepr Effect) <- RawNode.make (Id.unsafeFamilyR "custom") nodeState shape inletsMap Map.empty $ pure unit
+                    spawnAndRenderGivenRawNode patchR { top : 20, left : 20 } rawNode
+                    pure unit
+                Nothing -> pure unit
+        Nothing ->
+            pure unit

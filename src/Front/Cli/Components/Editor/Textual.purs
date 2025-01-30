@@ -57,7 +57,7 @@ fromKey editorKey initialValue sendValue =
 create :: forall key state m. IsSymbol key => Key.ValueEditorKey key -> String -> (String -> Effect Unit) -> BlessedOp state m
 create editorKey initialValue sendValue = do
     let
-        innerText =
+        innerTextBox =
             B.textBox editorKey
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
@@ -77,7 +77,7 @@ create editorKey initialValue sendValue = do
                 ]
                 [  ]
     --nodeBoxKey >~ Node.append innerText
-    Key.patchBox >~ Node.append innerText
+    Key.patchBox >~ Node.append innerTextBox
     editorKey >~ Element.setFront
     editorKey >~ Element.hide
 
@@ -89,6 +89,7 @@ transpose editorKey { x, y } = do
     editorKey >~ Element.setFront
     editorKey >~ Element.show
     editorKey >~ Element.focus
+    -- Key.mainScreen >~ Screen.render
 
 
 {-
