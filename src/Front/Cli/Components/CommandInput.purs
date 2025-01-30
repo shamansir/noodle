@@ -11,12 +11,16 @@ import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.Map (empty, insert) as Map
+import Data.String (trim) as String
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
 
 import Data.Tuple.Nested ((/\), type (/\))
+
+import Parsing (Parser, runParser, ParseError, ParseState(..), getParserT, position, Position(..)) as P
 
 import Blessed as B
 import Blessed ((>~), (~<))
@@ -57,6 +61,7 @@ import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Toolkit (isKnownFamily) as Toolkit
 import Noodle.Network (toolkit) as Network
 import Noodle.Text.NdfFile.Parser as NdfParser
+import Noodle.Text.NdfFile.FamilyDef.Parser as NdfFamilyParser
 
 import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
@@ -93,11 +98,12 @@ component =
         , Core.on TextArea.Submit
             \_ _ -> do
                 content <- TextArea.value ~< commandInputKey
-                tryExecute content
+                tryExecute $ String.trim content
                 hide
         ]
         [  ]
     $ const hide
+
 
 hide :: forall tk ps fs sr cr mi mo. BlessedOp (State tk ps fs sr cr mi) mo
 hide = do
@@ -137,9 +143,11 @@ tryExecute
     => String -> BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
 tryExecute command = do
     state <- State.get
-    let toolkit = Network.toolkit state.network
-    let mbCurrentPatch = CState.currentPatch state
-    case (/\) <$> Toolkit.isKnownFamily command toolkit <*> (Patch.id <$> mbCurrentPatch) of
+    let
+        toolkit = Network.toolkit state.network
+        mbCurrentPatch = CState.currentPatch state
+        mbCurrentPatchId = Patch.id <$> mbCurrentPatch
+    case (/\) <$> Toolkit.isKnownFamily command toolkit <*> mbCurrentPatchId of
         Just (familyR /\ curPatchR) ->
             case Toolkit.withAnyFamily
                     (Library.spawnAndRenderRaw
@@ -152,7 +160,11 @@ tryExecute command = do
                 of
                 Just op -> op
                 Nothing -> pure unit
-        Nothing -> pure unit
+        Nothing ->
+            case P.runParser command $ NdfFamilyParser.fnSignature "custom" of
+                -- (StateDef /\ Fn ChannelDef ChannelDef)
+                Right (stateDef /\ fn) -> pure unit
+                Left err -> pure unit
     pure unit
 
     {-

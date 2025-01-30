@@ -9,7 +9,8 @@ import Color (rgba, fromHexString, toRGBA) as NativeColor
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap) as NT
-import Data.String (splitAt, drop) as String
+import Data.String (splitAt, drop, uncons) as String
+import Data.String.CodeUnits as CU
 import Data.Number (fromString) as Number
 import Data.Array (length) as Array
 import Data.Int (fromString, toNumber) as Int
@@ -41,7 +42,7 @@ import Noodle.Repr.ValueInChannel (accept, decline, toMaybe) as ViC
 import Noodle.Repr.Tagged (class Tagged)
 import Noodle.Repr.Tagged (Path) as Tag
 import Noodle.Raw.Fn.Shape (Tag, tagAs)
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
 
@@ -245,6 +246,81 @@ instance At x ValueRepr where
 
 instance Show Time where
     show (Time { seconds }) = show seconds <> "s"
+
+
+toDefaultImpl :: EncodedType -> ValueRepr
+toDefaultImpl = NT.unwrap >>> case _ of
+    "Any"     -> VAny VNone
+    "Bang"    -> VBang
+    "Bool"    -> VBool false
+    "Char"    -> VChar '-'
+    "Number"  -> VNumber 0.0
+    "Time"    -> VTime (HF.fallback :: Time)
+    "Color"   -> VColor (HF.fallback :: Color)
+    "Shape"   -> VShape (HF.fallback :: Shape)
+    "SpreadN" -> VSpreadNum (HF.fallback :: Spread Number)
+    "SpreadV" -> VSpreadVec (HF.fallback :: Spread (Number /\ Number))
+    "SpreadC" -> VSpreadCol (HF.fallback :: Spread Color)
+    "SpreadS" -> VSpreadShp (HF.fallback :: Spread Shape)
+    _ -> VNone
+
+
+toReprImpl :: EncodedType -> EncodedValue -> Maybe ValueRepr
+toReprImpl eType eValue =
+    case NT.unwrap eType of
+        "Any" ->
+            case valuePrefix of
+                "b/" -> VAny <$> toReprImpl (EncodedType "Bool") eValue
+                "x/" -> VAny <$> toReprImpl (EncodedType "Char") eValue
+                "#/" -> VAny <$> toReprImpl (EncodedType "Number") eValue
+                "t/" -> VAny <$> toReprImpl (EncodedType "Time") eValue
+                "c/" -> VAny <$> toReprImpl (EncodedType "Color") eValue
+                "s/" -> VAny <$> toReprImpl (EncodedType "Shape") eValue
+                _ -> Nothing
+        "Bang" -> Just VBang
+        "Bool" ->
+            if valuePrefix == "b/" then
+                case valueStr of
+                    "true" -> Just $ VBool true
+                    _ -> Just $ VBool false
+            else Nothing
+        "Char" ->
+            if valuePrefix == "x/" then
+                VChar <$> _.head <$> CU.uncons valueStr
+            else Nothing
+        "Number" ->
+            if valuePrefix == "#/" then
+                VNumber <$> Number.fromString valueStr
+            else Nothing
+        "Time" ->
+            if valuePrefix == "t/" then
+                VTime <$> timeFromString valueStr
+            else Nothing
+        "Color" ->
+            if valuePrefix == "c/" then
+                -- FIXME: VColor <$> NativeColor.fromHexString valueStr
+                Nothing
+            else Nothing
+        "Shape" ->
+            if valuePrefix == "s/" then
+                VShape <$> shapeFromString valueStr
+            else Nothing
+        "SpreadN" -> Nothing -- TODO
+        "SpreadV" -> Nothing -- TODO
+        "SpreadC" -> Nothing -- TODO
+        "SpreadS" -> Nothing -- TODO
+        _ -> Nothing
+    where
+        valuePrefix /\ valueStr =
+            case String.splitAt 2 $ NT.unwrap eValue of
+                { before, after } -> before /\ after
+
+
+-- TODO: FIXME: Use toDefault & toRepr in the `Codegen` implementations below + `ValueCodegen ValueRepr` + `TypeCodegen ValueRepr`
+
+instance ParseableRepr ValueRepr where
+    toDefault = toDefaultImpl
+    toRepr = toReprImpl
 
 
 instance CodegenRepr ValueRepr where
