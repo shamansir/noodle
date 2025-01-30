@@ -14,7 +14,7 @@ type InletButtonKey  = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
 type RemoveButtonKey = Button <^> "remove-button"
--- type TextBoxKey = TextBox <^> "text-box"
+type CommandInputKey = TextBox <^> "command-input"
 
 
 type ValueEditorKey sym = TextBox <^> sym
@@ -36,6 +36,7 @@ inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 removeButton = nk :: RemoveButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
+commandInput = nk :: TextBox <^> "command-input"
 -- loadFileButton = nk :: Button <^> "load-file"
 commandLogButton = nk :: Button <^> "command-log"
 commandLogBox = nk :: Box <^> "command-log"

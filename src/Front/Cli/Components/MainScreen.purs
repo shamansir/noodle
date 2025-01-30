@@ -3,6 +3,8 @@ module Cli.Components.MainScreen where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Console as Console
 
 import Data.List (toUnfoldable) as List
 import Data.Maybe (Maybe)
@@ -13,7 +15,7 @@ import Blessed as B
 import Blessed (exit) as Blessed
 
 import Blessed.Internal.Core as Core
-import Blessed.Core.Key (alpha, control, escape) as Key
+import Blessed.Core.Key (alpha, control, escape, tab) as Key
 
 import Blessed.UI.Base.Screen.Event (key) as Screen
 import Blessed.UI.Base.Screen.Method (render) as Screen
@@ -51,6 +53,7 @@ import Cli.Components.SidePanel.WsServerStatus (sidePanel) as WS
 -- import Cli.Components.SidePanel.HydraCode (sidePanel) as HC
 -- import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
+import Cli.Components.CommandInput as CommandInput
 
 
 -- import Toolkit.Hydra (toolkit, Toolkit) as Hydra
@@ -81,6 +84,10 @@ component initialState =
             [ Key.escape, Key.alpha 'q', (Key.control $ Key.alpha 'C') ]
             $ \_ kevt -> do
                 Blessed.exit
+        , Screen.key
+            [ Key.tab ]
+            $ \_ kevt -> do
+                CommandInput.toggle
         ]
 
         (
@@ -99,6 +106,7 @@ component initialState =
         , SP.panel (isOnByDefault P.Commands      /\ initialCommands) CL.sidePanel
         , SP.panel (isOnByDefault P.Console       /\ []) Console.sidePanel
         , SP.panel (isOnByDefault P.WsServer      /\ []) WS.sidePanel
+        , CommandInput.component
         -- , SP.panel HC.sidePanel
         ]
         )

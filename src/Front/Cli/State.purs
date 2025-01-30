@@ -72,6 +72,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , panelsOnOff :: SidePanelsOnOff
+    , commandBoxActive :: Boolean
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
@@ -144,6 +145,7 @@ init state toolkit = do
         -- , innerStates : Map.empty
         -- , nodes : Hydra.noInstances
         , panelsOnOff : initPanelsOnOff
+        , commandBoxActive : false
         -- , editors : Map.empty
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
