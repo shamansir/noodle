@@ -15,7 +15,7 @@ import Type.Proxy (Proxy(..))
 import Noodle.Text.Code.Target (Target)
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError)
-import Noodle.Fn.Signature (Signature, SigS, class ToSignature, sigs, toSignature, class PossiblyToSignature, possiblyToSignature, i, o)
+import Noodle.Fn.Signature (Signature, SignatureS, class ToSignature, sigs, toSignature, class PossiblyToSignature, possiblyToSignature, i, o)
 import Noodle.Fn.Signature (Argument, Output, argName, argValue, empty) as Sig
 
 import Hydra.Types as HT
@@ -286,7 +286,7 @@ instance ToCode HYDRA_V opts HT.DepFn where
 
 _encodeUsingFn :: forall a. ToSignature HYDRA_V HT.Value Unit a => a -> String
 _encodeUsingFn a =
-    case unwrap $ toSignature hydraV a :: SigS HT.Value Unit of
+    case unwrap $ toSignature hydraV a :: SignatureS HT.Value Unit of
         name /\ args /\ _ ->
             if Array.length args > 0 then
                 String.toUpper name <> " " <> String.joinWith PM._argSep (_encode <$> Sig.argValue <$> args) <> PM._argsEnd
@@ -296,7 +296,7 @@ _encodeUsingFn a =
 
 _encodeFnWithArgNames :: forall arg out. ToCode HYDRA_V Unit arg => Signature arg out -> String
 _encodeFnWithArgNames fn =
-    case unwrap $ toSignature (Proxy :: _ Void) fn :: SigS arg out of
+    case unwrap $ toSignature (Proxy :: _ Void) fn :: SignatureS arg out of
         name /\ args /\ _ ->
             if Array.length args > 0 then
                 name <> " " <> show (Array.length args) <> " " <> String.joinWith PM._argSep (_encodeArg <$> args) <> PM._argsEnd
@@ -485,23 +485,23 @@ instance PossiblyToSignature HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
     possiblyToSignature ph = case _ of
         HT.Empty -> Nothing
         HT.Start src ->
-            case (unwrap <$> possiblyToSignature ph src :: Maybe (SigS HT.Value Unit)) of
+            case (unwrap <$> possiblyToSignature ph src :: Maybe (SignatureS HT.Value Unit)) of
                 Just (name /\ args /\ outs) -> Just $ sigs $ name /\ (map HT.V <$> args) /\ (map (const HT.OT) <$> outs)
                 Nothing -> Nothing
         HT.BlendOf { what, with } blend ->
-            case unwrap $ toSignature ph blend :: SigS HT.Value Unit of
+            case unwrap $ toSignature ph blend :: SignatureS HT.Value Unit of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Filter texture cop ->
-            case unwrap $ toSignature ph cop :: SigS HT.Value Unit of
+            case unwrap $ toSignature ph cop :: SignatureS HT.Value Unit of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.ModulateWith { what, with } mod ->
-            case unwrap $ toSignature ph mod :: SigS HT.Value Unit of
+            case unwrap $ toSignature ph mod :: SignatureS HT.Value Unit of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Geometry texture gmt ->
-            case unwrap $ toSignature ph gmt :: SigS HT.Value Unit of
+            case unwrap $ toSignature ph gmt :: SignatureS HT.Value Unit of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.CallGlslFn { over, mbWith } fnRef ->
-            case unwrap $ toSignature ph fnRef :: SigS HT.TOrV HT.GlslFnOut of
+            case unwrap $ toSignature ph fnRef :: SignatureS HT.TOrV HT.GlslFnOut of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((i "over" $ HT.T over) : args <>
                     case mbWith of
                         Just with -> [ i "with" $ HT.T with ]

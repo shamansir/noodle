@@ -24,7 +24,7 @@ import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Fn.Signature (Argument, Output, extract, argName, argValue, outName, outValue) as Sig
-import Noodle.Fn.Signature (Sig, SigS, SigX, toSignature)
+import Noodle.Fn.Signature (Signature, SignatureS, SignatureX, toSignature)
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (toolkit, group, family) as Id
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
@@ -231,7 +231,7 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         fnDefBranch :: Partial => FamilyDef -> _
         fnDefBranch fdef =
-            case (unwrap $ toSignature (Proxy :: _ Void) fdef :: SigS ChannelDef ChannelDef) of
+            case (unwrap $ toSignature (Proxy :: _ Void) fdef :: SignatureS ChannelDef ChannelDef) of
                 name /\ inlets /\ outlets ->
                     caseBranch
                         [ binderString name ]

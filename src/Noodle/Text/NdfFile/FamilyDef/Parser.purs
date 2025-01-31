@@ -26,7 +26,8 @@ import Parsing.Combinators ((<?>))
 
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (unsafeFamilyR, unsafeGroupR) as Id
-import Noodle.Fn.Signature (Sig, sig') as Sig
+import Noodle.Fn.Signature (Signature)
+import Noodle.Fn.Signature (sig') as Sig
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..), ProcessAssign(..))
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
@@ -52,7 +53,7 @@ parser = do
     }
 
 
-fnSignature :: String -> P.Parser String (StateDef /\ Sig.Sig ChannelDef ChannelDef)
+fnSignature :: String -> P.Parser String (StateDef /\ Signature ChannelDef ChannelDef)
 fnSignature family = do
   _ <- sep $ P.string "::"
   mbState <- P.try maybeState

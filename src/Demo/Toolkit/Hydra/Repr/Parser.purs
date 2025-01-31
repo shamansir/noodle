@@ -33,7 +33,7 @@ import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 -- import Hydra.Lang.SketchParser.Utils as U
 -- import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
-import Noodle.Fn.Signature (Sig, sigOf) as Lang
+import Noodle.Fn.Signature (Signature, sigOf) as Lang
 import Noodle.Fn.Signature (empty, argsCount, out1) as Sig
 
 
@@ -306,7 +306,7 @@ glsl = do
     pure $ HT.GlslFn  { kind, code, fn : gfn }
 
 
-langFn ::forall x. Parser String x -> Parser String (Lang.Sig x Unit)
+langFn ::forall x. Parser String x -> Parser String (Lang.Signature x Unit)
 langFn argParser = do
     name <- many1 alphaNum
     _ <- space

@@ -15,7 +15,7 @@ import Noodle.Id (group, family) as Id
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Fn.Signature (Signature, class ToSignature, Sig, SigS, toSignature, Argument, Output, argName, argValue, outName, outValue, arg, out)
+import Noodle.Fn.Signature (Signature, class ToSignature, Signature, SignatureS, toSignature, Argument, Output, argName, argValue, outName, outValue, arg, out)
 import Noodle.Fn.Signature (name) as Sig
 import Noodle.Fn.Signature (sig) as Make
 import Noodle.Text.NdfFile.Types (FamilyDefRec, EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
@@ -57,7 +57,7 @@ instance ToCode NDF opts NodeSigDef where
     toCode _ _ =
         case _ of
             NodeSigDef fn ->
-                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SigS ChannelDef ChannelDef) of
+                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SignatureS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         " => " <>
@@ -80,7 +80,7 @@ instance ToTaggedCode NDF opts NodeSigDef where
     toTaggedCode _ _ =
         case _ of
             NodeSigDef fn ->
-                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SigS ChannelDef ChannelDef) of
+                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SignatureS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         T.space <> F.operator "=>" <> T.space <>

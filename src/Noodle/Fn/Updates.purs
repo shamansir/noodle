@@ -6,7 +6,7 @@ module Noodle.Fn.Updates
     where
 
 import Noodle.Id as Id
-import Noodle.Fn.Signature (Sig)
+import Noodle.Fn.Signature (Signature)
 
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..), UpdateFocus(..), toRecord, fromRecord) as GenericUpdates
 
@@ -19,5 +19,5 @@ type Update state (is :: Row Type) (os :: Row Type) repr = Raw.Update state repr
 type MergedUpdate state (is :: Row Type) (os :: Row Type) repr = Raw.MergedUpdate state repr
 
 
-toSignature :: forall state is os repr. Id.NodeR -> MergedUpdate state is os repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+toSignature :: forall state is os repr. Id.NodeR -> MergedUpdate state is os repr -> Signature (ValueInChannel repr) (ValueInChannel repr)
 toSignature = Raw.toSignature
