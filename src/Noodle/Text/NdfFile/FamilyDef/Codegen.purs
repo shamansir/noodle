@@ -23,7 +23,7 @@ import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, im
 import Noodle.Id as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..)) as T
 import Noodle.Fn.Shape.Temperament (Algorithm, byIndex) as Temperament
-import Noodle.Fn.Signature (Signature, Sig(..))
+import Noodle.Fn.Signature (Signature(..))
 import Noodle.Fn.Signature (Argument, Output, args, name, outs, argName, argValue, outName, outValue) as Sig
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.Types (Source, FamilyDefRec, ChannelDef(..), EncodedType, EncodedValue, StateDef(..), familyOf)

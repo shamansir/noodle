@@ -24,7 +24,7 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Fn.Signature (Sig)
+import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (Argument, Output, empty) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
@@ -280,11 +280,11 @@ newtype GlslFnCode = GlslFnCode String
 newtype GlslFn = GlslFn
     { kind :: GlslFnKind
     , code :: GlslFnCode
-    , fn :: Sig GlslFnArg GlslFnOut  -- holds default value in every argument
+    , fn :: Signature GlslFnArg GlslFnOut  -- holds default value in every argument
     }
 
 
-newtype GlslFnRef = GlslFnRef (Sig GlslFnArg GlslFnOut) -- should be the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Signature GlslFnArg GlslFnOut) -- should be the name of the function from the registry
 
 
 data Canvas = Canvas

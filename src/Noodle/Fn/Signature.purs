@@ -49,42 +49,39 @@ type ArgumentName = String
 type OutputName = String
 
 
-type SigS arg out = String /\ Array (Argument arg) /\ Array (Output out)
+type SignatureS arg out = String /\ Array (Argument arg) /\ Array (Output out)
 
 
-type SigX arg out = String /\ Array arg /\ Array out
+type SignatureX arg out = String /\ Array arg /\ Array out
 
 
-newtype Sig arg out = Sig (SigS arg out)
+newtype Signature arg out = Sig (SignatureS arg out)
 
 
-type Signature arg out = Sig arg out
-
-
-instance Bifunctor Sig where
+instance Bifunctor Signature where
     bimap f g (Sig fnS) = Sig $ bimap (map $ map f) (map $ map g) <$> fnS
 
 
-derive instance Newtype (Sig arg out) _
+derive instance Newtype (Signature arg out) _
 
 
-type SigU arg = Sig arg Unit
+type SignatureU arg = Signature arg Unit
 
 
 
 derive instance (Eq arg) => Eq (Argument arg)
 derive instance (Eq out) => Eq (Output out)
-derive newtype instance (Eq arg, Eq out) => Eq (Sig arg out)
+derive newtype instance (Eq arg, Eq out) => Eq (Signature arg out)
 
 
 class ToSignature :: forall k. k -> Type -> Type -> Type -> Constraint -- TODO: Leave only `PossiblyToSignature` and rename it to `ToSignature` with always returning `Maybe`
 class ToSignature x arg out a where
-    toSignature :: Proxy x -> a -> Sig arg out
+    toSignature :: Proxy x -> a -> Signature arg out
 
 
 class PossiblyToSignature :: forall k. k -> Type -> Type -> Type -> Constraint
 class PossiblyToSignature x arg out a where
-    possiblyToSignature :: Proxy x -> a -> Maybe (Sig arg out)
+    possiblyToSignature :: Proxy x -> a -> Maybe (Signature arg out)
 
 
 {-
@@ -103,89 +100,89 @@ instance Functor Output where
     map f (Output name v) = Output name $ f v
 
 
-empty :: forall arg out. String -> Sig arg out
+empty :: forall arg out. String -> Signature arg out
 empty n = Sig $ n /\ [] /\ []
 
 
-sigs :: forall arg out. SigS arg out -> Sig arg out
+sigs :: forall arg out. SignatureS arg out -> Signature arg out
 sigs = wrap
 
 
-sig :: forall arg out. String -> Array (Argument arg) -> Array (Output out) -> Sig arg out
+sig :: forall arg out. String -> Array (Argument arg) -> Array (Output out) -> Signature arg out
 sig n args outs =
     Sig $ n /\ args /\ outs
 
 
-sig' :: forall arg out. String -> Array (String /\ arg) -> Array (String /\ out) -> Sig arg out
+sig' :: forall arg out. String -> Array (String /\ arg) -> Array (String /\ out) -> Signature arg out
 sig' n args outs =
     sig n (Tuple.uncurry Argument <$> args) (Tuple.uncurry Output <$> outs)
 
 
-sigOf :: forall arg out. String -> Array (String /\ arg) -> Sig arg out
+sigOf :: forall arg out. String -> Array (String /\ arg) -> Signature arg out
 sigOf n args =
     Sig $ n /\ (Tuple.uncurry Argument <$> args) /\ []
 
 
-singleton :: forall arg out. String -> (String /\ arg) -> Sig arg out
+singleton :: forall arg out. String -> (String /\ arg) -> Signature arg out
 singleton = sig1
 
 
-sig1 :: forall arg out. String -> (String /\ arg) -> Sig arg out
+sig1 :: forall arg out. String -> (String /\ arg) -> Signature arg out
 sig1 n a1 =
     sigOf n [ a1 ]
 
 
-sig2 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig2 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig2 n a1 a2 =
     sigOf n [ a1, a2 ]
 
 
-sig3 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig3 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig3 n a1 a2 a3 =
     sigOf n [ a1, a2, a3 ]
 
 
-sig4 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig4 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig4 n a1 a2 a3 a4 =
     sigOf n [ a1, a2, a3, a4 ]
 
 
-sig5 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig5 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig5 n a1 a2 a3 a4 a5 =
     sigOf n [ a1, a2, a3, a4, a5 ]
 
 
-sig6 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig6 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig6 n a1 a2 a3 a4 a5 a6 =
     sigOf n [ a1, a2, a3, a4, a5, a6 ]
 
 
-sig7 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig7 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig7 n a1 a2 a3 a4 a5 a6 a7 =
     sigOf n [ a1, a2, a3, a4, a5, a6, a7 ]
 
 
-sig8 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Sig arg out
+sig8 :: forall arg out. String -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> (String /\ arg) -> Signature arg out
 sig8 n a1 a2 a3 a4 a5 a6 a7 a8 =
     sigOf n [ a1, a2, a3, a4, a5, a6, a7, a8 ]
 
 
-addOuts :: forall arg out. Array (String /\ out) -> Sig arg out -> Sig arg out
+addOuts :: forall arg out. Array (String /\ out) -> Signature arg out -> Signature arg out
 addOuts next_outs (Sig (name /\ args /\ cur_outs)) =
     Sig $ name /\ args /\ (cur_outs <> (Tuple.uncurry Output <$> next_outs))
 
 
-out1 :: forall arg out. (String /\ out) -> Sig arg out -> Sig arg out
+out1 :: forall arg out. (String /\ out) -> Signature arg out -> Signature arg out
 out1 o1 =
     addOuts [ o1 ]
 
 
-out2 :: forall arg out. (String /\ out) -> (String /\ out) -> Sig arg out -> Sig arg out
+out2 :: forall arg out. (String /\ out) -> (String /\ out) -> Signature arg out -> Signature arg out
 out2 o1 o2 =
     addOuts [ o1, o2 ]
 
 
-out3 :: forall arg out. (String /\ out) -> (String /\ out) -> (String /\ out) -> Sig arg out -> Sig arg out
+out3 :: forall arg out. (String /\ out) -> (String /\ out) -> (String /\ out) -> Signature arg out -> Signature arg out
 out3 o1 o2 o3 =
     addOuts [ o1, o2, o3 ]
 
@@ -198,11 +195,11 @@ out :: forall x. OutputName -> x -> Output x
 out = o
 
 
-args :: forall arg out. Sig arg out -> Array (String /\ arg)
+args :: forall arg out. Signature arg out -> Array (String /\ arg)
 args (Sig (_ /\ as /\ _)) = dearg <$> as
 
 
-outs :: forall arg out. Sig arg out -> Array (String /\ out)
+outs :: forall arg out. Signature arg out -> Array (String /\ out)
 outs (Sig (_ /\ _ /\ os)) = deout <$> os
 
 
@@ -246,11 +243,11 @@ outName :: forall x. Output x -> OutputName
 outName (Output name _) = name
 
 
-argsCount :: forall i o. Sig i o -> Int
+argsCount :: forall i o. Signature i o -> Int
 argsCount (Sig (_ /\ args /\ _)) = Array.length args
 
 
-outsCount :: forall i o. Sig i o -> Int
+outsCount :: forall i o. Signature i o -> Int
 outsCount (Sig (_ /\ _ /\ outs)) = Array.length outs
 
 
@@ -262,40 +259,40 @@ deout :: forall x. Output x -> OutputName /\ x
 deout (Output name x) = name /\ x
 
 
-name :: forall i o. Sig i o -> String
+name :: forall i o. Signature i o -> String
 name (Sig (name /\ _)) = name
 
 
-extract :: forall x a arg out. ToSignature x arg out a => Proxy x -> a -> SigX arg out
-extract px a = bimap (map argValue) (map outValue) <$> unwrap (toSignature px a :: Sig arg out)
+extract :: forall x a arg out. ToSignature x arg out a => Proxy x -> a -> SignatureX arg out
+extract px a = bimap (map argValue) (map outValue) <$> unwrap (toSignature px a :: Signature arg out)
 
 
-toReprable :: forall x arg out a repr. FromValueInChannel arg repr => FromValueInChannel out repr => ToSignature x arg out a => Proxy x -> a -> Sig repr repr
-toReprable px a = bimap ViC.fromValueInChannel ViC.fromValueInChannel (toSignature px a :: Sig arg out)
+toReprable :: forall x arg out a repr. FromValueInChannel arg repr => FromValueInChannel out repr => ToSignature x arg out a => Proxy x -> a -> Signature repr repr
+toReprable px a = bimap ViC.fromValueInChannel ViC.fromValueInChannel (toSignature px a :: Signature arg out)
 
 
-toChanneled :: forall arg out. Sig (Maybe arg) (Maybe out) -> Sig (ValueInChannel arg) (ValueInChannel out)
+toChanneled :: forall arg out. Signature (Maybe arg) (Maybe out) -> Signature (ValueInChannel arg) (ValueInChannel out)
 toChanneled = bimap (maybe ViC.empty ViC.accept) (maybe ViC.empty ViC.accept)
 
 
-reorder :: forall a b arg out. Ord a => Ord b => (ArgumentName -> a) -> (OutputName -> b) -> Sig arg out -> Sig arg out
+reorder :: forall a b arg out. Ord a => Ord b => (ArgumentName -> a) -> (OutputName -> b) -> Signature arg out -> Signature arg out
 reorder farg fout = _reorder (argName >>> farg) (outName >>> fout)
 
 
-_reorder :: forall a b arg out. Ord a => Ord b => (Argument arg -> a) -> (Output out -> b) -> Sig arg out -> Sig arg out
+_reorder :: forall a b arg out. Ord a => Ord b => (Argument arg -> a) -> (Output out -> b) -> Signature arg out -> Signature arg out
 _reorder farg fout (Sig (name /\ args /\ outs)) = Sig (name /\ Array.sortWith farg args /\ Array.sortWith fout outs)
 
 
-instance ToSignature Void arg out (Sig arg out) where
-    toSignature :: Proxy Void -> Sig arg out -> Sig arg out
+instance ToSignature Void arg out (Signature arg out) where
+    toSignature :: Proxy Void -> Signature arg out -> Signature arg out
     toSignature = const identity
 
 
-instance (Show arg, Show out) => Show (Sig arg out) where
+instance (Show arg, Show out) => Show (Signature arg out) where
     show = defaultShow
 
 
-_showManually :: forall arg out. (arg -> String) -> (out -> String) -> Sig arg out -> String
+_showManually :: forall arg out. (arg -> String) -> (out -> String) -> Signature arg out -> String
 _showManually showArg showOut = unwrap >>> case _ of
         name /\ args /\ outs ->
             if Array.length args > 0 && Array.length outs > 0 then
@@ -308,9 +305,9 @@ _showManually showArg showOut = unwrap >>> case _ of
                  "<" <> String.pascalCase name <> ">"
 
 
-defaultShow :: forall arg out. Show arg => Show out => Sig arg out -> String
+defaultShow :: forall arg out. Show arg => Show out => Signature arg out -> String
 defaultShow = _showManually show show
 
 
 showUsingSignature :: forall x arg out a. Show arg => Show out => ToSignature x arg out a => Proxy x -> a -> String
-showUsingSignature px a = defaultShow (toSignature px a :: Sig arg out)
+showUsingSignature px a = defaultShow (toSignature px a :: Signature arg out)

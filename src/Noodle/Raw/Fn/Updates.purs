@@ -13,7 +13,7 @@ import Noodle.Id (InletR, OutletR, NodeR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.Generic.Updates as Generic
 
-import Noodle.Fn.Signature (Sig)
+import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (Argument, Output, arg, out) as Sig
 
 import Noodle.Repr.ValueInChannel (ValueInChannel)
@@ -24,7 +24,7 @@ type MergedUpdate state repr        = Generic.MergedUpdate state (Map InletR (Va
 type OrderedMergedUpdate state repr = Generic.MergedUpdate state (Map (Int /\ InletR) (ValueInChannel repr)) (Map (Int /\ OutletR) (ValueInChannel repr))
 
 
-toSignature :: forall state repr. NodeR -> MergedUpdate state repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+toSignature :: forall state repr. NodeR -> MergedUpdate state repr -> Signature (ValueInChannel repr) (ValueInChannel repr)
 toSignature nodeR = Generic.toSignature nodeR inletsToArgs outletsToArgs
   where
     inletsToArgs  :: Map InletR (ValueInChannel repr) -> Array (Sig.Argument (ValueInChannel repr))
@@ -34,7 +34,7 @@ toSignature nodeR = Generic.toSignature nodeR inletsToArgs outletsToArgs
 
 
 
-orderedToSignature :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+orderedToSignature :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Signature (ValueInChannel repr) (ValueInChannel repr)
 orderedToSignature nodeR = Generic.toSignature nodeR inletsToArgs outletsToArgs
   where
     inletsToArgs  :: Map (Int /\ InletR) (ValueInChannel repr) -> Array (Sig.Argument (ValueInChannel repr))

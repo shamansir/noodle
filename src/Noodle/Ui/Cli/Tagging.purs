@@ -18,7 +18,7 @@ import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
 import Noodle.Id as Id
-import Noodle.Fn.Signature (Signature, class PossiblyToSignature, Sig, SigS, possiblyToSignature)
+import Noodle.Fn.Signature (Signature, class PossiblyToSignature, SignatureS, possiblyToSignature)
 import Noodle.Fn.Signature (Argument, Output, argValue, argName, outName, outValue) as Sig
 import Noodle.Raw.Node (NodeChanges) as Raw
 import Noodle.Raw.Fn.Updates as Updates

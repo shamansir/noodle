@@ -43,7 +43,7 @@ import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
 import Noodle.Raw.Fn.Updates (toSignature) as RawUpdates
-import Noodle.Fn.Signature (Sig, Signature)
+import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (reorder, args, outs) as Sig
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
@@ -123,7 +123,7 @@ _fromSignature
     => CT.Tagged chrepr
     => Id.FamilyR
     -> state
-    -> Sig chrepr chrepr
+    -> Signature chrepr chrepr
     -> Raw.Process state chrepr mp
     -> m (Node state chrepr mp)
 _fromSignature family state sig =
