@@ -31,7 +31,8 @@ import Noodle.Fn (Fn)
 import Noodle.Fn (make, run', toRaw) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (_reflect) as Shape
-import Noodle.Fn.ToFn (Fn, Argument, Output, arg, out) as ToFn
+import Noodle.Fn.Signature (Signature)
+import Noodle.Fn.Signature (Argument, Output, arg, out) as Sig
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
@@ -41,7 +42,7 @@ import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
 import Noodle.Raw.Fn.Shape (Shape, Tag, tagAs, failed) as Raw
 import Noodle.Raw.Fn.Shape (inletRName, outletRName, hasHotInlets, isHotInlet) as RawShape
-import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
+import Noodle.Raw.Fn.Updates (toSignature) as RawUpdates
 import Noodle.Raw.FromToRec as ChReprCnv
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
@@ -258,8 +259,8 @@ subscribeChanges (Node _ shape tracker _ _) =
         }
 
 
-subscribeChangesAsFn :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (ToFn.Fn (ValueInChannel chrepr) (ValueInChannel chrepr))
-subscribeChangesAsFn (Node nodeR _ tracker _ _) = tracker.all <#> RawUpdates.toFn nodeR
+subscribeChangesAsSignature :: forall f state is os chrepr m. Node f state is os chrepr m -> Signal (Signature (ValueInChannel chrepr) (ValueInChannel chrepr))
+subscribeChangesAsSignature (Node nodeR _ tracker _ _) = tracker.all <#> RawUpdates.toSignature nodeR
 
 
 {- Get Data -}

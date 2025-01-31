@@ -25,7 +25,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 
 -- import Cli.Components.InputIndicator as InputIndicator
 -- import Cli.Components.OutputIndicator as OutputIndicator
@@ -35,7 +35,7 @@ component
     :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
     => CT.Tagged chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk ps strepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => CliFriendly tk fs chrepr Effect

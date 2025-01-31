@@ -10,14 +10,14 @@ import Data.Newtype (unwrap, wrap) as NT
 
 import Noodle.Id (GroupR, FamilyR, unsafeFamilyR, InletR, inletRName, OutletR, outletRName) as Id
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (name) as Fn
+import Noodle.Fn.Signature (Signature)
+import Noodle.Fn.Signature (name) as Sig
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
 
 
 type FamilyDefRec =
     { group :: Id.GroupR
-    , fn :: Fn ChannelDef ChannelDef
+    , fnsig :: Signature ChannelDef ChannelDef
     , state :: StateDef
     , process :: ProcessCode
     }
@@ -109,7 +109,7 @@ emptyChannelDef = ChannelDef emptyDefAndType
 
 
 familyOf :: FamilyDefRec -> Id.FamilyR
-familyOf = _.fn >>> Fn.name >>> Id.unsafeFamilyR
+familyOf = _.fnsig >>> Sig.name >>> Id.unsafeFamilyR
 
 
 encodedTypeOf :: ChannelDef -> Maybe EncodedType

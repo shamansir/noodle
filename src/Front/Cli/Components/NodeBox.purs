@@ -68,7 +68,7 @@ import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Wiring (class Wiring)
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.Tagged (class Tagged) as CT
 
@@ -128,7 +128,7 @@ _component
     .  Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -288,7 +288,7 @@ componentRaw
      . Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -314,7 +314,7 @@ component
     => CT.Tagged chrepr
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
     -> Id.PatchR
@@ -439,7 +439,7 @@ onMouseOver
      . MarkToolkit tk
     => Toolkit.HasChRepr tk chrepr
     => T.At At.StatusLine chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Id.NodeR

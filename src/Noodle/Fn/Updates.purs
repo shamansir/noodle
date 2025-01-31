@@ -1,12 +1,12 @@
 module Noodle.Fn.Updates
     ( module GenericUpdates
     , Update, MergedUpdate
-    , toFn
+    , toSignature
     )
     where
 
 import Noodle.Id as Id
-import Noodle.Fn.ToFn (Fn)
+import Noodle.Fn.Signature (Sig)
 
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..), UpdateFocus(..), toRecord, fromRecord) as GenericUpdates
 
@@ -19,5 +19,5 @@ type Update state (is :: Row Type) (os :: Row Type) repr = Raw.Update state repr
 type MergedUpdate state (is :: Row Type) (os :: Row Type) repr = Raw.MergedUpdate state repr
 
 
-toFn :: forall state is os repr. Id.NodeR -> MergedUpdate state is os repr -> Fn (ValueInChannel repr) (ValueInChannel repr)
-toFn = Raw.toFn
+toSignature :: forall state is os repr. Id.NodeR -> MergedUpdate state is os repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+toSignature = Raw.toSignature

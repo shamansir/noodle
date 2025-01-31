@@ -18,8 +18,8 @@ import Data.Text.Format (Tag)
 import Data.Text.Format as T
 
 import Noodle.Id as Id
-import Noodle.Fn.ToFn (class PossiblyToFn, Fn, FnS, possiblyToFn)
-import Noodle.Fn.ToFn (Argument, Output, argValue, argName, outName, outValue) as Fn
+import Noodle.Fn.Signature (Signature, class PossiblyToSignature, Sig, SigS, possiblyToSignature)
+import Noodle.Fn.Signature (Argument, Output, argValue, argName, outName, outValue) as Sig
 import Noodle.Raw.Node (NodeChanges) as Raw
 import Noodle.Raw.Fn.Updates as Updates
 import Noodle.Fn.Generic.Updates (fromRecord) as Updates
@@ -119,7 +119,7 @@ nodeLabel ptk familyR =
 
 
 nodeStatusLine :: forall tk strepr chrepr. MarkToolkit tk => Tagged.At At.StatusLine chrepr => HasChRepr tk chrepr => Proxy tk -> Id.NodeR -> Raw.NodeChanges strepr chrepr -> Tag
-nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< Updates.orderedToFn nodeR <<< Updates.fromRecord
+nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< Updates.orderedToSignature nodeR <<< Updates.fromRecord
 
 
 {- T.fgcs (C.colorOf Palette.familyName) (reflect family)
@@ -296,7 +296,7 @@ familyDocs
      . MarkToolkit tk
     => HasChRepr tk chrepr
     => Tagged.At At.Documentation chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -311,7 +311,7 @@ familyStatusLine
      . MarkToolkit tk
     => HasChRepr tk chrepr
     => Tagged.At At.StatusLine chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> Tag
@@ -328,7 +328,7 @@ _fnOnelineSignature
     => Tagged.At at chrepr
     => Proxy at -> Proxy tk
     -> Either Id.FamilyR Id.NodeR
-    -> Fn (ValueInChannel chrepr) (ValueInChannel chrepr)
+    -> Signature (ValueInChannel chrepr) (ValueInChannel chrepr)
     -> Tag
 _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
     (name /\ args /\ outs) ->
@@ -351,10 +351,10 @@ _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
             <> foldl (<>) (T.s "") (tagOut <$> outs)
             <> postfix
     where
-        tagArgument :: Fn.Argument (ValueInChannel chrepr) -> Tag
+        tagArgument :: Sig.Argument (ValueInChannel chrepr) -> Tag
         tagArgument arg = markerSymbol "<"
-            <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.argName arg)
-            <>  (Fn.argValue arg # ViC.resolve
+            <> T.fgcs (C.colorOf Pico.darkGreen) (Sig.argName arg)
+            <>  (Sig.argValue arg # ViC.resolve
                     { accept : \inVal ->
                         operator "::" <> (Tagged.at pat) inVal
                      -- FIXME: show other values in ViC
@@ -364,9 +364,9 @@ _fnOnelineSignature pat ptk eNodeR = unwrap >>> case _ of
                     }
                 )
             <> markerSymbol ">" <> T.s " "
-        tagOut :: Fn.Output (ValueInChannel chrepr) -> Tag
-        tagOut out = markerSymbol "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Fn.outName out) <>
-            (Fn.outValue out # ViC.resolve
+        tagOut :: Sig.Output (ValueInChannel chrepr) -> Tag
+        tagOut out = markerSymbol "(" <> T.fgcs (C.colorOf Pico.darkGreen) (Sig.outName out) <>
+            (Sig.outValue out # ViC.resolve
                 { accept : \outVal ->
                     operator "::" <> (Tagged.at pat) outVal
                     -- FIXME: show other values in ViC
@@ -383,11 +383,11 @@ familyOnelineSignature
      . MarkToolkit tk
     => HasChRepr tk chrepr
     => Tagged.At at chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy at -> Proxy tk
     -> Id.FamilyR
     -> Tag
 familyOnelineSignature pat ptk familyR =
-    case (possiblyToFn ptk familyR :: Maybe (Fn (ValueInChannel chrepr) (ValueInChannel chrepr))) of
+    case (possiblyToSignature ptk familyR :: Maybe (Signature (ValueInChannel chrepr) (ValueInChannel chrepr))) of
         Just fn -> _fnOnelineSignature pat ptk (Left familyR) fn
         Nothing -> T.fgcs (C.colorOf X11.lightyellow) "?"

@@ -29,7 +29,7 @@ import Cli.State (State)
 import Noodle.Id as Id
 -- import Noodle.Family.Def as Family
 import Noodle.Toolkit (class IsToolkit, class MarkToolkit, class HasChRepr)
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Raw.Node as Raw
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Ui.Cli.Tagging (familyStatusLine, inletStatusLine, outletStatusLine, removeStatusLine, nodeStatusLine)  as T
@@ -82,7 +82,7 @@ familyStatus
      . MarkToolkit tk
     => HasChRepr tk chrepr
     => Tagged.At At.StatusLine chrepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
     -> Id.FamilyR
     -> C.BlessedOp state m

@@ -23,8 +23,8 @@ import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, im
 import Noodle.Id as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..)) as T
 import Noodle.Fn.Shape.Temperament (Algorithm, byIndex) as Temperament
-import Noodle.Fn.ToFn (Fn(..))
-import Noodle.Fn.ToFn (Argument, Output, args, name, outs, argName, argValue, outName, outValue) as Fn
+import Noodle.Fn.Signature (Signature, Sig(..))
+import Noodle.Fn.Signature (Argument, Output, args, name, outs, argName, argValue, outName, outValue) as Sig
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.Types (Source, FamilyDefRec, ChannelDef(..), EncodedType, EncodedValue, StateDef(..), familyOf)
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
@@ -63,19 +63,19 @@ instance (Partial, ValueCodegen a) => ValueCodegen (Maybe a) where
     Nothing -> exprCtor "Nothing"
 
 
-instance (Partial, ValueCodegen val) => ValueCodegen (Fn.Argument val) where
+instance (Partial, ValueCodegen val) => ValueCodegen (Sig.Argument val) where
   mkExpression arg =
-    exprApp (exprIdent "Fn.arg") [ exprString $ Fn.argName arg, mkExpression $ Fn.argValue arg ]
+    exprApp (exprIdent "Fn.arg") [ exprString $ Sig.argName arg, mkExpression $ Sig.argValue arg ]
 
 
-instance (Partial, ValueCodegen val) => ValueCodegen (Fn.Output val) where
+instance (Partial, ValueCodegen val) => ValueCodegen (Sig.Output val) where
   mkExpression arg =
-    exprApp (exprIdent "Fn.out") [ exprString $ Fn.outName arg, mkExpression $ Fn.outValue arg ]
+    exprApp (exprIdent "Fn.out") [ exprString $ Sig.outName arg, mkExpression $ Sig.outValue arg ]
 
 
-instance (Partial, ValueCodegen arg, ValueCodegen out) => ValueCodegen (Fn arg out) where
+instance (Partial, ValueCodegen arg, ValueCodegen out) => ValueCodegen (Signature arg out) where
   mkExpression = case _ of
-    Fn (name /\ args /\ outs) ->
+    Sig (name /\ args /\ outs) ->
       exprApp (exprCtor "Fn")
         [ exprOp (exprString name)
           [ binaryOp "/\\" (exprArray $ mkExpression <$> args)
@@ -182,7 +182,7 @@ generateModule (Options opts) mbSource fdef
   reprC <- importFrom (reprModule opts.pchrepr) $ importType $ reprTypeName opts.pchrepr -- FIXME: use forall?
 
   let
-    familyName = Fn.name fdef.fn
+    familyName = Sig.name fdef.fnsig
 
     nameOf :: Channel -> String
     nameOf (name /\ _) = name
@@ -220,13 +220,13 @@ generateModule (Options opts) mbSource fdef
 
     generateInletsType :: CST.Type Void
     generateInletsType =
-        case Array.uncons $ Array.mapWithIndex inletTypeApp $ Fn.args fdef.fn of
+        case Array.uncons $ Array.mapWithIndex inletTypeApp $ Sig.args fdef.fnsig of
             Just { head, tail } ->
                 typeParens $ typeOp head $ (binaryOp listOp <$> tail) <> [ binaryOp listOp (typeCtor listTnil) ]
             Nothing -> typeCtor listTnil
     generateOuletsType :: CST.Type Void
     generateOuletsType =
-        case Array.uncons $ outletTypeApp <$> Fn.outs fdef.fn of
+        case Array.uncons $ outletTypeApp <$> Sig.outs fdef.fnsig of
             Just { head, tail } ->
                 typeParens $ typeOp head $ (binaryOp listOp <$> tail) <> [ binaryOp listOp (typeCtor listTnil) ]
             Nothing -> typeCtor listTnil
@@ -275,11 +275,11 @@ generateModule (Options opts) mbSource fdef
         $ typeCtor shapeN.outlets
 
     , declType "InletsRow" []
-        $ typeRow (channelRow <$> Fn.args fdef.fn)
+        $ typeRow (channelRow <$> Sig.args fdef.fnsig)
         Nothing
 
     , declType "OutletsRow" []
-        $ typeRow (channelRow <$> Fn.outs fdef.fn)
+        $ typeRow (channelRow <$> Sig.outs fdef.fnsig)
         Nothing
 
     , declType "Shape" []
@@ -327,15 +327,15 @@ generateModule (Options opts) mbSource fdef
 
     , declSignature "defaultI" $ typeApp (typeCtor "Record") [ typeCtor "InletsRow" ]
     , declValue "defaultI" []
-        $ exprRecord $ channelDefault <$> Fn.args fdef.fn
+        $ exprRecord $ channelDefault <$> Sig.args fdef.fnsig
 
     , declSignature "defaultO" $ typeApp (typeCtor "Record") [ typeCtor "OutletsRow" ]
     , declValue "defaultO" []
-        $ exprRecord $ channelDefault <$> Fn.outs fdef.fn
+        $ exprRecord $ channelDefault <$> Sig.outs fdef.fnsig
 
     ]
-    <> (inletDeclr <$> Fn.args fdef.fn)
-    <> (outletDeclr <$> Fn.outs fdef.fn)
+    <> (inletDeclr  <$> Sig.args fdef.fnsig)
+    <> (outletDeclr <$> Sig.outs fdef.fnsig)
     <>
     [ declSignature "family" $ typeCtor "Family"
     , declValue "family" []

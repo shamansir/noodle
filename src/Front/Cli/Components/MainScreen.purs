@@ -29,7 +29,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 
 import Noodle.Ui.Cli.Tagging.At as T
@@ -73,7 +73,7 @@ component
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => State tk ps fs strepr chrepr Effect
     -> Core.Blessed (State tk ps fs strepr chrepr Effect)

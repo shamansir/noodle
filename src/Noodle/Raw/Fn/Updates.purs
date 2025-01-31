@@ -13,8 +13,8 @@ import Noodle.Id (InletR, OutletR, NodeR)
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Fn.Generic.Updates as Generic
 
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (Argument, Output, arg, out) as Fn
+import Noodle.Fn.Signature (Sig)
+import Noodle.Fn.Signature (Argument, Output, arg, out) as Sig
 
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
@@ -24,20 +24,20 @@ type MergedUpdate state repr        = Generic.MergedUpdate state (Map InletR (Va
 type OrderedMergedUpdate state repr = Generic.MergedUpdate state (Map (Int /\ InletR) (ValueInChannel repr)) (Map (Int /\ OutletR) (ValueInChannel repr))
 
 
-toFn :: forall state repr. NodeR -> MergedUpdate state repr -> Fn (ValueInChannel repr) (ValueInChannel repr)
-toFn nodeR = Generic.toFn nodeR inletsToArgs outletsToArgs
+toSignature :: forall state repr. NodeR -> MergedUpdate state repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+toSignature nodeR = Generic.toSignature nodeR inletsToArgs outletsToArgs
   where
-    inletsToArgs  :: Map InletR (ValueInChannel repr) -> Array (Fn.Argument (ValueInChannel repr))
-    inletsToArgs   = Map.toUnfoldable >>> map (lmap Id.inletRName >>> uncurry Fn.arg)
-    outletsToArgs :: Map OutletR (ValueInChannel repr) -> Array (Fn.Output (ValueInChannel repr))
-    outletsToArgs  = Map.toUnfoldable >>> map (lmap Id.outletRName >>> uncurry Fn.out)
+    inletsToArgs  :: Map InletR (ValueInChannel repr) -> Array (Sig.Argument (ValueInChannel repr))
+    inletsToArgs   = Map.toUnfoldable >>> map (lmap Id.inletRName >>> uncurry Sig.arg)
+    outletsToArgs :: Map OutletR (ValueInChannel repr) -> Array (Sig.Output (ValueInChannel repr))
+    outletsToArgs  = Map.toUnfoldable >>> map (lmap Id.outletRName >>> uncurry Sig.out)
 
 
 
-orderedToFn :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Fn (ValueInChannel repr) (ValueInChannel repr)
-orderedToFn nodeR = Generic.toFn nodeR inletsToArgs outletsToArgs
+orderedToSignature :: forall state repr. NodeR -> OrderedMergedUpdate state repr -> Sig (ValueInChannel repr) (ValueInChannel repr)
+orderedToSignature nodeR = Generic.toSignature nodeR inletsToArgs outletsToArgs
   where
-    inletsToArgs  :: Map (Int /\ InletR) (ValueInChannel repr) -> Array (Fn.Argument (ValueInChannel repr))
-    inletsToArgs   = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.inletRName) >>> uncurry Fn.arg)
-    outletsToArgs :: Map (Int /\ OutletR) (ValueInChannel repr) -> Array (Fn.Output (ValueInChannel repr))
-    outletsToArgs  = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.outletRName) >>> uncurry Fn.out)
+    inletsToArgs  :: Map (Int /\ InletR) (ValueInChannel repr) -> Array (Sig.Argument (ValueInChannel repr))
+    inletsToArgs   = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.inletRName) >>> uncurry Sig.arg)
+    outletsToArgs :: Map (Int /\ OutletR) (ValueInChannel repr) -> Array (Sig.Output (ValueInChannel repr))
+    outletsToArgs  = Map.toUnfoldable >>> map (lmap (Tuple.snd >>> Id.outletRName) >>> uncurry Sig.out)

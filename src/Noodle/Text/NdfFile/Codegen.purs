@@ -23,8 +23,8 @@ import Data.Text.Format.Org.Construct (b)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Fn.ToFn (Argument, Output, extract, argName, argValue, outName, outValue) as Fn
-import Noodle.Fn.ToFn (Fn, FnS, FnX, toFn)
+import Noodle.Fn.Signature (Argument, Output, extract, argName, argValue, outName, outValue) as Sig
+import Noodle.Fn.Signature (Sig, SigS, SigX, toSignature)
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (toolkit, group, family) as Id
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
@@ -231,7 +231,7 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         fnDefBranch :: Partial => FamilyDef -> _
         fnDefBranch fdef =
-            case (unwrap $ toFn (Proxy :: _ Void) fdef :: FnS ChannelDef ChannelDef) of
+            case (unwrap $ toSignature (Proxy :: _ Void) fdef :: SigS ChannelDef ChannelDef) of
                 name /\ inlets /\ outlets ->
                     caseBranch
                         [ binderString name ]
@@ -243,24 +243,24 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                                     , exprArray $ outletExpr <$> outlets
                                     ]
                             ]
-        inletExpr :: Partial => Fn.Argument ChannelDef -> CST.Expr Void
-        inletExpr chdef = case chdef # Fn.argValue # unwrap of
+        inletExpr :: Partial => Sig.Argument ChannelDef -> CST.Expr Void
+        inletExpr chdef = case chdef # Sig.argValue # unwrap of
             { mbType, mbDefault } -> case mbDefault of
                 Just _ ->
                     exprOp
-                        (exprApp (exprIdent "Fn.in_") [ exprString $ Fn.argName chdef ])
+                        (exprApp (exprIdent "Fn.in_") [ exprString $ Sig.argName chdef ])
                         [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
-                    exprApp (exprIdent "Fn.inx_") [ exprString $ Fn.argName chdef ]
-        outletExpr :: Partial => Fn.Output ChannelDef -> CST.Expr Void
-        outletExpr chdef = case chdef # Fn.outValue # unwrap of
+                    exprApp (exprIdent "Fn.inx_") [ exprString $ Sig.argName chdef ]
+        outletExpr :: Partial => Sig.Output ChannelDef -> CST.Expr Void
+        outletExpr chdef = case chdef # Sig.outValue # unwrap of
             { mbType, mbDefault } -> case mbDefault of
                 Just _ ->
                     exprOp
-                        (exprApp (exprIdent "Fn.out_") [ exprString $ Fn.outName chdef ])
+                        (exprApp (exprIdent "Fn.out_") [ exprString $ Sig.outName chdef ])
                         [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
-                    exprApp (exprIdent "Fn.outx_") [ exprString $ Fn.outName chdef ]
+                    exprApp (exprIdent "Fn.outx_") [ exprString $ Sig.outName chdef ]
         qChFullValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
         qChFullValue mbDataType = maybe (FCG.fDefaultFor opts.pchrepr mbDataType) (FCG.fValueFor opts.pchrepr mbDataType)
 

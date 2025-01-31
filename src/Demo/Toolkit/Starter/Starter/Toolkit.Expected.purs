@@ -12,8 +12,8 @@ import Noodle.Id (toolkitR, unsafeGroupR, FamilyR, family, group) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Noodle.Fn.ToFn (class PossiblyToFn, fn)
-import Noodle.Fn.ToFn (in_, inx_, out_, outx_) as Fn
+import Noodle.Fn.Signature (class PossiblyToSignature, sig)
+import Noodle.Fn.Signature (in_, inx_, out_, outx_) as Sig
 import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Cli.Palette.Item as C
@@ -120,42 +120,42 @@ instance CliEditor STARTER ValueRepr where
 
 instance HasChRepr STARTER ValueRepr
 
-instance PossiblyToFn STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
-  possiblyToFn _ = Id.family >>> case _ of
-    "bang" -> Just $ fn "bang" [] [ Fn.outx_ "bang" ]
-    "metro" -> Just $ fn "metro"
-      [ Fn.in_ "enabled" $ VR.VBool true
-      , Fn.in_ "period" $ VR.VTime $ RV.Time { seconds: 0 }
+instance PossiblyToSignature STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.FamilyR where
+  possiblyToSignature _ = Id.family >>> case _ of
+    "bang" -> Just $ sig "bang" [] [ Sig.outx_ "bang" ]
+    "metro" -> Just $ sig "metro"
+      [ Sig.in_ "enabled" $ VR.VBool true
+      , Sig.in_ "period" $ VR.VTime $ RV.Time { seconds: 0 }
       ]
-      [ Fn.outx_ "bang" ]
-    "gennum" -> Just $ fn "gennum" [] [ Fn.out_ "out" $ VR.VNumber 0.0 ]
-    "random" -> Just $ fn "random" [ Fn.inx_ "bang", Fn.inx_ "min", Fn.inx_ "max" ]
-      [ Fn.outx_ "random" ]
-    "knob" -> Just $ fn "knob" [ Fn.inx_ "min", Fn.inx_ "max" ] [ Fn.out_ "number" $ VR.VNumber 0.0 ]
-    "color" -> Just $ fn "color" [ Fn.inx_ "r", Fn.inx_ "g", Fn.inx_ "b" ]
-      [ Fn.out_ "color" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 } ]
-    "letter" -> Just $ fn "letter" [ Fn.inx_ "code" ] [ Fn.outx_ "letter" ]
-    "sum" -> Just $ fn "sum" [ Fn.inx_ "a", Fn.inx_ "b", Fn.inx_ "c" ] [ Fn.out_ "sum" $ VR.VNumber 0.0 ]
-    "log" -> Just $ fn "log" [ Fn.inx_ "what" ] []
-    "shape" -> Just $ fn "shape" [] [ Fn.out_ "shape" $ VR.VShape RV.Circle ]
-    "sketch" -> Just $ fn "sketch"
-      [ Fn.in_ "shape" $ VR.VShape RV.Circle
-      , Fn.in_ "wavescount" $ VR.VNumber 5.0
-      , Fn.in_ "startcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
-      , Fn.in_ "endcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
-      , Fn.in_ "xspasing" $ VR.VNumber 16.0
-      , Fn.in_ "amplitude" $ VR.VNumber 75.0
-      , Fn.in_ "period" $ VR.VNumber 500.0
+      [ Sig.outx_ "bang" ]
+    "gennum" -> Just $ sig "gennum" [] [ Sig.out_ "out" $ VR.VNumber 0.0 ]
+    "random" -> Just $ sig "random" [ Sig.inx_ "bang", Sig.inx_ "min", Sig.inx_ "max" ]
+      [ Sig.outx_ "random" ]
+    "knob" -> Just $ sig "knob" [ Sig.inx_ "min", Sig.inx_ "max" ] [ Sig.out_ "number" $ VR.VNumber 0.0 ]
+    "color" -> Just $ sig "color" [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b" ]
+      [ Sig.out_ "color" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 } ]
+    "letter" -> Just $ sig "letter" [ Sig.inx_ "code" ] [ Sig.outx_ "letter" ]
+    "sum" -> Just $ sig "sum" [ Sig.inx_ "a", Sig.inx_ "b", Sig.inx_ "c" ] [ Sig.out_ "sum" $ VR.VNumber 0.0 ]
+    "log" -> Just $ sig "log" [ Sig.inx_ "what" ] []
+    "shape" -> Just $ sig "shape" [] [ Sig.out_ "shape" $ VR.VShape RV.Circle ]
+    "sketch" -> Just $ sig "sketch"
+      [ Sig.in_ "shape" $ VR.VShape RV.Circle
+      , Sig.in_ "wavescount" $ VR.VNumber 5.0
+      , Sig.in_ "startcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
+      , Sig.in_ "endcolor" $ VR.VColor $ RV.Color { r: 0, g: 0, b: 0, a: 255 }
+      , Sig.in_ "xspasing" $ VR.VNumber 16.0
+      , Sig.in_ "amplitude" $ VR.VNumber 75.0
+      , Sig.in_ "period" $ VR.VNumber 500.0
       ]
       []
-    "nspread" -> Just $ fn "nspread"
-      [ Fn.in_ "min" $ VR.VNumber $ -150.0, Fn.in_ "max" $ VR.VNumber 150.0, Fn.in_ "count" $ VR.VNumber 26.0 ]
-      [ Fn.outx_ "spread" ]
-    "vspread" -> Just $ fn "vspread" [ Fn.inx_ "x", Fn.inx_ "y" ] [ Fn.outx_ "spread" ]
-    "cspread" -> Just $ fn "cspread"
-      [ Fn.inx_ "red", Fn.inx_ "green", Fn.inx_ "blue", Fn.inx_ "alpha" ]
-      [ Fn.outx_ "color" ]
-    "xsshape" -> Just $ fn "xsshape"
-      [ Fn.inx_ "pos", Fn.inx_ "color", Fn.inx_ "size", Fn.inx_ "angle" ]
-      [ Fn.outx_ "shape" ]
+    "nspread" -> Just $ sig "nspread"
+      [ Sig.in_ "min" $ VR.VNumber $ -150.0, Sig.in_ "max" $ VR.VNumber 150.0, Sig.in_ "count" $ VR.VNumber 26.0 ]
+      [ Sig.outx_ "spread" ]
+    "vspread" -> Just $ sig "vspread" [ Sig.inx_ "x", Sig.inx_ "y" ] [ Sig.outx_ "spread" ]
+    "cspread" -> Just $ sig "cspread"
+      [ Sig.inx_ "red", Sig.inx_ "green", Sig.inx_ "blue", Sig.inx_ "alpha" ]
+      [ Sig.outx_ "color" ]
+    "xsshape" -> Just $ sig "xsshape"
+      [ Sig.inx_ "pos", Sig.inx_ "color", Sig.inx_ "size", Sig.inx_ "angle" ]
+      [ Sig.outx_ "shape" ]
     _ -> Nothing
