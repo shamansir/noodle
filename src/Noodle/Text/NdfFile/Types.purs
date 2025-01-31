@@ -6,6 +6,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Newtype (class Newtype)
+import Data.Newtype (unwrap, wrap) as NT
 
 import Noodle.Id (GroupR, FamilyR, unsafeFamilyR, InletR, inletRName, OutletR, outletRName) as Id
 import Noodle.Text.FromCode (Source) as FC
@@ -109,3 +110,11 @@ emptyChannelDef = ChannelDef emptyDefAndType
 
 familyOf :: FamilyDefRec -> Id.FamilyR
 familyOf = _.fn >>> Fn.name >>> Id.unsafeFamilyR
+
+
+encodedTypeOf :: ChannelDef -> Maybe EncodedType
+encodedTypeOf = NT.unwrap >>> _.mbType
+
+
+encodedValueOf :: ChannelDef -> Maybe EncodedValue
+encodedValueOf = NT.unwrap >>> _.mbDefault

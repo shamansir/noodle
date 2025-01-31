@@ -10,10 +10,11 @@ import Effect.Class (liftEffect)
 import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Map (empty, insert) as Map
 import Data.String (trim) as String
+import Data.Bifunctor (bimap)
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
@@ -50,18 +51,23 @@ import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 import Noodle.Id (FamilyR, unsafeFamilyR, unsafeInletR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.ToFn (Fn) as ToFn
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (make) as RawNode
+import Noodle.Raw.Node (make, _fromSignature) as RawNode
 import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
 import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Toolkit (isKnownFamily) as Toolkit
 import Noodle.Network (toolkit) as Network
 import Noodle.Text.NdfFile.Parser as NdfParser
 import Noodle.Text.NdfFile.FamilyDef.Parser as NdfFamilyParser
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (toRepr, toDefault) as CG
+import Noodle.Text.NdfFile.Types (ChannelDef)
+import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as CD
 
 import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
@@ -70,6 +76,7 @@ import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Style as Style
 import Cli.Components.Library as Library
 import Cli.Components.NodeBox as NodeBox
+import Cli.Components.SidePanel.Console as CC
 
 
 commandInputKey :: Key.CommandInputKey
@@ -78,7 +85,9 @@ commandInputKey = Key.commandInput
 
 component :: forall tk pstate fs strepr chrepr
     .  HasFallback chrepr
+    => HasFallback strepr
     => CT.Tagged chrepr
+    => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
@@ -135,7 +144,9 @@ toggle =
 tryExecute
     :: forall tk fs pstate strepr chrepr
      . HasFallback chrepr
+    => HasFallback strepr
     => CT.Tagged chrepr
+    => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
@@ -163,9 +174,30 @@ tryExecute command = do
         Nothing ->
             case P.runParser command $ NdfFamilyParser.fnSignature "custom" of
                 -- (StateDef /\ Fn ChannelDef ChannelDef)
-                Right (stateDef /\ fn) -> pure unit
-                Left err -> pure unit
+                Right (stateDef /\ fn) -> do
+                    case mbCurrentPatchId of
+                        Just curPatchR -> do
+                            CC.log $ "got fn: " <> command
+                            rawNode <- RawNode._fromSignature (Id.unsafeFamilyR "custom") (fallback :: strepr) (convertFn fn) $ pure unit
+                            Library.spawnAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                        Nothing -> do
+                            CC.log "no patch ID"
+                            pure unit
+                Left err -> CC.log $ "parse error " <> command
     pure unit
+    where
+        defToRepr :: ChannelDef -> chrepr
+        defToRepr chanDef =
+            case CD.encodedTypeOf chanDef of
+                Just encodedType ->
+                    case CD.encodedValueOf chanDef of
+                        Just encodedValue ->
+                            CG.toRepr encodedType encodedValue # fromMaybe fallback
+                        Nothing -> CG.toDefault encodedType
+                Nothing -> fallback
+
+        convertFn :: ToFn.Fn ChannelDef ChannelDef -> ToFn.Fn chrepr chrepr
+        convertFn = bimap defToRepr defToRepr
 
     {-
     state <- State.get

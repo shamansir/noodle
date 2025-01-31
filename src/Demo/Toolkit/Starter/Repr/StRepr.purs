@@ -10,6 +10,7 @@ import Tidy.Codegen
      (exprIdent, typeCtor)
 
 import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
@@ -21,6 +22,10 @@ data StateRepr
     = StateRepr
     | Gennum Gennum.State
     | Metro Metro.State
+
+
+instance HasFallback StateRepr where
+    fallback = StateRepr
 
 
 instance StRepr Gennum.State StateRepr where

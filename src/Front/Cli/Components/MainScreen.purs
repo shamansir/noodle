@@ -30,6 +30,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 
 import Noodle.Ui.Cli.Tagging.At as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
@@ -67,7 +68,9 @@ import Cli.Components.CommandInput as CommandInput
 component
     :: forall tk ps fs strepr chrepr
     .  HasFallback chrepr
+    => HasFallback strepr
     => CT.Tagged chrepr
+    => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
