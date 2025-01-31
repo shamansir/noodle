@@ -7,8 +7,8 @@ import Data.Either (Either(..))
 import Data.String (joinWith) as String
 import Data.Newtype (class Newtype, unwrap, wrap)
 
-import Noodle.Fn.ToFn (Fn, toFn)
-import Noodle.Fn.ToFn as Fn
+import Noodle.Fn.Signature (Signature, toSignature)
+import Noodle.Fn.Signature as Sig
 
 import Hydra.Types
 import Hydra.Repr.Target
@@ -18,8 +18,8 @@ class HydraShow a where -- Some kind of `ToCode` ?
     hShow :: a -> String
 
 
-instance (HydraShow arg, HydraShow out) => HydraShow (Fn arg out) where
-    hShow = Fn._showManually hShow hShow
+instance (HydraShow arg, HydraShow out) => HydraShow (Signature arg out) where
+    hShow = Sig._showManually hShow hShow
 
 
 instance HydraShow Unit where
@@ -122,22 +122,22 @@ instance HydraShow Texture where
 
 instance HydraShow Blend where
     hShow :: Blend -> String
-    hShow blend = hShow $ (toFn hydraV blend :: Fn Value Unit)
+    hShow blend = hShow $ (toSignature hydraV blend :: Signature Value Unit)
 
 
 instance HydraShow ColorOp where
     hShow :: ColorOp -> String
-    hShow colorOp = hShow $ (toFn hydraV colorOp :: Fn Value Unit)
+    hShow colorOp = hShow $ (toSignature hydraV colorOp :: Signature Value Unit)
 
 
 instance HydraShow Modulate where
     hShow :: Modulate -> String
-    hShow mod = hShow $ (toFn hydraV mod :: Fn Value Unit)
+    hShow mod = hShow $ (toSignature hydraV mod :: Signature Value Unit)
 
 
 instance HydraShow Geometry where
     hShow :: Geometry -> String
-    hShow geo = hShow $ (toFn hydraV geo :: Fn Value Unit)
+    hShow geo = hShow $ (toSignature hydraV geo :: Signature Value Unit)
 
 
 instance HydraShow TODO where

@@ -108,6 +108,13 @@ timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ..
     Just $ Time { seconds : fromMaybe 0 $ Int.fromString $ String.drop 1 str }
 
 
+fromNativeColor :: Native.Color -> Color
+fromNativeColor = NativeColor.toRGBA >>> (\{ r, g, b, a } -> Color { r, g, b, a : 255 })
+toNativeColor :: Color -> Native.Color
+toNativeColor (Color { r, g, b, a }) = NativeColor.rgba r g b $ Int.toNumber a / 255.0
+
+
+
 instance HasFallback ValueRepr where
     fallback = VNone
 
@@ -298,8 +305,7 @@ toReprImpl eType eValue =
             else Nothing
         "Color" ->
             if valuePrefix == "c/" then
-                -- FIXME: VColor <$> NativeColor.fromHexString valueStr
-                Nothing
+                VColor <$> fromNativeColor <$> NativeColor.fromHexString ("#" <> valueStr)
             else Nothing
         "Shape" ->
             if valuePrefix == "s/" then
@@ -469,10 +475,6 @@ editorFor = ViC.toMaybe >>> case _ of
     Just (VColor _) ->
         Just $ VE.imap (maybe VNone VColor <<< map fromNativeColor) extractColor VColor.editor
             where
-                fromNativeColor :: Native.Color -> Color
-                fromNativeColor = NativeColor.toRGBA >>> (\{ r, g, b, a } -> Color { r, g, b, a : 255 })
-                toNativeColor :: Color -> Native.Color
-                toNativeColor (Color { r, g, b, a }) = NativeColor.rgba r g b $ Int.toNumber a / 255.0
                 extractColor :: ValueRepr -> Maybe Native.Color
                 extractColor = case _ of -- reuse `ValueInChannel`?
                     VColor color -> Just $ toNativeColor color

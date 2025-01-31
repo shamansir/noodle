@@ -11,8 +11,8 @@ import Data.Newtype (class Newtype)
 
 import Noodle.Id (NodeR, InletR, OutletR)
 import Noodle.Id (family, familyOf) as Id
-import Noodle.Fn.ToFn (Fn, class PossiblyToFn)
-import Noodle.Fn.ToFn (Argument, Output, fn) as Fn
+import Noodle.Fn.Signature (Sig, class PossiblyToSignature)
+import Noodle.Fn.Signature (Argument, Output, sig) as Sig
 
 
 
@@ -176,5 +176,5 @@ mergedMapOutlets f (MergedUpdate { focus, state, inlets, outlets }) =
     MergedUpdate { focus, state, inlets, outlets : f outlets }
 
 
-toFn :: forall repr state inlets outlets. NodeR -> (inlets -> Array (Fn.Argument repr)) -> (outlets -> Array (Fn.Output repr)) -> MergedUpdate state inlets outlets -> Fn repr repr
-toFn inNode inletsToArgs outletsToOutputs (MergedUpdate { inlets, outlets }) = Fn.fn (Id.family $ Id.familyOf inNode) (inletsToArgs inlets) (outletsToOutputs outlets)
+toSignature :: forall repr state inlets outlets. NodeR -> (inlets -> Array (Sig.Argument repr)) -> (outlets -> Array (Sig.Output repr)) -> MergedUpdate state inlets outlets -> Sig repr repr
+toSignature inNode inletsToArgs outletsToOutputs (MergedUpdate { inlets, outlets }) = Sig.sig (Id.family $ Id.familyOf inNode) (inletsToArgs inlets) (outletsToOutputs outlets)

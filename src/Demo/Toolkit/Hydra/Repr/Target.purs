@@ -15,8 +15,8 @@ import Type.Proxy (Proxy(..))
 import Noodle.Text.Code.Target (Target)
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError)
-import Noodle.Fn.ToFn (Fn, FnS, class ToFn, fns, toFn, class PossiblyToFn, possiblyToFn, i, o)
-import Noodle.Fn.ToFn (Argument, Output, argName, argValue, empty) as Fn
+import Noodle.Fn.Signature (Signature, SigS, class ToSignature, sigs, toSignature, class PossiblyToSignature, possiblyToSignature, i, o)
+import Noodle.Fn.Signature (Argument, Output, argName, argValue, empty) as Sig
 
 import Hydra.Types as HT
 import Hydra.Repr.Parser as RP
@@ -284,19 +284,19 @@ instance ToCode HYDRA_V opts HT.DepFn where
         HT.NoAction -> "/----/"
 
 
-_encodeUsingFn :: forall a. ToFn HYDRA_V HT.Value Unit a => a -> String
+_encodeUsingFn :: forall a. ToSignature HYDRA_V HT.Value Unit a => a -> String
 _encodeUsingFn a =
-    case unwrap $ toFn hydraV a :: FnS HT.Value Unit of
+    case unwrap $ toSignature hydraV a :: SigS HT.Value Unit of
         name /\ args /\ _ ->
             if Array.length args > 0 then
-                String.toUpper name <> " " <> String.joinWith PM._argSep (_encode <$> Fn.argValue <$> args) <> PM._argsEnd
+                String.toUpper name <> " " <> String.joinWith PM._argSep (_encode <$> Sig.argValue <$> args) <> PM._argsEnd
             else
                 String.toUpper name <> " " <> PM._argsEnd
 
 
-_encodeFnWithArgNames :: forall arg out. ToCode HYDRA_V Unit arg => Fn arg out -> String
+_encodeFnWithArgNames :: forall arg out. ToCode HYDRA_V Unit arg => Signature arg out -> String
 _encodeFnWithArgNames fn =
-    case unwrap $ toFn (Proxy :: _ Void) fn :: FnS arg out of
+    case unwrap $ toSignature (Proxy :: _ Void) fn :: SigS arg out of
         name /\ args /\ _ ->
             if Array.length args > 0 then
                 name <> " " <> show (Array.length args) <> " " <> String.joinWith PM._argSep (_encodeArg <$> args) <> PM._argsEnd
@@ -304,7 +304,7 @@ _encodeFnWithArgNames fn =
                 name <> " " <> show (Array.length args) <> " " <> PM._argsEnd
     where
         _encodeArg arg =
-            Fn.argName arg <> "::" <> _encode (Fn.argValue arg)
+            Sig.argName arg <> "::" <> _encode (Sig.argValue arg)
     -- Fn.name fn
 
 
@@ -375,9 +375,9 @@ instance FromCode HYDRA_V opts HT.Ease     where fromCode = fromParser
 
 
 -- TODO: generate it automatically from NDF
-instance ToFn HYDRA_V HT.Value Unit HT.ColorOp where
-    toFn :: Proxy _ -> HT.ColorOp -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.ColorOp where
+    toSignature :: Proxy _ -> HT.ColorOp -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.R { scale, offset } -> "r" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
         HT.G { scale, offset } -> "g" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
         HT.B { scale, offset } -> "b" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
@@ -396,9 +396,9 @@ instance ToFn HYDRA_V HT.Value Unit HT.ColorOp where
 
 
 -- TODO: generate it automatically from NDF
-instance ToFn HYDRA_V HT.Value Unit HT.Modulate where
-    toFn :: Proxy _ -> HT.Modulate -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.Modulate where
+    toSignature :: Proxy _ -> HT.Modulate -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.Modulate amount -> "modulate" /\ [ i "amount" amount ] /\ [ o "out" unit ]
         HT.ModHue amount -> "modHue" /\ [ i "amount" amount ] /\ [ o "out" unit ]
         HT.ModKaleid { nSides } -> "modKaleid" /\ [ i "nSides" nSides ] /\ [ o "out" unit ]
@@ -413,9 +413,9 @@ instance ToFn HYDRA_V HT.Value Unit HT.Modulate where
         HT.ModScrollY { scrollY, speed } -> "modScrollY" /\ [ i "scrollY" scrollY, i "speed" speed ] /\ [ o "out" unit ]
 
 
-instance ToFn HYDRA_V HT.Value Unit HT.Blend where
-    toFn :: Proxy _ -> HT.Blend -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.Blend where
+    toSignature :: Proxy _ -> HT.Blend -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.Blend amount -> "blend" /\ [ i "amount" amount ] /\ [ o "out" unit ]
         HT.Add amount -> "add" /\ [ i "amount" amount ] /\ [ o "out" unit ]
         HT.Sub amount -> "sub" /\ [ i "amount" amount ] /\ [ o "out" unit ]
@@ -425,9 +425,9 @@ instance ToFn HYDRA_V HT.Value Unit HT.Blend where
         HT.Mask -> "mask" /\ [] /\ []
 
 
-instance ToFn HYDRA_V HT.Value Unit HT.Geometry where
-    toFn :: Proxy _ -> HT.Geometry -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.Geometry where
+    toSignature :: Proxy _ -> HT.Geometry -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.GKaleid { nSides } -> "kaleid" /\ [ i "nSides" nSides ] /\ [ o "out" unit ]
         HT.GPixelate { pixelX, pixelY } -> "pixelate" /\ [ i "pixelX" pixelX, i "pixelY" pixelY ] /\ [ o "out" unit ]
         HT.GRepeat { repeatX, repeatY, offsetX, offsetY } -> "repeat" /\ [ i "repeatX" repeatX, i "repeatY" repeatY, i "offsetX" offsetX, i "offsetY" offsetY ] /\ [ o "out" unit ]
@@ -440,9 +440,9 @@ instance ToFn HYDRA_V HT.Value Unit HT.Geometry where
         HT.GScrollY { scrollY, speed } -> "scrollY" /\ [ i "scrollY" scrollY, i "speed" speed ] /\ [ o "out" unit ]
 
 
-instance ToFn HYDRA_V HT.Value Unit HT.Ease where
-    toFn :: Proxy _ -> HT.Ease -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.Ease where
+    toSignature :: Proxy _ -> HT.Ease -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.Linear -> "linear" /\ [] /\ [ o "out" unit ]
         HT.Fast v -> "fast" /\ [ i "v" v ] /\ [ o "out" unit ]
         HT.Smooth v -> "smooth" /\ [ i "v" v ] /\ [ o "out" unit ]
@@ -451,19 +451,19 @@ instance ToFn HYDRA_V HT.Value Unit HT.Ease where
         HT.InOutCubic -> "inOutCubic" /\ [] /\ [ o "out" unit ]
 
 
-instance ToFn HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFn where
-    toFn :: Proxy _ -> HT.GlslFn -> Fn HT.GlslFnArg HT.GlslFnOut
-    toFn ph (HT.GlslFn { fn }) = toFn (Proxy :: _ Void) fn
+instance ToSignature HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFn where
+    toSignature :: Proxy _ -> HT.GlslFn -> Signature HT.GlslFnArg HT.GlslFnOut
+    toSignature ph (HT.GlslFn { fn }) = toSignature (Proxy :: _ Void) fn
 
 
-instance ToFn HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFnRef where
-    toFn :: Proxy _ -> HT.GlslFnRef -> Fn HT.GlslFnArg HT.GlslFnOut
-    toFn ph (HT.GlslFnRef fn) = toFn (Proxy :: _ Void) fn
+instance ToSignature HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFnRef where
+    toSignature :: Proxy _ -> HT.GlslFnRef -> Signature HT.GlslFnArg HT.GlslFnOut
+    toSignature ph (HT.GlslFnRef fn) = toSignature (Proxy :: _ Void) fn
 
 
-instance ToFn HYDRA_V HT.Value Unit HT.From where
-    toFn :: Proxy _ -> HT.From -> Fn HT.Value Unit
-    toFn = const $ fns <<< case _ of
+instance ToSignature HYDRA_V HT.Value Unit HT.From where
+    toSignature :: Proxy _ -> HT.From -> Signature HT.Value Unit
+    toSignature = const $ sigs <<< case _ of
         HT.Gradient { speed } -> "gradient" /\ [ i "speed" speed ] /\ [ o "out" unit ]
         HT.Noise { scale, offset } -> "noise" /\ [ i "scale" scale, i "offset" offset ] /\ [ o "out" unit ]
         HT.Osc { frequency, sync, offset } -> "osc" /\ [ i "frequency" frequency, i "sync" sync, i "offset" offset ] /\ [ o "out" unit ]
@@ -472,56 +472,56 @@ instance ToFn HYDRA_V HT.Value Unit HT.From where
         HT.Voronoi { scale, speed, blending } -> "voronoi" /\ [ i "scale" scale, i "speed" speed, i "blending" blending ] /\ [ o "out" unit ]
 
 
-instance PossiblyToFn HYDRA_V HT.Value Unit HT.Source where
-    possiblyToFn :: Proxy _ -> HT.Source -> Maybe (Fn HT.Value Unit)
-    possiblyToFn ph = case _ of
+instance PossiblyToSignature HYDRA_V HT.Value Unit HT.Source where
+    possiblyToSignature :: Proxy _ -> HT.Source -> Maybe (Signature HT.Value Unit)
+    possiblyToSignature ph = case _ of
         HT.Load outputN -> Nothing -- TODO: could be converted to `src()`
         HT.External sourceN ext -> Nothing -- TODO: could be converted to `src()` ?
-        HT.From from -> Just $ toFn ph from
+        HT.From from -> Just $ toSignature ph from
 
 
-instance PossiblyToFn HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
-    possiblyToFn :: Proxy _ -> HT.Texture -> Maybe (Fn HT.TOrV HT.OTOrV)
-    possiblyToFn ph = case _ of
+instance PossiblyToSignature HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
+    possiblyToSignature :: Proxy _ -> HT.Texture -> Maybe (Signature HT.TOrV HT.OTOrV)
+    possiblyToSignature ph = case _ of
         HT.Empty -> Nothing
         HT.Start src ->
-            case (unwrap <$> possiblyToFn ph src :: Maybe (FnS HT.Value Unit)) of
-                Just (name /\ args /\ outs) -> Just $ fns $ name /\ (map HT.V <$> args) /\ (map (const HT.OT) <$> outs)
+            case (unwrap <$> possiblyToSignature ph src :: Maybe (SigS HT.Value Unit)) of
+                Just (name /\ args /\ outs) -> Just $ sigs $ name /\ (map HT.V <$> args) /\ (map (const HT.OT) <$> outs)
                 Nothing -> Nothing
         HT.BlendOf { what, with } blend ->
-            case unwrap $ toFn ph blend :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+            case unwrap $ toSignature ph blend :: SigS HT.Value Unit of
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Filter texture cop ->
-            case unwrap $ toFn ph cop :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+            case unwrap $ toSignature ph cop :: SigS HT.Value Unit of
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.ModulateWith { what, with } mod ->
-            case unwrap $ toFn ph mod :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+            case unwrap $ toSignature ph mod :: SigS HT.Value Unit of
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
         HT.Geometry texture gmt ->
-            case unwrap $ toFn ph gmt :: FnS HT.Value Unit of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+            case unwrap $ toSignature ph gmt :: SigS HT.Value Unit of
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
         HT.CallGlslFn { over, mbWith } fnRef ->
-            case unwrap $ toFn ph fnRef :: FnS HT.TOrV HT.GlslFnOut of
-                name /\ args /\ outs -> Just $ fns $ name /\ ((i "over" $ HT.T over) : args <>
+            case unwrap $ toSignature ph fnRef :: SigS HT.TOrV HT.GlslFnOut of
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "over" $ HT.T over) : args <>
                     case mbWith of
                         Just with -> [ i "with" $ HT.T with ]
                         Nothing -> [ ]
                     ) /\ (map (const HT.OT) <$> outs)
 
 
-instance PossiblyToFn HYDRA_V HT.Value Unit HT.HydraFnId where
-    possiblyToFn :: Proxy _ -> HT.HydraFnId -> Maybe (Fn HT.Value Unit)
-    possiblyToFn _ = unwrap >>> fromKnownFn
+instance PossiblyToSignature HYDRA_V HT.Value Unit HT.HydraFnId where
+    possiblyToSignature :: Proxy _ -> HT.HydraFnId -> Maybe (Signature HT.Value Unit)
+    possiblyToSignature _ = unwrap >>> fromKnownFn
 
 
-instance PossiblyToFn HYDRA_V HT.FnArg HT.FnOut HT.HydraFnId where
-    possiblyToFn _ = unwrap >>> defaultsFor
+instance PossiblyToSignature HYDRA_V HT.FnArg HT.FnOut HT.HydraFnId where
+    possiblyToSignature _ = unwrap >>> defaultsFor
 
 
 -- TODO: generate from NDF
-defaultsFor :: String -> Maybe (Fn HT.FnArg HT.FnOut) -- TODO: output of Fn!
+defaultsFor :: String -> Maybe (Signature HT.FnArg HT.FnOut) -- TODO: output of Fn!
 -- defaultValuesOf :: FamilyR -> Maybe (String /\ Array (Fn.Argument Value) /\ Array (Fn.Output Unit))
-defaultsFor = map fns <<< case _ of
+defaultsFor = map sigs <<< case _ of
     -- "number" -> Feed
 
     "noise" -> Just $ "noise" /\ [ i "scale" $ HT.narg 10.0, i "offset" $ HT.narg 0.1 ] /\ [ o "out" HT.tOut ]
@@ -636,8 +636,8 @@ defaultsFor = map fns <<< case _ of
 -- TODO: probably duplicates something, is it used? replace with above instance of `defaultsFor`?`
 -- TODO: private
 -- TODO: generate from NDF
-fromKnownFn :: String -> Maybe (Fn HT.Value Unit)
-fromKnownFn = map fns <<< case _ of
+fromKnownFn :: String -> Maybe (Signature HT.Value Unit)
+fromKnownFn = map sigs <<< case _ of
     -- "number" -> Feed
 
     "noise" -> Just $ "noise" /\ [ i "scale" $ HT.Number 10.0, i "offset" $ HT.Number 0.1 ] /\ [ o "out" unit ]

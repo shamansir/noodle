@@ -42,9 +42,9 @@ import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Raw.Fn.Tracker (toReprableState) as RawTracker
 import Noodle.Raw.Fn.Protocol (toReprableState) as RawProtocol
-import Noodle.Raw.Fn.Updates (toFn) as RawUpdates
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (reorder, args, outs) as Fn
+import Noodle.Raw.Fn.Updates (toSignature) as RawUpdates
+import Noodle.Fn.Signature (Sig, Signature)
+import Noodle.Fn.Signature (reorder, args, outs) as Sig
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (make, fromNode, toNode, cancel) as RawLink
 import Noodle.Fn.Shape.Temperament as Temp
@@ -123,18 +123,18 @@ _fromSignature
     => CT.Tagged chrepr
     => Id.FamilyR
     -> state
-    -> Fn chrepr chrepr
+    -> Sig chrepr chrepr
     -> Raw.Process state chrepr mp
     -> m (Node state chrepr mp)
 _fromSignature family state sig =
     make family state
       (RawShape.make
-        { inlets  : mapWithIndex inletDef  $ Fn.args sig
-        , outlets : mapWithIndex outletDef $ Fn.outs sig
+        { inlets  : mapWithIndex inletDef  $ Sig.args sig
+        , outlets : mapWithIndex outletDef $ Sig.outs sig
         }
       )
-      (Map.fromFoldable $ lmap Id.unsafeInletR  <$> Fn.args sig)
-      (Map.fromFoldable $ lmap Id.unsafeOutletR <$> Fn.outs sig)
+      (Map.fromFoldable $ lmap Id.unsafeInletR  <$> Sig.args sig)
+      (Map.fromFoldable $ lmap Id.unsafeOutletR <$> Sig.outs sig)
     where
       inletDef  idx (inletS  /\ repr) =
         let inletR = Id.unsafeInletR inletS
@@ -288,11 +288,11 @@ subscribeChanges (Node _ shape tracker _ _) =
       }
 
 
-subscribeChangesAsFn :: forall state chrepr m. Node state chrepr m -> Signal (Fn (ValueInChannel chrepr) (ValueInChannel chrepr))
-subscribeChangesAsFn (Node nodeR shape tracker _ _) =
+subscribeChangesAsSignature :: forall state chrepr m. Node state chrepr m -> Signal (Signature (ValueInChannel chrepr) (ValueInChannel chrepr))
+subscribeChangesAsSignature (Node nodeR shape tracker _ _) =
   tracker.all
-    <#> RawUpdates.toFn nodeR
-    <#> Fn.reorder
+    <#> RawUpdates.toSignature nodeR
+    <#> Sig.reorder
       (Id.inletR >>> flip RawShape.indexOfInlet shape)
       (Id.outletR >>> flip RawShape.indexOfOutlet shape)
 

@@ -66,7 +66,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
-import Noodle.Fn.ToFn (class PossiblyToFn)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options, class ParseableRepr) as FCG
 
@@ -161,7 +161,7 @@ runBlessedInterface
     => FCG.ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CT.Tagged chrepr
     => CliFriendly tk fs chrepr Effect
     => ps

@@ -24,8 +24,8 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Fn.ToFn (Fn)
-import Noodle.Fn.ToFn (Argument, Output, empty) as Fn
+import Noodle.Fn.Signature (Sig)
+import Noodle.Fn.Signature (Argument, Output, empty) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
@@ -280,11 +280,11 @@ newtype GlslFnCode = GlslFnCode String
 newtype GlslFn = GlslFn
     { kind :: GlslFnKind
     , code :: GlslFnCode
-    , fn :: Fn GlslFnArg GlslFnOut  -- holds default value in every argument
+    , fn :: Sig GlslFnArg GlslFnOut  -- holds default value in every argument
     }
 
 
-newtype GlslFnRef = GlslFnRef (Fn GlslFnArg GlslFnOut) -- should be the name of the function from the registry
+newtype GlslFnRef = GlslFnRef (Sig GlslFnArg GlslFnOut) -- should be the name of the function from the registry
 
 
 data Canvas = Canvas
@@ -332,11 +332,11 @@ defaultTOrV = T Empty
 
 
 defaultGlslFn :: GlslFn
-defaultGlslFn = GlslFn { kind : FnSrc, code : GlslFnCode "", fn : Fn.empty "" }
+defaultGlslFn = GlslFn { kind : FnSrc, code : GlslFnCode "", fn : Sig.empty "" }
 
 
 defaultGlslFnRef :: GlslFnRef
-defaultGlslFnRef = GlslFnRef $ Fn.empty ""
+defaultGlslFnRef = GlslFnRef $ Sig.empty ""
 
 
 defaultGlslFnArg :: GlslFnArg

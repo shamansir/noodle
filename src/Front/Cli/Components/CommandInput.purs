@@ -50,8 +50,7 @@ import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 
 import Noodle.Id (FamilyR, unsafeFamilyR, unsafeInletR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Fn.ToFn (class PossiblyToFn)
-import Noodle.Fn.ToFn (Fn) as ToFn
+import Noodle.Fn.Signature (Signature, class PossiblyToSignature)
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.Tagged (class Tagged) as CT
@@ -90,7 +89,7 @@ component :: forall tk pstate fs strepr chrepr
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => Core.Blessed (State tk pstate fs strepr chrepr Effect)
 component =
@@ -149,7 +148,7 @@ tryExecute
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
-    => PossiblyToFn tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
     => String -> BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
 tryExecute command = do
@@ -196,7 +195,7 @@ tryExecute command = do
                         Nothing -> CG.toDefault encodedType
                 Nothing -> fallback
 
-        convertFn :: ToFn.Fn ChannelDef ChannelDef -> ToFn.Fn chrepr chrepr
+        convertFn :: Signature ChannelDef ChannelDef -> Signature chrepr chrepr
         convertFn = bimap defToRepr defToRepr
 
     {-

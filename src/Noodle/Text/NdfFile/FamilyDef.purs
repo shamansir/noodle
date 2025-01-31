@@ -15,9 +15,9 @@ import Noodle.Id (group, family) as Id
 import Noodle.Text.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.FromCode (Source) as FC
-import Noodle.Fn.ToFn (class ToFn, Fn, FnS, toFn, Argument, Output, argName, argValue, outName, outValue, arg, out)
-import Noodle.Fn.ToFn (name) as Fn
-import Noodle.Fn.ToFn (fn) as Make
+import Noodle.Fn.Signature (Signature, class ToSignature, Sig, SigS, toSignature, Argument, Output, argName, argValue, outName, outValue, arg, out)
+import Noodle.Fn.Signature (name) as Sig
+import Noodle.Fn.Signature (sig) as Make
 import Noodle.Text.NdfFile.Types (FamilyDefRec, EncodedType(..), EncodedValue(..), ChannelDef(..), StateDef(..), emptyStateDef)
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ndfLinesCount) as PC
@@ -31,9 +31,9 @@ derive instance Newtype FamilyDef _
 derive newtype instance Eq FamilyDef
 
 
-newtype NodeFnDef = NodeFnDef (Fn ChannelDef ChannelDef)
-derive instance Newtype NodeFnDef _
-derive newtype instance Eq NodeFnDef
+newtype NodeSigDef = NodeSigDef (Signature ChannelDef ChannelDef)
+derive instance Newtype NodeSigDef _
+derive newtype instance Eq NodeSigDef
 
 
 newtype ProcessAssign =
@@ -42,22 +42,22 @@ derive instance Newtype ProcessAssign _
 derive newtype instance Eq ProcessAssign
 
 
-instance ToFn a ChannelDef ChannelDef FamilyDef where
-    toFn :: Proxy a -> FamilyDef -> Fn ChannelDef ChannelDef
-    toFn _ = _.fn <<< unwrap
+instance ToSignature a ChannelDef ChannelDef FamilyDef where
+    toSignature :: Proxy a -> FamilyDef -> Signature ChannelDef ChannelDef
+    toSignature _ = _.fnsig <<< unwrap
 
 
-instance ToFn a ChannelDef ChannelDef NodeFnDef where
-    toFn :: Proxy a -> NodeFnDef -> Fn ChannelDef ChannelDef
-    toFn = const unwrap
+instance ToSignature a ChannelDef ChannelDef NodeSigDef where
+    toSignature :: Proxy a -> NodeSigDef -> Signature ChannelDef ChannelDef
+    toSignature = const unwrap
 
 
-instance ToCode NDF opts NodeFnDef where
-    toCode :: Proxy NDF -> opts -> NodeFnDef -> String
+instance ToCode NDF opts NodeSigDef where
+    toCode :: Proxy NDF -> opts -> NodeSigDef -> String
     toCode _ _ =
         case _ of
-            NodeFnDef fn ->
-                case (unwrap $ toFn (Proxy :: _ Void) fn :: FnS ChannelDef ChannelDef) of
+            NodeSigDef fn ->
+                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SigS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         " => " <>
@@ -75,12 +75,12 @@ instance ToCode NDF opts NodeFnDef where
                 channelToCode_ (outName out) (outValue out)
 
 
-instance ToTaggedCode NDF opts NodeFnDef where
-    toTaggedCode :: Proxy NDF -> opts -> NodeFnDef -> T.Tag
+instance ToTaggedCode NDF opts NodeSigDef where
+    toTaggedCode :: Proxy NDF -> opts -> NodeSigDef -> T.Tag
     toTaggedCode _ _ =
         case _ of
-            NodeFnDef fn ->
-                case (unwrap $ toFn (Proxy :: _ Void) fn :: FnS ChannelDef ChannelDef) of
+            NodeSigDef fn ->
+                case (unwrap $ toSignature (Proxy :: _ Void) fn :: SigS ChannelDef ChannelDef) of
                     (_ /\ inlets /\ outlets) ->
                         inletsList inlets <>
                         T.space <> F.operator "=>" <> T.space <>
@@ -88,7 +88,7 @@ instance ToTaggedCode NDF opts NodeFnDef where
                             [ singleOutput ] -> outletDefToTaggedCode singleOutput
                             _ -> outletsList outlets
         where
-            inletsList inlets = F.operator "<" <> T.joinWith (T.space <> F.operator "->" <> T.space) (inletDefToTaggedCode <$> inlets) <> F.operator ">"
+            inletsList inlets   = F.operator "<" <> T.joinWith (T.space <> F.operator "->" <> T.space) (inletDefToTaggedCode  <$> inlets)  <> F.operator ">"
             outletsList outlets = F.operator "<" <> T.joinWith (T.space <> F.operator "->" <> T.space) (outletDefToTaggedCode <$> outlets) <> F.operator ">"
             inletDefToTaggedCode :: Argument ChannelDef -> T.Tag
             inletDefToTaggedCode arg =
@@ -102,10 +102,10 @@ instance ToCode NDF opts FamilyDef where
     toCode :: Proxy NDF -> opts -> FamilyDef -> String
     toCode pndf opts (FamilyDef fdef) =
         case fdef of
-            { group, fn, process, state } ->
-                ": " <> Id.group group <> " : " <> (Fn.name fn) <> " :: "
+            { group, fnsig, process, state } ->
+                ": " <> Id.group group <> " : " <> (Sig.name fnsig) <> " :: "
                      <> (if hasStateDef_ state then stateToCode_ state <> " " else "")
-                     <> toCode pndf opts (wrap fn :: NodeFnDef) <> case process of
+                     <> toCode pndf opts (wrap fnsig :: NodeSigDef) <> case process of
                         NoneSpecified -> ""
                         _ -> " " <> toCode pndf opts process
 
@@ -114,12 +114,12 @@ instance ToTaggedCode NDF opts FamilyDef where
     toTaggedCode :: Proxy NDF -> opts -> FamilyDef -> T.Tag
     toTaggedCode pndf opts (FamilyDef fdef) =
         case fdef of
-            { group, fn, process, state } ->
+            { group, fnsig, process, state } ->
                 F.operator ":"
                 <> T.space <> F.someGroup (Id.group group) <> T.space <> F.operator ":"
-                <> T.space <> F.family (Fn.name fn) <> T.space <> F.operator "::"
+                <> T.space <> F.family (Sig.name fnsig) <> T.space <> F.operator "::"
                 <> (if hasStateDef_ state then T.space <> stateToTaggedCode_ state else T.space)
-                <> toTaggedCode pndf opts (wrap fn :: NodeFnDef)
+                <> toTaggedCode pndf opts (wrap fnsig :: NodeSigDef)
                 <> case process of
                     NoneSpecified -> T.s ""
                     _ -> T.space <> toTaggedCode pndf opts process
@@ -209,12 +209,12 @@ group :: FamilyDef -> GroupR
 group = unwrap >>> _.group
 
 
-fnDef:: FamilyDef -> NodeFnDef
-fnDef = unwrap >>> _.fn >>> wrap
+sigDef:: FamilyDef -> NodeSigDef
+sigDef = unwrap >>> _.fnsig >>> wrap
 
 
 family :: FamilyDef -> FamilyR
-family = unwrap >>> _.fn >>> Fn.name >>> unsafeFamilyR
+family = unwrap >>> _.fnsig >>> Sig.name >>> unsafeFamilyR
 
 
 -- familyR :: FamilyDef -> Id.FamilyR
@@ -301,7 +301,7 @@ qdef :: { group :: String, family :: String, inputs :: Array (Argument ChannelDe
 qdef { group, family, inputs, outputs } =
     FamilyDef
         { group : unsafeGroupR group
-        , fn : Make.fn family inputs outputs
+        , fnsig : Make.sig family inputs outputs
         , state : emptyStateDef
         , process : NoneSpecified
         }
@@ -311,7 +311,7 @@ qdefp :: { group :: String, family :: String, inputs :: Array (Argument ChannelD
 qdefp { group, family, inputs, outputs, process } =
     FamilyDef
         { group : unsafeGroupR group
-        , fn : Make.fn family inputs outputs
+        , fnsig : Make.sig family inputs outputs
         , state : emptyStateDef
         , process
         }
@@ -321,7 +321,7 @@ qdefs :: { group :: String, family :: String, inputs :: Array (Argument ChannelD
 qdefs { group, family, inputs, outputs, state } =
     FamilyDef
         { group : unsafeGroupR group
-        , fn : Make.fn family inputs outputs
+        , fnsig : Make.sig family inputs outputs
         , state
         , process : NoneSpecified
         }
@@ -331,7 +331,7 @@ qdefps :: { group :: String, family :: String, inputs :: Array (Argument Channel
 qdefps { group, family, inputs, outputs, state, process } =
     FamilyDef
         { group : unsafeGroupR group
-        , fn : Make.fn family inputs outputs
+        , fnsig : Make.sig family inputs outputs
         , state
         , process
         }
