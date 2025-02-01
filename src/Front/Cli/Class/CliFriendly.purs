@@ -4,7 +4,7 @@ import Prelude
 
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr) as Toolkit
 import Noodle.Ui.Cli.Tagging.At (class At) as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel, StatusLine) as At
+import Noodle.Ui.Cli.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
 
 import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 
@@ -19,6 +19,7 @@ class
     , Toolkit.MarkToolkit tk
     , T.At At.ChannelLabel chrepr
     , T.At At.StatusLine chrepr
+    , T.At At.Documentation chrepr
     ) <= CliFriendly tk fs chrepr m
 
 
@@ -29,4 +30,5 @@ instance
     , Toolkit.MarkToolkit tk
     , T.At At.ChannelLabel chrepr
     , T.At At.StatusLine chrepr
+    , T.At At.Documentation chrepr
     ) => CliFriendly tk fs chrepr m
