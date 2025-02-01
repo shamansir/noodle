@@ -68,7 +68,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , patchKeysMap :: Map Id.PatchR K.PatchBoxKey
     , history :: NdfFile
     , developmentLog :: Array String
-    , currentDocumentation :: Array String
+    , currentDocumentation :: Maybe (DocumentationFocus sr cr)
     -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , panelsOnOff :: SidePanelsOnOff
@@ -98,6 +98,12 @@ type LastKeys =
     , outletsBox :: K.OutletsBoxKey
     , infoBox :: K.InfoBoxKey
     , removeButton :: K.RemoveButtonKey
+    }
+
+
+type DocumentationFocus sr cr =
+    { node :: Id.NodeR
+    , curUpdate :: Maybe (Raw.NodeChanges sr cr)
     }
 
 
@@ -139,7 +145,7 @@ init state toolkit = do
         , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
         , history : Ndf.init "noodle" 2.0
         , developmentLog : []
-        , currentDocumentation : []
+        , currentDocumentation : Nothing
         , blockInletEditor : false
         , inletEditorOpenedFrom : Nothing
         -- , program : Map.empty
@@ -287,12 +293,12 @@ prependHistory :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> 
 prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }
 
 
-switchDocumentation :: forall tk ps fs sr cr m. Id.FamilyR -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-switchDocumentation familyR s = s { currentDocumentation = s.history # Ndf.documentationFor familyR }
+switchDocumentation :: forall tk ps fs sr cr m. Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+switchDocumentation nodeR mbUpdate s = s { currentDocumentation = Just { node : nodeR, curUpdate : mbUpdate } }
 
 
 clearDocumentation :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
-clearDocumentation = _ { currentDocumentation = [] }
+clearDocumentation = _ { currentDocumentation = Nothing }
 
 
 appendToLog :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m

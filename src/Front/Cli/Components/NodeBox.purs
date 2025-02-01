@@ -220,7 +220,7 @@ _component
                 , Core.on Element.Move
                     $ onMove nodeR keys.nodeBox
                 , Core.on Element.MouseOver
-                    $ onMouseOver (Proxy :: _ tk) familyR nodeR
+                    $ onMouseOver (Proxy :: _ tk) nodeR
                 , Core.on Element.MouseOut
                    $ onMouseOut
                 ]
@@ -340,6 +340,8 @@ renderUpdate
     => Toolkit.HasChRepr tk chrepr
     => T.At At.StatusLine chrepr
     => T.At At.ChannelLabel chrepr
+    => T.At At.Documentation chrepr
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => NodeBoxKey
     -> Proxy tk
     -> Id.NodeR
@@ -354,9 +356,10 @@ renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
     state <- State.get
     case state.mouseOverNode of
         Just moNodeId ->
-            if nodeR == moNodeId then
+            if nodeR == moNodeId then do
                 -- DP.showDocumentationFor $ Id.familyOf nodeR
                 SL.nodeStatus ptk nodeR update
+                DP.showNodeDocumentation nodeR $ Just update
             else pure unit
         Nothing -> pure unit
     Key.mainScreen >~ Screen.render
@@ -452,21 +455,24 @@ onMouseOver
      . MarkToolkit tk
     => Toolkit.HasChRepr tk chrepr
     => T.At At.StatusLine chrepr
+    => T.At At.Documentation chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
-    -> Id.FamilyR
     -> Id.NodeR
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onMouseOver ptk familyR nodeR _ _ = do
+onMouseOver ptk nodeR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
     state <- State.get
     case State.lastNodeUpdate nodeR state of
-        Just update -> SL.nodeStatus ptk nodeR update
-        Nothing -> SL.familyStatus ptk familyR
-    DP.showDocumentationFor familyR
+        Just update -> do
+            SL.nodeStatus ptk nodeR update
+            DP.showNodeDocumentation nodeR $ Just update
+        Nothing -> do
+            SL.familyStatus ptk $ Id.familyOf nodeR
+            DP.showNodeDocumentation nodeR Nothing
     State.modify_ $ _ { mouseOverNode = Just nodeR }
     {-
     FI.familyStatus family
@@ -475,7 +481,14 @@ onMouseOver ptk familyR nodeR _ _ = do
     --CC.log $ "over" <> show idx
 
 
-onMouseOut :: forall tk ps fs sr cr m. _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
+onMouseOut
+    :: forall tk ps fs sr cr m
+     . MarkToolkit tk
+    => Toolkit.HasChRepr tk cr
+    => T.At At.StatusLine cr
+    => T.At At.Documentation cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
     State.modify_ $ _ { mouseOverNode = Nothing }
     SL.clear

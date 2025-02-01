@@ -122,6 +122,10 @@ nodeStatusLine :: forall tk strepr chrepr. MarkToolkit tk => Tagged.At At.Status
 nodeStatusLine ptk nodeR = _fnOnelineSignature (Proxy :: _ At.StatusLine) ptk (Right nodeR) <<< Updates.orderedToSignature nodeR <<< Updates.fromRecord
 
 
+nodeDocumentation :: forall tk strepr chrepr. MarkToolkit tk => Tagged.At At.Documentation chrepr => HasChRepr tk chrepr => Proxy tk -> Id.NodeR -> Raw.NodeChanges strepr chrepr -> Tag
+nodeDocumentation ptk nodeR = _fnOnelineSignature (Proxy :: _ At.Documentation) ptk (Right nodeR) <<< Updates.orderedToSignature nodeR <<< Updates.fromRecord
+
+
 {- T.fgcs (C.colorOf Palette.familyName) (reflect family)
     <> T.s " ==== "
     <> -}
@@ -301,9 +305,9 @@ familyDocs
     -> Id.FamilyR
     -> Tag
 familyDocs ptk familyR =
-    let group = groupOf ptk familyR
+    {- let group = groupOf ptk familyR
     in T.fgcs (markGroup ptk group) (Id.group group)
-        <> T.space <> familyOnelineSignature (Proxy :: _ At.Documentation) ptk familyR
+        <> T.space <> -} familyOnelineSignature (Proxy :: _ At.Documentation) ptk familyR
 
 
 familyStatusLine
