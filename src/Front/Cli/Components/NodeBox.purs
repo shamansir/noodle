@@ -225,8 +225,8 @@ _component
                    $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: forall a. Raw.NodeChanges strepr chrepr -> BlessedOp a m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
-        renderNodeUpdate = renderUpdate keys.nodeBox inletsKeys outletsKeys
+        renderNodeUpdate :: Raw.NodeChanges strepr chrepr -> BlessedOp (State tk pstate fs strepr chrepr m) m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate = renderUpdate keys.nodeBox (Proxy :: _ tk) nodeR inletsKeys outletsKeys
 
     -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
 
@@ -237,7 +237,7 @@ _component
 
     -- Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM state <<< CC.log <<< ?wh)
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< storeNodeUpdate nodeR)
-    Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+    Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< renderNodeUpdate) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< logUpdateToConsole) -- FIXME: shouldn't there be node state? but it's not used in the function anyway
     -- REM Blessed.lift $ SignalX.runSignal $ updates ~> logDataCommand stateRef -- TODO: only inlude changes from node editors and node body
 
@@ -335,17 +335,30 @@ storeNodeUpdate nodeR =
 
 
 renderUpdate
-    :: forall s m fstate chrepr
-     . T.At At.ChannelLabel chrepr
+    :: forall tk fs pstate strepr chrepr m
+     . MarkToolkit tk
+    => Toolkit.HasChRepr tk chrepr
+    => T.At At.StatusLine chrepr
+    => T.At At.ChannelLabel chrepr
     => NodeBoxKey
+    -> Proxy tk
+    -> Id.NodeR
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey
-    -> Raw.NodeChanges fstate chrepr
-    -> BlessedOp s m
-renderUpdate _ inletsKeysMap outletsKeysMap update = do
+    -> Raw.NodeChanges strepr chrepr
+    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
     -- CC.log $ show outletsReprs
-    _ <- traverseWithIndex updateInlet update.inlets
+    _ <- traverseWithIndex updateInlet  update.inlets
     _ <- traverseWithIndex updateOutlet update.outlets
+    state <- State.get
+    case state.mouseOverNode of
+        Just moNodeId ->
+            if nodeR == moNodeId then
+                -- DP.showDocumentationFor $ Id.familyOf nodeR
+                SL.nodeStatus ptk nodeR update
+            else pure unit
+        Nothing -> pure unit
     Key.mainScreen >~ Screen.render
     where
         updateInlet (_ /\ inletR) vicRepr =
@@ -454,6 +467,7 @@ onMouseOver ptk familyR nodeR _ _ = do
         Just update -> SL.nodeStatus ptk nodeR update
         Nothing -> SL.familyStatus ptk familyR
     DP.showDocumentationFor familyR
+    State.modify_ $ _ { mouseOverNode = Just nodeR }
     {-
     FI.familyStatus family
      -}
@@ -463,6 +477,7 @@ onMouseOver ptk familyR nodeR _ _ = do
 
 onMouseOut :: forall tk ps fs sr cr m. _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
+    State.modify_ $ _ { mouseOverNode = Nothing }
     SL.clear
     DP.clear
     {- REM

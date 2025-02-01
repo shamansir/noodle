@@ -78,6 +78,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , locations :: Map Id.NodeR Bounds
+    , mouseOverNode :: Maybe Id.NodeR
     }
 
 
@@ -150,6 +151,7 @@ init state toolkit = do
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
         , locations : Map.empty
+        , mouseOverNode : Nothing
         }
 
 
