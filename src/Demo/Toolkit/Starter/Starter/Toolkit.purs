@@ -2,6 +2,8 @@ module Starter.Toolkit where
 
 import Prelude
 
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
 import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 import Color as Color
 import Control.Monad.State (class MonadState)
@@ -14,12 +16,16 @@ import Demo.Toolkit.Starter.Starter.Patch (PState)
 import Effect (Effect)
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
-import Noodle.Id (FamilyR, family, group, toolkitR, unsafeGroupR) as Id
+import Noodle.Id (Family, FamilyR, family, group, toolkitR, unsafeGroupR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import StarterTk.P5.Shape as P5.Shape
+import Noodle.Node (Node)
+import Data.Symbol (class IsSymbol, reflectSymbol)
+import Cli.Keys (NodeBoxKey)
+import Blessed.Internal.BlessedOp (BlessedOp)
+import StarterTk.P5.Shape (F, family) as P5.Shape
 import StarterTk.P5.Sketch as P5.Sketch
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Color as Simple.Color
@@ -31,6 +37,7 @@ import StarterTk.Simple.Log as Simple.Log
 import StarterTk.Simple.Metro as Simple.Metro
 import StarterTk.Simple.Random as Simple.Random
 import StarterTk.Simple.Sum as Simple.Sum
+import Demo.Toolkit.Starter.Body.P5.Shape (body)  as P5.Shape
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
@@ -38,6 +45,7 @@ import StarterTk.Spreads.Xsshape as Spreads.Xsshape
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
+import Unsafe.Coerce (unsafeCoerce)
 
 
 type StarterFamilies :: Families
@@ -103,11 +111,28 @@ instance IsToolkit STARTER where
       )
     >>> Id.unsafeGroupR
 
-instance CliRenderer STARTER StarterFamilies ValueRepr m where
+instance MonadEffect m => CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
   cliSizeRaw _ _ _ _ _ = Nothing
-  renderCli _ _ _ _ _ = pure unit
-  renderCliRaw _ _ _ _ _ = pure unit
+  renderCli
+    :: forall (f :: Symbol) fstate is os
+     . IsSymbol f
+    => RegisteredFamily (F f fstate is os ValueRepr m) StarterFamilies
+    => Proxy STARTER
+    -> Proxy StarterFamilies
+    -> Id.Family f -> NodeBoxKey
+    -> Node f fstate is os ValueRepr m
+    -> BlessedOp fstate m
+  renderCli _ _ family nbkey node = do
+    -- liftEffect $ Console.log $ "render cli called with" <> reflectSymbol (Proxy :: _ f)
+    case reflectSymbol (Proxy :: _ f) of
+      "shape" -> do
+        -- liftEffect $ Console.log $ "shape :: " <> reflectSymbol (Proxy :: _ f)
+        unsafeCoerce $ P5.Shape.body (unsafeCoerce family) nbkey (unsafeCoerce node)
+      _ -> pure unit
+  renderCliRaw _ _ _ _ _ = do
+    -- liftEffect $ Console.log $ "render cli raw called" --
+    pure unit
 
 
 instance CliEditor STARTER ValueRepr where

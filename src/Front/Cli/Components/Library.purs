@@ -44,8 +44,8 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
-import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
-import Noodle.Toolkit.Family (Family) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class HoldsFamiliesFS, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
+import Noodle.Toolkit.Family (Family, familyIdOf) as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Ui.Cli.Tagging (libraryItem) as T
@@ -74,7 +74,7 @@ component
      . HasFallback chrepr
     => CT.Tagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.HoldsFamilies strepr chrepr Effect fs
+    => Toolkit.HoldsFamiliesFS strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
@@ -115,7 +115,7 @@ onFamilySelect
     => HasFallback chrepr
     => CT.Tagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.HoldsFamilies strepr chrepr m fs
+    => Toolkit.HoldsFamiliesFS strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => BlessedOp (State tk pstate fs strepr chrepr m) m
@@ -128,20 +128,27 @@ onFamilySelect =
         let toolkit = Network.toolkit state.network
         let families = Toolkit.families toolkit
         let mbSelectedFamily = families !! selected
-
         _ <- case (/\) <$> mbSelectedFamily <*> mbCurrentPatchR of
             Just (familyR /\ curPatchR) ->
-                case Toolkit.withAnyFamily
-                        (spawnAndRenderRaw
+                case Toolkit.withFamilyUnsafe
+                        (spawnAndRender
                             toolkit
                             curPatchR
-                            familyR
-                            $ NodeBox.nextPos state.lastShift)
-                        familyR
-                        toolkit
-                    of
+                            $ NodeBox.nextPos state.lastShift
+                        ) familyR toolkit of
                     Just op -> op
-                    Nothing -> pure unit
+                    Nothing ->
+                        case Toolkit.withRawFamily -- Toolkit.withAnyFamily
+                                (spawnAndRenderRaw
+                                    toolkit
+                                    curPatchR
+                                    familyR
+                                    $ NodeBox.nextPos state.lastShift)
+                                familyR
+                                toolkit
+                            of
+                            Just op -> op
+                            Nothing -> pure unit
             Nothing -> pure unit
 
         pure unit
@@ -152,7 +159,7 @@ spawnAndRenderRaw
      . Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
-    => Toolkit.HoldsFamilies strepr chrepr m fs
+    => Toolkit.HoldsFamiliesFS strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
@@ -218,20 +225,21 @@ spawnAndRender
     => CliFriendly tk fs chrepr m
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
-    -> Id.Family f
     -> { left :: Int, top :: Int }
     -> Toolkit.Family f fstate is os chrepr m
     -> BlessedOp (State tk pstate fs strepr chrepr m) m
-spawnAndRender toolkit patchR family nextPos  _ = do
-    (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn family toolkit
+spawnAndRender toolkit patchR nextPos family = do
+    let (familyId :: Id.Family f) = (Toolkit.familyIdOf family)
+
+    (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn familyId toolkit
     (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
-    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR family)
+    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR familyId)
 
     traverse_ (flip Node.setState node) $ StRepr.from =<< mbNodeState
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
 
-    NodeBox.component nextPos patchR family node
+    NodeBox.component nextPos patchR familyId node
 
     CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
 

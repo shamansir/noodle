@@ -12,6 +12,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Exception (Error)
+import Effect.Console (log) as Console
 
 import Control.Monad.State (get, modify, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
@@ -45,7 +46,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (getStateRef, lift, runM, runM', runOnUnit) as Blessed
+import Blessed.Internal.BlessedOp (getStateRef, lift, runM, runM', runOnUnit, runOn, imapStateF) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -55,7 +56,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 -- import Blessed.UI.Line.Li ()
 
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Id as Id
@@ -91,7 +92,7 @@ import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
 import Cli.Class.CliFriendly (class CliFriendly)
-import Cli.Class.CliRenderer (cliSizeRaw, renderCliRaw)
+import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
 -- REM import Cli.Components.NodeBox.InfoBox as IB
@@ -258,7 +259,9 @@ _component
 
     (nodeStateRef :: Ref strepr) <- liftEffect $ Ref.new nodeState
 
-    Blessed.lift $ Blessed.runM' nodeStateRef $ nodeOp
+    -- liftEffect $ Console.log "before render cli"
+    -- liftEffect $ Console.log "test second line"
+    Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
 
     let
         location =
@@ -321,8 +324,15 @@ component
     -> Id.Family f
     -> Noodle.Node f fstate is os chrepr m
     -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
-component pos curPatchR family =
-    componentRaw pos curPatchR (Id.familyR family) <<< RawNode.toReprableState <<< Node.toRaw
+component pos curPatchR family node = do
+    state <- State.get
+    let
+        nextKeys = State.nextKeys state.lastKeys
+        familyR = Id.familyR family
+        mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
+        nodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
+        rawNode = RawNode.toReprableState $ Node.toRaw node
+    _component pos curPatchR familyR rawNode nextKeys mbSize (Blessed.runOn fallback nodeOp)
 
 
 storeNodeUpdate
