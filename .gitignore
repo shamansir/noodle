@@ -1,4 +1,6 @@
 .#*
+.DS_Store
+**/.DS_Store
 package-lock.json
 .psc-ide-port
 .purs-repl
@@ -10,7 +12,6 @@ node_modules
 index.js
 hydra.bundle.*.js
 static
-.DS_Store
 src_
 to-production.sh
 commands_dump.txt
