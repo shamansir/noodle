@@ -5,6 +5,7 @@ import Prelude (class Applicative, pure)
 import Type.Data.Peano as Peano
 import Type.Data.List (List', Cons', Nil', type (:>), class Length, class IsMember)
 import Type.Proxy (Proxy(..))
+import Type.Data.Boolean (True)
 
 -- import Prim.Boolean (True, False)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -39,7 +40,7 @@ class Put x xs ys | xs -> ys
 
 
 instance Put x TNil (x :> TNil)
-else instance Put x (some :> tail) (x :> some :> tail)
+else instance IsMember x (x :> some :> tail) True => Put x (some :> tail) (x :> some :> tail)
 
 
 class Merge :: forall k. TList k -> TList k -> TList k -> Constraint
