@@ -14,7 +14,7 @@ import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Fn.Signature (class PossiblyToSignature, sig)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_) as Sig
-import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
+import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
 import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Cli.Palette.Item as C
 import StarterTk.Simple.Bang as Simple.Bang
@@ -110,8 +110,11 @@ instance MarkToolkit STARTER where
 
 instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
-  cliSizeRaw _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = pure unit
+
+
+instance CliRawRenderer STARTER StarterFamilies ValueRepr m where
+  cliSizeRaw _ _ _ _ _ = Nothing
   renderCliRaw _ _ _ _ _ = pure unit
 
 
