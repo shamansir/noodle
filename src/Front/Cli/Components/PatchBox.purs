@@ -24,7 +24,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
-import Noodle.Toolkit (class HoldsFamilies, class HoldsFamiliesFS, class FromPatchState) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.Signature (class PossiblyToSignature)
 
 -- import Cli.Components.InputIndicator as InputIndicator
@@ -37,7 +37,7 @@ component
     => CT.Tagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk ps strepr
-    => Toolkit.HoldsFamiliesFS strepr chrepr Effect fs
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
     -> Core.Blessed (State tk ps fs strepr chrepr Effect)

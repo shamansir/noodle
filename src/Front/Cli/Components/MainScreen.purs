@@ -71,7 +71,7 @@ component
     => HasFallback strepr
     => CT.Tagged chrepr
     => ParseableRepr chrepr
-    => Toolkit.HoldsFamiliesFS strepr chrepr Effect fs
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
