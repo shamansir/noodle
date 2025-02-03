@@ -4,7 +4,7 @@ import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console (log) as Console
-import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
+import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
 import Color as Color
 import Control.Monad.State (class MonadState)
 import Data.Maybe (Maybe(..))
@@ -113,7 +113,6 @@ instance IsToolkit STARTER where
 
 instance MonadEffect m => CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
-  cliSizeRaw _ _ _ _ _ = Nothing
   renderCli
     :: forall (f :: Symbol) fstate is os
      . IsSymbol f
@@ -130,9 +129,11 @@ instance MonadEffect m => CliRenderer STARTER StarterFamilies ValueRepr m where
         -- liftEffect $ Console.log $ "shape :: " <> reflectSymbol (Proxy :: _ f)
         unsafeCoerce $ P5.Shape.body (unsafeCoerce family) nbkey (unsafeCoerce node)
       _ -> pure unit
-  renderCliRaw _ _ _ _ _ = do
-    -- liftEffect $ Console.log $ "render cli raw called" --
-    pure unit
+
+
+instance MonadEffect m => CliRawRenderer STARTER StarterFamilies ValueRepr m where
+  cliSizeRaw _ _ _ _ _ = Nothing
+  renderCliRaw _ _ _ _ _ = pure unit
 
 
 instance CliEditor STARTER ValueRepr where

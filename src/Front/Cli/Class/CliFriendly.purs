@@ -6,7 +6,7 @@ import Noodle.Toolkit (class MarkToolkit, class HasChRepr) as Toolkit
 import Noodle.Ui.Cli.Tagging.At (class At) as T
 import Noodle.Ui.Cli.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
 
-import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
+import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
 
 
 -- FIXME: ensure those are the only classes required in the places where it is used
@@ -14,6 +14,7 @@ import Cli.Class.CliRenderer (class CliRenderer, class CliEditor)
 
 class
     ( CliRenderer tk fs chrepr m
+    , CliRawRenderer tk fs chrepr m
     , CliEditor tk chrepr
     , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
@@ -25,6 +26,7 @@ class
 
 instance
     ( CliRenderer tk fs chrepr m
+    , CliRawRenderer tk fs chrepr m
     , CliEditor tk chrepr
     , Toolkit.HasChRepr tk chrepr
     , Toolkit.MarkToolkit tk
