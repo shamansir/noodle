@@ -44,7 +44,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
-import Noodle.Toolkit (class HoldsFamilies, class HoldsFamiliesFS, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
 import Noodle.Toolkit.Family (Family, familyIdOf) as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
@@ -74,7 +74,7 @@ component
      . HasFallback chrepr
     => CT.Tagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.HoldsFamiliesFS strepr chrepr Effect fs
+    => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
@@ -115,7 +115,7 @@ onFamilySelect
     => HasFallback chrepr
     => CT.Tagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.HoldsFamiliesFS strepr chrepr m fs
+    => Toolkit.HoldsFamilies strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => BlessedOp (State tk pstate fs strepr chrepr m) m
@@ -159,7 +159,7 @@ spawnAndRenderRaw
      . Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
-    => Toolkit.HoldsFamiliesFS strepr chrepr m fs
+    => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
