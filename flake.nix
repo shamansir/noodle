@@ -1,46 +1,77 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    ps-tools.follows = "purs-nix/ps-tools";
-    purs-nix.url = "github:purs-nix/purs-nix/ps-0.15";
-    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
+    purescript-overlay = {
+      url = "github:thomashoneyman/purescript-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs =
-    { nixpkgs, utils, ... }@inputs:
-    utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ]
-      (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        ps-tools = inputs.ps-tools.legacyPackages.${system};
-        purs-nix = inputs.purs-nix { inherit system; };
+  outputs = { self, nixpkgs, ... }@inputs:
+    let
+      supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
 
-        ps = purs-nix.purs {
-          dependencies = [
-            "console"
-            "effect"
-            "prelude"
-          ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-          dir = ./.;
-        };
-      in
-      {
-        packages.default = ps.bundle { };
-
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            entr
-            nodejs
-            (ps.command { })
-            ps-tools.for-0_15.purescript-language-server
-            purs-nix.esbuild
-            purs-nix.purescript
-          ];
-
-          shellHook = ''
-            alias watch="find src | entr -s 'echo bundling; purs-nix bundle'"
-          '';
-        };
+      nixpkgsFor = forAllSystems (system: import nixpkgs {
+        inherit system;
+        config = { };
+        overlays = builtins.attrValues self.overlays;
       });
+    in {
+      overlays = {
+        purescript = inputs.purescript-overlay.overlays.default;
+      };
+
+      packages = forAllSystems (system:
+        let pkgs = nixpkgsFor.${system}; in {
+          default = pkgs.stdenv.mkDerivation {
+            pname = "my-purescript-project";
+            version = "1.0.0";
+            src = ./.;
+
+            # This ensures the right versions of the tools are in the PATH.
+            buildInputs = [
+              pkgs.nodejs
+              pkgs.purs-tidy-bin.purs-tidy-0_10_0
+              pkgs.purs-backend-es
+              pkgs.purs-bin.purs-0_15_9
+              pkgs.spago-bin.spago-0_21_0
+            ];
+
+            # Optionally, set an environment variable so that spago can find the right purs
+            # (if needed; depends on your spago configuration)
+            # configureFlags = "--with-purs=${pkgs.purs-bin.purs-0_15_9}/bin/purs";
+
+            buildPhase = ''
+              # Create a temporary cache directory for spago
+              export XDG_CACHE_HOME=$(mktemp -d)
+              spago bundle-app --global-cache skip
+            '';
+
+            # Here we assume that spago creates a directory (say, `output/`) with the build
+            # artifacts. We then copy that to $out. Adjust as necessary for your project.
+            installPhase = ''
+              mkdir -p $out
+              cp -r output $out/
+            '';
+          };
+        });
+
+      devShells = forAllSystems (system:
+        # pkgs now has access to the standard PureScript toolchain
+        let pkgs = nixpkgsFor.${system}; in {
+          default = pkgs.mkShell {
+            name = "noodle";
+            inputsFrom = builtins.attrValues self.packages.${system};
+            buildInputs = with pkgs; [
+              pkgs.nodejs
+              purs-bin.purs-0_15_9
+              spago-bin.spago-0_21_0
+              purs-tidy-bin.purs-tidy-0_10_0
+              purs-backend-es
+            ];
+          };
+        });
+  };
 }
