@@ -25,8 +25,10 @@
 
       packages = forAllSystems (system:
         let pkgs = nixpkgsFor.${system}; in {
+          # FIXME: on Mac ARM works only with `nix build --option system x86_64-darwin`
+
           default = pkgs.stdenv.mkDerivation {
-            pname = "my-purescript-project";
+            pname = "noodle";
             version = "1.0.0";
             src = ./.;
 
@@ -34,9 +36,13 @@
             buildInputs = [
               pkgs.nodejs
               pkgs.purs-tidy-bin.purs-tidy-0_10_0
+              pkgs.git
+              pkgs.dhall
               pkgs.purs-backend-es
               pkgs.purs-bin.purs-0_15_9
-              pkgs.spago-bin.spago-0_21_0
+              #pkgs.spago-bin.spago-0_21_0
+              pkgs.spago-unstable
+              # pkgs.spago-unstable
             ];
 
             # Optionally, set an environment variable so that spago can find the right purs
@@ -46,7 +52,8 @@
             buildPhase = ''
               # Create a temporary cache directory for spago
               export XDG_CACHE_HOME=$(mktemp -d)
-              spago bundle-app --global-cache skip
+              export HOME=$(mktemp -d)
+              spago build
             '';
 
             # Here we assume that spago creates a directory (say, `output/`) with the build
@@ -60,12 +67,13 @@
 
       devShells = forAllSystems (system:
         # pkgs now has access to the standard PureScript toolchain
+        # FIXME: on Mac ARM works only with `nix develop --option system x86_64-darwin`
         let pkgs = nixpkgsFor.${system}; in {
           default = pkgs.mkShell {
             name = "noodle";
             inputsFrom = builtins.attrValues self.packages.${system};
             buildInputs = with pkgs; [
-              pkgs.nodejs
+              nodejs
               purs-bin.purs-0_15_9
               spago-bin.spago-0_21_0
               purs-tidy-bin.purs-tidy-0_10_0
