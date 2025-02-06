@@ -6,13 +6,23 @@
 
 https://noodle.labs.jb.gg
 
-## Warnings
+## Temprorary Warnings
 
 * It is developed with PureScript `0.15.9` and spago `0.21.0`, but now I have updated to `spago.yaml`, but still include `spago.dhall` "just in case";
 * I also drafted a `flake.nix` for `nix` packaging and running:
-  * It works on my M1 Pro machine with `nix develop --option system x86_64-darwin` (`develop` is not totally pure);
+  * It is not yet isolated with `node_packages`, and current CLI interface a.k.a. TUI requires `chjj/blessed` library from `npm`;
+  * It works on my M1 Pro machine :D;
   * With `purescript-overlay` it allows to select compiler and `spago`, and `spago build` and all the commands below should work there in theory;
-  * `nix build --option system x86_64-darwin` currently creates `result/output` but doesn't bundle it further in any way, it is in works;
+  * `nix develop` works, where you can do `spago build` and `spago run`;
+  * `nix build` works;
+  * `nix run` is not yet working, something with the terminal output;
+
+## Installing
+
+* Latest `spago` should work (`0.93.42` for the moment)
+  * However it is developed with `spago` `v0.21.0`
+* `purs` compiler `v0.15.9`, it is not yet updated/checked on the latest version;
+* `npm install` is needed;
 
 ## Running
 
