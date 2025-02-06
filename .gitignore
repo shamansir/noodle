@@ -26,3 +26,4 @@ test.to.revive/Files/Output
 /output.backup
 /output.txt
 /result
+/output.nix

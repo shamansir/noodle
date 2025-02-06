@@ -126,6 +126,8 @@ package:
       - "-f"
       - "./ndf/starter.v0.1.ndf"
 workspace:
+  buildOpts:
+    output: "output.nix"
   extraPackages:
     # blessed:
     #   path: ../purescript-blessed

@@ -49,12 +49,12 @@
               export XDG_CACHE_HOME=$(mktemp -d)
               export HOME=$(mktemp -d)
               export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-              spago build
+              spago build --output output.nix
             '';
 
             installPhase = ''
               mkdir -p $out
-              cp -r output $out/
+              cp -r output.nix $out/
               cp -r ndf $out/
             '';
           };
@@ -79,7 +79,7 @@
                   spago-unstable
                 ];
               text = ''
-                spago run
+                spago run --output output.nix
               '';
             };
           in {
