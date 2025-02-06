@@ -32,23 +32,17 @@
             version = "1.0.0";
             src = ./.;
 
-            # This ensures the right versions of the tools are in the PATH.
-            buildInputs = [
-              pkgs.cacert
-              pkgs.nodejs
-              pkgs.purs-tidy-bin.purs-tidy-0_10_0
-              pkgs.git
-              pkgs.dhall
-              pkgs.purs-backend-es
-              pkgs.purs-bin.purs-0_15_9
-              #pkgs.spago-bin.spago-0_21_0
-              pkgs.spago-unstable
-              # pkgs.spago-unstable
+            buildInputs = with pkgs; [
+              cacert
+              nodejs
+              purs-tidy-bin.purs-tidy-0_10_0
+              git
+              dhall
+              purs-backend-es
+              purs-bin.purs-0_15_9
+              #spago-bin.spago-0_21_0
+              spago-unstable
             ];
-
-            # Optionally, set an environment variable so that spago can find the right purs
-            # (if needed; depends on your spago configuration)
-            # configureFlags = "--with-purs=${pkgs.purs-bin.purs-0_15_9}/bin/purs";
 
             buildPhase = ''
               # Create a temporary cache directory for spago
@@ -58,13 +52,41 @@
               spago build
             '';
 
-            # Here we assume that spago creates a directory (say, `output/`) with the build
-            # artifacts. We then copy that to $out. Adjust as necessary for your project.
             installPhase = ''
               mkdir -p $out
               cp -r output $out/
+              cp -r ndf $out/
             '';
           };
+        });
+
+      apps = forAllSystems (system:
+        let pkgs = nixpkgsFor.${system}; in {
+
+          default = let
+            runCli = pkgs.writeShellApplication {
+              name = "run-cli";
+              runtimeInputs =
+                with pkgs; [
+                  # cacert
+                  nodejs
+                  # purs-tidy-bin.purs-tidy-0_10_0
+                  # git
+                  # dhall
+                  # purs-backend-es
+                  # purs-bin.purs-0_15_9
+                  #spago-bin.spago-0_21_0
+                  spago-unstable
+                ];
+              text = ''
+                spago run
+              '';
+            };
+          in {
+            type = "app";
+            program = "${runCli}/bin/run-cli";
+          };
+
         });
 
       devShells = forAllSystems (system:

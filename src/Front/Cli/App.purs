@@ -21,6 +21,7 @@ import Control.Monad.State (modify_, get) as State
 
 import Node.HTTP (Request)
 import Node.Encoding (Encoding(..))
+import Node.Process (cwd)
 import Node.FS.Sync (readTextFile, stat, exists, mkdir', writeTextFile) as Sync
 import Node.FS.Aff (readTextFile, stat) as Async
 import Node.FS.Perms (permsReadWrite)
@@ -138,6 +139,8 @@ runWith =
             runPaletteTest
     where
         postFix fromFile = do
+            -- rootStat <- liftEffect $ cwd
+            -- liftEffect $ Console.log $ show rootStat
             fileCallback <- Blessed.impair1 applyFile
             liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
             pure unit
