@@ -103,7 +103,9 @@ package:
   - yoga-tree
   name: noodle
 workspace:
-  extra_packages:
+  extraPackages:
+    # blessed:
+    #   path: ../purescript-blessed
     blessed:
       dependencies:
       - "aff"
@@ -139,7 +141,7 @@ workspace:
       - "unfoldable"
       - "unsafe-coerce"
       git: https://github.com/shamansir/purescript-blessed.git
-      ref: 6c5a08c20f846940067798ed7b03d445055bec85
+      ref: 776e3b3eae4269570f90637195c01a1a4bd4b4bf
     halogen-svg-elems:
       dependencies:
       - halogen

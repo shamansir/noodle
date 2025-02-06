@@ -75,7 +75,8 @@
             buildInputs = with pkgs; [
               nodejs
               purs-bin.purs-0_15_9
-              spago-bin.spago-0_21_0
+              #spago-bin.spago-0_21_0
+              spago-unstable
               purs-tidy-bin.purs-tidy-0_10_0
               purs-backend-es
             ];

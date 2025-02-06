@@ -9,7 +9,6 @@ https://noodle.labs.jb.gg
 ## Warnings
 
 * It is developed with PureScript `0.15.9` and spago `0.21.0`, where it is still uses `dhall` instead of `yaml`;
-  * Partly because I have local copies of my own repos as the dependencies while I develop and `yaml` seems doesn't support this way of referencing anymore;
 * However, I have attempted to migrate and there's a `spago.yaml` which is not yet tested to the end;
 * I also have tried to provide `flake.nix`:
   * It works on my M1 Pro machine with `nix develop --option system x86_64-darwin` (`develop` is not totally pure);

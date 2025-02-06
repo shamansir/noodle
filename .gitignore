@@ -22,3 +22,6 @@ hydra.v2.toolkit.tpurs
 src/Noodle/Text/SketchParser.pgpurs
 *.gen.purs
 test/Files/Output
+test.to.revive/Files/Output
+output.backup
+output.txt
