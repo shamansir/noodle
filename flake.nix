@@ -34,6 +34,7 @@
 
             # This ensures the right versions of the tools are in the PATH.
             buildInputs = [
+              pkgs.cacert
               pkgs.nodejs
               pkgs.purs-tidy-bin.purs-tidy-0_10_0
               pkgs.git
@@ -53,6 +54,7 @@
               # Create a temporary cache directory for spago
               export XDG_CACHE_HOME=$(mktemp -d)
               export HOME=$(mktemp -d)
+              export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
               spago build
             '';
 

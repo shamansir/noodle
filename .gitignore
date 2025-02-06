@@ -23,5 +23,6 @@ src/Noodle/Text/SketchParser.pgpurs
 *.gen.purs
 test/Files/Output
 test.to.revive/Files/Output
-output.backup
-output.txt
+/output.backup
+/output.txt
+/result

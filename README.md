@@ -8,12 +8,11 @@ https://noodle.labs.jb.gg
 
 ## Warnings
 
-* It is developed with PureScript `0.15.9` and spago `0.21.0`, where it is still uses `dhall` instead of `yaml`;
-* However, I have attempted to migrate and there's a `spago.yaml` which is not yet tested to the end;
-* I also have tried to provide `flake.nix`:
+* It is developed with PureScript `0.15.9` and spago `0.21.0`, but now I have updated to `spago.yaml`, but still include `spago.dhall` "just in case";
+* I also drafted a `flake.nix` for `nix` packaging and running:
   * It works on my M1 Pro machine with `nix develop --option system x86_64-darwin` (`develop` is not totally pure);
   * With `purescript-overlay` it allows to select compiler and `spago`, and `spago build` and all the commands below should work there in theory;
-  * But `nix build` is not yet working for many reasons (I try!);
+  * `nix build --option system x86_64-darwin` currently creates `result/output` but doesn't bundle it further in any way, it is in works;
 
 ## Running
 
