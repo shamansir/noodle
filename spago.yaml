@@ -115,7 +115,6 @@ package:
       - MissingKindDeclaration
       - ImplicitImport
       - HidingImport
-      - DuplicateImportRef # Enable back
       - MissingTypeDeclaration
       - WildcardInferredType
   run:
@@ -125,6 +124,7 @@ package:
       - "starter"
       - "-f"
       - "./ndf/starter.v0.1.ndf"
+      # - "--palette-test"
 workspace:
   buildOpts:
     output: "output.nix"

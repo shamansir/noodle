@@ -24,7 +24,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
-import Noodle.Toolkit (class HoldsFamilies, class HoldsFamilies, class FromPatchState) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.Signature (class PossiblyToSignature)
 
 -- import Cli.Components.InputIndicator as InputIndicator

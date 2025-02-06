@@ -34,7 +34,7 @@
 
             buildInputs = with pkgs; [
               cacert
-              nodejs
+              nodejs_20
               purs-tidy-bin.purs-tidy-0_10_0
               git
               dhall
@@ -69,7 +69,7 @@
               runtimeInputs =
                 with pkgs; [
                   # cacert
-                  nodejs
+                  nodejs_20
                   # purs-tidy-bin.purs-tidy-0_10_0
                   # git
                   # dhall
@@ -79,6 +79,7 @@
                   spago-unstable
                 ];
               text = ''
+                # node ./test-blessed.js
                 spago run --output output.nix
               '';
             };
@@ -97,7 +98,7 @@
             name = "noodle";
             inputsFrom = builtins.attrValues self.packages.${system};
             buildInputs = with pkgs; [
-              nodejs
+              nodejs_20
               purs-bin.purs-0_15_9
               #spago-bin.spago-0_21_0
               spago-unstable
