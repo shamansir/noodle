@@ -23,7 +23,7 @@ import Noodle.Network (Network)
 import Noodle.Network (init, patch, addPatch, withPatch, patchesCount, toolkit) as Network
 import Noodle.Patch (getState) as Patch
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
+import Noodle.Toolkit (families, class HoldsFamilies, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
