@@ -23,7 +23,9 @@
     "blessed-contrib": "^4.11.0",
     "bresenham": "^0.0.4",
     "drawille": "^2.0.2",
+    "fs": "^0.0.1-security",
     "hydra-synth": "^1.3.9",
+    "util": "^0.12.5",
     "ws": "^8.13.0",
     "xhr2": "^0.2.1"
   },

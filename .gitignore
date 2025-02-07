@@ -1,4 +1,6 @@
 .#*
+.DS_Store
+**/.DS_Store
 package-lock.json
 .psc-ide-port
 .purs-repl
@@ -10,7 +12,6 @@ node_modules
 index.js
 hydra.bundle.*.js
 static
-.DS_Store
 src_
 to-production.sh
 commands_dump.txt
@@ -21,3 +22,8 @@ hydra.v2.toolkit.tpurs
 src/Noodle/Text/SketchParser.pgpurs
 *.gen.purs
 test/Files/Output
+test.to.revive/Files/Output
+/output.backup
+/output.txt
+/result
+/output.nix

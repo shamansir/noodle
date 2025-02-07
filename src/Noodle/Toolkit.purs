@@ -27,8 +27,8 @@ import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR, unsafeFamilyR) as Id
-import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily, HoldsFamily, holdFamily)
-import Noodle.Toolkit.HoldsFamily (withFamily, withFamily) as HF
+import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily)
+import Noodle.Toolkit.HoldsFamily (withFamily) as HF
 import Noodle.Toolkit.Family (Family)
 import Noodle.Toolkit.Family (familyROf, familyIdOf, spawn, toRaw) as Family
 import Noodle.Raw.Toolkit.Family (id, familyIdOf, spawn, toReprableState) as RawFamily

@@ -66,6 +66,7 @@ to generate this file without the comments in this block.
   , "node-fs-aff"
   , "node-http"
   , "node-path"
+  , "node-process"
   , "node-streams"
   , "nonempty"
   , "numbers"

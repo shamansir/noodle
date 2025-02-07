@@ -44,7 +44,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
-import Noodle.Toolkit (class HoldsFamilies, class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
 import Noodle.Toolkit.Family (Family, familyIdOf) as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)

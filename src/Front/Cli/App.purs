@@ -21,6 +21,7 @@ import Control.Monad.State (modify_, get) as State
 
 import Node.HTTP (Request)
 import Node.Encoding (Encoding(..))
+import Node.Process (cwd)
 import Node.FS.Sync (readTextFile, stat, exists, mkdir', writeTextFile) as Sync
 import Node.FS.Aff (readTextFile, stat) as Async
 import Node.FS.Perms (permsReadWrite)
@@ -64,7 +65,7 @@ import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class HoldsFamilies, class HoldsFamilies, class FromPatchState) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.Codegen as MCG
@@ -138,6 +139,8 @@ runWith =
             runPaletteTest
     where
         postFix fromFile = do
+            -- rootStat <- liftEffect $ cwd
+            -- liftEffect $ Console.log $ show rootStat
             fileCallback <- Blessed.impair1 applyFile
             liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
             pure unit
