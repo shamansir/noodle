@@ -746,7 +746,7 @@
     "extra_packages": {
       "blessed": {
         "git": "https://github.com/shamansir/purescript-blessed.git",
-        "ref": "776e3b3eae4269570f90637195c01a1a4bd4b4bf",
+        "ref": "abe8e390be811517274041788d54e2771d1c7852",
         "dependencies": [
           "aff",
           "argonaut-codecs",
@@ -1070,7 +1070,7 @@
     "blessed": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-blessed.git",
-      "rev": "776e3b3eae4269570f90637195c01a1a4bd4b4bf",
+      "rev": "abe8e390be811517274041788d54e2771d1c7852",
       "dependencies": [
         "aff",
         "argonaut-codecs",

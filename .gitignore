@@ -27,3 +27,7 @@ test.to.revive/Files/Output
 /output.txt
 /result
 /output.nix
+blessed.log.txt
+commands.log.txt
+node_modules.*
+node-modules.*

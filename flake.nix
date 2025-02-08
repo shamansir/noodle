@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     purescript-overlay = {
       url = "github:thomashoneyman/purescript-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,13 +18,17 @@
         config = { };
         overlays = builtins.attrValues self.overlays;
       });
+
     in {
       overlays = {
         purescript = inputs.purescript-overlay.overlays.default;
       };
 
       packages = forAllSystems (system:
-        let pkgs = nixpkgsFor.${system}; in {
+        let
+          pkgs = nixpkgsFor.${system};
+          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
+        in {
           # FIXME: on Mac ARM works only with `nix build --option system x86_64-darwin`
 
           default = pkgs.stdenv.mkDerivation {
@@ -49,6 +53,8 @@
               export XDG_CACHE_HOME=$(mktemp -d)
               export HOME=$(mktemp -d)
               export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+              ln -s ${nodeDependencies}/lib/node_modules ./node_modules
+              export PATH="${nodeDependencies}/bin:$PATH"
               spago build --output output.nix
             '';
 
@@ -61,7 +67,11 @@
         });
 
       apps = forAllSystems (system:
-        let pkgs = nixpkgsFor.${system}; in {
+        let
+          pkgs = nixpkgsFor.${system};
+          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
+
+        in {
 
           default = let
             runCli = pkgs.writeShellApplication {
@@ -80,6 +90,7 @@
                 ];
               text = ''
                 # node ./test-blessed.js
+                # spago run --demo
                 spago run --output output.nix
               '';
             };
@@ -93,14 +104,21 @@
       devShells = forAllSystems (system:
         # pkgs now has access to the standard PureScript toolchain
         # FIXME: on Mac ARM works only with `nix develop --option system x86_64-darwin`
-        let pkgs = nixpkgsFor.${system}; in {
+
+        let
+          pkgs = nixpkgsFor.${system};
+          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
+        in {
           default = pkgs.mkShell {
             name = "noodle";
             inputsFrom = builtins.attrValues self.packages.${system};
+            shellHook = ''
+              ln -s ${nodeDependencies}/lib/node_modules ./node_modules
+              export PATH="${nodeDependencies}/bin:$PATH"
+            '';
             buildInputs = with pkgs; [
-              nodejs_20
+              nodejs_23
               purs-bin.purs-0_15_9
-              #spago-bin.spago-0_21_0
               spago-unstable
               purs-tidy-bin.purs-tidy-0_10_0
               purs-backend-es

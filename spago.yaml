@@ -125,6 +125,7 @@ package:
       - "-f"
       - "./ndf/starter.v0.1.ndf"
       # - "--palette-test"
+      # - "--cli-demo"
 workspace:
   buildOpts:
     output: "output.nix"
@@ -166,7 +167,7 @@ workspace:
         - "unfoldable"
         - "unsafe-coerce"
       git: https://github.com/shamansir/purescript-blessed.git
-      ref: 776e3b3eae4269570f90637195c01a1a4bd4b4bf
+      ref: abe8e390be811517274041788d54e2771d1c7852
     halogen-svg-elems:
       dependencies:
         - halogen

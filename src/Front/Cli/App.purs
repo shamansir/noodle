@@ -28,11 +28,12 @@ import Node.FS.Perms (permsReadWrite)
 
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (impair1, impair2) as Blessed
+import Blessed.Internal.BlessedOp (impair1, impair2, configureJs') as Blessed
 import Blessed.Internal.Core (Blessed)
 import Blessed ((>~))
 import Blessed (run, runAnd) as Blessed
 import Blessed.UI.Base.Screen.Method as Screen
+import Blessed.Demo (demo, logEverythingConfig) as BDemo
 
 import Web.Socket.Server (WebSocketConnection, WebSocketMessage(..), sendMessage) as WSS
 
@@ -90,7 +91,8 @@ newtype NdfFilePath = NdfFilePath String
 
 
 data Options
-    = JustRun SelectedToolkit
+    = Demo
+    | JustRun SelectedToolkit
     | LoadNetworkFrom NdfFilePath SelectedToolkit
     | GenerateToolkitFrom NdfFilePath SelectedToolkit
     | PaletteTest SelectedToolkit
@@ -137,6 +139,8 @@ runWith =
                 User _  -> pure unit
         PaletteTest tkKey ->
             runPaletteTest
+        Demo ->
+            runBlessedDemo
     where
         postFix fromFile = do
             -- rootStat <- liftEffect $ cwd
@@ -221,6 +225,11 @@ runPaletteTest =
     Blessed.run unit PaletteTest.component
 
 
+runBlessedDemo :: Effect Unit
+runBlessedDemo = BDemo.demo
+    -- Blessed.configureJs' BDemo.logEverythingConfig *> BDemo.demo
+
+
 options :: OA.Parser Options
 options = ado
     selectToolkit <- OA.strOption $ fold
@@ -251,13 +260,19 @@ options = ado
         , OA.help "Run the palette preview test"
         ]
 
+    demo <- OA.switch $ fold
+        [ OA.long "cli-demo"
+        , OA.help "Run the chjj/blessed TUI interface demo"
+        ]
+
     let selectedToolkit =
             case selectToolkit of
                 "starter" -> Starter
                 _ -> defaultToolkit
 
     in
-        if paletteTest then PaletteTest selectedToolkit
+        if demo then Demo
+        else if paletteTest then PaletteTest selectedToolkit
         else if (genFromFile /= "") then GenerateToolkitFrom (NdfFilePath genFromFile) selectedToolkit
         else if (nwFromFile /= "")  then LoadNetworkFrom     (NdfFilePath nwFromFile)  selectedToolkit
         else JustRun selectedToolkit
