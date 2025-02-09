@@ -118,7 +118,7 @@ onMouseOver family nodeIdR nodeBox infoBox idx outletR vicRepr reprSignal _ _ = 
     case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> do
-            OI.move { x : outletPos.x, y : outletPos.y - 1 }
+            OI.move { x : outletPos.x, y : outletPos.y - 2 }
             OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
     --CC.log $ "over" <> show idx
@@ -142,7 +142,7 @@ onPress idx outletR nodeR nodeBoxKey _ _ = do
     CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey
     let outletPos = Bounds.outletPos nodeBounds idx
-    OI.move { x : outletPos.x, y : outletPos.y - 1 }
+    OI.move { x : outletPos.x, y : outletPos.y - 2 }
     OI.updateStatus OI.WaitConnection
     mainScreen >~ Screen.render
     State.modify_

@@ -50,7 +50,7 @@ collect _ node = do
     top <- Element.top ~< node
     width <- Element.width ~< node
     height <- Element.height ~< node
-    pure { top, left, width, height }
+    pure { top : top + 1, left, width, height }
 
 
 {- REM
