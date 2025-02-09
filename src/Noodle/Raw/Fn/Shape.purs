@@ -147,6 +147,10 @@ _isHotInlet :: InletDefR -> Boolean
 _isHotInlet = unwrap >>> _.temp >>> (_ == Temp.Hot)
 
 
+temperamentOf :: InletR -> Shape -> Maybe Temperament
+temperamentOf inletR = findInletDef inletR >>> map (unwrap >>> _.temp)
+
+
 indexOfInlet :: InletR -> Shape -> Maybe Int
 indexOfInlet inletR = findInletDef inletR >>> map (unwrap >>> _.order)
 

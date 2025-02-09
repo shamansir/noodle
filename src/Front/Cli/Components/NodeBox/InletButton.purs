@@ -15,7 +15,7 @@ import Type.Proxy (Proxy(..))
 import Control.Monad.State (get, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
 
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..), isJust, isNothing, fromMaybe)
 import Data.Text.Output.Blessed (singleLine) as T
 import Data.Map (lookup) as Map
 import Data.Newtype (unwrap)
@@ -76,13 +76,16 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, sendIn) as RawNode
+import Noodle.Raw.Node (id, sendIn, shape) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Toolkit (ToolkitKey)
+import Noodle.Fn.Shape.Temperament (Temperament(..))
+import Noodle.Fn.Shape.Temperament (default) as Temperament
+import Noodle.Raw.Fn.Shape (temperamentOf) as RawShape
 
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
@@ -127,6 +130,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
     let
         nodeR = RawNode.id rawNode
         familyR = Id.familyOf nodeR
+        temper = fromMaybe Temperament.default $ RawShape.temperamentOf inletR $ RawNode.shape rawNode
         (sendF :: chrepr -> Effect Unit) =
             \reprV -> do
                 state <- Ref.read stateRef
@@ -152,7 +156,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         , Core.on Element.Click -- Button.Press
             $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx inletR vicRepr reprSignal
+            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx temper inletR vicRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey inletIdx
         ]
@@ -167,11 +171,12 @@ onMouseOver
     -> NodeBoxKey
     -> InfoBoxKey
     -> Int
+    -> Temperament
     -> Id.InletR
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onMouseOver nodeR nodeBox infoBox idx inletR vicRepr reprSignal _ _ = do
+onMouseOver nodeR nodeBox infoBox idx temper inletR vicRepr reprSignal _ _ = do
     state <- State.get
     nodeBounds <- case Map.lookup nodeR state.locations of
                         Just bounds -> pure bounds
@@ -185,7 +190,7 @@ onMouseOver nodeR nodeBox infoBox idx inletR vicRepr reprSignal _ _ = do
         Just _ -> pure unit
         Nothing -> do
             II.move { x : inletPos.x, y : inletPos.y - 1 }
-            II.updateStatus II.Hover
+            II.updateStatus $ II.Hover temper
     Key.mainScreen >~ Screen.render
 
 

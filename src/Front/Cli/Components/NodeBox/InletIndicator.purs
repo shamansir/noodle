@@ -32,19 +32,23 @@ import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style as Style
 
+
+import Noodle.Fn.Shape.Temperament (Temperament)
+
 import Noodle.Ui.Cli.Tagging (inletHover) as T
 
 
 
+
 data Status
-    = Hover
+    = Hover Temperament
     | Off
     -- TODO: Editor
 
 
 contentFor :: Status -> String
 contentFor Off = ""
-contentFor Hover = T.singleLine $ T.inletHover
+contentFor (Hover temp) = T.singleLine $ T.inletHover temp
 
 
 component ∷ forall state. Core.Blessed state

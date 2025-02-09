@@ -64,6 +64,10 @@ defaultAlgorithm :: Algorithm
 defaultAlgorithm = AllHot
 
 
+default :: Temperament
+default = Hot
+
+
 infixr 6 byIndex as <+->
 
 

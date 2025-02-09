@@ -26,6 +26,7 @@ import Noodle.Fn.Generic.Updates (fromRecord) as Updates
 import Noodle.Toolkit (ToolkitKey, class IsToolkit, class MarkToolkit, class HasChRepr, markGroup, markFamily, groupOf)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve) as ViC
+import Noodle.Fn.Shape.Temperament (Temperament(..))
 
 import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Cli.Palette.Item (colorOf) as C
@@ -264,15 +265,19 @@ buttonConnection (Right n) = T.fgc (C.colorOf Palette.positive) $ T.s $ show n
 
 
 outletHover :: Tag
-outletHover = T.fgc (C.colorOf Palette.neutral) $ T.s "🮧"
+outletHover = T.fgc (C.colorOf Palette.outlet) $ T.s "⌃"
 
 
 outletSelect :: Tag
-outletSelect = T.fgc (C.colorOf Palette.positive) $ T.s "~"
+outletSelect = T.fgc (C.colorOf Palette.outletConnect) $ T.s "⇣" -- "↯"
 
 
-inletHover :: Tag
-inletHover = T.fgc (C.colorOf Palette.neutral) $ T.s "🮦"
+inletHover :: Temperament -> Tag
+inletHover temp =
+    T.fgc (C.colorOf $ case temp of
+        Cold -> Palette.inletCold
+        Hot -> Palette.inletHot
+    ) $ T.s "⌄"
 
 
 infoNode :: forall repr. Tagged.At At.InfoNode repr => repr -> Tag

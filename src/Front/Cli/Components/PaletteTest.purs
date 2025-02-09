@@ -39,6 +39,7 @@ import Noodle.Ui.Cli.Palette.Set.Catpuccin as Catpuccin
 import Noodle.Ui.Cli.Palette.Item as Palette
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline) as ViC
+import Noodle.Fn.Shape.Temperament (Temperament(..))
 
 import Starter.Toolkit (STARTER)
 import StarterTk.Simple.Sum as Starter.Sum
@@ -124,7 +125,8 @@ buildPalette =
     , qt "btn-con-r-1" $ T.buttonConnection $ Right 1
     , qt "o-hvr" $ T.outletHover
     , qt "o-sel" $ T.outletSelect
-    , qt "i-hvr" $ T.inletHover
+    , qt "i-hvr-hot" $ T.inletHover Hot
+    , qt "i-hvr-cld" $ T.inletHover Cold
     -- TODO , qt "i-sel" $ T.inletSelect
     , qt "inode-num" $ T.infoNode $ Sr.VNumber 20.0
     , qt "inode-chr" $ T.infoNode $ Sr.VChar 'b'
