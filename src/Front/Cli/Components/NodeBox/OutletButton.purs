@@ -38,6 +38,7 @@ import Cli.Style (inletsOutlets) as Style
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.SidePanel.Console as CC
+import Cli.Components.NodeBox.OutletIndicator as OI
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -117,9 +118,8 @@ onMouseOver family nodeIdR nodeBox infoBox idx outletR vicRepr reprSignal _ _ = 
     case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> do
-            pure unit
-            -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
-            -- REM OI.updateStatus OI.Hover
+            OI.move { x : outletPos.x, y : outletPos.y - 1 }
+            OI.updateStatus OI.Hover
     mainScreen >~ Screen.render
     --CC.log $ "over" <> show idx
 
@@ -132,7 +132,7 @@ onMouseOut infoBox idx _ _ = do
     -- REM: FI.clear
     case state.lastClickedOutlet of
         Just _ -> pure unit
-        Nothing -> pure unit -- REM OI.hide
+        Nothing -> OI.hide
     mainScreen >~ Screen.render
     --CC.log $ "out" <> show idx
 
@@ -142,8 +142,8 @@ onPress idx outletR nodeR nodeBoxKey _ _ = do
     CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey
     let outletPos = Bounds.outletPos nodeBounds idx
-    -- REM OI.move { x : outputPos.x, y : outputPos.y - 1 }
-    -- REM OI.updateStatus OI.WaitConnection
+    OI.move { x : outletPos.x, y : outletPos.y - 1 }
+    OI.updateStatus OI.WaitConnection
     mainScreen >~ Screen.render
     State.modify_
         (_

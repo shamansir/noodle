@@ -65,6 +65,8 @@ import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.Editor.Textual (tveKey) as VEditor
+import Cli.Components.NodeBox.InletIndicator as II
+import Cli.Components.NodeBox.OutletIndicator as OI
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -182,9 +184,8 @@ onMouseOver nodeR nodeBox infoBox idx inletR vicRepr reprSignal _ _ = do
     case state.lastClickedOutlet of
         Just _ -> pure unit
         Nothing -> do
-            pure unit
-            -- REM II.move { x : inletPos.x, y : inletPos.y - 1 }
-            -- REM II.updateStatus II.Hover
+            II.move { x : inletPos.x, y : inletPos.y - 1 }
+            II.updateStatus II.Hover
     Key.mainScreen >~ Screen.render
 
 
@@ -196,7 +197,7 @@ onMouseOut infoBox idx _ _ = do
     -- REM FI.clear
     case state.lastClickedOutlet of
         Just _ -> pure unit
-        Nothing -> pure unit -- REM II.hide
+        Nothing -> II.hide
     Key.mainScreen >~ Screen.render
 
 
@@ -224,6 +225,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                 if nodeBoxKey /= lco.nodeKey then do
 
                     CC.log "inlet press"
+                    OI.hide
 
                     let
                         (mbPrevLink :: Maybe (LinkState Unit)) =
@@ -297,7 +299,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                         _ -> pure unit
 
                     {- REM
-                    OI.hide
+                    hide
                     -}
 
                     pure unit

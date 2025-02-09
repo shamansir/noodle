@@ -27,8 +27,8 @@ import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Fn.Signature (class PossiblyToSignature)
 
--- import Cli.Components.InputIndicator as InputIndicator
--- import Cli.Components.OutputIndicator as OutputIndicator
+import Cli.Components.NodeBox.InletIndicator as InletIndicator
+import Cli.Components.NodeBox.OutletIndicator as OutletIndicator
 
 
 component
@@ -55,8 +55,8 @@ component toolkit =
         ]
 
         [ Library.component toolkit
-        -- , InputIndicator.component
-        -- , OutputIndicator.component
+        , InletIndicator.component
+        , OutletIndicator.component
         ]
 
         $ \_ -> do
