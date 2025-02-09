@@ -80,18 +80,18 @@
                 with pkgs; [
                   # cacert
                   nodejs_20
-                  # purs-tidy-bin.purs-tidy-0_10_0
+                  purs-tidy-bin.purs-tidy-0_10_0
                   # git
                   # dhall
-                  # purs-backend-es
-                  # purs-bin.purs-0_15_9
+                  purs-backend-es
+                  purs-bin.purs-0_15_9
                   #spago-bin.spago-0_21_0
                   spago-unstable
                 ];
               text = ''
-                # node ./test-blessed.js
                 # spago run --demo
-                spago run --output output.nix
+                spago build --output output.nix
+                node ./.spago/run/run.js -t starter
               '';
             };
           in {
@@ -113,6 +113,7 @@
             name = "noodle";
             inputsFrom = builtins.attrValues self.packages.${system};
             shellHook = ''
+              rm -r ./node_modules
               ln -s ${nodeDependencies}/lib/node_modules ./node_modules
               export PATH="${nodeDependencies}/bin:$PATH"
             '';
