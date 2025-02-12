@@ -19,7 +19,6 @@ import Data.Map (empty, insert) as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap, wrap, class Newtype)
 import Data.String (toUpper) as String
-import Data.Text.Format.Org.Construct (b)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
