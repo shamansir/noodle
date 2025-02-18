@@ -67,7 +67,7 @@ component =
 move :: forall state m. MonadThrow Error m => { x :: Int, y :: Int } -> BlessedOp state m
 move { x, y } = do
     Key.outletIndicator >~ Element.setLeft $ Offset.px x
-    Key.outletIndicator >~ Element.setTop $ Offset.px y
+    Key.outletIndicator >~ Element.setTop  $ Offset.px y
 
 
 updateStatus :: forall state m. Status -> BlessedOp state m

@@ -136,7 +136,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                 state <- Ref.read stateRef
                 case state.inletEditorOpenedFrom of
                     Just (editorRawNode /\ editorInletR) -> do
-                        Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
+                        -- Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
                         stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
                         RawNode.sendIn editorInletR reprV editorRawNode
                     Nothing ->
@@ -178,19 +178,17 @@ onMouseOver
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onMouseOver nodeR nodeBox infoBox idx temper inletR vicRepr reprSignal _ _ = do
     state <- State.get
-    nodeBounds <- case Map.lookup nodeR state.locations of
-                        Just bounds -> pure bounds
-                        Nothing -> Bounds.collect nodeR nodeBox
+    nodeBounds <- Bounds.collect nodeR nodeBox
+    -- nodeBounds <- case Map.lookup nodeR state.locations of
+    --                     Just bounds -> pure bounds
+    --                     Nothing -> Bounds.collect nodeR nodeBox
     let inletPos = Bounds.inletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.inletInfo inletR
     SL.inletStatus (Id.familyOf nodeR) idx inletR vicRepr
     -- REM FI.inletStatus family idx inletId maybeRepr
-    case state.lastClickedOutlet of
-        Just _ -> pure unit
-        Nothing -> do
-            II.move { x : inletPos.x, y : inletPos.y - 1 }
-            II.updateStatus $ II.Hover temper
+    II.move { x : inletPos.x, y : inletPos.y }
+    II.updateStatus $ II.Hover temper
     Key.mainScreen >~ Screen.render
 
 
@@ -229,7 +227,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
             Just lco /\ Just curPatch ->
                 if nodeBoxKey /= lco.nodeKey then do
 
-                    CC.log "inlet press"
+                    -- CC.log "inlet press"
                     OI.hide
 
                     let
@@ -311,13 +309,13 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                 else pure unit
             _ -> do
                 if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
-                    CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
+                    -- CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
                     -- TODO: also don't call if there is at least one link incoming
                     let nodeR = RawNode.id rawNode
 
                     case mbValueEditorOp of
                         Just { create, transpose } -> do
-                            CC.log "Exact editor was found, call it"
+                            -- CC.log "Exact editor was found, call it"
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
                             nodeBounds <- case Map.lookup nodeR state.locations of
                                             Just bounds -> pure bounds
@@ -325,13 +323,15 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y - 1 }
 
-                            CC.log "Remember the source node & inlet of the opened editor"
+                            -- CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                         Nothing ->
-                            CC.log "No matching editor was found, skip"
+                            pure unit
+                            -- CC.log "No matching editor was found, skip"
                 else
-                    CC.log "Editor is either blocked or opened already, don't call it"
-                CC.log "And don't block opening editor anymore"
+                    pure unit
+                    -- CC.log "Editor is either blocked or opened already, don't call it"
+                --CC.log "And don't block opening editor anymore"
                 State.modify_ $ _ { blockInletEditor = false }
 
         State.modify_

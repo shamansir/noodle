@@ -17,7 +17,7 @@ import Data.Maybe (Maybe(..))
 import Blessed ((~<))
 import Blessed.Internal.BlessedOp (BlessedOp', BlessedOpGet)
 
-import Blessed.UI.Base.Element.Property (left, top, width, height) as Element
+import Blessed.UI.Base.Element.Property (aleft, atop, width, height) as Element
 
 import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.BlessedSubj as K
@@ -46,11 +46,11 @@ collect
     -> NodeKey subj key
     -> BlessedOp' state m Bounds
 collect _ node = do
-    left <- Element.left ~< node
-    top <- Element.top ~< node
-    width <- Element.width ~< node
+    left   <- Element.aleft ~< node
+    top    <- Element.atop ~< node
+    width  <- Element.width ~< node
     height <- Element.height ~< node
-    pure { top : top + 1, left, width, height }
+    pure { top, left, width, height }
 
 
 {- REM
@@ -92,7 +92,7 @@ inletPos n inletIdx =
     -- , y : n.top + 1
     -- }
     { x : n.left + (inletIdx * 4)
-    , y : n.top
+    , y : n.top - 2
     }
 
 

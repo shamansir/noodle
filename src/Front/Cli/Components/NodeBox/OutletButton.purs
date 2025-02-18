@@ -139,7 +139,7 @@ onMouseOut infoBox idx _ _ = do
 
 onPress :: forall tk pstate fs strepr chrepr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onPress idx outletR nodeR nodeBoxKey _ _ = do
-    CC.log "outlet press"
+    -- CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey
     let outletPos = Bounds.outletPos nodeBounds idx
     OI.move { x : outletPos.x, y : outletPos.y - 2 }
