@@ -223,7 +223,7 @@ documentationFor :: Id.FamilyR -> NdfFile -> Array String
 documentationFor familyR = extractCommands >>> map Command.op >>> foldl extractDocs []
     where
         extractDocs docs (Documentation familyR' docLine) | familyR' == familyR = Array.snoc docs docLine
-        extractDocs docs _  = docs
+        extractDocs docs _ = docs
 
 
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?

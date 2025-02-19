@@ -4,10 +4,13 @@ import Prelude
 
 import Effect.Class (class MonadEffect)
 
+import Type.Proxy (Proxy(..))
+
 import Data.Tuple.Nested ((/\))
 import Data.Text.Format as T
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Type.Proxy (Proxy(..))
+import Data.Array (length) as Array
+import Data.Array ((:))
 
 import Control.Monad.State (modify_) as State
 
@@ -64,11 +67,20 @@ loadDocumentation
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => Proxy tk -> NdfFile -> DocumentationFocus sr cr -> Array T.Tag
 loadDocumentation ptk ndfFile { node, curUpdate } =
-    (T.s <$> Ndf.documentationFor (Id.familyOf node) ndfFile)
-    <>
-    [ T.nl, Tagging.familyDocs ptk (Id.familyOf node)
-    , fromMaybe T.nil $ Tagging.nodeDocumentation ptk node <$> curUpdate
+    [ Tagging.comment "Defaults:"
+    , familyDocs
+    , Tagging.comment "Current state:"
+    , fromMaybe T.nil mdUpdateLines
     ]
+    <>
+    (if hasDocumentation then
+        Tagging.comment "Documentation:" : (T.s <$> documentationLines)
+    else [])
+    where
+        familyDocs = Tagging.familyDocs ptk (Id.familyOf node)
+        documentationLines = Ndf.documentationFor (Id.familyOf node) ndfFile
+        mdUpdateLines = Tagging.nodeDocumentation ptk node <$> curUpdate
+        hasDocumentation = Array.length documentationLines > 0
 
  -- (T.s <$> s.currentDocumentation)
  -- s { currentDocumentation = s.history # Ndf.documentationFor familyR }

@@ -102,6 +102,7 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Documentation as DP
 import Cli.Bounds as Bounds
+import Cli.Components.NodeBox.OutletIndicator as OI
 
 
 width :: Id.FamilyR -> Int -> Int -> Dimension
@@ -449,6 +450,7 @@ logDataCommand stateRef update =
 
 onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
 onMove nodeId nodeKey _ _ = do
+    OI.hide
     let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
     state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
@@ -502,7 +504,7 @@ onMouseOut
 onMouseOut _ _ = do
     State.modify_ $ _ { mouseOverNode = Nothing }
     SL.clear
-    DP.clear
+    -- DP.clear
     {- REM
     FI.clear
     -}
