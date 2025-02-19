@@ -50,7 +50,7 @@ type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of 
     { title :: String
     , char :: v -> Char
     , isOn :: v -> Boolean
-    , panelKey :: NodeKey Subj.Box id
+    , panelKey :: NodeKey Subj.Log id
     , buttonKey :: NodeKey Subj.Button id
     , next :: (s -> v /\ Array T.Tag)
     , onToggle :: (s -> s)
@@ -60,7 +60,7 @@ type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of 
 panel
     :: forall id s v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> C.Blessed s
 panel initial sidePanel =
-    B.boxAnd sidePanel.panelKey
+    B.logAnd sidePanel.panelKey
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
         , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 5
         , Box.top $ Offset.px 3
@@ -69,6 +69,8 @@ panel initial sidePanel =
         , Box.content "."
         , Box.hidden true
         , Box.label sidePanel.title
+        , Box.scrollable true
+        -- , Box.alwaysScroll true
         , Style.sidePanel
         , Style.sidePanelBorder
         ]

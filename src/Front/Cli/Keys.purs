@@ -1,7 +1,7 @@
 module Cli.Keys where
 
 
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button, TextBox)
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button, TextBox, Log)
 import Blessed.Internal.NodeKey (nk, type (<^>))
 
 
@@ -39,15 +39,15 @@ addPatchButton = nk :: Button <^> "add-patch"
 commandInput = nk :: TextBox <^> "command-input"
 -- loadFileButton = nk :: Button <^> "load-file"
 commandLogButton = nk :: Button <^> "command-log"
-commandLogBox = nk :: Box <^> "command-log"
+commandLogBox = nk :: Log <^> "command-log"
 consoleButton = nk :: Button <^> "console"
-consoleBox = nk :: Box <^> "console"
+consoleBox = nk :: Log <^> "console"
 hydraCodeButton = nk :: Button <^> "hydra-code"
-hydraCodeBox = nk :: Box <^> "hydra-code"
+hydraCodeBox = nk :: Log <^> "hydra-code"
 documentationButton = nk :: Button <^> "documentation"
-documentationBox = nk :: Box <^> "documentation"
+documentationBox = nk :: Log <^> "documentation"
 wsStatusButton = nk :: Button <^> "ws-status"
-wsStatusBox = nk :: Box <^> "ws-status"
+wsStatusBox = nk :: Log <^> "ws-status"
 inletIndicator = nk :: Button <^> "inlet-led"
 outletIndicator = nk :: Button <^> "outlet-led"
 
