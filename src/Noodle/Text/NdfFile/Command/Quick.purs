@@ -6,7 +6,7 @@ import Data.UniqueHash as UH
 import Data.String (drop) as String
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Id (NodeR, hashOf, family, familyOf) as Id
+import Noodle.Id (NodeR, InletR, hashOf, family, familyOf) as Id
 
 import Noodle.Text.NdfFile.Types as T
 import Noodle.Text.NdfFile.Command.Op as Op
@@ -40,3 +40,7 @@ disconnect link =
 
 removeNode :: Id.NodeR -> Op.CommandOp
 removeNode = instanceIdFor >>> Op.RemoveNode
+
+
+sendIn :: Id.NodeR -> Id.InletR -> T.EncodedValue -> Op.CommandOp
+sendIn nodeR inletR = Op.Send (instanceIdFor nodeR) (T.fromInletR inletR)

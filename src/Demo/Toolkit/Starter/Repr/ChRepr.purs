@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Color (Color) as Native
-import Color (rgba, fromHexString, toRGBA) as NativeColor
+import Color (rgba, fromHexString, toHexString, toRGBA) as NativeColor
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap) as NT
@@ -42,7 +42,7 @@ import Noodle.Repr.ValueInChannel (accept, decline, toMaybe) as ViC
 import Noodle.Repr.Tagged (class Tagged)
 import Noodle.Repr.Tagged (Path) as Tag
 import Noodle.Raw.Fn.Shape (Tag, tagAs)
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, mkExpression, pDefaultFor, pValueFor)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, class ValueEncode, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
 
@@ -103,9 +103,22 @@ shapeFromString = case _ of
     _ -> Nothing
 
 
+shapeToString :: Shape -> String
+shapeToString = case _ of
+    Circle -> "circle"
+    Rect -> "rect"
+    Cross -> "cross"
+    Diamond -> "diamond"
+
+
 timeFromString :: String -> Maybe Time
-timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ...
+timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ... may be there's a module for that?
     Just $ Time { seconds : fromMaybe 0 $ Int.fromString $ String.drop 1 str }
+
+
+timeToString :: Time -> String
+timeToString (Time { seconds }) = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ... may be there's a module for that?
+    show seconds <> "s"
 
 
 fromNativeColor :: Native.Color -> Color
@@ -270,6 +283,23 @@ toDefaultImpl = NT.unwrap >>> case _ of
     "SpreadC" -> VSpreadCol (HF.fallback :: Spread Color)
     "SpreadS" -> VSpreadShp (HF.fallback :: Spread Shape)
     _ -> VNone
+
+
+encodeValueImpl :: ValueRepr -> Maybe EncodedValue
+encodeValueImpl = case _ of
+    VNone ->        Nothing
+    VAny val ->     encodeValueImpl val
+    VBang ->        Nothing
+    VBool v ->      Just $ EncodedValue $ "b/" <> if v then "true" else "false"
+    VNumber n ->    Just $ EncodedValue $ "#/" <> show n
+    VChar c ->      Just $ EncodedValue $ "x/" <> CU.singleton c
+    VColor clr ->   Just $ EncodedValue $ "c/" <> (clr # toNativeColor # NativeColor.toHexString # String.drop 1)
+    VTime time ->   Just $ EncodedValue $ "t/" <> timeToString time
+    VShape shape -> Just $ EncodedValue $ "s/" <> shapeToString shape
+    VSpreadNum _ -> Nothing -- TODO
+    VSpreadVec _ -> Nothing -- TODO
+    VSpreadCol _ -> Nothing -- TODO
+    VSpreadShp _ -> Nothing -- TODO
 
 
 toReprImpl :: EncodedType -> EncodedValue -> Maybe ValueRepr
@@ -462,6 +492,10 @@ instance ValueCodegen a => ValueCodegen (Spread a) where
             exprApp (exprCtor "VR.Spread")
                 [ exprArray $ mkExpression <$> items
                 ]
+
+
+instance ValueEncode ValueRepr where
+    encodeValue = encodeValueImpl
 
 
 editorFor :: ValueInChannel ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)

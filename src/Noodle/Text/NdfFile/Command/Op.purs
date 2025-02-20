@@ -99,6 +99,7 @@ instance ToTaggedCode NDF opts CommandOp where
             eOutletToCode (OutletId (Right iindex)) = F.outletIdx iindex
             eOutletToCode (OutletId (Left  iname))  = F.outletId iname
 
+
 toNdf :: Array CommandOp -> String
 toNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize cmds)
 

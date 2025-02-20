@@ -79,6 +79,8 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, sendIn, shape) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode, encodeValue) as Ndf
+import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Repr.Tagged (class Tagged) as CT
@@ -113,6 +115,7 @@ component
     :: forall (tk :: ToolkitKey) (vekey :: Symbol) pstate fs strepr chrepr m
      . T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
+    => Ndf.ValueEncode chrepr
     => HasFallback chrepr
     => CT.Tagged chrepr
     => Wiring m
@@ -139,6 +142,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                         -- Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
                         stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
                         RawNode.sendIn editorInletR reprV editorRawNode
+                        Blessed.runM' stateRef $ CL.trackCommand $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue reprV
                     Nothing ->
                         pure unit
         (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
@@ -322,7 +326,6 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                                             Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y - 1 }
-
                             -- CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                         Nothing ->

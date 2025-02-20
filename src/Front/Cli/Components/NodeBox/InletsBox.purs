@@ -39,6 +39,7 @@ import Noodle.Repr.Tagged (class Tagged) as CT
 import Noodle.Wiring (class Wiring)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (_reportMissingKey) as ViC
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode) as Ndf
 -- import Noodle.Family.Def as Family
 
 -- import Cli.Components.NodeBox.HasBody (class HasEditor)
@@ -63,6 +64,7 @@ component
     => CliEditor tk chrepr
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr
+    => Ndf.ValueEncode chrepr
     => Ref (State tk pstate fs strepr chrepr m)
     -> Id.PatchR
     -> LastKeys

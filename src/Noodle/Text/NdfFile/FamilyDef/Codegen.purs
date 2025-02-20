@@ -39,6 +39,10 @@ class TypeCodegen a where
   mkType :: a -> CST.Type Void
 
 
+class ValueEncode a where
+  encodeValue :: a -> Maybe EncodedValue
+
+
 instance Partial => ValueCodegen Unit    where mkExpression = const $ exprIdent "unit"
 instance Partial => ValueCodegen Int     where mkExpression = exprInt
 instance Partial => ValueCodegen Number  where mkExpression = exprNumber
