@@ -1,61 +1,37 @@
 module Demo.Toolkit.Starter.Body.P5.Shape where
 
 import Prelude
-import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr, Shape(..))
+import Demo.Toolkit.Starter.Repr.ChRepr (Shape(..))
 import Effect (Effect)
-import Effect.Class (liftEffect)
-import Effect.Console as Console
-import Noodle.Fn.Process as Fn
-import Noodle.Fn.Process as Noodle
-import Noodle.Fn.Shape (I, O)
-import Noodle.Fn.Shape as Noodle
-import Noodle.Fn.Shape.Temperament (Cold, Hot)
-import Noodle.Id as NId
-import Noodle.Node as Noodle
-import Noodle.Node ((#->), (@->))
-import Noodle.Toolkit.Families as Noodle
-import Noodle.Toolkit.Family as Family
-import Noodle.Toolkit.Family as Noodle
-import Blessed.UI.Base.Node.Method (append) as Node
-import Type.Data.List (type (:>))
-import Type.Data.List.Extra (TNil)
+
 import Data.Tuple.Nested ((/\), type (/\))
-import Demo.Toolkit.Starter.Repr.ChRepr as VR
-import Cli.Keys (NodeBoxKey)
-import Blessed.Internal.Core as Core
-import Blessed.Internal.BlessedOp (BlessedOp)
 import Type.Data.Symbol (class IsSymbol)
-
-
-import StarterTk.P5.Shape (Node, _out_shape)
-
 
 import Blessed as B
 import Blessed ((>~))
 
-import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Coord as Coord
-import Blessed.Core.Coord ((<->))
+import Blessed.Internal.Core as Core
+import Blessed.Internal.BlessedOp (BlessedOp)
 -- import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.BlessedSubj as Subj
-
-import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.Core (on) as Core
-import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.NodeKey (nk, type (<^>), type (<<>>))
 import Blessed.Internal.NodeKey (append) as NK
 
-import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method (setContent) as Box
+import Blessed.UI.Boxes.Box.Option (bg, content, height, left, tags, top, width) as Box
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
-import Blessed.UI.Base.Element.Method (toggle) as Element
-import Blessed.UI.Base.Screen.Method (render) as Screen
-import Blessed.UI.Base.Element.Method (setFront) as Element
-import Cli.Components.SidePanel.Console as CC
+import Blessed.UI.Base.Node.Method (append) as Node
+
+import Cli.Keys (NodeBoxKey)
+
+import Noodle.Id as NId
+import Noodle.Node ((#->), (@->))
+import Noodle.Ui.Cli.Palette as Palette
+
+import StarterTk.P5.Shape (Node, _out_shape)
 
 
 
@@ -74,7 +50,7 @@ body _ nodeBox node = do
     pure unit
 
 
-rectKey  = nk :: Subj.Button <^> "rect-button-p5-starter"
+rectKey    = nk :: Subj.Button <^> "rect-button-p5-starter"
 circleKey  = nk :: Subj.Button <^> "circle-button-p5-starter"
 crossKey   = nk :: Subj.Button <^> "cross-button-p5-starter"
 diamondKey = nk :: Subj.Button <^> "diamond-button-p5-starter"
@@ -92,6 +68,7 @@ shapeButton symbol xcoord bkey onClick =
         , Box.width $ Dimension.px 1
         , Box.height $ Dimension.px 1
         , Button.mouse true
+        , Box.bg Palette.nodeBg'
         , Box.tags true
         -- , Style.addPatch
         , Core.on Button.Press

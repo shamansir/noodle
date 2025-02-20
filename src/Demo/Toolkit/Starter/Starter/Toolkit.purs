@@ -121,19 +121,19 @@ instance MonadEffect m => CliRenderer STARTER StarterFamilies ValueRepr m where
     -> Proxy StarterFamilies
     -> Id.Family f -> NodeBoxKey
     -> Node f fstate is os ValueRepr m
-    -> BlessedOp fstate m
+    -> Maybe (BlessedOp fstate m)
   renderCli _ _ family nbkey node = do
     -- liftEffect $ Console.log $ "render cli called with" <> reflectSymbol (Proxy :: _ f)
     case reflectSymbol (Proxy :: _ f) of
-      "shape" -> do
+      "shape" -> Just $ do
         -- liftEffect $ Console.log $ "shape :: " <> reflectSymbol (Proxy :: _ f)
         unsafeCoerce $ P5.Shape.body (unsafeCoerce family) nbkey (unsafeCoerce node)
-      _ -> pure unit
+      _ -> Nothing
 
 
 instance MonadEffect m => CliRawRenderer STARTER StarterFamilies ValueRepr m where
   cliSizeRaw _ _ _ _ _ = Nothing
-  renderCliRaw _ _ _ _ _ = pure unit
+  renderCliRaw _ _ _ _ _ = Nothing
 
 
 instance CliEditor STARTER ValueRepr where

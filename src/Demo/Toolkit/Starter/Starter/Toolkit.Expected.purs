@@ -110,12 +110,12 @@ instance MarkToolkit STARTER where
 
 instance CliRenderer STARTER StarterFamilies ValueRepr m where
   cliSize _ _ _ _ _ = Nothing
-  renderCli _ _ _ _ _ = pure unit
+  renderCli _ _ _ _ _ = Nothing
 
 
 instance CliRawRenderer STARTER StarterFamilies ValueRepr m where
   cliSizeRaw _ _ _ _ _ = Nothing
-  renderCliRaw _ _ _ _ _ = pure unit
+  renderCliRaw _ _ _ _ _ = Nothing
 
 
 instance CliEditor STARTER ValueRepr where

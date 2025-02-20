@@ -123,6 +123,13 @@ nodeBox =
         ]
 
 
+bodyOverlay :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+bodyOverlay =
+    Box.style
+        [ Style.bg Palette.nodeBg'
+        ]
+
+
 infoBox :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
 infoBox =
     Box.style

@@ -17,7 +17,7 @@ import Effect.Console (log) as Console
 import Control.Monad.State (get, modify, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
@@ -39,6 +39,7 @@ import Signal.Extra as SignalX
 import Blessed ((>~))
 import Blessed as B
 
+import Blessed.Core.Coord ((<+>))
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
@@ -138,7 +139,7 @@ _component
     -> Raw.Node strepr chrepr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
-    -> BlessedOp strepr m
+    -> Maybe (BlessedOp strepr m)
     -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
 _component
     pos
@@ -147,7 +148,7 @@ _component
     rawNode
     keys
     mbBodySize
-    nodeOp
+    mbNodeOp
     = do
     let (updates :: Signal (Raw.NodeChanges strepr chrepr)) = RawNode.subscribeChanges rawNode
 
@@ -253,6 +254,19 @@ _component
     keys.nodeBox >~ Node.append outletsBoxN
     keys.nodeBox >~ Node.append infoBoxN
     keys.nodeBox >~ Node.append removeButtonN
+    when (isJust mbNodeOp)
+        $ let
+            nextBodyOverlayN =
+                B.box keys.bodyOverlay
+                    [ Box.draggable false
+                    , Box.top $ Offset.px 1
+                    , Box.left $ Offset.px 0
+                    , Box.width $ Dimension.px $ boxWidth - 2
+                    , Box.height $ Dimension.px $ boxHeight - 4
+                    , Style.bodyOverlay
+                    ]
+                    [ ]
+        in keys.nodeBox >~ Node.append nextBodyOverlayN
 
     -- REM? mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
 
@@ -262,7 +276,9 @@ _component
 
     -- liftEffect $ Console.log "before render cli"
     -- liftEffect $ Console.log "test second line"
-    Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
+    case mbNodeOp of
+        Just nodeOp -> Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
+        Nothing -> pure unit
 
     let
         location =
@@ -331,9 +347,9 @@ component pos curPatchR family node = do
         nextKeys = State.nextKeys state.lastKeys
         familyR = Id.familyR family
         mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
-        nodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
+        mbNodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
         rawNode = RawNode.toReprableState $ Node.toRaw node
-    _component pos curPatchR familyR rawNode nextKeys mbSize (Blessed.runOn fallback nodeOp)
+    _component pos curPatchR familyR rawNode nextKeys mbSize (Blessed.runOn fallback <$> mbNodeOp)
 
 
 storeNodeUpdate

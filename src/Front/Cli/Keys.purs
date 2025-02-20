@@ -14,6 +14,7 @@ type InletButtonKey  = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
 type RemoveButtonKey = Button <^> "remove-button"
+type BodyOverlayKey = Box <^> "body-overlay"
 type CommandInputKey = TextBox <^> "command-input"
 
 
@@ -35,6 +36,7 @@ infoBox = nk :: InfoBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 removeButton = nk :: RemoveButtonKey
+bodyOverlay = nk :: BodyOverlayKey
 addPatchButton = nk :: Button <^> "add-patch"
 commandInput = nk :: TextBox <^> "command-input"
 -- loadFileButton = nk :: Button <^> "load-file"

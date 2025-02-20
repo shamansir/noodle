@@ -46,7 +46,7 @@ import Cli.Panels (Which(..), toggle, isOn) as Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
-import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox) as Key
+import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, bodyOverlay, patchBox) as Key
 import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
 
 
@@ -98,6 +98,7 @@ type LastKeys =
     , outletsBox :: K.OutletsBoxKey
     , infoBox :: K.InfoBoxKey
     , removeButton :: K.RemoveButtonKey
+    , bodyOverlay :: K.BodyOverlayKey
     }
 
 
@@ -135,6 +136,7 @@ init state toolkit = do
             , outletsBox : Key.outletsBox
             , infoBox : Key.infoBox
             , removeButton : Key.removeButton
+            , bodyOverlay : Key.bodyOverlay
             }
         , lastClickedOutlet : Nothing
         , lastLink : Nothing
@@ -179,6 +181,7 @@ nextKeys lk =
     , outletsBox   : NodeKey.next lk.outletsBox
     , infoBox      : NodeKey.next lk.infoBox
     , removeButton : NodeKey.next lk.removeButton
+    , bodyOverlay  : NodeKey.next lk.bodyOverlay
     }
 
 
