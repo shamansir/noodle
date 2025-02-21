@@ -83,6 +83,7 @@ import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
+import Cli.State (Focus(..)) as Focus
 import Cli.Style as Style
 
 import Cli.Components.Link as CLink
@@ -204,7 +205,7 @@ _component
         inletsKeys /\ inletsBoxN =
             InletsBox.component stateRef patchR keys rawNode (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component outletsTopOffset keys familyR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
+            OutletsBox.component outletsTopOffset keys patchR nodeR (updates ~> _.outlets) $ RawNode.orderOutlets shape osValues
         infoBoxN =
             InfoBox.component keys.infoBox $ boxWidth - 2
         removeButtonN =
@@ -223,7 +224,7 @@ _component
                 , Core.on Element.Move
                     $ onMove nodeR keys.nodeBox
                 , Core.on Element.MouseOver
-                    $ onMouseOver (Proxy :: _ tk) nodeR
+                    $ onMouseOver (Proxy :: _ tk) patchR nodeR
                 , Core.on Element.MouseOut
                    $ onMouseOut
                 ]
@@ -381,26 +382,38 @@ renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
     _ <- traverseWithIndex updateInlet  update.inlets
     _ <- traverseWithIndex updateOutlet update.outlets
     state <- State.get
-    case state.mouseOverNode of
-        Just moNodeId ->
-            if nodeR == moNodeId then do
-                -- DP.showDocumentationFor $ Id.familyOf nodeR
+    case state.mouseOverFocus of
+        Just (Focus.Node _ moNodeId) ->
+            when (nodeR == moNodeId) $ do
                 SL.nodeStatus ptk nodeR update
                 DP.showNodeDocumentation nodeR $ Just update
-            else pure unit
+        Just (Focus.Inlet _ moNodeR moInletR) ->
+            when (nodeR == moNodeR) $
+                traverseWithIndex (updateStatusLineAsInlet moInletR) update.inlets >>= mempty
+        Just (Focus.Outlet _ moNodeR moOutletR) ->
+            when (nodeR == moNodeR) $
+                traverseWithIndex (updateStatusLineAsOutlet moOutletR) update.outlets >>= mempty
+        Just (Focus.Patch _) ->
+            pure unit
         Nothing -> pure unit
     Key.mainScreen >~ Screen.render
     where
-        updateInlet (_ /\ inletR) vicRepr =
+        updateInlet (iidx /\ inletR) vicRepr =
             case Map.lookup inletR inletsKeysMap of
                 Just inletKey -> do
-                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet 0 inletR vicRepr
+                    inletKey >~ Box.setContent $ T.singleLine $ T.inlet iidx inletR vicRepr
                 Nothing -> pure unit
-        updateOutlet (_ /\ outletR) vicRepr =
+        updateOutlet (oidx /\ outletR) vicRepr =
             case Map.lookup outletR outletsKeysMap of
                 Just outletKey -> do
-                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet 0 outletR vicRepr
+                    outletKey >~ Box.setContent $ T.singleLine $ T.outlet oidx outletR vicRepr
                 Nothing -> pure unit
+        updateStatusLineAsInlet moInletR (iidx /\ inletR) vicRepr =
+            when (moInletR == inletR) $
+                SL.inletStatus (Id.familyOf nodeR) iidx inletR vicRepr
+        updateStatusLineAsOutlet moOutletR (oidx /\ outletR) vicRepr =
+            when (moOutletR == outletR) $
+                SL.outletStatus (Id.familyOf nodeR) oidx outletR vicRepr
 
 
 updateCodeFor
@@ -486,11 +499,12 @@ onMouseOver
     => T.At At.Documentation chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Proxy tk
+    -> Id.PatchR
     -> Id.NodeR
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onMouseOver ptk nodeR _ _ = do
+onMouseOver ptk patchR nodeR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
     state <- State.get
@@ -501,7 +515,7 @@ onMouseOver ptk nodeR _ _ = do
         Nothing -> do
             SL.familyStatus ptk $ Id.familyOf nodeR
             DP.showNodeDocumentation nodeR Nothing
-    State.modify_ $ _ { mouseOverNode = Just nodeR }
+    State.modify_ $ _ { mouseOverFocus = Just $ Focus.Node patchR nodeR }
     {-
     FI.familyStatus family
      -}
@@ -518,7 +532,7 @@ onMouseOut
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
-    State.modify_ $ _ { mouseOverNode = Nothing }
+    State.modify_ $ _ { mouseOverFocus = Nothing }
     SL.clear
     -- DP.clear
     {- REM

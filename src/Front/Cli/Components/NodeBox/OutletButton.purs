@@ -33,6 +33,7 @@ import Blessed.UI.Base.Element.Method (show, focus) as Element
 import Cli.Bounds (collect, outletPos) as Bounds
 import Cli.Keys (OutletsBoxKey, OutletButtonKey, InfoBoxKey, NodeBoxKey, mainScreen)
 import Cli.State (State) {- LinkState(..), OutletIndex(..), InputIndex(..), logNdfCommandM)  -}
+import Cli.State (Focus(..)) as Focus
 import Cli.Style (inletsOutlets) as Style
 
 import Cli.Components.NodeBox.InfoBox as IB
@@ -68,13 +69,13 @@ component
      . T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
     => OutletButtonKey -> NodeBoxKey -> InfoBoxKey
-    -> Id.FamilyR -> Id.NodeR -> Id.OutletR
+    -> Id.PatchR -> Id.NodeR -> Id.OutletR
     -> Int
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -- -> Raw.Node
     -> Core.Blessed (State tk pstate fs strepr chrepr m)
-component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx vicRepr reprSignal =
+component buttonKey nodeBoxKey infoBoxKey patchR nodeR outletR idx vicRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.outlet idx outletR vicRepr
         , Box.top $ Offset.px 0
@@ -88,7 +89,7 @@ component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx vicRepr repr
         , Core.on Button.Press
             $ onPress idx outletR nodeR nodeBoxKey
         , Core.on Element.MouseOver
-            $ onMouseOver familyR nodeR nodeBoxKey infoBoxKey idx outletR vicRepr reprSignal
+            $ onMouseOver patchR nodeR outletR nodeBoxKey infoBoxKey idx vicRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey idx
         ]
@@ -98,22 +99,23 @@ component buttonKey nodeBoxKey infoBoxKey familyR nodeR outletR idx vicRepr repr
 onMouseOver
     :: forall tk pstate fs strepr chrepr m
      . T.At T.StatusLine chrepr
-    => Id.FamilyR
+    => Id.PatchR
     -> Id.NodeR
+    -> Id.OutletR
     -> NodeBoxKey
     -> InfoBoxKey
     -> Int
-    -> Id.OutletR
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
-onMouseOver family nodeIdR nodeBox infoBox idx outletR vicRepr reprSignal _ _ = do
+onMouseOver patchR nodeR outletR nodeBox infoBox idx vicRepr reprSignal _ _ = do
+    State.modify_ $ _ { mouseOverFocus = Just $ Focus.Outlet patchR nodeR outletR }
     state <- State.get
-    nodeBounds <- Bounds.collect nodeIdR nodeBox
+    nodeBounds <- Bounds.collect nodeR nodeBox
     let outletPos = Bounds.outletPos nodeBounds idx
     maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ IB.outletInfo outletR
-    SL.outletStatus family idx outletR vicRepr
+    SL.outletStatus (Id.familyOf nodeR) idx outletR vicRepr
     -- REM FI.outputStatus family idx outputId maybeRepr
     case state.lastClickedOutlet of
         Just _ -> pure unit
@@ -126,6 +128,7 @@ onMouseOver family nodeIdR nodeBox infoBox idx outletR vicRepr reprSignal _ _ = 
 
 onMouseOut :: forall tk pstate fs strepr chrepr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
 onMouseOut infoBox idx _ _ = do
+    State.modify_ $ _ { mouseOverFocus = Nothing }
     state <- State.get
     infoBox >~ IB.clear
     SL.clear

@@ -57,6 +57,7 @@ import Cli.State (State)
 import Cli.State (patch, replacePatch) as State
 import Cli.Style (inletsOutlets) as Style
 import Cli.Class.CliRenderer (class CliEditor, editorFor)
+import Cli.State (Focus(..)) as Focus
 
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
@@ -67,6 +68,7 @@ import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.Editor.Textual (tveKey) as VEditor
 import Cli.Components.NodeBox.InletIndicator as II
 import Cli.Components.NodeBox.OutletIndicator as OI
+import Cli.Components.ValueEditor (ValueEditor, ValueEditorComp)
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
@@ -92,7 +94,6 @@ import Noodle.Raw.Fn.Shape (temperamentOf) as RawShape
 import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
-import Cli.Components.ValueEditor (ValueEditor, ValueEditorComp)
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
@@ -160,7 +161,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         , Core.on Element.Click -- Button.Press
             $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
-            $ onMouseOver (RawNode.id rawNode) nodeBoxKey infoBoxKey inletIdx temper inletR vicRepr reprSignal
+            $ onMouseOver patchR (RawNode.id rawNode) inletR nodeBoxKey infoBoxKey inletIdx temper vicRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut infoBoxKey inletIdx
         ]
@@ -171,17 +172,18 @@ onMouseOver
     :: forall tk pstate fs strepr chrepr mi mo
      . T.At T.StatusLine chrepr
     => Wiring mo
-    => Id.NodeR
+    => Id.PatchR
+    -> Id.NodeR
+    -> Id.InletR
     -> NodeBoxKey
     -> InfoBoxKey
     -> Int
     -> Temperament
-    -> Id.InletR
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onMouseOver nodeR nodeBox infoBox idx temper inletR vicRepr reprSignal _ _ = do
-    state <- State.get
+onMouseOver patchR nodeR inletR nodeBox infoBox idx temper vicRepr reprSignal _ _ = do
+    State.modify_ $ _ { mouseOverFocus = Just $ Focus.Inlet patchR nodeR inletR }
     nodeBounds <- Bounds.collect nodeR nodeBox
     -- nodeBounds <- case Map.lookup nodeR state.locations of
     --                     Just bounds -> pure bounds
@@ -198,6 +200,7 @@ onMouseOver nodeR nodeBox infoBox idx temper inletR vicRepr reprSignal _ _ = do
 
 onMouseOut :: forall tk pstate fs strepr chrepr mi mo. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onMouseOut infoBox idx _ _ = do
+    State.modify_ $ _ { mouseOverFocus = Nothing }
     state <- State.get
     infoBox >~ IB.clear
     SL.clear

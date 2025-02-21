@@ -67,7 +67,7 @@ newtype LinkState s =
     , inPatch :: Id.Link
     , blessed :: { a :: Core.Blessed s, b :: Core.Blessed s, c :: Core.Blessed s }
     , fromNode :: { key :: K.NodeBoxKey, id :: Id.NodeR }
-    , toNode :: { key :: K.NodeBoxKey, id :: Id.NodeR }
+    , toNode   :: { key :: K.NodeBoxKey, id :: Id.NodeR }
     , outletIndex :: Int
     , inletIndex :: Int
     , keys ::

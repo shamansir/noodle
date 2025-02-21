@@ -50,6 +50,16 @@ import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, bodyOver
 import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
 
 
+data Focus
+    = Patch Id.PatchR
+    | Node Id.PatchR Id.NodeR
+    | Inlet Id.PatchR Id.NodeR Id.InletR
+    | Outlet Id.PatchR Id.NodeR Id.OutletR
+    -- InletEditor
+    -- RemoveButton
+    -- ...
+
+
 -- tkey patch-state families node-state-repr channel-value-repr m
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { network :: Network tk ps fs sr cr m
@@ -78,7 +88,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , locations :: Map Id.NodeR Bounds
-    , mouseOverNode :: Maybe Id.NodeR
+    , mouseOverFocus :: Maybe Focus
     }
 
 
@@ -159,7 +169,7 @@ init state toolkit = do
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
         , locations : Map.empty
-        , mouseOverNode : Nothing
+        , mouseOverFocus : Nothing
         }
 
 

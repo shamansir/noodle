@@ -58,12 +58,13 @@ component
     => T.At T.ChannelLabel chrepr
     => Offset
     -> LastKeys
-    -> Id.FamilyR -> Id.NodeR
+    -> Id.PatchR
+    -> Id.NodeR
     -> Signal (OrderedOutletsValues chrepr)
     -> OrderedOutletsValues chrepr
     -> Map Id.OutletR OutletButtonKey
     /\ C.Blessed (State tk pstate fs strepr chrepr m)
-component offsetY keys familyR nodeR oReprSignal outlets =
+component offsetY keys patchR nodeR oReprSignal outlets =
     outletsKeys /\
     B.box keys.outletsBox
         [ Box.width $ width $ Map.size outlets -- * OutletButton.widthN
@@ -100,7 +101,7 @@ component offsetY keys familyR nodeR oReprSignal outlets =
         makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ vicRepr)) =
             (outletR /\ buttonKey)
             /\
-            ( OutletButton.component buttonKey keys.nodeBox keys.infoBox familyR nodeR outletR idx vicRepr
+            ( OutletButton.component buttonKey keys.nodeBox keys.infoBox patchR nodeR outletR idx vicRepr
             $ map (Map.lookup outletR >>> (ViC._reportMissingKey $ Id.outletRName outletR))
             $ map (Map.mapKeys Tuple.snd)
             $ oReprSignal

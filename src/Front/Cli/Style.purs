@@ -234,7 +234,7 @@ linkA :: forall subj id state e. Respresents Line subj id => Array (C.Attribute 
 linkA =
     [ Line.orientation $ Orientation.Vertical
     , Line.type_ $ Border._bg
-    , Line.ch '▏' -- '⊽' -- '≀'
+    , Line.ch '≀' -- '▏' -- '⊽' -- '≀'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]
@@ -244,7 +244,7 @@ linkB :: forall subj id state e. Respresents Line subj id => Array (C.Attribute 
 linkB =
     [ Line.orientation $ Orientation.Horizontal
     , Line.type_ $ Border._bg
-    , Line.ch '▔' -- '⊳' -- '∼'
+    , Line.ch '∼' -- '▔' -- '⊳' -- '∼'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]
@@ -254,7 +254,7 @@ linkC :: forall subj id state e. Respresents Line subj id => Array (C.Attribute 
 linkC =
     [ Line.orientation $ Orientation.Vertical
     , Line.type_ $ Border._bg
-    , Line.ch '▏' -- '⊽' -- '≀'
+    , Line.ch '≀' -- '▏' -- '⊽' -- '≀'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]

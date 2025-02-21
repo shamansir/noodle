@@ -19,6 +19,15 @@ https://noodle.labs.jb.gg
 
 ## Installing
 
+### Nix way
+
+`nix run github:shamansir/noodle --extra-experimental-features nix-command --extra-experimental-features flakes`
+
+* `nix shell` should work
+* `nix build` also should work
+
+### Other way
+
 * Latest `spago` should work (`0.93.42` for the moment)
   * However it is developed with `spago` `v0.21.0`
 * `purs` compiler `v0.15.9`, it is not yet updated/checked on the latest version;

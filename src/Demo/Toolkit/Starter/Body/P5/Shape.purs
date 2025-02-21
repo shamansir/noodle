@@ -37,7 +37,6 @@ import StarterTk.P5.Shape (Node, _out_shape)
 
 body :: NId.Family "shape" -> NodeBoxKey -> Node -> BlessedOp Unit Effect
 body _ nodeBox node = do
-    -- liftEffect $ Console.log "foo"
     let
         rectButton    = shapeButton "■" 0 (NK.append nodeBox rectKey)    $ node @-> (_out_shape /\ Rect)
         circleButton  = shapeButton "⏺" 1 (NK.append nodeBox circleKey)  $ node @-> (_out_shape /\ Circle)
