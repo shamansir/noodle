@@ -13,8 +13,12 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
 
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr, toChRepr, fromChRepr, ChRepr(..))
-import Noodle.Repr.ChRepr (fromEq, toEq, wrap, unwrap, ensureTo, ensureFrom) as Repr
+import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr, readChannelRepr, writeChannelRepr)
+import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (accept, decline) as ViC
+import Noodle.Repr.Tagged (class Tagged)
+import Noodle.Repr.Tagged (Path) as Tag
+import Noodle.Raw.Fn.Shape (Tag, tagAs)
 import Noodle.Repr.StRepr (class StRepr)
 
 import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, exprOp, typeCtor, typeOp, binaryOp)
@@ -43,8 +47,8 @@ data MinimalStRepr
 derive instance Eq MinimalVRepr
 
 
-instance FromChRepr MinimalVRepr MinimalVRepr where fromChRepr = Repr.fromEq
-instance ToChRepr   MinimalVRepr MinimalVRepr where toChRepr   = Repr.toEq
+instance FromValueInChannel MinimalVRepr MinimalVRepr where fromValueInChannel = identity
+instance ToValueInChannel   MinimalVRepr MinimalVRepr where toValueInChannel   = ViC.accept
 
 
 instance Show MinimalVRepr where
@@ -60,9 +64,32 @@ instance HasFallback MinimalVRepr where
     fallback = None
 
 
-instance ToChRepr Int MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< Int
-instance ToChRepr String MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< Str
-instance ToChRepr Unit MinimalVRepr where toChRepr = Just <<< Repr.wrap <<< const UnitV
+instance FromValueInChannel Int MinimalVRepr where fromValueInChannel = Int
+instance FromValueInChannel String MinimalVRepr where fromValueInChannel = Str
+instance FromValueInChannel Unit MinimalVRepr where fromValueInChannel = const UnitV
+
+
+instance Tagged MinimalVRepr where
+    tag :: Tag.Path -> MinimalVRepr -> Tag
+    tag = const $ tagAs <<< case _ of
+        None -> "None"
+        Int _ -> "Int"
+        Str _ -> "Str"
+        UnitV -> "Bool"
+
+
+instance ToValueInChannel MinimalVRepr Int where
+    toValueInChannel = case _ of
+        Int n -> ViC.accept n
+        _ -> ViC.decline
+instance ToValueInChannel MinimalVRepr String where
+    toValueInChannel = case _ of
+        Str str -> ViC.accept str
+        _ -> ViC.decline
+instance ToValueInChannel MinimalVRepr Unit where
+    toValueInChannel = case _ of
+        UnitV -> ViC.accept unit
+        _ -> ViC.decline
 
 
 instance StRepr Unit MinimalStRepr where
@@ -83,23 +110,6 @@ instance StRepr (Tuple Patch.State String) MinimalStRepr where
     from = case _ of
         PState ((intVal /\ strVal) /\ nodeVal) -> Just $ (NT.wrap { intVal, strVal }) /\ nodeVal
         _ -> Nothing
-
-
-instance FromChRepr MinimalVRepr Int where
-    fromChRepr = Repr.unwrap >>>
-        case _ of
-            Int n -> Just n
-            _ -> Nothing
-instance FromChRepr MinimalVRepr String where
-    fromChRepr = Repr.unwrap >>>
-        case _ of
-            Str str -> Just str
-            _ -> Nothing
-instance FromChRepr MinimalVRepr Unit where
-    fromChRepr = Repr.unwrap >>>
-        case _ of
-            UnitV -> Just unit
-            _ -> Nothing
 
 
 instance CodegenRepr MinimalVRepr where

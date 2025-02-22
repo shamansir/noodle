@@ -14,7 +14,6 @@ import Node.FS.Sync (readTextFile)
 import Test.Spec (Spec, describe, it, pending', describeOnly)
 import Test.Spec.Util.Parsing (parses)
 import Test.Spec.Assertions (fail, shouldEqual)
-import Test.Spec.Util.Assertions (shouldEqual) as U
 
 import Parsing (runParser) as P
 

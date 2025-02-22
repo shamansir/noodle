@@ -4,20 +4,22 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.Maybe (Maybe(..))
 import Data.Map (empty, insert) as Map
-import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..))
-import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
+import Noodle.Raw.Node (Node, InitialInletsValues, InitialOutletsValues) as Raw
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape (make) as RawShape
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Process (receive, send) as RawFn
+import Noodle.Raw.Fn.Shape (tagAs)
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
+import Noodle.Repr.ValueInChannel (toMaybe, accept) as ViC
 
 import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
@@ -27,24 +29,24 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : Id.inletR "left", temp : Hot, order : 0 }
-            , { name : Id.inletR "right", temp : Hot, order : 1 }
+            [ { name : Id.inletR "left",  temp : Hot, order : 0, tag : tagAs "Str" }
+            , { name : Id.inletR "right", temp : Hot, order : 1, tag : tagAs "Str" }
             ] -- FIXME: order is not necessary here due to the fact we have index
         , outlets :
-            [ { name : Id.outletR "out", order : 0 }
-            , { name : Id.outletR "len", order : 1 }
+            [ { name : Id.outletR "out", order : 0, tag : tagAs "Str" }
+            , { name : Id.outletR "len", order : 1, tag : tagAs "Int" }
             ]
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues MinimalVRepr
+defaultInlets :: Raw.InitialInletsValues MinimalVRepr
 defaultInlets =
     Map.empty
-        # Map.insert (Id.inletR "left") (MinimalRepr.Str "")
+        # Map.insert (Id.inletR "left")  (MinimalRepr.Str "")
         # Map.insert (Id.inletR "right") (MinimalRepr.Str "")
 
 
-defaultOutlets :: Raw.OutletsValues MinimalVRepr
+defaultOutlets :: Raw.InitialOutletsValues MinimalVRepr
 defaultOutlets =
     Map.empty
         # Map.insert (Id.outletR "str") (MinimalRepr.Str "")
@@ -53,14 +55,14 @@ defaultOutlets =
 
 process :: Raw.Process MinimalStRepr MinimalVRepr Effect
 process = do
-    mbLeft  <- RawFn.receive $ Id.inletR "left"
-    mbRight <- RawFn.receive $ Id.inletR "right"
+    mbLeft  <- ViC.toMaybe <$> (RawFn.receive $ Id.inletR "left")
+    mbRight <- ViC.toMaybe <$> (RawFn.receive $ Id.inletR "right")
     case mbLeft /\ mbRight of
-        (ChRepr (MinimalRepr.Str left) /\ ChRepr (MinimalRepr.Str right)) ->
+        (Just (MinimalRepr.Str left) /\ Just (MinimalRepr.Str right)) ->
             let combined = left <> right
             in do
-                RawFn.send (Id.outletR "str") $ ChRepr $ MinimalRepr.Str combined
-                RawFn.send (Id.outletR "len") $ ChRepr $ MinimalRepr.Int $ String.length combined
+                RawFn.send (Id.outletR "str") $ ViC.accept $ MinimalRepr.Str combined
+                RawFn.send (Id.outletR "len") $ ViC.accept $ MinimalRepr.Int $ String.length combined
         _ -> pure unit
 
 

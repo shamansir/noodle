@@ -5,19 +5,20 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
-import Data.String (length) as String
+import Data.Maybe (Maybe(..))
 
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
-import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
+import Noodle.Raw.Node (Node, InitialInletsValues, InitialOutletsValues) as Raw
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape (make) as RawShape
+import Noodle.Raw.Fn.Shape (tagAs)
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
+import Noodle.Repr.ValueInChannel (toMaybe, accept) as ViC
 
 import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
 import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
@@ -27,18 +28,18 @@ shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : Id.inletR "foo", temp : Hot, order : 0 }
-            , { name : Id.inletR "c", temp : Hot, order : 1 }
-            , { name : Id.inletR "bar", temp : Hot, order : 2 }
+            [ { name : Id.inletR "foo", temp : Hot, order : 0, tag : tagAs "Int" }
+            , { name : Id.inletR "c",   temp : Hot, order : 1, tag : tagAs "Str" }
+            , { name : Id.inletR "bar", temp : Hot, order : 2, tag : tagAs "Int" }
             ] -- FIXME: order should not be necessary here due to the fact we have index
         , outlets :
-            [ { name : Id.outletR "foo", order : 0 }
-            , { name : Id.outletR "bar", order : 1 }
+            [ { name : Id.outletR "foo", order : 0, tag : tagAs "Str" }
+            , { name : Id.outletR "bar", order : 1, tag : tagAs "Int" }
             ]
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues MinimalVRepr
+defaultInlets :: Raw.InitialInletsValues MinimalVRepr
 defaultInlets =
     Map.empty
         # Map.insert (Id.inletR "foo") (MinimalRepr.Int 1)
@@ -46,7 +47,7 @@ defaultInlets =
         # Map.insert (Id.inletR "c")   (MinimalRepr.Int 2)
 
 
-defaultOutlets :: Raw.OutletsValues MinimalVRepr
+defaultOutlets :: Raw.InitialOutletsValues MinimalVRepr
 defaultOutlets =
     Map.empty
         # Map.insert (Id.outletR "foo") (MinimalRepr.Str "1")
@@ -55,13 +56,13 @@ defaultOutlets =
 
 process :: Raw.Process MinimalStRepr MinimalVRepr Effect
 process = do
-    mbFoo  <- RawFn.receive $ Id.inletR "foo"
-    mbBar  <- RawFn.receive $ Id.inletR "c"
-    mbC    <- RawFn.receive $ Id.inletR "bar"
-    case mbFoo /\ mbBar /\ mbC of
-        (ChRepr (MinimalRepr.Int foo) /\ ChRepr (MinimalRepr.Str bar) /\ ChRepr (MinimalRepr.Int c)) -> do
-            RawFn.send (Id.outletR "foo") $ ChRepr $ MinimalRepr.Str $ show (foo + c) <> bar
-            RawFn.send (Id.outletR "bar") $ ChRepr $ MinimalRepr.Int $ foo - c
+    vicFoo <- RawFn.receive $ Id.inletR "foo"
+    vicBar <- RawFn.receive $ Id.inletR "bar"
+    vicC   <- RawFn.receive $ Id.inletR "c"
+    case ViC.toMaybe vicFoo /\ ViC.toMaybe vicBar /\ ViC.toMaybe vicC of
+        (Just (MinimalRepr.Int foo) /\ Just (MinimalRepr.Str bar) /\ Just (MinimalRepr.Int c)) -> do
+            RawFn.send (Id.outletR "foo") $ ViC.accept $ MinimalRepr.Str $ show (foo + c) <> bar
+            RawFn.send (Id.outletR "bar") $ ViC.accept $ MinimalRepr.Int $ foo - c
         _ -> pure unit
 
 

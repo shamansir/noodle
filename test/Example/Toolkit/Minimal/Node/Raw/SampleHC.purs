@@ -5,45 +5,43 @@ import Prelude
 import Effect (Effect)
 
 import Data.Map (empty, insert) as Map
-import Noodle.Repr.ChRepr (ChRepr(..))
 import Data.Tuple.Nested ((/\))
 import Data.String (length) as String
 
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
-import Noodle.Raw.Node (Node, InletsValues, OutletsValues) as Raw
+import Noodle.Raw.Node (Node, InitialInletsValues, InitialOutletsValues) as Raw
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (make) as RawShape
+import Noodle.Raw.Fn.Shape (make, tagAs) as RawShape
 import Noodle.Raw.Fn.Process (Process) as Raw
-import Noodle.Raw.Fn.Process (receive, send) as RawFn
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
 import Example.Toolkit.Minimal.Node.Raw.Sample as Src
 import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.Repr (MinimalStRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape
 shape =
     RawShape.make
         { inlets :
-            [ { name : Id.inletR "foo", temp : Hot, order : 0 }
-            , { name : Id.inletR "c", temp : Hot, order : 1 }
-            , { name : Id.inletR "bar", temp : Cold, order : 2 } -- it's cold, unlike in the source
+            [ { name : Id.inletR "foo", temp : Hot,  order : 0, tag : RawShape.tagAs "Int" }
+            , { name : Id.inletR "c"  , temp : Hot,  order : 1, tag : RawShape.tagAs "Str" }
+            , { name : Id.inletR "bar", temp : Cold, order : 2, tag : RawShape.tagAs "Int" } -- it's cold, unlike in the source
             ] -- FIXME: order should not be necessary here due to the fact we have index
         , outlets :
-            [ { name : Id.outletR "foo", order : 0 }
-            , { name : Id.outletR "bar", order : 1 }
+            [ { name : Id.outletR "foo", order : 0, tag : RawShape.tagAs "Str" }
+            , { name : Id.outletR "bar", order : 1, tag : RawShape.tagAs "Int" }
             ]
         } -- TODO
 
 
-defaultInlets :: Raw.InletsValues MinimalVRepr
+defaultInlets :: Raw.InitialInletsValues MinimalVRepr
 defaultInlets = Src.defaultInlets
 
 
-defaultOutlets :: Raw.OutletsValues MinimalVRepr
+defaultOutlets :: Raw.InitialOutletsValues MinimalVRepr
 defaultOutlets = Src.defaultOutlets
 
 

@@ -14,12 +14,11 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions
 
 import Test.Spec.Util.Parsing (parses)
-import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
 
-import Noodle.Fn.ToFn (Fn(..))
-import Noodle.Fn.ToFn (i, o) as Fn
+import Noodle.Fn.Signature (Signature(..))
+import Noodle.Fn.Signature (i, o) as Sig
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.FromCode (fromCode, SourceError, srcErrorToString)
 
