@@ -10,7 +10,7 @@ import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
 import Noodle.Patch (Patch)
-import Noodle.Patch (make, fromToolkit, registerNodeNotFromToolkit, registerNode, registerRawNode, mapAllNodes, connect, disconnect) as Patch
+import Noodle.Patch (make, fromToolkit, registerGivenNode, registerNode, registerRawNode, mapAllNodes, connect, disconnect) as Patch
 import Noodle.Node (run) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
@@ -33,7 +33,7 @@ spec = do
             let
                 (patchWithNodes :: Patch _ _ MinimalStRepr MinimalVRepr _) =
                     emptyPatch
-                        # Patch.registerNodeNotFromToolkit concatNode
+                        # Patch.registerGivenNode concatNode
                 nodesInPatch =
                     Patch.mapAllNodes RawNode.family patchWithNodes
             (show <$> nodesInPatch) `shouldEqual` [ "concat" ]

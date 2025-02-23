@@ -47,35 +47,16 @@ data MinimalStRepr
 derive instance Eq MinimalVRepr
 
 
-instance FromValueInChannel MinimalVRepr MinimalVRepr where fromValueInChannel = identity
-instance ToValueInChannel   MinimalVRepr MinimalVRepr where toValueInChannel   = ViC.accept
-
-
-instance Show MinimalVRepr where
-    show =
-        case _ of
-            None -> "<None>"
-            Int n -> show n
-            Str str -> str
-            UnitV -> "<Unit>"
-
-
 instance HasFallback MinimalVRepr where
     fallback = None
 
 
+instance FromValueInChannel MinimalVRepr MinimalVRepr where fromValueInChannel = identity
+instance ToValueInChannel   MinimalVRepr MinimalVRepr where toValueInChannel   = ViC.accept
+
 instance FromValueInChannel Int MinimalVRepr where fromValueInChannel = Int
 instance FromValueInChannel String MinimalVRepr where fromValueInChannel = Str
 instance FromValueInChannel Unit MinimalVRepr where fromValueInChannel = const UnitV
-
-
-instance Tagged MinimalVRepr where
-    tag :: Tag.Path -> MinimalVRepr -> Tag
-    tag = const $ tagAs <<< case _ of
-        None -> "None"
-        Int _ -> "Int"
-        Str _ -> "Str"
-        UnitV -> "Bool"
 
 
 instance ToValueInChannel MinimalVRepr Int where
@@ -90,6 +71,24 @@ instance ToValueInChannel MinimalVRepr Unit where
     toValueInChannel = case _ of
         UnitV -> ViC.accept unit
         _ -> ViC.decline
+
+
+instance Show MinimalVRepr where
+    show =
+        case _ of
+            None -> "<None>"
+            Int n -> show n
+            Str str -> str
+            UnitV -> "<Unit>"
+
+
+instance Tagged MinimalVRepr where
+    tag :: Tag.Path -> MinimalVRepr -> Tag
+    tag = const $ tagAs <<< case _ of
+        None -> "None"
+        Int _ -> "Int"
+        Str _ -> "Str"
+        UnitV -> "Bool"
 
 
 instance StRepr Unit MinimalStRepr where

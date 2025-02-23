@@ -14,6 +14,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions
 
 import Test.Spec.Util.Parsing (parses)
+import Test.Spec.Util.Assertions (shouldEqual) as U
 
 
 
@@ -170,28 +171,28 @@ test
 multiline
 code
             """
-          , fn : Fn ("abc" /\ [] /\ [])
+          , fn : Sig ("abc" /\ [] /\ [])
           }
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
-        $ GlslFnRef $ Fn ("aaa" /\ [] /\ [])
+        $ GlslFnRef $ Sig ("aaa" /\ [] /\ [])
     , Texture
         $ CallGlslFn { over : Empty, mbWith : Nothing }
-        $ GlslFnRef $ Fn ("aaa" /\ [ Fn.i "arg1" $ T $ Empty ] /\ [])
+        $ GlslFnRef $ Sig ("aaa" /\ [ Sig.i "arg1" $ T $ Empty ] /\ [])
     , W.GlslFn
         $ T.GlslFn
         $ { kind : FnSrc
           , code : GlslFnCode "foo\nbar\nbzz"
-          , fn : Fn ("axz" /\ [ Fn.i "arg1" $ T $ Empty, Fn.i "arg2" $ V $ Number 2.0 ] /\ [])
+          , fn : Sig ("axz" /\ [ Sig.i "arg1" $ T $ Empty, Sig.i "arg2" $ V $ Number 2.0 ] /\ [])
           }
     , Texture
         $ CallGlslFn { over : Filter Empty $ Posterize { bins : Time, gamma : Height }, mbWith : Nothing }
-        $ GlslFnRef $ Fn
+        $ GlslFnRef $ Sig
             $ "bzz" /\
-                [ Fn.i "a1" $ T Empty
-                , Fn.i "a2"
+                [ Sig.i "a1" $ T Empty
+                , Sig.i "a2"
                     $ T $ BlendOf { what : Empty, with : Empty } $ Diff
-                , Fn.i "a3" $ V $ Number 2.0
+                , Sig.i "a3" $ V $ Number 2.0
                 ] /\
                 []
     ]

@@ -8,9 +8,10 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class ToChRepr, class FromChRepr)
-import Noodle.Repr.ChRepr (wrap, unwrap) as Repr
-import Data.Newtype (wrap) as NT
+import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValueInChannel, class FromValueInChannel)
+import Noodle.Repr.ValueInChannel (toMaybe, accept) as ViC
+import Data.Newtype (class Newtype)
+import Data.Newtype (wrap, unwrap) as NT
 
 import Type.Proxy (Proxy(..))
 
@@ -37,6 +38,8 @@ import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
 import Noodle.Fn.Protocol as Protocol
+import Noodle.Fn.Tracker (Tracker)
+import Noodle.Fn.Tracker (outletsRec) as Tracker
 import Noodle.Id (Inlet(..), Outlet(..)) as Fn
 import Noodle.Id (Temperament(..))
 
@@ -58,14 +61,16 @@ shouldContain id val tracker = do
             throwError $ error $ "\"" <> id <> "\" was not found in tracker"
 -}
 
-data MyRepr
+newtype MyRepr
     = MyRepr Int
+
+derive instance Newtype MyRepr _
 
 
 instance Show MyRepr where show = case _ of MyRepr n -> show n
 instance HasFallback MyRepr where fallback = MyRepr 0
-instance ToChRepr Int MyRepr where toChRepr = Just <<< Repr.wrap <<< MyRepr
-instance FromChRepr MyRepr Int where fromChRepr = Repr.unwrap >>> case _ of MyRepr n -> Just n
+instance FromValueInChannel Int MyRepr where fromValueInChannel = NT.wrap
+instance ToValueInChannel MyRepr Int where toValueInChannel = NT.unwrap >>> ViC.accept
 
 
 spec :: Spec Unit
@@ -74,7 +79,7 @@ spec = do
     describe "performing functions" $ do
 
         it "summing works on records" $ do
-            (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
+            ((tracker /\ protocol) :: Tracker Unit _ _ MyRepr /\ Protocol Unit _ _ MyRepr) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
@@ -82,11 +87,13 @@ spec = do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            (_ /\ _ /\ outputs) <- Fn.runRec protocol fn
-            outputs.sum `shouldEqual` 8
+            _ <- Fn.run protocol fn
+            -- REM (_ /\ _ /\ outputs) <- Fn.runRec protocol fn
+            -- REM outlets.sum `shouldEqual` 8
+            fail "implement"
 
         it "summing works with sendIn on records" $ do
-            (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
+            ((tracker /\ protocol) :: Tracker Unit _ _ MyRepr /\ Protocol Unit _ _ MyRepr) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
@@ -96,10 +103,11 @@ spec = do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            (_ /\ inputs /\ outputs) <- Fn.runRec protocol fn
-            outputs.sum `shouldEqual` 13
-            inputs.a `shouldEqual` 6
-            inputs.b `shouldEqual` 7
+            -- REM (_ /\ inputs /\ outputs) <- Fn.runRec protocol fn
+            -- REM outputs.sum `shouldEqual` 13
+            -- REM inputs.a `shouldEqual` 6
+            -- REM inputs.b `shouldEqual` 7
+            fail "implement"
 
 
 type SumFn m =

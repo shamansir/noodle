@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Data.Symbol (reflectSymbol)
+import Noodle.Repr.ValueInChannel (accept, toMaybe) as ViC
 
 import Noodle.Raw.FromToRec as RR
 
@@ -33,20 +34,20 @@ spec = do
 
         it "converting to repr works" $ do
             let map = RR.fromRec reflectSymbol { a : 5, b : 3 }
-            Map.lookup "a" map `shouldEqual` (Just $ Int 5)
-            Map.lookup "b" map `shouldEqual` (Just $ Int 3)
+            (ViC.toMaybe =<< Map.lookup "a" map) `shouldEqual` (Just $ Int 5)
+            (ViC.toMaybe =<< Map.lookup "b" map) `shouldEqual` (Just $ Int 3)
 
         it "converting to repr works with different types" $ do
             let map = RR.fromRec reflectSymbol { a : 5, b : "3" }
-            Map.lookup "a" map `shouldEqual` (Just $ Int 5)
-            Map.lookup "b" map `shouldEqual` (Just $ Str "3")
+            (ViC.toMaybe =<< Map.lookup "a" map) `shouldEqual` (Just $ Int 5)
+            (ViC.toMaybe =<< Map.lookup "b" map) `shouldEqual` (Just $ Str "3")
 
         it "converting from repr works" $ do
             let
                 (rec :: Record ( a :: Int, b :: Int )) =
                     RR.toRec identity
-                        $ Map.insert "a" (Int 5)
-                        $ Map.insert "b" (Int 3)
+                        $ Map.insert "a" (ViC.accept $ Int 5)
+                        $ Map.insert "b" (ViC.accept $ Int 3)
                         $ Map.empty
             rec.a `shouldEqual` 5
             rec.b `shouldEqual` 3
@@ -55,8 +56,8 @@ spec = do
             let
                 (rec :: Record ( a :: Int, b :: String )) =
                     RR.toRec identity
-                        $ Map.insert "a" (Int 5)
-                        $ Map.insert "b" (Str "3")
+                        $ Map.insert "a" (ViC.accept $ Int 5)
+                        $ Map.insert "b" (ViC.accept $ Str "3")
                         $ Map.empty
             rec.a `shouldEqual` 5
             rec.b `shouldEqual` "3"

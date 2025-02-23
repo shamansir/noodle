@@ -18,11 +18,12 @@ import Test.Spec (Spec, describe, it, itOnly)
 import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Id (InletR, OutletR) as Id
-import Noodle.Repr.ChRepr (ChRepr(..))
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (accept, toMaybe) as ViC
 import Noodle.Fn.Shape (Shape(..))
-import Noodle.Fn.Shape (reflect) as Shape
+import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
-import Noodle.Raw.Fn.Shape (inlets, outlets, make) as RawShape
+import Noodle.Raw.Fn.Shape (inlets, outlets, make, tagAs) as RawShape
 import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
@@ -56,15 +57,15 @@ spec = do
         it "properly instantiates / reflects shape" $ do
             let
                 rawShape =
-                    Shape.reflect (Shape :: SampleHC.Shape)
+                    Shape._reflect ?wh ?wh (Shape :: SampleHC.Shape)
             RawShape.inlets rawShape `shouldEqual`
-                [ { name : inletR "foo", order : 0, temp : Hot }
-                , { name : inletR "c"  , order : 1, temp : Hot }
-                , { name : inletR "bar", order : 2, temp : Cold }
+                [ { name : inletR "foo", order : 0, temp : Hot,  tag : RawShape.tagAs "Int" }
+                , { name : inletR "c"  , order : 1, temp : Hot,  tag : RawShape.tagAs "Str" }
+                , { name : inletR "bar", order : 2, temp : Cold, tag : RawShape.tagAs "Int"}
                 ]
             RawShape.outlets rawShape `shouldEqual`
-                [ { name : outletR "foo", order : 0 }
-                , { name : outletR "bar", order : 1 }
+                [ { name : outletR "foo", order : 0, tag : RawShape.tagAs "Int" }
+                , { name : outletR "bar", order : 1, tag : RawShape.tagAs "Int" }
                 ]
 
     describe "creation" $ do
@@ -317,14 +318,14 @@ spec = do
                         # Map.insert (outletR "sum") (MinimalRepr.Int 0)
                     )
                     $ do
-                        mbA <- RawFn.receive $ inletR "a"
-                        mbB <- RawFn.receive $ inletR "b"
-                        RawFn.send (outletR "sum") $ ChRepr $ MinimalRepr.Int $ case mbA /\ mbB of
-                            (ChRepr (MinimalRepr.Int a) /\ ChRepr (MinimalRepr.Int b)) -> a + b
+                        vicA <- RawFn.receive $ inletR "a"
+                        vicB <- RawFn.receive $ inletR "b"
+                        RawFn.send (outletR "sum") $ ViC.accept $ MinimalRepr.Int $ case ViC.toMaybe vicA /\ ViC.toMaybe vicB of
+                            (Just (MinimalRepr.Int a) /\ Just (MinimalRepr.Int b)) -> a + b
                             _ -> 0
 
             rawNode # RawNode.run
 
-            mbSum <- RawNode.atOutlet (outletR "sum") rawNode
+            vicSum <- RawNode.atOutlet (outletR "sum") rawNode
 
-            mbSum `shouldEqual` (Just $ MinimalRepr.Int 12)
+            ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
