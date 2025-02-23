@@ -31,3 +31,4 @@ blessed.log.txt
 commands.log.txt
 node_modules.*
 node-modules.*
+/tests.mute

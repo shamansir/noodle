@@ -5,6 +5,7 @@ import Prelude
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.SOrder (type (:::), T)
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -78,22 +79,34 @@ spec = do
 
     describe "performing functions" $ do
 
-        it "summing works on records" $ do
-            ((tracker /\ protocol) :: Tracker Unit _ _ MyRepr /\ Protocol Unit _ _ MyRepr) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
+        it "summing works on records (tracker way)" $ do
+            (tracker /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
                     Fn.make "foo" $ do
-                        a <- Fn.receive a_in
-                        b <- Fn.receive b_in
+                        (a :: Int) <- Fn.receive a_in
+                        (b :: Int) <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            _ <- Fn.run protocol fn
-            -- REM (_ /\ _ /\ outputs) <- Fn.runRec protocol fn
-            -- REM outlets.sum `shouldEqual` 8
-            fail "implement"
+            Fn.run' protocol fn
+            (outlets :: ViCOutlets) <- liftEffect $ Tracker.outletsRec tracker
+            outlets.sum `shouldEqual` (ViC.accept 8)
+
+
+        it "summing works on records (protocol way)" $ do
+            (_ /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 5, b : 3 } { sum : 0 }
+            let
+                fn :: forall m. MonadEffect m => SumFn m
+                fn =
+                    Fn.make "foo" $ do
+                        (a :: Int) <- Fn.receive a_in
+                        (b :: Int) <- Fn.receive b_in
+                        Fn.send sum_out $ a + b
+            ((_ /\ _ /\ outlets) :: _ /\ ViCInlets /\ ViCOutlets) <- Fn.runRec protocol fn
+            outlets.sum `shouldEqual` (ViC.accept 8)
 
         it "summing works with sendIn on records" $ do
-            ((tracker /\ protocol) :: Tracker Unit _ _ MyRepr /\ Protocol Unit _ _ MyRepr) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
+            (_ /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
             let
                 fn :: forall m. MonadEffect m => SumFn m
                 fn =
@@ -103,11 +116,19 @@ spec = do
                         a <- Fn.receive a_in
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            -- REM (_ /\ inputs /\ outputs) <- Fn.runRec protocol fn
-            -- REM outputs.sum `shouldEqual` 13
-            -- REM inputs.a `shouldEqual` 6
-            -- REM inputs.b `shouldEqual` 7
-            fail "implement"
+                        pure unit
+            (_ /\ inlets /\ outlets :: _ /\ ViCInlets /\ ViCOutlets) <- Fn.runRec protocol fn
+            outlets.sum `shouldEqual` (ViC.accept 13)
+            inlets.a `shouldEqual` (ViC.accept 6)
+            inlets.b `shouldEqual` (ViC.accept 7)
+
+
+type InletsRow = ( a :: Int, b :: Int )
+type OutletsRow = ( sum :: Int )
+
+
+type ViCInlets = Record ( a :: ValueInChannel Int, b :: ValueInChannel Int )
+type ViCOutlets = Record ( sum :: ValueInChannel Int )
 
 
 type SumFn m =

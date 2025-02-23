@@ -8,24 +8,13 @@ import Data.Maybe (Maybe(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Data.Symbol (reflectSymbol)
-import Noodle.Repr.ValueInChannel (accept, toMaybe) as ViC
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (accept) as ViC
 
 import Noodle.Raw.FromToRec as RR
 
 import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
 
-
-{-
-shouldContain :: forall state is os. String -> d -> Protocol.Tracker state is os -> Aff Unit
-shouldContain id val tracker = do
-    values <- liftEffect $ Ref.read tracker
-    case Map.lookup id values of
-        Just otherVal ->
-            if val == otherVal then pure unit
-            else throwError $ error $ show val <> " /= " <> show otherVal
-        Nothing ->
-            throwError $ error $ "\"" <> id <> "\" was not found in tracker"
--}
 
 spec :: Spec Unit
 spec = do
@@ -34,39 +23,30 @@ spec = do
 
         it "converting to repr works" $ do
             let map = RR.fromRec reflectSymbol { a : 5, b : 3 }
-            (ViC.toMaybe =<< Map.lookup "a" map) `shouldEqual` (Just $ Int 5)
-            (ViC.toMaybe =<< Map.lookup "b" map) `shouldEqual` (Just $ Int 3)
+            (Map.lookup "a" map) `shouldEqual` (Just $ ViC.accept $ Int 5)
+            (Map.lookup "b" map) `shouldEqual` (Just $ ViC.accept $ Int 3)
 
         it "converting to repr works with different types" $ do
             let map = RR.fromRec reflectSymbol { a : 5, b : "3" }
-            (ViC.toMaybe =<< Map.lookup "a" map) `shouldEqual` (Just $ Int 5)
-            (ViC.toMaybe =<< Map.lookup "b" map) `shouldEqual` (Just $ Str "3")
+            (Map.lookup "a" map) `shouldEqual` (Just $ ViC.accept $ Int 5)
+            (Map.lookup "b" map) `shouldEqual` (Just $ ViC.accept $ Str "3")
 
         it "converting from repr works" $ do
             let
-                (rec :: Record ( a :: Int, b :: Int )) =
+                (rec :: Record ( a :: ValueInChannel Int, b :: ValueInChannel Int )) =
                     RR.toRec identity
                         $ Map.insert "a" (ViC.accept $ Int 5)
                         $ Map.insert "b" (ViC.accept $ Int 3)
                         $ Map.empty
-            rec.a `shouldEqual` 5
-            rec.b `shouldEqual` 3
+            rec.a `shouldEqual` (ViC.accept 5)
+            rec.b `shouldEqual` (ViC.accept 3)
 
         it "converting from repr works with different types" $ do
             let
-                (rec :: Record ( a :: Int, b :: String )) =
+                (rec :: Record ( a :: ValueInChannel Int, b :: ValueInChannel String )) =
                     RR.toRec identity
                         $ Map.insert "a" (ViC.accept $ Int 5)
                         $ Map.insert "b" (ViC.accept $ Str "3")
                         $ Map.empty
-            rec.a `shouldEqual` 5
-            rec.b `shouldEqual` "3"
-
-
-{-
-sumOrders :: Fn.Orders _ _
-sumOrders =
-    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
-    , outputs : Proxy :: _ ( "sum" ::: T )
-    }
--}
+            rec.a `shouldEqual` (ViC.accept 5)
+            rec.b `shouldEqual` (ViC.accept "3")

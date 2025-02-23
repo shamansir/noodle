@@ -48,7 +48,11 @@ data ValueInChannel a
   | Empty
 
 
+derive instance Eq a => Eq (ValueInChannel a)
 derive instance Functor ValueInChannel
+
+
+-- instance HasFallback (ValueInChannel a) where fallback = Empty
 
 
 class ToValueInChannel repr a where

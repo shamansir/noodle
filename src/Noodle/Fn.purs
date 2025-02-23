@@ -86,14 +86,14 @@ run protocol (Fn _ process) = do
 
 
 runRec
-    :: forall state is os isrl osrl chrepr m
+    :: forall state is is' os' os isrl osrl chrepr m
     .  MonadRec m => MonadEffect m
     => HasFallback chrepr
-    => RL.RowToList is isrl => ToValuesInChannelRow isrl is chrepr
-    => RL.RowToList os osrl => ToValuesInChannelRow osrl os chrepr
+    => RL.RowToList is' isrl => ToValuesInChannelRow isrl is' chrepr
+    => RL.RowToList os' osrl => ToValuesInChannelRow osrl os' chrepr
     => Protocol state is os chrepr
     -> Fn state is os chrepr m
-    -> m ( state /\ Record is /\ Record os )
+    -> m ( state /\ Record is' /\ Record os' )
 runRec protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ Protocol.getState protocol
