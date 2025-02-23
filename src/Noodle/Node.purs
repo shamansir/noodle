@@ -270,11 +270,11 @@ shape :: forall f state is os chrepr m. Node f state is os chrepr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
 
 
-inlets :: forall m f state is isrl os chrepr mp. MonadEffect m => ToValuesInChannelRow isrl is chrepr => Node f state is os chrepr mp -> m (Record is)
+inlets :: forall m f state is vis visrl os chrepr mp. MonadEffect m => ToValuesInChannelRow visrl vis chrepr => Node f state is os chrepr mp -> m (Record vis)
 inlets node = liftEffect $ Protocol.getRecInlets $ _getProtocol node
 
 
-outlets :: forall m f state is os osrl chrepr mp. MonadEffect m => ToValuesInChannelRow osrl os chrepr => Node f state is os chrepr mp -> m (Record os)
+outlets :: forall m f state is os vos vosrl chrepr mp. MonadEffect m => ToValuesInChannelRow vosrl vos chrepr => Node f state is os chrepr mp -> m (Record vos)
 outlets node = liftEffect $ Protocol.getRecOutlets $ _getProtocol node
 
 
@@ -307,20 +307,20 @@ infixr 6 getFromInletsFlipped as <=#
 infixr 6 getFromOutletsFlipped as <=@
 
 
-atInlet :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Id.Inlet i -> Node f state is os chrepr mp -> m din
-atInlet _ = getFromInlets $ Record.get (Proxy :: _ i)
+atInlet :: forall m f i state is vis vis' visrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow visrl vis chrepr => HasInlet vis vis' i (ValueInChannel din) => Id.Inlet i -> Node f state is os chrepr mp -> m (ValueInChannel din)
+atInlet _ node = (inlets node :: m (Record vis)) <#> Record.get (Proxy :: _ i)
 
 
-atInletFlipped :: forall m f i state is is' isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => HasInlet is is' i din => Node f state is os chrepr mp -> Id.Inlet i -> m din
-atInletFlipped = flip atInlet
+atInletFlipped :: forall m f i state is vis vis' visrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow visrl vis chrepr => HasInlet vis vis' i (ValueInChannel din) => Node f state is os chrepr mp -> Id.Inlet i -> m (ValueInChannel din)
+atInletFlipped node _ = (inlets node :: m (Record vis)) <#> Record.get (Proxy :: _ i)
 
 
-atOutlet :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Id.Outlet o -> Node f state is os chrepr mp -> m dout
-atOutlet _ = getFromOutlets $ Record.get (Proxy :: _ o)
+atOutlet :: forall m f o state is os vos vos' vosrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow vosrl vos chrepr => HasOutlet vos vos' o (ValueInChannel dout) => Id.Outlet o -> Node f state is os chrepr mp -> m (ValueInChannel dout)
+atOutlet _ node = (outlets node :: m (Record vos)) <#> Record.get (Proxy :: _ o)
 
 
-atOutletFlipped :: forall m f o state is os os' osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => HasOutlet os os' o dout => Node f state is os chrepr mp -> Id.Outlet o -> m dout
-atOutletFlipped = flip atOutlet
+atOutletFlipped :: forall m f o state is os vos vos' vosrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow vosrl vos chrepr => HasOutlet vos vos' o (ValueInChannel dout) => Node f state is os chrepr mp -> Id.Outlet o -> m (ValueInChannel dout)
+atOutletFlipped node _ = (outlets node :: m (Record vos)) <#> Record.get (Proxy :: _ o)
 
 
 atInletR :: forall m f state is os chrepr mp. MonadEffect m => Id.InletR -> Node f state is os chrepr mp -> m (ValueInChannel chrepr)
@@ -331,19 +331,19 @@ atOutletR :: forall m f state is os chrepr mp. MonadEffect m => Id.OutletR -> No
 atOutletR outletR node = outletsRaw node <#> Map.lookup outletR <#> (ViC._reportMissingKey $ Id.outletRName outletR)
 
 
-getFromInlets :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => (Record is -> din) -> Node f state is os chrepr mp -> m din
+getFromInlets :: forall m f state is vis visrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow visrl vis chrepr => (Record vis -> ValueInChannel din) -> Node f state is os chrepr mp -> m (ValueInChannel din)
 getFromInlets getter node = inlets node <#> getter
 
 
-getFromInletsFlipped :: forall m f state is isrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow isrl is chrepr => Node f state is os chrepr mp -> (Record is -> din) -> m din
+getFromInletsFlipped :: forall m f state is vis visrl os chrepr mp din. MonadEffect m => ToValuesInChannelRow visrl vis chrepr => Node f state is os chrepr mp -> (Record vis -> ValueInChannel din) -> m (ValueInChannel din)
 getFromInletsFlipped = flip getFromInlets
 
 
-getFromOutlets :: forall m f state is os osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => (Record os -> dout) -> Node f state is os chrepr mp -> m dout
+getFromOutlets :: forall m f state is os vos vosrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow vosrl vos chrepr => (Record vos -> ValueInChannel dout) -> Node f state is os chrepr mp -> m (ValueInChannel dout)
 getFromOutlets getter node = outlets node <#> getter
 
 
-getFromOutletsFlipped :: forall m f state is os osrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow osrl os chrepr => Node f state is os chrepr mp -> (Record os -> dout) -> m dout
+getFromOutletsFlipped :: forall m f state is os vos vosrl chrepr mp dout. MonadEffect m => ToValuesInChannelRow vosrl vos chrepr => Node f state is os chrepr mp -> (Record vos -> ValueInChannel dout) -> m (ValueInChannel dout)
 getFromOutletsFlipped = flip getFromOutlets
 
 
