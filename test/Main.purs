@@ -36,13 +36,11 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Toolkit.spec
   describe "Patch"
     Patch.spec
-  {-
   describe "NDF File"
     NdfFile.spec
-  -- describe "Codegen from NDF Definitions" -- FIXME: enable back
-  --   NdfCodegen.spec
+  describe "Codegen from NDF Definitions"
+    NdfCodegen.spec
   describe "Hydra Repr parsing"
     HydraReprParsing.spec
-  -}
   describe "Nodes and Purescript records"
     NodesAndRecords.spec
