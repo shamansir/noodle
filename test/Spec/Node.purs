@@ -99,12 +99,11 @@ spec = do
             liftEffect $ do
                 myNode <- liftEffect Sample.makeNode
                 myNode # Node.run
-                -- (foo :: ValueInChannel String) <- myNode <-@ Sample.foo_out
-                pure unit
+                (foo :: String) <- myNode <-@ Sample.foo_out
                 -- bar <- myNode <-@ Sample.bar_out
                 -- foo <- myNode <=@ _.foo
                 -- bar <- myNode <=@ _.bar
-                -- foo `shouldEqual` (ViC.accept "35")
+                foo `shouldEqual` "35"
                 -- bar `shouldEqual` (ViC.accept $ -1)
 
         {-

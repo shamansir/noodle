@@ -258,12 +258,13 @@ instance toValuesInChannelRowBaseNil :: ToValuesInChannelRowBase RL.Nil row repr
   toValuesInChannelRowBuilder _ _ _ = identity
 else instance toValuesInChannelRowBaseCons ::
   ( IsSymbol name
+  , HasFallback a
   , ToValueInChannel repr a
-  , Row.Cons name (ValueInChannel a) trash row
+  , Row.Cons name a trash row
   , Row.Lacks name from'
-  , Row.Cons name (ValueInChannel a) from' to
+  , Row.Cons name a from' to
   , ToValuesInChannelRowBase tail row repr from from'
-  ) => ToValuesInChannelRowBase (RL.Cons name (ValueInChannel a) tail) row repr from to where
+  ) => ToValuesInChannelRowBase (RL.Cons name a tail) row repr from to where
   toValuesInChannelRowBuilder _ _ map =
     first <<< rest
     where
@@ -273,7 +274,7 @@ else instance toValuesInChannelRowBaseCons ::
           Just repr -> _backToValue repr
           Nothing -> MissingKey $ reflectSymbol nameP
       rest = toValuesInChannelRowBuilder (Proxy :: _ repr) (Proxy :: _ tail) map
-      first = Builder.insert nameP val
+      first = Builder.insert nameP $ toFallback val
 
 
 fromMap :: forall row rl repr

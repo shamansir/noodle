@@ -33,20 +33,20 @@ spec = do
 
         it "converting from repr works" $ do
             let
-                (rec :: Record ( a :: ValueInChannel Int, b :: ValueInChannel Int )) =
+                (rec :: Record ( a :: Int, b :: Int )) =
                     RR.toRec identity
                         $ Map.insert "a" (ViC.accept $ Int 5)
                         $ Map.insert "b" (ViC.accept $ Int 3)
                         $ Map.empty
-            rec.a `shouldEqual` (ViC.accept 5)
-            rec.b `shouldEqual` (ViC.accept 3)
+            rec.a `shouldEqual` 5
+            rec.b `shouldEqual` 3
 
         it "converting from repr works with different types" $ do
             let
-                (rec :: Record ( a :: ValueInChannel Int, b :: ValueInChannel String )) =
+                (rec :: Record ( a :: Int, b :: String )) =
                     RR.toRec identity
                         $ Map.insert "a" (ViC.accept $ Int 5)
                         $ Map.insert "b" (ViC.accept $ Str "3")
                         $ Map.empty
-            rec.a `shouldEqual` (ViC.accept 5)
-            rec.b `shouldEqual` (ViC.accept "3")
+            rec.a `shouldEqual` 5
+            rec.b `shouldEqual` "3"

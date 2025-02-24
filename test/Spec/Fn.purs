@@ -89,8 +89,8 @@ spec = do
                         (b :: Int) <- Fn.receive b_in
                         Fn.send sum_out $ a + b
             Fn.run' protocol fn
-            (outlets :: ViCOutlets) <- liftEffect $ Tracker.outletsRec tracker
-            outlets.sum `shouldEqual` (ViC.accept 8)
+            (outlets :: Record OutletsRow) <- liftEffect $ Tracker.outletsRec tracker
+            outlets.sum `shouldEqual` 8
 
 
         it "summing works on records (protocol way)" $ do
@@ -102,8 +102,8 @@ spec = do
                         (a :: Int) <- Fn.receive a_in
                         (b :: Int) <- Fn.receive b_in
                         Fn.send sum_out $ a + b
-            ((_ /\ _ /\ outlets) :: _ /\ ViCInlets /\ ViCOutlets) <- Fn.runRec protocol fn
-            outlets.sum `shouldEqual` (ViC.accept 8)
+            ((_ /\ _ /\ outlets) :: _ /\ Record InletsRow /\ Record OutletsRow) <- Fn.runRec protocol fn
+            outlets.sum `shouldEqual` 8
 
         it "summing works with sendIn on records" $ do
             (_ /\ protocol) <- liftEffect $ Protocol.makeRec unit { a : 0, b : 0 } { sum : 0 }
@@ -117,18 +117,14 @@ spec = do
                         b <- Fn.receive b_in
                         Fn.send sum_out $ a + b
                         pure unit
-            (_ /\ inlets /\ outlets :: _ /\ ViCInlets /\ ViCOutlets) <- Fn.runRec protocol fn
-            outlets.sum `shouldEqual` (ViC.accept 13)
-            inlets.a `shouldEqual` (ViC.accept 6)
-            inlets.b `shouldEqual` (ViC.accept 7)
+            (_ /\ inlets /\ outlets :: _ /\ Record InletsRow /\ Record OutletsRow) <- Fn.runRec protocol fn
+            outlets.sum `shouldEqual` 13
+            inlets.a `shouldEqual` 6
+            inlets.b `shouldEqual` 7
 
 
 type InletsRow = ( a :: Int, b :: Int )
 type OutletsRow = ( sum :: Int )
-
-
-type ViCInlets = Record ( a :: ValueInChannel Int, b :: ValueInChannel Int )
-type ViCOutlets = Record ( sum :: ValueInChannel Int )
 
 
 type SumFn m =

@@ -72,11 +72,11 @@ getOutlets :: forall state is os chrepr. Protocol state is os chrepr -> Effect (
 getOutlets = Raw.getOutlets
 
 
-getRecInlets :: forall state is vis visrl os chrepr. ToValuesInChannelRow visrl vis chrepr => Protocol state is os chrepr -> Effect (Record vis)
+getRecInlets :: forall state is isrl os chrepr. ToValuesInChannelRow isrl is chrepr => Protocol state is os chrepr -> Effect (Record is)
 getRecInlets p = p.getInlets unit <#> Tuple.snd <#> toRec Id.inletRName
 
 
-getRecOutlets :: forall state is os vos vosrl chrepr. ToValuesInChannelRow vosrl vos chrepr => Protocol state is os chrepr -> Effect (Record vos)
+getRecOutlets :: forall state is os osrl chrepr. ToValuesInChannelRow osrl os chrepr => Protocol state is os chrepr -> Effect (Record os)
 getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec Id.outletRName
 
 
