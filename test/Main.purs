@@ -14,7 +14,7 @@ import Test.Spec.Fn (spec) as Fn
 import Test.Spec.UniqueHash (spec) as UniqueHash
 import Test.Spec.Repr (spec) as Repr
 import Test.Spec.Node (spec) as Node
--- REM import Test.Spec.Toolkit (spec) as Toolkit
+import Test.Spec.Toolkit (spec) as Toolkit
 import Test.Spec.Patch (spec) as Patch
 import Test.Spec.NdfFile (spec) as NdfFile
 import Test.Spec.NdfCodegen (spec) as NdfCodegen
@@ -32,10 +32,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Fn.spec
   describe "Node"
     Node.spec
-  {-
   describe "Toolkit"
     Toolkit.spec
-  -}
   describe "Patch"
     Patch.spec
   {-
