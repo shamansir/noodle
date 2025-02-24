@@ -99,14 +99,13 @@ spec = do
             liftEffect $ do
                 myNode <- liftEffect Sample.makeNode
                 myNode # Node.run
-                (foo :: String) <- myNode <-@ Sample.foo_out
-                -- bar <- myNode <-@ Sample.bar_out
+                foo <- myNode <-@ Sample.foo_out
+                bar <- myNode <-@ Sample.bar_out
                 -- foo <- myNode <=@ _.foo
                 -- bar <- myNode <=@ _.bar
                 foo `shouldEqual` "35"
-                -- bar `shouldEqual` (ViC.accept $ -1)
+                bar `shouldEqual` -1
 
-        {-
         it "running node with some function (send new values to all inlets before running)" $ do
             liftEffect $ do
                 myNode <- liftEffect Sample.makeNode
@@ -167,9 +166,7 @@ spec = do
                 bar <- myNode <-@ SampleHC.bar_out
                 foo `shouldEqual` "95"
                 bar `shouldEqual` 5
-        -}
 
-    {-
     describe "connecting & disconnecting" $ do
 
         it "is possible to connect nodes (case a)" $ liftEffect $ do
@@ -250,7 +247,6 @@ spec = do
 
             pure unit
 
-
         it "disconnecting works" $ liftEffect $ do
             (nodeA :: Sum.Node) <-
                 Sum.makeNode_ { a : 2, b : 3 } { sum : 0 } Sum.sumBoth
@@ -283,10 +279,8 @@ spec = do
             atSumB' `shouldEqual` (2 + 4 + 3)
 
             pure unit
-    -}
 
 
-    {-
 
     describe "working with state" $ do
 
@@ -324,10 +318,6 @@ spec = do
             stateC <- Node.state modifiesPStateNode
             stateC `shouldEqual` (Patch.State { intVal : 17, strVal : "12*5*0*0*" } /\ "<<<-o+0+0+5+12")
 
-    -}
-
-
-    {-
     describe "raw nodes" $ do
 
         it "is possible to create raw node" $ liftEffect $ do
@@ -354,4 +344,3 @@ spec = do
             vicSum <- RawNode.atOutlet (outletR "sum") rawNode
 
             ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
-    -}
