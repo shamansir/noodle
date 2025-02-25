@@ -8,7 +8,6 @@ import Data.Maybe (Maybe(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Data.Symbol (reflectSymbol)
-import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (accept) as ViC
 
 import Noodle.Raw.FromToRec as RR

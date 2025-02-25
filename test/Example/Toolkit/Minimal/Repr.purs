@@ -166,12 +166,12 @@ instance CodegenRepr MinimalStRepr where
                     _ -> typeCtor "MinimalStRepr"
     pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
-                     Just "Int" -> exprInt $ fromMaybe 0 $ Int.fromString valueStr
-                     Just "String" -> exprString valueStr
-                     Just "Unit" -> exprIdent "unit"
+                     Just "StrSt" -> exprString valueStr
+                     Just "UnitSt" -> exprIdent "unit"
+                     Just "PState" -> exprIdent "foo" -- FIXME:
                      _ -> if (valueStr == "unit")
-                                then exprIdent "unit"
-                                else exprCtor "None"
+                                then exprCtor "NoSt" --exprIdent "unit"
+                                else exprCtor "NoSt"
     fTypeFor prepr = pTypeFor prepr
     fDefaultFor prepr = pDefaultFor prepr
     fValueFor prepr = pValueFor prepr

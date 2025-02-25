@@ -33,7 +33,7 @@ import Node.FS.Perms (permsReadWrite)
 
 import Tidy.Codegen
 
-import Noodle.Id (toolkitR) as Id
+import Noodle.Id (toolkitR, family) as Id
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
@@ -68,7 +68,11 @@ minimalGenOptions = FCG.Options
     [ declImportAs "Data.String" [ importValue "length" ] "String"
     , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalVRepr", importTypeAll "MinimalStRepr" ]
     ]
-  , familyImports : const []
+  , familyImports : Id.family >>> (unsafePartial $ case _ of
+    "concat" ->
+      [ declImportAs "Data.String" [ importValue "length" ] "String"
+      ]
+    _ -> [])
   }
 
 
@@ -176,4 +180,5 @@ testCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
           sample
           # String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
           # String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
+    Console.log $ inputFilePath <> " <-> " <> outputFilePath
     fileContent `U.shouldEqual` alteredSample

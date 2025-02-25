@@ -183,7 +183,8 @@ generateModule (Options opts) mbSource fdef
     , spawn : importValue "Family.spawn"
     }
   tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
-  reprC <- importFrom (reprModule opts.pchrepr) $ importType $ reprTypeName opts.pchrepr -- FIXME: use forall?
+  reprC <- importFrom (reprModule opts.pchrepr) $ importTypeAll $ reprTypeName opts.pchrepr -- FIXME: use forall?
+  reprS <- importFrom (reprModule opts.pstrepr) $ importTypeAll $ reprTypeName opts.pstrepr -- FIXME: use forall?
 
   let
     familyName = Sig.name fdef.fnsig
@@ -338,6 +339,12 @@ generateModule (Options opts) mbSource fdef
         $ exprRecord $ channelDefault <$> Sig.outs fdef.fnsig
 
     ]
+    <> case state.mbType of
+        Just _ ->
+          [ declSignature "defaultSt" $ qPartialStateType state.mbType
+          , declValue "defaultSt" [] $ qPartialStateValue state.mbType state.mbDefault
+          ]
+        Nothing -> []
     <> (inletDeclr  <$> Sig.args fdef.fnsig)
     <> (outletDeclr <$> Sig.outs fdef.fnsig)
     <>
@@ -346,7 +353,7 @@ generateModule (Options opts) mbSource fdef
         $ exprApp
           (exprIdent tkFamilyF.make)
           [ exprIdent $ "_" <> familyName
-          , qPartialStateValue state.mbType state.mbDefault
+          , exprIdent "defaultSt"
           , exprParens (exprTyped (exprCtor "Noodle.Shape") (typeCtor "Shape"))
           , exprIdent "defaultI"
           , exprIdent "defaultO"

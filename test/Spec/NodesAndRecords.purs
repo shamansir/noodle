@@ -2,28 +2,14 @@ module Test.Spec.NodesAndRecords where
 
 import Prelude
 
-import Data.Map as Map
-import Data.Maybe (Maybe(..))
-
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Data.Symbol (reflectSymbol)
-import Noodle.Repr.ValueInChannel (accept, toMaybe) as ViC
 import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (_reflect) as Shape
-import Noodle.Raw.Id (inletR, outletR, familyR)
+import Noodle.Raw.Id (inletR, outletR)
 import Noodle.Id (Temperament(..), inletRName, outletRName)
-import Noodle.Raw.Fn.Shape (inlets, outlets, make, tagAs) as RawShape
+import Noodle.Raw.Fn.Shape (inlets, outlets, tagAs) as RawShape
 import Example.Toolkit.Minimal.Node.SampleHC as SampleHC
-import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.Tagged (class Tagged)
-import Noodle.Repr.Tagged (Path, inlet) as Tag
-import Noodle.Repr.Tagged (tag) as Repr
-
-
-import Noodle.Raw.FromToRec as RR
-
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
 
 
 spec :: Spec Unit
