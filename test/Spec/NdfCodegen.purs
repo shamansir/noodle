@@ -125,7 +125,7 @@ spec = do
         testSingleFamilyDef (Id.toolkitR "Test") minimalGenOptions testFamilyDef
 
       it "properly generates Hydra Toolkit" $ do
-        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.3.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error
@@ -172,4 +172,8 @@ testCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
     when (not outputDirectoryExists) $ mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
     writeTextFile UTF8 outputFilePath fileContent
     sample <- readTextFile UTF8 inputFilePath
-    fileContent `U.shouldEqual` sample
+    let alteredSample =
+          sample
+          # String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
+          # String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
+    fileContent `U.shouldEqual` alteredSample
