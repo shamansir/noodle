@@ -338,13 +338,9 @@ generateModule (Options opts) mbSource fdef
     , declValue "defaultO" []
         $ exprRecord $ channelDefault <$> Sig.outs fdef.fnsig
 
+    , declSignature "defaultSt" $ qPartialStateType state.mbType
+    , declValue "defaultSt" [] $ qPartialStateValue state.mbType state.mbDefault
     ]
-    <> case state.mbType of
-        Just _ ->
-          [ declSignature "defaultSt" $ qPartialStateType state.mbType
-          , declValue "defaultSt" [] $ qPartialStateValue state.mbType state.mbDefault
-          ]
-        Nothing -> []
     <> (inletDeclr  <$> Sig.args fdef.fnsig)
     <> (outletDeclr <$> Sig.outs fdef.fnsig)
     <>

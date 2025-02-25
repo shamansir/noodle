@@ -13,8 +13,8 @@ import Data.Newtype (unwrap) as NT
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either, either)
 
-import Color as Color
 
+import Color as Color
 import Parsing (Parser)
 import Parsing.String as P
 import Parsing.Extra (marker, foldMarkers)
@@ -26,6 +26,9 @@ import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChan
 import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr) as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
+import Noodle.Repr.Tagged (class Tagged)
+import Noodle.Repr.Tagged (Path) as Tag
+import Noodle.Raw.Fn.Shape (Tag, tagAs) as Shape
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, familyPascalCase, groupPascalCase, pDefaultFor, pValueFor)
@@ -529,13 +532,41 @@ hydraGenOptions = FCG.Options
         genericImports = unsafePartial $
             [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
             , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_
-            , declImport "Noodle.Fn.ToFn" [ importTypeAll "Fn"]
+            -- , declImport "Noodle.Fn.ToFn" [ importTypeAll "Fn"]
             , declImport "Data.Tuple.Nested" [ importOp "/\\"]
             ]
 
 
 
 pWrap = Proxy :: _ WrapRepr
+
+
+instance Tagged WrapRepr where
+    tag :: Tag.Path -> WrapRepr -> Shape.Tag
+    tag = const $ Shape.tagAs <<< case _ of
+        Value _ -> "Value"
+        Unit _ -> "Unit"
+        Texture _ -> "Texture"
+        TOrV (HT.T _) -> "Texture" -- FIXME: could fail when new value is value and the other is texture
+        TOrV (HT.V _) -> "Value" -- FIXME: could fail when new value is value and the other is texture
+        TODO _ -> "TODO"
+        Context _ -> "Context"
+        UpdateFn _ -> "UpdateFn"
+        Source _ -> "Source"
+        Url _ -> "Url"
+        GlslFn _ -> "GlslFn"
+        SourceOptions _ -> "SourceOptions"
+        Values _ -> "Values"
+        Ease _ -> "Ease"
+        Audio _ -> "Audio"
+        AudioBin _ -> "AudioBin"
+        OutputN _ -> "OutputN"
+        SourceN _ -> "SourceN"
+        ExtSource _ -> "ExtSource"
+        Target _ -> "Target"
+        DepFn _ -> "DepFn"
+        CBS _ -> "CBS"
+        WRError _ -> "WRError"
 
 
 instance CodegenRepr WrapRepr where
