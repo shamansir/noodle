@@ -190,6 +190,19 @@ in  upstream
     , repo = "https://github.com/natefaubion/purescript-tidy-codegen.git"
     , version = "v4.0.0"
     }
+  with yoga-tree =
+    { dependencies =
+      [ "arrays"
+      , "control"
+      , "foldable-traversable"
+      , "free"
+      , "maybe"
+      , "prelude"
+      , "tailrec"
+      ]
+    , repo = "https://github.com/jmatsushita/purescript-yoga-tree.git"
+    , version = "5595c95c43de83a8fb6e9c50a18e6e4049d09b35"
+    }
   with text-formatting =
     ../purescript-text-formatting/spago.dhall as Location
   with blessed =
