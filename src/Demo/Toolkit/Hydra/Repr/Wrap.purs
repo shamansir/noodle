@@ -19,6 +19,7 @@ import Parsing (Parser)
 import Parsing.String as P
 import Parsing.Extra (marker, foldMarkers)
 
+import Noodle.Id (family) as Id
 import Noodle.Repr.HasFallback as HF
 import Noodle.Repr.StRepr as SR
 import Noodle.Repr.ValueInChannel (ValueInChannel)
@@ -355,6 +356,11 @@ instance ViC.ToValueInChannel WrapRepr WrapRepr where
     toValueInChannel = ViC.accept
 
 
+instance SR.StRepr WrapRepr WrapRepr where
+    to = identity
+    from = Just
+
+
 instance Mark WrapRepr where
     mark = case _ of
         Value v -> mark v
@@ -526,13 +532,18 @@ hydraGenOptions = FCG.Options
             Just src -> "\n\n[[ " <> src.line <> " ]] (#" <> show src.lineIndex <> ")"
             Nothing -> ""
     , tkImports : genericImports
-    , familyImports : const genericImports
+    , familyImports : \familyR ->
+        genericImports <> case Id.family familyR of
+            "setFunction" ->
+                unsafePartial $
+                    [ declImport "Noodle.Fn.Signature" [ importTypeAll "Signature" ]
+                    ]
+            _ -> []
     }
     where
         genericImports = unsafePartial $
             [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
-            , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_
-            -- , declImport "Noodle.Fn.ToFn" [ importTypeAll "Fn"]
+            , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_ -- FIXME: included twice
             , declImport "Data.Tuple.Nested" [ importOp "/\\"]
             ]
 
@@ -589,7 +600,7 @@ instance CodegenRepr WrapRepr where
             Just "Url"     -> exprApp (wrapCtor_ "Url") [ pDefaultFor pWrap mbType ]
             Just "GlslFn"  -> exprApp (wrapCtor_ "GlslFn") [ pDefaultFor pWrap mbType ]
             Just "SourceOptions" -> exprApp (wrapCtor_ "SourceOptions") [ pDefaultFor pWrap mbType ]
-            Just "Values"  -> exprApp (wrapCtor_ "SourceOptions") [ pDefaultFor pWrap mbType ]
+            Just "Values"  -> exprApp (wrapCtor_ "Values") [ pDefaultFor pWrap mbType ]
             Just "Ease"    -> exprApp (wrapCtor_ "Ease") [ pDefaultFor pWrap mbType ]
             Just "Audio"   -> exprApp (wrapCtor_ "Audio") [ pDefaultFor pWrap mbType ]
             Just "AudioBin" -> exprApp (wrapCtor_ "AudioBin") [ pDefaultFor pWrap mbType ]
@@ -599,7 +610,7 @@ instance CodegenRepr WrapRepr where
             Just "Target"  -> exprApp (wrapCtor_ "Target") [ pDefaultFor pWrap mbType ]
             Just "DepFn"   -> exprApp (wrapCtor_ "DepFn") [ pDefaultFor pWrap mbType ]
             Just "CBS"     -> exprApp (wrapCtor_ "CBS") [ pDefaultFor pWrap mbType ]
-            _ -> wrapCtor_ "WrapRepr"
+            _ -> exprApp (wrapCtor_ "Unit") [ exprIdent "unit" ]
     fValueFor = const $ unsafePartial $ \mbType encV ->
         case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
             Just "Value"   -> exprApp (wrapCtor_ "Value") [ pValueFor pWrap mbType encV ]
@@ -612,7 +623,7 @@ instance CodegenRepr WrapRepr where
             Just "Url"     -> exprApp (wrapCtor_ "Url") [ pValueFor pWrap mbType encV ]
             Just "GlslFn"  -> exprApp (wrapCtor_ "GlslFn") [ pValueFor pWrap mbType encV ]
             Just "SourceOptions" -> exprApp (wrapCtor_ "SourceOptions") [ pValueFor pWrap mbType encV ]
-            Just "Values"  -> exprApp (wrapCtor_ "SourceOptions") [ pValueFor pWrap mbType encV ]
+            Just "Values"  -> exprApp (wrapCtor_ "Values") [ pValueFor pWrap mbType encV ]
             Just "Ease"    -> exprApp (wrapCtor_ "Ease") [ pValueFor pWrap mbType encV ]
             Just "Audio"   -> exprApp (wrapCtor_ "Audio") [ pValueFor pWrap mbType encV ]
             Just "AudioBin" -> exprApp (wrapCtor_ "AudioBin") [ pValueFor pWrap mbType encV ]
@@ -622,7 +633,7 @@ instance CodegenRepr WrapRepr where
             Just "Target"  -> exprApp (wrapCtor_ "Target") [ pValueFor pWrap mbType encV ]
             Just "DepFn"   -> exprApp (wrapCtor_ "DepFn") [ pValueFor pWrap mbType encV ]
             Just "CBS"     -> exprApp (wrapCtor_ "CBS") [ pValueFor pWrap mbType encV ]
-            _ -> wrapCtor_ "WrapRepr"
+            _ -> exprApp (wrapCtor_ "Unit") [ exprIdent "unit" ]
     pTypeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
     pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
                 case typeStr of

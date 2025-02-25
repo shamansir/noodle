@@ -88,12 +88,12 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
             , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR", importValue "group" ] "Id"
-            , declImport "Noodle.Fn.ToFn" [ importValue "fn", importClass "PossiblyToFn" ]
-            , declImportAs "Noodle.Fn.ToFn" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Fn"
+            , declImport "Noodle.Fn.Signature" [ importValue "sig", importClass "PossiblyToSignature" ]
+            , declImportAs "Noodle.Fn.Signature" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Sig"
             , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr", importValue "markGroup" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
-            , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer" ]
+            , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer", importClass "CliRawRenderer" ]
             ]
             <> (defToModuleImport <$> definitions) <>
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
@@ -127,9 +127,11 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             ]
         , declInstance Nothing [] "CliRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
             [ instValue "cliSize" _5binders $ exprCtor "Nothing"
-            , instValue "cliSizeRaw" _5binders $ exprCtor "Nothing"
-            , instValue "renderCli" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]
-            , instValue "renderCliRaw" _5binders $ exprApp (exprIdent "pure") [ exprIdent "unit" ]
+            , instValue "renderCli" _5binders $ exprCtor "Nothing" -- exprApp (exprCtor "Just") [ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
+            ]
+        , declInstance Nothing [] "CliRawRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
+            [ instValue "cliSizeRaw" _5binders $ exprCtor "Nothing"
+            , instValue "renderCliRaw" _5binders $ exprCtor "Nothing" -- exprApp (exprCtor "Just") [ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
             ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
             [ instValue "markGroup" [ binderWildcard ]
@@ -142,7 +144,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 $ exprOp (exprIdent "const")
                 [ binaryOp "<<<" $ exprApp (exprIdent "markGroup") [ exprIdent "ptk" ] ]
             ]
-        , generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray
+        , generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
@@ -210,15 +212,15 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     Nothing -> rgbColorExpr 255 255 255
 
 
-generatePossiblyToFnInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
-generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
-    declInstance Nothing [] "PossiblyToFn"
+generatePossiblyToSignatureInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
+generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray =
+    declInstance Nothing [] "PossiblyToSignature"
         [ typeCtor toolkitKey
         , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
         , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
         , typeCtor "Id.FamilyR"
         ]
-        [ instValue "possiblyToFn" [ binderWildcard ]
+        [ instValue "possiblyToSignature" [ binderWildcard ]
             $ exprOp (exprIdent "Id.family")
             [ binaryOp ">>>"
                 $ exprCase [ exprSection ]
@@ -236,7 +238,7 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
                         [ binderString name ]
                         $ exprOp ( exprCtor "Just" )
                             [ binaryOp "$"
-                                $ exprApp (exprIdent "fn")
+                                $ exprApp (exprIdent "sig")
                                     [ exprString name
                                     , exprArray $ inletExpr  <$> inlets
                                     , exprArray $ outletExpr <$> outlets
@@ -247,19 +249,19 @@ generatePossiblyToFnInstance tkName (FCG.Options opts) definitionsArray =
             { mbType, mbDefault } -> case mbDefault of
                 Just _ ->
                     exprOp
-                        (exprApp (exprIdent "Fn.in_") [ exprString $ Sig.argName chdef ])
+                        (exprApp (exprIdent "Sig.in_") [ exprString $ Sig.argName chdef ])
                         [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
-                    exprApp (exprIdent "Fn.inx_") [ exprString $ Sig.argName chdef ]
+                    exprApp (exprIdent "Sig.inx_") [ exprString $ Sig.argName chdef ]
         outletExpr :: Partial => Sig.Output ChannelDef -> CST.Expr Void
         outletExpr chdef = case chdef # Sig.outValue # unwrap of
             { mbType, mbDefault } -> case mbDefault of
                 Just _ ->
                     exprOp
-                        (exprApp (exprIdent "Fn.out_") [ exprString $ Sig.outName chdef ])
+                        (exprApp (exprIdent "Sig.out_") [ exprString $ Sig.outName chdef ])
                         [ binaryOp "$" $ qChFullValue mbType mbDefault ]
                 Nothing ->
-                    exprApp (exprIdent "Fn.outx_") [ exprString $ Sig.outName chdef ]
+                    exprApp (exprIdent "Sig.outx_") [ exprString $ Sig.outName chdef ]
         qChFullValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
         qChFullValue mbDataType = maybe (FCG.fDefaultFor opts.pchrepr mbDataType) (FCG.fValueFor opts.pchrepr mbDataType)
 

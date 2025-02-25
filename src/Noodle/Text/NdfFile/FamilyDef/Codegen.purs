@@ -80,7 +80,7 @@ instance (Partial, ValueCodegen val) => ValueCodegen (Sig.Output val) where
 instance (Partial, ValueCodegen arg, ValueCodegen out) => ValueCodegen (Signature arg out) where
   mkExpression = case _ of
     Sig (name /\ args /\ outs) ->
-      exprApp (exprCtor "Fn")
+      exprApp (exprCtor "Sig")
         [ exprOp (exprString name)
           [ binaryOp "/\\" (exprArray $ mkExpression <$> args)
           , binaryOp "/\\" (exprArray $ mkExpression <$> outs)
