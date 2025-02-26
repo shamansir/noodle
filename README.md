@@ -57,6 +57,19 @@ Generate code for _starter_ toolkit with `purescript-codegen` using the given de
 
 The code will be located in `./src/Demo/Toolkit/Starter` directory.
 
+## Command Bar
+
+Command bar is called by `<TAB>` key and currently supports these kinds of `NDF` commands:
+
+* `<family-name>` : spawn a node of given family
+* `:: <inlets-spec> => <outlets-spec>` : spawn a node of given shape, some examples:
+  * `:: <> => <>` : no inlets and no outlets
+  * `:: <a:Number -> b:Number -> c:Number> => <>` : three inlets of given names and types
+  * `:: <a -> b -> c> => <>` : just three inlets
+  * `:: <r:Number -> g:Number -> b:Number> => <color:Color>` :  three inlets of given names and types + one outlet of given name and type
+  * `:: <r:Number -> g:Number -> b:Number> => <color:Color {c/ff0000}>` :  three inlets of given names and types + one outlet of given name and type and default value
+  * `:: <tuple> => <fst -> snd>` : one inlet and two outlets
+
 ## Help
 
 `sh ./run-cli.sh --help`

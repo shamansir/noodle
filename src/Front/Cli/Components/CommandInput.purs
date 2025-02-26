@@ -35,7 +35,7 @@ import Blessed.UI.Forms.TextArea.Event (TextAreaEvent(..)) as TextArea
 import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 
 
-import Noodle.Id (FamilyR, unsafeFamilyR) as Id
+import Noodle.Id (FamilyR, unsafeFamilyR, family) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (Signature, class PossiblyToSignature)
 import Noodle.Toolkit (class FromPatchState, class HoldsFamilies, isKnownFamily, withAnyFamily) as Toolkit
@@ -49,6 +49,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (toRepr, toDefault) as CG
 import Noodle.Text.NdfFile.Types (ChannelDef)
 import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as CD
+import Noodle.Text.NdfFile.Command.FromInput as FI
 
 import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
@@ -139,6 +140,26 @@ tryExecute command = do
         toolkit = Network.toolkit state.network
         mbCurrentPatch = CState.currentPatch state
         mbCurrentPatchId = Patch.id <$> mbCurrentPatch
+    fromInput <- FI.tryExecute toolkit command
+    case mbCurrentPatchId of
+        Just curPatchR ->
+            case fromInput of
+                FI.FromFamily familyR rawNode ->
+                    Library.registerAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                FI.CustomNode signature rawNode ->
+                    Library.registerAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                FI.CannotSpawn familyR ->
+                    CC.log $ "family not found: " <> Id.family familyR
+                FI.UnknownCommand command ->
+                    CC.log $ "parse error " <> command
+        Nothing ->
+            CC.log "no current patch"
+
+    {-
+    let
+        toolkit = Network.toolkit state.network
+        mbCurrentPatch = CState.currentPatch state
+        mbCurrentPatchId = Patch.id <$> mbCurrentPatch
     case (/\) <$> Toolkit.isKnownFamily command toolkit <*> mbCurrentPatchId of
         Just (familyR /\ curPatchR) ->
             case Toolkit.withAnyFamily
@@ -151,7 +172,9 @@ tryExecute command = do
                     toolkit
                 of
                 Just op -> op
-                Nothing -> pure unit
+                Nothing -> do
+
+                    pure unit
         Nothing ->
             case P.runParser command $ NdfFamilyParser.fnSignature "custom" of
                 -- (StateDef /\ Fn ChannelDef ChannelDef)
@@ -160,7 +183,7 @@ tryExecute command = do
                         Just curPatchR -> do
                             CC.log $ "got fn: " <> command
                             rawNode <- RawNode._fromSignature (Id.unsafeFamilyR "custom") (fallback :: strepr) (convertFn fn) $ pure unit
-                            Library.spawnAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                            Library.registerAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
                         Nothing -> do
                             CC.log "no patch ID"
                             pure unit
@@ -179,6 +202,7 @@ tryExecute command = do
 
         convertFn :: Signature ChannelDef ChannelDef -> Signature chrepr chrepr
         convertFn = bimap defToRepr defToRepr
+    -}
 
     {-
     state <- State.get

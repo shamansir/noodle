@@ -174,33 +174,34 @@ spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
 
     case mbRawNode of
         Just rawNode -> do
-            (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
-            let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
-
-            case mbNodeState of
-                Just nextState -> rawNode # RawNode.setState nextState
-                Nothing -> pure unit
-
-            spawnAndRenderGivenRawNode patchR nextPos rawNode
+            registerAndRenderGivenRawNode patchR nextPos rawNode
         Nothing -> pure unit
 
 
-spawnAndRenderGivenRawNode
+registerAndRenderGivenRawNode
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
     => CT.Tagged chrepr
     -- => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    -- => Toolkit.FromPatchState tk pstate strepr
+    => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     -- => Toolkit tk fs strepr chrepr m
     => Id.PatchR
     -> { left :: Int, top :: Int }
     -> Raw.Node strepr chrepr m
     -> BlessedOp (State tk pstate fs strepr chrepr m) m
-spawnAndRenderGivenRawNode patchR nextPos rawNode = do
+registerAndRenderGivenRawNode patchR nextPos rawNode = do
     let familyR = Id.familyOf $ RawNode.id rawNode
+
+    -- we load the default initial node state for the family
+    (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
+    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+
+    case mbNodeState of
+        Just nextState -> rawNode # RawNode.setState nextState
+        Nothing -> pure unit
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 

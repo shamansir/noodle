@@ -29,25 +29,24 @@ import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as CD
 
 data CommandResult strepr chrepr m
     = FromFamily Id.FamilyR (Raw.Node strepr chrepr m)
-    | CustomNode (Raw.Node strepr chrepr m)
+    | CustomNode (Signature chrepr chrepr) (Raw.Node strepr chrepr m)
     | CannotSpawn Id.FamilyR
     | UnknownCommand String
 
 
 tryExecute
-    :: forall tk fs strepr chrepr m
-     . MonadEffect m
+    :: forall tk fs strepr chrepr mo mi
+     . MonadEffect mo
     => HasFallback strepr
     => HasFallback chrepr
     => ParseableRepr chrepr
     => CT.Tagged chrepr
-    => Toolkit.HoldsFamilies strepr chrepr m fs
+    => Toolkit.HoldsFamilies strepr chrepr mi fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit tk fs strepr chrepr m
-    -> Id.PatchR
+    => Toolkit tk fs strepr chrepr mi
     -> String
-    -> m (CommandResult strepr chrepr m)
-tryExecute toolkit curPatchR command =
+    -> mo (CommandResult strepr chrepr mi)
+tryExecute toolkit command =
     case Toolkit.isKnownFamily command toolkit of
         Just familyR -> do
             mbRawNode <- Toolkit.spawnAnyRaw familyR toolkit
@@ -56,7 +55,7 @@ tryExecute toolkit curPatchR command =
             case P.runParser command $ NdfFamilyParser.fnSignature "custom" of
                 Right (stateDef /\ fn) -> do
                     rawNode <- RawNode._fromSignature (Id.unsafeFamilyR "custom") (fallback :: strepr) (convertFn fn) $ pure unit
-                    pure $ CustomNode rawNode
+                    pure $ CustomNode (convertFn fn) rawNode
                 Left error ->
                     pure $ UnknownCommand command
     where
