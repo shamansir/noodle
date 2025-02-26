@@ -1,32 +1,22 @@
 module Cli.Components.CommandInput where
 
-import Prelude
+import Prelude hiding (show)
 
 import Effect (Effect)
-import Effect.Exception (Error)
-import Effect.Console (log) as Console
-import Effect.Class (liftEffect)
-
-import Type.Proxy (Proxy(..))
-import Type.Data.Symbol (class IsSymbol)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
-import Data.Map (empty, insert) as Map
 import Data.String (trim) as String
 import Data.Bifunctor (bimap)
 
 import Control.Monad.State (modify_, get) as State
-import Control.Monad.Error.Class (class MonadThrow)
 
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Parsing (Parser, runParser, ParseError, ParseState(..), getParserT, position, Position(..)) as P
+import Parsing (runParser) as P
 
 import Blessed as B
 import Blessed ((>~), (~<))
-import Blessed.Internal.NodeKey as NK
-import Blessed.Internal.BlessedOp (lift, lift') as Blessed
 
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
@@ -34,13 +24,10 @@ import Blessed.Core.Offset as Offset
 import Blessed.Internal.Core as Core
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.UI.Base.Node.Method (append) as Node
-import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Option (content, height, left, top, width) as Box
 -- import Blessed.UI.Base.Element.Option (index) as Element
-import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 import Blessed.UI.Forms.TextArea.Method (setValue)  as TextArea
 import Blessed.UI.Base.Element.Method (focus, setFront, hide, show) as Element
-import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 -- import Blessed.UI.Boxes.Box.Method (focus) as Box
 import Blessed.UI.Forms.TextArea.Option (inputOnFocus, mouse) as TextArea
@@ -48,20 +35,15 @@ import Blessed.UI.Forms.TextArea.Event (TextAreaEvent(..)) as TextArea
 import Blessed.UI.Forms.TextArea.Property (value) as TextArea
 
 
-import Noodle.Id (FamilyR, unsafeFamilyR, unsafeInletR) as Id
+import Noodle.Id (FamilyR, unsafeFamilyR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (Signature, class PossiblyToSignature)
-import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch) as Toolkit
+import Noodle.Toolkit (class FromPatchState, class HoldsFamilies, isKnownFamily, withAnyFamily) as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.Tagged (class Tagged) as CT
-import Noodle.Fn.Shape.Temperament (Temperament(..))
-import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (make, _fromSignature) as RawNode
-import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
-import Noodle.Patch (id, registerNode, registerRawNode) as Patch
-import Noodle.Toolkit (isKnownFamily) as Toolkit
+import Noodle.Raw.Node (_fromSignature) as RawNode
+import Noodle.Patch (id) as Patch
 import Noodle.Network (toolkit) as Network
-import Noodle.Text.NdfFile.Parser as NdfParser
 import Noodle.Text.NdfFile.FamilyDef.Parser as NdfFamilyParser
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (toRepr, toDefault) as CG
@@ -70,7 +52,7 @@ import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as CD
 
 import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
-import Cli.State (currentPatchState, currentPatch) as CState
+import Cli.State (currentPatch) as CState
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Style as Style
 import Cli.Components.Library as Library
