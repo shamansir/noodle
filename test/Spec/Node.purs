@@ -346,7 +346,7 @@ spec = do
             ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
 
 
-        itOnly "is possible to process data using JS function" $ liftEffect $ do
+        it "is possible to process data using JS function" $ liftEffect $ do
             (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
                 RawNode.make (Id.familyR "myRawNode-2")
                     MinimalRepr.NoSt
@@ -366,7 +366,7 @@ spec = do
                         const bValue = _receive("b")();
                         console.log(aValue);
                         console.log(bValue);
-                        _send("sum")(aValue + bValue)();
+                        _send("sum")({ tag : "Int", value : (parseInt(aValue.value) + parseInt(bValue.value)).toString() })();
                         """
 
             rawNode # RawNode.run
