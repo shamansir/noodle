@@ -746,7 +746,7 @@
     "extra_packages": {
       "blessed": {
         "git": "https://github.com/shamansir/purescript-blessed.git",
-        "ref": "abe8e390be811517274041788d54e2771d1c7852",
+        "ref": "c01e13fdb2773074ab56785186ff617095a5444b",
         "dependencies": [
           "aff",
           "argonaut-codecs",
@@ -791,7 +791,7 @@
       },
       "text-formatting": {
         "git": "https://github.com/shamansir/purescript-text-formatting.git",
-        "ref": "938ff52b956d3a7cc7afbc59b72e53d0f9b7343a",
+        "ref": "08e288de74362736b26e4f32febed260db33317c",
         "dependencies": [
           "arrays",
           "colors",
@@ -1070,7 +1070,7 @@
     "blessed": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-blessed.git",
-      "rev": "abe8e390be811517274041788d54e2771d1c7852",
+      "rev": "c01e13fdb2773074ab56785186ff617095a5444b",
       "dependencies": [
         "aff",
         "argonaut-codecs",
@@ -2682,7 +2682,7 @@
     "text-formatting": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-text-formatting.git",
-      "rev": "938ff52b956d3a7cc7afbc59b72e53d0f9b7343a",
+      "rev": "08e288de74362736b26e4f32febed260db33317c",
       "dependencies": [
         "arrays",
         "colors",

@@ -90,6 +90,8 @@
                 ];
               text = ''
                 # spago run --demo
+                ln -s ${nodeDependencies}/lib/node_modules ./node_modules
+                export PATH="${nodeDependencies}/bin:$PATH"
                 spago build --output output.nix
                 node ./.spago/run/run.js -t starter
               '';

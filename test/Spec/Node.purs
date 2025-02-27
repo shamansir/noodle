@@ -25,7 +25,7 @@ import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Raw.Fn.Shape (inlets, outlets, make, tagAs) as RawShape
-import Noodle.Raw.Fn.Process (receive, send, sendIn) as RawFn
+import Noodle.Raw.Fn.Process (receive, send, sendIn, fromJsCode) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR, logUpdates) as Node
@@ -322,7 +322,7 @@ spec = do
 
         it "is possible to create raw node" $ liftEffect $ do
             (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
-                RawNode.make (Id.familyR "myRawNode")
+                RawNode.make (Id.familyR "myRawNode-1")
                     MinimalRepr.NoSt
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
@@ -338,6 +338,36 @@ spec = do
                         RawFn.send (outletR "sum") $ ViC.accept $ MinimalRepr.Int $ case ViC.toMaybe vicA /\ ViC.toMaybe vicB of
                             (Just (MinimalRepr.Int a) /\ Just (MinimalRepr.Int b)) -> a + b
                             _ -> 0
+
+            rawNode # RawNode.run
+
+            vicSum <- RawNode.atOutlet (outletR "sum") rawNode
+
+            ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
+
+
+        itOnly "is possible to process data using JS function" $ liftEffect $ do
+            (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
+                RawNode.make (Id.familyR "myRawNode-2")
+                    MinimalRepr.NoSt
+                    (RawShape.make { inlets : [], outlets : [] }) -- TODO
+                    (Map.empty
+                        # Map.insert (inletR "a") (MinimalRepr.Int 5)
+                        # Map.insert (inletR "b") (MinimalRepr.Int 7)
+                    )
+                    (Map.empty
+                        # Map.insert (outletR "sum") (MinimalRepr.Int 0)
+                    )
+                    $ RawFn.fromJsCode
+                        """
+                        console.log("test");
+                        console.log('process');
+                        const aValue = _receive("a")();
+                        const bValue = _receive("b")();
+                        console.log(aValue);
+                        console.log(bValue);
+                        _send("sum")(aValue + bValue)();
+                        """
 
             rawNode # RawNode.run
 

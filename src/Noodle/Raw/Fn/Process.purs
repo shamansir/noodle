@@ -19,6 +19,7 @@ module Noodle.Raw.Fn.Process
   , mkRunner
   , spawn
   , initial
+  , fromJsCode
 --   , getProtocol -- TODO: is it ok to expose?
   )
   where
@@ -33,6 +34,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Either (either)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -42,9 +44,11 @@ import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
+import Control.Monad.Except (runExcept)
 
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
 -- import Noodle.Fn.Protocol (Protocol)
 
 
@@ -60,6 +64,11 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (_missingKey) as ViC
 -- import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
 -- import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
+
+import Yoga.JSON (writeImpl, readImpl)
+
+import Foreign (Foreign, F)
+import Effect (Effect)
 
 
 
@@ -174,6 +183,13 @@ spawn :: forall state chrepr m. HasFallback chrepr => MonadRec m => MonadEffect 
 spawn proc = mkRunner <#> (#) proc
 
 
+fromJsCode :: forall state chrepr m. MonadEffect m => String -> ProcessM state chrepr m Unit
+fromJsCode jsCode = liftEffect
+    $ executeJs ("(function() { return function() {" <> jsCode <> "}; })()()")
+    (const $ pure $ writeImpl 3)
+    (\name val -> Console.log $ name <> "--" <> (either show show $ runExcept (readImpl val :: F Int)))
+
+
 {- Maps -}
 
 
@@ -259,7 +275,6 @@ runFreeM protocol fn =
         go (Lift m) = m
         go (Receive iid getV) = do
             valueAtInlet <- getInletAt iid
-            -- if there's is no value, throwError ?wh
             pure
                 $ getV
                 $ valueAtInlet
@@ -286,3 +301,6 @@ runFreeM protocol fn =
         sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid v >>> (Tuple $ SingleOutlet oid)
         sendToInlet :: InletR -> ValueInChannel chrepr -> m Unit
         sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid v >>> (Tuple $ SingleInlet iid)
+
+
+foreign import executeJs :: String -> (String -> Effect Foreign) -> (String -> Foreign -> Effect Unit) -> Effect Unit

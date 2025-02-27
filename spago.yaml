@@ -167,7 +167,7 @@ workspace:
         - "unfoldable"
         - "unsafe-coerce"
       git: https://github.com/shamansir/purescript-blessed.git
-      ref: abe8e390be811517274041788d54e2771d1c7852
+      ref: c01e13fdb2773074ab56785186ff617095a5444b
     halogen-svg-elems:
       dependencies:
         - halogen
@@ -205,7 +205,7 @@ workspace:
         - "variant"
         - "yoga-json"
       git: https://github.com/shamansir/purescript-text-formatting.git
-      ref: 938ff52b956d3a7cc7afbc59b72e53d0f9b7343a
+      ref: 08e288de74362736b26e4f32febed260db33317c
     tidy:
       dependencies:
         - arrays

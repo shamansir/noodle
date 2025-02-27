@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/shamansir/noodle#readme",
   "dependencies": {
+    "@nyariv/sandboxjs": "^0.8.23",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
     "bresenham": "^0.0.4",
