@@ -10,11 +10,11 @@ import Type.Data.List.Extra (TNil)
 import Data.Tuple.Nested ((/\))
 import Data.Symbol (class IsSymbol)
 
-import Test.Spec (Spec, pending, describe, it, pending', itOnly)
-import Test.Spec.Assertions (fail, shouldEqual)
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 
-import Noodle.Id (familyR, family, FamilyR(..), toolkitR) as Id
-import Noodle.Node (run, _listenUpdatesAndRun, state, modifyState) as Node
+import Noodle.Id (familyR, family, toolkitR) as Id
+import Noodle.Node (_listenUpdatesAndRun, run, state) as Node
 import Noodle.Node ((#->), (@->), (<=@))
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (empty, spawn, register, registerRaw, mapFamilies, mapRawFamilies) as Toolkit

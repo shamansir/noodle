@@ -33,7 +33,6 @@ data CommandResult strepr chrepr m
     | CannotSpawn Id.FamilyR
     | UnknownCommand String
 
-
 tryExecute
     :: forall tk fs strepr chrepr mo mi
      . MonadEffect mo

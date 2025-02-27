@@ -20,6 +20,7 @@ import Test.Spec.NdfFile (spec) as NdfFile
 import Test.Spec.NdfCodegen (spec) as NdfCodegen
 import Test.Spec.HydraReprParsing (spec) as HydraReprParsing
 import Test.Spec.NodesAndRecords (spec) as NodesAndRecords
+import Test.Spec.CommandInput (spec) as CommandInput
 
 
 main :: Effect Unit
@@ -44,3 +45,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     HydraReprParsing.spec
   describe "Nodes and Purescript records"
     NodesAndRecords.spec
+  describe "Command Input"
+    CommandInput.spec

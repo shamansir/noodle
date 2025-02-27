@@ -71,11 +71,11 @@ newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int, tag :: Tag }
 
 
 instance Show InletDefR where
-    show (InletDefR { name, order, temp }) = inletRName name <> " (" <> show order <> "," <> show temp <> " )"
+    show (InletDefR { name, order, temp, tag }) = inletRName name <> " (" <> show order <> "," <> show temp <> "," <> show tag <> ")"
 
 
 instance Show OutletDefR where
-    show (OutletDefR { name, order }) = outletRName name <> " (" <> show order <> ")"
+    show (OutletDefR { name, order, tag }) = outletRName name <> " (" <> show order <> "," <> show tag <> ")"
 
 
 derive instance Newtype InletDefR _
@@ -95,12 +95,18 @@ newtype OutletsShape = Outlets (Array OutletDefR)
 
 derive instance Newtype InletsShape _
 derive instance Newtype OutletsShape _
+derive newtype instance Show InletsShape
+derive newtype instance Show OutletsShape
+derive newtype instance Eq InletsShape
+derive newtype instance Eq OutletsShape
 
 
 newtype Shape = Shape { inlets :: InletsShape, outlets :: OutletsShape }
 
 
 derive instance Newtype Shape _
+derive newtype instance Show Shape
+derive newtype instance Eq Shape
 
 
 inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }

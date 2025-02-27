@@ -24,8 +24,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, exprOp, typeCtor, typeOp, binaryOp)
 
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefaultFor, pValueFor)
-
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefaultFor, pValueFor, class ParseableRepr)
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
 
@@ -49,6 +48,10 @@ derive instance Eq MinimalVRepr
 
 instance HasFallback MinimalVRepr where
     fallback = None
+
+
+instance HasFallback MinimalStRepr where
+    fallback = NoSt
 
 
 instance FromValueInChannel MinimalVRepr MinimalVRepr where fromValueInChannel = identity
@@ -88,7 +91,7 @@ instance Tagged MinimalVRepr where
         None -> "None"
         Int _ -> "Int"
         Str _ -> "Str"
-        UnitV -> "Bool"
+        UnitV -> "Unit"
 
 
 instance StRepr Unit MinimalStRepr where
@@ -175,3 +178,27 @@ instance CodegenRepr MinimalStRepr where
     fTypeFor prepr = pTypeFor prepr
     fDefaultFor prepr = pDefaultFor prepr
     fValueFor prepr = pValueFor prepr
+
+
+instance ParseableRepr MinimalVRepr where
+    toDefault = toDefaultImpl
+    toRepr = toReprImpl
+
+
+toDefaultImpl :: EncodedType -> MinimalVRepr
+toDefaultImpl = NT.unwrap >>> case _ of
+    "None"    -> None
+    "Unit"    -> UnitV
+    "Int"     -> Int 0
+    "String"  -> Str ""
+    _ -> None
+
+
+toReprImpl :: EncodedType -> EncodedValue -> Maybe MinimalVRepr
+toReprImpl eType eValue =
+    case NT.unwrap eType of
+        "None"    -> Just None
+        "Unit"    -> Just UnitV
+        "Int"     -> Int <$> (Int.fromString $ NT.unwrap eValue)
+        "String"  -> Just $ Str $ NT.unwrap eValue
+        _ -> Nothing

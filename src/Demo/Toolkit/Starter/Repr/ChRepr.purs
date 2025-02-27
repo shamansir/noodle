@@ -268,23 +268,6 @@ instance Show Time where
     show (Time { seconds }) = show seconds <> "s"
 
 
-toDefaultImpl :: EncodedType -> ValueRepr
-toDefaultImpl = NT.unwrap >>> case _ of
-    "Any"     -> VAny VNone
-    "Bang"    -> VBang
-    "Bool"    -> VBool false
-    "Char"    -> VChar '-'
-    "Number"  -> VNumber 0.0
-    "Time"    -> VTime (HF.fallback :: Time)
-    "Color"   -> VColor (HF.fallback :: Color)
-    "Shape"   -> VShape (HF.fallback :: Shape)
-    "SpreadN" -> VSpreadNum (HF.fallback :: Spread Number)
-    "SpreadV" -> VSpreadVec (HF.fallback :: Spread (Number /\ Number))
-    "SpreadC" -> VSpreadCol (HF.fallback :: Spread Color)
-    "SpreadS" -> VSpreadShp (HF.fallback :: Spread Shape)
-    _ -> VNone
-
-
 encodeValueImpl :: ValueRepr -> Maybe EncodedValue
 encodeValueImpl = case _ of
     VNone ->        Nothing
@@ -300,6 +283,23 @@ encodeValueImpl = case _ of
     VSpreadVec _ -> Nothing -- TODO
     VSpreadCol _ -> Nothing -- TODO
     VSpreadShp _ -> Nothing -- TODO
+
+
+toDefaultImpl :: EncodedType -> ValueRepr
+toDefaultImpl = NT.unwrap >>> case _ of
+    "Any"     -> VAny VNone
+    "Bang"    -> VBang
+    "Bool"    -> VBool false
+    "Char"    -> VChar '-'
+    "Number"  -> VNumber 0.0
+    "Time"    -> VTime (HF.fallback :: Time)
+    "Color"   -> VColor (HF.fallback :: Color)
+    "Shape"   -> VShape (HF.fallback :: Shape)
+    "SpreadN" -> VSpreadNum (HF.fallback :: Spread Number)
+    "SpreadV" -> VSpreadVec (HF.fallback :: Spread (Number /\ Number))
+    "SpreadC" -> VSpreadCol (HF.fallback :: Spread Color)
+    "SpreadS" -> VSpreadShp (HF.fallback :: Spread Shape)
+    _ -> VNone
 
 
 toReprImpl :: EncodedType -> EncodedValue -> Maybe ValueRepr
