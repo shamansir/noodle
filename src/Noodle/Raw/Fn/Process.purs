@@ -20,6 +20,8 @@ module Noodle.Raw.Fn.Process
   , spawn
   , initial
   , fromJsCode
+  , JsProcessingCode
+  , jsCode
 --   , getProtocol -- TODO: is it ok to expose?
   )
   where
@@ -34,7 +36,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Either (either)
+import Data.Either (either, fromRight)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -53,23 +55,22 @@ import Effect.Console (log) as Console
 
 
 import Noodle.Id (InletR, OutletR)
-import Noodle.Id (inletRName) as Id
+import Noodle.Id (inletRName, unsafeInletR, unsafeOutletR) as Id
 import Noodle.Fn.Generic.Updates (InletsUpdate(..), OutletsUpdate(..))
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
 import Noodle.Fn.Generic.Protocol (imapState) as RawProtocol
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (ensureFrom, to) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.ValueInChannel (_missingKey) as ViC
+import Noodle.Repr.ValueInChannel (_missingKey, empty, accept, toMaybe) as ViC
 -- import Noodle.Repr.ChRepr (ChRepr, class ToChRepr, class FromChRepr, fallbackByChRepr)
 -- import Noodle.Repr.ChRepr (unwrap, wrap, ensureTo, ensureFrom) as ChRepr
 
-import Yoga.JSON (writeImpl, readImpl)
+import Yoga.JSON (class ReadForeign, class WriteForeign, writeImpl, readImpl)
 
 import Foreign (Foreign, F)
 import Effect (Effect)
-
 
 
 data ProcessF :: Type -> Type -> (Type -> Type) -> Type -> Type
@@ -81,6 +82,7 @@ data ProcessF state chrepr m a
     | Send    OutletR (ValueInChannel chrepr) a
     | SendIn  InletR  (ValueInChannel chrepr) a
     | Receive InletR  (ValueInChannel chrepr -> a)
+    | PerformJS (chrepr -> Foreign) (Foreign -> F chrepr) JsProcessingCode a -- FIXME: just require `ReadForeign` / `WriteForeign` for running processing
 
 
 instance functorProcessF :: Functor m => Functor (ProcessF state chrepr m) where
@@ -92,6 +94,7 @@ instance functorProcessF :: Functor m => Functor (ProcessF state chrepr m) where
         Receive iid k ->     Receive iid $ map f k
         Send oid d next ->   Send oid d $ f next
         SendIn iid d next -> SendIn iid d $ f next
+        PerformJS w r js next -> PerformJS w r js $ f next
         -- RunEffect effA -> RunEffect $ map f effA
 
 
@@ -133,6 +136,8 @@ instance monadRecProcessM :: MonadRec (ProcessM state chrepr m) where
     Loop x -> tailRecM k x
     Done y -> pure y
 
+
+newtype JsProcessingCode = JsProcessingCode String
 
 {- Processing -}
 
@@ -183,11 +188,12 @@ spawn :: forall state chrepr m. HasFallback chrepr => MonadRec m => MonadEffect 
 spawn proc = mkRunner <#> (#) proc
 
 
-fromJsCode :: forall state chrepr m. MonadEffect m => String -> ProcessM state chrepr m Unit
-fromJsCode jsCode = liftEffect
-    $ executeJs ("(function() { return function() {" <> jsCode <> "}; })()()")
-    (const $ pure $ writeImpl 3)
-    (\name val -> Console.log $ name <> "--" <> (either show show $ runExcept (readImpl val :: F Int)))
+fromJsCode :: forall state chrepr m. WriteForeign chrepr => ReadForeign chrepr => MonadEffect m => JsProcessingCode -> ProcessM state chrepr m Unit
+fromJsCode jsProcCode = ProcessM $ Free.liftF $ PerformJS writeImpl readImpl jsProcCode unit
+
+
+jsCode :: String -> JsProcessingCode
+jsCode = JsProcessingCode
 
 
 {- Maps -}
@@ -203,6 +209,7 @@ imapFState f g =
         Receive iid k -> Receive iid k
         Send oid d next -> Send oid d next
         SendIn iid d next -> SendIn iid d next
+        PerformJS w r js next -> PerformJS w r js next
         -- RunEffect effA -> RunEffect effA
 
 
@@ -221,6 +228,7 @@ mapFM f =
         Receive iid k -> Receive iid k
         Send oid d next -> Send oid d next
         SendIn iid d next -> SendIn iid d next
+        PerformJS w r js next -> PerformJS w r js next
         -- RunEffect effA -> RunEffect effA
 
 
@@ -288,6 +296,18 @@ runFreeM protocol fn =
             -- markLastInlet iid
             sendToInlet iid v
             pure next
+        go (PerformJS write read jsProcCode next) = do
+            executeJs (adaptJsCode jsProcCode)
+                (\inlet -> do
+                    vicVal <- getInletAt $ Id.unsafeInletR inlet
+                    pure $ write $ fromMaybe fallback $ ViC.toMaybe vicVal
+                ) -- (const $ pure $ writeImpl 3)
+                (\outlet frgn -> do
+                    let eVal = runExcept $ read frgn
+                    sendToOutlet (Id.unsafeOutletR outlet) $ ViC.accept $ fromRight fallback eVal
+                )
+                    -- liftEffect $ Console.log $ name <> "--" <> (either show show $ runExcept (readImpl val :: F Int)))
+            pure next
 
         getUserState = liftEffect $ protocol.getState unit
         writeUserState _ nextState = liftEffect $ protocol.modifyState $ const nextState
@@ -301,6 +321,8 @@ runFreeM protocol fn =
         sendToOutlet oid v = liftEffect $ protocol.modifyOutlets $ Map.insert oid v >>> (Tuple $ SingleOutlet oid)
         sendToInlet :: InletR -> ValueInChannel chrepr -> m Unit
         sendToInlet iid v = liftEffect $ protocol.modifyInlets $ Map.insert iid v >>> (Tuple $ SingleInlet iid)
+        adaptJsCode :: JsProcessingCode -> String
+        adaptJsCode (JsProcessingCode jsProcCode) = "(function() { return function() {" <> jsProcCode <> "}; })()()"
 
 
-foreign import executeJs :: String -> (String -> Effect Foreign) -> (String -> Foreign -> Effect Unit) -> Effect Unit
+foreign import executeJs :: forall m. String -> (String -> m Foreign) -> (String -> Foreign -> m Unit) -> m Unit

@@ -6,7 +6,7 @@ import Partial.Unsafe (unsafePartial)
 
 import Data.Newtype (unwrap, wrap) as NT
 -- import Data.String.Read (read)
-import Data.Int (fromString) as Int
+import Data.Int (fromString, toStringAs, decimal) as Int
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple, uncurry, curry)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -27,6 +27,8 @@ import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefaultFor, pValueFor, class ParseableRepr)
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
+
+import Yoga.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
 
 data MinimalVRepr
@@ -202,3 +204,22 @@ toReprImpl eType eValue =
         "Int"     -> Int <$> (Int.fromString $ NT.unwrap eValue)
         "String"  -> Just $ Str $ NT.unwrap eValue
         _ -> Nothing
+
+
+instance ReadForeign MinimalVRepr where -- FIXME: use `Taggable` & `ParseableRepr`
+    readImpl fgn = do
+        (rec :: { tag :: String, value :: String }) <- readImpl fgn
+        pure $ case rec.tag of
+            "None" -> None
+            "Unit" -> UnitV
+            "Int" -> fromMaybe None $ Int <$> Int.fromString rec.value
+            "String" -> Str rec.value
+            _ -> None
+
+
+instance WriteForeign MinimalVRepr where -- FIXME: use `Taggable` & `ParseableRepr`
+    writeImpl = case _ of
+        None -> writeImpl { tag : "None", value : "" }
+        UnitV -> writeImpl { tag : "Unit", value : "" }
+        Int val -> writeImpl { tag : "Int", value : Int.toStringAs Int.decimal val }
+        Str str -> writeImpl { tag : "String", value : str }

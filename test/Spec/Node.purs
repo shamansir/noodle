@@ -25,7 +25,7 @@ import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Raw.Fn.Shape (inlets, outlets, make, tagAs) as RawShape
-import Noodle.Raw.Fn.Process (receive, send, sendIn, fromJsCode) as RawFn
+import Noodle.Raw.Fn.Process (receive, send, sendIn, fromJsCode, jsCode) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR, logUpdates) as Node
@@ -358,7 +358,7 @@ spec = do
                     (Map.empty
                         # Map.insert (outletR "sum") (MinimalRepr.Int 0)
                     )
-                    $ RawFn.fromJsCode
+                    $ RawFn.fromJsCode $ RawFn.jsCode
                         """
                         console.log("test");
                         console.log('process');
