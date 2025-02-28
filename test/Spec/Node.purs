@@ -360,13 +360,12 @@ spec = do
                     )
                     $ RawFn.fromJsCode $ RawFn.jsCode
                         """
-                        console.log("test");
-                        console.log('process');
-                        const aValue = _receive("a")();
-                        const bValue = _receive("b")();
-                        console.log(aValue);
-                        console.log(bValue);
-                        _send("sum")({ tag : "Int", value : (parseInt(aValue.value) + parseInt(bValue.value)).toString() })();
+                        const aValue = _receive("a");
+                        const bValue = _receive("b");
+                        _send("sum",
+                            { tag : "Int",
+                              value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
+                            });
                         """
 
             rawNode # RawNode.run
