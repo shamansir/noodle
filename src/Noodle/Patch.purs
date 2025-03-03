@@ -42,7 +42,7 @@ import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
 import Noodle.Raw.Node (connect) as RawNode
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo) as Links
+import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo, all) as Links
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (setId, cancel) as RawLink
 import Noodle.Raw.Node (Node) as Raw
@@ -391,3 +391,7 @@ subscribeState (Patch _ _ stchan _ _ _) = Channel.subscribe stchan
 
 getState :: forall pstate families strepr chrepr mi m. MonadEffect m => Patch pstate families strepr chrepr mi -> m pstate
 getState = liftEffect <<< Signal.get <<< subscribeState
+
+
+allRawLinks :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Array Raw.Link
+allRawLinks (Patch _ _ _ _ _ links) = Links.all links

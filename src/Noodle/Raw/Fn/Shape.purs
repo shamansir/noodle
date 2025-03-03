@@ -89,7 +89,7 @@ derive instance Ord InletDefR
 derive instance Ord OutletDefR
 
 
-newtype InletsShape = Inlets (Array InletDefR)
+newtype InletsShape  = Inlets  (Array InletDefR)
 newtype OutletsShape = Outlets (Array OutletDefR)
 
 
@@ -118,13 +118,13 @@ outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
 
 
 make ::
-    { inlets  :: Array { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
+    { inlets  :: Array { name :: InletR,  order :: Int, temp :: Temperament, tag :: Tag }
     , outlets :: Array { name :: OutletR, order :: Int, tag :: Tag }
     }
     -> Shape
 make { inlets, outlets } =
     Shape
-        { inlets : Inlets $ InletDefR <$> inlets
+        { inlets  : Inlets  $ InletDefR  <$> inlets
         , outlets : Outlets $ OutletDefR <$> outlets
         }
 

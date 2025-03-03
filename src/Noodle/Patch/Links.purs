@@ -4,10 +4,10 @@ import Prelude
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, insert, alter, delete, lookup) as Map
+import Data.Map (empty, insert, alter, delete, lookup, values) as Map
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (singleton, cons, catMaybes) as Array
+import Data.Array (singleton, cons, catMaybes, fromFoldable) as Array
 import Data.Foldable (foldr)
 
 import Noodle.Id (Link(..), NodeR) as Id
@@ -86,6 +86,10 @@ forgetRaw rawLink { lastId, from, to, byNode, byId } =
     , byId :
         byId -- FIXME: we don't know ID, store (Maybe ID) in the Link
     }
+
+
+all :: Links -> Array Raw.Link
+all = _.byId >>> Map.values >>> Array.fromFoldable
 
 
 findRaw :: Id.Link -> Links -> Maybe Raw.Link
