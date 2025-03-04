@@ -17,6 +17,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Newtype (wrap) as NT
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
@@ -35,7 +36,7 @@ import Noodle.Repr.ValueInChannel (_reportMissingKey, accept, decline) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
-import Noodle.Raw.Fn.Shape (Shape, Tag, failed) as Raw
+import Noodle.Raw.Fn.Shape (Shape, Tag, failed, InletDefR, OutletDefR) as Raw
 import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
@@ -235,6 +236,14 @@ curChanges node = do
     , inlets : is # orderInlets nshape
     , outlets : os # orderOutlets nshape
     }
+
+
+inlets' :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> Array (Raw.InletDefR /\ (m (ValueInChannel chrepr)))
+inlets' node@(Node _ shape _ _ _) = (\def -> NT.wrap def /\ atInlet def.name node) <$> RawShape.inlets shape
+
+
+outlets' :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> Array (Raw.OutletDefR /\ (m (ValueInChannel chrepr)))
+outlets' node@(Node _ shape _ _ _) = (\def -> NT.wrap def /\ atOutlet def.name node) <$> RawShape.outlets shape
 
 
 {- Private accessors -}
