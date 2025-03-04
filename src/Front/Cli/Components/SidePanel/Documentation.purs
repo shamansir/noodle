@@ -50,7 +50,7 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.documentationBox
     , buttonKey : Key.documentationButton
-    , next : \s ->
+    , next : \s -> pure $
         CState.isPanelOn P.Documentation s
         /\ maybe []
             (loadDocumentation (Proxy :: _ tk) s.history)
@@ -88,7 +88,8 @@ loadDocumentation ptk ndfFile { node, curUpdate } =
 
 showFamilyDocumentation
     :: forall tk p fs sr cr m mi
-     . MarkToolkit tk
+     . MonadEffect m
+    => MarkToolkit tk
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
@@ -100,7 +101,8 @@ showFamilyDocumentation familyR = do
 
 showNodeDocumentation
     :: forall tk p fs sr cr m mi
-     . MarkToolkit tk
+     . MonadEffect m
+    => MarkToolkit tk
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
@@ -112,7 +114,8 @@ showNodeDocumentation nodeR mbUpdate = do
 
 clear
     :: forall tk p fs sr cr m mi
-     . MarkToolkit tk
+     . MonadEffect m
+    => MarkToolkit tk
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR

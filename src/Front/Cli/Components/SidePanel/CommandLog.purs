@@ -26,9 +26,9 @@ sidePanel =
     { title : "history"
     , char : const '⏺'
     , isOn : identity
-    , panelKey : Key.commandLogBox
+    , panelKey  : Key.commandLogBox
     , buttonKey : Key.commandLogButton
-    , next : (\s -> CState.isPanelOn P.Commands s /\ CState.formatHistory s)
+    , next : (\s -> pure $ CState.isPanelOn P.Commands s /\ CState.formatHistory s)
     , onToggle : CState.togglePanel P.Commands
     }
 

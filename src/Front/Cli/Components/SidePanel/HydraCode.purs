@@ -21,6 +21,6 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.hydraCodeBox
     , buttonKey : Key.hydraCodeButton
-    , next : \s -> CState.isPanelOn P.WsServer s /\ []
+    , next : \s -> pure $ CState.isPanelOn P.WsServer s /\ []
     , onToggle : CState.togglePanel P.WsServer
     }

@@ -30,7 +30,7 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.consoleBox
     , buttonKey : Key.consoleButton
-    , next : (\s -> CState.isPanelOn P.Console s /\ (T.s <$> s.developmentLog))
+    , next : (\s -> pure $ CState.isPanelOn P.Console s /\ (T.s <$> s.developmentLog))
     , onToggle : CState.togglePanel P.Console
     }
 

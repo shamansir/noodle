@@ -28,6 +28,6 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.wsStatusBox
     , buttonKey : Key.wsStatusButton
-    , next : \s -> CState.isPanelOn P.WsServer s /\ []
+    , next : \s -> pure $ CState.isPanelOn P.WsServer s /\ []
     , onToggle : CState.togglePanel P.WsServer
     }

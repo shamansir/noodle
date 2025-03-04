@@ -364,7 +364,8 @@ storeNodeUpdate nodeR =
 
 renderUpdate
     :: forall tk fs pstate strepr chrepr m
-     . MarkToolkit tk
+     . MonadEffect m
+    => MarkToolkit tk
     => Toolkit.HasChRepr tk chrepr
     => T.At At.StatusLine chrepr
     => T.At At.ChannelLabel chrepr

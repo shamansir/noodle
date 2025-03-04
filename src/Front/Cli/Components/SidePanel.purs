@@ -13,6 +13,7 @@ import Type.Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append)
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, modify) as State
 
@@ -30,6 +31,7 @@ import Blessed.Internal.BlessedSubj as Subj
 import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.Core (on) as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.BlessedOp (lift') as Blessed
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
@@ -52,7 +54,7 @@ type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of 
     , isOn :: v -> Boolean
     , panelKey :: NodeKey Subj.Log id
     , buttonKey :: NodeKey Subj.Button id
-    , next :: (s -> v /\ Array T.Tag)
+    , next :: (s -> Effect (v /\ Array T.Tag))
     , onToggle :: (s -> s)
     }
 
@@ -104,9 +106,11 @@ button offset initV sidePanel =
         []
 
 
-refresh :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
-refresh sidePanel =
-    State.get <#> sidePanel.next >>= flip refreshWith sidePanel
+refresh :: forall id s m v. MonadEffect m => IsSymbol id => SidePanel id s v -> BlessedOp s m
+refresh sidePanel = do
+    state <- State.get
+    next <- liftEffect $ sidePanel.next state
+    sidePanel # refreshWith next
 
 
 refreshWith :: forall id s m v. IsSymbol id => v /\ Array T.Tag -> SidePanel id s v -> BlessedOp s m
@@ -116,9 +120,10 @@ refreshWith (nextV /\ nextContent) sidePanel = do
     -- Key.mainScreen >~ Screen.render
 
 
-toggle :: forall id s m v. IsSymbol id => SidePanel id s v -> BlessedOp s m
+toggle :: forall id s m v. MonadEffect m => IsSymbol id => SidePanel id s v -> BlessedOp s m
 toggle sidePanel = do
     state <- State.modify sidePanel.onToggle
-    sidePanel # refreshWith (sidePanel.next state)
+    next <- liftEffect $ sidePanel.next state
+    sidePanel # refreshWith next
     sidePanel.panelKey >~ Element.toggle
     Key.mainScreen >~ Screen.render
