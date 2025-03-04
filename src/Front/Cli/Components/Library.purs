@@ -62,7 +62,9 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Repr.Tagged (class Tagged) as CT
 
 import Cli.Components.NodeBox as NodeBox
+import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel.CommandLog as CL
+import Cli.Components.SidePanel.Tree as TP
 
 
 
@@ -208,6 +210,7 @@ registerAndRenderGivenRawNode patchR nextPos rawNode = do
     NodeBox.componentRaw nextPos patchR familyR rawNode
 
     CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
+    SidePanel.refresh TP.sidePanel
 
     Key.mainScreen >~ Screen.render
 
@@ -243,5 +246,6 @@ spawnAndRender toolkit patchR nextPos family = do
     NodeBox.component nextPos patchR familyId node
 
     CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
+    SidePanel.refresh TP.sidePanel
 
     Key.mainScreen >~ Screen.render

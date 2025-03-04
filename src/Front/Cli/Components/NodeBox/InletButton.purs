@@ -63,8 +63,10 @@ import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
 import Cli.Components.Link (LinkState)
 import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
+import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
+import Cli.Components.SidePanel.Tree as TP
 import Cli.Components.Editor.Textual (tveKey) as VEditor
 import Cli.Components.NodeBox.InletIndicator as II
 import Cli.Components.NodeBox.OutletIndicator as OI
@@ -261,6 +263,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                                             nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
                                             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
                                             CL.trackCommand $ QOp.disconnect rawLink
+                                            SidePanel.refresh $ TP.sidePanel
                                             pure $ nextPatch /\ success
                                         Nothing -> pure (curPatch /\ false)
 
@@ -300,6 +303,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                                     Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn state <<< onLinkClick patchR rawLink lstate) linkState
 
                                     CL.trackCommand $ QOp.connect rawLink
+                                    SidePanel.refresh $ TP.sidePanel
 
                                     -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
                                     State.modify_ $ _ { blockInletEditor = true }
@@ -362,5 +366,6 @@ onLinkClick patchR rawLink linkState _ = do
                 in s { linksFrom = nextLinksFrom, linksTo = nextLinksTo }
             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
             CL.trackCommand $ QOp.disconnect rawLink
+            SidePanel.refresh $ TP.sidePanel
             Key.mainScreen >~ Screen.render
         Nothing -> pure unit

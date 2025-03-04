@@ -45,9 +45,11 @@ import Cli.State (State)
 import Cli.State (currentPatch, replacePatch, LastKeys) as CState
 import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InfoBox as IB
+import Cli.Components.SidePanel as SidePanel
 import Cli.Components.StatusLine as SL
 import Cli.Components.SidePanel.Documentation as Doc
 import Cli.Components.SidePanel.CommandLog as CL
+import Cli.Components.SidePanel.Tree as TP
 
 import Noodle.Id as Id
 import Noodle.Patch as Patch
@@ -98,7 +100,11 @@ component topOffset family node keys =
                         )
                         Blessed.runOnUnit $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
                         keys.nodeBox >~ Node.detach
+                        State.modify_
+                            $ CState.replacePatch (Patch.id currentPatch)
+                            $ Patch.removeNode (RawNode.id node) nextCurrentPatch
                         CL.trackCommand $ QOp.removeNode (RawNode.id node)
+                        SidePanel.refresh $ TP.sidePanel
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
                 {-

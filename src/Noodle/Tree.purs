@@ -11,10 +11,13 @@ import Data.Map (values) as Map
 import Data.List (toUnfoldable) as List
 import Data.Tuple (uncurry) as Tuple
 import Data.Traversable (sequence, class Traversable)
+import Data.Foldable (foldl)
 import Data.Newtype as NT
+import Data.UniqueHash (toString) as UH
 
 import Data.Text.Format as T
 
+import Noodle.Id (hashOf) as Id
 import Noodle.Network (Network)
 import Noodle.Network (patches) as Network
 import Noodle.Patch (Patch)
@@ -62,8 +65,8 @@ data PathTreeNode repr a
     | Patch Id.PatchR a
     | Link (Maybe Id.Link) a
     | Node Id.NodeR a
-    | Inlet Id.InletR (ValueInChannel repr) a
-    | Outlet Id.OutletR (ValueInChannel repr) a
+    | Inlet Raw.InletDefR (ValueInChannel repr) a
+    | Outlet Raw.OutletDefR (ValueInChannel repr) a
 
 
 toTree
@@ -107,8 +110,8 @@ toPathNode = case _ of
     P patch a -> Patch (Patch.id patch) a
     L link a -> Link (RawLink.id link) a
     N node a -> Node (RawNode.id node) a
-    I def vicval a -> Inlet  (_.name $ NT.unwrap def) vicval a
-    O def vicval a -> Outlet (_.name $ NT.unwrap def) vicval a
+    I def vicval a -> Inlet def vicval a
+    O def vicval a -> Outlet def vicval a
 
 
 extractPaths :: forall pstate families strepr chrepr mp a. NetworkTree pstate families strepr chrepr mp a -> NetworkPathTree chrepr a
@@ -116,4 +119,12 @@ extractPaths = NT.unwrap >>> map toPathNode >>> NT.wrap
 
 
 formatPathTree :: forall chrepr a. NetworkPathTree chrepr a -> T.Tag
-formatPathTree = const $ T.s "Foo"
+formatPathTree = NT.unwrap >>> map stringifyNode >>> Tree.showTree >>> T.s
+    where
+        stringifyNode = case _ of
+            Root a -> ""
+            Patch patchId a -> "P " <> (UH.toString $ Id.hashOf patchId)
+            Link _ a -> "L " <> "link"
+            Node nodeR a -> "N " <> (UH.toString $ Id.hashOf nodeR)
+            Inlet inletDef val a -> "I " <> (Id.inletRName $ _.name $ NT.unwrap inletDef)
+            Outlet outletDef val a -> "O " <> (Id.outletRName $ _.name $ NT.unwrap outletDef)

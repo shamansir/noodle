@@ -14,12 +14,12 @@ import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
-import Data.Map (empty, alter, lookup, toUnfoldable) as Map
+import Data.Map (empty, alter, lookup, toUnfoldable, update) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
-import Data.Array (singleton, cons, concat, catMaybes, find) as Array
+import Data.Array (singleton, cons, concat, catMaybes, find, filter) as Array
 import Data.Traversable (traverse_)
 
 import Unsafe.Coerce (unsafeCoerce)
@@ -32,7 +32,7 @@ import Signal (get) as Signal
 import Signal.Channel (Channel, channel)
 import Signal.Channel (subscribe) as Channel
 
-import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, Inlet, Outlet, InletR, OutletR) as Id
+import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, familyOf, Inlet, Outlet, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, setId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
@@ -286,6 +286,19 @@ findRawLink
     -> Maybe Raw.Link
 findRawLink linkId (Patch _ _ _ _ _ links) =
     links # Links.findRaw linkId
+
+
+removeNode
+    :: forall pstate strepr chrepr mp families
+     . Id.NodeR
+    -> Patch pstate families strepr chrepr mp
+    -> Patch pstate families strepr chrepr mp
+removeNode nodeR (Patch name id chState nodes rawNodes links) =
+    let
+        nextNodes = Map.update (Array.filter (\hnode -> HN.withNode hnode Node.id == nodeR) >>> Just) (Id.familyOf nodeR) nodes
+        nextRawNodes = Map.update (Array.filter (\rnode -> RawNode.id rnode == nodeR) >>> Just) (Id.familyOf nodeR) rawNodes
+        nextPatch = Patch name id chState nextNodes nextRawNodes links
+    in nextPatch
 
 
 data MapNodes strepr chrepr m = MapNodes (Map Id.FamilyR (Array (HoldsNode strepr chrepr m)))
