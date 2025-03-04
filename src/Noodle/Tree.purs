@@ -124,7 +124,7 @@ formatPathTree = NT.unwrap >>> map stringifyNode >>> Tree.showTree >>> T.s
         stringifyNode = case _ of
             Root a -> ""
             Patch patchId a -> "P " <> (UH.toString $ Id.hashOf patchId)
-            Link _ a -> "L " <> "link"
-            Node nodeR a -> "N " <> (UH.toString $ Id.hashOf nodeR)
+            Link linkId a -> "L " <> show linkId
+            Node nodeR a -> "N " <> Id.family (Id.familyOf nodeR) <> ":" <> (UH.toString $ Id.hashOf nodeR)
             Inlet inletDef val a -> "I " <> (Id.inletRName $ _.name $ NT.unwrap inletDef)
             Outlet outletDef val a -> "O " <> (Id.outletRName $ _.name $ NT.unwrap outletDef)

@@ -50,6 +50,8 @@ import Cli.Components.StatusLine as SL
 import Cli.Components.SidePanel.Documentation as Doc
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Tree as TP
+import Cli.Components.NodeBox.InletIndicator as II
+import Cli.Components.NodeBox.OutletIndicator as OI
 
 import Noodle.Id as Id
 import Noodle.Patch as Patch
@@ -60,7 +62,6 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Text.NdfFile.Command.Quick as QOp
 -- import Noodle.Node (unsafeDisconnect) as Node
 -- import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
-
 
 
 component
@@ -84,6 +85,8 @@ component topOffset family node keys =
         , Style.inletsOutlets
         , Core.on Button.Press
             \_ _ -> do
+                OI.hide
+                II.hide
                 state <- State.get
                 let mbCurrentPatch = CState.currentPatch state
                 case mbCurrentPatch of
@@ -104,7 +107,7 @@ component topOffset family node keys =
                             $ CState.replacePatch (Patch.id currentPatch)
                             $ Patch.removeNode (RawNode.id node) nextCurrentPatch
                         CL.trackCommand $ QOp.removeNode (RawNode.id node)
-                        SidePanel.refresh $ TP.sidePanel
+                        SidePanel.refresh TP.sidePanel
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
                 {-

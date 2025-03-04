@@ -295,10 +295,9 @@ removeNode
     -> Patch pstate families strepr chrepr mp
 removeNode nodeR (Patch name id chState nodes rawNodes links) =
     let
-        nextNodes = Map.update (Array.filter (\hnode -> HN.withNode hnode Node.id == nodeR) >>> Just) (Id.familyOf nodeR) nodes
-        nextRawNodes = Map.update (Array.filter (\rnode -> RawNode.id rnode == nodeR) >>> Just) (Id.familyOf nodeR) rawNodes
-        nextPatch = Patch name id chState nextNodes nextRawNodes links
-    in nextPatch
+        nextNodes = Map.update (Array.filter (\hnode -> HN.withNode hnode Node.id /= nodeR) >>> Just) (Id.familyOf nodeR) nodes
+        nextRawNodes = Map.update (Array.filter (\rnode -> RawNode.id rnode /= nodeR) >>> Just) (Id.familyOf nodeR) rawNodes
+    in Patch name id chState nextNodes nextRawNodes links
 
 
 data MapNodes strepr chrepr m = MapNodes (Map Id.FamilyR (Array (HoldsNode strepr chrepr m)))

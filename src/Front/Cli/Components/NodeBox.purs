@@ -85,6 +85,10 @@ import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCom
 import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.State (Focus(..)) as Focus
 import Cli.Style as Style
+import Cli.Bounds as Bounds
+
+import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
 
 import Cli.Components.Link as CLink
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -93,8 +97,6 @@ import Cli.Components.NodeBox.InfoBox as InfoBox
 -- REM import Cli.Components.NodeBox.InletButton as InletButton
 -- REM import Cli.Components.NodeBox.OutletButton as OutletButton
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
-import Cli.Class.CliFriendly (class CliFriendly)
-import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
 -- REM import Cli.Components.CommandLogBox as CommandLogBox
 -- REM import Cli.Components.HydraCodeBox as HydraCodeBox
 -- REM import Cli.Components.NodeBox.InfoBox as IB
@@ -103,7 +105,7 @@ import Cli.Components.StatusLine as SL
 -- import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Documentation as DP
-import Cli.Bounds as Bounds
+import Cli.Components.NodeBox.InletIndicator as II
 import Cli.Components.NodeBox.OutletIndicator as OI
 
 
@@ -480,6 +482,7 @@ logDataCommand stateRef update =
 
 onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
 onMove nodeId nodeKey _ _ = do
+    II.hide
     OI.hide
     let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeId nodeKey
