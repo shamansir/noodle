@@ -19,6 +19,7 @@ data Which
     | Documentation
     | HydraCode
     | Console
+    | Tree
 
 
 -- FIXME: by logic, those are just parts of the `State`, may be make them a direct members and store only toggles here
@@ -28,6 +29,7 @@ type SidePanelsOnOff =
     , hydraCode :: Boolean
     , documentation :: Boolean
     , console :: Boolean
+    , tree :: Boolean
     }
 
 
@@ -38,40 +40,8 @@ initPanelsOnOff =
     , hydraCode : false
     , documentation : false
     , console : false
+    , tree : false
     }
-
-
-{-
-initCommands :: NdfFile
-initCommands = Ndf.init "noodle" 1.0
-
-
-insertDocs :: Array T.Tag -> SidePanels -> SidePanels
-insertDocs docs s = s { documentation = docs <$ s.documentation }
-
-
-clearCommands :: SidePanels -> SidePanels
-clearCommands s = s { commands = initCommands <$ s.console }
-
-
-appendCommand :: Ndf.CommandOp -> SidePanels -> SidePanels
-appendCommand cmdop s =
-    s { commands = Ndf.optimize <$> flip Ndf.snocOp cmdop <$> s.commands }
-
-
-appendNdf :: NdfFile -> SidePanels -> SidePanels
-appendNdf ndfFile s =
-    s { commands = Ndf.optimize <$> Ndf.append ndfFile <$> s.commands }
-
-
-clearLog :: SidePanels -> SidePanels
-clearLog s = s { console = [] <$ s.console }
-
-
-logToConsole :: Array String -> SidePanels -> SidePanels
-logToConsole lines s =
-    s { console = (flip (<>) lines) <$> s.console
--}
 
 
 isOn :: Which -> SidePanelsOnOff -> Boolean
@@ -81,6 +51,7 @@ isOn = case _ of
     Documentation -> _.documentation
     Console -> _.console
     HydraCode -> _.hydraCode
+    Tree -> _.tree
 
 
 isOff :: Which -> SidePanelsOnOff -> Boolean
@@ -94,13 +65,4 @@ toggle w s = case w of
     Documentation -> s { documentation = not s.documentation }
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
-
-
-{-
-load :: Which -> SidePanels -> Boolean /\ Array T.Tag
-load w = case w of
-    Commands ->      _.commands >>> map (Array.singleton <<< Ndf.toTaggedNdfCode)
-    WsServer ->      _.wsServer >>> (flip (/\) [])
-    Documentation -> _.documentation
-    Console ->       _.console >>> map (map T.s)
--}
+    Tree -> s { tree = not s.tree }

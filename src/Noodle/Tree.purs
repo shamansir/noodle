@@ -13,6 +13,8 @@ import Data.Tuple (uncurry) as Tuple
 import Data.Traversable (sequence, class Traversable)
 import Data.Newtype as NT
 
+import Data.Text.Format as T
+
 import Noodle.Network (Network)
 import Noodle.Network (patches) as Network
 import Noodle.Patch (Patch)
@@ -24,8 +26,18 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, inlets', outlets') as RawNode
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
+import Noodle.Ui.Cli.Tagging as T
+
 import Yoga.Tree (Tree)
 import Yoga.Tree as Tree
+
+
+newtype NetworkTree pstate families strepr chrepr mp a = NetworkTree (Tree (TreeNode pstate families strepr chrepr mp a))
+newtype NetworkPathTree chrepr a = NetworkPathTree (Tree (PathTreeNode chrepr a))
+
+
+derive instance NT.Newtype (NetworkTree pstate families strepr chrepr mp a) _
+derive instance NT.Newtype (NetworkPathTree chrepr a) _
 
 
 data TreeNode pstate fs strepr chrepr m a
@@ -38,6 +50,9 @@ data TreeNode pstate fs strepr chrepr m a
 
 
 derive instance Functor (TreeNode pstate fs strepr chrepr m)
+derive instance Functor (PathTreeNode chrepr)
+derive instance Functor (NetworkTree pstate fs strepr chrepr m)
+derive instance Functor (NetworkPathTree chrepr)
 
 
 data PathTreeNode repr a
@@ -56,9 +71,9 @@ toTree
      . MonadEffect m
     => (TreeNode pstate families strepr chrepr mp Unit -> a)
     -> Network tk pstate families strepr chrepr mp
-    -> m (Tree (TreeNode pstate families strepr chrepr mp a))
+    -> m (NetworkTree pstate families strepr chrepr mp a)
 toTree makeVal network = do
-    sequenceH (Tree.mkTree $ withVal R) $ patchTree <$> (List.toUnfoldable $ Map.values $ Network.patches network)
+    NT.wrap <$> (sequenceH (Tree.mkTree $ withVal R) $ patchTree <$> (List.toUnfoldable $ Map.values $ Network.patches network))
     where
         sequenceH :: forall t x v. Traversable t => Applicative m => (t v -> x) -> t (m v) -> m x
         sequenceH f leaves = sequence leaves <#> \leavesx -> f leavesx
@@ -81,7 +96,7 @@ toPathTree
      . MonadEffect m
     => (PathTreeNode chrepr Unit -> a)
     -> Network tk pstate families strepr chrepr mp
-    -> m (Tree (PathTreeNode chrepr a))
+    -> m (NetworkPathTree chrepr a)
 toPathTree makeVal =
     toTree (toPathNode >>> makeVal) <#> map extractPaths
 
@@ -96,5 +111,9 @@ toPathNode = case _ of
     O def vicval a -> Outlet (_.name $ NT.unwrap def) vicval a
 
 
-extractPaths :: forall pstate families strepr chrepr mp a. Tree (TreeNode pstate families strepr chrepr mp a) -> Tree (PathTreeNode chrepr a)
-extractPaths = map toPathNode
+extractPaths :: forall pstate families strepr chrepr mp a. NetworkTree pstate families strepr chrepr mp a -> NetworkPathTree chrepr a
+extractPaths = NT.unwrap >>> map toPathNode >>> NT.wrap
+
+
+formatPathTree :: forall chrepr a. NetworkPathTree chrepr a -> T.Tag
+formatPathTree = const $ T.s "Foo"

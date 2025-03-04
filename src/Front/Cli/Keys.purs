@@ -52,6 +52,8 @@ wsStatusButton = nk :: Button <^> "ws-status"
 wsStatusBox = nk :: Log <^> "ws-status"
 inletIndicator = nk :: Button <^> "inlet-led"
 outletIndicator = nk :: Button <^> "outlet-led"
+treeButton = nk :: Button <^> "tree"
+treeBox = nk :: Log <^> "tree"
 
 
 textValueEditor = nk :: TextValueEditorKey
