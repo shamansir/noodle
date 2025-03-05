@@ -9,12 +9,11 @@ import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id (NodeR, OutletR, InletR)
-import Noodle.Id (Link) as Id
+import Noodle.Id (Link(..)) as Id
 
 
 data Link =
     Link
-        (Maybe Id.Link)
         Connector
         (Effect Unit)
 
@@ -26,11 +25,7 @@ type Connector =
 
 
 make :: NodeR -> OutletR -> InletR -> NodeR -> Effect Unit -> Link
-make nA oA iB nB = Link Nothing { from : nA /\ oA, to : nB /\ iB }
-
-
-make' :: Id.Link -> NodeR -> OutletR -> InletR -> NodeR -> Effect Unit -> Link
-make' id nA oA iB nB = Link (Just id) { from : nA /\ oA, to : nB /\ iB }
+make nA oA iB nB = Link { from : nA /\ oA, to : nB /\ iB }
 
 
 from :: Link -> NodeR /\ OutletR
@@ -58,16 +53,12 @@ toInlet = to >>> Tuple.snd
 
 
 connector :: Link -> Connector
-connector (Link _ con _) = con
+connector (Link con _) = con
 
 
-id :: Link -> Maybe Id.Link
-id (Link id _ _) = id
+id :: Link -> Id.Link
+id = connector >>> Id.Link
 
 
 cancel :: Link -> Effect Unit
-cancel (Link _ _ canceller) = canceller
-
-
-setId :: Id.Link -> Link -> Link
-setId id (Link _ rec c) = Link (Just id) rec c
+cancel (Link _ canceller) = canceller

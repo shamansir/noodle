@@ -63,7 +63,7 @@ data PathTreeNode repr a
     -- | Toolkit Id.ToolkitR a
     -- | Family Id.FamilyR a
     | Patch Id.PatchR a
-    | Link (Maybe Id.Link) RawLink.Connector a
+    | Link Id.Link a
     | Node Id.NodeR a
     | Inlet Raw.InletDefR (ValueInChannel repr) a
     | Outlet Raw.OutletDefR (ValueInChannel repr) a
@@ -108,7 +108,7 @@ toPathNode :: forall pstate families strepr chrepr mp a. TreeNode pstate familie
 toPathNode = case _ of
     R a -> Root a
     P patch a -> Patch (Patch.id patch) a
-    L link a -> Link (RawLink.id link) (RawLink.connector link) a
+    L link a -> Link (RawLink.id link) a
     N node a -> Node (RawNode.id node) a
     I def vicval a -> Inlet def vicval a
     O def vicval a -> Outlet def vicval a
@@ -124,8 +124,9 @@ formatPathTree = NT.unwrap >>> map stringifyNode >>> Tree.showTree >>> T.s
         stringifyNode = case _ of
             Root a -> ""
             Patch patchId a -> "P " <> (UH.toString $ Id.hashOf patchId)
-            Link mbId conn a ->
-                "L " <> maybe "-" show mbId <> " "
+            Link linkId a ->
+                NT.unwrap linkId # \conn ->
+                "L " <> " "
                     <> show (Tuple.fst $ _.from conn) <> " " <> show (Tuple.snd $ _.from conn) <> " "
                     <> show (Tuple.fst $ _.to conn) <> " " <> show (Tuple.snd $ _.to conn)
             Node nodeR a -> "N " <> Id.family (Id.familyOf nodeR) <> ":" <> (UH.toString $ Id.hashOf nodeR)

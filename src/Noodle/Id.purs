@@ -21,11 +21,13 @@ module Noodle.Id
 import Prelude
 
 import Type.Proxy (Proxy(..))
+
+import Data.Newtype (class Newtype)
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash (toString) as UH
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Reflectable (class Reflectable)
-
+import Data.Tuple.Nested (type (/\), (/\))
 
 
 import Noodle.Fn.Shape
@@ -122,7 +124,13 @@ nodeR_ (FamilyR { family }) hash = NodeR { family, hash }
 type FnName = String
 
 
-newtype Link = Link Int
+newtype Link = Link -- links are unique by the nodes and channels they connect, even if there are multiple links (many from one outlet or many to one inlet) allowed
+    { from :: NodeR /\ FromShape.OutletR
+    , to   :: NodeR /\ FromShape.InletR
+    }
+
+
+derive instance Newtype Link _
 
 
 derive instance Eq Link

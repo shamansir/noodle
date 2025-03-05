@@ -33,7 +33,7 @@ import Signal.Channel (Channel, channel)
 import Signal.Channel (subscribe) as Channel
 
 import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, familyOf, Inlet, Outlet, InletR, OutletR) as Id
-import Noodle.Link (FromId, ToId, setId, cancel) as Link
+import Noodle.Link (FromId, ToId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
 import Noodle.Node (id, family, toRaw, connect) as Node
@@ -42,9 +42,9 @@ import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
 import Noodle.Raw.Node (connect) as RawNode
 import Noodle.Patch.Links (Links)
-import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo, all) as Links
+import Noodle.Patch.Links (init, track, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo, all) as Links
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Raw.Link (setId, cancel, id) as RawLink
+import Noodle.Raw.Link (cancel, id) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, family, toReprableState) as RawNode
 import Noodle.Repr.StRepr (class StRepr)
@@ -181,10 +181,9 @@ connect
 connect outletA inletB nodeA nodeB (Patch name id chState nodes rawNodes links) = do
     link <- Node.connect outletA inletB nodeA nodeB
     let
-      linkWithId = link # Link.setId (Links.nextId links)
-      nextLinks = links # Links.track linkWithId
+      nextLinks = links # Links.track link
       nextPatch = Patch name id chState nodes rawNodes nextLinks
-    pure (nextPatch /\ linkWithId)
+    pure (nextPatch /\ link)
 
 
 connectRaw
@@ -201,10 +200,9 @@ connectRaw outletRA inletRB nodeRA nodeRB (Patch name id chState nodes rawNodes 
     rawLink <- RawNode.connect outletRA inletRB identity nodeRA nodeRB
     -- let _ = Debug.spy "connect raw" $ RawLink.id rawLink
     let
-      rawLinkWithId = rawLink # RawLink.setId (Links.nextId links)
-      nextLinks = links # Links.trackRaw rawLinkWithId
+      nextLinks = links # Links.trackRaw rawLink
       nextPatch = Patch name id chState nodes rawNodes nextLinks
-    pure (nextPatch /\ rawLinkWithId)
+    pure (nextPatch /\ rawLink)
 
 
 disconnect

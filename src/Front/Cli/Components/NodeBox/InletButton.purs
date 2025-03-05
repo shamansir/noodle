@@ -275,50 +275,45 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                             -- CC.log "both nodes were found"
                             nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
 
-                            case RawLink.id rawLink of
-                                Just rawLinkId -> do
-                                    -- CC.log $ "RawLink ID is set: " <> show rawLinkId
-                                    (linkState :: LinkState Unit)
-                                        <- CLink.create
-                                                rawLinkId
-                                                { id : nodeSrcR, key : nodeSrcBoxKey }
-                                                (Id.OutletIndex outletIdx)
-                                                { id : nodeTrgR, key : nodeTrgBoxKey  }
-                                                (Id.InletIndex inletIdx)
-                                                state.lastLink
+                            -- CC.log $ "RawLink ID is set: " <> show rawLinkId
+                            (linkState :: LinkState Unit)
+                                <- CLink.create
+                                    (RawLink.id rawLink)
+                                    { id : nodeSrcR, key : nodeSrcBoxKey }
+                                    (Id.OutletIndex outletIdx)
+                                    { id : nodeTrgR, key : nodeTrgBoxKey  }
+                                    (Id.InletIndex inletIdx)
+                                    state.lastLink
 
-                                    State.modify_ $ \s ->
-                                        let
-                                            nextLinksFrom /\ nextLinksTo = CLink.store linkState $ s.linksFrom /\ s.linksTo
-                                        in
-                                            s
-                                                { linksFrom = nextLinksFrom
-                                                , linksTo = nextLinksTo
-                                                , lastLink = Just linkState
-                                                }
+                            State.modify_ $ \s ->
+                                let
+                                    nextLinksFrom /\ nextLinksTo = CLink.store linkState $ s.linksFrom /\ s.linksTo
+                                in
+                                    s
+                                        { linksFrom = nextLinksFrom
+                                        , linksTo = nextLinksTo
+                                        , lastLink = Just linkState
+                                        }
 
-                                    Blessed.runOnUnit $ Key.patchBox >~ CLink.append linkState
+                            Blessed.runOnUnit $ Key.patchBox >~ CLink.append linkState
 
-                                    State.modify_ $ State.replacePatch patchR nextPatch'
+                            State.modify_ $ State.replacePatch patchR nextPatch'
 
-                                    stateRef <- Blessed.getStateRef
+                            stateRef <- Blessed.getStateRef
 
-                                    Blessed.runOnUnit $ CLink.on Element.Click
-                                        (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< onLinkClick patchR rawLink lstate)
-                                        linkState
+                            Blessed.runOnUnit $ CLink.on Element.Click
+                                (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< onLinkClick patchR rawLink lstate)
+                                linkState
 
-                                    -- State.put nextState'
+                            -- State.put nextState'
 
-                                    -- Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn nextState <<< onLinkClick patchR rawLink lstate) linkState
+                            -- Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn nextState <<< onLinkClick patchR rawLink lstate) linkState
 
-                                    CL.trackCommand $ QOp.connect rawLink
-                                    SidePanel.refresh $ TP.sidePanel
+                            CL.trackCommand $ QOp.connect rawLink
+                            SidePanel.refresh $ TP.sidePanel
 
-                                    -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
-                                    State.modify_ $ _ { blockInletEditor = true }
-
-                                    pure unit
-                                Nothing -> pure unit
+                            -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
+                            State.modify_ $ _ { blockInletEditor = true }
                         _ -> pure unit
 
                     {- REM
