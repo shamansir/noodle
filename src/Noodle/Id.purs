@@ -78,7 +78,7 @@ newtype NodeR = NodeR { family :: String, hash :: UniqueHash }
 
 
 instance Show NodeR where
-    show (NodeR { family, hash }) = "<" <> show family <> ":" <> show hash <> ">"
+    show (NodeR { family, hash }) = "<" <> family <> ":" <> UH.toString hash <> ">"
 
 
 instance Eq NodeR where

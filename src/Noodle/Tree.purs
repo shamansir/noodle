@@ -6,10 +6,10 @@ import Noodle.Id as Id
 
 import Effect.Class (class MonadEffect)
 
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, maybe)
 import Data.Map (values) as Map
 import Data.List (toUnfoldable) as List
-import Data.Tuple (uncurry) as Tuple
+import Data.Tuple (uncurry, fst, snd) as Tuple
 import Data.Traversable (sequence, class Traversable)
 import Data.Foldable (foldl)
 import Data.Newtype as NT
@@ -24,7 +24,7 @@ import Noodle.Patch (Patch)
 import Noodle.Patch (id, mapAllNodes, allRawLinks) as Patch
 import Noodle.Raw.Fn.Shape (InletDefR, OutletDefR) as Raw
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Raw.Link (id) as RawLink
+import Noodle.Raw.Link (id, Connector, connector, fromNode, toNode, fromOutlet, toInlet) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, inlets', outlets') as RawNode
 import Noodle.Repr.ValueInChannel (ValueInChannel)
@@ -63,7 +63,7 @@ data PathTreeNode repr a
     -- | Toolkit Id.ToolkitR a
     -- | Family Id.FamilyR a
     | Patch Id.PatchR a
-    | Link (Maybe Id.Link) a
+    | Link (Maybe Id.Link) RawLink.Connector a
     | Node Id.NodeR a
     | Inlet Raw.InletDefR (ValueInChannel repr) a
     | Outlet Raw.OutletDefR (ValueInChannel repr) a
@@ -108,7 +108,7 @@ toPathNode :: forall pstate families strepr chrepr mp a. TreeNode pstate familie
 toPathNode = case _ of
     R a -> Root a
     P patch a -> Patch (Patch.id patch) a
-    L link a -> Link (RawLink.id link) a
+    L link a -> Link (RawLink.id link) (RawLink.connector link) a
     N node a -> Node (RawNode.id node) a
     I def vicval a -> Inlet def vicval a
     O def vicval a -> Outlet def vicval a
@@ -124,7 +124,10 @@ formatPathTree = NT.unwrap >>> map stringifyNode >>> Tree.showTree >>> T.s
         stringifyNode = case _ of
             Root a -> ""
             Patch patchId a -> "P " <> (UH.toString $ Id.hashOf patchId)
-            Link linkId a -> "L " <> show linkId
+            Link mbId conn a ->
+                "L " <> maybe "-" show mbId <> " "
+                    <> show (Tuple.fst $ _.from conn) <> " " <> show (Tuple.snd $ _.from conn) <> " "
+                    <> show (Tuple.fst $ _.to conn) <> " " <> show (Tuple.snd $ _.to conn)
             Node nodeR a -> "N " <> Id.family (Id.familyOf nodeR) <> ":" <> (UH.toString $ Id.hashOf nodeR)
             Inlet inletDef val a -> "I " <> (Id.inletRName $ _.name $ NT.unwrap inletDef)
             Outlet outletDef val a -> "O " <> (Id.outletRName $ _.name $ NT.unwrap outletDef)

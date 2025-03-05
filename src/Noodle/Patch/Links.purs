@@ -2,19 +2,21 @@ module Noodle.Patch.Links where
 
 import Prelude
 
+import Debug as Debug
+
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
 import Data.Map (empty, insert, alter, delete, lookup, values) as Map
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (singleton, cons, catMaybes, fromFoldable) as Array
+import Data.Array (singleton, cons, catMaybes, fromFoldable, length) as Array
 import Data.Foldable (foldr)
 
 import Noodle.Id (Link(..), NodeR) as Id
 import Noodle.Link (FromId, ToId, toRaw) as Link
 import Noodle.Link (Link)
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Raw.Link (from, to, fromNode, toNode) as RawLink
+import Noodle.Raw.Link (id, from, to, fromNode, toNode) as RawLink
 
 
 type Links =
@@ -84,7 +86,9 @@ forgetRaw rawLink { lastId, from, to, byNode, byId } =
           # Map.delete (RawLink.fromNode rawLink)
           # Map.delete (RawLink.toNode rawLink)
     , byId :
-        byId -- FIXME: we don't know ID, store (Maybe ID) in the Link
+        case RawLink.id rawLink of
+          Just linkId -> byId # Map.delete linkId
+          Nothing -> byId
     }
 
 
@@ -119,11 +123,15 @@ findAllTo nodeR links =
 
 forgetAllFrom :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
 forgetAllFrom nodeR links =
-  let (allFrom :: Array Raw.Link) = links # findAllFrom nodeR
+  let
+    (allFrom :: Array Raw.Link) = links # findAllFrom nodeR
+    -- _ = Debug.spy "count from" $ Array.length allFrom
   in (allFrom # foldr forgetRaw links) /\ allFrom
 
 
 forgetAllTo :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
 forgetAllTo nodeR links =
-  let (allTo :: Array Raw.Link) = links # findAllTo nodeR
+  let
+    (allTo :: Array Raw.Link) = links # findAllTo nodeR
+    -- _ = Debug.spy "count to" $ Array.length allTo
   in (allTo # foldr forgetRaw links) /\ allTo

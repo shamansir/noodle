@@ -44,7 +44,7 @@ import Noodle.Raw.Node (connect) as RawNode
 import Noodle.Patch.Links (Links)
 import Noodle.Patch.Links (init, track, nextId, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo, all) as Links
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Raw.Link (setId, cancel) as RawLink
+import Noodle.Raw.Link (setId, cancel, id) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, family, toReprableState) as RawNode
 import Noodle.Repr.StRepr (class StRepr)
@@ -199,6 +199,7 @@ connectRaw
     -> m (Patch pstate families strepr chrepr mp /\ Raw.Link)
 connectRaw outletRA inletRB nodeRA nodeRB (Patch name id chState nodes rawNodes links) = do
     rawLink <- RawNode.connect outletRA inletRB identity nodeRA nodeRB
+    -- let _ = Debug.spy "connect raw" $ RawLink.id rawLink
     let
       rawLinkWithId = rawLink # RawLink.setId (Links.nextId links)
       nextLinks = links # Links.trackRaw rawLinkWithId
@@ -236,6 +237,7 @@ disconnectRaw
     -> m (Patch pstate families strepr chrepr mp /\ Boolean)
 disconnectRaw rawLink (Patch name id chState nodes rawNodes links) = do
     -- FIXME: ensure link is registered in the patch. Return false if not
+    -- let _ = Debug.spy "disconnect raw" $ RawLink.id rawLink
     _ <- liftEffect $ RawLink.cancel rawLink
     let
         nextLinks = links # Links.forgetRaw rawLink
@@ -260,7 +262,8 @@ disconnectAllFrom
     -> Patch pstate families strepr chrepr mp
     -> m (Patch pstate families strepr chrepr mp)
 disconnectAllFrom nodeR (Patch name id chState nodes rawNodes links) = do
-    let (nextLinks /\ allLinksFrom)  = Links.forgetAllFrom nodeR links
+    -- let _ = Debug.spy "disconnect all from" $ show nodeR
+    let (nextLinks /\ allLinksFrom) = Links.forgetAllFrom nodeR links
     liftEffect $ traverse_ RawLink.cancel allLinksFrom
     let nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure nextPatch
@@ -273,6 +276,7 @@ disconnectAllTo
     -> Patch pstate families strepr chrepr mp
     -> m (Patch pstate families strepr chrepr mp)
 disconnectAllTo nodeR (Patch name id chState nodes rawNodes links) = do
+    -- let _ = Debug.spy "disconnect all to" $ show nodeR
     let (nextLinks /\ allLinksTo)  = Links.forgetAllTo nodeR links
     liftEffect $ traverse_ RawLink.cancel allLinksTo
     let nextPatch = Patch name id chState nodes rawNodes nextLinks

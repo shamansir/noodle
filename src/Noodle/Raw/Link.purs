@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Maybe (Maybe(..))
-import Data.Tuple (fst) as Tuple
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id (NodeR, OutletR, InletR)
@@ -15,8 +15,14 @@ import Noodle.Id (Link) as Id
 data Link =
     Link
         (Maybe Id.Link)
-        { from :: NodeR /\ OutletR, to :: NodeR /\ InletR }
+        Connector
         (Effect Unit)
+
+
+type Connector =
+    { from :: NodeR /\ OutletR
+    , to   :: NodeR /\ InletR
+    }
 
 
 make :: NodeR -> OutletR -> InletR -> NodeR -> Effect Unit -> Link
@@ -28,11 +34,11 @@ make' id nA oA iB nB = Link (Just id) { from : nA /\ oA, to : nB /\ iB }
 
 
 from :: Link -> NodeR /\ OutletR
-from (Link _ { from } _) = from
+from = connector >>> _.from
 
 
 to :: Link -> NodeR /\ InletR
-to (Link _ { to } _) = to
+to = connector >>> _.to
 
 
 fromNode :: Link -> NodeR
@@ -41,6 +47,18 @@ fromNode = from >>> Tuple.fst
 
 toNode :: Link -> NodeR
 toNode = to >>> Tuple.fst
+
+
+fromOutlet :: Link -> OutletR
+fromOutlet = from >>> Tuple.snd
+
+
+toInlet :: Link -> InletR
+toInlet = to >>> Tuple.snd
+
+
+connector :: Link -> Connector
+connector (Link _ con _) = con
 
 
 id :: Link -> Maybe Id.Link

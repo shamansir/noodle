@@ -12,7 +12,8 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Type.Proxy (Proxy(..))
 
-import Control.Monad.State (get, modify_) as State
+import Control.Monad.State (get, modify, modify_, put) as State
+import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Maybe (Maybe(..), isJust, isNothing, fromMaybe)
@@ -38,7 +39,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runEffect, getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen
@@ -300,7 +301,15 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
 
                                     State.modify_ $ State.replacePatch patchR nextPatch'
 
-                                    Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn state <<< onLinkClick patchR rawLink lstate) linkState
+                                    stateRef <- Blessed.getStateRef
+
+                                    Blessed.runOnUnit $ CLink.on Element.Click
+                                        (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< onLinkClick patchR rawLink lstate)
+                                        linkState
+
+                                    -- State.put nextState'
+
+                                    -- Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn nextState <<< onLinkClick patchR rawLink lstate) linkState
 
                                     CL.trackCommand $ QOp.connect rawLink
                                     SidePanel.refresh $ TP.sidePanel
