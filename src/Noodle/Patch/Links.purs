@@ -6,7 +6,7 @@ import Debug as Debug
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, insert, alter, delete, lookup, values) as Map
+import Data.Map (empty, insert, alter, delete, lookup, values, filterKeys) as Map
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (singleton, cons, catMaybes, fromFoldable, length) as Array
@@ -103,22 +103,16 @@ findRaw linkId =
 
 findAllFrom :: Id.NodeR -> Links -> Array Raw.Link
 findAllFrom nodeR links =
-  let
-    (allFrom :: Array Link.FromId) =
-      links.byNode # Map.lookup nodeR # fromMaybe [] # map Tuple.fst
-  in allFrom
-      <#> flip Map.lookup links.from
-       # Array.catMaybes
+  links.from
+    # Map.filterKeys (Tuple.fst >>> (_ == nodeR))
+    # Map.values # Array.fromFoldable
 
 
 findAllTo :: Id.NodeR -> Links -> Array Raw.Link
 findAllTo nodeR links =
-  let
-    (allTo :: Array Link.ToId) =
-      links.byNode # Map.lookup nodeR # fromMaybe [] # map Tuple.snd
-  in allTo
-      <#> flip Map.lookup links.to
-       # Array.catMaybes
+  links.to
+    # Map.filterKeys (Tuple.fst >>> (_ == nodeR))
+    # Map.values # Array.fromFoldable
 
 
 forgetAllFrom :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
