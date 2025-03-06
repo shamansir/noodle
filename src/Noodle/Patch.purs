@@ -19,7 +19,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
-import Data.Array (singleton, cons, concat, catMaybes, find, filter) as Array
+import Data.Array (singleton, cons, concat, catMaybes, find, filter, length) as Array
 import Data.Traversable (traverse_)
 
 import Unsafe.Coerce (unsafeCoerce)
@@ -262,6 +262,7 @@ disconnectAllFrom
 disconnectAllFrom nodeR (Patch name id chState nodes rawNodes links) = do
     -- let _ = Debug.spy "disconnect all from" $ show nodeR
     let (nextLinks /\ allLinksFrom) = Links.forgetAllFrom nodeR links
+    -- let _ = Debug.spy "links count from" $ show $ Array.length allLinksFrom
     liftEffect $ traverse_ RawLink.cancel allLinksFrom
     let nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure nextPatch
@@ -276,6 +277,7 @@ disconnectAllTo
 disconnectAllTo nodeR (Patch name id chState nodes rawNodes links) = do
     -- let _ = Debug.spy "disconnect all to" $ show nodeR
     let (nextLinks /\ allLinksTo)  = Links.forgetAllTo nodeR links
+    -- let _ = Debug.spy "links count to" $ show $ Array.length allLinksTo
     liftEffect $ traverse_ RawLink.cancel allLinksTo
     let nextPatch = Patch name id chState nodes rawNodes nextLinks
     pure nextPatch

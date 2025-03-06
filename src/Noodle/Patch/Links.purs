@@ -11,6 +11,7 @@ import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (singleton, cons, catMaybes, fromFoldable, length) as Array
 import Data.Foldable (foldr)
+import Data.Newtype (unwrap, wrap) as NT
 
 import Noodle.Id (Link(..), NodeR) as Id
 import Noodle.Link (FromId, ToId, toRaw) as Link
@@ -19,8 +20,11 @@ import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id, from, to, fromNode, toNode) as RawLink
 
 
--- TODO: get rid of this, now it definitely just stores the same information in different shapes
-type Links =
+-- `Id.Link` is a combination of `NodeR /\ OutletR` + `NodeR /\ InletR` and so it should be unique for the whole patch
+type Links = Map Id.Link Raw.Link
+
+
+{- type Links =
   { from :: Map Link.FromId Raw.Link
   , to :: Map Link.ToId Raw.Link
   , byNode :: Map Id.NodeR (Array (Link.FromId /\ Link.ToId))
@@ -28,13 +32,11 @@ type Links =
   }
 
 
+-}
+
+
 init :: Links
-init =
-  { from : Map.empty
-  , to : Map.empty
-  , byNode : Map.empty
-  , byId : Map.empty
-  }
+init = Map.empty
 
 
 track :: forall fA fB oA iB. Link fA fB oA iB -> Links -> Links
@@ -42,19 +44,7 @@ track = trackRaw <<< Link.toRaw
 
 
 trackRaw :: Raw.Link -> Links -> Links
-trackRaw rawLink { from, to, byNode, byId } =
-  let
-    alterF tpl = maybe (Just $ Array.singleton tpl) (Array.cons tpl >>> Just)
-  in
-    { from : from # Map.insert (RawLink.from rawLink) rawLink
-    , to : to # Map.insert (RawLink.to rawLink) rawLink
-    , byNode :
-        byNode
-          # Map.alter (alterF (RawLink.from rawLink /\ RawLink.to rawLink)) (RawLink.fromNode rawLink)
-          # Map.alter (alterF (RawLink.from rawLink /\ RawLink.to rawLink)) (RawLink.toNode rawLink)
-    , byId :
-        byId # Map.insert (RawLink.id rawLink) rawLink
-    }
+trackRaw rawLink = Map.insert (RawLink.id rawLink) rawLink
 
 
 forget :: forall fA fB oA iB. Link fA fB oA iB -> Links -> Links
@@ -62,51 +52,36 @@ forget = forgetRaw <<< Link.toRaw
 
 
 forgetRaw :: Raw.Link -> Links -> Links
-forgetRaw rawLink { from, to, byNode, byId } =
-    { from : from # Map.delete (RawLink.from rawLink)
-    , to : to # Map.delete (RawLink.to rawLink)
-    , byNode :
-        byNode
-          # Map.delete (RawLink.fromNode rawLink)
-          # Map.delete (RawLink.toNode rawLink)
-    , byId : byId # Map.delete (RawLink.id rawLink)
-    }
+forgetRaw rawLink = Map.delete $ RawLink.id rawLink
 
 
 all :: Links -> Array Raw.Link
-all = _.byId >>> Map.values >>> Array.fromFoldable
+all = Map.values >>> Array.fromFoldable
 
 
 findRaw :: Id.Link -> Links -> Maybe Raw.Link
-findRaw linkId =
-  _.byId >>> Map.lookup linkId
+findRaw = Map.lookup
 
 
 findAllFrom :: Id.NodeR -> Links -> Array Raw.Link
-findAllFrom nodeR links =
-  links.from
-    # Map.filterKeys (Tuple.fst >>> (_ == nodeR))
-    # Map.values # Array.fromFoldable
+findAllFrom nodeR =
+  Map.filterKeys (NT.unwrap >>> _.from >>> Tuple.fst >>> (_ == nodeR))
+    >>> Map.values >>> Array.fromFoldable
 
 
 findAllTo :: Id.NodeR -> Links -> Array Raw.Link
-findAllTo nodeR links =
-  links.to
-    # Map.filterKeys (Tuple.fst >>> (_ == nodeR))
-    # Map.values # Array.fromFoldable
+findAllTo nodeR =
+  Map.filterKeys (NT.unwrap >>> _.to >>> Tuple.fst >>> (_ == nodeR))
+    >>> Map.values >>> Array.fromFoldable
 
 
 forgetAllFrom :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
 forgetAllFrom nodeR links =
-  let
-    (allFrom :: Array Raw.Link) = links # findAllFrom nodeR
-    -- _ = Debug.spy "count from" $ Array.length allFrom
+  let (allFrom :: Array Raw.Link) = links # findAllFrom nodeR
   in (allFrom # foldr forgetRaw links) /\ allFrom
 
 
 forgetAllTo :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
 forgetAllTo nodeR links =
-  let
-    (allTo :: Array Raw.Link) = links # findAllTo nodeR
-    -- _ = Debug.spy "count to" $ Array.length allTo
+  let (allTo :: Array Raw.Link) = links # findAllTo nodeR
   in (allTo # foldr forgetRaw links) /\ allTo

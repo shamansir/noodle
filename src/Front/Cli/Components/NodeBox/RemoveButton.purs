@@ -110,30 +110,6 @@ component topOffset family node keys =
                         SidePanel.refresh TP.sidePanel
                         Key.mainScreen >~ Screen.render
                     Nothing -> pure unit
-                {-
-                state <- State.get
-                mbCurrentPatch <- CState.currentPatch state
-                pure unit
-                -}
-
-                {- REM
-                case Tuple.snd <$> state.currentPatch of
-                    Just patchId ->
-                        case Map.lookup patchId state.patchKeysMap of
-                            Just patchBoxKey -> do
-                                case Network.patch patchId $ State.unwrapN state.network of
-                                    Just patch ->
-                                        for_ (Patch.allLinksOf node patch) \holdsLink -> Patch.withLink holdsLink Node.unsafeDisconnect
-                                    Nothing -> pure unit
-                                State.modify_
-                                    (_ { network = State.withNetwork (Network.withPatch patchId $ Patch.removeNode node) state.network })
-                                Link.removeAllOf nodeBoxKey patchBoxKey
-                                State.modify_ $ Link.forgetAllFromTo nodeBoxKey
-                                nodeBoxKey >~ Node.detach
-                                Key.mainScreen >~ Screen.render
-                            Nothing -> pure unit
-                    Nothing -> pure unit
-                -}
         , Core.on Element.MouseOver
             \_ _ -> do
                 keys.removeButton >~ Box.setContent $ T.singleLine $ T.removeButtonOver
