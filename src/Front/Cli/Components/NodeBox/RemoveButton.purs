@@ -92,16 +92,13 @@ component topOffset family node keys =
                 case mbCurrentPatch of
                     Just currentPatch -> do
                         nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo (RawNode.id node) currentPatch
+                        let nextLinks /\ linksToRemove = CLink.forgetAllFromTo (RawNode.id node) state.links
                         State.modify_ (\s ->
-                            let
-                                nextLinksFrom /\ nextLinksTo = CLink.forgetAllFromTo keys.nodeBox (s.linksFrom /\ s.linksTo)
-                            in s
+                            s
                                 # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
-                                # _ { linksFrom = nextLinksFrom
-                                    , linksTo = nextLinksTo
-                                    }
+                                # _ { links = nextLinks }
                         )
-                        Blessed.runOnUnit $ CLink.removeAllOf keys.nodeBox Key.patchBox state.linksFrom state.linksTo
+                        Blessed.runOnUnit $ CLink.removeAllOf Key.patchBox linksToRemove
                         keys.nodeBox >~ Node.detach
                         State.modify_
                             $ CState.replacePatch (Patch.id currentPatch)

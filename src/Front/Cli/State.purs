@@ -47,7 +47,7 @@ import Cli.Panels (Which(..), toggle, isOn) as Panels
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, bodyOverlay, patchBox) as Key
-import Cli.Components.Link (LinkState, LinksFrom, LinksTo)
+import Cli.Components.Link (LinkCmpState)
 
 
 data Focus
@@ -69,9 +69,8 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , lastUpdate :: Map Id.NodeR (Raw.NodeChanges sr cr)
     , lastShift :: { left :: Int, top :: Int }
     , lastClickedOutlet :: Maybe OutletInfo
-    , lastLink :: Maybe (LinkState Unit)
-    , linksFrom :: LinksFrom Unit
-    , linksTo :: LinksTo Unit
+    , lastLink :: Maybe (LinkCmpState Unit) -- it is needed for the next Blessed keys for link
+    , links :: Map Id.LinkR (LinkCmpState Unit) -- links should have unique IDs across patches so we don't risk anything, arent't we?
     , lastKeys :: LastKeys
     , patchIdToIndex :: Map Id.PatchR Int
     , nodeKeysMap :: Map Id.NodeR K.NodeBoxKey
@@ -150,8 +149,7 @@ init state toolkit = do
             }
         , lastClickedOutlet : Nothing
         , lastLink : Nothing
-        , linksFrom : Map.empty
-        , linksTo : Map.empty
+        , links : Map.empty
         , patchIdToIndex : Map.empty # Map.insert (Patch.id firstPatch) 0
         , nodeKeysMap : Map.empty
         , patchKeysMap : Map.empty -- TODO , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox

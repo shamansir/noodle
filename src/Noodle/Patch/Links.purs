@@ -6,14 +6,14 @@ import Debug as Debug
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, insert, alter, delete, lookup, values, filterKeys) as Map
+import Data.Map (empty, insert, alter, delete, lookup, values, filter, filterKeys) as Map
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (singleton, cons, catMaybes, fromFoldable, length) as Array
 import Data.Foldable (foldr)
 import Data.Newtype (unwrap, wrap) as NT
 
-import Noodle.Id (Link(..), NodeR) as Id
+import Noodle.Id (LinkR(..), NodeR, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, toRaw) as Link
 import Noodle.Link (Link)
 import Noodle.Raw.Link (Link) as Raw
@@ -21,7 +21,7 @@ import Noodle.Raw.Link (id, from, to, fromNode, toNode) as RawLink
 
 
 -- `Id.Link` is a combination of `NodeR /\ OutletR` + `NodeR /\ InletR` and so it should be unique for the whole patch
-type Links = Map Id.Link Raw.Link
+type Links = Map Id.LinkR Raw.Link
 
 
 {- type Links =
@@ -59,7 +59,7 @@ all :: Links -> Array Raw.Link
 all = Map.values >>> Array.fromFoldable
 
 
-findRaw :: Id.Link -> Links -> Maybe Raw.Link
+findRaw :: Id.LinkR -> Links -> Maybe Raw.Link
 findRaw = Map.lookup
 
 
@@ -85,3 +85,13 @@ forgetAllTo :: Id.NodeR -> Links -> (Links /\ Array Raw.Link)
 forgetAllTo nodeR links =
   let (allTo :: Array Raw.Link) = links # findAllTo nodeR
   in (allTo # foldr forgetRaw links) /\ allTo
+
+
+findFrom :: Id.NodeR -> Id.OutletR -> Links -> Array Raw.Link
+findFrom nodeR outletR =
+  Map.filterKeys (NT.unwrap >>> _.from >>> (_ == nodeR /\ outletR)) >>> Map.values >>> Array.fromFoldable
+
+
+findTo :: Id.NodeR -> Id.InletR -> Links -> Array Raw.Link
+findTo nodeR inletR =
+  Map.filterKeys (NT.unwrap >>> _.to >>> (_ == nodeR /\ inletR)) >>> Map.values >>> Array.fromFoldable

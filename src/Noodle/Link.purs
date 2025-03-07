@@ -11,7 +11,7 @@ import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id (NodeR, Node, Inlet, Outlet, InletR, OutletR, nodeR, inletR, outletR)
-import Noodle.Id (Link(..)) as Id
+import Noodle.Id (LinkR(..)) as Id
 import Noodle.Raw.Link (Link(..), Connector) as Raw
 
 
@@ -67,5 +67,5 @@ cancel :: forall fA fB oA iB. Link fA fB oA iB -> Effect Unit
 cancel (Link _ canceller) = canceller
 
 
-id :: forall fA fB oA iB. Link fA fB oA iB -> Id.Link
-id (Link con _) = Id.Link con
+id :: forall fA fB oA iB. Link fA fB oA iB -> Id.LinkR
+id (Link con _) = Id.LinkR con

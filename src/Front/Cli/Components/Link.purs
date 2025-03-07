@@ -15,11 +15,13 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Data.Foldable (for_, foldr)
 import Data.Int (floor, toNumber)
 import Data.List (List)
+import Data.List (head) as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Ord (abs)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Blessed ((>~))
@@ -57,19 +59,15 @@ import Noodle.Ui.Cli.Palette as Palette
 -- TODO: forall state. BlessedOp state Effect
 
 
-type LinksFrom s =  Map RawNodeKey (Map Id.OutletIndex (LinkState s))
-type LinksTo s = Map RawNodeKey (Map Id.InletIndex (LinkState s))
+type LinksCmps s = Map Id.LinkR (LinkCmpState s) -- Map Id.PatchR (Map Id.Link (LinkCmpState Unit))
 
 
-newtype LinkState s =
-    LinkState
-    { id :: Int
-    , inPatch :: Id.Link
+newtype LinkCmpState s =
+    LinkCmpState
+    { linkId :: Id.LinkR
     , blessed :: { a :: Core.Blessed s, b :: Core.Blessed s, c :: Core.Blessed s }
-    , fromNode :: { key :: K.NodeBoxKey, id :: Id.NodeR }
-    , toNode   :: { key :: K.NodeBoxKey, id :: Id.NodeR }
-    , outletIndex :: Int
-    , inletIndex :: Int
+    , from :: { node :: K.NodeBoxKey, outletIndex :: Int }
+    , to   :: { node :: K.NodeBoxKey, inletIndex  :: Int }
     , keys ::
         { a :: K.LineA
         , b :: K.LineB
@@ -78,7 +76,7 @@ newtype LinkState s =
     }
 
 
-derive instance Newtype (LinkState s) _
+derive instance Newtype (LinkCmpState s) _
 
 
 type LinkCalc =
@@ -88,7 +86,7 @@ type LinkCalc =
     }
 
 
-type LinkHandler s = forall id. IsSymbol id => LinkState s -> Line <^> id -> EventJson -> BlessedOp s Effect
+type LinkHandler s = forall id. IsSymbol id => LinkCmpState s -> Line <^> id -> EventJson -> BlessedOp s Effect
 
 
 -- FIXME: pass data from state as arguments and make Links independent from State type
@@ -97,24 +95,23 @@ type LinkHandler s = forall id. IsSymbol id => LinkState s -> Line <^> id -> Eve
 create
     :: forall s ls m
      . MonadThrow Error m
-    => Id.Link
-    -> { key :: K.NodeBoxKey, id :: Id.NodeR }
-    -> Id.OutletIndex
-    -> { key :: K.NodeBoxKey, id :: Id.NodeR }
-    -> Id.InletIndex
-    -> Maybe (LinkState ls)
-    -> BlessedOpGet s m (LinkState ls)
-create inPatch fromNode (Id.OutletIndex outletIdx) toNode (Id.InletIndex inletIdx) maybePrev = do
+    => Id.LinkR
+    -> { node :: K.NodeBoxKey, outletIndex :: Int }
+    -> { node :: K.NodeBoxKey, inletIndex  :: Int }
+    -> Maybe (LinkCmpState ls)
+    -> BlessedOpGet s m (LinkCmpState ls)
+create linkId linkFrom linkTo maybePrev = do
+
     -- maybePrev <- _.lastLink <$> State.get
-    from <- Bounds.collect fromNode.id fromNode.key
-    to <- Bounds.collect toNode.id toNode.key
+    from <- Bounds.collect (Id.startsFrom linkId) linkFrom.node
+    to   <- Bounds.collect (Id.goesTo     linkId) linkTo.node
 
     let
 
         keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
         keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
         keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
-        calc = calculate { from, to } (Id.OutletIndex outletIdx) (Id.InletIndex inletIdx)
+        calc = calculate { from, to } (Id.OutletIndex linkFrom.outletIndex) (Id.InletIndex linkTo.inletIndex)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
         -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
@@ -142,15 +139,12 @@ create inPatch fromNode (Id.OutletIndex outletIdx) toNode (Id.InletIndex inletId
                     ] <> Style.linkC )
 
         linkState =
-            LinkState
-                { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
-                , inPatch
-                , fromNode
-                , toNode
-                , outletIndex : outletIdx
-                , inletIndex : inletIdx
+            LinkCmpState
+                { linkId
+                , from : linkFrom
+                , to   : linkTo
                 , blessed : { a : linkA [], b : linkB [], c : linkC [] }
-                , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
+                , keys    : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
                 }
 
     pure linkState
@@ -190,8 +184,8 @@ calculate np (Id.OutletIndex outletIdx) (Id.InletIndex inletIdx) =
     }
 
 
-append :: forall s m. LinkState s -> K.PatchBoxKey -> BlessedOp s m
-append (LinkState link) pnk = do
+append :: forall s m. LinkCmpState s -> K.PatchBoxKey -> BlessedOp s m
+append (LinkCmpState link) pnk = do
     link.keys.a >~ Element.setBack
     link.keys.b >~ Element.setBack
     link.keys.c >~ Element.setBack
@@ -200,30 +194,30 @@ append (LinkState link) pnk = do
     pnk >~ Node.append link.blessed.c
 
 
-remove :: forall s m. LinkState s -> K.PatchBoxKey -> BlessedOp s m
-remove (LinkState link) pnk = do
+remove :: forall s m. LinkCmpState s -> K.PatchBoxKey -> BlessedOp s m
+remove (LinkCmpState link) pnk = do
     pnk >~ Node.remove link.blessed.a
     pnk >~ Node.remove link.blessed.b
     pnk >~ Node.remove link.blessed.c
 
 
-on :: forall s e m. E.Fires Line e => e -> LinkHandler s -> LinkState s -> BlessedOp s m
-on evt handler (LinkState link) = do
-    link.keys.a >~ Core.on' evt (handler $ LinkState link)
-    link.keys.b >~ Core.on' evt (handler $ LinkState link)
-    link.keys.c >~ Core.on' evt (handler $ LinkState link)
+on :: forall s e m. E.Fires Line e => e -> LinkHandler s -> LinkCmpState s -> BlessedOp s m
+on evt handler (LinkCmpState link) = do
+    link.keys.a >~ Core.on' evt (handler $ LinkCmpState link)
+    link.keys.b >~ Core.on' evt (handler $ LinkCmpState link)
+    link.keys.c >~ Core.on' evt (handler $ LinkCmpState link)
 
 
-update :: forall s m. MonadThrow Error m => LinkState s -> BlessedOp s m
-update (LinkState link) = do
-    from <- Bounds.collect link.fromNode.id link.fromNode.key
-    to <- Bounds.collect link.toNode.id link.toNode.key
+update :: forall s m. MonadThrow Error m => LinkCmpState s -> BlessedOp s m
+update (LinkCmpState link) = do
+    from <- Bounds.collect (Id.startsFrom link.linkId) link.from.node
+    to   <- Bounds.collect (Id.goesTo     link.linkId) link.to.node
 
     let calc =
             calculate
             { from, to }
-            (Id.OutletIndex link.outletIndex)
-            (Id.InletIndex link.inletIndex)
+            (Id.OutletIndex link.from.outletIndex)
+            (Id.InletIndex  link.to.inletIndex)
 
     link.keys.a >~ Element.setLeft $ Offset.px calc.a.left
     link.keys.a >~ Element.setTop $ Offset.px calc.a.top
@@ -241,47 +235,47 @@ update (LinkState link) = do
     link.keys.c >~ Element.setHeight $ Dimension.px calc.c.height
 
 
-forget :: forall s. LinkState s -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
-forget (LinkState props) (linksFrom /\ linksTo) =
-    Map.update (Map.delete (Id.OutletIndex props.outletIndex) >>> Just) (NodeKey.toRaw props.fromNode.key) linksFrom
-    /\
-    Map.update (Map.delete (Id.InletIndex props.inletIndex) >>> Just) (NodeKey.toRaw props.toNode.key) linksTo
+-- TODO Move functions below into the `State` module?
 
 
-store :: forall s. LinkState s -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
-store link@(LinkState props) (linksFrom /\ linksTo) =
-    Map.alter (push (Id.OutletIndex props.outletIndex) link) (NodeKey.toRaw props.fromNode.key) linksFrom
-    /\
-    Map.alter (push (Id.InletIndex props.inletIndex) link) (NodeKey.toRaw props.toNode.key) linksTo
-    {-
-    state
-        { linksFrom =
-            Map.alter (push (OutletIndex props.outletIndex) link) (NodeKey.rawify props.fromNode.key) state.linksFrom
-        , linksTo =
-            Map.alter (push (InletIndex props.inletIndex) link) (NodeKey.rawify props.toNode.key) state.linksTo
-        , lastLink = Just link
-        }
-    -}
+of_ :: forall s. LinkCmpState s -> Id.LinkR
+of_ = unwrap >>> _.linkId
 
 
-push :: forall s key. Ord key => key -> LinkState s -> Maybe (Map key (LinkState s)) -> Maybe (Map key (LinkState s))
+forget :: forall s. LinkCmpState s -> LinksCmps s -> LinksCmps s
+forget (LinkCmpState props) =
+    Map.delete props.linkId
+
+
+store :: forall s. LinkCmpState s -> LinksCmps s -> LinksCmps s
+store link@(LinkCmpState props) =
+    Map.insert props.linkId link
+
+
+{-
+push :: forall s key. Ord key => key -> LinkCmpState s -> Maybe (Map key (LinkCmpState s)) -> Maybe (Map key (LinkCmpState s))
 push id link (Just map) = Just $ Map.insert id link map
 push id link Nothing = Just $ Map.singleton id link
+-}
 
-
-forgetAllFromTo :: forall s. K.NodeBoxKey -> (LinksFrom s /\ LinksTo s) -> (LinksFrom s /\ LinksTo s)
-forgetAllFromTo nbKey (linksFrom /\ linksTo) =
+forgetAllFromTo :: forall s. Id.NodeR -> LinksCmps s -> (LinksCmps s /\ List (LinkCmpState s))
+forgetAllFromTo nodeR links =
     let
-        rawNk = NodeKey.toRaw nbKey
-        allLinks :: List (LinkState s)
-        allLinks
-            =  (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk linksFrom)
-            <> (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk linksTo)
-    in foldr forget (linksFrom /\ linksTo) allLinks
+        connectedLinks :: List (LinkCmpState s)
+        connectedLinks
+            =  (links # Map.filterKeys (unwrap >>> _.from >>> Tuple.fst >>> (_ == nodeR)) # Map.values)
+            <> (links # Map.filterKeys (unwrap >>> _.to   >>> Tuple.fst >>> (_ == nodeR)) # Map.values)
+    in foldr forget links connectedLinks /\ connectedLinks
 
 
-removeAllOf :: forall s m. K.NodeBoxKey -> K.PatchBoxKey -> LinksFrom s -> LinksTo s -> BlessedOp s m
-removeAllOf nbKey pnk linksFrom linksTo = do
-    let rawNk = NodeKey.toRaw nbKey
-    for_ (fromMaybe Map.empty $ Map.lookup rawNk linksFrom) $ flip remove pnk
-    for_ (fromMaybe Map.empty $ Map.lookup rawNk linksTo) $ flip remove pnk
+removeAllOf :: forall s m. K.PatchBoxKey -> List (LinkCmpState s) -> BlessedOp s m
+removeAllOf pnk linksToRemove = do
+    for_ linksToRemove $ flip remove pnk
+
+
+findFrom :: forall s. Id.NodeR -> Id.OutletR -> LinksCmps s -> Maybe (LinkCmpState s)
+findFrom nodeR outletR = Map.filter (unwrap >>> _.linkId >>> unwrap >>> _.from >>> (_ == nodeR /\ outletR)) >>> Map.values >>> List.head
+
+
+findTo :: forall s. Id.NodeR -> Id.InletR -> LinksCmps s -> Maybe (LinkCmpState s)
+findTo nodeR inletR = Map.filter (unwrap >>> _.linkId >>> unwrap >>> _.to >>> (_ == nodeR /\ inletR)) >>> Map.values >>> List.head

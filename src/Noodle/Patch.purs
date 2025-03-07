@@ -32,7 +32,7 @@ import Signal (get) as Signal
 import Signal.Channel (Channel, channel)
 import Signal.Channel (subscribe) as Channel
 
-import Noodle.Id (PatchR, Family, FamilyR, NodeR, Link, PatchName, PatchR, patchR, familyR, familyOf, Inlet, Outlet, InletR, OutletR) as Id
+import Noodle.Id (PatchR, Family, FamilyR, NodeR, LinkR, PatchName, PatchR, patchR, familyR, familyOf, Inlet, Outlet, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
@@ -285,7 +285,7 @@ disconnectAllTo nodeR (Patch name id chState nodes rawNodes links) = do
 
 findRawLink
     :: forall pstate strepr chrepr mp families
-     . Id.Link
+     . Id.LinkR
     -> Patch pstate families strepr chrepr mp
     -> Maybe Raw.Link
 findRawLink linkId (Patch _ _ _ _ _ links) =
@@ -409,5 +409,9 @@ getState :: forall pstate families strepr chrepr mi m. MonadEffect m => Patch ps
 getState = liftEffect <<< Signal.get <<< subscribeState
 
 
-allRawLinks :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Array Raw.Link
-allRawLinks (Patch _ _ _ _ _ links) = Links.all links
+linksMap :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Map Id.LinkR Raw.Link
+linksMap (Patch _ _ _ _ _ links) = links
+
+
+links :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Array Raw.Link
+links = linksMap >>> Links.all

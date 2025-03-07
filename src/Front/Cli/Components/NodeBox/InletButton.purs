@@ -22,6 +22,7 @@ import Data.Map (lookup) as Map
 import Data.Newtype (unwrap)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array (head) as Array
 
 import Type.Data.Symbol (class IsSymbol)
 
@@ -62,8 +63,8 @@ import Cli.State (Focus(..)) as Focus
 
 import Cli.Components.NodeBox.InfoBox as IB
 import Cli.Components.StatusLine as SL
-import Cli.Components.Link (LinkState)
-import Cli.Components.Link (create, remove, store, append, on, forget) as CLink
+import Cli.Components.Link (LinkCmpState)
+import Cli.Components.Link (create, remove, store, append, on, forget, findTo) as CLink
 import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
@@ -76,7 +77,8 @@ import Cli.Components.ValueEditor (ValueEditor, ValueEditorComp)
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Wiring (class Wiring)
-import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw) as Patch
+import Noodle.Patch (findRawNode, findRawLink, disconnectRaw, connectRaw, linksMap) as Patch
+import Noodle.Patch.Links as Links
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
@@ -241,9 +243,12 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     OI.hide
 
                     let
-                        (mbPrevLink :: Maybe (LinkState Unit)) =
-                            Map.lookup (NodeKey.toRaw nodeBoxKey) state.linksTo
-                            >>= Map.lookup (Id.InletIndex inletIdx)
+                        (mbPrevLink :: Maybe (LinkCmpState Unit)) =
+                            -- CLink.findTo (RawNode.id rawNode) inletR state.links
+                            Patch.linksMap curPatch
+                                # Links.findTo (RawNode.id rawNode) inletR
+                                # Array.head
+                                >>= \link -> Map.lookup (RawLink.id link) state.links
                         outletSrcR = lco.outletId
                         nodeSrcR = lco.nodeId
                         nodeSrcBoxKey = lco.nodeKey
@@ -256,7 +261,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                         case mbPrevLink of
                             Just prevLinkState ->
                                 let
-                                    prevLinkId = _.inPatch $ unwrap prevLinkState
+                                    prevLinkId = _.linkId $ unwrap prevLinkState
                                 in
                                     case curPatch # Patch.findRawLink prevLinkId of
                                         Just rawLink -> do
@@ -276,22 +281,19 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                             nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
 
                             -- CC.log $ "RawLink ID is set: " <> show rawLinkId
-                            (linkState :: LinkState Unit)
+                            (linkState :: LinkCmpState Unit)
                                 <- CLink.create
                                     (RawLink.id rawLink)
-                                    { id : nodeSrcR, key : nodeSrcBoxKey }
-                                    (Id.OutletIndex outletIdx)
-                                    { id : nodeTrgR, key : nodeTrgBoxKey  }
-                                    (Id.InletIndex inletIdx)
+                                    { node : nodeSrcBoxKey, outletIndex : outletIdx }
+                                    { node : nodeTrgBoxKey, inletIndex  : inletIdx  }
                                     state.lastLink
 
                             State.modify_ $ \s ->
                                 let
-                                    nextLinksFrom /\ nextLinksTo = CLink.store linkState $ s.linksFrom /\ s.linksTo
+                                    nextLinks = CLink.store linkState s.links
                                 in
                                     s
-                                        { linksFrom = nextLinksFrom
-                                        , linksTo = nextLinksTo
+                                        { links = nextLinks
                                         , lastLink = Just linkState
                                         }
 
@@ -355,7 +357,7 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
 
 
-onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo
+onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo
 onLinkClick patchR rawLink linkState _ = do
     CC.log $ "Click link"
     curState <- State.get
@@ -366,8 +368,8 @@ onLinkClick patchR rawLink linkState _ = do
             State.modify_ $ State.replacePatch patchR nextPatch
             State.modify_ \s ->
                 let
-                    nextLinksFrom /\ nextLinksTo = CLink.forget linkState (s.linksFrom /\ s.linksTo)
-                in s { linksFrom = nextLinksFrom, linksTo = nextLinksTo }
+                    nextLinks = CLink.forget linkState s.links
+                in s { links = nextLinks }
             Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
             CL.trackCommand $ QOp.disconnect rawLink
             SidePanel.refresh $ TP.sidePanel

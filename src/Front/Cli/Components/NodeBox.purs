@@ -25,7 +25,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Map.Extra as Map
 import Data.Array as Array
-import Data.Foldable (for_)
+import Data.Foldable (for_, traverse_)
 -- REM import Data.KeyHolder as KH
 import Data.Symbol (class IsSymbol)
 import Data.String as String
@@ -69,6 +69,7 @@ import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
+import Noodle.Raw.Link as Link
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.Command.Quick as QOp
@@ -481,16 +482,17 @@ logDataCommand stateRef update =
 
 
 onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
-onMove nodeId nodeKey _ _ = do
+onMove nodeR nodeKey _ _ = do
     II.hide
     OI.hide
-    let rawNk = NodeKey.toRaw nodeKey
-    newBounds <- Bounds.collect nodeId nodeKey
-    state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeId s.locations }
+    -- let rawNk = NodeKey.toRaw nodeKey
+    newBounds <- Bounds.collect nodeR nodeKey
+    state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeR s.locations }
     Blessed.runOnUnit $ do
-        for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update
-        for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) CLink.update
-    CL.trackCommand $ QOp.moveNode nodeId { left : newBounds.left, top : newBounds.top }
+        traverse_ CLink.update $ Map.filter (CLink.of_ >>> Id.connectedTo nodeR) state.links
+        -- for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update
+        -- for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) CLink.update
+    CL.trackCommand $ QOp.moveNode nodeR { left : newBounds.left, top : newBounds.top }
     where
         updatePos nb = Just <<< Bounds.move nb
 

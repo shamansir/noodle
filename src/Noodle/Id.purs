@@ -8,7 +8,8 @@ module Noodle.Id
     , family, familyR, familyOf, unsafeFamilyR
     , PatchR, PatchName, patchR
     , FnName
-    , Link(..)
+    , LinkR(..)
+    , startsFrom, goesTo, connectedTo
     , Group(..), GroupR
     , group, groupR, unsafeGroupR
     , ToolkitR
@@ -23,10 +24,12 @@ import Prelude
 import Type.Proxy (Proxy(..))
 
 import Data.Newtype (class Newtype)
+import Data.Newtype (unwrap) as NT
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash (toString) as UH
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Reflectable (class Reflectable)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 
 
@@ -124,18 +127,30 @@ nodeR_ (FamilyR { family }) hash = NodeR { family, hash }
 type FnName = String
 
 
-newtype Link = Link -- links are unique by the nodes and channels they connect, even if there are multiple links (many from one outlet or many to one inlet) allowed
+newtype LinkR = LinkR -- links are unique by the nodes and channels they connect, even if there are multiple links (many from one outlet or many to one inlet) allowed
     { from :: NodeR /\ FromShape.OutletR
     , to   :: NodeR /\ FromShape.InletR
     }
 
 
-derive instance Newtype Link _
+derive instance Newtype LinkR _
 
 
-derive instance Eq Link
-derive instance Ord Link
-derive newtype instance Show Link
+derive instance Eq LinkR
+derive instance Ord LinkR
+derive newtype instance Show LinkR
+
+
+startsFrom :: LinkR -> NodeR
+startsFrom = NT.unwrap >>> _.from >>> Tuple.fst
+
+
+goesTo :: LinkR -> NodeR
+goesTo = NT.unwrap >>> _.to >>> Tuple.fst
+
+
+connectedTo :: NodeR -> LinkR -> Boolean
+connectedTo nodeR linkR = startsFrom linkR == nodeR || goesTo linkR == nodeR
 
 
 type PatchName = String

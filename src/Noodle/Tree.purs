@@ -21,7 +21,7 @@ import Noodle.Id (hashOf) as Id
 import Noodle.Network (Network)
 import Noodle.Network (patches) as Network
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, mapAllNodes, allRawLinks) as Patch
+import Noodle.Patch (id, mapAllNodes, links) as Patch
 import Noodle.Raw.Fn.Shape (InletDefR, OutletDefR) as Raw
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id, Connector, connector, fromNode, toNode, fromOutlet, toInlet) as RawLink
@@ -63,7 +63,7 @@ data PathTreeNode repr a
     -- | Toolkit Id.ToolkitR a
     -- | Family Id.FamilyR a
     | Patch Id.PatchR a
-    | Link Id.Link a
+    | Link Id.LinkR a
     | Node Id.NodeR a
     | Inlet Raw.InletDefR (ValueInChannel repr) a
     | Outlet Raw.OutletDefR (ValueInChannel repr) a
@@ -81,7 +81,7 @@ toTree makeVal network = do
         sequenceH :: forall t x v. Traversable t => Applicative m => (t v -> x) -> t (m v) -> m x
         sequenceH f leaves = sequence leaves <#> \leavesx -> f leavesx
         patchTree :: Patch pstate families strepr chrepr mp -> m (Tree (TreeNode pstate families strepr chrepr mp a))
-        patchTree patch = sequenceH (Tree.mkTree $ withVal (P patch)) $ Patch.mapAllNodes nodeTree patch <> (linkLeaf <$> Patch.allRawLinks patch)
+        patchTree patch = sequenceH (Tree.mkTree $ withVal (P patch)) $ Patch.mapAllNodes nodeTree patch <> (linkLeaf <$> Patch.links patch)
         nodeTree :: Raw.Node strepr chrepr mp -> m (Tree (TreeNode pstate families strepr chrepr mp a))
         nodeTree node = sequenceH (Tree.mkTree (withVal (N node))) $ (Tuple.uncurry inletLeaf <$> RawNode.inlets' node) <> (Tuple.uncurry outletLeaf <$> RawNode.outlets' node)
         linkLeaf :: Raw.Link -> m (Tree (TreeNode pstate families strepr chrepr mp a))

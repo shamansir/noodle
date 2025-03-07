@@ -7,9 +7,10 @@ import Effect (Effect)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (unwrap)
 
 import Noodle.Id (NodeR, OutletR, InletR)
-import Noodle.Id (Link(..)) as Id
+import Noodle.Id (LinkR(..)) as Id
 
 
 data Link =
@@ -56,9 +57,13 @@ connector :: Link -> Connector
 connector (Link con _) = con
 
 
-id :: Link -> Id.Link
-id = connector >>> Id.Link
+id :: Link -> Id.LinkR
+id = connector >>> Id.LinkR
 
 
 cancel :: Link -> Effect Unit
 cancel (Link _ canceller) = canceller
+
+
+connectedTo :: NodeR -> Link -> Boolean
+connectedTo nodeR link = fromNode link == nodeR || toNode link == nodeR
