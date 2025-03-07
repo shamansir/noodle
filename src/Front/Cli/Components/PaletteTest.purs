@@ -154,7 +154,7 @@ buildPalette =
     ] <>
     (qchrepr <$>
         [ Sr.VNone, Sr.VBang, Sr.VNumber 5.0, Sr.VBool false, Sr.VBool true, Sr.VChar 'x'
-        , Sr.VTime $ Sr.Time { seconds : 5 }, Sr.VTime $ Sr.Time { seconds : 12 }
+        , Sr.VTime $ Sr.Time { hours : 1, minutes : 10, seconds : 5 }, Sr.VTime $ Sr.Time { hours : 0, minutes : 0, seconds : 12 }
         , Sr.VShape Sr.Circle, Sr.VShape Sr.Rect, Sr.VShape Sr.Cross, Sr.VShape Sr.Diamond
         , Sr.VColor $ Sr.Color { r : 255, g : 0, b : 0, a : 255 }, Sr.VColor $ Sr.Color { r : 255, g : 255, b : 0, a : 255 }, Sr.VColor $ Sr.Color { r : 255, g : 0, b : 255, a : 255 }
         , Sr.VSpreadNum $ Sr.Spread [ ], Sr.VSpreadNum $ Sr.Spread [ 2.0, 5.0 ]

@@ -16,6 +16,11 @@ import Data.Array (length) as Array
 import Data.Int (fromString, toNumber) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
+import Data.Either (Either(..))
+import Data.Newtype (class Newtype)
+
+import Data.String.Regex (Regex, split, regex, replace, search) as RGX
+import Data.String.Regex.Flags (global, noFlags) as RGX
 
 import Noodle.Ui.Cli.Palette.Item (colorOf) as C
 import Noodle.Ui.Cli.Palette.Set.X11 as X11
@@ -72,7 +77,10 @@ data Any = Any ValueRepr
 data Bang = Bang
 
 
-newtype Time = Time { seconds :: Int }
+newtype Time = Time { hours :: Int, minutes :: Int, seconds :: Int }
+
+
+derive instance Newtype Time _
 
 
 newtype Color = Color { r :: Int, g :: Int, b :: Int, a :: Int }
@@ -89,7 +97,7 @@ data Shape
 
 
 instance HasFallback Shape where fallback = Circle
-instance HasFallback Time  where fallback = Time { seconds : 0 }
+instance HasFallback Time  where fallback = Time { hours : 0, minutes : 0, seconds : 0 }
 instance HasFallback Color where fallback = Color { r : 0, g : 0, b : 0, a : 255 }
 instance HasFallback (Spread a) where fallback = Spread []
 
@@ -112,13 +120,41 @@ shapeToString = case _ of
 
 
 timeFromString :: String -> Maybe Time
-timeFromString str = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ... may be there's a module for that?
-    Just $ Time { seconds : fromMaybe 0 $ Int.fromString $ String.drop 1 str }
+timeFromString str =
+    let eSepRegex = RGX.regex "\\w+" RGX.noFlags
+    in case eSepRegex of
+        Left _ -> Nothing
+        Right sepRegex ->
+            case RGX.split sepRegex str of
+                [ hh, mm, ss ] ->
+                    Just $ Time
+                        { hours   : fromMaybe 0 $ Int.fromString hh
+                        , minutes : fromMaybe 0 $ Int.fromString mm
+                        , seconds : fromMaybe 0 $ Int.fromString ss
+                        }
+                [ mm, ss ] ->
+                    Just $ Time
+                        { hours   : 0
+                        , minutes : fromMaybe 0 $ Int.fromString mm
+                        , seconds : fromMaybe 0 $ Int.fromString ss
+                        }
+                [ ss ] ->
+                    Just $ Time
+                        { hours   : 0
+                        , minutes : 0
+                        , seconds : fromMaybe 0 $ Int.fromString ss
+                        }
+                _ -> Nothing
 
 
 timeToString :: Time -> String
-timeToString (Time { seconds }) = -- TODO: parse properly, i.e `2h20m15s` or `30m` or `5s` ... may be there's a module for that?
-    show seconds <> "s"
+timeToString (Time { hours, minutes, seconds }) =
+    if hours > 0 then
+        show hours <> "h" <> show minutes <> "m" <> show seconds <> "s"
+    else if minutes > 0 then
+        show minutes <> "m" <> show seconds <> "s"
+    else
+        show seconds <> "s"
 
 
 fromNativeColor :: Native.Color -> Color
@@ -201,33 +237,6 @@ _tryAny f = case _ of
     vrepr      -> f vrepr
 
 
-{-
-instance Mark ValueRepr where
-    mark = case _ of
-        VNone -> C.colorOf $ X11.burlywood
-        VAny repr -> mark repr
-        VBang -> C.colorOf $ X11.aqua
-        VBool bool ->
-            if bool
-                then C.colorOf $ X11.steelblue2
-                else C.colorOf $ X11.steelblue
-            -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
-        VChar _ -> C.colorOf $ X11.aquamarine
-        VNumber _ -> C.colorOf $ X11.green
-        VTime _ -> C.colorOf $ X11.darkolivegreen4
-        VColor clr -> toNativeColor clr
-        VShape _ ->
-            C.colorOf $ X11.firebrick1
-        VSpreadNum _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadVec _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadCol _ -> C.colorOf $ X11.darkolivegreen3
-        VSpreadShp _ -> C.colorOf $ X11.darkolivegreen3
-        where
-            toNativeColor :: Color -> Color.Color
-            toNativeColor (Color { r, g, b, a }) = Color.rgba r g b $ Int.toNumber a / 255.0
--}
-
-
 -- x == ChannelLabel
 instance At x ValueRepr where
     at _ = case _ of
@@ -265,7 +274,7 @@ instance At x ValueRepr where
 
 
 instance Show Time where
-    show (Time { seconds }) = show seconds <> "s"
+    show = timeToString
 
 
 encodeValueImpl :: ValueRepr -> Maybe EncodedValue
@@ -466,10 +475,13 @@ instance ValueCodegen Shape where
 
 instance ValueCodegen Time where
     mkExpression = unsafePartial $ case _ of
-        Time { seconds } ->
+        Time { hours, minutes, seconds } ->
             exprApp (exprCtor "VR.Time")
                 [ exprRecord
-                    [ "seconds" /\ exprInt seconds ]
+                    [ "hours"   /\ exprInt hours
+                    , "minutes" /\ exprInt minutes
+                    , "seconds" /\ exprInt seconds
+                    ]
                 ]
 
 

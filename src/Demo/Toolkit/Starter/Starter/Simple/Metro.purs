@@ -46,7 +46,7 @@ type Family = Noodle.Family "metro" State InletsRow OutletsRow ValueRepr Effect
 type F = Noodle.F "metro" State InletsRow OutletsRow ValueRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { enabled: true, period: VR.Time { seconds: 0 } }
+defaultI = { enabled: true, period: VR.Time { hours : 0, minutes : 0, seconds: 0 } }
 
 defaultO :: Record OutletsRow
 defaultO = { bang: VR.Bang }
@@ -64,17 +64,17 @@ makeNode = Family.spawn family
 metroP :: Process
 metroP = do
     enabled <- Noodle.receive _in_enabled
-    period  <- Noodle.receive _in_period
-    let seconds = case period of VR.Time { seconds } -> seconds
+    periodw  <- Noodle.receive _in_period
+    let period = unwrap periodw
     curState <- State.get
-    if enabled && seconds > 0 then
+    if enabled && period.seconds > 0 then
         case _.latest $ unwrap curState of
             Just _ -> pure unit
             Nothing -> do
                 sendBang <- Fn.spawn $ do
                     Noodle.send _out_bang VR.Bang
-                let genSignal = Signal.every (Int.toNumber seconds * 1000.0) ~> const sendBang
-                State.modify_ $ unwrap >>> _ { latest = Just { period : VR.Time { seconds }, signal : genSignal } } >>> wrap
+                let genSignal = Signal.every (Int.toNumber period.seconds * 1000.0) ~> const sendBang
+                State.modify_ $ unwrap >>> _ { latest = Just { period : VR.Time period, signal : genSignal } } >>> wrap
                 Noodle.lift $ Signal.runSignal genSignal
     else pure unit
 

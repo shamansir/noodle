@@ -128,7 +128,7 @@ instance PossiblyToSignature STARTER (Maybe ValueRepr) (Maybe ValueRepr) Id.Fami
     "bang" -> Just $ sig "bang" [] [ Sig.outx_ "bang" ]
     "metro" -> Just $ sig "metro"
       [ Sig.in_ "enabled" $ VR.VBool true
-      , Sig.in_ "period" $ VR.VTime $ RV.Time { seconds: 0 }
+      , Sig.in_ "period" $ VR.VTime $ RV.Time { hours : 0, minutes : 0, seconds: 0 }
       ]
       [ Sig.outx_ "bang" ]
     "gennum" -> Just $ sig "gennum" [] [ Sig.out_ "out" $ VR.VNumber 0.0 ]

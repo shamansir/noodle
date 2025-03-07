@@ -162,7 +162,7 @@ instance PossiblyToSignature STARTER (ValueInChannel ValueRepr) (ValueInChannel 
   possiblyToSignature _ = Id.family >>> case _ of
     "bang" -> Just $ sig "bang" [] [ Sig.outx_ "bang" ]
     "metro" -> Just $ sig "metro"
-      [ Sig.in_ "enabled" $ VR.VBool true, Sig.in_ "period" $ VR.VTime (VR.Time { seconds: 0 }) ]
+      [ Sig.in_ "enabled" $ VR.VBool true, Sig.in_ "period" $ VR.VTime (VR.Time { hours : 0, minutes : 0, seconds: 0 }) ]
       [ Sig.outx_ "bang" ]
     "gennum" -> Just $ sig "gennum" [] [ Sig.out_ "out" $ VR.VNumber 0.0 ]
     "random" -> Just $ sig "random" [ Sig.inx_ "bang", Sig.inx_ "min", Sig.inx_ "max" ]
