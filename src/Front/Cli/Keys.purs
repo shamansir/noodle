@@ -21,6 +21,7 @@ type CommandInputKey = TextBox <^> "command-input"
 type ValueEditorKey sym = TextBox <^> sym
 type TextValueEditorKey = ValueEditorKey "text-value-editor"
 type NumberValueEditorKey = ValueEditorKey "number-value-editor"
+type IntValueEditorKey = ValueEditorKey "int-value-editor"
 type ColorValueEditorKey = ValueEditorKey "color-value-editor"
 
 
@@ -58,6 +59,7 @@ treeBox = nk :: Log <^> "tree"
 
 textValueEditor = nk :: TextValueEditorKey
 numberValueEditor = nk :: NumberValueEditorKey
+intValueEditor = nk :: IntValueEditorKey
 colorValueEditor = nk :: ColorValueEditorKey
 
 

@@ -31,6 +31,7 @@ import Cli.Components.ValueEditor (ValueEditor)
 import Cli.Components.ValueEditor (imap) as VE
 import Cli.Components.Editor.Textual as VTextual
 import Cli.Components.Editor.Numeric as VNumeric
+import Cli.Components.Editor.Int as VInt
 import Cli.Components.Editor.Color as VColor
 
 import Type.Proxy (Proxy(..))
@@ -545,6 +546,12 @@ editorFor = ViC.toMaybe >>> case _ of
             where
                 extractNum = case _ of -- reuse `ValueInChannel`?
                     VNumber num -> Just num
+                    _ -> Nothing
+    Just (VInt _) ->
+        Just $ VE.imap (maybe VNone VInt) extractInt VInt.editor
+            where
+                extractInt = case _ of -- reuse `ValueInChannel`?
+                    VInt int -> Just int
                     _ -> Nothing
     Just (VColor _) ->
         Just $ VE.imap (maybe VNone VColor <<< map fromNativeColor) extractColor VColor.editor
