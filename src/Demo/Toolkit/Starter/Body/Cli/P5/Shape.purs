@@ -1,4 +1,4 @@
-module Demo.Toolkit.Starter.Body.P5.Shape where
+module Demo.Toolkit.Starter.Body.Cli.P5.Shape where
 
 import Prelude
 import Demo.Toolkit.Starter.Repr.ChRepr (Shape(..))

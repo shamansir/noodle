@@ -3,6 +3,9 @@ module Demo.Toolkit.Starter.Repr.ChRepr where
 import Prelude
 
 import Effect (Effect)
+import Effect.Exception (Error)
+
+import Control.Monad.Error.Class (class MonadThrow)
 
 import Color (Color) as Native
 import Color (rgba, fromHexString, toHexString, toRGBA) as NativeColor
@@ -27,6 +30,8 @@ import Noodle.Ui.Cli.Palette.Set.X11 as X11
 import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 
+import Blessed.Internal.NodeKey (nk) as Blessed
+import Cli.Keys (ValueEditorKey) as Key
 import Cli.Components.ValueEditor (ValueEditor)
 import Cli.Components.ValueEditor (imap) as VE
 import Cli.Components.Editor.Textual as VTextual
@@ -559,5 +564,16 @@ editorFor = ViC.toMaybe >>> case _ of
                 extractColor :: ValueRepr -> Maybe Native.Color
                 extractColor = case _ of -- reuse `ValueInChannel`?
                     VColor color -> Just $ toNativeColor color
+                    _ -> Nothing
+    Just (VTime _) ->
+        Just $ VE.imap (maybe VNone VTime) extractTime timeEditor
+            where
+                timeEditor :: forall state m. MonadThrow Error m => ValueEditor (Maybe Time) state m
+                timeEditor =
+                    VE.imap timeFromString (map timeToString >>> fromMaybe "-")
+                        $ VTextual.fromKey (Blessed.nk :: Key.ValueEditorKey "time-value-editor")
+                extractTime :: ValueRepr -> Maybe Time
+                extractTime = case _ of -- reuse `ValueInChannel`?
+                    VTime time -> Just time
                     _ -> Nothing
     _ -> Nothing

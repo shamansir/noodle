@@ -38,7 +38,7 @@ import StarterTk.Simple.Log as Simple.Log
 import StarterTk.Simple.Metro as Simple.Metro
 import StarterTk.Simple.Random as Simple.Random
 import StarterTk.Simple.Sum as Simple.Sum
-import Demo.Toolkit.Starter.Body.P5.Shape (body)  as P5.Shape
+import Demo.Toolkit.Starter.Body.Cli.P5.Shape (body) as P5.Shape
 import StarterTk.Spreads.Cspread as Spreads.Cspread
 import StarterTk.Spreads.Nspread as Spreads.Nspread
 import StarterTk.Spreads.Vspread as Spreads.Vspread
