@@ -29,6 +29,7 @@ import StarterTk.P5.Shape (F, family) as P5.Shape
 import StarterTk.P5.Sketch as P5.Sketch
 import StarterTk.Simple.Bang as Simple.Bang
 import StarterTk.Simple.Color as Simple.Color
+import StarterTk.Simple.Time as Simple.Time
 import StarterTk.Simple.Gennum as Simple.Gennum
 import StarterTk.Simple.Knob as Simple.Knob
 import StarterTk.Simple.Lerp as Simple.Lerp
@@ -52,6 +53,7 @@ type StarterFamilies :: Families
 type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Gennum.F :> Simple.Random.F
   :> Simple.Knob.F
   :> Simple.Color.F
+  :> Simple.Time.F
   :> Simple.Letter.F
   :> Simple.Sum.F
   :> Simple.Lerp.F
@@ -78,6 +80,7 @@ toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
   # Toolkit.register Simple.Lerp.family
   # Toolkit.register Simple.Sum.family
   # Toolkit.register Simple.Letter.family
+  # Toolkit.register Simple.Time.family
   # Toolkit.register Simple.Color.family
   # Toolkit.register Simple.Knob.family
   # Toolkit.register Simple.Random.family
@@ -97,6 +100,7 @@ instance IsToolkit STARTER where
           "random" -> "simple"
           "knob" -> "simple"
           "color" -> "simple"
+          "time" -> "simple"
           "letter" -> "simple"
           "sum" -> "simple"
           "lerp" -> "simple"
@@ -170,6 +174,8 @@ instance PossiblyToSignature STARTER (ValueInChannel ValueRepr) (ValueInChannel 
     "knob" -> Just $ sig "knob" [ Sig.inx_ "min", Sig.inx_ "max" ] [ Sig.out_ "number" $ VR.VNumber 0.0 ]
     "color" -> Just $ sig "color" [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b" ]
       [ Sig.out_ "color" $ VR.VColor (VR.Color { r: 0, g: 0, b: 0, a: 255 }) ]
+    "time" -> Just $ sig "time" [ Sig.inx_ "h", Sig.inx_ "m", Sig.inx_ "s" ]
+      [ Sig.out_ "time" $ VR.VTime (VR.Time { hours : 0, minutes : 0, seconds : 0 }) ]
     "letter" -> Just $ sig "letter" [ Sig.inx_ "code" ] [ Sig.outx_ "letter" ]
     "sum" -> Just $ sig "sum" [ Sig.inx_ "a", Sig.inx_ "b", Sig.inx_ "c" ]
       [ Sig.out_ "sum" $ VR.VNumber 0.0 ]

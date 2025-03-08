@@ -13,7 +13,7 @@ import Data.String (splitAt, drop, uncons) as String
 import Data.String.CodeUnits as CU
 import Data.Number (fromString) as Number
 import Data.Array (length) as Array
-import Data.Int (fromString, toNumber) as Int
+import Data.Int (fromString, toNumber, round) as Int
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
 import Data.Either (Either(..))
@@ -59,6 +59,7 @@ data ValueRepr
     | VBool Boolean
     | VChar Char
     | VNumber Number
+    | VInt Int
     | VTime Time
     | VColor Color
     | VShape Shape
@@ -177,6 +178,7 @@ instance FromValueInChannel Bang    ValueRepr where fromValueInChannel = const V
 instance FromValueInChannel Boolean ValueRepr where fromValueInChannel = VBool
 instance FromValueInChannel Char    ValueRepr where fromValueInChannel = VChar
 instance FromValueInChannel Number  ValueRepr where fromValueInChannel = VNumber
+instance FromValueInChannel Int     ValueRepr where fromValueInChannel = VInt
 instance FromValueInChannel Time    ValueRepr where fromValueInChannel = VTime
 instance FromValueInChannel Shape   ValueRepr where fromValueInChannel = VShape
 instance FromValueInChannel Color   ValueRepr where fromValueInChannel = VColor
@@ -191,6 +193,15 @@ instance ToValueInChannel ValueRepr Number
         toValueInChannel = _tryAny
             (case _ of
                 VNumber num -> ViC.accept num
+                _ -> ViC.decline
+            )
+
+
+instance ToValueInChannel ValueRepr Int
+    where
+        toValueInChannel = _tryAny
+            (case _ of
+                VInt int -> ViC.accept int
                 _ -> ViC.decline
             )
 
@@ -221,6 +232,7 @@ instance Tagged ValueRepr where
         VBool _ -> "Bool"
         VChar _ -> "Char"
         VNumber _ -> "Number"
+        VInt _ -> "Int"
         VTime _ -> "Time"
         VColor _ -> "Color"
         VShape _ -> "Shape"
@@ -250,6 +262,7 @@ instance At x ValueRepr where
             -- T.fgc (C.colorOf $ X11.blue) $ T.s $ if bool then "T" else "F"
         VChar ch -> T.fgc (C.colorOf $ X11.aquamarine) $ T.s $ show ch
         VNumber num -> T.fgc (C.colorOf $ X11.green) $ T.s $ show num
+        VInt int -> T.fgc (C.colorOf $ X11.darkgreen) $ T.s $ show int
         VTime t -> T.fgc (C.colorOf $ X11.darkolivegreen4) $ T.s $ show t
         VColor clr -> T.fgc (toNativeColor clr) $ T.s "■"
         VShape shape ->
@@ -284,6 +297,7 @@ encodeValueImpl = case _ of
     VBang ->        Nothing
     VBool v ->      Just $ EncodedValue $ "b/" <> if v then "true" else "false"
     VNumber n ->    Just $ EncodedValue $ "#/" <> show n
+    VInt n ->       Just $ EncodedValue $ "i/" <> show n
     VChar c ->      Just $ EncodedValue $ "x/" <> CU.singleton c
     VColor clr ->   Just $ EncodedValue $ "c/" <> (clr # toNativeColor # NativeColor.toHexString # String.drop 1)
     VTime time ->   Just $ EncodedValue $ "t/" <> timeToString time
@@ -301,6 +315,7 @@ toDefaultImpl = NT.unwrap >>> case _ of
     "Bool"    -> VBool false
     "Char"    -> VChar '-'
     "Number"  -> VNumber 0.0
+    "Int"     -> VInt 0
     "Time"    -> VTime (HF.fallback :: Time)
     "Color"   -> VColor (HF.fallback :: Color)
     "Shape"   -> VShape (HF.fallback :: Shape)
@@ -319,6 +334,7 @@ toReprImpl eType eValue =
                 "b/" -> VAny <$> toReprImpl (EncodedType "Bool") eValue
                 "x/" -> VAny <$> toReprImpl (EncodedType "Char") eValue
                 "#/" -> VAny <$> toReprImpl (EncodedType "Number") eValue
+                "i/" -> VAny <$> toReprImpl (EncodedType "Int") eValue
                 "t/" -> VAny <$> toReprImpl (EncodedType "Time") eValue
                 "c/" -> VAny <$> toReprImpl (EncodedType "Color") eValue
                 "s/" -> VAny <$> toReprImpl (EncodedType "Shape") eValue
@@ -337,6 +353,10 @@ toReprImpl eType eValue =
         "Number" ->
             if valuePrefix == "#/" then
                 VNumber <$> Number.fromString valueStr
+            else Nothing
+        "Int" ->
+            if valuePrefix == "i/" then
+                VInt <$> Int.fromString valueStr
             else Nothing
         "Time" ->
             if valuePrefix == "t/" then
@@ -377,12 +397,13 @@ instance CodegenRepr ValueRepr where
         case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`
             Just "Any"     -> exprCtor "VR.VNone"
             Just "Bang"    -> exprCtor "VR.VBang"
-            Just "Bool"    -> exprApp (exprCtor "VR.VBool") [ pDefaultFor pValue mbType ]
-            Just "Char"    -> exprApp (exprCtor "VR.VChar") [ pDefaultFor pValue mbType ]
+            Just "Bool"    -> exprApp (exprCtor "VR.VBool")   [ pDefaultFor pValue mbType ]
+            Just "Char"    -> exprApp (exprCtor "VR.VChar")   [ pDefaultFor pValue mbType ]
             Just "Number"  -> exprApp (exprCtor "VR.VNumber") [ pDefaultFor pValue mbType ]
-            Just "Time"    -> exprApp (exprCtor "VR.VTime") [ pDefaultFor pValue mbType ]
-            Just "Color"   -> exprApp (exprCtor "VR.VColor") [ pDefaultFor pValue mbType ]
-            Just "Shape"   -> exprApp (exprCtor "VR.VShape") [ pDefaultFor pValue mbType ]
+            Just "Int"     -> exprApp (exprCtor "VR.VInt")    [ pDefaultFor pValue mbType ]
+            Just "Time"    -> exprApp (exprCtor "VR.VTime")   [ pDefaultFor pValue mbType ]
+            Just "Color"   -> exprApp (exprCtor "VR.VColor")  [ pDefaultFor pValue mbType ]
+            Just "Shape"   -> exprApp (exprCtor "VR.VShape")  [ pDefaultFor pValue mbType ]
             Just "SpreadN" -> exprApp (exprCtor "VR.VSpreadNum") [ pDefaultFor pValue mbType ]
             Just "SpreadV" -> exprApp (exprCtor "VR.VSpreadVec") [ pDefaultFor pValue mbType ]
             Just "SpreadC" -> exprApp (exprCtor "VR.VSpreadCol") [ pDefaultFor pValue mbType ]
@@ -394,6 +415,7 @@ instance CodegenRepr ValueRepr where
             Just "Bool"    -> exprApp (exprCtor "VR.VBool")   [ pValueFor pValue mbType encV ]
             Just "Char"    -> exprApp (exprCtor "VR.VChar")   [ pValueFor pValue mbType encV ]
             Just "Number"  -> exprApp (exprCtor "VR.VNumber") [ pValueFor pValue mbType encV ]
+            Just "Int"     -> exprApp (exprCtor "VR.VInt")    [ pDefaultFor pValue mbType ]
             Just "Time"    -> exprApp (exprCtor "VR.VTime")   [ pValueFor pValue mbType encV ]
             Just "Color"   -> exprApp (exprCtor "VR.VColor")  [ pValueFor pValue mbType encV ]
             Just "Shape"   -> exprApp (exprCtor "VR.VShape")  [ pValueFor pValue mbType encV ]
@@ -408,6 +430,7 @@ instance CodegenRepr ValueRepr where
                 "Bool"    -> typeCtor "Boolean"
                 "Char"    -> typeCtor "Char"
                 "Number"  -> typeCtor "Number"
+                "Int"     -> typeCtor "Int"
                 "Time"    -> typeCtor "VR.Time"
                 "Color"   -> typeCtor "VR.Color"
                 "Shape"   -> typeCtor "VR.Shape"
@@ -426,6 +449,7 @@ instance CodegenRepr ValueRepr where
                 Just "Bool"    -> exprIdent "false"
                 Just "Char"    -> exprChar '-'
                 Just "Number"  -> exprNumber 0.0
+                Just "Int"     -> exprInt 0
                 Just "Time"    -> mkExpression (HF.fallback :: Time)
                 Just "Color"   -> mkExpression (HF.fallback :: Color)
                 Just "Shape"   -> mkExpression (HF.fallback :: Shape)
@@ -450,6 +474,10 @@ instance CodegenRepr ValueRepr where
                         case Number.fromString after of
                             Just n -> if n >= 0.0 then exprNumber n else exprParens $ exprNumber n
                             Nothing -> exprNumber 0.0
+                    "i/" ->
+                        case Int.fromString after of
+                            Just n -> if n >= 0 then exprInt n else exprParens $ exprInt n
+                            Nothing -> exprInt 0
                     "c/" ->
                         case NativeColor.fromHexString after of
                             Just color -> exprCtor "VR.VNone"
