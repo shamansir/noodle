@@ -83,7 +83,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, sendIn, shape) as RawNode
+import Noodle.Raw.Node (id, sendIn, shape, atInlet) as RawNode
 import Noodle.Network as Network
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode, encodeValue) as Ndf
@@ -152,7 +152,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
                     Nothing ->
                         pure unit
         (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
-        (mbValueEditorOp :: Maybe (ValueEditorComp Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
+        (mbValueEditorOp :: Maybe (ValueEditorComp chrepr Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
     in B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR vicRepr
         , Box.top $ Offset.px 0
@@ -219,10 +219,10 @@ onMouseOut infoBox idx _ _ = do
 onPress
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
-    -- => HasFallback chrepr
+    => HasFallback chrepr
     => CT.Tagged chrepr
     => CliEditor tk chrepr
-    => Maybe (ValueEditorComp Unit Effect)
+    => Maybe (ValueEditorComp chrepr Unit Effect)
     -> Id.PatchR
     -> NodeBoxKey
     -> Int
@@ -329,17 +329,20 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     -- CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
                     -- TODO: also don't call if there is at least one link incoming
                     let nodeR = RawNode.id rawNode
+                    vicCurValue <- RawNode.atInlet inletR rawNode
 
                     case mbValueEditorOp of
-                        Just { create, transpose } -> do
-                            -- CC.log "Exact editor was found, call it"
-                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
+                        Just { create, inject, transpose } -> do
+                            CC.log "Exact editor was found, call `create` on it"
+                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ do
+                                create
+                                inject $ ViC.toFallback vicCurValue
                             nodeBounds <- case Map.lookup nodeR state.locations of
                                             Just bounds -> pure bounds
                                             Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y - 1 }
-                            -- CC.log "Remember the source node & inlet of the opened editor"
+                            CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                         Nothing ->
                             pure unit

@@ -24,6 +24,7 @@ import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method (setContent)  as Box
 -- import Blessed.UI.Base.Element.Option (index) as Element
 import Blessed.UI.Base.Element.Method (focus, setFront, hide, show) as Element
 import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
@@ -50,6 +51,7 @@ editor = fromKey tveKey
 fromKey :: forall key state m. MonadThrow Error m => IsSymbol key => Key.ValueEditorKey key -> ValueEditor String state m
 fromKey editorKey initialValue sendValue =
     { create : create editorKey initialValue sendValue
+    , inject : \v -> editorKey >~ Box.setContent v
     , transpose : transpose editorKey
     }
 
