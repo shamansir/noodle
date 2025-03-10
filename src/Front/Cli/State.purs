@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Map (Map)
 import Data.Map (empty, insert, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
@@ -30,11 +30,12 @@ import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
+import Noodle.Raw.Fn.Shape (Tag) as Shape
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
-import Noodle.Raw.Node (Node) as Raw
+
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
@@ -58,6 +59,17 @@ data Focus
     -- InletEditor
     -- RemoveButton
     -- ...
+
+{- TODO,
+data Focus
+    = Patch
+    | Library (Maybe Id.FamilyR)
+    | Node Id.NodeR
+    | Inlet Id.NodeR Id.InletR
+    | Outlet Id.NodeR Id.InletR
+    | Link Id.Link
+    | SidePanel Which
+-}
 
 
 -- tkey patch-state families node-state-repr channel-value-repr m
@@ -85,6 +97,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
+    , inletEditorCreated :: Map Shape.Tag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , locations :: Map Id.NodeR Bounds
     , mouseOverFocus :: Maybe Focus
@@ -117,18 +130,6 @@ type DocumentationFocus sr cr =
     }
 
 
-{- TODO,
-data Focus
-    = Patch
-    | Library (Maybe Id.FamilyR)
-    | Node Id.NodeR
-    | Inlet Id.NodeR Id.InletR
-    | Outlet Id.NodeR Id.InletR
-    | Link Id.Link
-    | SidePanel Which
--}
-
-
 init :: forall tk ps fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> m (State tk ps fs sr cr m)
 init state toolkit = do
     firstPatch <- Patch.make "Patch 1" state
@@ -157,6 +158,7 @@ init state toolkit = do
         , developmentLog : []
         , currentDocumentation : Nothing
         , blockInletEditor : false
+        , inletEditorCreated : Map.empty
         , inletEditorOpenedFrom : Nothing
         -- , program : Map.empty
         -- , innerStates : Map.empty
@@ -318,3 +320,11 @@ appendToLog line s = s { developmentLog = Array.snoc s.developmentLog line }
 
 clearLog :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
 clearLog = _ { developmentLog = [] }
+
+
+inletEditorCreated :: forall tk ps fs sr cr m. Shape.Tag -> State tk ps fs sr cr m -> Boolean
+inletEditorCreated tag = _.inletEditorCreated >>> Map.lookup tag >>> isJust
+
+
+markInletEditorCreated :: forall tk ps fs sr cr m. Shape.Tag -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+markInletEditorCreated tag s = s { inletEditorCreated = s.inletEditorCreated # Map.insert tag unit }

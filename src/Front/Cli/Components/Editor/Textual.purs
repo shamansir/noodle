@@ -80,6 +80,7 @@ create editorKey initialValue sendValue = do
                 [  ]
     --nodeBoxKey >~ Node.append innerText
     Key.patchBox >~ Node.append innerTextBox
+    -- editorKey >~ Box.setContent initialValue
     editorKey >~ Element.setFront
     editorKey >~ Element.hide
 

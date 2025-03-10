@@ -56,7 +56,7 @@ import Cli.Bounds (collect, inletPos) as Bounds
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, ValueEditorKey)
 import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
-import Cli.State (patch, replacePatch) as State
+import Cli.State (patch, replacePatch, inletEditorCreated, markInletEditorCreated) as State
 import Cli.Style (inletsOutlets) as Style
 import Cli.Class.CliRenderer (class CliEditor, editorFor)
 import Cli.State (Focus(..)) as Focus
@@ -90,7 +90,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode, encodeValue) as
 import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class Tagged, tag, Path(..)) as CT
 import Noodle.Toolkit (ToolkitKey)
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Fn.Shape.Temperament (default) as Temperament
@@ -164,7 +164,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Element.Click -- Button.Press
-            $ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr-- REM Hydra.editorIdOf =<< maybeRepr
+            $ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR-- REM Hydra.editorIdOf =<< maybeRepr
         , Core.on Element.MouseOver
             $ onMouseOver patchR (RawNode.id rawNode) inletR nodeBoxKey infoBoxKey inletIdx temper vicRepr reprSignal
         , Core.on Element.MouseOut
@@ -223,16 +223,16 @@ onPress
     => CT.Tagged chrepr
     => CliEditor tk chrepr
     => Maybe (ValueEditorComp chrepr Unit Effect)
+    -> Id.FamilyR
     -> Id.PatchR
     -> NodeBoxKey
     -> Int
     -> Raw.Node strepr chrepr mi
     -> Id.InletR
-    -> ValueInChannel chrepr
     -> _
     -> _
     -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
-onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = do
+onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ State.patch patchR state of
@@ -330,18 +330,26 @@ onPress mbValueEditorOp patchR nodeBoxKey inletIdx rawNode inletR vicRepr _ _ = 
                     -- TODO: also don't call if there is at least one link incoming
                     let nodeR = RawNode.id rawNode
                     vicCurValue <- RawNode.atInlet inletR rawNode
+                    let
+                        curValue = ViC.toFallback vicCurValue
+                        curValueTag = CT.tag (CT.Inlet familyR inletR) curValue
 
                     case mbValueEditorOp of
                         Just { create, inject, transpose } -> do
-                            CC.log "Exact editor was found, call `create` on it"
-                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ do
-                                create
-                                inject $ ViC.toFallback vicCurValue
+                            if not $ State.inletEditorCreated curValueTag state then do
+                                CC.log "Exact editor wasn't created, call `create` on it"
+                                _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
+                                State.modify_ $ State.markInletEditorCreated curValueTag
+                            else do
+                                CC.log "Skip creating the editor"
+                            CC.log "Send current value in the editor"
+                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
                             nodeBounds <- case Map.lookup nodeR state.locations of
                                             Just bounds -> pure bounds
                                             Nothing -> Bounds.collect nodeR nodeBoxKey
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
-                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y - 1 }
+                            CC.log "Transpose the editor"
+                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y }
                             CC.log "Remember the source node & inlet of the opened editor"
                             State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                         Nothing ->
