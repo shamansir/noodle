@@ -35,7 +35,7 @@ import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Wiring (class Wiring)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (_reportMissingKey) as ViC
@@ -60,7 +60,7 @@ component
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => CliEditor tk chrepr
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr

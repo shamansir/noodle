@@ -90,7 +90,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode, encodeValue) as
 import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
-import Noodle.Repr.Tagged (class Tagged, tag, Path(..)) as CT
+import Noodle.Repr.Tagged (class ValueTagged, valueTag, ValuePath(..)) as VT
 import Noodle.Toolkit (ToolkitKey)
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Fn.Shape.Temperament (default) as Temperament
@@ -123,7 +123,7 @@ component
     => T.At T.ChannelLabel chrepr
     => Ndf.ValueEncode chrepr
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Wiring m
     => CliEditor tk chrepr
     => Ref (State tk pstate fs strepr chrepr m)
@@ -224,7 +224,7 @@ onPress
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => CliEditor tk chrepr
     => Maybe (ValueEditorComp chrepr Unit Effect)
     -> Id.FamilyR
@@ -336,7 +336,7 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
                     vicCurValue <- RawNode.atInlet inletR rawNode
                     let
                         curValue = ViC.toFallback vicCurValue
-                        curValueTag = CT.tag (CT.Inlet familyR inletR) curValue
+                        curValueTag = VT.valueTag (VT.Inlet familyR inletR) curValue
 
                     case mbValueEditorOp of
                         Just { create, inject, transpose } -> do

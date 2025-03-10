@@ -41,7 +41,7 @@ import Cli.WsServer (start) as WSS
 
 import Noodle.Text.NdfFile (codegen, failedLines, hasFailedLines) as NdfFile
 import Noodle.Text.NdfFile.Parser (parser)  as NdfFile
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 
 import Parsing (runParser) as P
 
@@ -169,7 +169,7 @@ runBlessedInterface
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => CliFriendly tk fs chrepr Effect
     => ps
     -> Toolkit tk fs strepr chrepr Effect

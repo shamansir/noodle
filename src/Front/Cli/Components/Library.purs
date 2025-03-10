@@ -59,7 +59,7 @@ import Noodle.Raw.Node (id, make, setState, sendIn) as RawNode
 import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.SidePanel as SidePanel
@@ -74,7 +74,7 @@ import Prelude
 component
     :: forall tk ps fs strepr chrepr
      . HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
@@ -115,7 +115,7 @@ onFamilySelect
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
@@ -160,7 +160,7 @@ spawnAndRenderRaw
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
@@ -184,7 +184,7 @@ registerAndRenderGivenRawNode
     :: forall tk pstate fs strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     -- => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk pstate strepr
@@ -221,7 +221,7 @@ spawnAndRender
     => IsSymbol f
     => HasFallback chrepr
     => HasFallback fstate
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR

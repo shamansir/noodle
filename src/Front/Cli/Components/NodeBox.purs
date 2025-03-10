@@ -73,7 +73,7 @@ import Noodle.Raw.Link as Link
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.Command.Quick as QOp
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 
  -- FIXME: `Repr.Tag` and `Format.Tag` are very different things, find a way to make it clear (name it `Style`?)
 import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
@@ -134,7 +134,7 @@ _component
     :: forall tk fs pstate strepr chrepr m
     .  Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
@@ -311,7 +311,7 @@ componentRaw
     :: forall tk fs pstate strepr chrepr m
      . Wiring m
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
     => { left :: Int, top :: Int }
@@ -335,7 +335,7 @@ component
     => IsSymbol f
     => HasFallback chrepr
     => HasFallback fstate
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR

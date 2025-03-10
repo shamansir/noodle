@@ -15,7 +15,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TList, TNil, class MapDown, mapDown, ByReflect(..))
 
-import Noodle.Raw.Fn.Shape (InletR(..), OutletR(..), InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..), Tag) as Raw
+import Noodle.Raw.Fn.Shape (InletR(..), OutletR(..), InletsShape(..), OutletsShape(..), Shape(..), InletDefR(..), OutletDefR(..), ValueTag) as Raw
 import Noodle.Fn.Shape.Temperament (TemperamentK(..), Hot, Cold, Temperament(..), class IsTemperament, reflectTemperament)
 
 
@@ -80,21 +80,21 @@ instance IsSymbol sym => Reflectable (O sym t) String where
 
 
 class InletsDefs (inlets :: Inlets) where
-    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.Tag) -> Raw.InletsShape
+    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.ValueTag) -> Raw.InletsShape
 
 
 instance MapDown ByReflect inlets Array (Temperament /\ String) => InletsDefs inlets where
-    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.Tag) -> Raw.InletsShape
+    reflectInlets :: Proxy inlets -> (Raw.InletR -> Raw.ValueTag) -> Raw.InletsShape
     reflectInlets _ toTag = Raw.Inlets $ mapWithIndex makeInletDef (mapDown ByReflect (Proxy :: _ inlets) :: Array (Temperament /\ String))
         where makeInletDef order (temp /\ name) = Raw.InletDefR { name : Raw.InletR name, order, temp , tag : toTag $ Raw.InletR name}
 
 
 class OutletsDefs (outlets :: Outlets) where
-    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.Tag) -> Raw.OutletsShape
+    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.ValueTag) -> Raw.OutletsShape
 
 
 instance MapDown ByReflect outlets Array String => OutletsDefs outlets where
-    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.Tag) -> Raw.OutletsShape
+    reflectOutlets :: Proxy outlets -> (Raw.OutletR -> Raw.ValueTag) -> Raw.OutletsShape
     reflectOutlets _ toTag = Raw.Outlets $ mapWithIndex makeOutletDef (mapDown ByReflect (Proxy :: _ outlets) :: Array String)
         where makeOutletDef order name = Raw.OutletDefR { name : Raw.OutletR name, order, tag : toTag $ Raw.OutletR name }
 
@@ -125,7 +125,7 @@ data Shape (inlets :: Inlets) (outlets :: Outlets) = Shape
 -- FIXME: Find a way to load `Raw.Tag` from `Inlets` & `Output` defitinions for each value. We use this function by ourself, don't expose it because we can't be sure maps are corresponding to the actual values
 
 
-_reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => (Raw.InletR -> Raw.Tag) -> (Raw.OutletR -> Raw.Tag) -> Shape inlets outlets -> Raw.Shape
+_reflect :: forall (inlets :: Inlets) (outlets :: Outlets). InletsDefs inlets => OutletsDefs outlets => (Raw.InletR -> Raw.ValueTag) -> (Raw.OutletR -> Raw.ValueTag) -> Shape inlets outlets -> Raw.Shape
 _reflect inletToTag outletToTag _ = Raw.Shape { inlets : reflectInlets (Proxy :: _ inlets) inletToTag, outlets : reflectOutlets (Proxy :: _ outlets) outletToTag }
 
 

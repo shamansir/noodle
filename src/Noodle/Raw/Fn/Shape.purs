@@ -63,11 +63,11 @@ unsafeOutletR = wrap
 
 
 -- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype InletDefR = InletDefR { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
+newtype InletDefR = InletDefR { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
 
 
 -- | `OutletDefR` stores rawified outlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int, tag :: Tag }
+newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int, tag :: ValueTag }
 
 
 instance Show InletDefR where
@@ -109,17 +109,17 @@ derive newtype instance Show Shape
 derive newtype instance Eq Shape
 
 
-inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: Tag }
+inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
 inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
 
 
-outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: Tag }
+outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: ValueTag }
 outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
 
 
 make ::
-    { inlets  :: Array { name :: InletR,  order :: Int, temp :: Temperament, tag :: Tag }
-    , outlets :: Array { name :: OutletR, order :: Int, tag :: Tag }
+    { inlets  :: Array { name :: InletR,  order :: Int, temp :: Temperament, tag :: ValueTag }
+    , outlets :: Array { name :: OutletR, order :: Int, tag :: ValueTag }
     }
     -> Shape
 make { inlets, outlets } =
@@ -179,25 +179,26 @@ derive instance Eq OutletIndex
 derive instance Ord OutletIndex
 
 
-newtype Tag = Tag String
-
-derive instance Newtype Tag _
-derive newtype instance Eq Tag
-derive newtype instance Ord Tag
-instance Show Tag where show (Tag tag) = "<" <> tag <> ">"
+newtype ValueTag = ValueTag String
 
 
-tagAs :: String -> Tag
-tagAs = Tag
+derive instance Newtype ValueTag _
+derive newtype instance Eq ValueTag
+derive newtype instance Ord ValueTag
+instance Show ValueTag where show (ValueTag tag) = "<" <> tag <> ">"
 
 
-failed :: Tag
-failed = Tag "FAIL-X"
+tagAs :: String -> ValueTag
+tagAs = ValueTag
 
 
-tagOfInlet :: InletR -> Shape -> Maybe Tag
+failed :: ValueTag
+failed = ValueTag "FAIL-X"
+
+
+tagOfInlet :: InletR -> Shape -> Maybe ValueTag
 tagOfInlet inletR = findInletDef inletR >>> map (unwrap >>> _.tag)
 
 
-tagOfOutlet :: OutletR -> Shape -> Maybe Tag
+tagOfOutlet :: OutletR -> Shape -> Maybe ValueTag
 tagOfOutlet outletR = findOutletDef outletR >>> map (unwrap >>> _.tag)

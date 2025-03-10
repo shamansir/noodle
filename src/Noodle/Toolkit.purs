@@ -35,7 +35,7 @@ import Noodle.Raw.Toolkit.Family (id, familyIdOf, spawn, toReprableState) as Raw
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Ui.Cli.Palette.Mark (class Mark)
 
 
@@ -132,7 +132,7 @@ spawn familyId (Toolkit _ families _) = do
 spawnRaw
     :: forall m tk strepr chrepr mp families
      . MonadEffect m
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Id.FamilyR
     -> Toolkit tk families strepr chrepr mp
     -> m (Maybe (Raw.Node strepr chrepr mp))
@@ -144,7 +144,7 @@ spawnRaw familyR (Toolkit _ _ rawFamilies) = do
 
 spawnAnyRaw :: forall m tk strepr chrepr mp families
      . MonadEffect m
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Id.FamilyR
     -> Toolkit tk families strepr chrepr mp
     -> m (Maybe (Raw.Node strepr chrepr mp))

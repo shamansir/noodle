@@ -2,41 +2,40 @@ module Noodle.Repr.Tagged where
 
 import Prelude
 
-import Type.Proxy (Proxy(..))
-
-import Data.Newtype (class Newtype)
+import Type.Proxy (Proxy)
 
 import Noodle.Id as Id
-import Noodle.Raw.Fn.Shape (Tag) as Shape
+import Noodle.Raw.Fn.Shape (ValueTag) as Shape
 
 
-data Path
+data ValuePath
     = Inlet  Id.FamilyR Id.InletR
     | Outlet Id.FamilyR Id.OutletR
 
 
-class Tagged a where
-    tag :: Path -> a -> Shape.Tag
+class ValueTagged a where
+    valueTag :: ValuePath -> a -> Shape.ValueTag
+    acceptByTag :: Proxy a -> { incoming :: Shape.ValueTag, current :: Shape.ValueTag } -> Boolean
 
 
 {-
 class TypeTagged a where
-    typeTag :: Proxy a -> Shape.Tag
+    typeTag :: Proxy a -> Shape.ValueTag
 -}
 
 
-inlet :: Id.FamilyR -> Id.InletR -> Path
+inlet :: Id.FamilyR -> Id.InletR -> ValuePath
 inlet = Inlet
 
 
-outlet :: Id.FamilyR -> Id.OutletR -> Path
+outlet :: Id.FamilyR -> Id.OutletR -> ValuePath
 outlet = Outlet
 
 
 
-inletN :: Id.NodeR -> Id.InletR -> Path
+inletN :: Id.NodeR -> Id.InletR -> ValuePath
 inletN = Id.familyOf >>> inlet
 
 
-outletN :: Id.NodeR -> Id.OutletR -> Path
+outletN :: Id.NodeR -> Id.OutletR -> ValuePath
 outletN = Id.familyOf >>> outlet

@@ -50,9 +50,8 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, toValueInChannel, fromValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline, toMaybe) as ViC
-import Noodle.Repr.Tagged (class Tagged)
-import Noodle.Repr.Tagged (Path) as Tag
-import Noodle.Raw.Fn.Shape (Tag, tagAs)
+import Noodle.Repr.Tagged (ValuePath, class ValueTagged) as VT
+import Noodle.Raw.Fn.Shape (ValueTag, tagAs)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, class ValueEncode, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 -- import StarterTk.Simple.Gennum as Simple.Gennum
@@ -230,9 +229,9 @@ instance ToValueInChannel ValueRepr Time
             )
 
 
-instance Tagged ValueRepr where
-    tag :: Tag.Path -> ValueRepr -> Tag
-    tag = const $ tagAs <<< case _ of
+instance VT.ValueTagged ValueRepr where
+    valueTag :: VT.ValuePath -> ValueRepr -> ValueTag
+    valueTag = const $ tagAs <<< case _ of
         VNone -> "None"
         VBang -> "Bang"
         VBool _ -> "Bool"
@@ -247,6 +246,8 @@ instance Tagged ValueRepr where
         VSpreadCol _ -> "ColorSpread"
         VSpreadShp _ -> "ShapeSpread"
         VAny _ -> "Any"
+    acceptByTag :: Proxy ValueRepr -> { current :: ValueTag, incoming :: ValueTag } -> Boolean
+    acceptByTag _ { current, incoming } = current == incoming
 
 
 _tryAny :: forall a. (ValueRepr -> ValueInChannel a) -> ValueRepr -> ValueInChannel a

@@ -40,7 +40,7 @@ import Noodle.Fn.Tracker (Tracker)
 import Noodle.Fn.Updates (UpdateFocus, InletsUpdate(..)) as Fn
 import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
-import Noodle.Raw.Fn.Shape (Shape, Tag, tagAs, failed) as Raw
+import Noodle.Raw.Fn.Shape (Shape, ValueTag, tagAs, failed) as Raw
 import Noodle.Raw.Fn.Shape (inletRName, outletRName, hasHotInlets, isHotInlet) as RawShape
 import Noodle.Raw.Fn.Updates (toSignature) as RawUpdates
 import Noodle.Raw.FromToRec as ChReprCnv
@@ -48,7 +48,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel, class ToValuesInChannelRow, class FromValuesInChannelRow, fromValueInChannel, toValueInChannel)
 import Noodle.Repr.ValueInChannel (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback, _reportMissingKey) as ViC
-import Noodle.Repr.Tagged (class Tagged, tag, inlet, outlet) as CT
+import Noodle.Repr.Tagged (class ValueTagged, valueTag, inlet, outlet) as VT
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
@@ -86,7 +86,7 @@ make
      . IsSymbol f
     => InletsDefs inlets => OutletsDefs outlets
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => FromValuesInChannelRow isrl is Id.InletR  chrepr
     => FromValuesInChannelRow osrl os Id.OutletR chrepr
     => ContainsAllInlets is inlets => ContainsAllOutlets os outlets
@@ -104,8 +104,8 @@ make family state shape inletsRec outletsRec =
         familyR = Id.familyR family
         (inletsValues  :: Raw.InitialInletsValues chrepr ) = ViC.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec   -- FIXME: may be could manage without `fallback`` here?
         (outletsValues :: Raw.InitialOutletsValues chrepr) = ViC.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec -- FIXME: may be could manage without `fallback`` here?
-        inletToTag inletR   = Map.lookup inletR inletsValues   <#> CT.tag (CT.inlet  familyR inletR)  # fromMaybe Raw.failed
-        outletToTag outletR = Map.lookup outletR outletsValues <#> CT.tag (CT.outlet familyR outletR) # fromMaybe Raw.failed
+        inletToTag inletR   = Map.lookup inletR inletsValues   <#> VT.valueTag (VT.inlet  familyR inletR)  # fromMaybe Raw.failed
+        outletToTag outletR = Map.lookup outletR outletsValues <#> VT.valueTag (VT.outlet familyR outletR) # fromMaybe Raw.failed
         (rawShape :: Raw.Shape) = Shape._reflect inletToTag outletToTag shape
 
 

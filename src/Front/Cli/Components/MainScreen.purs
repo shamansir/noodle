@@ -27,7 +27,7 @@ import Noodle.Network as Network
 import Noodle.Toolkit as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
@@ -70,7 +70,7 @@ component
     :: forall tk ps fs strepr chrepr
     .  HasFallback chrepr
     => HasFallback strepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr

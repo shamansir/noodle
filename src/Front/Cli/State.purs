@@ -30,7 +30,7 @@ import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
-import Noodle.Raw.Fn.Shape (Tag) as Shape
+import Noodle.Raw.Fn.Shape (ValueTag) as Shape
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
@@ -97,7 +97,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     -- TODO, , editors :: Editors
     -- TODO, , knownGlslFunctions :: Array T.GlslFn
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
-    , inletEditorCreated :: Map Shape.Tag Unit
+    , inletEditorCreated :: Map Shape.ValueTag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , locations :: Map Id.NodeR Bounds
     , mouseOverFocus :: Maybe Focus
@@ -322,9 +322,9 @@ clearLog :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr
 clearLog = _ { developmentLog = [] }
 
 
-inletEditorCreated :: forall tk ps fs sr cr m. Shape.Tag -> State tk ps fs sr cr m -> Boolean
+inletEditorCreated :: forall tk ps fs sr cr m. Shape.ValueTag -> State tk ps fs sr cr m -> Boolean
 inletEditorCreated tag = _.inletEditorCreated >>> Map.lookup tag >>> isJust
 
 
-markInletEditorCreated :: forall tk ps fs sr cr m. Shape.Tag -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+markInletEditorCreated :: forall tk ps fs sr cr m. Shape.ValueTag -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 markInletEditorCreated tag s = s { inletEditorCreated = s.inletEditorCreated # Map.insert tag unit }

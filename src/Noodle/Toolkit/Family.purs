@@ -22,8 +22,8 @@ import Noodle.Node (_makeWithFn) as Node
 import Noodle.Repr.ValueInChannel (class FromValuesInChannelRow)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Raw.Fn.Shape (Shape, Tag, tagAs, failed) as Raw
-import Noodle.Repr.Tagged (class Tagged, tag, inlet, outlet) as CT
+import Noodle.Raw.Fn.Shape (Shape, ValueTag, tagAs, failed) as Raw
+import Noodle.Repr.Tagged (class ValueTagged, valueTag, inlet, outlet) as VT
 import Noodle.Raw.FromToRec as ChReprCnv
 
 import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues) as Raw
@@ -45,7 +45,7 @@ make
     :: forall f state (is :: Row Type) isrl (inlets :: Inlets) (os :: Row Type) osrl (outlets :: Outlets) chrepr m
      . IsSymbol f
     => HasFallback chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => InletsDefs inlets => OutletsDefs outlets
     => FromValuesInChannelRow isrl is Id.InletR chrepr
     => FromValuesInChannelRow osrl os Id.OutletR chrepr
@@ -68,8 +68,8 @@ make family state shape inletsRec outletsRec process =
         familyR = Id.familyR family
         (inletsValues  :: Raw.InitialInletsValues chrepr ) = ViC.toFallback <$> ChReprCnv.fromRec Id.inletR inletsRec   -- FIXME: may be could manage without `fallback`` here?
         (outletsValues :: Raw.InitialOutletsValues chrepr) = ViC.toFallback <$> ChReprCnv.fromRec Id.outletR outletsRec -- FIXME: may be could manage without `fallback`` here?
-        inletToTag inletR   = Map.lookup inletR inletsValues   <#> CT.tag (CT.inlet  familyR inletR)  # fromMaybe Raw.failed
-        outletToTag outletR = Map.lookup outletR outletsValues <#> CT.tag (CT.outlet familyR outletR) # fromMaybe Raw.failed
+        inletToTag inletR   = Map.lookup inletR inletsValues   <#> VT.valueTag (VT.inlet  familyR inletR)  # fromMaybe Raw.failed
+        outletToTag outletR = Map.lookup outletR outletsValues <#> VT.valueTag (VT.outlet familyR outletR) # fromMaybe Raw.failed
         (rawShape :: Raw.Shape) = Shape._reflect inletToTag outletToTag shape
 
 

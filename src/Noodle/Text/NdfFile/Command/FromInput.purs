@@ -19,7 +19,7 @@ import Noodle.Toolkit (class HoldsFamilies, isKnownFamily, spawnAnyRaw) as Toolk
 import Noodle.Fn.Signature (Signature, class PossiblyToSignature)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (toRepr, toDefault) as CG
 import Noodle.Text.NdfFile.FamilyDef.Parser as NdfFamilyParser
@@ -39,7 +39,7 @@ tryExecute
     => HasFallback strepr
     => HasFallback chrepr
     => ParseableRepr chrepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Toolkit.HoldsFamilies strepr chrepr mi fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit tk fs strepr chrepr mi

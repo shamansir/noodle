@@ -27,9 +27,8 @@ import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChan
 import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr) as CR
 -- import Noodle.Node.MapsFolds.Repr as NMF
 -- import Noodle.Node.Path (InNode)
-import Noodle.Repr.Tagged (class Tagged)
-import Noodle.Repr.Tagged (Path) as Tag
-import Noodle.Raw.Fn.Shape (Tag, tagAs) as Shape
+import Noodle.Repr.Tagged (class ValueTagged, ValuePath) as VT
+import Noodle.Raw.Fn.Shape (ValueTag, tagAs) as Shape
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, familyPascalCase, groupPascalCase, pDefaultFor, pValueFor)
@@ -552,14 +551,13 @@ hydraGenOptions = FCG.Options
 pWrap = Proxy :: _ WrapRepr
 
 
-instance Tagged WrapRepr where
-    tag :: Tag.Path -> WrapRepr -> Shape.Tag
-    tag = const $ Shape.tagAs <<< case _ of
+instance VT.ValueTagged WrapRepr where
+    valueTag :: VT.ValuePath -> WrapRepr -> Shape.ValueTag
+    valueTag = const $ Shape.tagAs <<< case _ of
         Value _ -> "Value"
         Unit _ -> "Unit"
         Texture _ -> "Texture"
-        TOrV (HT.T _) -> "Texture" -- FIXME: could fail when new value is value and the other is texture
-        TOrV (HT.V _) -> "Value" -- FIXME: could fail when new value is value and the other is texture
+        TOrV _ -> "TOrV" -- FIXME: could fail when new value is value and the other is texture
         TODO _ -> "TODO"
         Context _ -> "Context"
         UpdateFn _ -> "UpdateFn"
@@ -578,6 +576,11 @@ instance Tagged WrapRepr where
         DepFn _ -> "DepFn"
         CBS _ -> "CBS"
         WRError _ -> "WRError"
+    acceptByTag :: Proxy WrapRepr -> { current :: Shape.ValueTag, incoming :: Shape.ValueTag } -> Boolean
+    acceptByTag _ { current, incoming }
+        =  ((NT.unwrap current == "TOrV") && (NT.unwrap incoming == "Texture")) -- FIXME: ensure we wrap values properly
+        || ((NT.unwrap current == "TOrV") && (NT.unwrap incoming == "Value"))
+        || current == incoming
 
 
 instance CodegenRepr WrapRepr where

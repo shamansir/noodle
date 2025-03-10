@@ -5,6 +5,8 @@ import Prelude
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write) as Ref
 
+import Type.Proxy (Proxy(..))
+
 import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Map (Map)
@@ -29,14 +31,14 @@ import Noodle.Fn.Generic.Updates (UpdateFocus(..), InletsUpdate(..)) as Fn
 import Noodle.Fn.Generic.Updates (MergedUpdateRec, toRecord) as Updates
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.Tagged (class Tagged, tag, Path(..)) as CT
+import Noodle.Repr.Tagged (class ValueTagged, valueTag, acceptByTag, ValuePath(..)) as VT
 import Noodle.Repr.Tagged (inletN, outletN) as Path
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (_reportMissingKey, accept, decline) as ViC
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
-import Noodle.Raw.Fn.Shape (Shape, Tag, failed, InletDefR, OutletDefR) as Raw
+import Noodle.Raw.Fn.Shape (Shape, ValueTag, failed, InletDefR, OutletDefR) as Raw
 import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
@@ -121,7 +123,7 @@ _makeWithFn family state rawShape inletsMap outletsMap fn = do
 _fromSignature
     :: forall m state chrepr mp
      . MonadEffect m
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => Id.FamilyR
     -> state
     -> Signature chrepr chrepr
@@ -139,10 +141,10 @@ _fromSignature family state sig =
     where
       inletDef  idx (inletS  /\ repr) =
         let inletR = Id.unsafeInletR inletS
-        in { name : inletR, order : idx,  tag : CT.tag (CT.Inlet family inletR) repr, temp : Temp.Hot }
+        in { name : inletR, order : idx,  tag : VT.valueTag (VT.Inlet family inletR) repr, temp : Temp.Hot }
       outletDef idx (outletS /\ repr) =
         let outletR = Id.unsafeOutletR outletS
-        in { name : outletR, order : idx, tag : CT.tag (CT.Outlet family outletR) repr }
+        in { name : outletR, order : idx, tag : VT.valueTag (VT.Outlet family outletR) repr }
 
 
 {- Running -}
@@ -355,6 +357,7 @@ setState = modifyState <<< const
 connect
     :: forall m stateA stateB chreprA chreprB mp
      . Wiring m
+    => VT.ValueTagged chreprB
     => Id.OutletR
     -> Id.InletR
     -> (chreprA -> chreprB)
@@ -384,11 +387,11 @@ connect
         sendToBIfFlagIsOn $ convertRepr =<< vicReprA
         pure $ RawLink.make nodeAId outletA inletB nodeBId $ Ref.write false flagRef
     where
-      (outletATag :: Raw.Tag) = RawShape.tagOfOutlet outletA nodeAShape # fromMaybe Raw.failed
-      (inletBTag  :: Raw.Tag) = RawShape.tagOfInlet  inletB  nodeBShape # fromMaybe Raw.failed
+      (outletATag :: Raw.ValueTag) = RawShape.tagOfOutlet outletA nodeAShape # fromMaybe Raw.failed
+      (inletBTag  :: Raw.ValueTag) = RawShape.tagOfInlet  inletB  nodeBShape # fromMaybe Raw.failed
       convertRepr :: chreprA -> ValueInChannel chreprB
       convertRepr reprA =
-          if outletATag == inletBTag
+          if VT.acceptByTag (Proxy :: _ chreprB) { incoming : outletATag, current : inletBTag }
             then ViC.accept $ toReprB reprA
             else ViC.decline
 

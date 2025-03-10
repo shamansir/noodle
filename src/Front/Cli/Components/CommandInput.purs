@@ -40,7 +40,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (Signature, class PossiblyToSignature)
 import Noodle.Toolkit (class FromPatchState, class HoldsFamilies, isKnownFamily, withAnyFamily) as Toolkit
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.Tagged (class Tagged) as CT
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Raw.Node (_fromSignature) as RawNode
 import Noodle.Patch (id) as Patch
 import Noodle.Network (toolkit) as Network
@@ -68,7 +68,7 @@ commandInputKey = Key.commandInput
 component :: forall tk pstate fs strepr chrepr
     .  HasFallback chrepr
     => HasFallback strepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
@@ -127,7 +127,7 @@ tryExecute
     :: forall tk fs pstate strepr chrepr
      . HasFallback chrepr
     => HasFallback strepr
-    => CT.Tagged chrepr
+    => VT.ValueTagged chrepr
     => ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk pstate strepr
