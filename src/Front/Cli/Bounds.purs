@@ -63,7 +63,7 @@ loadOrCollect
     => MonadThrow Error mo
     => Id.NodeR
     -> NodeKey subj key
-    -> BlessedOpGet (State tk s fs r mi) mo NodeBounds
+    -> BlessedOpGet (State loc tk s fs r mi) mo NodeBounds
 loadOrCollect nodeId nodeKey = do
     locations <- _.locations <$> State.get
     -- liftEffect $ Console.log $ ( show $ Map.lookup nodeId locations )

@@ -114,7 +114,7 @@ class ContainsAllOutlets (row :: Row Type) (outlets :: Outlets) -- | inlets -> r
 
 instance ContainsAllOutlets row TNil
 else instance
-  ( Row.Cons name din rowtail row
+  ( Row.Cons name dout rowtail row
   , ContainsAllOutlets rowtail otail
   ) => ContainsAllOutlets row (O name dout :> otail)
 

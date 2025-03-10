@@ -63,7 +63,7 @@ component
     -> Signal (OrderedOutletsValues chrepr)
     -> OrderedOutletsValues chrepr
     -> Map Id.OutletR OutletButtonKey
-    /\ C.Blessed (State tk pstate fs strepr chrepr m)
+    /\ C.Blessed (State _ tk pstate fs strepr chrepr m)
 component offsetY keys patchR nodeR oReprSignal outlets =
     outletsKeys /\
     B.box keys.outletsBox
@@ -95,9 +95,9 @@ component offsetY keys patchR nodeR oReprSignal outlets =
         outletsArr = Map.toUnfoldable outlets
         keysArray :: Array OutletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length outletsArr
-        outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
+        outletsButtonsWithKeys :: Array ((Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State _ tk pstate fs strepr chrepr m))
         outletsButtonsWithKeys = makeOutletButton <$> Array.zip keysArray outletsArr
-        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ ValueInChannel chrepr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
+        makeOutletButton :: (OutletButtonKey /\ ((Int /\ Id.OutletR) /\ ValueInChannel chrepr)) -> (Id.OutletR /\ OutletButtonKey) /\ C.Blessed (State _ tk pstate fs strepr chrepr m)
         makeOutletButton (buttonKey /\ ((idx /\ outletR) /\ vicRepr)) =
             (outletR /\ buttonKey)
             /\
@@ -106,7 +106,7 @@ component offsetY keys patchR nodeR oReprSignal outlets =
             $ map (Map.mapKeys Tuple.snd)
             $ oReprSignal
             )
-        outletsButtons :: Array (C.Blessed (State tk pstate fs strepr chrepr m))
+        outletsButtons :: Array (C.Blessed (State _ tk pstate fs strepr chrepr m))
         outletsButtons = Tuple.snd <$> outletsButtonsWithKeys
         outletsKeys :: Map Id.OutletR OutletButtonKey
         outletsKeys = Map.fromFoldable (Tuple.fst <$> outletsButtonsWithKeys)

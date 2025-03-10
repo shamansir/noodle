@@ -71,7 +71,7 @@ component
     -> Id.FamilyR
     -> Raw.Node fstate chrepr m
     -> CState.LastKeys
-    -> Core.Blessed (State tk pstate fs strepr chrepr m)
+    -> Core.Blessed (State _ tk pstate fs strepr chrepr m)
 component topOffset family node keys =
     B.button keys.removeButton
         [ Box.content $ T.singleLine $ T.removeButtonOut

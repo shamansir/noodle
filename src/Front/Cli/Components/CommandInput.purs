@@ -55,6 +55,7 @@ import Cli.Keys (mainScreen, commandInput, CommandInputKey) as Key
 import Cli.State (State)
 import Cli.State (currentPatch) as CState
 import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (class CliLocator)
 import Cli.Style as Style
 import Cli.Components.Library as Library
 import Cli.Components.NodeBox as NodeBox
@@ -65,8 +66,9 @@ commandInputKey :: Key.CommandInputKey
 commandInputKey = Key.commandInput
 
 
-component :: forall tk pstate fs strepr chrepr
-    .  HasFallback chrepr
+component :: forall loc tk pstate fs strepr chrepr
+    .  CliLocator loc
+    => HasFallback chrepr
     => HasFallback strepr
     => VT.ValueTagged chrepr
     => ParseableRepr chrepr
@@ -74,7 +76,7 @@ component :: forall tk pstate fs strepr chrepr
     => Toolkit.FromPatchState tk pstate strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
-    => Core.Blessed (State tk pstate fs strepr chrepr Effect)
+    => Core.Blessed (State loc tk pstate fs strepr chrepr Effect)
 component =
     B.textBoxAnd commandInputKey
         [ Box.top $ Offset.center
@@ -96,14 +98,14 @@ component =
     $ const hide
 
 
-hide :: forall tk ps fs sr cr mi mo. BlessedOp (State tk ps fs sr cr mi) mo
+hide :: forall tk ps fs sr cr mi mo. BlessedOp (State _ tk ps fs sr cr mi) mo
 hide = do
     State.modify_ $ _ { commandBoxActive = false }
     commandInputKey >~ Element.hide
     Key.mainScreen >~ Screen.render
 
 
-show :: forall tk ps fs sr cr mi mo. BlessedOp (State tk ps fs sr cr mi) mo
+show :: forall tk ps fs sr cr mi mo. BlessedOp (State _ tk ps fs sr cr mi) mo
 show = do
     commandInputKey >~ Element.setFront
     commandInputKey >~ Element.show
@@ -114,7 +116,7 @@ show = do
     Key.mainScreen >~ Screen.render
 
 
-toggle :: forall tk ps fs sr cr mi mo. BlessedOp (State tk ps fs sr cr mi) mo
+toggle :: forall tk ps fs sr cr mi mo. BlessedOp (State _ tk ps fs sr cr mi) mo
 toggle =
     State.get >>= \s ->
         if s.commandBoxActive then
@@ -124,8 +126,9 @@ toggle =
 
 
 tryExecute
-    :: forall tk fs pstate strepr chrepr
-     . HasFallback chrepr
+    :: forall loc tk fs pstate strepr chrepr
+     . CliLocator loc
+    => HasFallback chrepr
     => HasFallback strepr
     => VT.ValueTagged chrepr
     => ParseableRepr chrepr
@@ -133,7 +136,7 @@ tryExecute
     => Toolkit.FromPatchState tk pstate strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
-    => String -> BlessedOp (State tk pstate fs strepr chrepr Effect) Effect
+    => String -> BlessedOp (State loc tk pstate fs strepr chrepr Effect) Effect
 tryExecute command = do
     state <- State.get
     let
@@ -145,9 +148,9 @@ tryExecute command = do
         Just curPatchR ->
             case fromInput of
                 FI.FromFamily familyR rawNode ->
-                    Library.registerAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                    Library.registerAndRenderGivenRawNode curPatchR rawNode
                 FI.CustomNode signature rawNode ->
-                    Library.registerAndRenderGivenRawNode curPatchR (NodeBox.nextPos state.lastShift) rawNode
+                    Library.registerAndRenderGivenRawNode curPatchR rawNode
                 FI.CannotSpawn familyR ->
                     CC.log $ "family not found: " <> Id.family familyR
                 FI.UnknownCommand command ->

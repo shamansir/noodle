@@ -49,6 +49,7 @@ import Cli.Bounds (Bounds)
 import Cli.Keys as K
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, bodyOverlay, patchBox) as Key
 import Cli.Components.Link (LinkCmpState)
+import Cli.Class.CliRenderer (class CliLocator, firstLocation)
 
 
 data Focus
@@ -73,7 +74,7 @@ data Focus
 
 
 -- tkey patch-state families node-state-repr channel-value-repr m
-type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
+type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { network :: Network tk ps fs sr cr m
     , initPatchesFrom :: ps
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
@@ -99,6 +100,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
     , inletEditorCreated :: Map Shape.ValueTag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
+    , lastLocation :: loc
     , locations :: Map Id.NodeR Bounds
     , mouseOverFocus :: Maybe Focus
     }
@@ -130,7 +132,7 @@ type DocumentationFocus sr cr =
     }
 
 
-init :: forall tk ps fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> m (State tk ps fs sr cr m)
+init :: forall loc tk ps fs sr cr m. MonadEffect m => CliLocator loc => ps -> Toolkit tk fs sr cr m -> m (State loc tk ps fs sr cr m)
 init state toolkit = do
     firstPatch <- Patch.make "Patch 1" state
     pure
@@ -168,19 +170,20 @@ init state toolkit = do
         -- , editors : Map.empty
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
+        , lastLocation : firstLocation
         , locations : Map.empty
         , mouseOverFocus : Nothing
         }
 
 
-informWsInitialized :: forall tk ps fs sr cr m. WSS.WebSocketServer -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+informWsInitialized :: forall loc tk ps fs sr cr m. WSS.WebSocketServer -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 informWsInitialized _ state = state
 
 
     -- # Network.addPatch (patchIdFromIndex 0) (Patch.init' CAI.none (Hydra.toolkit :: Hydra.Toolkit Effect))
 
 
-families :: forall tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m fs => State tk ps fs sr cr m -> Array Id.FamilyR
+families :: forall loc tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m fs => State loc tk ps fs sr cr m -> Array Id.FamilyR
 families = _.network >>> Network.toolkit >>> Toolkit.families
 
 
@@ -203,43 +206,43 @@ type NodeBounds =
     }
 
 
-registerRawNode :: forall strepr tk ps fs chrepr m. Id.PatchR -> Raw.Node strepr chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode :: forall strepr loc tk ps fs chrepr m. Id.PatchR -> Raw.Node strepr chrepr m -> State loc tk ps fs strepr chrepr m -> State loc tk ps fs strepr chrepr m
 registerRawNode patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode rawNode) }
 
 
-registerRawNode' :: forall fstate strepr tk ps fs chrepr m. HasFallback fstate => StRepr fstate strepr => Id.PatchR -> Raw.Node fstate chrepr m -> State tk ps fs strepr chrepr m -> State tk ps fs strepr chrepr m
+registerRawNode' :: forall fstate strepr loc tk ps fs chrepr m. HasFallback fstate => StRepr fstate strepr => Id.PatchR -> Raw.Node fstate chrepr m -> State loc tk ps fs strepr chrepr m -> State loc tk ps fs strepr chrepr m
 registerRawNode' patchR rawNode s = s
     { network = s.network # Network.withPatch patchR (Patch.registerRawNode' rawNode) }
 
 
-patch :: forall tk ps fs sr cr m. Id.PatchR -> State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+patch :: forall loc tk ps fs sr cr m. Id.PatchR -> State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 patch patchR = _.network >>> Network.patch patchR
 
 
-currentPatch :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+currentPatch :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 currentPatch s = s.currentPatch <#> _.id >>= flip patch s
 
 
-currentPatchState :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Maybe ps)
+currentPatchState :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Maybe ps)
 currentPatchState = traverse Patch.getState <<< currentPatch
 
 
-withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+withPatch :: forall loc tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
 
 
-replacePatch :: forall tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+replacePatch :: forall loc tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 replacePatch patchR = withPatch patchR <<< const
 
 
-withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+withCurrentPatch :: forall loc tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 withCurrentPatch f s = case s.currentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s
 
 
-spawnPatch :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Patch ps fs sr cr mp)
+spawnPatch :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Patch ps fs sr cr mp)
 spawnPatch s = do
     let
         patchesCount = s.network # Network.patchesCount
@@ -247,7 +250,7 @@ spawnPatch s = do
     Patch.make ("Patch " <> show nextPatchIndex) s.initPatchesFrom
 
 
-registerPatch :: forall tk ps fs sr cr m. Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+registerPatch :: forall loc tk ps fs sr cr m. Patch ps fs sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 registerPatch newPatch s =
     let
         patchesCount = s.network # Network.patchesCount
@@ -261,70 +264,70 @@ registerPatch newPatch s =
             }
 
 
-lastPatchIndex :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Int
+lastPatchIndex :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Int
 lastPatchIndex s = Network.patchesCount s.network
 
 
-storeNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> Raw.NodeChanges sr cr -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+storeNodeUpdate :: forall loc tk ps fs sr cr m. Id.NodeR -> Raw.NodeChanges sr cr -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 storeNodeUpdate nodeR changes s = s { lastUpdate = Map.insert nodeR changes s.lastUpdate  }
 
 
-lastNodeUpdate :: forall tk ps fs sr cr m. Id.NodeR -> State tk ps fs sr cr m -> Maybe (Raw.NodeChanges sr cr)
+lastNodeUpdate :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe (Raw.NodeChanges sr cr)
 lastNodeUpdate nodeR = _.lastUpdate >>> Map.lookup nodeR
 
 
-isPanelOn :: forall tk ps fs sr cr m. Panels.Which -> State tk ps fs sr cr m -> Boolean
+isPanelOn :: forall loc tk ps fs sr cr m. Panels.Which -> State loc tk ps fs sr cr m -> Boolean
 isPanelOn which = _.panelsOnOff >>> Panels.isOn which
 
 
-togglePanel :: forall tk ps fs sr cr m. Panels.Which -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+togglePanel :: forall loc tk ps fs sr cr m. Panels.Which -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 togglePanel which s = s { panelsOnOff = Panels.toggle which s.panelsOnOff }
 
 
-trackCommand :: forall tk ps fs sr cr m. Ndf.Command -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+trackCommand :: forall loc tk ps fs sr cr m. Ndf.Command -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 trackCommand = trackCommandOp <<< Ndf.op
 
 
-trackCommandOp :: forall tk ps fs sr cr m. Ndf.CommandOp -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+trackCommandOp :: forall loc tk ps fs sr cr m. Ndf.CommandOp -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 trackCommandOp cmdop s =
     s { history = Ndf.optimize $ flip Ndf.snocOp cmdop $ s.history }
 
 
-formatHistory :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Array T.Tag
+formatHistory :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Array T.Tag
 formatHistory = _.history >>> Ndf.optimize >>> Ndf.toTaggedNdfCode >>> Array.singleton
 
 
-clearHistory :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearHistory :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 clearHistory = _ { history = Ndf.init "noodle" 2.0 }
 
 
-appendHistory :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+appendHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 appendHistory ndfFile s = s { history = Ndf.append s.history ndfFile }
 
 
-prependHistory :: forall tk ps fs sr cr m. NdfFile -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+prependHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }
 
 
-switchDocumentation :: forall tk ps fs sr cr m. Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+switchDocumentation :: forall loc tk ps fs sr cr m. Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 switchDocumentation nodeR mbUpdate s = s { currentDocumentation = Just { node : nodeR, curUpdate : mbUpdate } }
 
 
-clearDocumentation :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearDocumentation :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 clearDocumentation = _ { currentDocumentation = Nothing }
 
 
-appendToLog :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+appendToLog :: forall loc tk ps fs sr cr m. String -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 appendToLog line s = s { developmentLog = Array.snoc s.developmentLog line }
 
 
-clearLog :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> State tk ps fs sr cr m
+clearLog :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 clearLog = _ { developmentLog = [] }
 
 
-inletEditorCreated :: forall tk ps fs sr cr m. Shape.ValueTag -> State tk ps fs sr cr m -> Boolean
+inletEditorCreated :: forall loc tk ps fs sr cr m. Shape.ValueTag -> State loc tk ps fs sr cr m -> Boolean
 inletEditorCreated tag = _.inletEditorCreated >>> Map.lookup tag >>> isJust
 
 
-markInletEditorCreated :: forall tk ps fs sr cr m. Shape.ValueTag -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+markInletEditorCreated :: forall loc tk ps fs sr cr m. Shape.ValueTag -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 markInletEditorCreated tag s = s { inletEditorCreated = s.inletEditorCreated # Map.insert tag unit }

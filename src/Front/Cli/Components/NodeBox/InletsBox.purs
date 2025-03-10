@@ -65,14 +65,14 @@ component
     => T.At T.ChannelLabel chrepr
     => T.At T.StatusLine chrepr
     => Ndf.ValueEncode chrepr
-    => Ref (State tk pstate fs strepr chrepr m)
+    => Ref (State _ tk pstate fs strepr chrepr m)
     -> Id.PatchR
     -> LastKeys
     -> Raw.Node strepr chrepr m
     -> Signal (OrderedInletsValues chrepr)
     -> OrderedInletsValues chrepr
     -> Map Id.InletR InletButtonKey
-    /\ C.Blessed (State tk pstate fs strepr chrepr m)
+    /\ C.Blessed (State _ tk pstate fs strepr chrepr m)
 component stateRef patchR keys rawNode iReprSignal inlets =
     inletsKeys /\
     B.box keys.inletsBox
@@ -103,9 +103,9 @@ component stateRef patchR keys rawNode iReprSignal inlets =
         inletsArr = Map.toUnfoldable inlets
         keysArray :: Array InletButtonKey
         keysArray = NK.nestChain keys.nodeBox $ Array.length inletsArr
-        inletsButtonsWithKeys :: Array ((Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m))
+        inletsButtonsWithKeys :: Array ((Id.InletR /\ InletButtonKey) /\ C.Blessed (State _ tk pstate fs strepr chrepr m))
         inletsButtonsWithKeys = makeInletButton <$> Array.zip keysArray inletsArr
-        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ ValueInChannel chrepr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State tk pstate fs strepr chrepr m)
+        makeInletButton :: (InletButtonKey /\ ((Int /\ Id.InletR) /\ ValueInChannel chrepr)) -> (Id.InletR /\ InletButtonKey) /\ C.Blessed (State _ tk pstate fs strepr chrepr m)
         makeInletButton (buttonKey /\ ((idx /\ inletR) /\ vicRepr)) =
             (inletR /\ buttonKey)
             /\
@@ -114,7 +114,7 @@ component stateRef patchR keys rawNode iReprSignal inlets =
             $ map (Map.mapKeys Tuple.snd)
             $ iReprSignal
             )
-        inletsButtons :: Array (C.Blessed (State tk pstate fs strepr chrepr m))
+        inletsButtons :: Array (C.Blessed (State _ tk pstate fs strepr chrepr m))
         inletsButtons = Tuple.snd <$> inletsButtonsWithKeys
         inletsKeys :: Map Id.InletR InletButtonKey
         inletsKeys = Map.fromFoldable (Tuple.fst <$> inletsButtonsWithKeys)

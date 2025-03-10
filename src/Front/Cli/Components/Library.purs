@@ -36,6 +36,7 @@ import Cli.State (State)
 import Cli.State (withCurrentPatch, currentPatchState, currentPatch) as CState
 import Cli.Style (library, libraryBorder) as Style
 import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (class CliLocator)
 
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR, unsafeInletR, unsafeOutletR) as Id
@@ -72,15 +73,16 @@ import Prelude
 
 
 component
-    :: forall tk ps fs strepr chrepr
-     . HasFallback chrepr
+    :: forall loc tk ps fs strepr chrepr
+     . CliLocator loc
+    => HasFallback chrepr
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => Toolkit.FromPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
-    -> Core.Blessed (State tk ps fs strepr chrepr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
+    -> Core.Blessed (State loc tk ps fs strepr chrepr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
     -- -> BlessedOpM (State tk p fs repr m) m Unit
 component toolkit =
     B.listAnd Key.library
@@ -112,15 +114,16 @@ component toolkit =
 
 
 onFamilySelect
-    :: forall tk pstate fs strepr chrepr m
+    :: forall loc tk pstate fs strepr chrepr m
      . Wiring m
+    => CliLocator loc
     => HasFallback chrepr
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => Toolkit.FromPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
-    => BlessedOp (State tk pstate fs strepr chrepr m) m
+    => BlessedOp (State loc tk pstate fs strepr chrepr m) m
 onFamilySelect =
     do
         state <- State.get
@@ -136,7 +139,6 @@ onFamilySelect =
                         (spawnAndRender
                             toolkit
                             curPatchR
-                            $ NodeBox.nextPos state.lastShift
                         ) familyR toolkit of
                     Just op -> op
                     Nothing ->
@@ -145,7 +147,7 @@ onFamilySelect =
                                     toolkit
                                     curPatchR
                                     familyR
-                                    $ NodeBox.nextPos state.lastShift)
+                                )
                                 familyR
                                 toolkit
                             of
@@ -157,8 +159,9 @@ onFamilySelect =
 
 
 spawnAndRenderRaw
-    :: forall tk pstate fs strepr chrepr m
+    :: forall loc tk pstate fs strepr chrepr m
      . Wiring m
+    => CliLocator loc
     => HasFallback chrepr
     => VT.ValueTagged chrepr
     => Toolkit.HoldsFamilies strepr chrepr m fs
@@ -168,21 +171,21 @@ spawnAndRenderRaw
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
     -> Id.FamilyR
-    -> { left :: Int, top :: Int }
     -> Raw.Family strepr chrepr m
-    -> BlessedOp (State tk pstate fs strepr chrepr m) m
-spawnAndRenderRaw toolkit patchR familyR nextPos  _ = do
+    -> BlessedOp (State loc tk pstate fs strepr chrepr m) m
+spawnAndRenderRaw toolkit patchR familyR _ = do
     (mbRawNode :: Maybe (Raw.Node strepr chrepr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
 
     case mbRawNode of
         Just rawNode -> do
-            registerAndRenderGivenRawNode patchR nextPos rawNode
+            registerAndRenderGivenRawNode patchR rawNode
         Nothing -> pure unit
 
 
 registerAndRenderGivenRawNode
-    :: forall tk pstate fs strepr chrepr m
+    :: forall loc tk pstate fs strepr chrepr m
      . Wiring m
+    => CliLocator loc
     => HasFallback chrepr
     => VT.ValueTagged chrepr
     -- => Toolkit.HoldsFamilies strepr chrepr m fs
@@ -191,10 +194,9 @@ registerAndRenderGivenRawNode
     => CliFriendly tk fs chrepr m
     -- => Toolkit tk fs strepr chrepr m
     => Id.PatchR
-    -> { left :: Int, top :: Int }
     -> Raw.Node strepr chrepr m
-    -> BlessedOp (State tk pstate fs strepr chrepr m) m
-registerAndRenderGivenRawNode patchR nextPos rawNode = do
+    -> BlessedOp (State loc tk pstate fs strepr chrepr m) m
+registerAndRenderGivenRawNode patchR rawNode = do
     let familyR = Id.familyOf $ RawNode.id rawNode
 
     -- we load the default initial node state for the family
@@ -207,7 +209,7 @@ registerAndRenderGivenRawNode patchR nextPos rawNode = do
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 
-    NodeBox.componentRaw nextPos patchR familyR rawNode
+    nextPos <- NodeBox.componentRaw patchR familyR rawNode
 
     CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
     SidePanel.refresh TP.sidePanel
@@ -216,8 +218,9 @@ registerAndRenderGivenRawNode patchR nextPos rawNode = do
 
 
 spawnAndRender
-    :: forall tk fs pstate f fstate is os strepr chrepr m
+    :: forall loc tk fs pstate f fstate is os strepr chrepr m
      . Wiring m
+    => CliLocator loc
     => IsSymbol f
     => HasFallback chrepr
     => HasFallback fstate
@@ -229,10 +232,9 @@ spawnAndRender
     => CliFriendly tk fs chrepr m
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
-    -> { left :: Int, top :: Int }
     -> Toolkit.Family f fstate is os chrepr m
-    -> BlessedOp (State tk pstate fs strepr chrepr m) m
-spawnAndRender toolkit patchR nextPos family = do
+    -> BlessedOp (State loc tk pstate fs strepr chrepr m) m
+spawnAndRender toolkit patchR family = do
     let (familyId :: Id.Family f) = (Toolkit.familyIdOf family)
 
     (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn familyId toolkit
@@ -243,7 +245,7 @@ spawnAndRender toolkit patchR nextPos family = do
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
 
-    NodeBox.component nextPos patchR familyId node
+    nextPos <- NodeBox.component patchR familyId node
 
     CL.trackCommand $ QOp.makeNode (Node.id node) nextPos
     SidePanel.refresh TP.sidePanel

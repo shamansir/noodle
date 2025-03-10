@@ -126,7 +126,7 @@ component
     => VT.ValueTagged chrepr
     => Wiring m
     => CliEditor tk chrepr
-    => Ref (State tk pstate fs strepr chrepr m)
+    => Ref (State _ tk pstate fs strepr chrepr m)
     -> Id.PatchR
     -> InletButtonKey -> NodeBoxKey -> InfoBoxKey
     -> Raw.Node strepr chrepr m
@@ -134,7 +134,7 @@ component
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -- -> Raw.Node
-    -> Core.Blessed (State tk pstate fs strepr chrepr m)
+    -> Core.Blessed (State _ tk pstate fs strepr chrepr m)
 component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletIdx vicRepr reprSignal =
     let
         nodeR = RawNode.id rawNode
@@ -164,7 +164,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         []
 
 
-sendFromEditor :: forall tk pstate fs strepr chrepr m. Ndf.ValueEncode chrepr => Ref (State tk pstate fs strepr chrepr m) -> Id.NodeR -> Id.InletR -> chrepr -> Effect Unit
+sendFromEditor :: forall tk pstate fs strepr chrepr m. Ndf.ValueEncode chrepr => Ref (State _ tk pstate fs strepr chrepr m) -> Id.NodeR -> Id.InletR -> chrepr -> Effect Unit
 sendFromEditor stateRef nodeR inletR reprV = do
     state <- Ref.read stateRef
     case state.inletEditorOpenedFrom of
@@ -190,7 +190,7 @@ onMouseOver
     -> Temperament
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
-    -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
+    -> _ -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 onMouseOver patchR nodeR inletR nodeBox infoBox idx temper vicRepr reprSignal _ _ = do
     State.modify_ $ _ { mouseOverFocus = Just $ Focus.Inlet patchR nodeR inletR }
     nodeBounds <- Bounds.collect nodeR nodeBox
@@ -207,7 +207,7 @@ onMouseOver patchR nodeR inletR nodeBox infoBox idx temper vicRepr reprSignal _ 
     Key.mainScreen >~ Screen.render
 
 
-onMouseOut :: forall tk pstate fs strepr chrepr mi mo. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
+onMouseOut :: forall tk pstate fs strepr chrepr mi mo. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 onMouseOut infoBox idx _ _ = do
     State.modify_ $ _ { mouseOverFocus = Nothing }
     state <- State.get
@@ -235,7 +235,7 @@ onPress
     -> Id.InletR
     -> _
     -> _
-    -> BlessedOp (State tk pstate fs strepr chrepr mi) mo
+    -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
@@ -373,7 +373,7 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
 
 
-onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State tk pstate fs strepr chrepr mi) mo
+onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 onLinkClick patchR rawLink linkState _ = do
     CC.log $ "Click link"
     curState <- State.get

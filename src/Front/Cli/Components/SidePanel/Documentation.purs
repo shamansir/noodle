@@ -43,7 +43,7 @@ sidePanel
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => SidePanel "documentation" (State tk p fs sr cr m) Boolean
+    => SidePanel "documentation" (State _ tk p fs sr cr m) Boolean
 sidePanel =
     { title : "documentation"
     , char : const '☰'
@@ -93,7 +93,7 @@ showFamilyDocumentation
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Id.FamilyR -> BlessedOp (State tk p fs sr cr mi) m
+    => Id.FamilyR -> BlessedOp (State _ tk p fs sr cr mi) m
 showFamilyDocumentation familyR = do
     -- State.modify_ $ CState.switchDocumentation ?wh Nothing
     SP.refresh sidePanel
@@ -106,7 +106,7 @@ showNodeDocumentation
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> BlessedOp (State tk p fs sr cr mi) m
+    => Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> BlessedOp (State _ tk p fs sr cr mi) m
 showNodeDocumentation nodeR mbUpdate = do
     State.modify_ $ CState.switchDocumentation nodeR mbUpdate
     SP.refresh sidePanel
@@ -119,7 +119,7 @@ clear
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => BlessedOp (State tk p fs sr cr mi) m
+    => BlessedOp (State _ tk p fs sr cr mi) m
 clear = do
     State.modify_ CState.clearDocumentation
     SP.refresh sidePanel

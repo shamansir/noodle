@@ -74,7 +74,7 @@ component
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
     -- -> Raw.Node
-    -> Core.Blessed (State tk pstate fs strepr chrepr m)
+    -> Core.Blessed (State _ tk pstate fs strepr chrepr m)
 component buttonKey nodeBoxKey infoBoxKey patchR nodeR outletR idx vicRepr reprSignal =
     B.button buttonKey
         [ Box.content $ T.singleLine $ T.outlet idx outletR vicRepr
@@ -107,7 +107,7 @@ onMouseOver
     -> Int
     -> ValueInChannel chrepr
     -> Signal (ValueInChannel chrepr)
-    -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
+    -> _ -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr m) Effect
 onMouseOver patchR nodeR outletR nodeBox infoBox idx vicRepr reprSignal _ _ = do
     State.modify_ $ _ { mouseOverFocus = Just $ Focus.Outlet patchR nodeR outletR }
     state <- State.get
@@ -126,7 +126,7 @@ onMouseOver patchR nodeR outletR nodeBox infoBox idx vicRepr reprSignal _ _ = do
     --CC.log $ "over" <> show idx
 
 
-onMouseOut :: forall tk pstate fs strepr chrepr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
+onMouseOut :: forall tk pstate fs strepr chrepr m. InfoBoxKey -> Int ->  _ -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr m) Effect
 onMouseOut infoBox idx _ _ = do
     State.modify_ $ _ { mouseOverFocus = Nothing }
     state <- State.get
@@ -140,7 +140,7 @@ onMouseOut infoBox idx _ _ = do
     --CC.log $ "out" <> show idx
 
 
-onPress :: forall tk pstate fs strepr chrepr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
+onPress :: forall tk pstate fs strepr chrepr m. Int -> Id.OutletR -> Id.NodeR -> NodeBoxKey -> _ -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr m) Effect
 onPress idx outletR nodeR nodeBoxKey _ _ = do
     -- CC.log "outlet press"
     nodeBounds <- Bounds.collect nodeR nodeBoxKey

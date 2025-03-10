@@ -17,6 +17,7 @@ import Cli.State (State)
 import Cli.Style (patchBox, patchBoxBorder) as Style
 import Cli.Components.Library as Library
 import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (class CliLocator)
 
 import Noodle.Id as Id
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -32,15 +33,16 @@ import Cli.Components.NodeBox.OutletIndicator as OutletIndicator
 
 
 component
-    :: forall tk ps fs strepr chrepr
-     . HasFallback chrepr
+    :: forall loc tk ps fs strepr chrepr
+     . CliLocator loc
+    => HasFallback chrepr
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.FromPatchState tk ps strepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
-    -> Core.Blessed (State tk ps fs strepr chrepr Effect)
+    -> Core.Blessed (State loc tk ps fs strepr chrepr Effect)
 component toolkit =
     B.boxAnd Key.patchBox
 

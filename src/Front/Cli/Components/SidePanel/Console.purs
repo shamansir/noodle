@@ -23,7 +23,7 @@ import Cli.Keys as Key
 import Cli.Panels (Which(..)) as P
 
 
-sidePanel :: forall tk p fs sr cr m. SidePanel "console" (State tk p fs sr cr m) Boolean
+sidePanel :: forall tk p fs sr cr m. SidePanel "console" (State _ tk p fs sr cr m) Boolean
 sidePanel =
     { title : "console"
     , char : const 'L'
@@ -35,17 +35,17 @@ sidePanel =
     }
 
 
-log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
+log :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State _ tk p fs sr cr mi) m
 log line = do
     State.modify_ $ CState.appendToLog line
     SP.refresh sidePanel
 
 
-logError :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State tk p fs sr cr mi) m
+logError :: forall tk p fs sr cr m mi. MonadEffect m => String -> BlessedOp (State _ tk p fs sr cr mi) m
 logError errorStr = log $ "Error : " <> errorStr
 
 
-clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
+clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State _ tk p fs sr cr mi) m
 clear = do
     State.modify_ CState.clearLog
     SP.refresh sidePanel

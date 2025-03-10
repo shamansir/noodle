@@ -2,112 +2,89 @@ module Cli.Components.NodeBox where
 
 import Prelude
 
-import Data.Text.Output.Blessed (singleLine) as T
-
-import Cli.WsServer as WSS
-import Control.Monad.Error.Class (class MonadThrow)
-
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
-import Effect.Exception (Error)
-import Effect.Console (log) as Console
-
-import Control.Monad.State (get, modify, modify_) as State
-import Control.Monad.Rec.Class (class MonadRec)
-
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.Tuple (fst, snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Type.Proxy (Proxy(..))
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Map.Extra as Map
-import Data.Array as Array
-import Data.Foldable (for_, traverse_)
--- REM import Data.KeyHolder as KH
-import Data.Symbol (class IsSymbol)
-import Data.String as String
-import Data.TraversableWithIndex (traverseWithIndex)
--- REM import Data.SProxy (reflect, reflect')
--- REM import Data.FromToFile (class Encode, encode)
-
-import Signal (Signal, (~>))
-import Signal.Extra as SignalX
-
 import Blessed ((>~))
 import Blessed as B
-
 import Blessed.Core.Coord ((<+>))
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-
-import Blessed.Internal.Core as Core
-import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
 import Blessed.Internal.BlessedOp (getStateRef, lift, runM, runM', runOnUnit, runOn, imapStateF) as Blessed
+import Blessed.Internal.Core as Core
+import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.NodeKey as NodeKey
-
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Base.Screen.Method (render) as Screen
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method (setContent)  as Box
--- import Blessed.UI.Line.Li ()
-
-import Noodle.Repr.HasFallback (class HasFallback, fallback)
-import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Id as Id
-import Noodle.Toolkit (class MarkToolkit)
-import Noodle.Toolkit as Toolkit
-import Noodle.Node (toRaw) as Node
-import Noodle.Node (Node) as Noodle
-import Noodle.Toolkit.Families (F, class RegisteredFamily)
-import Noodle.Raw.Node (Node, NodeChanges) as Raw
-import Noodle.Raw.Node as RawNode
-import Noodle.Raw.Fn.Shape as RawShape
-import Noodle.Raw.Link as Link
-import Noodle.Wiring (class Wiring)
-import Noodle.Fn.Signature (class PossiblyToSignature)
-import Noodle.Text.NdfFile.Command.Quick as QOp
-import Noodle.Repr.Tagged (class ValueTagged) as VT
-
- -- FIXME: `Repr.Tag` and `Format.Tag` are very different things, find a way to make it clear (name it `Style`?)
-import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At) as T
-import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
-
-import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
-import Cli.Keys (mainScreen, patchBox) as Key
-import Cli.State (State) -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State -- REM , logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
-import Cli.State (Focus(..)) as Focus
-import Cli.Style as Style
 import Cli.Bounds as Bounds
-
 import Cli.Class.CliFriendly (class CliFriendly)
-import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw)
-
+import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw, class CliLocator)
+import Cli.Class.CliRenderer (locateNext) as Cli
 import Cli.Components.Link as CLink
-import Cli.Components.NodeBox.InletsBox as InletsBox
-import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InfoBox as InfoBox
--- REM import Cli.Components.NodeBox.InletButton as InletButton
--- REM import Cli.Components.NodeBox.OutletButton as OutletButton
+import Cli.Components.NodeBox.InletIndicator as II
+import Cli.Components.NodeBox.InletsBox as InletsBox
+import Cli.Components.NodeBox.OutletIndicator as OI
+import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.RemoveButton as RemoveButton
--- REM import Cli.Components.CommandLogBox as CommandLogBox
--- REM import Cli.Components.HydraCodeBox as HydraCodeBox
--- REM import Cli.Components.NodeBox.InfoBox as IB
-import Cli.Components.StatusLine as SL
--- REM import Cli.Components.FullInfoBox as FI
--- import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Documentation as DP
-import Cli.Components.NodeBox.InletIndicator as II
-import Cli.Components.NodeBox.OutletIndicator as OI
+import Cli.Components.StatusLine as SL
+import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
+import Cli.Keys (mainScreen, patchBox) as Key
+import Cli.State (Focus(..)) as Focus
+import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State
+import Cli.State (State)
+import Cli.Style as Style
+import Cli.WsServer as WSS
+import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.State (get, modify, modify_) as State
+import Data.Array as Array
+import Data.Foldable (for_, traverse_)
+import Data.Lens.Lens.Product (_1)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Map.Extra as Map
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.String as String
+import Data.Symbol (class IsSymbol)
+import Data.Text.Output.Blessed (singleLine) as T
+import Data.TraversableWithIndex (traverseWithIndex)
+import Data.Tuple (fst, snd) as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
+import Effect.Exception (Error)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+import Noodle.Fn.Signature (class PossiblyToSignature)
+import Noodle.Id as Id
+import Noodle.Node (Node) as Noodle
+import Noodle.Node (toRaw) as Node
+import Noodle.Raw.Fn.Shape as RawShape
+import Noodle.Raw.Link as Link
+import Noodle.Raw.Node (Node, NodeChanges) as Raw
+import Noodle.Raw.Node as RawNode
+import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.Tagged (class ValueTagged) as VT
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Toolkit (class MarkToolkit)
+import Noodle.Toolkit as Toolkit
+import Noodle.Toolkit.Families (F, class RegisteredFamily)
+import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
+import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
+import Noodle.Ui.Cli.Tagging.At (class At) as T
+import Noodle.Wiring (class Wiring)
+import Signal (Signal, (~>))
+import Signal.Extra as SignalX
+import Type.Proxy (Proxy(..))
+import Type.Proxy (Proxy)
 
 
 width :: Id.FamilyR -> Int -> Int -> Dimension
@@ -123,30 +100,22 @@ widthN familyName isCount osCount =
 -- widthN :: String -> Int -> Int -> Dimension
 
 
-nextPos :: { left :: Int, top :: Int } -> { left :: Int, top :: Int }
-nextPos { left, top } =
-    { left : 16 + left + 2
-    , top : top + 2
-    }
-
-
 _component
-    :: forall tk fs pstate strepr chrepr m
+    :: forall loc tk fs pstate strepr chrepr m
     .  Wiring m
+    => CliLocator loc
     => HasFallback chrepr
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
-    => { left :: Int, top :: Int }
-    -> Id.PatchR
+    => Id.PatchR
     -> Id.FamilyR
     -> Raw.Node strepr chrepr m
     -> State.LastKeys
     -> Maybe { width :: Int, height :: Int }
     -> Maybe (BlessedOp strepr m)
-    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
+    -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
 _component
-    pos
     patchR
     familyR
     rawNode
@@ -154,7 +123,20 @@ _component
     mbBodySize
     mbNodeOp
     = do
-    let (updates :: Signal (Raw.NodeChanges strepr chrepr)) = RawNode.subscribeChanges rawNode
+    state <- State.get
+
+    let
+        shape = RawNode.shape rawNode
+        is = RawShape.inlets shape
+        os = RawShape.outlets shape
+        bodySize = case mbBodySize of
+                        Just size -> { height : size.height, width : size.width - 1 }
+                        Nothing -> { height : 3, width : widthN familyR (Array.length is) (Array.length os) }
+        nextLoc /\ pos = Cli.locateNext state.lastLocation bodySize
+
+        (updates :: Signal (Raw.NodeChanges strepr chrepr)) = RawNode.subscribeChanges rawNode
+
+    State.modify_ $ _ { lastLocation = nextLoc }
 
     _ <- Blessed.lift $ RawNode._runOnInletUpdates rawNode
 
@@ -165,11 +147,6 @@ _component
 
     -- REM logNdfCommandM $ Cmd.MakeNode (Cmd.family $ reflect family) (Cmd.coord topN) (Cmd.coord $ leftN) (Cmd.nodeId $ reflect' nodeId) -- TODO: log somewhere else in a special place
     -- REM CommandLogBox.refresh
-
-    let
-        shape = RawNode.shape rawNode
-        is = RawShape.inlets shape
-        os = RawShape.outlets shape
 
     isValues <- RawNode.inlets rawNode  -- Sort using shape in the node?
     osValues <- RawNode.outlets rawNode -- Sort using shape in the node?
@@ -187,24 +164,10 @@ _component
     let
         (nodeR   :: Id.NodeR)   = RawNode.id rawNode
         (familyR :: Id.FamilyR) = Id.familyOf nodeR
-        boxWidth =
-            case mbBodySize of
-                Just { width } -> width - 1
-                Nothing -> widthN familyR (Array.length is) (Array.length os)
-        boxHeight =
-            case mbBodySize of
-                Just { width, height } -> height + 2
-                Nothing -> 5
-        outletsTopOffset =
-            Offset.px $
-                case mbBodySize of
-                    Just { height } -> height - 1
-                    Nothing -> 2
-        removeButtonOffset =
-            Offset.px $
-                case mbBodySize of
-                    Just { height } -> height
-                    Nothing -> 3
+        boxWidth = bodySize.width
+        boxHeight = bodySize.height + 2
+        outletsTopOffset = Offset.px $ bodySize.height - 1
+        removeButtonOffset = Offset.px bodySize.height
         inletsKeys /\ inletsBoxN =
             InletsBox.component stateRef patchR keys rawNode (updates ~> _.inlets) $ RawNode.orderInlets shape isValues
         outletsKeys /\ outletsBoxN =
@@ -232,15 +195,13 @@ _component
                    $ onMouseOut
                 ]
                 [ ]
-        renderNodeUpdate :: Raw.NodeChanges strepr chrepr -> BlessedOp (State tk pstate fs strepr chrepr m) m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
+        renderNodeUpdate :: Raw.NodeChanges strepr chrepr -> BlessedOp (State loc tk pstate fs strepr chrepr m) m -- FIXME: shouldn't there be node state? but it's not used in the function anyway
         renderNodeUpdate = renderUpdate keys.nodeBox (Proxy :: _ tk) nodeR inletsKeys outletsKeys
 
-    -- REM (stateRef :: Ref (State tk pstate fs repr m)) <- Blessed.getStateRef
+    -- REM (stateRef :: Ref (State loc tk pstate fs repr m)) <- Blessed.getStateRef
 
     -- state <- State.get
     (nodeState :: strepr) <- RawNode.state rawNode
-
-    stateRef <- Blessed.getStateRef
 
     -- Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM state <<< CC.log <<< ?wh)
     Blessed.lift $ SignalX.runSignal $ updates ~> (Blessed.runM' stateRef <<< storeNodeUpdate nodeR)
@@ -303,35 +264,36 @@ _component
         }
     )
 
-    pure unit -- REM { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
+    pure pos -- REM { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
 
 
 
 componentRaw
-    :: forall tk fs pstate strepr chrepr m
+    :: forall loc tk fs pstate strepr chrepr m
      . Wiring m
+    => CliLocator loc
     => HasFallback chrepr
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
-    => { left :: Int, top :: Int }
-    -> Id.PatchR
+    => Id.PatchR
     -> Id.FamilyR
     -> Raw.Node strepr chrepr m
-    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
-componentRaw pos curPatchR familyR rawNode = do
+    -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
+componentRaw curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
     let
         nextKeys = State.nextKeys state.lastKeys
         mbSize = cliSizeRaw   (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
         nodeOp = renderCliRaw (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
-    _component pos curPatchR familyR rawNode nextKeys mbSize nodeOp
+    _component curPatchR familyR rawNode nextKeys mbSize nodeOp
 
 
 component
-    :: forall tk fs pstate f fstate is os strepr chrepr m
+    :: forall loc tk fs pstate f fstate is os strepr chrepr m
     .  Wiring m
+    => CliLocator loc
     => IsSymbol f
     => HasFallback chrepr
     => HasFallback fstate
@@ -340,12 +302,11 @@ component
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr m
-    => { left :: Int, top :: Int }
-    -> Id.PatchR
+    => Id.PatchR
     -> Id.Family f
     -> Noodle.Node f fstate is os chrepr m
-    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
-component pos curPatchR family node = do
+    -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
+component curPatchR family node = do
     state <- State.get
     let
         nextKeys = State.nextKeys state.lastKeys
@@ -353,14 +314,14 @@ component pos curPatchR family node = do
         mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
         mbNodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
         rawNode = RawNode.toReprableState $ Node.toRaw node
-    _component pos curPatchR familyR rawNode nextKeys mbSize (Blessed.runOn fallback <$> mbNodeOp)
+    _component curPatchR familyR rawNode nextKeys mbSize (Blessed.runOn fallback <$> mbNodeOp)
 
 
 storeNodeUpdate
     :: forall tk fs pstate strepr chrepr m
      . Id.NodeR
     -> Raw.NodeChanges strepr chrepr
-    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+    -> BlessedOp (State _ tk pstate fs strepr chrepr m) m
 storeNodeUpdate nodeR =
     State.modify_ <<< State.storeNodeUpdate nodeR
 
@@ -380,7 +341,7 @@ renderUpdate
     -> Map Id.InletR  InletButtonKey
     -> Map Id.OutletR OutletButtonKey
     -> Raw.NodeChanges strepr chrepr
-    -> BlessedOp (State tk pstate fs strepr chrepr m) m
+    -> BlessedOp (State _ tk pstate fs strepr chrepr m) m
 renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
     -- CC.log $ show outletsReprs
     _ <- traverseWithIndex updateInlet  update.inlets
@@ -421,10 +382,10 @@ renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
 
 
 updateCodeFor
-    :: forall f fstate tk pstate fs strepr chrepr m
+    :: forall f fstate loc tk pstate fs strepr chrepr m
      . MonadEffect m
     => IsSymbol f
-    => Ref (State tk pstate fs strepr chrepr m)
+    => Ref (State loc tk pstate fs strepr chrepr m)
     -> Id.Family f
     -> Raw.NodeChanges fstate chrepr
     -> m Unit
@@ -447,7 +408,7 @@ logUpdateToConsole :: forall tk fs pstate fstate strepr chrepr m
     => Show fstate
     => Show chrepr
     => Raw.NodeChanges fstate chrepr
-    -> BlessedOpM (State tk pstate fs strepr chrepr m) m _
+    -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
 logUpdateToConsole updates =
     CC.log $ show updates
 -}
@@ -458,7 +419,7 @@ logUpdateToConsole updates =
 logDataCommand
     :: forall tk fs pstate fstate strepr chrepr m
      . MonadEffect m
-    => Ref (State tk pstate fs strepr chrepr m)
+    => Ref (State loc tk pstate fs strepr chrepr m)
     -> Raw.NodeChanges fstate chrepr
     -> m Unit
 logDataCommand stateRef update =
@@ -481,7 +442,7 @@ logDataCommand stateRef update =
 -}
 
 
-onMove :: forall tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State tk ps fs sr cr m) Effect
+onMove :: forall loc tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State loc tk ps fs sr cr m) Effect
 onMove nodeR nodeKey _ _ = do
     II.hide
     OI.hide
@@ -509,7 +470,7 @@ onMouseOver
     -> Id.NodeR
     -> _
     -> _
-    -> BlessedOp (State tk pstate fs strepr chrepr m) Effect
+    -> BlessedOp (State _ tk pstate fs strepr chrepr m) Effect
 onMouseOver ptk patchR nodeR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
@@ -530,13 +491,13 @@ onMouseOver ptk patchR nodeR _ _ = do
 
 
 onMouseOut
-    :: forall tk ps fs sr cr m
+    :: forall loc tk ps fs sr cr m
      . MarkToolkit tk
     => Toolkit.HasChRepr tk cr
     => T.At At.StatusLine cr
     => T.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => _ -> _ -> BlessedOp (State tk ps fs sr cr m) Effect
+    => _ -> _ -> BlessedOp (State loc tk ps fs sr cr m) Effect
 onMouseOut _ _ = do
     State.modify_ $ _ { mouseOverFocus = Nothing }
     SL.clear

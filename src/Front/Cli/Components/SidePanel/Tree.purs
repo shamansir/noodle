@@ -15,7 +15,7 @@ import Cli.Panels (Which(..)) as P
 import Noodle.Tree (formatPathTree, toPathTree)
 
 
-sidePanel :: forall tk p fs sr cr m. SidePanel "tree" (State tk p fs sr cr m) Boolean
+sidePanel :: forall tk p fs sr cr m. SidePanel "tree" (State _ tk p fs sr cr m) Boolean
 sidePanel =
     { title : "tree"
     , char : const 'T'

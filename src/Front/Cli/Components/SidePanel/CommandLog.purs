@@ -21,7 +21,7 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Noodle.Text.NdfFile.Command.Op (CommandOp)
 
 
-sidePanel :: forall tk p fs sr cr m. SidePanel "command-log" (State tk p fs sr cr m) Boolean
+sidePanel :: forall tk p fs sr cr m. SidePanel "command-log" (State _ tk p fs sr cr m) Boolean
 sidePanel =
     { title : "history"
     , char : const '⏺'
@@ -33,13 +33,13 @@ sidePanel =
     }
 
 
-trackCommand :: forall tk p fs sr cr m mi. MonadEffect m => CommandOp -> BlessedOp (State tk p fs sr cr mi) m
+trackCommand :: forall tk p fs sr cr m mi. MonadEffect m => CommandOp -> BlessedOp (State _ tk p fs sr cr mi) m
 trackCommand cmdOp = do
     State.modify_ $ CState.trackCommandOp cmdOp
     SP.refresh sidePanel
 
 
-clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State tk p fs sr cr mi) m
+clear :: forall tk p fs sr cr m mi. MonadEffect m => BlessedOp (State _ tk p fs sr cr mi) m
 clear = do
     State.modify_ $ CState.clearHistory
     SP.refresh sidePanel

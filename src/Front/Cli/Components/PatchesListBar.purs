@@ -36,7 +36,7 @@ import Cli.State (State)
 import Cli.Style as Style
 
 
-component :: forall tk s fs sr cr m. Map Id.PatchR (Patch s fs sr cr m) -> Core.Blessed (State tk s fs sr cr m)
+component :: forall tk s fs sr cr m. Map Id.PatchR (Patch s fs sr cr m) -> Core.Blessed (State _ tk s fs sr cr m)
 component patches =
     B.listbar Key.patchesBar
         [ Box.top $ Offset.px 0
@@ -50,17 +50,17 @@ component patches =
         ]
         []
 
-type Command_ subj id tk s fs sr cr m =
+type Command_ subj id loc tk s fs sr cr m =
     (  String
     /\ Array Key
-    /\ Core.HandlerFn subj id (State tk s fs sr cr m)
+    /\ Core.HandlerFn subj id (State loc tk s fs sr cr m)
     )
 
 
 lbCommands
     :: forall tk s fs sr cr m
     .  Map Id.PatchR (Patch s fs sr cr m)
-    -> Array (Command_ _ _ tk s fs sr cr m)
+    -> Array (Command_ _ _ _ tk s fs sr cr m)
 lbCommands = mapWithIndex buttonFor <<< Map.toUnfoldable
 
 
@@ -68,7 +68,7 @@ buttonFor
     :: forall tk s fs sr cr m
     .  Int
     -> Id.PatchR /\ Patch s fs sr cr m
-    -> Command_ _ _ tk s fs sr cr m
+    -> Command_ _ _ _ tk s fs sr cr m
 buttonFor index (id /\ patch) =
     Patch.name patch /\ [] /\ \_ _ -> do
         State.modify_
@@ -77,11 +77,11 @@ buttonFor index (id /\ patch) =
         Key.mainScreen >~ Screen.render
 
 
-updatePatches :: forall tk s fs sr cr mi mo. Map Id.PatchR (Patch s fs sr cr mi) -> Core.BlessedOp (State tk s fs sr cr mi) mo
+updatePatches :: forall tk s fs sr cr mi mo. Map Id.PatchR (Patch s fs sr cr mi) -> Core.BlessedOp (State _ tk s fs sr cr mi) mo
 updatePatches patches =
     Key.patchesBar >~ ListBar.setItems $ lbCommands patches
 
 
-selectPatch :: forall tk s fs sr cr mi mo. Int -> Core.BlessedOp (State tk s fs sr cr mi) mo
+selectPatch :: forall tk s fs sr cr mi mo. Int -> Core.BlessedOp (State _ tk s fs sr cr mi) mo
 selectPatch patchNumId =
     Key.patchesBar >~ ListBar.select patchNumId

@@ -53,6 +53,7 @@ import Cli.State (init, appendHistory, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
+import Cli.Class.CliRenderer (ConstantShift)
 -- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
 -- import Cli.WsServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
@@ -104,8 +105,11 @@ defaultOptions = JustRun defaultToolkit :: Options
 defaultToolkit = Starter :: SelectedToolkit
 
 
+type Locator = ConstantShift
+
+
 data App (tk :: ToolkitKey) pstate (fs :: Families) strepr chrepr m
-    = App Options (State tk pstate fs strepr chrepr m)
+    = App Options (State Locator tk pstate fs strepr chrepr m)
 
 
 run :: Effect Unit
@@ -148,7 +152,7 @@ runWith =
             fileCallback <- Blessed.impair1 applyFile
             liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
             pure unit
-        applyFile :: forall tk s fs sr cr m. Either _ String -> BlessedOp (State tk s fs sr cr m) Effect
+        applyFile :: forall tk s fs sr cr m. Either _ String -> BlessedOp (State Locator tk s fs sr cr m) Effect
         applyFile (Right fileContents) = do
             case P.runParser fileContents NdfFile.parser of
                 Right ndfFile ->
@@ -173,10 +177,10 @@ runBlessedInterface
     => CliFriendly tk fs chrepr Effect
     => ps
     -> Toolkit tk fs strepr chrepr Effect
-    -> BlessedOp (State tk ps fs strepr chrepr Effect) Effect
+    -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
     -> Effect Unit
 runBlessedInterface pState toolkit andThen = do
-    (initialState :: State tk ps fs strepr chrepr Effect) <- CState.init pState toolkit
+    (initialState :: State Locator tk ps fs strepr chrepr Effect) <- CState.init pState toolkit
     Blessed.runAnd initialState (MainScreen.component initialState) $ do
         hMsg <- Blessed.impair2 handleMessage
         hCon <- Blessed.impair2 handleConnection
@@ -199,16 +203,16 @@ runBlessedInterface pState toolkit andThen = do
             -- FIXME: State.modify_ State.informWsListening
             -- FIXME: WsButton.updateStatus $ WsButton.Waiting
             mainScreen >~ Screen.render
-        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State tk ps fs strepr chrepr Effect) Effect
+        handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State tk ps fs strepr chrepr Effect) Effect
+        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
             liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
-        handleError :: Error -> BlessedOp (State tk ps fs strepr chrepr Effect) Effect
+        handleError :: Error -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleError _ = pure unit
         {- FIXME
         storeProducts :: Either Error CAI.ProductsRequestResult -> BlessedOp State Effect

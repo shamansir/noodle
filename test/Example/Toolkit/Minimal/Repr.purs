@@ -4,6 +4,8 @@ import Prelude
 
 import Partial.Unsafe (unsafePartial)
 
+import Type.Proxy (Proxy)
+
 import Data.Newtype (unwrap, wrap) as NT
 -- import Data.String.Read (read)
 import Data.Int (fromString, toStringAs, decimal) as Int
@@ -16,9 +18,8 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr, readChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline) as ViC
-import Noodle.Repr.Tagged (class Tagged)
-import Noodle.Repr.Tagged (Path) as Tag
-import Noodle.Raw.Fn.Shape (Tag, tagAs)
+import Noodle.Repr.Tagged (class ValueTagged, ValuePath) as VT
+import Noodle.Raw.Fn.Shape (ValueTag, tagAs)
 import Noodle.Repr.StRepr (class StRepr)
 
 import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, exprOp, typeCtor, typeOp, binaryOp)
@@ -87,13 +88,15 @@ instance Show MinimalVRepr where
             UnitV -> "<Unit>"
 
 
-instance Tagged MinimalVRepr where
-    tag :: Tag.Path -> MinimalVRepr -> Tag
-    tag = const $ tagAs <<< case _ of
+instance VT.ValueTagged MinimalVRepr where
+    valueTag :: VT.ValuePath -> MinimalVRepr -> ValueTag
+    valueTag = const $ tagAs <<< case _ of
         None -> "None"
         Int _ -> "Int"
         Str _ -> "Str"
         UnitV -> "Unit"
+    acceptByTag :: Proxy MinimalVRepr -> { current :: ValueTag, incoming :: ValueTag } -> Boolean
+    acceptByTag _ { current, incoming } = current == incoming
 
 
 instance StRepr Unit MinimalStRepr where

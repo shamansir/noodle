@@ -40,6 +40,7 @@ import Cli.State (State)
 import Cli.State (formatHistory, isPanelOn) as CState
 import Cli.Panels (Which(..)) as P
 import Cli.Class.CliFriendly (class CliFriendly)
+import Cli.Class.CliRenderer (class CliLocator)
 
 import Cli.Components.SidePanel as SP
 
@@ -67,8 +68,9 @@ import Cli.Components.CommandInput as CommandInput
 
 -- TODO: take toolkit here
 component
-    :: forall tk ps fs strepr chrepr
-    .  HasFallback chrepr
+    :: forall loc tk ps fs strepr chrepr
+    .  CliLocator loc
+    => HasFallback chrepr
     => HasFallback strepr
     => VT.ValueTagged chrepr
     => ParseableRepr chrepr
@@ -76,8 +78,8 @@ component
     => Toolkit.FromPatchState tk ps strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => CliFriendly tk fs chrepr Effect
-    => State tk ps fs strepr chrepr Effect
-    -> Core.Blessed (State tk ps fs strepr chrepr Effect)
+    => State loc tk ps fs strepr chrepr Effect
+    -> Core.Blessed (State loc tk ps fs strepr chrepr Effect)
 component initialState =
     B.screenAnd Key.mainScreen
 
