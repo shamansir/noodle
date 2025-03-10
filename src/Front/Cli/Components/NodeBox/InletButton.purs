@@ -140,19 +140,10 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         nodeR = RawNode.id rawNode
         familyR = Id.familyOf nodeR
         temper = fromMaybe Temperament.default $ RawShape.temperamentOf inletR $ RawNode.shape rawNode
-        (sendF :: chrepr -> Effect Unit) =
-            \reprV -> do
-                state <- Ref.read stateRef
-                case state.inletEditorOpenedFrom of
-                    Just (editorRawNode /\ editorInletR) -> do
-                        -- Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
-                        stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
-                        RawNode.sendIn editorInletR reprV editorRawNode
-                        Blessed.runM' stateRef $ CL.trackCommand $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue reprV
-                    Nothing ->
-                        pure unit
         (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
-        (mbValueEditorOp :: Maybe (ValueEditorComp chrepr Unit Effect)) = (\f -> f (ViC.toFallback vicRepr) sendF) <$> mbValueEditor
+        (mbValueEditorOp :: Maybe (ValueEditorComp chrepr Unit Effect)) =
+            (\f -> f (ViC.toFallback vicRepr) $ sendFromEditor stateRef nodeR inletR)
+            <$> mbValueEditor
     in B.button buttonKey
         [ Box.content $ T.singleLine $ T.inlet inletIdx inletR vicRepr
         , Box.top $ Offset.px 0
@@ -171,6 +162,19 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
             $ onMouseOut infoBoxKey inletIdx
         ]
         []
+
+
+sendFromEditor :: forall tk pstate fs strepr chrepr m. Ndf.ValueEncode chrepr => Ref (State tk pstate fs strepr chrepr m) -> Id.NodeR -> Id.InletR -> chrepr -> Effect Unit
+sendFromEditor stateRef nodeR inletR reprV = do
+    state <- Ref.read stateRef
+    case state.inletEditorOpenedFrom of
+        Just (editorRawNode /\ editorInletR) -> do
+            -- Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
+            stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
+            RawNode.sendIn editorInletR reprV editorRawNode
+            Blessed.runM' stateRef $ CL.trackCommand $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue reprV
+        Nothing ->
+            pure unit
 
 
 onMouseOver
@@ -342,6 +346,8 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
                                 State.modify_ $ State.markInletEditorCreated curValueTag
                             else do
                                 CC.log "Skip creating the editor"
+                            CC.log "Remember the source node & inlet of the opened editor"
+                            State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                             CC.log "Send current value in the editor"
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
                             nodeBounds <- case Map.lookup nodeR state.locations of
@@ -350,8 +356,7 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
                             let inletPos = Bounds.inletPos nodeBounds inletIdx
                             CC.log "Transpose the editor"
                             _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y }
-                            CC.log "Remember the source node & inlet of the opened editor"
-                            State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
+                            pure unit
                         Nothing ->
                             pure unit
                             -- CC.log "No matching editor was found, skip"
