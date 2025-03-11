@@ -55,7 +55,13 @@ Generate code for _starter_ toolkit with `purescript-codegen` using the given de
 
 `sh ./run-cli.sh -g ./ndf/starter.v0.1.ndf -t starter`
 
-The code will be located in `./src/Demo/Toolkit/Starter` directory.
+By defaul the generated code will be located in `./src/Demo/_Gen/Starter` directory (`./src/Demo/_Gen/<TOOLKIT-NAME>`). This could cause having double modules, though, and so fail to compile/start, since generated modules for toolkit could have the exact same name as the toolkit sources already provided in the repository, or just the sources that were generated before current run. In this case ensure that you don't need the previous sources at this location or have them commited to version control, and delete the target directory before generating new ones.
+
+Also, you could specify output directory manually:
+
+`sh ./run-cli.sh -g ./ndf/starter.v0.1.ndf -t starter -o ~/Temp/_Codegen`
+
+Notice that toolkit name will be appended to the path automatically, you don't need to specify it
 
 ## Command Bar
 
@@ -77,3 +83,8 @@ Command bar is called by `<TAB>` key and currently supports these kinds of `NDF`
 ## Run tests
 
 `sh ./test.sh`
+
+## Other
+
+* `sh ./run-cli.sh --palette-test` : Test how color palette is visible in your terminal;
+* `sh ./run-cli.sh --cli-demo` : Test if `chjj/blessed` interface works;

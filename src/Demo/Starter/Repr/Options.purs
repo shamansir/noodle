@@ -20,11 +20,11 @@ import StarterTk.Repr.ChRepr (ValueRepr)
 
 options :: Options StateRepr ValueRepr
 options = Options $
-    { streprAt : { module_ : "StarterTk.Repr", type_ : "StateRepr" }
-    , chreprAt : { module_ : "StarterTk.Repr", type_ : "ValueRepr" }
+    { streprAt : { module_ : "StarterTk.Repr.StRepr", type_ : "StateRepr" }
+    , chreprAt : { module_ : "StarterTk.Repr.ChRepr", type_ : "ValueRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
-    , familyModuleName : \fgroup family -> "StarterTk" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
+    , familyModuleName : \fgroup family -> "StarterTk" <> "." <> "Library" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
     , pstrepr : (Proxy :: _ StateRepr)
     , pchrepr : (Proxy :: _ ValueRepr)
     , infoComment : Just $ \mbSource fgroup family ->
@@ -46,6 +46,6 @@ options = Options $
     }
     where
         genericImports = unsafePartial $
-            [ declImport "Data.Tuple.Nested" [ importOp "/\\", importTypeOp "/\\" ]
-            , declImportAs "StarterTk.Repr" [] "VR"
+            [ declImportAs "StarterTk.Repr.ChRepr" [] "VR"
+            , declImport "Data.Tuple.Nested" [ importOp "/\\", importTypeOp "/\\" ]
             ]

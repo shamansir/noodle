@@ -396,7 +396,7 @@ instance ParseableRepr ValueRepr where
 
 
 instance CodegenRepr ValueRepr where
-    reprModule = const "StarterTk.Repr"
+    reprModule = const "StarterTk.Repr.ChRepr"
     reprTypeName = const "ValueRepr"
     reprType = const $ unsafePartial $ typeCtor "ValueRepr"
     fTypeFor = const $ unsafePartial $ \_ -> typeCtor "ValueRepr"

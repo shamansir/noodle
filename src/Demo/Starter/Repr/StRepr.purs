@@ -7,7 +7,7 @@ import Data.Maybe (Maybe(..))
 import Partial.Unsafe (unsafePartial)
 
 import Tidy.Codegen
-     (exprIdent, typeCtor)
+     (exprCtor, typeCtor)
 
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -47,12 +47,12 @@ instance StRepr Unit StateRepr where
 
 
 instance CodegenRepr StateRepr where
-    reprModule = const "StarterTk.Repr"
-    reprTypeName = const "Unit" -- FIXME: "StateRepr"
-    reprType =    const $ unsafePartial $ typeCtor "Unit" -- FIXME: "StateRepr"
-    pTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "Unit"
-    pDefaultFor = const $ unsafePartial $ \_ -> exprIdent "unit"
-    pValueFor =   const $ unsafePartial $ \_ (EncodedValue valueStr) -> exprIdent "unit"
-    fTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "Unit"
-    fDefaultFor = const $ unsafePartial $ \mbType -> exprIdent "unit"
-    fValueFor =   const $ unsafePartial $ \mbType (EncodedValue valueStr) -> exprIdent "unit"
+    reprModule = const "StarterTk.Repr.StRepr"
+    reprTypeName = const "StateRepr" -- FIXME: "StateRepr"
+    reprType =    const $ unsafePartial $ typeCtor "StateRepr" -- FIXME: "StateRepr"
+    pTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "StateRepr"
+    pDefaultFor = const $ unsafePartial $ \_ -> exprCtor "StateRepr"
+    pValueFor =   const $ unsafePartial $ \_ (EncodedValue valueStr) -> exprCtor "StateRepr"
+    fTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "StateRepr"
+    fDefaultFor = const $ unsafePartial $ \mbType -> exprCtor "StateRepr"
+    fValueFor =   const $ unsafePartial $ \mbType (EncodedValue valueStr) -> exprCtor "StateRepr"

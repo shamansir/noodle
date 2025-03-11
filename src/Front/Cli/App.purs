@@ -13,7 +13,7 @@ import Data.Traversable (traverse_)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Exception (Error)
+import Effect.Exception (Error, throw)
 import Effect.Aff (runAff_)
 import Effect.Console (log) as Console
 
@@ -22,7 +22,7 @@ import Control.Monad.State (modify_, get) as State
 import Node.HTTP (Request)
 import Node.Encoding (Encoding(..))
 import Node.Process (cwd)
-import Node.FS.Sync (readTextFile, stat, exists, mkdir', writeTextFile) as Sync
+import Node.FS.Sync (readTextFile, stat, exists, mkdir', rm', rmdir, writeTextFile) as Sync
 import Node.FS.Aff (readTextFile, stat) as Async
 import Node.FS.Perms (permsReadWrite)
 
@@ -63,7 +63,7 @@ import Cli.Keys (mainScreen, wsStatusButton)
 -- import Cli.Components.WsStatusButton as WsButton
 
 
-import Noodle.Id (ToolkitR, toolkitR, FamilyR) as Id
+import Noodle.Id (ToolkitR, toolkitR, FamilyR, toolkit) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -91,11 +91,14 @@ data SelectedToolkit
 newtype NdfFilePath = NdfFilePath String
 
 
+newtype GenTargetPath = GenTargetPath String
+
+
 data Options
     = Demo
     | JustRun SelectedToolkit
     | LoadNetworkFrom NdfFilePath SelectedToolkit
-    | GenerateToolkitFrom NdfFilePath SelectedToolkit
+    | GenerateToolkitFrom NdfFilePath SelectedToolkit GenTargetPath
     | PaletteTest SelectedToolkit
 
 
@@ -133,13 +136,13 @@ runWith =
             case tkKey of
                 Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ postFix fromFile
                 User _  -> pure unit
-        GenerateToolkitFrom (NdfFilePath fromFile) tkKey -> do
+        GenerateToolkitFrom (NdfFilePath fromFile) tkKey (GenTargetPath genTargetDir) -> do
             case tkKey of
                 -- FIXME: even though `Starter` is the actual toolkit name, it mixes up modules names when we want them to be different.
                 -- FIXME: Also, it puts families into `Starter.Starter` directory
                 -- FIXME: Check the families' modules names as well, since they are `StarterTk` in current configuration...
                 -- FIXME: May be put `toolkitName` into `FCG.Options`, and/or generate its module name same way as with families...?
-                Starter -> generateToolkit Starter.options (Id.toolkitR "Starter") fromFile
+                Starter -> generateToolkit Starter.options (NdfFilePath fromFile) (Id.toolkitR "Starter") (GenTargetPath genTargetDir)
                 User _  -> pure unit
         PaletteTest tkKey ->
             runPaletteTest
@@ -259,6 +262,14 @@ options = ado
         , OA.help "Generate Tookit definition from given NDF file"
         ]
 
+    genTargetPath <- OA.strOption $ fold
+        [ OA.long "out"
+        , OA.short 'o'
+        , OA.metavar "GEN-TARGET-PATH"
+        , OA.value defaultGenTargetDir
+        , OA.help "Target path for code generation (only works with `-g`)"
+        ]
+
     paletteTest <- OA.switch $ fold
         [ OA.long "palette-test"
         , OA.help "Run the palette preview test"
@@ -277,30 +288,38 @@ options = ado
     in
         if demo then Demo
         else if paletteTest then PaletteTest selectedToolkit
-        else if (genFromFile /= "") then GenerateToolkitFrom (NdfFilePath genFromFile) selectedToolkit
+        else if (genFromFile /= "") then GenerateToolkitFrom (NdfFilePath genFromFile) selectedToolkit (GenTargetPath genTargetPath)
         else if (nwFromFile /= "")  then LoadNetworkFrom     (NdfFilePath nwFromFile)  selectedToolkit
         else JustRun selectedToolkit
 
 
-generateToolkit :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => FCG.Options strepr chrepr -> Id.ToolkitR -> String -> Effect Unit
-generateToolkit options toolkitName sourcePath = do
+defaultGenTargetDir = "./src/Demo/_Gen" :: String
+
+
+generateToolkit :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => FCG.Options strepr chrepr -> NdfFilePath -> Id.ToolkitR -> GenTargetPath -> Effect Unit
+generateToolkit options (NdfFilePath sourcePath) toolkitR (GenTargetPath genTargetDir) = do
     toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
     let eParsedNdf = P.runParser toolkitText NdfFile.parser
+    let getToolkitTargetDir = genTargetDir <> "/" <> Id.toolkit toolkitR
     case eParsedNdf of
         Left error -> Console.log $ "Error: " <> show error
         Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
+                targetDirExists <- Sync.exists getToolkitTargetDir
+                when targetDirExists $ throw $ getToolkitTargetDir <> " directory exists, please remove it before generation"
+                Console.log $ "Writing to " <> getToolkitTargetDir
                 --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
-                let fileMap = NdfFile.codegen toolkitName options parsedNdf
-                traverse_ writeCodegenFile $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
+                let fileMap = NdfFile.codegen toolkitR options parsedNdf
+                traverse_ (writeCodegenFile (GenTargetPath genTargetDir) toolkitR)
+                    $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else
             Console.log $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
-writeCodegenFile :: MCG.FilePath /\ MCG.FileContent -> Effect Unit
-writeCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
+writeCodegenFile :: GenTargetPath -> Id.ToolkitR -> MCG.FilePath /\ MCG.FileContent -> Effect Unit
+writeCodegenFile (GenTargetPath genTargetDir) toolkitR (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
     let
-        outputFilePath = "./src/Demo/Toolkit/Starter/" <> filePath
+        outputFilePath = genTargetDir <> "/" <> Id.toolkit toolkitR <> "/" <> filePath
         outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
     liftEffect $ do
         outputDirectoryExists <- Sync.exists outputDirectory
