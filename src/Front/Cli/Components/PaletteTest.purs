@@ -42,10 +42,10 @@ import Noodle.Repr.ValueInChannel (accept, decline) as ViC
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 
 import Starter.Toolkit (STARTER)
-import StarterTk.Simple.Sum as Starter.Sum
-import StarterTk.Simple.Color as Starter.Color
-import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr)
-import Demo.Toolkit.Starter.Repr.ChRepr (ValueRepr(..), Time(..), Shape(..), Color(..), Spread(..)) as Sr
+import StarterTk.Library.Simple.Sum as Starter.Sum
+import StarterTk.Library.Simple.Color as Starter.Color
+import StarterTk.Repr.ChRepr (ValueRepr)
+import StarterTk.Repr.ChRepr (ValueRepr(..), Time(..), Shape(..), Color(..), Spread(..)) as Sr
 
 
 type MainScreenKey = Screen <^> "main"

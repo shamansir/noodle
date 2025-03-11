@@ -77,8 +77,8 @@ import Cli.Class.CliFriendly (class CliFriendly)
 
 import Starter.Toolkit (toolkit) as Starter
 
-import Demo.Toolkit.Starter.Repr.Options (options) as Starter
-import Demo.Toolkit.Starter.Starter.Patch as Stater.Patch
+import StarterTk.Repr.Options (options) as Starter
+import StarterTk.Patch as Starter.Patch
 
 
 data SelectedToolkit
@@ -127,11 +127,11 @@ runWith =
     case _ of
         JustRun tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ pure unit
+                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
                 User _  -> pure unit
         LoadNetworkFrom (NdfFilePath fromFile) tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface Stater.Patch.init Starter.toolkit $ postFix fromFile
+                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ postFix fromFile
                 User _  -> pure unit
         GenerateToolkitFrom (NdfFilePath fromFile) tkKey -> do
             case tkKey of
