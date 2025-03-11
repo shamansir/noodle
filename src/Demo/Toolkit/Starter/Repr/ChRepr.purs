@@ -127,24 +127,24 @@ shapeToString = case _ of
 
 timeFromString :: String -> Maybe Time
 timeFromString str =
-    let eSepRegex = RGX.regex "\\w+" RGX.noFlags
+    let eSepRegex = RGX.regex "[hms]" RGX.global
     in case eSepRegex of
         Left _ -> Nothing
         Right sepRegex ->
             case RGX.split sepRegex str of
-                [ hh, mm, ss ] ->
+                [ hh, mm, ss, _ ] ->
                     Just $ Time
                         { hours   : fromMaybe 0 $ Int.fromString hh
                         , minutes : fromMaybe 0 $ Int.fromString mm
                         , seconds : fromMaybe 0 $ Int.fromString ss
                         }
-                [ mm, ss ] ->
+                [ mm, ss, _ ] ->
                     Just $ Time
                         { hours   : 0
                         , minutes : fromMaybe 0 $ Int.fromString mm
                         , seconds : fromMaybe 0 $ Int.fromString ss
                         }
-                [ ss ] ->
+                [ ss, _ ] ->
                     Just $ Time
                         { hours   : 0
                         , minutes : 0
