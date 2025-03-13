@@ -177,8 +177,8 @@ removeCommandOp = do
 
 commandOp :: OpParser
 commandOp =
-  P.try (FamilyDef.parser <#> Cmd.DefineFamily) <?> "node definition"
-  <|> P.try (FamilyDef.assignmentParser <#> Cmd.AssignProcess) <?> "process assign"
+  P.try familyDefinition <?> "node definition"
+  <|> P.try processAsssignment <?> "process assign"
   <|> P.try connectCommandOpII <?> "connect command"
   <|> P.try connectCommandOpSS <?> "connect command"
   <|> P.try connectCommandOpIS <?> "connect command"
@@ -198,6 +198,9 @@ commandOp =
   <|> P.try documentationCommandOp <?> "documentation command"
   <|> P.try removeCommandOp <?> "remove node command"
   <|> P.try comment <?> "comment"
+  where
+    familyDefinition   = FamilyDef.parser <#> Cmd.DefineFamily
+    processAsssignment = (FamilyDef.assignmentParser <* P.anyTill eoi) <#> Cmd.AssignProcess
 
 
 command :: SParser Command

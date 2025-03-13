@@ -198,12 +198,12 @@ loadDefinitions :: NdfFile -> Array (Maybe Source /\ FamilyDef) -- a) TODO: Use 
 loadDefinitions ndfFile =
     ndfFile
         # extractCommands
-        # _normalizeCommands
+        -- # _normalizeCommands
         # definitionsFromCommands_
         # Array.sortWith (Tuple.fst >>> map _.lineIndex)
         # case loadOrder ndfFile of
                 Just familiesOrder -> Array.sortUsing (Tuple.snd >>> FD.family) (Array.concat familiesOrder)
-                Nothing -> identity -- Array.sortWith (Tuple.fst >>> map _.lineIndex)
+                Nothing -> identity -- Array.sortWith (Tuple.fst >>> map _.lineIndex
 
 
 loadOrder :: NdfFile -> Maybe FamiliesOrder

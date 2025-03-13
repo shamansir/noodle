@@ -2,6 +2,8 @@ module Cli.App where
 
 import Prelude
 
+import Debug as Debug
+
 import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Either (Either(..))
 import Data.Map as Map
