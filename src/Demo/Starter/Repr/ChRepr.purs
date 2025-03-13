@@ -430,24 +430,24 @@ instance CodegenRepr ValueRepr where
             Just "SpreadV" -> exprApp (exprCtor "VR.VSpreadVec") [ pValueFor pValue mbType encV ]
             Just "SpreadC" -> exprApp (exprCtor "VR.VSpreadCol") [ pValueFor pValue mbType encV ]
             Just "SpreadS" -> exprApp (exprCtor "VR.VSpreadShp") [ pValueFor pValue mbType encV ]
-    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
-            case typeStr of
-                "Any"     -> typeCtor "VR.Any"
-                "Bang"    -> typeCtor "VR.Bang"
-                "Bool"    -> typeCtor "Boolean"
-                "Char"    -> typeCtor "Char"
-                "Number"  -> typeCtor "Number"
-                "Int"     -> typeCtor "Int"
-                "Time"    -> typeCtor "VR.Time"
-                "Color"   -> typeCtor "VR.Color"
-                "Shape"   -> typeCtor "VR.Shape"
-                "SpreadN" -> typeApp (typeCtor "VR.Spread") [ typeCtor "Number" ]
-                "SpreadV" -> typeApp (typeCtor "VR.Spread")
+    pTypeFor = const $ unsafePartial $ \mbType ->
+            case NT.unwrap <$> mbType of
+                Just "Any"     -> typeCtor "VR.Any"
+                Just "Bang"    -> typeCtor "VR.Bang"
+                Just "Bool"    -> typeCtor "Boolean"
+                Just "Char"    -> typeCtor "Char"
+                Just "Number"  -> typeCtor "Number"
+                Just "Int"     -> typeCtor "Int"
+                Just "Time"    -> typeCtor "VR.Time"
+                Just "Color"   -> typeCtor "VR.Color"
+                Just "Shape"   -> typeCtor "VR.Shape"
+                Just "SpreadN" -> typeApp (typeCtor "VR.Spread") [ typeCtor "Number" ]
+                Just "SpreadV" -> typeApp (typeCtor "VR.Spread")
                                 [ typeOp (typeCtor "Number")
                                     [ binaryOp "/\\" $ typeCtor "Number" ]
                                 ]
-                "SpreadC" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Color" ]
-                "SpreadS" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Shape" ]
+                Just "SpreadC" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Color" ]
+                Just "SpreadS" -> typeApp (typeCtor "VR.Spread") [ typeCtor "VR.Shape" ]
                 _ -> typeCtor "Unit"
     pDefaultFor = const $ unsafePartial $ \mbType ->
             case NT.unwrap <$> mbType of -- FIXME: use `HasFallback`

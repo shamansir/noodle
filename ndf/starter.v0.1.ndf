@@ -1,16 +1,16 @@
 starter 0.2 0.1
 * | bang metro gennum random knob color letter sum lerp log | shape sketch |
-: simple : gennum :: <> => out:Number {#/0.0}
 : simple : sum :: <a:Number -> b:Number -> c:Number> => sum:Number {#/0.0}
 : simple : log :: <what:Any> => <>
 : simple : color :: <r:Number -> g:Number -> b:Number> => color:Color {c/000000}
 : simple : time :: <h:Int -> m:Int -> s:Int> => time:Time {t/0s}
 : simple : knob :: <min:Number -> max:Number> => number:Number {#/0.0}
-: simple : metro :: <enabled:Bool {b/true} -> period:Time {t/2s}> => bang:Bang
 : simple : letter :: <code:Number> => letter:Char
 : simple : random :: <bang:Bang -> min:Number -> max:Number> => random:Number
 : simple : bang :: <> => bang:Bang
 : simple : lerp :: <v:Number -> min:Number -> max:Number {#/100.0}> => v:Number {#/0.0}
+: simple : metro :: [Metro] <enabled:Bool {b/true} -> period:Time {t/2s}> => bang:Bang
+: simple : gennum :: [Gennum] <> => out:Number {#/0.0}
 : p5 : shape :: <> => shape:Shape {s/circle}
 : p5 : sketch :: <shape:Shape {s/circle} -> wavescount:Number {#/5.0} -> startcolor:Color {c/00000} -> endcolor:Color {c/143636} -> xspasing:Number {#/16} -> amplitude:Number {#/75} -> period:Number {#/500}> => <>
 : spreads : nspread :: <min:Number {#/-150.0} -> max:Number {#/150.0} -> count:Number {#/26}> => spread:SpreadN

@@ -8,7 +8,7 @@ import Type.Proxy (Proxy(..))
 
 import Partial.Unsafe (unsafePartial)
 
-import Tidy.Codegen (declImport, declImportAs, importOp, importTypeOp, importValue)
+import Tidy.Codegen (declImport, declImportAs, importOp, importType, importTypeOp, importValue, importTypeAll)
 
 import Noodle.Id (family) as Id
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
@@ -36,9 +36,10 @@ options = Options $
         genericImports <> case Id.family familyR of
             "gennum" ->
                 unsafePartial $
-                    [ declImport "Effect.Class" [ importValue "liftEffect" ]
+                    [ declImport "Data.Maybe" [ importTypeAll "Maybe" ]
+                    , declImport "Effect.Class" [ importValue "liftEffect" ]
                     , declImport "Effect.Random" [ importValue "random" ]
-                    , declImport "Signal" [ importOp "~>" ]
+                    , declImport "Signal" [ importOp "~>", importType "Signal" ]
                     , declImportAs "Signal.Extra" [ ] "SignalX"
                     , declImportAs "Signal.Time" [ importValue "every" ] "Signal"
                     ]

@@ -17,8 +17,8 @@ import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (ImportDecl, Module(..))
 import PureScript.CST.Types (Type, Expr, Declaration) as CST
 
-import Tidy.Codegen hiding (importType, importTypeOp, importValue, importTypeAll)
-import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue)
+import Tidy.Codegen hiding (importType, importTypeOp, importValue, importTypeAll, importClass)
+import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue, importClass)
 
 import Noodle.Id as Id
 import Noodle.Fn.Shape.Temperament (Temperament(..)) as T
@@ -93,10 +93,10 @@ class CodegenRepr repr where
   reprModule :: Proxy repr -> String -- a full path to the module where repr wrapper is located
   reprTypeName :: Proxy repr -> String -- a name of the type of the repr wrapper itself
   reprType :: Proxy repr -> CST.Type Void -- a CST type represntation of the repr wrapper itself
-  fTypeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for given encoded type (full, from root type)
+  fTypeFor :: Proxy repr -> Maybe EncodedType -> CST.Type Void -- a CST type representation for given encoded type (full, from root type)
   fDefaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code (full, from root type)
   fValueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value (full, from root type)
-  pTypeFor :: Proxy repr -> EncodedType -> CST.Type Void -- a CST type representation for given encoded type (partial, from inner type)
+  pTypeFor :: Proxy repr -> Maybe EncodedType -> CST.Type Void -- a CST type representation for given encoded type (partial, from inner type)
   pDefaultFor :: Proxy repr -> Maybe EncodedType -> CST.Expr Void -- default value for the given type (if specified) in case when expected default value wasn't provided by user in the code (partial, from inner type)
   pValueFor :: Proxy repr -> Maybe EncodedType -> EncodedValue -> CST.Expr Void -- a CST value representation for a given type (if specified) and given encoded value (partial, from inner type)
 
@@ -183,8 +183,9 @@ generateModule (Options opts) mbSource fdef
     , spawn : importValue "Family.spawn"
     }
   tkF <- importFrom "Noodle.Toolkit.Families" $ importType "Noodle.F"
+  hasFallback <- importFrom "Noodle.Repr.HasFallback" $ importClass "HasFallback"
   reprC <- importFrom (reprModule opts.pchrepr) $ importTypeAll $ reprTypeName opts.pchrepr -- FIXME: use forall?
-  reprS <- importFrom (reprModule opts.pstrepr) $ importTypeAll $ reprTypeName opts.pstrepr -- FIXME: use forall?
+  -- reprS <- importFrom (reprModule opts.pstrepr) $ importTypeAll $ reprTypeName opts.pstrepr -- FIXME: use forall?
 
   let
     familyName = Sig.name fdef.fnsig
@@ -193,12 +194,12 @@ generateModule (Options opts) mbSource fdef
     nameOf (name /\ _) = name
 
     qPartialReprType :: Maybe EncodedType -> CST.Type Void
-    qPartialReprType = maybe (reprType opts.pchrepr :: CST.Type Void) (pTypeFor opts.pchrepr)
+    qPartialReprType = pTypeFor opts.pchrepr
     qPartialReprValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
     qPartialReprValue mbDataType = maybe (pDefaultFor opts.pchrepr mbDataType) (pValueFor opts.pchrepr mbDataType)
 
     qPartialStateType :: Maybe EncodedType -> CST.Type Void
-    qPartialStateType = maybe (reprType opts.pstrepr :: CST.Type Void) (pTypeFor opts.pstrepr)
+    qPartialStateType = pTypeFor opts.pstrepr
     qPartialStateValue :: Maybe EncodedType -> Maybe EncodedValue -> CST.Expr Void
     qPartialStateValue mbDataType = maybe (pDefaultFor opts.pstrepr mbDataType) (pValueFor opts.pstrepr mbDataType)
 
@@ -291,9 +292,12 @@ generateModule (Options opts) mbSource fdef
         $ typeApp (typeCtor shapeN.shape)
             [ typeCtor "Inlets", typeCtor "Outlets" ]
 
+    , declNewtype "State" [] "State"
+        $ qPartialStateType state.mbType
+
     , declType "Process" []
         $ typeApp (typeCtor processN)
-            [ qPartialStateType state.mbType
+            [ typeCtor "State"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -303,7 +307,7 @@ generateModule (Options opts) mbSource fdef
     , declType "Node" []
         $ typeApp (typeCtor nodeCtor)
             [ typeString familyName
-            , qPartialStateType state.mbType
+            , typeCtor "State"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -313,7 +317,7 @@ generateModule (Options opts) mbSource fdef
     , declType "Family" []
         $ typeApp (typeCtor tkFamilyN)
             [ typeString familyName
-            , qPartialStateType state.mbType
+            , typeCtor "State"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -323,7 +327,7 @@ generateModule (Options opts) mbSource fdef
     , declType "F" []
         $ typeApp (typeCtor tkF)
             [ typeString familyName
-            , qPartialStateType state.mbType
+            , typeCtor "State"
             , typeCtor "InletsRow"
             , typeCtor "OutletsRow"
             , typeCtor reprC
@@ -338,8 +342,9 @@ generateModule (Options opts) mbSource fdef
     , declValue "defaultO" []
         $ exprRecord $ channelDefault <$> Sig.outs fdef.fnsig
 
-    , declSignature "defaultSt" $ qPartialStateType state.mbType
-    , declValue "defaultSt" [] $ qPartialStateValue state.mbType state.mbDefault
+    , declSignature "defaultSt" $ typeCtor "State"
+    , declValue "defaultSt" [] $ exprApp (exprCtor "State")
+        [ qPartialStateValue state.mbType state.mbDefault ]
     ]
     <> (inletDeclr  <$> Sig.args fdef.fnsig)
     <> (outletDeclr <$> Sig.outs fdef.fnsig)
@@ -368,6 +373,9 @@ generateModule (Options opts) mbSource fdef
         $ exprDo
           [ ]
           (leading (lineBreaks 1 <> blockComment __process_stub <> lineBreaks 1) $ exprApp (exprIdent "pure") [ exprIdent "unit" ])
+
+    , declInstance Nothing [] hasFallback [ typeCtor "State" ]
+        [ instValue "fallback" [] $ exprIdent "defaultSt" ]
     ]
 
 

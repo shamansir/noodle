@@ -6,7 +6,7 @@ import Type.Proxy (Proxy(..))
 
 import Partial.Unsafe (unsafePartial)
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodePoints as String
 import Data.Number as Number
 import Data.Newtype (unwrap) as NT
@@ -637,24 +637,24 @@ instance CodegenRepr WrapRepr where
             Just "DepFn"   -> exprApp (wrapCtor_ "DepFn") [ pValueFor pWrap mbType encV ]
             Just "CBS"     -> exprApp (wrapCtor_ "CBS") [ pValueFor pWrap mbType encV ]
             _ -> exprApp (wrapCtor_ "Unit") [ exprIdent "unit" ]
-    pTypeFor :: Proxy WrapRepr -> EncodedType -> CST.Type Void
-    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
-                case typeStr of
-                    "Value" -> HT.hydraType_ "Value"
-                    "Texture" -> HT.hydraType_ "Texture"
-                    "TODO" -> HT.hydraType_ "TODO"
-                    "Values" -> HT.hydraType_ "Values"
-                    "Source" -> HT.hydraType_ "Source"
-                    "GlslFn" -> HT.hydraType_ "GlslFn"
-                    "OutputN" -> HT.hydraType_ "OutputN"
-                    "Audio" -> HT.hydraType_ "AudioSource"
-                    "RenderTarget" -> HT.hydraType_ "RenderTarget"
-                    "SourceN" -> HT.hydraType_ "SourceN"
-                    "SourceOptions" -> HT.hydraType_ "SourceOptions"
-                    "Url" -> HT.hydraType_ "Url"
-                    "UpdateFn" -> HT.hydraType_ "UpdateFn"
-                    "Ease" -> HT.hydraType_ "Ease"
-                    "AudioBin" -> HT.hydraType_ "AudioBin"
+    pTypeFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Type Void
+    pTypeFor = const $ unsafePartial $ \mbType ->
+                case NT.unwrap <$> mbType of
+                    Just "Value" -> HT.hydraType_ "Value"
+                    Just "Texture" -> HT.hydraType_ "Texture"
+                    Just "TODO" -> HT.hydraType_ "TODO"
+                    Just "Values" -> HT.hydraType_ "Values"
+                    Just "Source" -> HT.hydraType_ "Source"
+                    Just "GlslFn" -> HT.hydraType_ "GlslFn"
+                    Just "OutputN" -> HT.hydraType_ "OutputN"
+                    Just "Audio" -> HT.hydraType_ "AudioSource"
+                    Just "RenderTarget" -> HT.hydraType_ "RenderTarget"
+                    Just "SourceN" -> HT.hydraType_ "SourceN"
+                    Just "SourceOptions" -> HT.hydraType_ "SourceOptions"
+                    Just "Url" -> HT.hydraType_ "Url"
+                    Just "UpdateFn" -> HT.hydraType_ "UpdateFn"
+                    Just "Ease" -> HT.hydraType_ "Ease"
+                    Just "AudioBin" -> HT.hydraType_ "AudioBin"
                     -- FIXME: implement further
                     _ -> wrapTypeCtor_ "WrapRepr"
     pDefaultFor :: Proxy WrapRepr -> Maybe EncodedType -> CST.Expr Void

@@ -32,3 +32,4 @@ commands.log.txt
 node_modules.*
 node-modules.*
 /tests.mute
+src/Demo/_Gen

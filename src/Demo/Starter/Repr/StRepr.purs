@@ -3,15 +3,18 @@ module StarterTk.Repr.StRepr where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
+import Data.Newtype (unwrap) as NT
 
+import Type.Proxy (Proxy)
 import Partial.Unsafe (unsafePartial)
+import PureScript.CST.Types (Type, Expr, Declaration) as CST
 
 import Tidy.Codegen
-     (exprCtor, typeCtor)
 
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pDefaultFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
 import StarterTk.Library.Simple.Gennum as Gennum
@@ -48,11 +51,51 @@ instance StRepr Unit StateRepr where
 
 instance CodegenRepr StateRepr where
     reprModule = const "StarterTk.Repr.StRepr"
-    reprTypeName = const "StateRepr" -- FIXME: "StateRepr"
-    reprType =    const $ unsafePartial $ typeCtor "StateRepr" -- FIXME: "StateRepr"
-    pTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "StateRepr"
-    pDefaultFor = const $ unsafePartial $ \_ -> exprCtor "StateRepr"
+    reprTypeName = const "StateRepr"
+    reprType =    const $ unsafePartial $ typeCtor "StateRepr"
+    pTypeFor =    typeFor
+    pDefaultFor = defaultFor
     pValueFor =   const $ unsafePartial $ \_ (EncodedValue valueStr) -> exprCtor "StateRepr"
-    fTypeFor =    const $ unsafePartial $ \(EncodedType _) -> typeCtor "StateRepr"
-    fDefaultFor = const $ unsafePartial $ \mbType -> exprCtor "StateRepr"
+    fTypeFor =    typeFor
+    fDefaultFor = defaultFor
     fValueFor =   const $ unsafePartial $ \mbType (EncodedValue valueStr) -> exprCtor "StateRepr"
+
+
+typeFor :: Proxy StateRepr -> Maybe EncodedType -> CST.Type Void
+typeFor = const $ unsafePartial $ \mbEncType ->
+    case NT.unwrap <$> mbEncType of
+        Just "Unit" -> typeCtor "Unit"
+        Just "Gennum" ->
+            typeRecord
+                [ "signal" /\ typeApp (typeCtor "Maybe")
+                    [ typeApp (typeCtor "Signal")
+                        [ typeApp (typeCtor "Effect") [ typeCtor "Unit" ]
+                        ]
+                    ]
+                ] Nothing
+        Just "Metro" ->
+            typeRecord
+                [ "cancelPrev" /\ typeApp (typeCtor "Maybe")
+                    [ typeApp (typeCtor "Effect") [ typeCtor "Unit" ]
+                    ]
+                ] Nothing
+        _ -> typeCtor "Unit"
+
+
+
+defaultFor :: Proxy StateRepr -> Maybe EncodedType -> CST.Expr Void
+defaultFor = const $ unsafePartial $ \mbType ->
+    case mbType of
+        Just (EncodedType encType) ->
+            case encType of
+                "Unit" -> exprIdent "unit"
+                "Gennum" ->
+                    exprRecord
+                        [ "signal" /\ exprCtor "Nothing"
+                        ]
+                "Metro" ->
+                    exprRecord
+                        [ "cancelPrev" /\ exprCtor "Nothing"
+                        ]
+                _ -> exprIdent "unit"
+        Nothing -> exprIdent "unit"
