@@ -155,6 +155,7 @@ generateModule (Options opts) mbSource fdef
   nodeMonad <- importFrom opts.monadAt.module_ $ importType opts.monadAt.type_ -- FIXME: use forall
   listOp <- importFrom "Type.Data.List" $ importTypeOp ":>"
   listTnil <- importFrom "Type.Data.List.Extra" $ importType "TNil"
+  newtypeClass <- importFrom "Data.Newtype" $ importClass "Newtype"
   familyIdCtor <- importFrom "Noodle.Id" $ importTypeAll "NId.Family"
   temper <- importFrom "Noodle.Fn.Shape.Temperament" $
     { hot : importType "Hot"
@@ -376,6 +377,7 @@ generateModule (Options opts) mbSource fdef
 
     , declInstance Nothing [] hasFallback [ typeCtor "State" ]
         [ instValue "fallback" [] $ exprIdent "defaultSt" ]
+    , declDerive Nothing [] newtypeClass [ typeCtor "State", typeWildcard ]
     ]
 
 

@@ -24,7 +24,7 @@ options = Options $
     , chreprAt : { module_ : "StarterTk.Repr.ChRepr", type_ : "ValueRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
-    , familyModuleName : \fgroup family -> "StarterTk" <> "." <> "Library" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
+    , familyModuleName : \fgroup family -> "StarterTk" <> "." <> "Gen" <> "." <> "Library" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
     , pstrepr : (Proxy :: _ StateRepr)
     , pchrepr : (Proxy :: _ ValueRepr)
     , infoComment : Just $ \mbSource fgroup family ->
@@ -37,11 +37,24 @@ options = Options $
             "gennum" ->
                 unsafePartial $
                     [ declImport "Data.Maybe" [ importTypeAll "Maybe" ]
+                    , declImport "Data.Newtype" [ importValue "unwrap", importValue "wrap" ]
                     , declImport "Effect.Class" [ importValue "liftEffect" ]
                     , declImport "Effect.Random" [ importValue "random" ]
+                    , declImportAs "Control.Monad.State" [ importValue "get", importValue "modify_" ] "State"
                     , declImport "Signal" [ importOp "~>", importType "Signal" ]
+                    , declImportAs "Signal" [ importValue "runSignal" ] "Signal"
                     , declImportAs "Signal.Extra" [ ] "SignalX"
                     , declImportAs "Signal.Time" [ importValue "every" ] "Signal"
+                    ]
+            "metro" ->
+                unsafePartial $
+                    [ declImport "Data.Maybe" [ importTypeAll "Maybe" ]
+                    , declImportAs "Data.Int" [ importValue "toNumber" ] "Int"
+                    , declImport "Data.Newtype" [ importValue "unwrap", importValue "wrap" ]
+                    , declImportAs "Control.Monad.State" [ importValue "get", importValue "put" ] "State"
+                    , declImportAs "Signal.Time.Extra" [ importValue "every" ] "SignalX"
+                    , declImportAs "Signal" [ importValue "runSignal" ] "Signal"
+                    , declImport "Signal" [ importOp "~>" ]
                     ]
             _ -> []
     }

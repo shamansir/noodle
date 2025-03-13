@@ -12,6 +12,7 @@ import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (ImportDecl, Module)
 import PureScript.CST.Types (Type, Expr, Declaration) as CST
 
+import Data.Array ((:))
 import Data.Array (uncons, reverse, singleton, mapWithIndex, index, nub) as Array
 import Data.Foldable (foldr)
 import Data.Map (Map)
@@ -82,6 +83,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         (
             [ declImport "Prelude" [ ] -- import Prelude (($), (#), (>>>), (<<<), pure, unit, const)
             , declImport "Effect" [ importType "Effect" ]
+            , declImport "Effect.Class" [ importClass "MonadEffect" ]
             , declImportAs "Color" [] "Color"
             , declImport "Data.Maybe" [ importTypeAll "Maybe" ]
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
@@ -89,11 +91,12 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
             , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR", importValue "group" ] "Id"
             , declImport "Noodle.Fn.Signature" [ importValue "sig", importClass "PossiblyToSignature" ]
-            , declImportAs "Noodle.Fn.Signature" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_" ] "Sig"
+            , declImportAs "Noodle.Fn.Signature" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_", importValue "toChanneled" ] "Sig"
             , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr", importValue "markGroup" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
-            , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer", importClass "CliRawRenderer" ]
+            , declImport "Noodle.Repr.ValueInChannel" [ importType "ValueInChannel" ]
+            , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer", importClass "CliRawRenderer", importClass "CliEditor" ]
             ]
             <> (defToModuleImport <$> definitions) <>
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
@@ -125,13 +128,16 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     , binaryOp ">>>" $ exprIdent "Id.unsafeGroupR"
                     ]
             ]
-        , declInstance Nothing [] "CliRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
+        , declInstance Nothing [ monadEffectReq ] "CliRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
             [ instValue "cliSize" _5binders $ exprCtor "Nothing"
             , instValue "renderCli" _5binders $ exprCtor "Nothing" -- exprApp (exprCtor "Just") [ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
             ]
-        , declInstance Nothing [] "CliRawRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
+        , declInstance Nothing [ monadEffectReq ] "CliRawRenderer" [ typeCtor toolkitKey, typeCtor familiesCtor, typeCtor opts.chreprAt.type_, typeVar "m" ]
             [ instValue "cliSizeRaw" _5binders $ exprCtor "Nothing"
             , instValue "renderCliRaw" _5binders $ exprCtor "Nothing" -- exprApp (exprCtor "Just") [ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
+            ]
+        , declInstance Nothing [ ] "CliEditor" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_ ]
+            [ instValue "editorFor" (binderWildcard : _5binders) $ exprCtor "Nothing"
             ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
             [ instValue "markGroup" [ binderWildcard ]
@@ -147,6 +153,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         , generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray
         ]
     where
+        monadEffectReq = unsafePartial $ typeApp (typeCtor "MonadEffect") [ typeVar "m" ]
         toolkitKey = String.toUpper $ Id.toolkit tkName -- Id.toolkit tkName <> "Key"
         familiesCtor = Id.toolkit tkName <> "Families"
         groupAndFamily :: FamilyDef -> GroupR /\ FamilyR
@@ -216,8 +223,8 @@ generatePossiblyToSignatureInstance :: forall strepr chrepr. Partial => FCG.Code
 generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray =
     declInstance Nothing [] "PossiblyToSignature"
         [ typeCtor toolkitKey
-        , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
-        , typeApp (typeCtor "Maybe") [ typeCtor opts.chreprAt.type_ ]
+        , typeApp (typeCtor "ValueInChannel") [ typeCtor opts.chreprAt.type_ ]
+        , typeApp (typeCtor "ValueInChannel") [ typeCtor opts.chreprAt.type_ ]
         , typeCtor "Id.FamilyR"
         ]
         [ instValue "possiblyToSignature" [ binderWildcard ]
@@ -226,6 +233,8 @@ generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray =
                 $ exprCase [ exprSection ]
                     $ (fnDefBranch <$> definitionsArray)
                     <> [ caseBranch [ binderWildcard ] $ exprCtor "Nothing" ]
+            , binaryOp ">>>"
+                $ exprApp (exprIdent "map") [ exprIdent "Sig.toChanneled" ]
             ]
         ]
     where
@@ -289,7 +298,7 @@ moduleFile genRoot tkName familyDef =
 
 toolkitModuleName :: Toolkit.Name -> String
 toolkitModuleName tkName =
-    Id.toolkit tkName <> "." <> "Toolkit"
+    Id.toolkit tkName <> "." <> "Gen" <> "." <> "Toolkit"
 
 
 toolkitModuleName' :: ModulePrefix -> Toolkit.Name -> String

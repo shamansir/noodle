@@ -127,10 +127,8 @@ instance MonadEffect m => CliRenderer STARTER StarterFamilies ValueRepr m where
     -> Node f fstate is os ValueRepr m
     -> Maybe (BlessedOp fstate m)
   renderCli _ _ family nbkey node = do
-    -- liftEffect $ Console.log $ "render cli called with" <> reflectSymbol (Proxy :: _ f)
     case reflectSymbol (Proxy :: _ f) of
       "shape" -> Just $ do
-        -- liftEffect $ Console.log $ "shape :: " <> reflectSymbol (Proxy :: _ f)
         unsafeCoerce $ P5.Shape.body (unsafeCoerce family) nbkey (unsafeCoerce node)
       _ -> Nothing
 

@@ -1,5 +1,5 @@
 starter 0.2 0.1
-* | bang metro gennum random knob color letter sum lerp log | shape sketch |
+* | bang metro gennum random knob color time letter sum lerp log | shape sketch |
 : simple : sum :: <a:Number -> b:Number -> c:Number> => sum:Number {#/0.0}
 : simple : log :: <what:Any> => <>
 : simple : color :: <r:Number -> g:Number -> b:Number> => color:Color {c/000000}
@@ -36,7 +36,66 @@ starter 0.2 0.1
 @ shape : (TODO) Produce a shape that was selected in the node
 @ xsshape : (TODO) Take a spread of positions, a spread of colors, a spread of sizes and a spread of angles and produce a spread of shapes
 $ gennum :: /-|
-  sendRandom <- Fn.spawn $ do
-    nextRandom <- liftEffect $ random
-    Noodle.send _out_out nextRandom
-  Noodle.lift $ SignalX.runSignal $ Signal.every 1000.0 ~> const sendRandom |-/
+    curState <- State.get
+    case _.signal $ unwrap curState of
+        Just _ -> pure unit
+        Nothing -> do
+            sendRandom <- Fn.spawn $ do
+                nextRandom <- liftEffect $ random
+                Noodle.send _out_out nextRandom
+            let genSignal = Signal.every 1000.0 ~> const sendRandom
+            State.modify_ $ unwrap >>> _ { signal = Just genSignal } >>> wrap
+            Noodle.lift $ Signal.runSignal genSignal |-/
+$ metro :: /-|
+    enabled <- Noodle.receive _in_enabled
+    periodw  <- Noodle.receive _in_period
+    let period = unwrap periodw
+    curState <- State.get
+    if enabled && period.seconds > 0 then do
+        case _.cancelPrev $ unwrap curState of
+            Just cancelPrev -> Noodle.lift $ cancelPrev
+            Nothing -> pure unit
+
+        sendBang <- Fn.spawn $ do
+            Noodle.send _out_bang VR.Bang
+
+        let { signal, cancel } = SignalX.every (Int.toNumber period.seconds * 1000.0)
+        State.put $ wrap { cancelPrev : Just cancel }
+        Noodle.lift $ Signal.runSignal $ signal ~> const sendBang
+    else pure unit |-/
+$ lerp :: /-|
+    v <- Noodle.receive _in_v
+    min <- Noodle.receive _in_min
+    max <- Noodle.receive _in_max
+    Noodle.send _out_v $ min + v * (max - min) |-/
+$ random :: /-|
+    min <- Noodle.receive _in_min
+    max <- Noodle.receive _in_max
+    randomVal <- liftEffect Eff.random
+    Noodle.send _out_random $ min + (randomVal * (max - min)) |-/
+$ sum :: /-|
+    a <- Noodle.receive _in_a
+    b <- Noodle.receive _in_b
+    c <- Noodle.receive _in_c
+    Noodle.send _out_sum $ a + b + c |-/
+$ time :: /-|
+    h <- Noodle.receive _in_h
+    m <- Noodle.receive _in_m
+    s <- Noodle.receive _in_s
+    Noodle.send _out_time $
+         VR.Time
+            { hours : h
+            , minutes : m
+            , seconds : s
+            } |-/
+$ color :: /-|
+    r <- Noodle.receive _in_r
+    g <- Noodle.receive _in_g
+    b <- Noodle.receive _in_b
+    Noodle.send _out_color $
+        VR.Color
+            { r : floor $ r * 255.0
+            , g : floor $ g * 255.0
+            , b : floor $ b * 255.0
+            , a: 255
+            } |-/
