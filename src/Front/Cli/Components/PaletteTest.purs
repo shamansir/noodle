@@ -41,7 +41,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline) as ViC
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 
-import Starter.Toolkit (STARTER)
+import StarterTk.Toolkit (STARTER)
 import StarterTk.Library.Simple.Sum as Starter.Sum
 import StarterTk.Library.Simple.Color as Starter.Color
 import StarterTk.Repr.ChRepr (ValueRepr)

@@ -59,6 +59,8 @@ derive newtype instance Eq ChannelName
 derive newtype instance Eq ChannelDef
 derive newtype instance Eq StateDef
 
+derive newtype instance Ord NodeInstanceId
+
 
 nodeInstanceId :: String -> NodeInstanceId
 nodeInstanceId = NodeInstanceId

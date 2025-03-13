@@ -35,6 +35,7 @@ import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
+import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 
 
 import Blessed.Internal.Core as Core
@@ -103,6 +104,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , lastLocation :: loc
     , locations :: Map Id.NodeR Bounds
     , mouseOverFocus :: Maybe Focus
+    , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
     }
 
 
@@ -173,6 +175,7 @@ init state toolkit = do
         , lastLocation : firstLocation
         , locations : Map.empty
         , mouseOverFocus : Nothing
+        , ndfInstances : Map.empty
         }
 
 
@@ -222,6 +225,10 @@ patch patchR = _.network >>> Network.patch patchR
 
 currentPatch :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 currentPatch s = s.currentPatch <#> _.id >>= flip patch s
+
+
+currentPatchId :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe Id.PatchR
+currentPatchId s = currentPatch s <#> Patch.id
 
 
 currentPatchState :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Maybe ps)
@@ -331,3 +338,15 @@ inletEditorCreated tag = _.inletEditorCreated >>> Map.lookup tag >>> isJust
 
 markInletEditorCreated :: forall loc tk ps fs sr cr m. Shape.ValueTag -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 markInletEditorCreated tag s = s { inletEditorCreated = s.inletEditorCreated # Map.insert tag unit }
+
+
+registerNdfInstance :: forall loc tk ps fs sr cr m. Ndf.NodeInstanceId -> Id.NodeR -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+registerNdfInstance instanceId nodeR s = s { ndfInstances = s.ndfInstances # Map.insert instanceId nodeR }
+
+
+findNodeIdByNdfInstance :: forall loc tk ps fs sr cr m. Ndf.NodeInstanceId -> State loc tk ps fs sr cr m -> Maybe Id.NodeR
+findNodeIdByNdfInstance instanceId = _.ndfInstances >>> Map.lookup instanceId
+
+
+findNodeKey :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe K.NodeBoxKey
+findNodeKey nodeR = _.nodeKeysMap >>> Map.lookup nodeR

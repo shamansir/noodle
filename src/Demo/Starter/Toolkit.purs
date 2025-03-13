@@ -1,4 +1,4 @@
-module Starter.Toolkit where
+module StarterTk.Toolkit where
 
 import Prelude
 

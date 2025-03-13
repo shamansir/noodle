@@ -28,7 +28,6 @@ import Node.FS.Sync (readTextFile, stat, exists, mkdir', rm', rmdir, writeTextFi
 import Node.FS.Aff (readTextFile, stat) as Async
 import Node.FS.Perms (permsReadWrite)
 
-
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (impair1, impair2, configureJs') as Blessed
 import Blessed.Internal.Core (Blessed)
@@ -39,46 +38,43 @@ import Blessed.Demo (demo, logEverythingConfig) as BDemo
 
 import Web.Socket.Server (WebSocketConnection, WebSocketMessage(..), sendMessage) as WSS
 
-import Cli.WsServer (start) as WSS
-
-import Noodle.Text.NdfFile (codegen, failedLines, hasFailedLines) as NdfFile
-import Noodle.Text.NdfFile.Parser (parser)  as NdfFile
-import Noodle.Repr.Tagged (class ValueTagged) as VT
-
 import Parsing (runParser) as P
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
+import Cli.WsServer (start) as WSS
 import Cli.State (State)
-import Cli.State (init, appendHistory, informWsInitialized) as CState
+import Cli.State (init, appendHistory, informWsInitialized, currentPatchId) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
 import Cli.Components.SidePanel.Console as CC
 import Cli.Class.CliRenderer (ConstantShift)
+import Cli.Class.CliFriendly (class CliFriendly)
 -- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
 -- import Cli.WsServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
 -- import Cli.Ndf.Apply (apply) as NdfFile
+import Front.Cli.ApplyNdf (applyNdf)
 
 -- import Cli.Components.MainScreen as MainScreen
 -- import Cli.Components.WsStatusButton as WsButton
 
-
 import Noodle.Id (ToolkitR, toolkitR, FamilyR, toolkit) as Id
+import Noodle.Patch (id) as Patch
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Fn.Signature (class PossiblyToSignature)
+import Noodle.Text.NdfFile (codegen, failedLines, hasFailedLines) as NdfFile
+import Noodle.Text.NdfFile.Parser (parser)  as NdfFile
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options, class ParseableRepr) as FCG
 
-import Cli.Class.CliFriendly (class CliFriendly)
-
-import Starter.Toolkit (toolkit) as Starter
-
+import StarterTk.Toolkit (toolkit) as Starter
 import StarterTk.Repr.Options (options) as Starter
 import StarterTk.Patch as Starter.Patch
 
@@ -136,7 +132,7 @@ runWith =
                 User _  -> pure unit
         LoadNetworkFrom (NdfFilePath fromFile) tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ postFix fromFile
+                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ postFix Starter.toolkit fromFile
                 User _  -> pure unit
         GenerateToolkitFrom (NdfFilePath fromFile) tkKey (GenTargetPath genTargetDir) -> do
             case tkKey of
@@ -151,23 +147,41 @@ runWith =
         Demo ->
             runBlessedDemo
     where
-        postFix fromFile = do
+        postFix toolkit fromFile = do
             -- rootStat <- liftEffect $ cwd
             -- liftEffect $ Console.log $ show rootStat
-            fileCallback <- Blessed.impair1 applyFile
+            fileCallback <- Blessed.impair1 $ _applyFile toolkit
             liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 fromFile
             pure unit
-        applyFile :: forall tk s fs sr cr m. Either _ String -> BlessedOp (State Locator tk s fs sr cr m) Effect
-        applyFile (Right fileContents) = do
-            case P.runParser fileContents NdfFile.parser of
-                Right ndfFile ->
-                    State.modify_ $ CState.appendHistory ndfFile
-                Left parsingError -> do
-                    liftEffect $ Console.log $ "Error : " <> show parsingError
-                    CC.logError $ show parsingError
-        applyFile (Left error) = do
-            liftEffect $ Console.log $ "Error : " <> show error
-            CC.logError $ show error
+
+
+_applyFile
+    :: forall err tk s fs sr cr
+    .  Show err
+    => HasFallback cr
+    => VT.ValueTagged cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => Toolkit.FromPatchState tk s sr
+    => CliFriendly tk fs cr Effect
+    => Toolkit tk fs sr cr Effect
+    -> Either err String
+    -> BlessedOp (State Locator tk s fs sr cr Effect) Effect
+_applyFile toolkit (Right fileContents) = do
+    case P.runParser fileContents NdfFile.parser of
+        Right ndfFile -> do
+            state <- State.get
+            let mbCurrentPatchId = CState.currentPatchId state
+            case mbCurrentPatchId of
+                Just curPatchR -> do
+                    applyNdf toolkit curPatchR ndfFile
+                Nothing -> CC.logError "no current patch to apply NDF commands"
+            State.modify_ $ CState.appendHistory ndfFile -- we don't normalize it here to keep the history consistent
+        Left parsingError -> do
+            liftEffect $ Console.log $ "Error : " <> show parsingError
+            CC.logError $ show parsingError
+_applyFile _ (Left error) = do
+    liftEffect $ Console.log $ "Error : " <> show error
+    CC.logError $ show error
 
 
 runBlessedInterface
