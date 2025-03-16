@@ -3,6 +3,7 @@ module Front.Cli.ApplyNdf where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..))
 
@@ -13,14 +14,15 @@ import Data.Traversable (traverse_)
 import Noodle.Id (FamilyR, PatchR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (spawnAnyRaw, class FromPatchState) as Toolkit
-import Noodle.Patch (id) as Patch
-import Noodle.Raw.Node (id) as RawNode
+import Noodle.Patch (id, connectRaw, disconnectRaw, findRawNode) as Patch
+import Noodle.Raw.Node (id, shape) as RawNode
 import Noodle.Fn.Signature (class PossiblyToSignature)
+import Noodle.Fn.Shape as RawShape
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (_normalize, extractCommands) as Ndf
 import Noodle.Text.NdfFile.Command (op) as NdfCommand
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
-import Noodle.Text.NdfFile.Types (Coord(..)) as Ndf
+import Noodle.Text.NdfFile.Types (Coord(..), InletId(..), OutletId(..), EncodedValue(..), findInlet, findOutlet) as Ndf
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Repr.HasFallback (class HasFallback)
@@ -79,9 +81,44 @@ applyCommandOp toolkit curPatchR = case _ of
                 state <- State.modify $ CState.registerNdfInstance instanceId $ RawNode.id rawNode
                 case CState.findNodeKey (RawNode.id rawNode) state of
                     Just nodeBoxKey -> do
-                        nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY -- inodeBounds.top - 1
-                        nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX -- inodeBounds.left
+                        nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
+                        nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
                     Nothing -> pure unit
                 pure unit
             Nothing -> pure unit
+    Ndf.Move instanceId (Ndf.Coord coordX) (Ndf.Coord coordY) -> do
+        state <- State.get
+        case CState.findNodeIdByNdfInstance instanceId state >>= flip CState.findNodeKey state of
+            Just nodeBoxKey -> do
+                nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
+                nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
+            Nothing -> pure unit
+    Ndf.Connect fromInstanceId ndfOutletId toInstanceId ndfInletId -> do
+        state <- State.get
+        let
+            mbConnection = do
+                currentPatch <- CState.currentPatch state
+                fromNodeR    <- CState.findNodeIdByNdfInstance fromInstanceId state
+                toNodeR      <- CState.findNodeIdByNdfInstance toInstanceId state
+                sourceNode   <- Patch.findRawNode fromNodeR currentPatch
+                targetNode   <- Patch.findRawNode toNodeR currentPatch
+                outletR      <- Ndf.findOutlet ndfOutletId $ RawNode.shape sourceNode
+                inletR       <- Ndf.findInlet ndfInletId $ RawNode.shape targetNode
+                pure { currentPatch, sourceNode, targetNode, outletR, inletR }
+        case mbConnection of
+            Just { currentPatch, sourceNode, targetNode, outletR, inletR } -> do
+                _ <- liftEffect $ Patch.connectRaw outletR inletR sourceNode targetNode currentPatch
+                pure unit
+            Nothing -> pure unit
+        pure unit
+    Ndf.Disconnect fromInstanceId (Ndf.OutletId ndfOutletId) toInstanceId (Ndf.InletId ndfInletId) ->
+        pure unit
+    Ndf.Send instanceId (Ndf.InletId inletId) (Ndf.EncodedValue encodedValue) ->
+        pure unit
+    Ndf.SendO instanceId (Ndf.OutletId outletId) (Ndf.EncodedValue encodedValue) ->
+        pure unit
+    Ndf.RemoveNode instanceId ->
+        pure unit
+    Ndf.Import filePath ->
+        pure unit
     _ -> pure unit

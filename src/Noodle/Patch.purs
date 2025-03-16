@@ -150,12 +150,12 @@ registerRawNode' =
     registerRawNode <<< RawNode.toReprableState
 
 
--- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family
+-- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family (but we have family accessible in NodeR)
 findNode :: forall pstate strepr chrepr m families. StoresNodesAt strepr chrepr m families => Id.NodeR -> Patch pstate families strepr chrepr m -> Maybe (HoldsNode strepr chrepr m)
 findNode nodeR = nonRawNodes >>> Array.find (\hn -> HN.withNode hn (Node.id >>> (_ == nodeR)))
 
 
- -- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family
+ -- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family (but we have family accessible in NodeR)
 findRawNode :: forall pstate strepr chrepr m families. Id.NodeR -> Patch pstate families strepr chrepr m -> Maybe (Raw.Node strepr chrepr m)
 findRawNode nodeR = mapAllNodes identity >>> Array.find (RawNode.id >>> (_ == nodeR))
 

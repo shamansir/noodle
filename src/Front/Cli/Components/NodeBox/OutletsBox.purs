@@ -27,7 +27,8 @@ import Blessed.UI.Boxes.Box.Option as Box
 
 import Cli.Keys (OutletButtonKey)
 import Cli.Style as Style
-import Cli.State (State, LastKeys)
+import Cli.State (State)
+import Cli.State (LastKeys) as CState
 import Cli.Components.NodeBox.OutletButton as OutletButton
 
 import Noodle.Id as Id
@@ -57,7 +58,7 @@ component
     => T.At T.StatusLine chrepr
     => T.At T.ChannelLabel chrepr
     => Offset
-    -> LastKeys
+    -> CState.LastKeys
     -> Id.PatchR
     -> Id.NodeR
     -> Signal (OrderedOutletsValues chrepr)

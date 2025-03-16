@@ -35,7 +35,7 @@ import Cli.Components.StatusLine as SL
 import Cli.Keys (NodeBoxKey, InletButtonKey, OutletButtonKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.State (Focus(..)) as Focus
-import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as State
+import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as CState
 import Cli.State (State)
 import Cli.Style as Style
 import Cli.WsServer as WSS
@@ -111,7 +111,7 @@ _component
     => Id.PatchR
     -> Id.FamilyR
     -> Raw.Node strepr chrepr m
-    -> State.LastKeys
+    -> CState.LastKeys
     -> Maybe { width :: Int, height :: Int }
     -> Maybe (BlessedOp strepr m)
     -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
@@ -284,7 +284,7 @@ componentRaw curPatchR familyR rawNode = do
     -- REM liftEffect $ Node.run node -- just Node.run ??
     state <- State.get
     let
-        nextKeys = State.nextKeys state.lastKeys
+        nextKeys = CState.nextKeys state.lastKeys
         mbSize = cliSizeRaw   (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
         nodeOp = renderCliRaw (Proxy :: _ tk) (Proxy :: _ fs) familyR nextKeys.nodeBox rawNode
     _component curPatchR familyR rawNode nextKeys mbSize nodeOp
@@ -309,7 +309,7 @@ component
 component curPatchR family node = do
     state <- State.get
     let
-        nextKeys = State.nextKeys state.lastKeys
+        nextKeys = CState.nextKeys state.lastKeys
         familyR = Id.familyR family
         mbSize = cliSize   (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
         mbNodeOp = renderCli (Proxy :: _ tk) (Proxy :: _ fs) family nextKeys.nodeBox node
@@ -323,7 +323,7 @@ storeNodeUpdate
     -> Raw.NodeChanges strepr chrepr
     -> BlessedOp (State _ tk pstate fs strepr chrepr m) m
 storeNodeUpdate nodeR =
-    State.modify_ <<< State.storeNodeUpdate nodeR
+    State.modify_ <<< CState.storeNodeUpdate nodeR
 
 
 renderUpdate
@@ -475,7 +475,7 @@ onMouseOver ptk patchR nodeR _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inletId
     state <- State.get
-    case State.lastNodeUpdate nodeR state of
+    case CState.lastNodeUpdate nodeR state of
         Just update -> do
             SL.nodeStatus ptk nodeR update
             DP.showNodeDocumentation nodeR $ Just update

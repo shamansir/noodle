@@ -37,12 +37,12 @@ data CommandOp
     | MakeNode Id.FamilyR Coord Coord NodeInstanceId
     | Move NodeInstanceId Coord Coord
     | Connect NodeInstanceId OutletId NodeInstanceId InletId
+    | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
     | Send NodeInstanceId InletId EncodedValue
     | SendO NodeInstanceId OutletId EncodedValue
     | Order FamiliesOrder
     | Import String
     | Comment String
-    | Disconnect NodeInstanceId OutletId NodeInstanceId InletId
     | RemoveNode NodeInstanceId
     | Documentation Id.FamilyR String -- TODO: make `FamilyR` optional and treat documentation before family definition as belonging to this family
 

@@ -7,11 +7,14 @@ import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Newtype (class Newtype)
 import Data.Newtype (unwrap, wrap) as NT
+import Data.Array (find) as Array
 
 import Noodle.Id (GroupR, FamilyR, unsafeFamilyR, InletR, inletRName, OutletR, outletRName) as Id
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (name) as Sig
+import Noodle.Raw.Fn.Shape (Shape) as RawFn
+import Noodle.Raw.Fn.Shape (inlets, outlets) as RawShape
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
 
 
@@ -120,3 +123,17 @@ encodedTypeOf = NT.unwrap >>> _.mbType
 
 encodedValueOf :: ChannelDef -> Maybe EncodedValue
 encodedValueOf = NT.unwrap >>> _.mbDefault
+
+
+findInlet :: InletId -> RawFn.Shape -> Maybe Id.InletR
+findInlet inletId = RawShape.inlets >>> Array.find (matchInlet inletId) >>> map _.name
+    where
+        matchInlet (InletId (Left strName)) { name } = Id.inletRName name == strName
+        matchInlet (InletId (Right index)) { order } = index == order
+
+
+findOutlet :: OutletId -> RawFn.Shape -> Maybe Id.OutletR
+findOutlet outletId = RawShape.outlets >>> Array.find (matchOutlet outletId) >>> map _.name
+    where
+        matchOutlet (OutletId (Left strName)) { name } = Id.outletRName name == strName
+        matchOutlet (OutletId (Right index)) { order } = index == order

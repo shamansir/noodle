@@ -56,7 +56,7 @@ import Cli.Bounds (collect, inletPos) as Bounds
 import Cli.Keys (InfoBoxKey, InletButtonKey, NodeBoxKey, ValueEditorKey)
 import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
-import Cli.State (patch, replacePatch, inletEditorCreated, markInletEditorCreated) as State
+import Cli.State (patch, replacePatch, inletEditorCreated, markInletEditorCreated) as CState
 import Cli.Style (inletsOutlets) as Style
 import Cli.Class.CliRenderer (class CliEditor, editorFor)
 import Cli.State (Focus(..)) as Focus
@@ -239,7 +239,7 @@ onPress
 onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
-        case state.lastClickedOutlet /\ State.patch patchR state of
+        case state.lastClickedOutlet /\ CState.patch patchR state of
             Just lco /\ Just curPatch ->
                 if nodeBoxKey /= lco.nodeKey then do
 
@@ -303,7 +303,7 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
 
                             Blessed.runOnUnit $ Key.patchBox >~ CLink.append linkState
 
-                            State.modify_ $ State.replacePatch patchR nextPatch'
+                            State.modify_ $ CState.replacePatch patchR nextPatch'
 
                             stateRef <- Blessed.getStateRef
 
@@ -340,10 +340,10 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
 
                     case mbValueEditorOp of
                         Just { create, inject, transpose } -> do
-                            if not $ State.inletEditorCreated curValueTag state then do
+                            if not $ CState.inletEditorCreated curValueTag state then do
                                 CC.log "Exact editor wasn't created, call `create` on it"
                                 _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
-                                State.modify_ $ State.markInletEditorCreated curValueTag
+                                State.modify_ $ CState.markInletEditorCreated curValueTag
                             else do
                                 CC.log "Skip creating the editor"
                             CC.log "Remember the source node & inlet of the opened editor"
@@ -377,11 +377,11 @@ onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.Patch
 onLinkClick patchR rawLink linkState _ = do
     CC.log $ "Click link"
     curState <- State.get
-    let mbPatch = State.patch patchR curState
+    let mbPatch = CState.patch patchR curState
     case mbPatch of
         Just patch -> do
             (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
-            State.modify_ $ State.replacePatch patchR nextPatch
+            State.modify_ $ CState.replacePatch patchR nextPatch
             State.modify_ \s ->
                 let
                     nextLinks = CLink.forget linkState s.links
