@@ -46,33 +46,55 @@ import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
 import Cli.Components.SidePanel.Tree as TP
 
+
+type LinkStart strepr chrepr mi =
+    { key :: Key.NodeBoxKey
+    , node :: Raw.Node strepr chrepr mi
+    , outlet :: Id.OutletR
+    , outletIndex :: Int
+    }
+
+
+type LinkEnd strepr chrepr mi =
+    { key :: Key.NodeBoxKey
+    , node :: Raw.Node strepr chrepr mi
+    , inlet :: Id.InletR
+    , inletIndex :: Int
+    }
+
+
+data TrackCommand
+    = Track
+    | DontTrack
+
+
+doTrack :: TrackCommand -> Boolean
+doTrack Track = true
+doTrack DontTrack = false
+
+
 connect
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
     => VT.ValueTagged chrepr
-    => Key.NodeBoxKey
-    -> Raw.Node strepr chrepr mi
-    -> Id.OutletR
-    -> Int
-    -> Int
-    -> Id.InletR
-    -> Raw.Node strepr chrepr mi
-    -> Key.NodeBoxKey
+    => TrackCommand
+    -> LinkStart strepr chrepr mi
+    -> LinkEnd strepr chrepr mi
     -> Patch pstate fs strepr chrepr mi
     -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
-connect nodeSrcBoxKey rawNodeSrc outletSrcR outletIdx inletIdx inletTrgR rawNodeTrg nodeTrgBoxKey inPatch = do
+connect trackCmd source target inPatch = do
     state <- State.get
 
     let patchR = Patch.id inPatch
 
-    nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg inPatch
+    nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw source.outlet target.inlet source.node target.node inPatch
 
     -- CC.log $ "RawLink ID is set: " <> show rawLinkId
     (linkState :: LinkCmpState Unit)
         <- CLink.create
             (RawLink.id rawLink)
-            { node : nodeSrcBoxKey, outletIndex : outletIdx }
-            { node : nodeTrgBoxKey, inletIndex  : inletIdx  }
+            { node : source.key, outletIndex : source.outletIndex }
+            { node : target.key, inletIndex  : target.inletIndex  }
             state.lastLink
 
     State.modify_ $ \s ->
@@ -91,14 +113,14 @@ connect nodeSrcBoxKey rawNodeSrc outletSrcR outletIdx inletIdx inletTrgR rawNode
     stateRef <- Blessed.getStateRef
 
     Blessed.runOnUnit $ CLink.on Element.Click
-        (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< disconnect patchR rawLink lstate)
+        (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< disconnect trackCmd patchR rawLink lstate)
         linkState
 
     -- State.put nextState'
 
     -- Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn nextState <<< onLinkClick patchR rawLink lstate) linkState
 
-    CL.trackCommand $ QOp.connect rawLink
+    when (doTrack trackCmd) $ CL.trackCommand $ QOp.connect rawLink
     SidePanel.refresh $ TP.sidePanel
 
     -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
@@ -108,11 +130,12 @@ connect nodeSrcBoxKey rawNodeSrc outletSrcR outletIdx inletIdx inletTrgR rawNode
 disconnectLastAtInlet
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo
-    => Raw.Node strepr chrepr mi
+    => TrackCommand
+    -> Raw.Node strepr chrepr mi
     -> Id.InletR
     -> Patch pstate fs strepr chrepr mi
     -> BlessedOpM (State _ tk pstate fs strepr chrepr mi) mo (Patch pstate fs strepr chrepr mi /\ Boolean)
-disconnectLastAtInlet rawNode inletR inPatch = do
+disconnectLastAtInlet trackCmd rawNode inletR inPatch = do
     state <- State.get
     let
         (mbPrevLink :: Maybe (LinkCmpState Unit)) =
@@ -131,12 +154,39 @@ disconnectLastAtInlet rawNode inletR inPatch = do
                         -- CC.log "disconnect previous"
                         nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink inPatch
                         Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
-                        CL.trackCommand $ QOp.disconnect rawLink
+                        when (doTrack trackCmd) $ CL.trackCommand $ QOp.disconnect rawLink
                         SidePanel.refresh $ TP.sidePanel
                         pure $ nextPatch /\ success
                     Nothing -> pure (inPatch /\ false)
 
         Nothing -> pure (inPatch /\ false)
+
+
+disconnect
+    :: forall tk pstate fs strepr chrepr mi mo
+     . Wiring mo
+    => TrackCommand
+    -> Id.PatchR
+    -> Raw.Link
+    -> LinkCmpState Unit
+    -> _ {- EventJson -}
+    -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
+disconnect trackCmd patchR rawLink linkState _ = do
+    curState <- State.get
+    let mbPatch = CState.patch patchR curState
+    case mbPatch of
+        Just patch -> do
+            (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
+            State.modify_ $ CState.replacePatch patchR nextPatch
+            State.modify_ \s ->
+                let
+                    nextLinks = CLink.forget linkState s.links
+                in s { links = nextLinks }
+            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
+            when (doTrack trackCmd) $ CL.trackCommand $ QOp.disconnect rawLink
+            SidePanel.refresh $ TP.sidePanel
+            Key.mainScreen >~ Screen.render
+        Nothing -> pure unit
 
 
 tryCallingInletEditor
@@ -191,22 +241,3 @@ tryCallingInletEditor nodeBoxKey rawNode inletR inletIdx mbValueEditorOp = do
         -- CC.log "Editor is either blocked or opened already, don't call it"
     --CC.log "And don't block opening editor anymore"
     State.modify_ $ _ { blockInletEditor = false }
-
-
-disconnect :: forall tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> _ -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
-disconnect patchR rawLink linkState _ = do
-    curState <- State.get
-    let mbPatch = CState.patch patchR curState
-    case mbPatch of
-        Just patch -> do
-            (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
-            State.modify_ $ CState.replacePatch patchR nextPatch
-            State.modify_ \s ->
-                let
-                    nextLinks = CLink.forget linkState s.links
-                in s { links = nextLinks }
-            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
-            CL.trackCommand $ QOp.disconnect rawLink
-            SidePanel.refresh $ TP.sidePanel
-            Key.mainScreen >~ Screen.render
-        Nothing -> pure unit

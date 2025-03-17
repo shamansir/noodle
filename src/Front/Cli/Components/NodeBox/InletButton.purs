@@ -100,6 +100,7 @@ import Noodle.Ui.Cli.Tagging (inlet) as T
 import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
 
+import Front.Cli.Actions as Actions
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')
 
@@ -236,7 +237,7 @@ onPress
     -> _
     -> _
     -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
-onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = do
+onPress mbValueEditorOp familyR patchR nodeBoxKey inletIndex rawNode inletR _ _ = do
         state <- State.get
         -- FIXME: load current patch from the state
         case state.lastClickedOutlet /\ CState.patch patchR state of
@@ -256,138 +257,35 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIdx rawNode inletR _ _ = 
                         outletSrcR = lco.outletId
                         nodeSrcR = lco.nodeId
                         nodeSrcBoxKey = lco.nodeKey
-                        outletIdx = lco.index
+                        outletIndex = lco.index
                         inletTrgR = inletR
                         nodeTrgR = RawNode.id rawNode
                         nodeTrgBoxKey = nodeBoxKey
 
-                    nextPatch /\ isDisconnected <-
-                        case mbPrevLink of
-                            Just prevLinkState ->
-                                let
-                                    prevLinkId = _.linkId $ unwrap prevLinkState
-                                in
-                                    case curPatch # Patch.findRawLink prevLinkId of
-                                        Just rawLink -> do
-                                            -- CC.log "disconnect previous"
-                                            nextPatch /\ success <- liftEffect $ Patch.disconnectRaw rawLink curPatch
-                                            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove prevLinkState
-                                            CL.trackCommand $ QOp.disconnect rawLink
-                                            SidePanel.refresh $ TP.sidePanel
-                                            pure $ nextPatch /\ success
-                                        Nothing -> pure (curPatch /\ false)
-
-                            Nothing -> pure (curPatch /\ false)
+                    nextPatch /\ isDisconnected <- Actions.disconnectLastAtInlet Actions.Track rawNode inletR curPatch
 
                     case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of -- FIXME: we already have target node here, no need to search for it
                         Just rawNodeSrc /\ Just rawNodeTrg -> do
                             -- CC.log "both nodes were found"
-                            nextPatch' /\ rawLink <- liftEffect $ Patch.connectRaw outletSrcR inletTrgR rawNodeSrc rawNodeTrg nextPatch
 
-                            -- CC.log $ "RawLink ID is set: " <> show rawLinkId
-                            (linkState :: LinkCmpState Unit)
-                                <- CLink.create
-                                    (RawLink.id rawLink)
-                                    { node : nodeSrcBoxKey, outletIndex : outletIdx }
-                                    { node : nodeTrgBoxKey, inletIndex  : inletIdx  }
-                                    state.lastLink
+                            Actions.connect
+                                Actions.Track
+                                { key : nodeSrcBoxKey, node : rawNodeSrc, outlet : outletSrcR, outletIndex }
+                                { key : nodeTrgBoxKey, node : rawNodeTrg, inlet  : inletTrgR,  inletIndex  }
+                                nextPatch
 
-                            State.modify_ $ \s ->
-                                let
-                                    nextLinks = CLink.store linkState s.links
-                                in
-                                    s
-                                        { links = nextLinks
-                                        , lastLink = Just linkState
-                                        }
-
-                            Blessed.runOnUnit $ Key.patchBox >~ CLink.append linkState
-
-                            State.modify_ $ CState.replacePatch patchR nextPatch'
-
-                            stateRef <- Blessed.getStateRef
-
-                            Blessed.runOnUnit $ CLink.on Element.Click
-                                (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< onLinkClick patchR rawLink lstate)
-                                linkState
-
-                            -- State.put nextState'
-
-                            -- Blessed.runOnUnit $ CLink.on Element.Click (\lstate -> const <<< Blessed.runOn nextState <<< onLinkClick patchR rawLink lstate) linkState
-
-                            CL.trackCommand $ QOp.connect rawLink
-                            SidePanel.refresh $ TP.sidePanel
-
-                            -- Blessed.runOnUnit $ CLink.on Element.Click (onLinkClick patchR rawLink) linkState
-                            State.modify_ $ _ { blockInletEditor = true }
                         _ -> pure unit
-
-                    {- REM
-                    hide
-                    -}
 
                     pure unit
                 else pure unit
             _ -> do
-                if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
-                    -- CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
-                    -- TODO: also don't call if there is at least one link incoming
-                    let nodeR = RawNode.id rawNode
-                    vicCurValue <- RawNode.atInlet inletR rawNode
-                    let
-                        curValue = ViC.toFallback vicCurValue
-                        curValueTag = VT.valueTag (VT.Inlet familyR inletR) curValue
-
-                    case mbValueEditorOp of
-                        Just { create, inject, transpose } -> do
-                            if not $ CState.inletEditorCreated curValueTag state then do
-                                CC.log "Exact editor wasn't created, call `create` on it"
-                                _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
-                                State.modify_ $ CState.markInletEditorCreated curValueTag
-                            else do
-                                CC.log "Skip creating the editor"
-                            CC.log "Remember the source node & inlet of the opened editor"
-                            State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
-                            CC.log "Send current value in the editor"
-                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
-                            nodeBounds <- case Map.lookup nodeR state.locations of
-                                            Just bounds -> pure bounds
-                                            Nothing -> Bounds.collect nodeR nodeBoxKey
-                            let inletPos = Bounds.inletPos nodeBounds inletIdx
-                            CC.log "Transpose the editor"
-                            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y }
-                            pure unit
-                        Nothing ->
-                            pure unit
-                            -- CC.log "No matching editor was found, skip"
-                else
-                    pure unit
-                    -- CC.log "Editor is either blocked or opened already, don't call it"
-                --CC.log "And don't block opening editor anymore"
-                State.modify_ $ _ { blockInletEditor = false }
+                Actions.tryCallingInletEditor nodeBoxKey rawNode inletR inletIndex mbValueEditorOp
 
         State.modify_
             (_ { lastClickedOutlet = Nothing })
 
-        -- CC.log "render screen"
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
 
 
 onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
-onLinkClick patchR rawLink linkState _ = do
-    CC.log $ "Click link"
-    curState <- State.get
-    let mbPatch = CState.patch patchR curState
-    case mbPatch of
-        Just patch -> do
-            (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
-            State.modify_ $ CState.replacePatch patchR nextPatch
-            State.modify_ \s ->
-                let
-                    nextLinks = CLink.forget linkState s.links
-                in s { links = nextLinks }
-            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
-            CL.trackCommand $ QOp.disconnect rawLink
-            SidePanel.refresh $ TP.sidePanel
-            Key.mainScreen >~ Screen.render
-        Nothing -> pure unit
+onLinkClick = Actions.disconnect Actions.Track
