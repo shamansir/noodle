@@ -350,3 +350,7 @@ findNodeIdByNdfInstance instanceId = _.ndfInstances >>> Map.lookup instanceId
 
 findNodeKey :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe K.NodeBoxKey
 findNodeKey nodeR = _.nodeKeysMap >>> Map.lookup nodeR
+
+
+findLinkState :: forall loc tk ps fs sr cr m. Id.LinkR -> State loc tk ps fs sr cr m -> Maybe (LinkCmpState Unit)
+findLinkState linkR = _.links >>> Map.lookup linkR

@@ -95,3 +95,8 @@ findFrom nodeR outletR =
 findTo :: Id.NodeR -> Id.InletR -> Links -> Array Raw.Link
 findTo nodeR inletR =
   Map.filterKeys (NT.unwrap >>> _.to >>> (_ == nodeR /\ inletR)) >>> Map.values >>> Array.fromFoldable
+
+
+findBetween :: Id.NodeR /\ Id.OutletR -> Id.NodeR /\ Id.InletR -> Links -> Array Raw.Link
+findBetween start end = Map.filterKeys (NT.unwrap >>> betweenTheSame) >>> Map.values >>> Array.fromFoldable
+  where betweenTheSame { from, to } = from == start && to == end

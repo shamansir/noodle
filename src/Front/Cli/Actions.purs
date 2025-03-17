@@ -18,11 +18,12 @@ import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
 import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
+import Blessed.UI.Base.Node.Method (detach) as BNode
 
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (familyOf, OutletR, InletR, PatchR) as Id
+import Noodle.Id (NodeR, OutletR, InletR, PatchR, familyOf) as Id
 import Noodle.Patch (Patch)
-import Noodle.Patch (connectRaw, id, linksMap, disconnectRaw, findRawLink) as Patch
+import Noodle.Patch (connectRaw, id, linksMap, disconnectRaw, findRawLink, disconnectAllFromTo, removeNode) as Patch
 import Noodle.Patch.Links as Links
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, sendIn, shape, atInlet) as RawNode
@@ -41,6 +42,7 @@ import Cli.State (patch, replacePatch, inletEditorCreated, markInletEditorCreate
 import Cli.Components.Link (create, remove, store, append, on, forget, findTo) as CLink
 import Cli.Components.Link (LinkCmpState)
 import Cli.Components.ValueEditor (ValueEditorComp)
+import Cli.Components.Link as CLink
 import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel.Console as CC
 import Cli.Components.SidePanel.CommandLog as CL
@@ -241,3 +243,33 @@ tryCallingInletEditor nodeBoxKey rawNode inletR inletIdx mbValueEditorOp = do
         -- CC.log "Editor is either blocked or opened already, don't call it"
     --CC.log "And don't block opening editor anymore"
     State.modify_ $ _ { blockInletEditor = false }
+
+removeNode
+    :: forall tk pstate fs strepr chrepr mi mo
+     . Wiring mo
+    => TrackCommand
+    -> Id.PatchR
+    -> Id.NodeR
+    -> Key.NodeBoxKey
+    -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
+removeNode trackCmd patchR nodeR nodeBoxKey = do
+    state <- State.get
+    let mbCurrentPatch = CState.patch patchR state
+    case mbCurrentPatch of
+        Just currentPatch -> do
+            nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo nodeR currentPatch
+            let nextLinks /\ linksToRemove = CLink.forgetAllFromTo nodeR state.links
+            State.modify_ (\s ->
+                s
+                    # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
+                    # _ { links = nextLinks }
+            )
+            Blessed.runOnUnit $ CLink.removeAllOf Key.patchBox linksToRemove
+            nodeBoxKey >~ BNode.detach
+            State.modify_
+                $ CState.replacePatch (Patch.id currentPatch)
+                $ Patch.removeNode nodeR nextCurrentPatch
+            when (doTrack trackCmd) $ CL.trackCommand $ QOp.removeNode nodeR
+            SidePanel.refresh TP.sidePanel
+            Key.mainScreen >~ Screen.render
+        Nothing -> pure unit

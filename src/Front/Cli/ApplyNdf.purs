@@ -6,18 +6,22 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (traverse_)
+import Data.Array (head) as Array
 
 import Control.Monad.State (get, modify) as State
-
-import Data.Traversable (traverse_)
 
 import Noodle.Id (FamilyR, PatchR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (spawnAnyRaw, class FromPatchState) as Toolkit
-import Noodle.Patch (id, connectRaw, disconnectRaw, findRawNode) as Patch
+import Noodle.Patch (id, connectRaw, disconnectRaw, findRawNode, linksMap) as Patch
+import Noodle.Patch.Links (findBetween) as Links
 import Noodle.Raw.Node (id, shape) as RawNode
+import Noodle.Raw.Link (id) as RawLink
 import Noodle.Fn.Signature (class PossiblyToSignature)
-import Noodle.Fn.Shape as RawShape
+import Noodle.Fn.Shape as Shape
+import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (_normalize, extractCommands) as Ndf
 import Noodle.Text.NdfFile.Command (op) as NdfCommand
@@ -30,15 +34,18 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Blessed ((>~), (~<))
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.BlessedOp (lift) as Blessed
 import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
 
 import Cli.State (State)
-import Cli.State (currentPatch, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance) as CState
+import Cli.State (currentPatch, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance, findLinkState) as CState
 import Cli.Components.Library as Library
 import Cli.Components.SidePanel.Console as CC
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (class CliLocator)
 
+
+import Front.Cli.Actions as Actions
 
 
 applyNdf
@@ -83,6 +90,7 @@ applyCommandOp toolkit curPatchR = case _ of
                     Just nodeBoxKey -> do
                         nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
                         nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
+                        -- FIXME: record new position in the state
                     Nothing -> pure unit
                 pure unit
             Nothing -> pure unit
@@ -102,23 +110,53 @@ applyCommandOp toolkit curPatchR = case _ of
                 toNodeR      <- CState.findNodeIdByNdfInstance toInstanceId state
                 sourceNode   <- Patch.findRawNode fromNodeR currentPatch
                 targetNode   <- Patch.findRawNode toNodeR currentPatch
+                srcNodeKey   <- CState.findNodeKey fromNodeR state
+                trgNodeKey   <- CState.findNodeKey toNodeR state
                 outletR      <- Ndf.findOutlet ndfOutletId $ RawNode.shape sourceNode
                 inletR       <- Ndf.findInlet ndfInletId $ RawNode.shape targetNode
-                pure { currentPatch, sourceNode, targetNode, outletR, inletR }
+                outletIndex  <- RawShape.indexOfOutlet outletR $ RawNode.shape sourceNode
+                inletIndex   <- RawShape.indexOfInlet  inletR  $ RawNode.shape targetNode
+                pure
+                    { currentPatch
+                    , linkStart : { key : srcNodeKey, node : sourceNode, outlet : outletR, outletIndex : outletIndex }
+                    , linkEnd :   { key : trgNodeKey, node : targetNode, inlet  : inletR,  inletIndex :  inletIndex  }
+                    }
         case mbConnection of
-            Just { currentPatch, sourceNode, targetNode, outletR, inletR } -> do
-                _ <- liftEffect $ Patch.connectRaw outletR inletR sourceNode targetNode currentPatch
-                pure unit
+            Just { currentPatch, linkStart, linkEnd } -> do
+                Actions.connect Actions.DontTrack linkStart linkEnd currentPatch
             Nothing -> pure unit
         pure unit
-    Ndf.Disconnect fromInstanceId (Ndf.OutletId ndfOutletId) toInstanceId (Ndf.InletId ndfInletId) ->
-        pure unit
+    Ndf.Disconnect fromInstanceId ndfOutletId toInstanceId ndfInletId -> do
+        state <- State.get
+        let
+            mbConnection = do
+                currentPatch <- CState.currentPatch state
+                fromNodeR    <- CState.findNodeIdByNdfInstance fromInstanceId state
+                toNodeR      <- CState.findNodeIdByNdfInstance toInstanceId state
+                sourceNode   <- Patch.findRawNode fromNodeR currentPatch
+                targetNode   <- Patch.findRawNode toNodeR currentPatch
+                outletR      <- Ndf.findOutlet ndfOutletId $ RawNode.shape sourceNode
+                inletR       <- Ndf.findInlet ndfInletId $ RawNode.shape targetNode
+                topLink      <- Patch.linksMap currentPatch # Links.findBetween (fromNodeR /\ outletR) (toNodeR /\ inletR) # Array.head
+                linkState    <- CState.findLinkState (RawLink.id topLink) state
+                pure $ topLink /\ linkState
+        case mbConnection of
+            Just (link /\ linkState) ->
+                Actions.disconnect Actions.DontTrack curPatchR link linkState unit
+            Nothing -> pure unit
     Ndf.Send instanceId (Ndf.InletId inletId) (Ndf.EncodedValue encodedValue) ->
         pure unit
     Ndf.SendO instanceId (Ndf.OutletId outletId) (Ndf.EncodedValue encodedValue) ->
         pure unit
-    Ndf.RemoveNode instanceId ->
-        pure unit
+    Ndf.RemoveNode instanceId -> do
+        state <- State.get
+        let
+            mbNodeR = CState.findNodeIdByNdfInstance instanceId state
+            mbNodeBoxKey = mbNodeR >>= \nodeR -> CState.findNodeKey nodeR state
+        case (/\) <$> mbNodeR <*> mbNodeBoxKey of
+            Just (nodeR /\ nodeBoxKey) ->
+                Actions.removeNode Actions.DontTrack curPatchR nodeR nodeBoxKey
+            Nothing -> pure unit
     Ndf.Import filePath ->
         pure unit
     _ -> pure unit

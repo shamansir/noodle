@@ -287,5 +287,5 @@ onPress mbValueEditorOp familyR patchR nodeBoxKey inletIndex rawNode inletR _ _ 
         Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
 
 
-onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
-onLinkClick = Actions.disconnect Actions.Track
+-- onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
+-- onLinkClick = Actions.disconnect Actions.Track

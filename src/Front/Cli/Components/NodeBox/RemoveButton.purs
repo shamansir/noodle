@@ -3,17 +3,10 @@ module Cli.Components.NodeBox.RemoveButton where
 import Prelude
 
 
-import Effect (Effect)
-
-import Data.Symbol (class IsSymbol)
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Foldable (for_)
-import Data.Map (lookup, empty) as Map
+import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 
-import Control.Monad.State (get, modify_) as State
+import Control.Monad.State (get) as State
 
 import Blessed as B
 
@@ -23,43 +16,33 @@ import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
-import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (lift', runOnUnit) as Blessed
 
-import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Option (content, height, left, tags, top, width) as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.Internal.Core as Core
-import Blessed.Internal.NodeKey as NodeKey
-import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (PatchBoxKey, NodeBoxKey, RemoveButtonKey, InfoBoxKey)
-import Cli.Keys (mainScreen, statusLine, patchBox) as Key
+import Cli.Keys (mainScreen) as Key
 import Cli.Style as Style
-import Noodle.Ui.Cli.Tagging as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Cli.State (State)
-import Cli.State (currentPatch, replacePatch, LastKeys) as CState
-import Cli.Components.Link as CLink
+import Cli.State (currentPatch, LastKeys) as CState
 import Cli.Components.NodeBox.InfoBox as IB
-import Cli.Components.SidePanel as SidePanel
 import Cli.Components.StatusLine as SL
-import Cli.Components.SidePanel.Documentation as Doc
-import Cli.Components.SidePanel.CommandLog as CL
-import Cli.Components.SidePanel.Tree as TP
 import Cli.Components.NodeBox.InletIndicator as II
 import Cli.Components.NodeBox.OutletIndicator as OI
+import Front.Cli.Actions as Actions
 
 import Noodle.Id as Id
 import Noodle.Patch as Patch
-import Noodle.Network as Network
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id) as RawNode
 import Noodle.Wiring (class Wiring)
-import Noodle.Text.NdfFile.Command.Quick as QOp
+
+import Noodle.Ui.Cli.Tagging (removeButtonOut, removeButtonOver) as T
+
 -- import Noodle.Node (unsafeDisconnect) as Node
 -- import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch
 
@@ -91,21 +74,7 @@ component topOffset family node keys =
                 let mbCurrentPatch = CState.currentPatch state
                 case mbCurrentPatch of
                     Just currentPatch -> do
-                        nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo (RawNode.id node) currentPatch
-                        let nextLinks /\ linksToRemove = CLink.forgetAllFromTo (RawNode.id node) state.links
-                        State.modify_ (\s ->
-                            s
-                                # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
-                                # _ { links = nextLinks }
-                        )
-                        Blessed.runOnUnit $ CLink.removeAllOf Key.patchBox linksToRemove
-                        keys.nodeBox >~ Node.detach
-                        State.modify_
-                            $ CState.replacePatch (Patch.id currentPatch)
-                            $ Patch.removeNode (RawNode.id node) nextCurrentPatch
-                        CL.trackCommand $ QOp.removeNode (RawNode.id node)
-                        SidePanel.refresh TP.sidePanel
-                        Key.mainScreen >~ Screen.render
+                        Actions.removeNode Actions.Track (Patch.id currentPatch) (RawNode.id node) keys.nodeBox
                     Nothing -> pure unit
         , Core.on Element.MouseOver
             \_ _ -> do

@@ -409,7 +409,7 @@ getState :: forall pstate families strepr chrepr mi m. MonadEffect m => Patch ps
 getState = liftEffect <<< Signal.get <<< subscribeState
 
 
-linksMap :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Map Id.LinkR Raw.Link
+linksMap :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Links
 linksMap (Patch _ _ _ _ _ links) = links
 
 
