@@ -160,6 +160,7 @@ _applyFile
     .  Show err
     => HasFallback cr
     => VT.ValueTagged cr
+    => FCG.ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => Toolkit.FromPatchState tk s sr
     => CliFriendly tk fs cr Effect

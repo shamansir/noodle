@@ -9,6 +9,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
 import Data.Array (head) as Array
+import Data.Newtype (unwrap) as NT
 
 import Control.Monad.State (get, modify) as State
 
@@ -17,7 +18,7 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (spawnAnyRaw, class FromPatchState) as Toolkit
 import Noodle.Patch (id, connectRaw, disconnectRaw, findRawNode, linksMap) as Patch
 import Noodle.Patch.Links (findBetween) as Links
-import Noodle.Raw.Node (id, shape) as RawNode
+import Noodle.Raw.Node (id, shape, sendIn_, sendOut_) as RawNode
 import Noodle.Raw.Link (id) as RawLink
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Fn.Shape as Shape
@@ -26,8 +27,10 @@ import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (_normalize, extractCommands) as Ndf
 import Noodle.Text.NdfFile.Command (op) as NdfCommand
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
-import Noodle.Text.NdfFile.Types (Coord(..), InletId(..), OutletId(..), EncodedValue(..), findInlet, findOutlet) as Ndf
+import Noodle.Text.NdfFile.Types (Coord(..), InletId(..), OutletId(..), EncodedType(..), EncodedValue(..), findInlet, findOutlet) as Ndf
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, toRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Repr.HasFallback (class HasFallback)
 
@@ -38,7 +41,7 @@ import Blessed.Internal.BlessedOp (lift) as Blessed
 import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
 
 import Cli.State (State)
-import Cli.State (currentPatch, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance, findLinkState) as CState
+import Cli.State (patch, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance, findLinkState) as CState
 import Cli.Components.Library as Library
 import Cli.Components.SidePanel.Console as CC
 import Cli.Class.CliFriendly (class CliFriendly)
@@ -53,6 +56,7 @@ applyNdf
     .  CliLocator loc
     => HasFallback cr
     => VT.ValueTagged cr
+    => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => Toolkit.FromPatchState tk s sr
     => CliFriendly tk fs cr Effect
@@ -72,6 +76,7 @@ applyCommandOp
     .  CliLocator loc
     => HasFallback cr
     => VT.ValueTagged cr
+    => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => Toolkit.FromPatchState tk s sr
     => CliFriendly tk fs cr Effect
@@ -105,7 +110,7 @@ applyCommandOp toolkit curPatchR = case _ of
         state <- State.get
         let
             mbConnection = do
-                currentPatch <- CState.currentPatch state
+                currentPatch <- CState.patch curPatchR state
                 fromNodeR    <- CState.findNodeIdByNdfInstance fromInstanceId state
                 toNodeR      <- CState.findNodeIdByNdfInstance toInstanceId state
                 sourceNode   <- Patch.findRawNode fromNodeR currentPatch
@@ -130,7 +135,7 @@ applyCommandOp toolkit curPatchR = case _ of
         state <- State.get
         let
             mbConnection = do
-                currentPatch <- CState.currentPatch state
+                currentPatch <- CState.patch curPatchR state
                 fromNodeR    <- CState.findNodeIdByNdfInstance fromInstanceId state
                 toNodeR      <- CState.findNodeIdByNdfInstance toInstanceId state
                 sourceNode   <- Patch.findRawNode fromNodeR currentPatch
@@ -144,10 +149,36 @@ applyCommandOp toolkit curPatchR = case _ of
             Just (link /\ linkState) ->
                 Actions.disconnect Actions.DontTrack curPatchR link linkState unit
             Nothing -> pure unit
-    Ndf.Send instanceId (Ndf.InletId inletId) (Ndf.EncodedValue encodedValue) ->
-        pure unit
-    Ndf.SendO instanceId (Ndf.OutletId outletId) (Ndf.EncodedValue encodedValue) ->
-        pure unit
+    Ndf.Send instanceId ndfInletId encodedValue -> do
+        state <- State.get
+        let
+            mbTarget = do
+                currentPatch <- CState.patch curPatchR state
+                nodeR <- CState.findNodeIdByNdfInstance instanceId state
+                targetNode <- Patch.findRawNode nodeR currentPatch
+                inletR <- Ndf.findInlet ndfInletId $ RawNode.shape targetNode
+                valueTag <- RawShape.tagOfInlet inletR $ RawNode.shape targetNode
+                reprValue <- toRepr (Ndf.EncodedType $ NT.unwrap valueTag) encodedValue
+                pure { inletR, targetNode, valueInChannel : ViC.accept reprValue }
+        case mbTarget of
+            Just { inletR, targetNode, valueInChannel } ->
+                RawNode.sendIn_ inletR valueInChannel targetNode
+            Nothing -> pure unit
+    Ndf.SendO instanceId ndfOutletId encodedValue -> do
+        state <- State.get
+        let
+            mbTarget = do
+                currentPatch <- CState.patch curPatchR state
+                nodeR <- CState.findNodeIdByNdfInstance instanceId state
+                targetNode <- Patch.findRawNode nodeR currentPatch
+                outletR <- Ndf.findOutlet ndfOutletId $ RawNode.shape targetNode
+                valueTag <- RawShape.tagOfOutlet outletR $ RawNode.shape targetNode
+                reprValue <- toRepr (Ndf.EncodedType $ NT.unwrap valueTag) encodedValue
+                pure { outletR, targetNode, valueInChannel : ViC.accept reprValue }
+        case mbTarget of
+            Just { outletR, targetNode, valueInChannel } ->
+                RawNode.sendOut_ outletR valueInChannel targetNode
+            Nothing -> pure unit
     Ndf.RemoveNode instanceId -> do
         state <- State.get
         let
