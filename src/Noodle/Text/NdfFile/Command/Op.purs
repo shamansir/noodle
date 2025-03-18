@@ -139,11 +139,12 @@ ndfLinesCount = case _ of
 
 _priority :: CommandOp -> Int
 _priority = case _ of
-    Import _ -> 0
     Order _ -> 1
     DefineFamily _ -> 2
+    Documentation _ _ -> 3 -- while documentation lines are bound to the respecting FamilyR each, we can move it over the file
     AssignProcess _ -> 5 -- assigning process comes after family definitions, but could be placed in the end of file w/o any follow-backs
     -- all the commands below should keep their order in file
+    Import _ -> 4 -- FIXME: may be replace imported files with the commands inside them during pre-processing?
     MakeNode _ _ _ _ -> 4
     RemoveNode _ -> 4
     Move _ _ _ -> 4
@@ -152,7 +153,6 @@ _priority = case _ of
     Send _ _ _ -> 4
     SendO _ _ _ -> 4
     Comment _ -> 4 -- to keep comments where they belong
-    Documentation _ _ -> 3 -- while documentation lines are bound to the respecting FamilyR each, we can move it over the file
 
 
 reviewOrder_ :: FamiliesOrder -> FamiliesOrder

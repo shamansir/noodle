@@ -4,14 +4,23 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
+import Effect.Aff (runAff_)
 
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
 import Data.Array (head) as Array
 import Data.Newtype (unwrap) as NT
 
-import Control.Monad.State (get, modify) as State
+import Control.Monad.State (get, modify, modify_) as State
+
+import Parsing (runParser) as P
+
+import Node.Path (FilePath)
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff (readTextFile, stat) as Async
 
 import Noodle.Id (FamilyR, PatchR) as Id
 import Noodle.Toolkit (Toolkit)
@@ -28,6 +37,7 @@ import Noodle.Text.NdfFile (_normalize, extractCommands) as Ndf
 import Noodle.Text.NdfFile.Command (op) as NdfCommand
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
 import Noodle.Text.NdfFile.Types (Coord(..), InletId(..), OutletId(..), EncodedType(..), EncodedValue(..), findInlet, findOutlet) as Ndf
+import Noodle.Text.NdfFile.Parser (parser)  as NdfFile
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, toRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (accept) as ViC
@@ -38,20 +48,41 @@ import Blessed ((>~), (~<))
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (lift) as Blessed
+import Blessed.Internal.BlessedOp (impair1, impair2, configureJs') as Blessed
 import Blessed.UI.Base.Element.PropertySet (setTop, setLeft) as Element
 
 import Cli.State (State)
-import Cli.State (patch, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance, findLinkState) as CState
+import Cli.State (patch, currentPatchId, findNodeKey, findNodeIdByNdfInstance, registerNdfInstance, findLinkState, appendHistory) as CState
 import Cli.Components.Library as Library
 import Cli.Components.SidePanel.Console as CC
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (class CliLocator)
 
-
 import Front.Cli.Actions as Actions
 
 
-applyNdf
+newtype NdfFilePath = NdfFilePath FilePath
+newtype NdfFileContent = NdfFileContent String
+
+
+applyNdfFileFrom
+    :: forall loc tk s fs sr cr
+    .  CliLocator loc
+    => HasFallback cr
+    => VT.ValueTagged cr
+    => ParseableRepr cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => Toolkit.FromPatchState tk s sr
+    => CliFriendly tk fs cr Effect
+    => Toolkit tk fs sr cr Effect
+    -> NdfFilePath
+    -> BlessedOp (State loc tk s fs sr cr Effect) Effect
+applyNdfFileFrom toolkit (NdfFilePath filePath) = do
+    fileCallback <- Blessed.impair1 $ _applyNdfFileContent toolkit <<< map NdfFileContent
+    liftEffect $ runAff_ fileCallback $ Async.readTextFile UTF8 filePath
+
+
+applyNdfFile
     :: forall tk loc s fs sr cr
     .  CliLocator loc
     => HasFallback cr
@@ -64,14 +95,14 @@ applyNdf
     -> Id.PatchR
     -> NdfFile
     -> BlessedOp (State loc tk s fs sr cr Effect) Effect
-applyNdf toolkit patchR  =
+applyNdfFile toolkit patchR =
     Ndf._normalize
         >>> Ndf.extractCommands
         >>> map NdfCommand.op
-        >>> traverse_ (applyCommandOp toolkit patchR)
+        >>> traverse_ (applyNdfCommandOp toolkit patchR)
 
 
-applyCommandOp
+applyNdfCommandOp
     :: forall tk loc s fs sr cr
     .  CliLocator loc
     => HasFallback cr
@@ -84,7 +115,7 @@ applyCommandOp
     -> Id.PatchR
     -> Ndf.CommandOp
     -> BlessedOp (State loc tk s fs sr cr Effect) Effect
-applyCommandOp toolkit curPatchR = case _ of
+applyNdfCommandOp toolkit curPatchR = case _ of
     Ndf.MakeNode familyR (Ndf.Coord coordX) (Ndf.Coord coordY) instanceId -> do
         mbRawNode <- Toolkit.spawnAnyRaw familyR toolkit
         case mbRawNode of
@@ -189,5 +220,36 @@ applyCommandOp toolkit curPatchR = case _ of
                 Actions.removeNode Actions.DontTrack curPatchR nodeR nodeBoxKey
             Nothing -> pure unit
     Ndf.Import filePath ->
-        pure unit
+        applyNdfFileFrom toolkit $ NdfFilePath filePath
     _ -> pure unit
+
+
+_applyNdfFileContent
+    :: forall err loc tk s fs sr cr
+    .  CliLocator loc
+    => Show err
+    => HasFallback cr
+    => VT.ValueTagged cr
+    => ParseableRepr cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => Toolkit.FromPatchState tk s sr
+    => CliFriendly tk fs cr Effect
+    => Toolkit tk fs sr cr Effect
+    -> Either err NdfFileContent
+    -> BlessedOp (State loc tk s fs sr cr Effect) Effect
+_applyNdfFileContent toolkit (Right (NdfFileContent fileContent)) = do
+    case P.runParser fileContent NdfFile.parser of
+        Right ndfFile -> do
+            state <- State.get
+            let mbCurrentPatchId = CState.currentPatchId state
+            case mbCurrentPatchId of
+                Just curPatchR -> do
+                    applyNdfFile toolkit curPatchR ndfFile
+                Nothing -> CC.logError "no current patch to apply NDF commands"
+            State.modify_ $ CState.appendHistory ndfFile -- we don't normalize it here to keep the history consistent
+        Left parsingError -> do
+            liftEffect $ Console.log $ "Error : " <> show parsingError
+            CC.logError $ show parsingError
+_applyNdfFileContent _ (Left error) = do
+    liftEffect $ Console.log $ "Error : " <> show error
+    CC.logError $ show error
