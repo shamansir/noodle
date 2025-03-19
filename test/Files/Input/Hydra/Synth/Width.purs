@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Synth.Width where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "w" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (w :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "width" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "width" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "width" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "width" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "width" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "width" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -43,8 +46,8 @@ defaultI = {}
 defaultO :: Record OutletsRow
 defaultO = { w: HT.Width }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _out_w = Noodle.Outlet :: _ "w"
 
@@ -55,4 +58,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 widthP :: Process
-widthP = pure unit
+widthP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

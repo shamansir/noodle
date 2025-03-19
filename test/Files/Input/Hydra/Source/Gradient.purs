@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Source.Gradient where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (speed :: HT.Value)
 type OutletsRow = (out :: HT.Texture)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "gradient" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "gradient" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "gradient" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "gradient" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "gradient" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "gradient" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { speed: HT.None }
@@ -43,8 +46,8 @@ defaultI = { speed: HT.None }
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_speed = Noodle.Inlet :: _ "speed"
 _out_out = Noodle.Outlet :: _ "out"
@@ -59,3 +62,8 @@ gradientP :: Process
 gradientP = do
   speed <- Fn.receive _in_speed
   Fn.send _out_out $ HT.Start $ HT.From $ HT.Gradient { speed }
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

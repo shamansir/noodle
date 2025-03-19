@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Source.Osc where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -35,10 +37,11 @@ type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (frequency :: HT.Value, sync :: HT.Value, offset :: HT.Value)
 type OutletsRow = (out :: HT.Texture)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "osc" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "osc" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "osc" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "osc" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "osc" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "osc" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { frequency: HT.Number 60.0, sync: HT.Number 0.1, offset: HT.None }
@@ -46,8 +49,8 @@ defaultI = { frequency: HT.Number 60.0, sync: HT.Number 0.1, offset: HT.None }
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_frequency = Noodle.Inlet :: _ "frequency"
 _in_sync = Noodle.Inlet :: _ "sync"
@@ -66,3 +69,8 @@ oscP = do
   sync <- Fn.receive _in_sync
   offset <- Fn.receive _in_offset
   Fn.send _out_out $ HT.Start $ HT.From $ HT.Osc { frequency, sync, offset }
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

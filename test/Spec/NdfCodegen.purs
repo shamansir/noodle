@@ -6,10 +6,10 @@ import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Traversable (traverse, traverse_)
-import Data.Array (length, take, dropEnd) as Array
+import Data.Array (length, take, dropEnd, fromFoldable) as Array
 import Data.Map (Map)
 import Data.Set (Set)
-import Data.Map (keys, fromFoldable, toUnfoldable, empty) as Map
+import Data.Map (keys, fromFoldable, toUnfoldable, empty, filter) as Map
 import Data.Map.Extra (joinWith, withKeys') as MapX
 import Data.Set (toUnfoldable) as Set
 import Data.Tuple (uncurry)
@@ -57,7 +57,8 @@ import Hydra.Types (FnArg(..))
 import Hydra.Repr.Wrap (WrapRepr)
 import Hydra.Repr.GenOptions (genOptions) as Hydra
 
-import Test.Spec.Util.Assertions (shouldEqual) as U
+import Test.Spec.Assertions (shouldEqual) as C
+import Test.Spec.Util.Assertions (shouldEqual, shouldEqualStack) as U
 
 
 minimalGenOptions :: FCG.Options MinimalStRepr MinimalVRepr
@@ -144,11 +145,30 @@ spec = do
               let outputFilesMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
               traverse_ _writeOutputFile (Map.toUnfoldable outputFilesMap :: Array (MCG.FilePath /\ MCG.FileContent))
               inputFilesMap <- MapX.withKeys' _readInputFile outputFilesMap
-              let results = MapX.joinWith (\output input -> { output, input }) outputFilesMap inputFilesMap
+              let
+                results = MapX.joinWith (\output input -> { input, output }) outputFilesMap inputFilesMap
+              --   allOutputFiles = Map.keys outputFilesMap
+              --   onlyEqualFiles = Map.keys $ Map.filter __compareByEq results
+              -- ( (String.joinWith "\n" $ show <$> Array.fromFoldable allOutputFiles)
+              --    `U.shouldEqualStack`
+              --   (String.joinWith "\n" $ show <$> Array.fromFoldable onlyEqualFiles)
+              -- )
               traverse_ (uncurry testCodegenPair) $ (Map.toUnfoldable results :: Array (MCG.FilePath /\ { input :: MCG.FileContent, output :: MCG.FileContent }))
-              -- traverse_ testCodegenFile $ (Map.toUnfoldable outputFilesMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
+
+
+__compareByEq :: { input :: MCG.FileContent, output :: MCG.FileContent } -> Boolean
+__compareByEq content =
+  case content.input /\ content.output of
+    MCG.FileContent inputContent /\ MCG.FileContent outputContent ->
+      outputContent == __alterInput inputContent
+
+
+__alterInput :: String -> String
+__alterInput =
+  String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
+  >>> String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
 
 
 _readInputFile :: forall m. MonadEffect m => MCG.FilePath -> m MCG.FileContent
@@ -195,17 +215,11 @@ testCodegenPair (MCG.FilePath filePath) content = do
   let
     outputFilePath = unwrap outputDir <> filePath
     inputFilePath  = unwrap inputDir <> filePath
-
   case content.input /\ content.output of
-    MCG.FileContent inputContent /\ MCG.FileContent outputContent -> do
-      let
-        alteredInputContent =
-          inputContent
-              # String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
-              # String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
+    MCG.FileContent inputContent /\ MCG.FileContent outputContent ->
       liftEffect $ do
         Console.log $ inputFilePath <> " <-> " <> outputFilePath
-        outputContent `U.shouldEqual` alteredInputContent
+        outputContent `U.shouldEqual` __alterInput inputContent
 
 
 testCodegenSingleFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -> m Unit
@@ -219,9 +233,5 @@ testCodegenSingleFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = d
     when (not outputDirectoryExists) $ mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
     writeTextFile UTF8 outputFilePath fileContent
     sample <- readTextFile UTF8 inputFilePath
-    let alteredSample =
-          sample
-          # String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
-          # String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
     Console.log $ inputFilePath <> " <-> " <> outputFilePath
-    fileContent `U.shouldEqual` alteredSample
+    fileContent `U.shouldEqual` __alterInput sample

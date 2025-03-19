@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Source.Voronoi where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -35,10 +37,11 @@ type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (scale :: HT.Value, speed :: HT.Value, blending :: HT.Value)
 type OutletsRow = (out :: HT.Texture)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "voronoi" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "voronoi" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "voronoi" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "voronoi" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "voronoi" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "voronoi" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { scale: HT.Number 5.0, speed: HT.Number 0.3, blending: HT.Number 0.3 }
@@ -46,8 +49,8 @@ defaultI = { scale: HT.Number 5.0, speed: HT.Number 0.3, blending: HT.Number 0.3
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_scale = Noodle.Inlet :: _ "scale"
 _in_speed = Noodle.Inlet :: _ "speed"
@@ -66,3 +69,8 @@ voronoiP = do
   speed <- Fn.receive _in_speed
   blending <- Fn.receive _in_blending
   Fn.send _out_out $ HT.Start $ HT.From $ HT.Voronoi { scale, speed, blending }
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

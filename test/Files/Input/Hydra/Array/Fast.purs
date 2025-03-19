@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Array.Fast where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "arr" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (arr :: HT.Values, speed :: HT.Value)
 type OutletsRow = (arr :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "fast" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "fast" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "fast" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "fast" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "fast" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "fast" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { arr: HT.Values [], speed: HT.Number 1.0 }
@@ -43,8 +46,8 @@ defaultI = { arr: HT.Values [], speed: HT.Number 1.0 }
 defaultO :: Record OutletsRow
 defaultO = { arr: HT.VArray (HT.Values []) HT.Linear }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_arr = Noodle.Inlet :: _ "arr"
 _in_speed = Noodle.Inlet :: _ "speed"
@@ -61,3 +64,8 @@ fastP = do
   arr <- Fn.receive _in_arr
   speed <- Fn.receive _in_speed
   Fn.send _out_arr $ HT.VArray arr $ HT.Fast speed
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

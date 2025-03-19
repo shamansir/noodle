@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Feed.GlslFn where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "out" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (out :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "glslFn" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "glslFn" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "glslFn" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "glslFn" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "glslFn" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "glslFn" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -43,8 +46,8 @@ defaultI = {}
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Dep HT.NoAction }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _out_out = Noodle.Outlet :: _ "out"
 
@@ -55,4 +58,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 glslFnP :: Process
-glslFnP = pure unit
+glslFnP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

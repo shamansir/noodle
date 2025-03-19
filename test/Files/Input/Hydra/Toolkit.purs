@@ -1,7 +1,8 @@
-module Input.Hydra.Toolkit where
+module Input.Hydra.Gen.Toolkit where
 
 import Prelude
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Color as Color
 import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
@@ -9,11 +10,12 @@ import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
-import Noodle.Fn.Signature (in_, inx_, out_, outx_) as Sig
+import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
 import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
-import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
 import Test.Files.CodeGenTest.Hydra.Feed.Number as Feed.Number
 import Test.Files.CodeGenTest.Hydra.Feed.Pi as Feed.Pi
 import Test.Files.CodeGenTest.Hydra.Feed.Array as Feed.Array
@@ -381,13 +383,16 @@ instance IsToolkit HYDRA where
       )
     >>> Id.unsafeGroupR
 
-instance CliRenderer HYDRA HydraFamilies WrapRepr m where
+instance MonadEffect m => CliRenderer HYDRA HydraFamilies WrapRepr m where
   cliSize _ _ _ _ _ = Nothing
   renderCli _ _ _ _ _ = Nothing
 
-instance CliRawRenderer HYDRA HydraFamilies WrapRepr m where
+instance MonadEffect m => CliRawRenderer HYDRA HydraFamilies WrapRepr m where
   cliSizeRaw _ _ _ _ _ = Nothing
   renderCliRaw _ _ _ _ _ = Nothing
+
+instance CliEditor HYDRA WrapRepr where
+  editorFor _ _ _ _ _ _ = Nothing
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>
@@ -407,356 +412,362 @@ instance MarkToolkit HYDRA where
     )
   markFamily ptk = const <<< markGroup ptk
 
-instance PossiblyToSignature HYDRA (Maybe WrapRepr) (Maybe WrapRepr) Id.FamilyR where
-  possiblyToSignature _ = Id.family >>> case _ of
-    "number" -> Just $ sig "number" [] [ Sig.out_ "out" $ HW.Value (HT.Number 0.0) ]
-    "pi" -> Just $ sig "pi" [] [ Sig.out_ "out" $ HW.Value HT.Pi ]
-    "array" -> Just $ sig "array" []
-      [ Sig.out_ "out" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "expression" -> Just $ sig "expression" [] [ Sig.out_ "out" $ HW.Value (HT.Dep HT.NoAction) ]
-    "time" -> Just $ sig "time" [] [ Sig.out_ "time" $ HW.Value HT.Time ]
-    "mouse" -> Just $ sig "mouse" []
-      [ Sig.out_ "x" $ HW.Value HT.MouseX, Sig.out_ "y" $ HW.Value HT.MouseY ]
-    "glslFn" -> Just $ sig "glslFn" [] [ Sig.out_ "out" $ HW.Value (HT.Dep HT.NoAction) ]
-    "noise" -> Just $ sig "noise"
-      [ Sig.in_ "scale" $ HW.Value (HT.Number 10.0), Sig.in_ "offset" $ HW.Value (HT.Number 0.1) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "voronoi" -> Just $ sig "voronoi"
-      [ Sig.in_ "scale" $ HW.Value (HT.Number 5.0)
-      , Sig.in_ "speed" $ HW.Value (HT.Number 0.3)
-      , Sig.in_ "blending" $ HW.Value (HT.Number 0.3)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "osc" -> Just $ sig "osc"
-      [ Sig.in_ "frequency" $ HW.Value (HT.Number 60.0)
-      , Sig.in_ "sync" $ HW.Value (HT.Number 0.1)
-      , Sig.inx_ "offset"
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "shape" -> Just $ sig "shape"
-      [ Sig.in_ "sides" $ HW.Value (HT.Number 60.0)
-      , Sig.in_ "radius" $ HW.Value (HT.Number 0.3)
-      , Sig.in_ "smoothing" $ HW.Value (HT.Number 0.01)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "gradient" -> Just $ sig "gradient" [ Sig.inx_ "speed" ] [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "src" -> Just $ sig "src" [ Sig.inx_ "load" ] [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "solid" -> Just $ sig "solid"
-      [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b", Sig.in_ "a" $ HW.Value (HT.Number 1.0) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "prev" -> Just $ sig "prev" [ Sig.in_ "todo" $ HW.TODO HT.TODO ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "rotate" -> Just $ sig "rotate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "angle" $ HW.Value (HT.Number 10.0)
-      , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "scale" -> Just $ sig "scale"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.5)
-      , Sig.in_ "xMult" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "yMult" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "pixelate" -> Just $ sig "pixelate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "pixelX" $ HW.Value (HT.Number 20.0)
-      , Sig.in_ "pixelY" $ HW.Value (HT.Number 20.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "repeat" -> Just $ sig "repeat"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "repeatX" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "repeatY" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.0)
-      , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "repeatX" -> Just $ sig "repeatX"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "repeatY" -> Just $ sig "repeatY"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "kaleid" -> Just $ sig "kaleid"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "nSides" $ HW.Value (HT.Number 3.0) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "scroll" -> Just $ sig "scroll"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
-      , Sig.inx_ "speedX"
-      , Sig.inx_ "speedY"
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "scrollX" -> Just $ sig "scrollX"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "scrollY" -> Just $ sig "scrollY"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "posterize" -> Just $ sig "posterize"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "bins" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "gamma" $ HW.Value (HT.Number 0.6)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "shift" -> Just $ sig "shift"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "r" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "g" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "b" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "a" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "invert" -> Just $ sig "invert"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 1.0) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "contrast" -> Just $ sig "contrast"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 1.6) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "brightness" -> Just $ sig "brightness"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 0.4) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "luma" -> Just $ sig "luma"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "threshold" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "tolerance" $ HW.Value (HT.Number 0.1)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "thresh" -> Just $ sig "thresh"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "threshold" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "tolerance" $ HW.Value (HT.Number 0.1)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "color" -> Just $ sig "color"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "r" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "g" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "b" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "a" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "saturate" -> Just $ sig "saturate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 2.0) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "hue" -> Just $ sig "hue"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "hue" $ HW.Value (HT.Number 0.4) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "colorama" -> Just $ sig "colorama"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 0.005) ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "sum" -> Just $ sig "sum"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "todo" $ HW.TODO HT.TODO ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "r" -> Just $ sig "r"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "b" -> Just $ sig "b"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "g" -> Just $ sig "g"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "a" -> Just $ sig "a"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "add" -> Just $ sig "add"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "sub" -> Just $ sig "sub"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "layer" -> Just $ sig "layer"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "blend" -> Just $ sig "blend"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "mult" -> Just $ sig "mult"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "diff" -> Just $ sig "diff"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "with" $ HW.Texture HT.Empty ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "mask" -> Just $ sig "mask"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "with" $ HW.Texture HT.Empty ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateRepeat" -> Just $ sig "modulateRepeat"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "repeatX" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "repeatY" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.5)
-      , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateRepeatX" -> Just $ sig "modulateRepeatX"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateRepeatY" -> Just $ sig "modulateRepeatY"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 0.5)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateKaleid" -> Just $ sig "modulateKaleid"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "nSides" $ HW.Value (HT.Number 3.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateScrollX" -> Just $ sig "modulateScrollX"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
-      , Sig.inx_ "speed"
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateScrollY" -> Just $ sig "modulateScrollY"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
-      , Sig.inx_ "speed"
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulate" -> Just $ sig "modulate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 0.1)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateScale" -> Just $ sig "modulateScale"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "multiple" $ HW.Value (HT.Number 1.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulatePixelate" -> Just $ sig "modulatePixelate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "multiple" $ HW.Value (HT.Number 10.0)
-      , Sig.in_ "offset" $ HW.Value (HT.Number 3.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateRotate" -> Just $ sig "modulateRotate"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "multiple" $ HW.Value (HT.Number 1.0)
-      , Sig.inx_ "offset"
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "modulateHue" -> Just $ sig "modulateHue"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty
-      , Sig.in_ "with" $ HW.Texture HT.Empty
-      , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "out" $ HW.Texture HT.Empty ]
-    "initCam" -> Just $ sig "initCam" [ Sig.inx_ "src", Sig.in_ "index" $ HW.Value HT.None ] []
-    "initImage" -> Just $ sig "initImage" [ Sig.inx_ "src", Sig.inx_ "url" ] []
-    "initVideo" -> Just $ sig "initVideo" [ Sig.inx_ "src", Sig.inx_ "url" ] []
-    "init" -> Just $ sig "init" [ Sig.inx_ "options" ] []
-    "initStream" -> Just $ sig "initStream" [ Sig.inx_ "src", Sig.in_ "todo" $ HW.TODO HT.TODO ] []
-    "initScreen" -> Just $ sig "initScreen" [] []
-    "render" -> Just $ sig "render" [ Sig.in_ "what" $ HW.Unit unit ] []
-    "update" -> Just $ sig "update" [ Sig.inx_ "fn" ] []
-    "setResolution" -> Just $ sig "setResolution"
-      [ Sig.in_ "width" $ HW.Value (HT.Number 100.0), Sig.in_ "height" $ HW.Value (HT.Number 100.0) ]
-      []
-    "hush" -> Just $ sig "hush" [] []
-    "setFunction" -> Just $ sig "setFunction" [ Sig.inx_ "fn" ] []
-    "speed" -> Just $ sig "speed" [ Sig.in_ "v" $ HW.Value (HT.Number 1.0) ] []
-    "bpm" -> Just $ sig "bpm" [ Sig.in_ "v" $ HW.Value (HT.Number 30.0) ] []
-    "width" -> Just $ sig "width" [] [ Sig.out_ "w" $ HW.Value HT.Width ]
-    "height" -> Just $ sig "height" [] [ Sig.out_ "h" $ HW.Value HT.Height ]
-    "fast" -> Just $ sig "fast"
-      [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "speed" $ HW.Value (HT.Number 1.0) ]
-      [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "smooth" -> Just $ sig "smooth"
-      [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "smooth" $ HW.Value (HT.Number 1.0) ]
-      [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "ease" -> Just $ sig "ease"
-      [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "ease" $ HW.Ease HT.Linear ]
-      [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "offset" -> Just $ sig "offset"
-      [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "offset" $ HW.Value (HT.Number 0.5) ]
-      [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "fit" -> Just $ sig "fit"
-      [ Sig.in_ "arr" $ HW.Values (HT.Values [])
-      , Sig.in_ "low" $ HW.Value (HT.Number 0.0)
-      , Sig.in_ "high" $ HW.Value (HT.Number 1.0)
-      ]
-      [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
-    "fft" -> Just $ sig "fft" [ Sig.in_ "bin" $ HW.AudioBin (HT.AudioBin 0) ]
-      [ Sig.out_ "fft" $ HW.Value HT.None ]
-    "setSmooth" -> Just $ sig "setSmooth"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "smooth" $ HW.Value (HT.Number 0.4) ]
-      []
-    "setCutoff" -> Just $ sig "setCutoff"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "cutoff" $ HW.Value (HT.Number 2.0) ]
-      []
-    "setBins" -> Just $ sig "setBins"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "numBins" $ HW.Value (HT.Number 4.0) ]
-      []
-    "setScale" -> Just $ sig "setScale"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "scale" $ HW.Value (HT.Number 10.0) ]
-      []
-    "hide" -> Just $ sig "hide"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "todo" $ HW.TODO HT.TODO ]
-      []
-    "show" -> Just $ sig "show"
-      [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "todo" $ HW.TODO HT.TODO ]
-      []
-    "out" -> Just $ sig "out"
-      [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "target" $ HW.Unit unit ]
-      []
-    _ -> Nothing
+instance PossiblyToSignature HYDRA (ValueInChannel WrapRepr) (ValueInChannel WrapRepr) Id.FamilyR where
+  possiblyToSignature _ = Id.family
+    >>> case _ of
+        "number" -> Just $ sig "number" [] [ Sig.out_ "out" $ HW.Value (HT.Number 0.0) ]
+        "pi" -> Just $ sig "pi" [] [ Sig.out_ "out" $ HW.Value HT.Pi ]
+        "array" -> Just $ sig "array" []
+          [ Sig.out_ "out" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "expression" -> Just $ sig "expression" [] [ Sig.out_ "out" $ HW.Value (HT.Dep HT.NoAction) ]
+        "time" -> Just $ sig "time" [] [ Sig.out_ "time" $ HW.Value HT.Time ]
+        "mouse" -> Just $ sig "mouse" []
+          [ Sig.out_ "x" $ HW.Value HT.MouseX, Sig.out_ "y" $ HW.Value HT.MouseY ]
+        "glslFn" -> Just $ sig "glslFn" [] [ Sig.out_ "out" $ HW.Value (HT.Dep HT.NoAction) ]
+        "noise" -> Just $ sig "noise"
+          [ Sig.in_ "scale" $ HW.Value (HT.Number 10.0), Sig.in_ "offset" $ HW.Value (HT.Number 0.1) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "voronoi" -> Just $ sig "voronoi"
+          [ Sig.in_ "scale" $ HW.Value (HT.Number 5.0)
+          , Sig.in_ "speed" $ HW.Value (HT.Number 0.3)
+          , Sig.in_ "blending" $ HW.Value (HT.Number 0.3)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "osc" -> Just $ sig "osc"
+          [ Sig.in_ "frequency" $ HW.Value (HT.Number 60.0)
+          , Sig.in_ "sync" $ HW.Value (HT.Number 0.1)
+          , Sig.inx_ "offset"
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "shape" -> Just $ sig "shape"
+          [ Sig.in_ "sides" $ HW.Value (HT.Number 60.0)
+          , Sig.in_ "radius" $ HW.Value (HT.Number 0.3)
+          , Sig.in_ "smoothing" $ HW.Value (HT.Number 0.01)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "gradient" -> Just $ sig "gradient" [ Sig.inx_ "speed" ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "src" -> Just $ sig "src" [ Sig.inx_ "load" ] [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "solid" -> Just $ sig "solid"
+          [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b", Sig.in_ "a" $ HW.Value (HT.Number 1.0) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "prev" -> Just $ sig "prev" [ Sig.in_ "todo" $ HW.TODO HT.TODO ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "rotate" -> Just $ sig "rotate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "angle" $ HW.Value (HT.Number 10.0)
+          , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "scale" -> Just $ sig "scale"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.5)
+          , Sig.in_ "xMult" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "yMult" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "pixelate" -> Just $ sig "pixelate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "pixelX" $ HW.Value (HT.Number 20.0)
+          , Sig.in_ "pixelY" $ HW.Value (HT.Number 20.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "repeat" -> Just $ sig "repeat"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "repeatX" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "repeatY" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.0)
+          , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "repeatX" -> Just $ sig "repeatX"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "repeatY" -> Just $ sig "repeatY"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "kaleid" -> Just $ sig "kaleid"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "nSides" $ HW.Value (HT.Number 3.0) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "scroll" -> Just $ sig "scroll"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
+          , Sig.inx_ "speedX"
+          , Sig.inx_ "speedY"
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "scrollX" -> Just $ sig "scrollX"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "scrollY" -> Just $ sig "scrollY"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "speed" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "posterize" -> Just $ sig "posterize"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "bins" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "gamma" $ HW.Value (HT.Number 0.6)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "shift" -> Just $ sig "shift"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "r" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "g" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "b" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "a" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "invert" -> Just $ sig "invert"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 1.0) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "contrast" -> Just $ sig "contrast"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 1.6) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "brightness" -> Just $ sig "brightness"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 0.4) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "luma" -> Just $ sig "luma"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "threshold" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "tolerance" $ HW.Value (HT.Number 0.1)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "thresh" -> Just $ sig "thresh"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "threshold" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "tolerance" $ HW.Value (HT.Number 0.1)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "color" -> Just $ sig "color"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "r" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "g" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "b" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "a" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "saturate" -> Just $ sig "saturate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 2.0) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "hue" -> Just $ sig "hue"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "hue" $ HW.Value (HT.Number 0.4) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "colorama" -> Just $ sig "colorama"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "amount" $ HW.Value (HT.Number 0.005) ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "sum" -> Just $ sig "sum"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "todo" $ HW.TODO HT.TODO ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "r" -> Just $ sig "r"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "b" -> Just $ sig "b"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "g" -> Just $ sig "g"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "a" -> Just $ sig "a"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "scale" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "add" -> Just $ sig "add"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "sub" -> Just $ sig "sub"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "layer" -> Just $ sig "layer"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "blend" -> Just $ sig "blend"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "mult" -> Just $ sig "mult"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "diff" -> Just $ sig "diff"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "with" $ HW.Texture HT.Empty ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "mask" -> Just $ sig "mask"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "with" $ HW.Texture HT.Empty ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateRepeat" -> Just $ sig "modulateRepeat"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "repeatX" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "repeatY" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offsetX" $ HW.Value (HT.Number 0.5)
+          , Sig.in_ "offsetY" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateRepeatX" -> Just $ sig "modulateRepeatX"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateRepeatY" -> Just $ sig "modulateRepeatY"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "reps" $ HW.Value (HT.Number 3.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 0.5)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateKaleid" -> Just $ sig "modulateKaleid"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "nSides" $ HW.Value (HT.Number 3.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateScrollX" -> Just $ sig "modulateScrollX"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "scrollX" $ HW.Value (HT.Number 0.5)
+          , Sig.inx_ "speed"
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateScrollY" -> Just $ sig "modulateScrollY"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "scrollY" $ HW.Value (HT.Number 0.5)
+          , Sig.inx_ "speed"
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulate" -> Just $ sig "modulate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 0.1)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateScale" -> Just $ sig "modulateScale"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "multiple" $ HW.Value (HT.Number 1.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulatePixelate" -> Just $ sig "modulatePixelate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "multiple" $ HW.Value (HT.Number 10.0)
+          , Sig.in_ "offset" $ HW.Value (HT.Number 3.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateRotate" -> Just $ sig "modulateRotate"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "multiple" $ HW.Value (HT.Number 1.0)
+          , Sig.inx_ "offset"
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "modulateHue" -> Just $ sig "modulateHue"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty
+          , Sig.in_ "with" $ HW.Texture HT.Empty
+          , Sig.in_ "amount" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "out" $ HW.Texture HT.Empty ]
+        "initCam" -> Just $ sig "initCam" [ Sig.inx_ "src", Sig.in_ "index" $ HW.Value HT.None ] []
+        "initImage" -> Just $ sig "initImage" [ Sig.inx_ "src", Sig.inx_ "url" ] []
+        "initVideo" -> Just $ sig "initVideo" [ Sig.inx_ "src", Sig.inx_ "url" ] []
+        "init" -> Just $ sig "init" [ Sig.inx_ "options" ] []
+        "initStream" -> Just $ sig "initStream" [ Sig.inx_ "src", Sig.in_ "todo" $ HW.TODO HT.TODO ]
+          []
+        "initScreen" -> Just $ sig "initScreen" [] []
+        "render" -> Just $ sig "render" [ Sig.in_ "what" $ HW.Unit unit ] []
+        "update" -> Just $ sig "update" [ Sig.inx_ "fn" ] []
+        "setResolution" -> Just $ sig "setResolution"
+          [ Sig.in_ "width" $ HW.Value (HT.Number 100.0)
+          , Sig.in_ "height" $ HW.Value (HT.Number 100.0)
+          ]
+          []
+        "hush" -> Just $ sig "hush" [] []
+        "setFunction" -> Just $ sig "setFunction" [ Sig.inx_ "fn" ] []
+        "speed" -> Just $ sig "speed" [ Sig.in_ "v" $ HW.Value (HT.Number 1.0) ] []
+        "bpm" -> Just $ sig "bpm" [ Sig.in_ "v" $ HW.Value (HT.Number 30.0) ] []
+        "width" -> Just $ sig "width" [] [ Sig.out_ "w" $ HW.Value HT.Width ]
+        "height" -> Just $ sig "height" [] [ Sig.out_ "h" $ HW.Value HT.Height ]
+        "fast" -> Just $ sig "fast"
+          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "speed" $ HW.Value (HT.Number 1.0) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "smooth" -> Just $ sig "smooth"
+          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "smooth" $ HW.Value (HT.Number 1.0) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "ease" -> Just $ sig "ease"
+          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "ease" $ HW.Ease HT.Linear ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "offset" -> Just $ sig "offset"
+          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "offset" $ HW.Value (HT.Number 0.5) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "fit" -> Just $ sig "fit"
+          [ Sig.in_ "arr" $ HW.Values (HT.Values [])
+          , Sig.in_ "low" $ HW.Value (HT.Number 0.0)
+          , Sig.in_ "high" $ HW.Value (HT.Number 1.0)
+          ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.Linear) ]
+        "fft" -> Just $ sig "fft" [ Sig.in_ "bin" $ HW.AudioBin (HT.AudioBin 0) ]
+          [ Sig.out_ "fft" $ HW.Value HT.None ]
+        "setSmooth" -> Just $ sig "setSmooth"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "smooth" $ HW.Value (HT.Number 0.4) ]
+          []
+        "setCutoff" -> Just $ sig "setCutoff"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "cutoff" $ HW.Value (HT.Number 2.0) ]
+          []
+        "setBins" -> Just $ sig "setBins"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "numBins" $ HW.Value (HT.Number 4.0) ]
+          []
+        "setScale" -> Just $ sig "setScale"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "scale" $ HW.Value (HT.Number 10.0) ]
+          []
+        "hide" -> Just $ sig "hide"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "todo" $ HW.TODO HT.TODO ]
+          []
+        "show" -> Just $ sig "show"
+          [ Sig.in_ "audio" $ HW.Audio HT.Silence, Sig.in_ "todo" $ HW.TODO HT.TODO ]
+          []
+        "out" -> Just $ sig "out"
+          [ Sig.in_ "what" $ HW.Texture HT.Empty, Sig.in_ "target" $ HW.Unit unit ]
+          []
+        _ -> Nothing
+    >>> map Sig.toChanneled

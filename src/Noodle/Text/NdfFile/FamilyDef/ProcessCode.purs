@@ -153,11 +153,10 @@ _processAutoCode src =
         toExpression :: AutoData_ -> String
         toExpression { allInlets, sends } = "do\n" <>
             if (Array.length allInlets > 0) then
-                indent -- FIXME: one indent should be at start
-                <> (String.joinWith "\n" $ inletStr <$> Array.nub allInlets)
+                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets)
                 <>
                 (if Array.length sends > 0
-                    then "\n" <> indent <> String.joinWith "\n" (sendStr <$> sends)
+                    then "\n" <> String.joinWith "\n" (sendStr <$> sends)
                     else ""
                 )
             else

@@ -26,4 +26,8 @@ import Test.Spec (SpecT, it, class Example)
 
 
 shouldEqual :: forall m. MonadEffect m => MonadThrow Error m => String -> String -> m Unit
-shouldEqual = Diff.compareBy (Diff.OnlyDifferent $ Diff.Limit 10)
+shouldEqual = Diff.compareBy $ Diff.OnlyDifferent $ Diff.Limit 10
+
+
+shouldEqualStack :: forall m. MonadEffect m => MonadThrow Error m => String -> String -> m Unit
+shouldEqualStack = Diff.compareBy $ Diff.Stack Diff.NoLimit

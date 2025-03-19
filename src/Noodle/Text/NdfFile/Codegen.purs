@@ -37,11 +37,12 @@ import Noodle.Ui.Cli.Palette.AutoColor (group) as AutoColor
 -- import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue)
 
 
-
 newtype FilePath = FilePath String -- TODO: replace with Node.FS FilePath
 newtype FileContent = FileContent String
 newtype GenRootPath = GenRootPath String
 newtype ModulePrefix = ModulePrefix String
+
+derive newtype instance Show FilePath
 derive instance Newtype GenRootPath _
 derive instance Newtype ModulePrefix _
 

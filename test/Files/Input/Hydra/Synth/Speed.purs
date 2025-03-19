@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Synth.Speed where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (v :: HT.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "speed" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "speed" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "speed" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "speed" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "speed" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "speed" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { v: HT.Number 1.0 }
@@ -43,8 +46,8 @@ defaultI = { v: HT.Number 1.0 }
 defaultO :: Record OutletsRow
 defaultO = {}
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_v = Noodle.Inlet :: _ "v"
 
@@ -55,4 +58,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 speedP :: Process
-speedP = pure unit
+speedP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

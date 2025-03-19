@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Synth.Hush where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "hush" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "hush" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "hush" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "hush" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "hush" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "hush" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -43,8 +46,8 @@ defaultI = {}
 defaultO :: Record OutletsRow
 defaultO = {}
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 family :: Family
 family = Family.make _hush defaultSt (Noodle.Shape :: Shape) defaultI defaultO hushP
@@ -53,4 +56,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 hushP :: Process
-hushP = pure unit
+hushP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

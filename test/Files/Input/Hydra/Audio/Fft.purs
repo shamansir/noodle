@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Audio.Fft where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "fft" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (bin :: HT.AudioBin)
 type OutletsRow = (fft :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "fft" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "fft" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "fft" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "fft" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "fft" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "fft" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { bin: HT.AudioBin 0 }
@@ -43,8 +46,8 @@ defaultI = { bin: HT.AudioBin 0 }
 defaultO :: Record OutletsRow
 defaultO = { fft: HT.None }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_bin = Noodle.Inlet :: _ "bin"
 _out_fft = Noodle.Outlet :: _ "fft"
@@ -59,3 +62,8 @@ fftP :: Process
 fftP = do
   bin <- Fn.receive _in_bin
   Fn.send _out_fft $ HT.Fft bin
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

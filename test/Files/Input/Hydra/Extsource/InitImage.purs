@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Extsource.InitImage where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (src :: HT.SourceN, url :: HT.Url)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "initImage" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "initImage" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "initImage" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "initImage" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "initImage" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "initImage" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { src: HT.Source0, url: HT.Url "" }
@@ -43,8 +46,8 @@ defaultI = { src: HT.Source0, url: HT.Url "" }
 defaultO :: Record OutletsRow
 defaultO = {}
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_src = Noodle.Inlet :: _ "src"
 _in_url = Noodle.Inlet :: _ "url"
@@ -56,4 +59,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 initImageP :: Process
-initImageP = pure unit
+initImageP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

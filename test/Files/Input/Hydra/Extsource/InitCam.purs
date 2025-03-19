@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Extsource.InitCam where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (src :: HT.SourceN, index :: HT.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "initCam" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "initCam" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "initCam" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "initCam" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "initCam" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "initCam" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { src: HT.Source0, index: HT.None }
@@ -43,8 +46,8 @@ defaultI = { src: HT.Source0, index: HT.None }
 defaultO :: Record OutletsRow
 defaultO = {}
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_src = Noodle.Inlet :: _ "src"
 _in_index = Noodle.Inlet :: _ "index"
@@ -56,4 +59,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 initCamP :: Process
-initCamP = pure unit
+initCamP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

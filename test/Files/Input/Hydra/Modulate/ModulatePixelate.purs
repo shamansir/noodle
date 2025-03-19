@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulatePixelate where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -37,10 +39,11 @@ type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (what :: HT.Texture, with :: HT.Texture, multiple :: HT.Value, offset :: HT.Value)
 type OutletsRow = (out :: HT.Texture)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "modulatePixelate" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "modulatePixelate" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "modulatePixelate" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "modulatePixelate" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "modulatePixelate" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "modulatePixelate" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { what: HT.Empty, with: HT.Empty, multiple: HT.Number 10.0, offset: HT.Number 3.0 }
@@ -48,8 +51,8 @@ defaultI = { what: HT.Empty, with: HT.Empty, multiple: HT.Number 10.0, offset: H
 defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_what = Noodle.Inlet :: _ "what"
 _in_with = Noodle.Inlet :: _ "with"
@@ -71,3 +74,8 @@ modulatePixelateP = do
   multiple <- Fn.receive _in_multiple
   offset <- Fn.receive _in_offset
   Fn.send _out_out $ HT.ModulateWith { what, with } $ HT.ModPixelate { multiple, offset }
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

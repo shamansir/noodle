@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Array.Fit where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -34,10 +36,11 @@ type Outlets = (O "arr" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (arr :: HT.Values, low :: HT.Value, high :: HT.Value)
 type OutletsRow = (arr :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "fit" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "fit" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "fit" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "fit" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "fit" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "fit" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { arr: HT.Values [], low: HT.Number 0.0, high: HT.Number 1.0 }
@@ -45,8 +48,8 @@ defaultI = { arr: HT.Values [], low: HT.Number 0.0, high: HT.Number 1.0 }
 defaultO :: Record OutletsRow
 defaultO = { arr: HT.VArray (HT.Values []) HT.Linear }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_arr = Noodle.Inlet :: _ "arr"
 _in_low = Noodle.Inlet :: _ "low"
@@ -65,3 +68,8 @@ fitP = do
   low <- Fn.receive _in_low
   high <- Fn.receive _in_high
   Fn.send _out_arr $ HT.VArray arr $ HT.Fit { low, high }
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

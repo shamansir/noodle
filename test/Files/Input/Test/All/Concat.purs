@@ -1,9 +1,10 @@
-module Test.Files.CodeGenTest.Input.Test.All.Concat where
+module Test.Files.CodeGenTest.Test.All.Concat where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
-import Example.Toolkit.Minimal.Repr (MinimalStRepr(..), MinimalVRepr(..))
+import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
 import Noodle.Fn.Shape (I, O)
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -28,10 +30,11 @@ type Outlets = (O "out" String :> O "len" Int :> TNil) :: Noodle.Outlets
 type InletsRow = (left :: String, right :: String)
 type OutletsRow = (out :: String, len :: Int)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process MinimalStRepr InletsRow OutletsRow MinimalVRepr Effect
-type Node = Noodle.Node "concat" MinimalStRepr InletsRow OutletsRow MinimalVRepr Effect
-type Family = Noodle.Family "concat" MinimalStRepr InletsRow OutletsRow MinimalVRepr Effect
-type F = Noodle.F "concat" MinimalStRepr InletsRow OutletsRow MinimalVRepr Effect
+newtype State = State Unit
+type Process = Noodle.Process State InletsRow OutletsRow MinimalVRepr Effect
+type Node = Noodle.Node "concat" State InletsRow OutletsRow MinimalVRepr Effect
+type Family = Noodle.Family "concat" State InletsRow OutletsRow MinimalVRepr Effect
+type F = Noodle.F "concat" State InletsRow OutletsRow MinimalVRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { left: "", right: "" }
@@ -39,8 +42,8 @@ defaultI = { left: "", right: "" }
 defaultO :: Record OutletsRow
 defaultO = { out: "", len: 0 }
 
-defaultSt :: MinimalStRepr
-defaultSt = NoSt
+defaultSt :: State
+defaultSt = State unit
 
 _in_left = Noodle.Inlet :: _ "left"
 _in_right = Noodle.Inlet :: _ "right"
@@ -60,3 +63,8 @@ concatP = do
   let concatenated = left <> right
   Fn.send _out_out concatenated
   Fn.send _out_len $ String.length concatenated
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

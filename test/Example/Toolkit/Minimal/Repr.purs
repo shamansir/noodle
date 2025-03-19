@@ -161,7 +161,7 @@ instance CodegenRepr MinimalStRepr where
                     [ binaryOp "/\\" $ exprString ""
                     , binaryOp "/\\" $ exprString ""
                     ]
-            _ -> exprCtor "NoSt"
+            _ -> exprIdent "unit"
     pTypeFor = const $ unsafePartial $ \mbType ->
                   case NT.unwrap <$> mbType of
                     Just "StrSt" -> typeCtor "String"
@@ -171,15 +171,13 @@ instance CodegenRepr MinimalStRepr where
                             [ binaryOp "/\\" $ typeCtor "String"
                             , binaryOp "/\\" $ typeCtor "String"
                             ]
-                    _ -> typeCtor "MinimalStRepr"
+                    _ -> typeCtor "Unit"
     pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
                      Just "StrSt" -> exprString valueStr
                      Just "UnitSt" -> exprIdent "unit"
                      Just "PState" -> exprIdent "foo" -- FIXME:
-                     _ -> if (valueStr == "unit")
-                                then exprCtor "NoSt" --exprIdent "unit"
-                                else exprCtor "NoSt"
+                     _ -> exprIdent "unit"
     fTypeFor prepr = pTypeFor prepr
     fDefaultFor prepr = pDefaultFor prepr
     fValueFor prepr = pValueFor prepr

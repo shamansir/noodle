@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Feed.Mouse where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = (O "x" HT.Value :> O "y" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (x :: HT.Value, y :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "mouse" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "mouse" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "mouse" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "mouse" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "mouse" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "mouse" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = {}
@@ -43,8 +46,8 @@ defaultI = {}
 defaultO :: Record OutletsRow
 defaultO = { x: HT.MouseX, y: HT.MouseY }
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _out_x = Noodle.Outlet :: _ "x"
 _out_y = Noodle.Outlet :: _ "y"
@@ -56,4 +59,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 mouseP :: Process
-mouseP = pure unit
+mouseP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _

@@ -2,6 +2,7 @@ module Test.Files.CodeGenTest.Input.Hydra.Synth.SetResolution where
 
 import Prelude
 
+import Data.Newtype (class Newtype)
 import Effect (Effect)
 import Hydra.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
@@ -11,6 +12,7 @@ import Noodle.Fn.Shape as Noodle
 import Noodle.Fn.Shape.Temperament (Cold, Hot)
 import Noodle.Id as NId
 import Noodle.Node as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Toolkit.Families as Noodle
 import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
@@ -32,10 +34,11 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (width :: HT.Value, height :: HT.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Node = Noodle.Node "setResolution" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type Family = Noodle.Family "setResolution" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
-type F = Noodle.F "setResolution" HW.WrapRepr InletsRow OutletsRow WrapRepr Effect
+newtype State = State HW.WrapRepr
+type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
+type Node = Noodle.Node "setResolution" State InletsRow OutletsRow WrapRepr Effect
+type Family = Noodle.Family "setResolution" State InletsRow OutletsRow WrapRepr Effect
+type F = Noodle.F "setResolution" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI = { width: HT.Number 100.0, height: HT.Number 100.0 }
@@ -43,8 +46,8 @@ defaultI = { width: HT.Number 100.0, height: HT.Number 100.0 }
 defaultO :: Record OutletsRow
 defaultO = {}
 
-defaultSt :: HW.WrapRepr
-defaultSt = HW.Value HT.None
+defaultSt :: State
+defaultSt = State (HW.Value HT.None)
 
 _in_width = Noodle.Inlet :: _ "width"
 _in_height = Noodle.Inlet :: _ "height"
@@ -57,4 +60,10 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 setResolutionP :: Process
-setResolutionP = pure unit
+setResolutionP = {- EMPTY PROCESS -}
+    pure unit
+
+instance HasFallback State where
+  fallback = defaultSt
+
+derive instance Newtype State _
