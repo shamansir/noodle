@@ -151,13 +151,15 @@ _processAutoCode src =
                 Nothing -> indent <> expr
 
         toExpression :: AutoData_ -> String
-        toExpression { allInlets, sends } = "do\n" <> indent <> -- FIXME: one indent is lost when parsing, we put it back
+        toExpression { allInlets, sends } = "do\n" <>
             if (Array.length allInlets > 0) then
-                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets) <>
-                    (if Array.length sends > 0
-                        then "\n" <> String.joinWith "\n" (sendStr <$> sends)
-                        else ""
-                    )
+                indent -- FIXME: one indent should be at start
+                <> (String.joinWith "\n" $ inletStr <$> Array.nub allInlets)
+                <>
+                (if Array.length sends > 0
+                    then "\n" <> indent <> String.joinWith "\n" (sendStr <$> sends)
+                    else ""
+                )
             else
                 if (Array.length sends > 0) then
                     String.joinWith "\n" $ sendStr <$> sends

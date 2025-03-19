@@ -129,11 +129,11 @@ instance CodegenRepr MinimalVRepr where
             Just "String" -> exprString ""
             Just "Unit" -> exprIdent "unit"
             _ -> exprCtor "None"
-    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
-                  case typeStr of
-                    "Int" -> typeCtor "Int"
-                    "String" -> typeCtor "String"
-                    "Unit" -> typeCtor "Unit"
+    pTypeFor = const $ unsafePartial $ \mbType ->
+                  case NT.unwrap <$> mbType of
+                    Just "Int" -> typeCtor "Int"
+                    Just "String" -> typeCtor "String"
+                    Just "Unit" -> typeCtor "Unit"
                     _ -> typeCtor "MinimalVRepr"
     pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
                   case NT.unwrap <$> mbType of
@@ -162,11 +162,11 @@ instance CodegenRepr MinimalStRepr where
                     , binaryOp "/\\" $ exprString ""
                     ]
             _ -> exprCtor "NoSt"
-    pTypeFor = const $ unsafePartial $ \(EncodedType typeStr) ->
-                  case typeStr of
-                    "StrSt" -> typeCtor "String"
-                    "UnitSt" -> typeCtor "Unit"
-                    "PState" ->
+    pTypeFor = const $ unsafePartial $ \mbType ->
+                  case NT.unwrap <$> mbType of
+                    Just "StrSt" -> typeCtor "String"
+                    Just "UnitSt" -> typeCtor "Unit"
+                    Just "PState" ->
                         typeOp (typeCtor "Int")
                             [ binaryOp "/\\" $ typeCtor "String"
                             , binaryOp "/\\" $ typeCtor "String"

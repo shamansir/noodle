@@ -1,4 +1,4 @@
-module StarterTk.Repr.Options where
+module StarterTk.Repr.GenOptions where
 
 import Prelude
 
@@ -18,8 +18,8 @@ import StarterTk.Repr.StRepr (StateRepr)
 import StarterTk.Repr.ChRepr (ValueRepr)
 
 
-options :: Options StateRepr ValueRepr
-options = Options $
+genOptions :: Options StateRepr ValueRepr
+genOptions = Options $
     { streprAt : { module_ : "StarterTk.Repr.StRepr", type_ : "StateRepr" }
     , chreprAt : { module_ : "StarterTk.Repr.ChRepr", type_ : "ValueRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm

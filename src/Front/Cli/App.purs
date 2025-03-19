@@ -75,13 +75,14 @@ import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options, class ParseableRepr) as FCG
 
 import StarterTk.Toolkit (toolkit) as Starter
-import StarterTk.Repr.Options (options) as Starter
+import StarterTk.Repr.GenOptions (genOptions) as Starter
 import StarterTk.Patch as Starter.Patch
+import Hydra.Repr.GenOptions (genOptions) as Hydra
 
 
 data SelectedToolkit
-    -- = Hydra
-    = Starter
+    = Hydra
+    | Starter
     -- | Timbre
     | User String
 
@@ -126,10 +127,12 @@ runWith =
         JustRun tkKey ->
             case tkKey of
                 Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
+                Hydra -> pure unit -- FIXME
                 User _  -> pure unit
         LoadNetworkFrom ndfFilePath tkKey ->
             case tkKey of
                 Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ applyNdfFileFrom Starter.toolkit ndfFilePath
+                Hydra -> pure unit -- FIXME
                 User _  -> pure unit
         GenerateToolkitFrom (NdfFilePath fromFile) tkKey (GenTargetPath genTargetDir) -> do
             case tkKey of
@@ -137,8 +140,9 @@ runWith =
                 -- FIXME: Also, it puts families into `Starter.Starter` directory
                 -- FIXME: Check the families' modules names as well, since they are `StarterTk` in current configuration...
                 -- FIXME: May be put `toolkitName` into `FCG.Options`, and/or generate its module name same way as with families...?
-                Starter -> generateToolkit Starter.options (NdfFilePath fromFile) (Id.toolkitR "Starter") (GenTargetPath genTargetDir)
-                User _  -> pure unit
+                Starter -> generateToolkit Starter.genOptions (NdfFilePath fromFile) (Id.toolkitR "Starter") (GenTargetPath genTargetDir)
+                Hydra   -> generateToolkit Hydra.genOptions   (NdfFilePath fromFile) (Id.toolkitR "Hydra")   (GenTargetPath genTargetDir)
+                User _  -> pure unit -- FIXME
         PaletteTest tkKey ->
             runPaletteTest
         Demo ->
@@ -260,7 +264,8 @@ options = ado
     let selectedToolkit =
             case selectToolkit of
                 "starter" -> Starter
-                _ -> defaultToolkit
+                "hydra" -> Hydra
+                other -> User other
 
     in
         if demo then Demo
@@ -274,8 +279,8 @@ defaultGenTargetDir = "./src/Demo/_Gen" :: String
 
 
 generateToolkit :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => FCG.Options strepr chrepr -> NdfFilePath -> Id.ToolkitR -> GenTargetPath -> Effect Unit
-generateToolkit options (NdfFilePath sourcePath) toolkitR (GenTargetPath genTargetDir) = do
-    toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath -- "./src/Demo/Toolkit/Hydra/hydra.v0.3.ndf"
+generateToolkit genOptions (NdfFilePath sourcePath) toolkitR (GenTargetPath genTargetDir) = do
+    toolkitText <- liftEffect $ Sync.readTextFile UTF8 sourcePath
     let eParsedNdf = P.runParser toolkitText NdfFile.parser
     let getToolkitTargetDir = genTargetDir <> "/" <> Id.toolkit toolkitR
     case eParsedNdf of
@@ -286,7 +291,7 @@ generateToolkit options (NdfFilePath sourcePath) toolkitR (GenTargetPath genTarg
                 when targetDirExists $ throw $ getToolkitTargetDir <> " directory exists, please remove it before generation"
                 Console.log $ "Writing to " <> getToolkitTargetDir
                 --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
-                let fileMap = NdfFile.codegen toolkitR options parsedNdf
+                let fileMap = NdfFile.codegen toolkitR genOptions parsedNdf
                 traverse_ (writeCodegenFile (GenTargetPath genTargetDir) toolkitR)
                     $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else

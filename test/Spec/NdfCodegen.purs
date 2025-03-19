@@ -5,9 +5,14 @@ import Prelude
 import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse, traverse_)
 import Data.Array (length, take, dropEnd) as Array
-import Data.Map (toUnfoldable) as Map
+import Data.Map (Map)
+import Data.Set (Set)
+import Data.Map (keys, fromFoldable, toUnfoldable, empty) as Map
+import Data.Map.Extra (joinWith, withKeys') as MapX
+import Data.Set (toUnfoldable) as Set
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap)
 
@@ -49,7 +54,8 @@ import Noodle.Toolkit (Name) as Toolkit
 import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 
 import Hydra.Types (FnArg(..))
-import Hydra.Repr.Wrap (WrapRepr, hydraGenOptions)
+import Hydra.Repr.Wrap (WrapRepr)
+import Hydra.Repr.GenOptions (genOptions) as Hydra
 
 import Test.Spec.Util.Assertions (shouldEqual) as U
 
@@ -135,19 +141,38 @@ spec = do
           Left error -> fail $ show error
           Right parsedNdf ->
             if not $ NdfFile.hasFailedLines parsedNdf then do
-              --liftEffect $ Console.log $ show $ NdfFile.loadOrder parsedNdf
-              let fileMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
-              traverse_ testCodegenFile $ (Map.toUnfoldable fileMap :: Array (MCG.FilePath /\ MCG.FileContent))
+              let outputFilesMap = NdfFile.codegen (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
+              traverse_ _writeOutputFile (Map.toUnfoldable outputFilesMap :: Array (MCG.FilePath /\ MCG.FileContent))
+              inputFilesMap <- MapX.withKeys' _readInputFile outputFilesMap
+              let results = MapX.joinWith (\output input -> { output, input }) outputFilesMap inputFilesMap
+              traverse_ (uncurry testCodegenPair) $ (Map.toUnfoldable results :: Array (MCG.FilePath /\ { input :: MCG.FileContent, output :: MCG.FileContent }))
+              -- traverse_ testCodegenFile $ (Map.toUnfoldable outputFilesMap :: Array (MCG.FilePath /\ MCG.FileContent))
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
 
+_readInputFile :: forall m. MonadEffect m => MCG.FilePath -> m MCG.FileContent
+_readInputFile (MCG.FilePath filePath) =
+  MCG.FileContent <$> (liftEffect $ readTextFile UTF8 $ unwrap inputDir <> filePath)
+
+
+_writeOutputFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -> m Unit
+_writeOutputFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) =
+  let
+    outputFilePath = unwrap outputDir <> filePath
+    outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
+  in
+  liftEffect $ do
+    outputDirectoryExists <- exists outputDirectory
+    when (not outputDirectoryExists) $ mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
+    writeTextFile UTF8 outputFilePath fileContent
+
+
 customHydraGenOptions :: FCG.Options WrapRepr WrapRepr
 customHydraGenOptions =
-  FCG.withOptions hydraGenOptions $ \opts -> opts
+  FCG.withOptions Hydra.genOptions $ \opts -> opts
       { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
       }
-
 
 modulePrefix = MCG.ModulePrefix "Test.Files.CodeGenTest" :: MCG.ModulePrefix
 
@@ -161,12 +186,30 @@ testSingleFamilyDef tkName genOptions familyDef =
   let
     filePath = MCG.moduleFile (MCG.GenRootPath "") tkName familyDef
     fileContent = toCode (ToCode.pureScript) genOptions familyDef
-  in testCodegenFile
+  in testCodegenSingleFile
      $ MCG.FilePath filePath /\ MCG.FileContent fileContent
 
 
-testCodegenFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -> m Unit
-testCodegenFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
+testCodegenPair :: forall m. MonadEffect m => MCG.FilePath -> { input :: MCG.FileContent, output :: MCG.FileContent } -> m Unit
+testCodegenPair (MCG.FilePath filePath) content = do
+  let
+    outputFilePath = unwrap outputDir <> filePath
+    inputFilePath  = unwrap inputDir <> filePath
+
+  case content.input /\ content.output of
+    MCG.FileContent inputContent /\ MCG.FileContent outputContent -> do
+      let
+        alteredInputContent =
+          inputContent
+              # String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
+              # String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
+      liftEffect $ do
+        Console.log $ inputFilePath <> " <-> " <> outputFilePath
+        outputContent `U.shouldEqual` alteredInputContent
+
+
+testCodegenSingleFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -> m Unit
+testCodegenSingleFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) = do
   let
     outputFilePath = unwrap outputDir <> filePath
     inputFilePath  = unwrap inputDir <> filePath

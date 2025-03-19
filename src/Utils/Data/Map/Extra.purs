@@ -5,6 +5,10 @@ module Data.Map.Extra
     , stringifyKeys
     , mapKeys
     , mapKeysMaybe
+    , join
+    , joinWith
+    , withKeys
+    , withKeys'
     ) where
 
 
@@ -12,6 +16,7 @@ import Prelude
 
 
 import Data.FoldableWithIndex (foldrWithIndex, foldlWithIndex)
+import Data.Traversable (sequence)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
@@ -66,7 +71,24 @@ mapKeysWith f g = mapKeysMaybeWithValueWith (Just <<< g) h
     h k v Nothing = Just (Tuple (g k) v)
 -}
 
+withKeys :: forall k a b. Ord k => (k -> b) -> Map k a -> Map k b
+withKeys f = Map.mapMaybeWithKey (const <<< Just <<< f)
+
+
+withKeys' :: forall f k a b. Applicative f => Ord k => (k -> f b) -> Map k a -> f (Map k b)
+withKeys' f = sequence <<< Map.mapMaybeWithKey (const <<< Just <<< f)
+
+
 mapKeysMaybeWithValueWith :: forall j k v. Ord j => Ord k => (k -> Maybe j) -> (k -> v -> Maybe v -> Maybe (Tuple j v)) -> Map k v -> Map j v
-mapKeysMaybeWithValueWith f g m = foldlWithIndex h Map.empty m
+mapKeysMaybeWithValueWith f g = foldlWithIndex h Map.empty
   where
     h k acc v = maybe acc (flip (uncurry Map.insert) acc) $ g k v <<< (flip Map.lookup acc) =<< f k
+
+
+join :: forall k a b. Ord k => Map k a -> Map k b -> Map k (Tuple a b)
+join = joinWith Tuple
+
+
+joinWith :: forall k a b c. Ord k => (a -> b -> c) -> Map k a -> Map k b -> Map k c
+joinWith f mapA = foldlWithIndex h Map.empty
+  where h k acc b = maybe acc (\a -> Map.insert k (f a b) acc) $ Map.lookup k mapA
