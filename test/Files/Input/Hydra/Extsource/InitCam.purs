@@ -34,7 +34,7 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (src :: HT.SourceN, index :: HT.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "initCam" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "initCam" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = {}
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _in_src = Noodle.Inlet :: _ "src"
 _in_index = Noodle.Inlet :: _ "index"

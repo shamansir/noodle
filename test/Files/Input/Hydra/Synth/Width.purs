@@ -34,7 +34,7 @@ type Outlets = (O "w" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (w :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "width" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "width" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = { w: HT.Width }
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _out_w = Noodle.Outlet :: _ "w"
 

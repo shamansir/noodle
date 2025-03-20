@@ -34,7 +34,7 @@ type Outlets = (O "fft" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (bin :: HT.AudioBin)
 type OutletsRow = (fft :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "fft" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "fft" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = { fft: HT.None }
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _in_bin = Noodle.Inlet :: _ "bin"
 _out_fft = Noodle.Outlet :: _ "fft"

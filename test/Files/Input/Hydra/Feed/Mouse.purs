@@ -34,7 +34,7 @@ type Outlets = (O "x" HT.Value :> O "y" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = (x :: HT.Value, y :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "mouse" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "mouse" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = { x: HT.MouseX, y: HT.MouseY }
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _out_x = Noodle.Outlet :: _ "x"
 _out_y = Noodle.Outlet :: _ "y"

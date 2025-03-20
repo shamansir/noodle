@@ -1,4 +1,4 @@
-module Input.Hydra.Gen.Toolkit where
+module Hydra.Gen.Toolkit where
 
 import Prelude
 import Effect (Effect)
@@ -103,7 +103,7 @@ import Test.Files.CodeGenTest.Hydra.Audio.SetScale as Audio.SetScale
 import Test.Files.CodeGenTest.Hydra.Audio.Hide as Audio.Hide
 import Test.Files.CodeGenTest.Hydra.Audio.Show as Audio.Show
 import Test.Files.CodeGenTest.Hydra.Out.Out as Out.Out
-import Hydra.Repr.Wrap (WrapRepr)
+import Hydra.Repr.State (StateRepr)
 import Hydra.Repr.Wrap (WrapRepr)
 import Hydra.Types as HT
 import Hydra.Repr.Wrap as HW
@@ -197,7 +197,7 @@ type HydraFamilies = Feed.Number.F :> Feed.Pi.F :> Feed.Array.F :> Feed.Expressi
 
 foreign import data HYDRA :: ToolkitKey
 
-toolkit :: Toolkit HYDRA HydraFamilies WrapRepr WrapRepr Effect
+toolkit :: Toolkit HYDRA HydraFamilies StateRepr WrapRepr Effect
 toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra") # Toolkit.register Out.Out.family
   # Toolkit.register Audio.Show.family
   # Toolkit.register Audio.Hide.family

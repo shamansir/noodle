@@ -34,7 +34,7 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = ()
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "hush" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "hush" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = {}
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 family :: Family
 family = Family.make _hush defaultSt (Noodle.Shape :: Shape) defaultI defaultO hushP

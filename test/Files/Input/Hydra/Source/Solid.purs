@@ -37,7 +37,7 @@ type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (r :: HT.Value, g :: HT.Value, b :: HT.Value, a :: HT.Value)
 type OutletsRow = (out :: HT.Texture)
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "solid" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "solid" State InletsRow OutletsRow WrapRepr Effect
@@ -50,7 +50,7 @@ defaultO :: Record OutletsRow
 defaultO = { out: HT.Empty }
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _in_r = Noodle.Inlet :: _ "r"
 _in_g = Noodle.Inlet :: _ "g"

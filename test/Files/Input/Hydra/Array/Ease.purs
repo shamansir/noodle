@@ -34,7 +34,7 @@ type Outlets = (O "arr" HT.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (arr :: HT.Values, ease :: HT.Ease)
 type OutletsRow = (arr :: HT.Value)
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State HW.WrapRepr
+newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "ease" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "ease" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +47,7 @@ defaultO :: Record OutletsRow
 defaultO = { arr: HT.VArray (HT.Values []) HT.Linear }
 
 defaultSt :: State
-defaultSt = State (HW.Value HT.None)
+defaultSt = State unit
 
 _in_arr = Noodle.Inlet :: _ "arr"
 _in_ease = Noodle.Inlet :: _ "ease"

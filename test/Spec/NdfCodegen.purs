@@ -55,7 +55,7 @@ import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 
 import Hydra.Types (FnArg(..))
 import Hydra.Repr.Wrap (WrapRepr)
-import Hydra.Repr.GenOptions (genOptions) as Hydra
+import Hydra.Repr.GenOptions (genOptions, GenOptions) as Hydra
 
 import Test.Spec.Assertions (shouldEqual) as C
 import Test.Spec.Util.Assertions (shouldEqual, shouldEqualStack) as U
@@ -89,6 +89,7 @@ spec = do
     describe "NDF Codegen" $ do
 
       it "auto code definitions:" $ do
+        -- FIXME: split in different tests
         -- (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
         -- (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
         (toCode (ToCode.pureScript) unit $ FD.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """do
@@ -111,6 +112,42 @@ spec = do
   Fn.send _out_g $ g
   Fn.send _out_b $ b
   Fn.send _out_a $ a"""
+        (toCode (ToCode.pureScript) unit $ FD.Raw """do
+    r <- Noodle.receive _in_r
+    g <- Noodle.receive _in_g
+    b <- Noodle.receive _in_b
+    Noodle.send _out_color $
+        VR.Color
+            { r : floor $ r * 255.0
+            , g : floor $ g * 255.0
+            , b : floor $ b * 255.0
+            , a: 255
+            }""") `U.shouldEqual` """do
+    r <- Noodle.receive _in_r
+    g <- Noodle.receive _in_g
+    b <- Noodle.receive _in_b
+    Noodle.send _out_color $
+        VR.Color
+            { r : floor $ r * 255.0
+            , g : floor $ g * 255.0
+            , b : floor $ b * 255.0
+            , a: 255
+            }"""
+        (toCode (ToCode.pureScript) unit $ FD.JS """
+  const aValue = _receive("a");
+  const bValue = _receive("b");
+  _send("sum",
+      { tag : "Int",
+        value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
+      });""") `U.shouldEqual` """callJsFunc ""\"
+  const aValue = _receive("a");
+  const bValue = _receive("b");
+  _send("sum",
+      { tag : "Int",
+        value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
+      });
+  ""\"
+            """
 
       it "should compile to the expected code" $ do
         let
@@ -180,15 +217,17 @@ _writeOutputFile :: forall m. MonadEffect m => MCG.FilePath /\ MCG.FileContent -
 _writeOutputFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) =
   let
     outputFilePath = unwrap outputDir <> filePath
+    -- inputFilePath  = unwrap inputDir <> filePath
     outputDirectory = String.joinWith "/" $ Array.dropEnd 1 $ String.split (String.Pattern "/") outputFilePath
   in
   liftEffect $ do
     outputDirectoryExists <- exists outputDirectory
     when (not outputDirectoryExists) $ mkdir' outputDirectory { mode : permsReadWrite, recursive : true }
     writeTextFile UTF8 outputFilePath fileContent
+    -- writeTextFile UTF8 inputFilePath fileContent
 
 
-customHydraGenOptions :: FCG.Options WrapRepr WrapRepr
+customHydraGenOptions :: Hydra.GenOptions
 customHydraGenOptions =
   FCG.withOptions Hydra.genOptions $ \opts -> opts
       { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
