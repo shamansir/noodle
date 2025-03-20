@@ -139,15 +139,13 @@ spec = do
   _send("sum",
       { tag : "Int",
         value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
-      });""") `U.shouldEqual` """callJsFunc ""\"
+      });""") `U.shouldEqual` ("fromJsCode $ jsCode $\n\t\t\"\"\"" <> """
   const aValue = _receive("a");
   const bValue = _receive("b");
   _send("sum",
       { tag : "Int",
         value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
-      });
-  ""\"
-            """
+      });""" <> "\n\t\t\"\"\"")
 
       it "should compile to the expected code" $ do
         let

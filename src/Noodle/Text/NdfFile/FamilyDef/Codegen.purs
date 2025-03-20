@@ -28,7 +28,7 @@ import Noodle.Fn.Signature (Argument, Output, args, name, outs, argName, argValu
 import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.Types (Source, FamilyDefRec, ChannelDef(..), EncodedType, EncodedValue, StateDef(..), familyOf)
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
-import Noodle.Text.NdfFile.FamilyDef.ProcessCode (process) as PC
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..), process) as PC
 
 
 class ValueCodegen a where
@@ -187,6 +187,13 @@ generateModule (Options opts) mbSource fdef
   hasFallback <- importFrom "Noodle.Repr.HasFallback" $ importClass "HasFallback"
   reprC <- importFrom (reprModule opts.pchrepr) $ importTypeAll $ reprTypeName opts.pchrepr -- FIXME: use forall?
   -- reprS <- importFrom (reprModule opts.pstrepr) $ importTypeAll $ reprTypeName opts.pstrepr -- FIXME: use forall?
+
+  case fdef.process of
+    PC.JS _ -> do
+      _ <- importFrom "Noodle.Raw.Fn.Process" $ importValue "jsCode"
+      _ <- importFrom "Noodle.Raw.Fn.Process" $ importValue "fromJsCode"
+      pure unit
+    _ -> pure unit
 
   let
     familyName = Sig.name fdef.fnsig

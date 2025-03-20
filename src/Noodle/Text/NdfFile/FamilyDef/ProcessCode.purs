@@ -177,7 +177,7 @@ process = case _ of
     NoneSpecified -> "{- EMPTY PROCESS -}\n    pure unit"
     Raw str -> str
     Auto str -> _processAutoCode str
-    JS code -> code -- TODO
+    JS code -> "fromJsCode $ jsCode $\n\t\t\"\"\"" <> code <> "\n\t\t\"\"\""
 
 
 instance ToCode NDF opts ProcessCode where
