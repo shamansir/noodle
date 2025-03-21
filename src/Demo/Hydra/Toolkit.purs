@@ -32,16 +32,16 @@ import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class Cli
 -- import HydraTk.Library.Source.Src as Source.Src
 -- import HydraTk.Library.Source.Solid as Source.Solid
 -- import HydraTk.Library.Source.Prev as Source.Prev
--- import HydraTk.Library.Geometry.Rotate as Geometry.Rotate
--- import HydraTk.Library.Geometry.Scale as Geometry.Scale
--- import HydraTk.Library.Geometry.Pixelate as Geometry.Pixelate
--- import HydraTk.Library.Geometry.Repeat as Geometry.Repeat
--- import HydraTk.Library.Geometry.RepeatX as Geometry.RepeatX
--- import HydraTk.Library.Geometry.RepeatY as Geometry.RepeatY
--- import HydraTk.Library.Geometry.Kaleid as Geometry.Kaleid
--- import HydraTk.Library.Geometry.Scroll as Geometry.Scroll
--- import HydraTk.Library.Geometry.ScrollX as Geometry.ScrollX
--- import HydraTk.Library.Geometry.ScrollY as Geometry.ScrollY
+import HydraTk.Library.Geometry.Rotate as Geometry.Rotate
+import HydraTk.Library.Geometry.Scale as Geometry.Scale
+import HydraTk.Library.Geometry.Pixelate as Geometry.Pixelate
+import HydraTk.Library.Geometry.Repeat as Geometry.Repeat
+import HydraTk.Library.Geometry.RepeatX as Geometry.RepeatX
+import HydraTk.Library.Geometry.RepeatY as Geometry.RepeatY
+import HydraTk.Library.Geometry.Kaleid as Geometry.Kaleid
+import HydraTk.Library.Geometry.Scroll as Geometry.Scroll
+import HydraTk.Library.Geometry.ScrollX as Geometry.ScrollX
+import HydraTk.Library.Geometry.ScrollY as Geometry.ScrollY
 import HydraTk.Library.Color.Posterize as Color.Posterize
 import HydraTk.Library.Color.Shift as Color.Shift
 import HydraTk.Library.Color.Invert as Color.Invert
@@ -128,7 +128,7 @@ type HydraFamilies
   :> Source.Src.F
   :> Source.Solid.F
   :> Source.Prev.F
-  :> Geometry.Rotate.F
+  :> -} Geometry.Rotate.F
   :> Geometry.Scale.F
   :> Geometry.Pixelate.F
   :> Geometry.Repeat.F
@@ -138,7 +138,7 @@ type HydraFamilies
   :> Geometry.Scroll.F
   :> Geometry.ScrollX.F
   :> Geometry.ScrollY.F
-  :> -} Color.Posterize.F
+  :> Color.Posterize.F
   :> Color.Shift.F
   :> Color.Invert.F
   :> Color.Contrast.F
@@ -221,17 +221,17 @@ toolkit
   -- $ Toolkit.register Source.Src.family
   -- $ Toolkit.register Source.Solid.family
   -- $ Toolkit.register Source.Prev.family
-  -- $ Toolkit.register Geometry.Rotate.family
-  -- $ Toolkit.register Geometry.Scale.family
-  -- $ Toolkit.register Geometry.Pixelate.family
-  -- $ Toolkit.register Geometry.Repeat.family
-  -- $ Toolkit.register Geometry.RepeatX.family
-  -- $ Toolkit.register Geometry.RepeatY.family
-  -- $ Toolkit.register Geometry.Kaleid.family
-  -- $ Toolkit.register Geometry.Scroll.family
-  -- $ Toolkit.register Geometry.ScrollX.family
-  -- $ Toolkit.register Geometry.ScrollY.family
-  = Toolkit.register Color.Posterize.family
+  = Toolkit.register Geometry.Rotate.family
+  $ Toolkit.register Geometry.Scale.family
+  $ Toolkit.register Geometry.Pixelate.family
+  $ Toolkit.register Geometry.Repeat.family
+  $ Toolkit.register Geometry.RepeatX.family
+  $ Toolkit.register Geometry.RepeatY.family
+  $ Toolkit.register Geometry.Kaleid.family
+  $ Toolkit.register Geometry.Scroll.family
+  $ Toolkit.register Geometry.ScrollX.family
+  $ Toolkit.register Geometry.ScrollY.family
+  $ Toolkit.register Color.Posterize.family
   $ Toolkit.register Color.Shift.family
   $ Toolkit.register Color.Invert.family
   $ Toolkit.register Color.Contrast.family
