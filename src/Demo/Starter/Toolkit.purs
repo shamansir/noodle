@@ -69,24 +69,25 @@ type StarterFamilies = Simple.Bang.F :> Simple.Metro.F :> Simple.Gennum.F :> Sim
 foreign import data STARTER :: ToolkitKey
 
 toolkit :: Toolkit STARTER StarterFamilies StateRepr ValueRepr Effect
-toolkit = Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
-  # Toolkit.register Spreads.Xsshape.family
-  # Toolkit.register Spreads.Cspread.family
-  # Toolkit.register Spreads.Vspread.family
-  # Toolkit.register Spreads.Nspread.family
-  # Toolkit.register P5.Sketch.family
-  # Toolkit.register P5.Shape.family
-  # Toolkit.register Simple.Log.family
-  # Toolkit.register Simple.Lerp.family
-  # Toolkit.register Simple.Sum.family
-  # Toolkit.register Simple.Letter.family
-  # Toolkit.register Simple.Time.family
-  # Toolkit.register Simple.Color.family
-  # Toolkit.register Simple.Knob.family
-  # Toolkit.register Simple.Random.family
-  # Toolkit.register Simple.Gennum.family
-  # Toolkit.register Simple.Metro.family
-  # Toolkit.register Simple.Bang.family
+toolkit
+  = Toolkit.register Simple.Bang.family
+  $ Toolkit.register Simple.Metro.family
+  $ Toolkit.register Simple.Gennum.family
+  $ Toolkit.register Simple.Random.family
+  $ Toolkit.register Simple.Knob.family
+  $ Toolkit.register Simple.Color.family
+  $ Toolkit.register Simple.Time.family
+  $ Toolkit.register Simple.Letter.family
+  $ Toolkit.register Simple.Sum.family
+  $ Toolkit.register Simple.Lerp.family
+  $ Toolkit.register Simple.Log.family
+  $ Toolkit.register P5.Shape.family
+  $ Toolkit.register P5.Sketch.family
+  $ Toolkit.register Spreads.Nspread.family
+  $ Toolkit.register Spreads.Vspread.family
+  $ Toolkit.register Spreads.Cspread.family
+  $ Toolkit.register Spreads.Xsshape.family
+  $ Toolkit.empty (Proxy :: _ STARTER) (Id.toolkitR "Starter")
 
 instance HasChRepr STARTER ValueRepr
 instance IsToolkit STARTER where

@@ -183,22 +183,24 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                 Nothing -> typeCtor "TNil"
         registerFamilies :: Partial => CST.Expr Void
         registerFamilies =
-            exprOp
-                (exprApp (exprIdent "Toolkit.empty")
-                    [ exprTyped
-                        ( exprCtor "Proxy" )
-                        $ typeApp typeWildcard [ typeCtor toolkitKey ]
-                    , exprApp (exprIdent "Id.toolkitR")
-                        [ exprString $ Id.toolkit tkName ]
-                    ]
-                )
-                (binaryOp "#"
-                    <$> exprApp (exprIdent "Toolkit.register")
-                    <$> Array.singleton
-                    <$> exprIdent
-                    <$> referFamily
-                    <$> Array.reverse definitions
-                )
+            case Array.uncons definitions of
+                Just { head, tail } ->
+                    exprOp (exprApp (exprIdent "Toolkit.register") [ exprIdent $ referFamily head ])
+                        $ (binaryOp "$"
+                            <$> exprApp (exprIdent "Toolkit.register")
+                            <$> Array.singleton
+                            <$> exprIdent
+                            <$> referFamily
+                            <$> tail)
+                            <> [ binaryOp "$"
+                                $ exprApp (exprIdent "Toolkit.empty")
+                                    [ exprTyped
+                                        ( exprCtor "Proxy" )
+                                        $ typeApp typeWildcard [ typeCtor toolkitKey ]
+                                    , exprApp (exprIdent "Id.toolkitR")
+                                        [ exprString $ Id.toolkit tkName ]
+                                    ]
+                                ]
         groupArray :: Array GroupR
         groupArray = Array.nub $ FamilyDef.group <$> definitionsArray
         _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]

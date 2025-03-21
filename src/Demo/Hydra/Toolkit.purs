@@ -205,94 +205,95 @@ type HydraFamilies
 foreign import data HYDRA :: ToolkitKey
 
 toolkit :: Toolkit HYDRA HydraFamilies StateRepr WrapRepr Effect
-toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
---   # Toolkit.register Out.Out.family
-  # Toolkit.register Audio.Show.family
-  # Toolkit.register Audio.Hide.family
-  # Toolkit.register Audio.SetScale.family
-  # Toolkit.register Audio.SetBins.family
-  # Toolkit.register Audio.SetCutoff.family
-  # Toolkit.register Audio.SetSmooth.family
-  # Toolkit.register Audio.Fft.family
-  # Toolkit.register Array.Fit.family
-  # Toolkit.register Array.Offset.family
-  # Toolkit.register Array.Ease.family
-  # Toolkit.register Array.Smooth.family
-  # Toolkit.register Array.Fast.family
---   # Toolkit.register Synth.Height.family
---   # Toolkit.register Synth.Width.family
---   # Toolkit.register Synth.Bpm.family
---   # Toolkit.register Synth.Speed.family
---   # Toolkit.register Synth.SetFunction.family
---   # Toolkit.register Synth.Hush.family
---   # Toolkit.register Synth.SetResolution.family
---   # Toolkit.register Synth.Update.family
---   # Toolkit.register Synth.Render.family
---   # Toolkit.register Extsource.InitScreen.family
---   # Toolkit.register Extsource.InitStream.family
---   # Toolkit.register Extsource.Init.family
---   # Toolkit.register Extsource.InitVideo.family
---   # Toolkit.register Extsource.InitImage.family
---   # Toolkit.register Extsource.InitCam.family
---   # Toolkit.register Modulate.ModulateHue.family
---   # Toolkit.register Modulate.ModulateRotate.family
---   # Toolkit.register Modulate.ModulatePixelate.family
---   # Toolkit.register Modulate.ModulateScale.family
---   # Toolkit.register Modulate.Modulate.family
---   # Toolkit.register Modulate.ModulateScrollY.family
---   # Toolkit.register Modulate.ModulateScrollX.family
---   # Toolkit.register Modulate.ModulateKaleid.family
---   # Toolkit.register Modulate.ModulateRepeatY.family
---   # Toolkit.register Modulate.ModulateRepeatX.family
---   # Toolkit.register Modulate.ModulateRepeat.family
---   # Toolkit.register Blend.Mask.family
---   # Toolkit.register Blend.Diff.family
---   # Toolkit.register Blend.Mult.family
---   # Toolkit.register Blend.Blend.family
---   # Toolkit.register Blend.Layer.family
---   # Toolkit.register Blend.Sub.family
---   # Toolkit.register Blend.Add.family
-  # Toolkit.register Color.A.family
-  # Toolkit.register Color.G.family
-  # Toolkit.register Color.B.family
-  # Toolkit.register Color.R.family
-  # Toolkit.register Color.Sum.family
-  # Toolkit.register Color.Colorama.family
-  # Toolkit.register Color.Hue.family
-  # Toolkit.register Color.Saturate.family
-  # Toolkit.register Color.Color.family
-  # Toolkit.register Color.Thresh.family
-  # Toolkit.register Color.Luma.family
-  # Toolkit.register Color.Brightness.family
-  # Toolkit.register Color.Contrast.family
-  # Toolkit.register Color.Invert.family
-  # Toolkit.register Color.Shift.family
-  # Toolkit.register Color.Posterize.family
---   # Toolkit.register Geometry.ScrollY.family
---   # Toolkit.register Geometry.ScrollX.family
---   # Toolkit.register Geometry.Scroll.family
---   # Toolkit.register Geometry.Kaleid.family
---   # Toolkit.register Geometry.RepeatY.family
---   # Toolkit.register Geometry.RepeatX.family
---   # Toolkit.register Geometry.Repeat.family
---   # Toolkit.register Geometry.Pixelate.family
---   # Toolkit.register Geometry.Scale.family
---   # Toolkit.register Geometry.Rotate.family
---   # Toolkit.register Source.Prev.family
---   # Toolkit.register Source.Solid.family
---   # Toolkit.register Source.Src.family
---   # Toolkit.register Source.Gradient.family
---   # Toolkit.register Source.Shape.family
---   # Toolkit.register Source.Osc.family
---   # Toolkit.register Source.Voronoi.family
---   # Toolkit.register Source.Noise.family
---   # Toolkit.register Feed.GlslFn.family
---   # Toolkit.register Feed.Mouse.family
---   # Toolkit.register Feed.Time.family
---   # Toolkit.register Feed.Expression.family
---   # Toolkit.register Feed.Array.family
---   # Toolkit.register Feed.Pi.family
---   # Toolkit.register Feed.Number.family
+toolkit
+  -- = Toolkit.register Feed.Number.family
+  -- $ Toolkit.register Feed.Pi.family
+  -- $ Toolkit.register Feed.Array.family
+  -- $ Toolkit.register Feed.Expression.family
+  -- $ Toolkit.register Feed.Time.family
+  -- $ Toolkit.register Feed.Mouse.family
+  -- $ Toolkit.register Feed.GlslFn.family
+  -- $ Toolkit.register Source.Noise.family
+  -- $ Toolkit.register Source.Voronoi.family
+  -- $ Toolkit.register Source.Osc.family
+  -- $ Toolkit.register Source.Shape.family
+  -- $ Toolkit.register Source.Gradient.family
+  -- $ Toolkit.register Source.Src.family
+  -- $ Toolkit.register Source.Solid.family
+  -- $ Toolkit.register Source.Prev.family
+  -- $ Toolkit.register Geometry.Rotate.family
+  -- $ Toolkit.register Geometry.Scale.family
+  -- $ Toolkit.register Geometry.Pixelate.family
+  -- $ Toolkit.register Geometry.Repeat.family
+  -- $ Toolkit.register Geometry.RepeatX.family
+  -- $ Toolkit.register Geometry.RepeatY.family
+  -- $ Toolkit.register Geometry.Kaleid.family
+  -- $ Toolkit.register Geometry.Scroll.family
+  -- $ Toolkit.register Geometry.ScrollX.family
+  -- $ Toolkit.register Geometry.ScrollY.family
+  = Toolkit.register Color.Posterize.family
+  $ Toolkit.register Color.Shift.family
+  $ Toolkit.register Color.Invert.family
+  $ Toolkit.register Color.Contrast.family
+  $ Toolkit.register Color.Brightness.family
+  $ Toolkit.register Color.Luma.family
+  $ Toolkit.register Color.Thresh.family
+  $ Toolkit.register Color.Color.family
+  $ Toolkit.register Color.Saturate.family
+  $ Toolkit.register Color.Hue.family
+  $ Toolkit.register Color.Colorama.family
+  $ Toolkit.register Color.Sum.family
+  $ Toolkit.register Color.R.family
+  $ Toolkit.register Color.B.family
+  $ Toolkit.register Color.G.family
+  $ Toolkit.register Color.A.family
+  -- $ Toolkit.register Blend.Add.family
+  -- $ Toolkit.register Blend.Sub.family
+  -- $ Toolkit.register Blend.Layer.family
+  -- $ Toolkit.register Blend.Blend.family
+  -- $ Toolkit.register Blend.Mult.family
+  -- $ Toolkit.register Blend.Diff.family
+  -- $ Toolkit.register Blend.Mask.family
+  -- $ Toolkit.register Modulate.ModulateRepeat.family
+  -- $ Toolkit.register Modulate.ModulateRepeatX.family
+  -- $ Toolkit.register Modulate.ModulateRepeatY.family
+  -- $ Toolkit.register Modulate.ModulateKaleid.family
+  -- $ Toolkit.register Modulate.ModulateScrollX.family
+  -- $ Toolkit.register Modulate.ModulateScrollY.family
+  -- $ Toolkit.register Modulate.Modulate.family
+  -- $ Toolkit.register Modulate.ModulateScale.family
+  -- $ Toolkit.register Modulate.ModulatePixelate.family
+  -- $ Toolkit.register Modulate.ModulateRotate.family
+  -- $ Toolkit.register Modulate.ModulateHue.family
+  -- $ Toolkit.register Extsource.InitCam.family
+  -- $ Toolkit.register Extsource.InitImage.family
+  -- $ Toolkit.register Extsource.InitVideo.family
+  -- $ Toolkit.register Extsource.Init.family
+  -- $ Toolkit.register Extsource.InitStream.family
+  -- $ Toolkit.register Extsource.InitScreen.family
+  -- $ Toolkit.register Synth.Render.family
+  -- $ Toolkit.register Synth.Update.family
+  -- $ Toolkit.register Synth.SetResolution.family
+  -- $ Toolkit.register Synth.Hush.family
+  -- $ Toolkit.register Synth.SetFunction.family
+  -- $ Toolkit.register Synth.Speed.family
+  -- $ Toolkit.register Synth.Bpm.family
+  -- $ Toolkit.register Synth.Width.family
+  -- $ Toolkit.register Synth.Height.family
+  $ Toolkit.register Array.Fast.family
+  $ Toolkit.register Array.Smooth.family
+  $ Toolkit.register Array.Ease.family
+  $ Toolkit.register Array.Offset.family
+  $ Toolkit.register Array.Fit.family
+  $ Toolkit.register Audio.Fft.family
+  $ Toolkit.register Audio.SetSmooth.family
+  $ Toolkit.register Audio.SetCutoff.family
+  $ Toolkit.register Audio.SetBins.family
+  $ Toolkit.register Audio.SetScale.family
+  $ Toolkit.register Audio.Hide.family
+  $ Toolkit.register Audio.Show.family
+  -- $ Toolkit.register Out.Out.family
+  $ Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
 
 instance HasChRepr HYDRA WrapRepr
 instance IsToolkit HYDRA where
