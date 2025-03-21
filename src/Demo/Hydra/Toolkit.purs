@@ -96,13 +96,13 @@ import HydraTk.Library.Array.Smooth as Array.Smooth
 import HydraTk.Library.Array.Ease as Array.Ease
 import HydraTk.Library.Array.Offset as Array.Offset
 import HydraTk.Library.Array.Fit as Array.Fit
--- import HydraTk.Library.Audio.Fft as Audio.Fft
--- import HydraTk.Library.Audio.SetSmooth as Audio.SetSmooth
--- import HydraTk.Library.Audio.SetCutoff as Audio.SetCutoff
--- import HydraTk.Library.Audio.SetBins as Audio.SetBins
--- import HydraTk.Library.Audio.SetScale as Audio.SetScale
--- import HydraTk.Library.Audio.Hide as Audio.Hide
--- import HydraTk.Library.Audio.Show as Audio.Show
+import HydraTk.Library.Audio.Fft as Audio.Fft
+import HydraTk.Library.Audio.SetSmooth as Audio.SetSmooth
+import HydraTk.Library.Audio.SetCutoff as Audio.SetCutoff
+import HydraTk.Library.Audio.SetBins as Audio.SetBins
+import HydraTk.Library.Audio.SetScale as Audio.SetScale
+import HydraTk.Library.Audio.Hide as Audio.Hide
+import HydraTk.Library.Audio.Show as Audio.Show
 -- import HydraTk.Library.Out.Out as Out.Out
 import HydraTk.Patch (PState)
 import HydraTk.Repr.Wrap (WrapRepr)
@@ -191,14 +191,14 @@ type HydraFamilies
   :> Array.Smooth.F
   :> Array.Ease.F
   :> Array.Offset.F
-  :> Array.Fit.F {-
+  :> Array.Fit.F
   :> Audio.Fft.F
   :> Audio.SetSmooth.F
   :> Audio.SetCutoff.F
   :> Audio.SetBins.F
   :> Audio.SetScale.F
   :> Audio.Hide.F
-  :> Audio.Show.F
+  :> Audio.Show.F {-
   :> Out.Out.F -}
   :> TNil
 
@@ -207,13 +207,13 @@ foreign import data HYDRA :: ToolkitKey
 toolkit :: Toolkit HYDRA HydraFamilies StateRepr WrapRepr Effect
 toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
 --   # Toolkit.register Out.Out.family
---   # Toolkit.register Audio.Show.family
---   # Toolkit.register Audio.Hide.family
---   # Toolkit.register Audio.SetScale.family
---   # Toolkit.register Audio.SetBins.family
---   # Toolkit.register Audio.SetCutoff.family
---   # Toolkit.register Audio.SetSmooth.family
---   # Toolkit.register Audio.Fft.family
+  # Toolkit.register Audio.Show.family
+  # Toolkit.register Audio.Hide.family
+  # Toolkit.register Audio.SetScale.family
+  # Toolkit.register Audio.SetBins.family
+  # Toolkit.register Audio.SetCutoff.family
+  # Toolkit.register Audio.SetSmooth.family
+  # Toolkit.register Audio.Fft.family
   # Toolkit.register Array.Fit.family
   # Toolkit.register Array.Offset.family
   # Toolkit.register Array.Ease.family
