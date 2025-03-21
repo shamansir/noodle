@@ -1,4 +1,4 @@
-module Hydra.Repr.Show where
+module HydraTk.Repr.Show where
 
 import Prelude
 
@@ -10,8 +10,8 @@ import Data.Newtype (class Newtype, unwrap, wrap)
 import Noodle.Fn.Signature (Signature, toSignature)
 import Noodle.Fn.Signature as Sig
 
-import Hydra.Types
-import Hydra.Repr.Target
+import HydraTk.Types
+import HydraTk.Repr.Target
 
 
 class HydraShow a where -- Some kind of `ToCode` ?

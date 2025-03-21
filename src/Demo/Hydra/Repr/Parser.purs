@@ -1,5 +1,5 @@
-module Hydra.Repr.Parser where
--- TODO: may be move value parsers to Hydra.Lang, but these parsers here encode NDF file structure, they are different from SketchParser,
+module HydraTk.Repr.Parser where
+-- TODO: may be move value parsers to HydraTk.Lang, but these parsers here encode NDF file structure, they are different from SketchParser,
 -- but JsExpr parser could be separated since it is the same everywhere
 
 import Prelude
@@ -29,16 +29,16 @@ import Parsing.Extra (class HasParser, parser, read)
 import Parsing.Expr (buildExprParser, Assoc(..), Operator(..))
 
 
--- import Hydra.Repr.Wrap (WrapRepr(..))
+-- import HydraTk.Repr.Wrap (WrapRepr(..))
 
--- import Hydra.Lang.SketchParser.Utils as U
+-- import HydraTk.Lang.SketchParser.Utils as U
 -- import Noodle.Fn.ToFn (class ToFn, toFn, class PossiblyToFn, possiblyToFn, q, o)
 import Noodle.Fn.Signature (Signature, sigOf) as Lang
 import Noodle.Fn.Signature (empty, argsCount, out1) as Sig
 
 
-import Hydra.Types as HT
-import Hydra.Repr.Markers as PM
+import HydraTk.Types as HT
+import HydraTk.Repr.Markers as PM
 
 
 value :: Parser String HT.Value

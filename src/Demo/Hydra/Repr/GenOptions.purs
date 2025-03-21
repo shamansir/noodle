@@ -1,4 +1,4 @@
-module Hydra.Repr.GenOptions where
+module HydraTk.Repr.GenOptions where
 
 import Prelude
 
@@ -6,9 +6,9 @@ import Data.Maybe (Maybe(..))
 
 import Noodle.Id (family) as Id
 
-import Hydra.Repr.Wrap
-import Hydra.Repr.State
-import Hydra.Types as HT
+import HydraTk.Repr.Wrap
+import HydraTk.Repr.State
+import HydraTk.Types as HT
 
 import Partial.Unsafe (unsafePartial)
 
@@ -25,8 +25,8 @@ type GenOptions = FCG.Options StateRepr WrapRepr
 
 genOptions :: GenOptions
 genOptions = FCG.Options
-    { streprAt : { module_ : "Hydra.Repr.State", type_ : "StateRepr" }
-    , chreprAt : { module_ : "Hydra.Repr.Wrap", type_ : "WrapRepr" }
+    { streprAt : { module_ : "HydraTk.Repr.State", type_ : "StateRepr" }
+    , chreprAt : { module_ : "HydraTk.Repr.Wrap", type_ : "WrapRepr" }
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "Hydra" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
@@ -47,7 +47,7 @@ genOptions = FCG.Options
     }
     where
         genericImports = unsafePartial $
-            [ declImportAs "Hydra.Types" [ ] HT.hydraAlias_
-            , declImportAs "Hydra.Repr.Wrap" [ ] wrapAlias_ -- FIXME: included twice
+            [ declImportAs "HydraTk.Types" [ ] HT.hydraAlias_
+            , declImportAs "HydraTk.Repr.Wrap" [ ] wrapAlias_ -- FIXME: included twice
             , declImport "Data.Tuple.Nested" [ importOp "/\\"]
             ]

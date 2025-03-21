@@ -1,4 +1,4 @@
-module Hydra.FnList where
+module HydraTk.FnList where
 
 import Prelude
 

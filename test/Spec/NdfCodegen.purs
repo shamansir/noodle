@@ -53,9 +53,9 @@ import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 
-import Hydra.Types (FnArg(..))
-import Hydra.Repr.Wrap (WrapRepr)
-import Hydra.Repr.GenOptions (genOptions, GenOptions) as Hydra
+import HydraTk.Types (FnArg(..))
+import HydraTk.Repr.Wrap (WrapRepr)
+import HydraTk.Repr.GenOptions (genOptions, GenOptions) as Hydra
 
 import Test.Spec.Assertions (shouldEqual) as C
 import Test.Spec.Util.Assertions (shouldEqual, shouldEqualStack) as U

@@ -1,4 +1,4 @@
-module Hydra.Types where
+module HydraTk.Types where
 
 import Effect (Effect)
 

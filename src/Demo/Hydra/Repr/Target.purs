@@ -1,4 +1,4 @@
-module Hydra.Repr.Target where
+module HydraTk.Repr.Target where
 
 import Prelude
 
@@ -18,9 +18,9 @@ import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParse
 import Noodle.Fn.Signature (Signature, SignatureS, class ToSignature, sigs, toSignature, class PossiblyToSignature, possiblyToSignature, i, o)
 import Noodle.Fn.Signature (Argument, Output, argName, argValue, empty) as Sig
 
-import Hydra.Types as HT
-import Hydra.Repr.Parser as RP
-import Hydra.Repr.Markers as PM
+import HydraTk.Types as HT
+import HydraTk.Repr.Parser as RP
+import HydraTk.Repr.Markers as PM
 
 
 foreign import data HYDRA_V :: Target

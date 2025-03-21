@@ -1,4 +1,4 @@
-module Hydra.Repr.Wrap where
+module HydraTk.Repr.Wrap where
 
 import Prelude
 
@@ -35,11 +35,11 @@ import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
 import Noodle.Text.ToCode (class ToCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError, Source, srcErrorToString)
 
-import Hydra.Types as HT
-import Hydra.Repr.Parser as RP
-import Hydra.Repr.Target (HYDRA_V, hydraV)
-import Hydra.Repr.Target (_encode) as H
-import Hydra.Repr.Show (class HydraShow, hShow)
+import HydraTk.Types as HT
+import HydraTk.Repr.Parser as RP
+import HydraTk.Repr.Target (HYDRA_V, hydraV)
+import HydraTk.Repr.Target (_encode) as H
+import HydraTk.Repr.Show (class HydraShow, hShow)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen (exprApp, exprCtor, exprIdent, exprRecord, exprString, typeCtor)
@@ -552,7 +552,7 @@ instance VT.ValueTagged WrapRepr where
 
 instance CodegenRepr WrapRepr where
     reprModule :: Proxy WrapRepr -> String
-    reprModule = const "Hydra.Repr.Wrap"
+    reprModule = const "HydraTk.Repr.Wrap"
     reprTypeName :: Proxy WrapRepr -> String
     reprTypeName = const "WrapRepr"
     reprType :: Proxy WrapRepr -> CST.Type Void

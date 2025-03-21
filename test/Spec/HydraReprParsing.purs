@@ -23,13 +23,13 @@ import Noodle.Fn.Signature (i, o) as Sig
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.FromCode (fromCode, SourceError, srcErrorToString)
 
-import Hydra.Types
-import Hydra.Repr.Show (hShow)
-import Hydra.Repr.Wrap
-import Hydra.Repr.Wrap (WrapRepr(..)) as W
-import Hydra.Types (AudioBin(..), Values(..), GlslFn(..)) as T
+import HydraTk.Types
+import HydraTk.Repr.Show (hShow)
+import HydraTk.Repr.Wrap
+import HydraTk.Repr.Wrap (WrapRepr(..)) as W
+import HydraTk.Types (AudioBin(..), Values(..), GlslFn(..)) as T
 -- import Hydra.Lang.Fn as Lang
-import Hydra.Repr.Target (_encode, _decode) as Hydra
+import HydraTk.Repr.Target (_encode, _decode) as Hydra
 
 -- import Data.FromToFile (encode, decode)
 

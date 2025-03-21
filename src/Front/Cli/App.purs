@@ -77,7 +77,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options, class 
 import StarterTk.Toolkit (toolkit) as Starter
 import StarterTk.Repr.GenOptions (genOptions) as Starter
 import StarterTk.Patch as Starter.Patch
-import Hydra.Repr.GenOptions (genOptions) as Hydra
+import HydraTk.Repr.GenOptions (genOptions) as Hydra
 
 
 data SelectedToolkit

@@ -103,10 +103,10 @@ import Test.Files.CodeGenTest.Hydra.Audio.SetScale as Audio.SetScale
 import Test.Files.CodeGenTest.Hydra.Audio.Hide as Audio.Hide
 import Test.Files.CodeGenTest.Hydra.Audio.Show as Audio.Show
 import Test.Files.CodeGenTest.Hydra.Out.Out as Out.Out
-import Hydra.Repr.State (StateRepr)
-import Hydra.Repr.Wrap (WrapRepr)
-import Hydra.Types as HT
-import Hydra.Repr.Wrap as HW
+import HydraTk.Repr.State (StateRepr)
+import HydraTk.Repr.Wrap (WrapRepr)
+import HydraTk.Types as HT
+import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
 type HydraFamilies :: Families

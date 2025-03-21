@@ -1,4 +1,4 @@
-module Hydra.Repr.State where
+module HydraTk.Repr.State where
 
 import Prelude
 
@@ -18,7 +18,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pDefaultFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
-import Hydra.Types as HT
+import HydraTk.Types as HT
 
 
 data StateRepr
@@ -38,7 +38,7 @@ instance (NT.Newtype w Unit) => StRepr w StateRepr where
 
 
 instance CodegenRepr StateRepr where
-    reprModule = const "Hydra.Repr.State"
+    reprModule = const "HydraTk.Repr.State"
     reprTypeName = const "StateRepr"
     reprType =    const $ unsafePartial $ typeCtor "StateRepr"
     pTypeFor =    typeFor
