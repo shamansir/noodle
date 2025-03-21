@@ -42,22 +42,22 @@ import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class Cli
 -- import HydraTk.Library.Geometry.Scroll as Geometry.Scroll
 -- import HydraTk.Library.Geometry.ScrollX as Geometry.ScrollX
 -- import HydraTk.Library.Geometry.ScrollY as Geometry.ScrollY
--- import HydraTk.Library.Color.Posterize as Color.Posterize
--- import HydraTk.Library.Color.Shift as Color.Shift
--- import HydraTk.Library.Color.Invert as Color.Invert
--- import HydraTk.Library.Color.Contrast as Color.Contrast
--- import HydraTk.Library.Color.Brightness as Color.Brightness
--- import HydraTk.Library.Color.Luma as Color.Luma
--- import HydraTk.Library.Color.Thresh as Color.Thresh
--- import HydraTk.Library.Color.Color as Color.Color
--- import HydraTk.Library.Color.Saturate as Color.Saturate
--- import HydraTk.Library.Color.Hue as Color.Hue
--- import HydraTk.Library.Color.Colorama as Color.Colorama
--- import HydraTk.Library.Color.Sum as Color.Sum
--- import HydraTk.Library.Color.R as Color.R
--- import HydraTk.Library.Color.B as Color.B
--- import HydraTk.Library.Color.G as Color.G
--- import HydraTk.Library.Color.A as Color.A
+import HydraTk.Library.Color.Posterize as Color.Posterize
+import HydraTk.Library.Color.Shift as Color.Shift
+import HydraTk.Library.Color.Invert as Color.Invert
+import HydraTk.Library.Color.Contrast as Color.Contrast
+import HydraTk.Library.Color.Brightness as Color.Brightness
+import HydraTk.Library.Color.Luma as Color.Luma
+import HydraTk.Library.Color.Thresh as Color.Thresh
+import HydraTk.Library.Color.Color as Color.Color
+import HydraTk.Library.Color.Saturate as Color.Saturate
+import HydraTk.Library.Color.Hue as Color.Hue
+import HydraTk.Library.Color.Colorama as Color.Colorama
+import HydraTk.Library.Color.Sum as Color.Sum
+import HydraTk.Library.Color.R as Color.R
+import HydraTk.Library.Color.B as Color.B
+import HydraTk.Library.Color.G as Color.G
+import HydraTk.Library.Color.A as Color.A
 -- import HydraTk.Library.Blend.Add as Blend.Add
 -- import HydraTk.Library.Blend.Sub as Blend.Sub
 -- import HydraTk.Library.Blend.Layer as Blend.Layer
@@ -138,7 +138,7 @@ type HydraFamilies
   :> Geometry.Scroll.F
   :> Geometry.ScrollX.F
   :> Geometry.ScrollY.F
-  :> Color.Posterize.F
+  :> -} Color.Posterize.F
   :> Color.Shift.F
   :> Color.Invert.F
   :> Color.Contrast.F
@@ -154,7 +154,7 @@ type HydraFamilies
   :> Color.B.F
   :> Color.G.F
   :> Color.A.F
-  :> Blend.Add.F
+  :> {- Blend.Add.F
   :> Blend.Sub.F
   :> Blend.Layer.F
   :> Blend.Blend.F
@@ -252,22 +252,22 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
 --   # Toolkit.register Blend.Layer.family
 --   # Toolkit.register Blend.Sub.family
 --   # Toolkit.register Blend.Add.family
---   # Toolkit.register Color.A.family
---   # Toolkit.register Color.G.family
---   # Toolkit.register Color.B.family
---   # Toolkit.register Color.R.family
---   # Toolkit.register Color.Sum.family
---   # Toolkit.register Color.Colorama.family
---   # Toolkit.register Color.Hue.family
---   # Toolkit.register Color.Saturate.family
---   # Toolkit.register Color.Color.family
---   # Toolkit.register Color.Thresh.family
---   # Toolkit.register Color.Luma.family
---   # Toolkit.register Color.Brightness.family
---   # Toolkit.register Color.Contrast.family
---   # Toolkit.register Color.Invert.family
---   # Toolkit.register Color.Shift.family
---   # Toolkit.register Color.Posterize.family
+  # Toolkit.register Color.A.family
+  # Toolkit.register Color.G.family
+  # Toolkit.register Color.B.family
+  # Toolkit.register Color.R.family
+  # Toolkit.register Color.Sum.family
+  # Toolkit.register Color.Colorama.family
+  # Toolkit.register Color.Hue.family
+  # Toolkit.register Color.Saturate.family
+  # Toolkit.register Color.Color.family
+  # Toolkit.register Color.Thresh.family
+  # Toolkit.register Color.Luma.family
+  # Toolkit.register Color.Brightness.family
+  # Toolkit.register Color.Contrast.family
+  # Toolkit.register Color.Invert.family
+  # Toolkit.register Color.Shift.family
+  # Toolkit.register Color.Posterize.family
 --   # Toolkit.register Geometry.ScrollY.family
 --   # Toolkit.register Geometry.ScrollX.family
 --   # Toolkit.register Geometry.Scroll.family
@@ -408,7 +408,7 @@ instance MarkToolkit HYDRA where
         "feed" -> Color.rgb 6 90 181
         "source" -> Color.rgb 255 163 0
         "geometry" -> Color.rgb 190 18 80
-        "color" -> Color.rgb 17 29 53
+        "color" -> Color.rgb 62 99 123 -- FIXME: fails: Color.rgb 17 29 53
         "blend" -> Color.rgb 255 127 102
         "modulate" -> Color.rgb 255 230 102
         "extsource" -> Color.rgb 179 255 102
