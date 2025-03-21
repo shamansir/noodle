@@ -25,6 +25,9 @@ data StateRepr
     = Val HT.Value
 
 
+instance HasFallback StateRepr where
+    fallback = Val HT.None
+
 
 pState = Proxy :: _ StateRepr
 

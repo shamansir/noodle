@@ -12,10 +12,13 @@ import Data.Number as Number
 import Data.Newtype (unwrap) as NT
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either, either)
+import Data.Either (hush) as Either
+import Data.Text.Format as T
 
 
 import Color as Color
 import Parsing (Parser)
+import Parsing (runParser) as P
 import Parsing.String as P
 import Parsing.Extra (marker, foldMarkers)
 
@@ -30,8 +33,10 @@ import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr) as CR
 import Noodle.Repr.Tagged (class ValueTagged, ValuePath) as VT
 import Noodle.Raw.Fn.Shape (ValueTag, tagAs) as Shape
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, mkExpression, pDefaultFor, pValueFor)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, class ValueEncode, mkExpression, pDefaultFor, pValueFor)
 import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Cli.Palette.Item (colorOf) as C
+import Noodle.Ui.Cli.Tagging.At (class At)
 import Noodle.Text.ToCode (class ToCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError, Source, srcErrorToString)
 
@@ -408,6 +413,13 @@ instance Mark WrapRepr where
     -}
 
 
+instance At x WrapRepr where
+    at _ repr = T.fgc (mark repr) $ T.s $ hShow repr
+
+
+instance ValueEncode WrapRepr where
+    encodeValue = H._encode >>> EncodedValue >>> Just
+
 
 instance HydraShow WrapRepr where
     hShow = case _ of
@@ -449,6 +461,38 @@ wrapParser =
         , marker $ "FN" /\ DepFn /\ RP.fn
         , marker $ "GLSL" /\ GlslFn /\ RP.glsl
         ]
+
+
+instance ParseableRepr WrapRepr where
+    toDefault :: EncodedType -> WrapRepr
+    toDefault encType =
+        case NT.unwrap encType of -- FIXME: use `HasFallback` from the repr somehow
+            "Value" -> Value (HF.fallback :: HT.Value)
+            "Unit" -> Unit (HF.fallback :: Unit)
+            "Texture" -> Texture (HF.fallback :: HT.Texture)
+            "TOrV" -> TOrV (HF.fallback :: HT.TOrV)
+            "OutputN" -> OutputN (HF.fallback :: HT.OutputN)
+            "SourceN" -> SourceN (HF.fallback :: HT.SourceN)
+            "TODO" -> TODO (HF.fallback :: HT.TODO)
+            "Context" -> Context (HF.fallback :: HT.Context)
+            "UpdateFn" -> UpdateFn (HF.fallback :: HT.UpdateFn)
+            "Source" -> Source (HF.fallback :: HT.Source)
+            "Url" -> Url (HF.fallback :: HT.Url)
+            "GlslFn" -> GlslFn (HF.fallback :: HT.GlslFn)
+            "SourceOptions" -> SourceOptions (HF.fallback :: HT.SourceOptions)
+            "Values" -> Values (HF.fallback :: HT.Values)
+            "Ease" -> Ease (HF.fallback :: HT.Ease)
+            "Audio" -> Audio (HF.fallback :: HT.AudioSource)
+            "AudioBin" -> AudioBin (HF.fallback :: HT.AudioBin)
+            "ExtSource" -> ExtSource (HF.fallback :: HT.ExtSource)
+            "RenderTarget" -> Target (HF.fallback :: HT.RenderTarget)
+            "DepFn" -> DepFn (HF.fallback :: HT.DepFn)
+            "CBS" -> CBS (HF.fallback :: HT.CanBeSource)
+            -- "WRError" -> WRError (HF.fallback :: HT.WRError)
+            _ -> (HF.fallback :: WrapRepr)
+    toRepr :: EncodedType -> EncodedValue -> Maybe WrapRepr
+    toRepr encType encVal = P.runParser (NT.unwrap encVal) wrapParser # Either.hush
+
 
 
 {-wrapParser :: Parser String WrapRepr

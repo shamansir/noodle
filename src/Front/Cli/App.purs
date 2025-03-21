@@ -75,8 +75,11 @@ import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options, class ParseableRepr) as FCG
 
 import StarterTk.Toolkit (toolkit) as Starter
-import StarterTk.Repr.GenOptions (genOptions) as Starter
 import StarterTk.Patch as Starter.Patch
+import StarterTk.Repr.GenOptions (genOptions) as Starter
+
+import HydraTk.Toolkit (toolkit) as Hydra
+import HydraTk.Patch as Hydra.Patch
 import HydraTk.Repr.GenOptions (genOptions) as Hydra
 
 
@@ -127,13 +130,13 @@ runWith =
         JustRun tkKey ->
             case tkKey of
                 Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
-                Hydra -> pure unit -- FIXME
-                User _  -> pure unit
+                Hydra -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
+                User _  -> pure unit -- FIXME
         LoadNetworkFrom ndfFilePath tkKey ->
             case tkKey of
                 Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ applyNdfFileFrom Starter.toolkit ndfFilePath
-                Hydra -> pure unit -- FIXME
-                User _  -> pure unit
+                Hydra -> runBlessedInterface Hydra.Patch.init Hydra.toolkit $ applyNdfFileFrom Hydra.toolkit ndfFilePath
+                User _  -> pure unit -- FIXME
         GenerateToolkitFrom (NdfFilePath fromFile) tkKey (GenTargetPath genTargetDir) -> do
             case tkKey of
                 -- FIXME: even though `Starter` is the actual toolkit name, it mixes up modules names when we want them to be different.
