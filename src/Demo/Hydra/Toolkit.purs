@@ -65,17 +65,17 @@ import HydraTk.Library.Blend.Blend as Blend.Blend
 import HydraTk.Library.Blend.Mult as Blend.Mult
 import HydraTk.Library.Blend.Diff as Blend.Diff
 import HydraTk.Library.Blend.Mask as Blend.Mask
--- import HydraTk.Library.Modulate.ModulateRepeat as Modulate.ModulateRepeat
--- import HydraTk.Library.Modulate.ModulateRepeatX as Modulate.ModulateRepeatX
--- import HydraTk.Library.Modulate.ModulateRepeatY as Modulate.ModulateRepeatY
--- import HydraTk.Library.Modulate.ModulateKaleid as Modulate.ModulateKaleid
--- import HydraTk.Library.Modulate.ModulateScrollX as Modulate.ModulateScrollX
--- import HydraTk.Library.Modulate.ModulateScrollY as Modulate.ModulateScrollY
--- import HydraTk.Library.Modulate.Modulate as Modulate.Modulate
--- import HydraTk.Library.Modulate.ModulateScale as Modulate.ModulateScale
--- import HydraTk.Library.Modulate.ModulatePixelate as Modulate.ModulatePixelate
--- import HydraTk.Library.Modulate.ModulateRotate as Modulate.ModulateRotate
--- import HydraTk.Library.Modulate.ModulateHue as Modulate.ModulateHue
+import HydraTk.Library.Modulate.ModulateRepeat as Modulate.ModulateRepeat
+import HydraTk.Library.Modulate.ModulateRepeatX as Modulate.ModulateRepeatX
+import HydraTk.Library.Modulate.ModulateRepeatY as Modulate.ModulateRepeatY
+import HydraTk.Library.Modulate.ModulateKaleid as Modulate.ModulateKaleid
+import HydraTk.Library.Modulate.ModulateScrollX as Modulate.ModulateScrollX
+import HydraTk.Library.Modulate.ModulateScrollY as Modulate.ModulateScrollY
+import HydraTk.Library.Modulate.Modulate as Modulate.Modulate
+import HydraTk.Library.Modulate.ModulateScale as Modulate.ModulateScale
+import HydraTk.Library.Modulate.ModulatePixelate as Modulate.ModulatePixelate
+import HydraTk.Library.Modulate.ModulateRotate as Modulate.ModulateRotate
+import HydraTk.Library.Modulate.ModulateHue as Modulate.ModulateHue
 -- import HydraTk.Library.Extsource.InitCam as Extsource.InitCam
 -- import HydraTk.Library.Extsource.InitImage as Extsource.InitImage
 -- import HydraTk.Library.Extsource.InitVideo as Extsource.InitVideo
@@ -161,7 +161,7 @@ type HydraFamilies
   :> Blend.Mult.F
   :> Blend.Diff.F
   :> Blend.Mask.F
-  :> {- Modulate.ModulateRepeat.F
+  :> Modulate.ModulateRepeat.F
   :> Modulate.ModulateRepeatX.F
   :> Modulate.ModulateRepeatY.F
   :> Modulate.ModulateKaleid.F
@@ -172,7 +172,7 @@ type HydraFamilies
   :> Modulate.ModulatePixelate.F
   :> Modulate.ModulateRotate.F
   :> Modulate.ModulateHue.F
-  :> Extsource.InitCam.F
+  :> {- Extsource.InitCam.F
   :> Extsource.InitImage.F
   :> Extsource.InitVideo.F
   :> Extsource.Init.F
@@ -254,17 +254,17 @@ toolkit
   $ Toolkit.register Blend.Mult.family
   $ Toolkit.register Blend.Diff.family
   $ Toolkit.register Blend.Mask.family
-  -- $ Toolkit.register Modulate.ModulateRepeat.family
-  -- $ Toolkit.register Modulate.ModulateRepeatX.family
-  -- $ Toolkit.register Modulate.ModulateRepeatY.family
-  -- $ Toolkit.register Modulate.ModulateKaleid.family
-  -- $ Toolkit.register Modulate.ModulateScrollX.family
-  -- $ Toolkit.register Modulate.ModulateScrollY.family
-  -- $ Toolkit.register Modulate.Modulate.family
-  -- $ Toolkit.register Modulate.ModulateScale.family
-  -- $ Toolkit.register Modulate.ModulatePixelate.family
-  -- $ Toolkit.register Modulate.ModulateRotate.family
-  -- $ Toolkit.register Modulate.ModulateHue.family
+  $ Toolkit.register Modulate.ModulateRepeat.family
+  $ Toolkit.register Modulate.ModulateRepeatX.family
+  $ Toolkit.register Modulate.ModulateRepeatY.family
+  $ Toolkit.register Modulate.ModulateKaleid.family
+  $ Toolkit.register Modulate.ModulateScrollX.family
+  $ Toolkit.register Modulate.ModulateScrollY.family
+  $ Toolkit.register Modulate.Modulate.family
+  $ Toolkit.register Modulate.ModulateScale.family
+  $ Toolkit.register Modulate.ModulatePixelate.family
+  $ Toolkit.register Modulate.ModulateRotate.family
+  $ Toolkit.register Modulate.ModulateHue.family
   -- $ Toolkit.register Extsource.InitCam.family
   -- $ Toolkit.register Extsource.InitImage.family
   -- $ Toolkit.register Extsource.InitVideo.family
