@@ -17,21 +17,21 @@ import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (fallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
--- import HydraTk.Library.Feed.Number as Feed.Number
--- import HydraTk.Library.Feed.Pi as Feed.Pi
--- import HydraTk.Library.Feed.Array as Feed.Array
--- import HydraTk.Library.Feed.Expression as Feed.Expression
--- import HydraTk.Library.Feed.Time as Feed.Time
--- import HydraTk.Library.Feed.Mouse as Feed.Mouse
--- import HydraTk.Library.Feed.GlslFn as Feed.GlslFn
--- import HydraTk.Library.Source.Noise as Source.Noise
--- import HydraTk.Library.Source.Voronoi as Source.Voronoi
--- import HydraTk.Library.Source.Osc as Source.Osc
--- import HydraTk.Library.Source.Shape as Source.Shape
--- import HydraTk.Library.Source.Gradient as Source.Gradient
--- import HydraTk.Library.Source.Src as Source.Src
--- import HydraTk.Library.Source.Solid as Source.Solid
--- import HydraTk.Library.Source.Prev as Source.Prev
+import HydraTk.Library.Feed.Number as Feed.Number
+import HydraTk.Library.Feed.Pi as Feed.Pi
+import HydraTk.Library.Feed.Array as Feed.Array
+import HydraTk.Library.Feed.Expression as Feed.Expression
+import HydraTk.Library.Feed.Time as Feed.Time
+import HydraTk.Library.Feed.Mouse as Feed.Mouse
+import HydraTk.Library.Feed.GlslFn as Feed.GlslFn
+import HydraTk.Library.Source.Noise as Source.Noise
+import HydraTk.Library.Source.Voronoi as Source.Voronoi
+import HydraTk.Library.Source.Osc as Source.Osc
+import HydraTk.Library.Source.Shape as Source.Shape
+import HydraTk.Library.Source.Gradient as Source.Gradient
+import HydraTk.Library.Source.Src as Source.Src
+import HydraTk.Library.Source.Solid as Source.Solid
+import HydraTk.Library.Source.Prev as Source.Prev
 import HydraTk.Library.Geometry.Rotate as Geometry.Rotate
 import HydraTk.Library.Geometry.Scale as Geometry.Scale
 import HydraTk.Library.Geometry.Pixelate as Geometry.Pixelate
@@ -76,21 +76,21 @@ import HydraTk.Library.Modulate.ModulateScale as Modulate.ModulateScale
 import HydraTk.Library.Modulate.ModulatePixelate as Modulate.ModulatePixelate
 import HydraTk.Library.Modulate.ModulateRotate as Modulate.ModulateRotate
 import HydraTk.Library.Modulate.ModulateHue as Modulate.ModulateHue
--- import HydraTk.Library.Extsource.InitCam as Extsource.InitCam
--- import HydraTk.Library.Extsource.InitImage as Extsource.InitImage
--- import HydraTk.Library.Extsource.InitVideo as Extsource.InitVideo
--- import HydraTk.Library.Extsource.Init as Extsource.Init
--- import HydraTk.Library.Extsource.InitStream as Extsource.InitStream
--- import HydraTk.Library.Extsource.InitScreen as Extsource.InitScreen
--- import HydraTk.Library.Synth.Render as Synth.Render
--- import HydraTk.Library.Synth.Update as Synth.Update
--- import HydraTk.Library.Synth.SetResolution as Synth.SetResolution
--- import HydraTk.Library.Synth.Hush as Synth.Hush
--- import HydraTk.Library.Synth.SetFunction as Synth.SetFunction
--- import HydraTk.Library.Synth.Speed as Synth.Speed
--- import HydraTk.Library.Synth.Bpm as Synth.Bpm
--- import HydraTk.Library.Synth.Width as Synth.Width
--- import HydraTk.Library.Synth.Height as Synth.Height
+import HydraTk.Library.Extsource.InitCam as Extsource.InitCam
+import HydraTk.Library.Extsource.InitImage as Extsource.InitImage
+import HydraTk.Library.Extsource.InitVideo as Extsource.InitVideo
+import HydraTk.Library.Extsource.Init as Extsource.Init
+import HydraTk.Library.Extsource.InitStream as Extsource.InitStream
+import HydraTk.Library.Extsource.InitScreen as Extsource.InitScreen
+import HydraTk.Library.Synth.Render as Synth.Render
+import HydraTk.Library.Synth.Update as Synth.Update
+import HydraTk.Library.Synth.SetResolution as Synth.SetResolution
+import HydraTk.Library.Synth.Hush as Synth.Hush
+import HydraTk.Library.Synth.SetFunction as Synth.SetFunction
+import HydraTk.Library.Synth.Speed as Synth.Speed
+import HydraTk.Library.Synth.Bpm as Synth.Bpm
+import HydraTk.Library.Synth.Width as Synth.Width
+import HydraTk.Library.Synth.Height as Synth.Height
 import HydraTk.Library.Array.Fast as Array.Fast
 import HydraTk.Library.Array.Smooth as Array.Smooth
 import HydraTk.Library.Array.Ease as Array.Ease
@@ -103,7 +103,7 @@ import HydraTk.Library.Audio.SetBins as Audio.SetBins
 import HydraTk.Library.Audio.SetScale as Audio.SetScale
 import HydraTk.Library.Audio.Hide as Audio.Hide
 import HydraTk.Library.Audio.Show as Audio.Show
--- import HydraTk.Library.Out.Out as Out.Out
+import HydraTk.Library.Out.Out as Out.Out
 import HydraTk.Patch (PState)
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Repr.State (StateRepr)
@@ -113,7 +113,7 @@ import Data.Tuple.Nested ((/\))
 
 type HydraFamilies :: Families
 type HydraFamilies
-  =  {- Feed.Number.F
+  =  Feed.Number.F
   :> Feed.Pi.F
   :> Feed.Array.F
   :> Feed.Expression.F
@@ -128,7 +128,7 @@ type HydraFamilies
   :> Source.Src.F
   :> Source.Solid.F
   :> Source.Prev.F
-  :> -} Geometry.Rotate.F
+  :> Geometry.Rotate.F
   :> Geometry.Scale.F
   :> Geometry.Pixelate.F
   :> Geometry.Repeat.F
@@ -172,7 +172,7 @@ type HydraFamilies
   :> Modulate.ModulatePixelate.F
   :> Modulate.ModulateRotate.F
   :> Modulate.ModulateHue.F
-  :> {- Extsource.InitCam.F
+  :> Extsource.InitCam.F
   :> Extsource.InitImage.F
   :> Extsource.InitVideo.F
   :> Extsource.Init.F
@@ -187,7 +187,7 @@ type HydraFamilies
   :> Synth.Bpm.F
   :> Synth.Width.F
   :> Synth.Height.F
-  :> -} Array.Fast.F
+  :> Array.Fast.F
   :> Array.Smooth.F
   :> Array.Ease.F
   :> Array.Offset.F
@@ -198,30 +198,30 @@ type HydraFamilies
   :> Audio.SetBins.F
   :> Audio.SetScale.F
   :> Audio.Hide.F
-  :> Audio.Show.F {-
-  :> Out.Out.F -}
+  :> Audio.Show.F
+  :> Out.Out.F
   :> TNil
 
 foreign import data HYDRA :: ToolkitKey
 
 toolkit :: Toolkit HYDRA HydraFamilies StateRepr WrapRepr Effect
 toolkit
-  -- = Toolkit.register Feed.Number.family
-  -- $ Toolkit.register Feed.Pi.family
-  -- $ Toolkit.register Feed.Array.family
-  -- $ Toolkit.register Feed.Expression.family
-  -- $ Toolkit.register Feed.Time.family
-  -- $ Toolkit.register Feed.Mouse.family
-  -- $ Toolkit.register Feed.GlslFn.family
-  -- $ Toolkit.register Source.Noise.family
-  -- $ Toolkit.register Source.Voronoi.family
-  -- $ Toolkit.register Source.Osc.family
-  -- $ Toolkit.register Source.Shape.family
-  -- $ Toolkit.register Source.Gradient.family
-  -- $ Toolkit.register Source.Src.family
-  -- $ Toolkit.register Source.Solid.family
-  -- $ Toolkit.register Source.Prev.family
-  = Toolkit.register Geometry.Rotate.family
+  = Toolkit.register Feed.Number.family
+  $ Toolkit.register Feed.Pi.family
+  $ Toolkit.register Feed.Array.family
+  $ Toolkit.register Feed.Expression.family
+  $ Toolkit.register Feed.Time.family
+  $ Toolkit.register Feed.Mouse.family
+  $ Toolkit.register Feed.GlslFn.family
+  $ Toolkit.register Source.Noise.family
+  $ Toolkit.register Source.Voronoi.family
+  $ Toolkit.register Source.Osc.family
+  $ Toolkit.register Source.Shape.family
+  $ Toolkit.register Source.Gradient.family
+  $ Toolkit.register Source.Src.family
+  $ Toolkit.register Source.Solid.family
+  $ Toolkit.register Source.Prev.family
+  $ Toolkit.register Geometry.Rotate.family
   $ Toolkit.register Geometry.Scale.family
   $ Toolkit.register Geometry.Pixelate.family
   $ Toolkit.register Geometry.Repeat.family
@@ -265,21 +265,21 @@ toolkit
   $ Toolkit.register Modulate.ModulatePixelate.family
   $ Toolkit.register Modulate.ModulateRotate.family
   $ Toolkit.register Modulate.ModulateHue.family
-  -- $ Toolkit.register Extsource.InitCam.family
-  -- $ Toolkit.register Extsource.InitImage.family
-  -- $ Toolkit.register Extsource.InitVideo.family
-  -- $ Toolkit.register Extsource.Init.family
-  -- $ Toolkit.register Extsource.InitStream.family
-  -- $ Toolkit.register Extsource.InitScreen.family
-  -- $ Toolkit.register Synth.Render.family
-  -- $ Toolkit.register Synth.Update.family
-  -- $ Toolkit.register Synth.SetResolution.family
-  -- $ Toolkit.register Synth.Hush.family
-  -- $ Toolkit.register Synth.SetFunction.family
-  -- $ Toolkit.register Synth.Speed.family
-  -- $ Toolkit.register Synth.Bpm.family
-  -- $ Toolkit.register Synth.Width.family
-  -- $ Toolkit.register Synth.Height.family
+  $ Toolkit.register Extsource.InitCam.family
+  $ Toolkit.register Extsource.InitImage.family
+  $ Toolkit.register Extsource.InitVideo.family
+  $ Toolkit.register Extsource.Init.family
+  $ Toolkit.register Extsource.InitStream.family
+  $ Toolkit.register Extsource.InitScreen.family
+  $ Toolkit.register Synth.Render.family
+  $ Toolkit.register Synth.Update.family
+  $ Toolkit.register Synth.SetResolution.family
+  $ Toolkit.register Synth.Hush.family
+  $ Toolkit.register Synth.SetFunction.family
+  $ Toolkit.register Synth.Speed.family
+  $ Toolkit.register Synth.Bpm.family
+  $ Toolkit.register Synth.Width.family
+  $ Toolkit.register Synth.Height.family
   $ Toolkit.register Array.Fast.family
   $ Toolkit.register Array.Smooth.family
   $ Toolkit.register Array.Ease.family
@@ -292,7 +292,7 @@ toolkit
   $ Toolkit.register Audio.SetScale.family
   $ Toolkit.register Audio.Hide.family
   $ Toolkit.register Audio.Show.family
-  -- $ Toolkit.register Out.Out.family
+  $ Toolkit.register Out.Out.family
   $ Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
 
 instance HasChRepr HYDRA WrapRepr

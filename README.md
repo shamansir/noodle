@@ -38,6 +38,7 @@ https://noodle.labs.jb.gg
 From _starter_ toolkit:
 
 `sh ./run-cli.sh -t starter`
+`sh ./run-cli.sh -t hydra`
 
 ### Run with commands from the file:
 
