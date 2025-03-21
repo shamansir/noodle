@@ -58,13 +58,13 @@ import HydraTk.Library.Color.R as Color.R
 import HydraTk.Library.Color.B as Color.B
 import HydraTk.Library.Color.G as Color.G
 import HydraTk.Library.Color.A as Color.A
--- import HydraTk.Library.Blend.Add as Blend.Add
--- import HydraTk.Library.Blend.Sub as Blend.Sub
--- import HydraTk.Library.Blend.Layer as Blend.Layer
--- import HydraTk.Library.Blend.Blend as Blend.Blend
--- import HydraTk.Library.Blend.Mult as Blend.Mult
--- import HydraTk.Library.Blend.Diff as Blend.Diff
--- import HydraTk.Library.Blend.Mask as Blend.Mask
+import HydraTk.Library.Blend.Add as Blend.Add
+import HydraTk.Library.Blend.Sub as Blend.Sub
+import HydraTk.Library.Blend.Layer as Blend.Layer
+import HydraTk.Library.Blend.Blend as Blend.Blend
+import HydraTk.Library.Blend.Mult as Blend.Mult
+import HydraTk.Library.Blend.Diff as Blend.Diff
+import HydraTk.Library.Blend.Mask as Blend.Mask
 -- import HydraTk.Library.Modulate.ModulateRepeat as Modulate.ModulateRepeat
 -- import HydraTk.Library.Modulate.ModulateRepeatX as Modulate.ModulateRepeatX
 -- import HydraTk.Library.Modulate.ModulateRepeatY as Modulate.ModulateRepeatY
@@ -154,14 +154,14 @@ type HydraFamilies
   :> Color.B.F
   :> Color.G.F
   :> Color.A.F
-  :> {- Blend.Add.F
+  :> Blend.Add.F
   :> Blend.Sub.F
   :> Blend.Layer.F
   :> Blend.Blend.F
   :> Blend.Mult.F
   :> Blend.Diff.F
   :> Blend.Mask.F
-  :> Modulate.ModulateRepeat.F
+  :> {- Modulate.ModulateRepeat.F
   :> Modulate.ModulateRepeatX.F
   :> Modulate.ModulateRepeatY.F
   :> Modulate.ModulateKaleid.F
@@ -247,13 +247,13 @@ toolkit
   $ Toolkit.register Color.B.family
   $ Toolkit.register Color.G.family
   $ Toolkit.register Color.A.family
-  -- $ Toolkit.register Blend.Add.family
-  -- $ Toolkit.register Blend.Sub.family
-  -- $ Toolkit.register Blend.Layer.family
-  -- $ Toolkit.register Blend.Blend.family
-  -- $ Toolkit.register Blend.Mult.family
-  -- $ Toolkit.register Blend.Diff.family
-  -- $ Toolkit.register Blend.Mask.family
+  $ Toolkit.register Blend.Add.family
+  $ Toolkit.register Blend.Sub.family
+  $ Toolkit.register Blend.Layer.family
+  $ Toolkit.register Blend.Blend.family
+  $ Toolkit.register Blend.Mult.family
+  $ Toolkit.register Blend.Diff.family
+  $ Toolkit.register Blend.Mask.family
   -- $ Toolkit.register Modulate.ModulateRepeat.family
   -- $ Toolkit.register Modulate.ModulateRepeatX.family
   -- $ Toolkit.register Modulate.ModulateRepeatY.family
