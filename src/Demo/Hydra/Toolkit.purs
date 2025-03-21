@@ -17,93 +17,93 @@ import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (fallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
--- import Test.Files.CodeGenTest.Hydra.Feed.Number as Feed.Number
--- import Test.Files.CodeGenTest.Hydra.Feed.Pi as Feed.Pi
--- import Test.Files.CodeGenTest.Hydra.Feed.Array as Feed.Array
--- import Test.Files.CodeGenTest.Hydra.Feed.Expression as Feed.Expression
--- import Test.Files.CodeGenTest.Hydra.Feed.Time as Feed.Time
--- import Test.Files.CodeGenTest.Hydra.Feed.Mouse as Feed.Mouse
--- import Test.Files.CodeGenTest.Hydra.Feed.GlslFn as Feed.GlslFn
--- import Test.Files.CodeGenTest.Hydra.Source.Noise as Source.Noise
--- import Test.Files.CodeGenTest.Hydra.Source.Voronoi as Source.Voronoi
--- import Test.Files.CodeGenTest.Hydra.Source.Osc as Source.Osc
--- import Test.Files.CodeGenTest.Hydra.Source.Shape as Source.Shape
--- import Test.Files.CodeGenTest.Hydra.Source.Gradient as Source.Gradient
--- import Test.Files.CodeGenTest.Hydra.Source.Src as Source.Src
--- import Test.Files.CodeGenTest.Hydra.Source.Solid as Source.Solid
--- import Test.Files.CodeGenTest.Hydra.Source.Prev as Source.Prev
--- import Test.Files.CodeGenTest.Hydra.Geometry.Rotate as Geometry.Rotate
--- import Test.Files.CodeGenTest.Hydra.Geometry.Scale as Geometry.Scale
--- import Test.Files.CodeGenTest.Hydra.Geometry.Pixelate as Geometry.Pixelate
--- import Test.Files.CodeGenTest.Hydra.Geometry.Repeat as Geometry.Repeat
--- import Test.Files.CodeGenTest.Hydra.Geometry.RepeatX as Geometry.RepeatX
--- import Test.Files.CodeGenTest.Hydra.Geometry.RepeatY as Geometry.RepeatY
--- import Test.Files.CodeGenTest.Hydra.Geometry.Kaleid as Geometry.Kaleid
--- import Test.Files.CodeGenTest.Hydra.Geometry.Scroll as Geometry.Scroll
--- import Test.Files.CodeGenTest.Hydra.Geometry.ScrollX as Geometry.ScrollX
--- import Test.Files.CodeGenTest.Hydra.Geometry.ScrollY as Geometry.ScrollY
--- import Test.Files.CodeGenTest.Hydra.Color.Posterize as Color.Posterize
--- import Test.Files.CodeGenTest.Hydra.Color.Shift as Color.Shift
--- import Test.Files.CodeGenTest.Hydra.Color.Invert as Color.Invert
--- import Test.Files.CodeGenTest.Hydra.Color.Contrast as Color.Contrast
--- import Test.Files.CodeGenTest.Hydra.Color.Brightness as Color.Brightness
--- import Test.Files.CodeGenTest.Hydra.Color.Luma as Color.Luma
--- import Test.Files.CodeGenTest.Hydra.Color.Thresh as Color.Thresh
--- import Test.Files.CodeGenTest.Hydra.Color.Color as Color.Color
--- import Test.Files.CodeGenTest.Hydra.Color.Saturate as Color.Saturate
--- import Test.Files.CodeGenTest.Hydra.Color.Hue as Color.Hue
--- import Test.Files.CodeGenTest.Hydra.Color.Colorama as Color.Colorama
--- import Test.Files.CodeGenTest.Hydra.Color.Sum as Color.Sum
--- import Test.Files.CodeGenTest.Hydra.Color.R as Color.R
--- import Test.Files.CodeGenTest.Hydra.Color.B as Color.B
--- import Test.Files.CodeGenTest.Hydra.Color.G as Color.G
--- import Test.Files.CodeGenTest.Hydra.Color.A as Color.A
--- import Test.Files.CodeGenTest.Hydra.Blend.Add as Blend.Add
--- import Test.Files.CodeGenTest.Hydra.Blend.Sub as Blend.Sub
--- import Test.Files.CodeGenTest.Hydra.Blend.Layer as Blend.Layer
--- import Test.Files.CodeGenTest.Hydra.Blend.Blend as Blend.Blend
--- import Test.Files.CodeGenTest.Hydra.Blend.Mult as Blend.Mult
--- import Test.Files.CodeGenTest.Hydra.Blend.Diff as Blend.Diff
--- import Test.Files.CodeGenTest.Hydra.Blend.Mask as Blend.Mask
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateRepeat as Modulate.ModulateRepeat
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateRepeatX as Modulate.ModulateRepeatX
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateRepeatY as Modulate.ModulateRepeatY
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateKaleid as Modulate.ModulateKaleid
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateScrollX as Modulate.ModulateScrollX
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateScrollY as Modulate.ModulateScrollY
--- import Test.Files.CodeGenTest.Hydra.Modulate.Modulate as Modulate.Modulate
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateScale as Modulate.ModulateScale
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulatePixelate as Modulate.ModulatePixelate
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateRotate as Modulate.ModulateRotate
--- import Test.Files.CodeGenTest.Hydra.Modulate.ModulateHue as Modulate.ModulateHue
--- import Test.Files.CodeGenTest.Hydra.Extsource.InitCam as Extsource.InitCam
--- import Test.Files.CodeGenTest.Hydra.Extsource.InitImage as Extsource.InitImage
--- import Test.Files.CodeGenTest.Hydra.Extsource.InitVideo as Extsource.InitVideo
--- import Test.Files.CodeGenTest.Hydra.Extsource.Init as Extsource.Init
--- import Test.Files.CodeGenTest.Hydra.Extsource.InitStream as Extsource.InitStream
--- import Test.Files.CodeGenTest.Hydra.Extsource.InitScreen as Extsource.InitScreen
--- import Test.Files.CodeGenTest.Hydra.Synth.Render as Synth.Render
--- import Test.Files.CodeGenTest.Hydra.Synth.Update as Synth.Update
--- import Test.Files.CodeGenTest.Hydra.Synth.SetResolution as Synth.SetResolution
--- import Test.Files.CodeGenTest.Hydra.Synth.Hush as Synth.Hush
--- import Test.Files.CodeGenTest.Hydra.Synth.SetFunction as Synth.SetFunction
--- import Test.Files.CodeGenTest.Hydra.Synth.Speed as Synth.Speed
--- import Test.Files.CodeGenTest.Hydra.Synth.Bpm as Synth.Bpm
--- import Test.Files.CodeGenTest.Hydra.Synth.Width as Synth.Width
--- import Test.Files.CodeGenTest.Hydra.Synth.Height as Synth.Height
--- import Test.Files.CodeGenTest.Hydra.Array.Fast as Array.Fast
--- import Test.Files.CodeGenTest.Hydra.Array.Smooth as Array.Smooth
+-- import HydraTk.Library.Feed.Number as Feed.Number
+-- import HydraTk.Library.Feed.Pi as Feed.Pi
+-- import HydraTk.Library.Feed.Array as Feed.Array
+-- import HydraTk.Library.Feed.Expression as Feed.Expression
+-- import HydraTk.Library.Feed.Time as Feed.Time
+-- import HydraTk.Library.Feed.Mouse as Feed.Mouse
+-- import HydraTk.Library.Feed.GlslFn as Feed.GlslFn
+-- import HydraTk.Library.Source.Noise as Source.Noise
+-- import HydraTk.Library.Source.Voronoi as Source.Voronoi
+-- import HydraTk.Library.Source.Osc as Source.Osc
+-- import HydraTk.Library.Source.Shape as Source.Shape
+-- import HydraTk.Library.Source.Gradient as Source.Gradient
+-- import HydraTk.Library.Source.Src as Source.Src
+-- import HydraTk.Library.Source.Solid as Source.Solid
+-- import HydraTk.Library.Source.Prev as Source.Prev
+-- import HydraTk.Library.Geometry.Rotate as Geometry.Rotate
+-- import HydraTk.Library.Geometry.Scale as Geometry.Scale
+-- import HydraTk.Library.Geometry.Pixelate as Geometry.Pixelate
+-- import HydraTk.Library.Geometry.Repeat as Geometry.Repeat
+-- import HydraTk.Library.Geometry.RepeatX as Geometry.RepeatX
+-- import HydraTk.Library.Geometry.RepeatY as Geometry.RepeatY
+-- import HydraTk.Library.Geometry.Kaleid as Geometry.Kaleid
+-- import HydraTk.Library.Geometry.Scroll as Geometry.Scroll
+-- import HydraTk.Library.Geometry.ScrollX as Geometry.ScrollX
+-- import HydraTk.Library.Geometry.ScrollY as Geometry.ScrollY
+-- import HydraTk.Library.Color.Posterize as Color.Posterize
+-- import HydraTk.Library.Color.Shift as Color.Shift
+-- import HydraTk.Library.Color.Invert as Color.Invert
+-- import HydraTk.Library.Color.Contrast as Color.Contrast
+-- import HydraTk.Library.Color.Brightness as Color.Brightness
+-- import HydraTk.Library.Color.Luma as Color.Luma
+-- import HydraTk.Library.Color.Thresh as Color.Thresh
+-- import HydraTk.Library.Color.Color as Color.Color
+-- import HydraTk.Library.Color.Saturate as Color.Saturate
+-- import HydraTk.Library.Color.Hue as Color.Hue
+-- import HydraTk.Library.Color.Colorama as Color.Colorama
+-- import HydraTk.Library.Color.Sum as Color.Sum
+-- import HydraTk.Library.Color.R as Color.R
+-- import HydraTk.Library.Color.B as Color.B
+-- import HydraTk.Library.Color.G as Color.G
+-- import HydraTk.Library.Color.A as Color.A
+-- import HydraTk.Library.Blend.Add as Blend.Add
+-- import HydraTk.Library.Blend.Sub as Blend.Sub
+-- import HydraTk.Library.Blend.Layer as Blend.Layer
+-- import HydraTk.Library.Blend.Blend as Blend.Blend
+-- import HydraTk.Library.Blend.Mult as Blend.Mult
+-- import HydraTk.Library.Blend.Diff as Blend.Diff
+-- import HydraTk.Library.Blend.Mask as Blend.Mask
+-- import HydraTk.Library.Modulate.ModulateRepeat as Modulate.ModulateRepeat
+-- import HydraTk.Library.Modulate.ModulateRepeatX as Modulate.ModulateRepeatX
+-- import HydraTk.Library.Modulate.ModulateRepeatY as Modulate.ModulateRepeatY
+-- import HydraTk.Library.Modulate.ModulateKaleid as Modulate.ModulateKaleid
+-- import HydraTk.Library.Modulate.ModulateScrollX as Modulate.ModulateScrollX
+-- import HydraTk.Library.Modulate.ModulateScrollY as Modulate.ModulateScrollY
+-- import HydraTk.Library.Modulate.Modulate as Modulate.Modulate
+-- import HydraTk.Library.Modulate.ModulateScale as Modulate.ModulateScale
+-- import HydraTk.Library.Modulate.ModulatePixelate as Modulate.ModulatePixelate
+-- import HydraTk.Library.Modulate.ModulateRotate as Modulate.ModulateRotate
+-- import HydraTk.Library.Modulate.ModulateHue as Modulate.ModulateHue
+-- import HydraTk.Library.Extsource.InitCam as Extsource.InitCam
+-- import HydraTk.Library.Extsource.InitImage as Extsource.InitImage
+-- import HydraTk.Library.Extsource.InitVideo as Extsource.InitVideo
+-- import HydraTk.Library.Extsource.Init as Extsource.Init
+-- import HydraTk.Library.Extsource.InitStream as Extsource.InitStream
+-- import HydraTk.Library.Extsource.InitScreen as Extsource.InitScreen
+-- import HydraTk.Library.Synth.Render as Synth.Render
+-- import HydraTk.Library.Synth.Update as Synth.Update
+-- import HydraTk.Library.Synth.SetResolution as Synth.SetResolution
+-- import HydraTk.Library.Synth.Hush as Synth.Hush
+-- import HydraTk.Library.Synth.SetFunction as Synth.SetFunction
+-- import HydraTk.Library.Synth.Speed as Synth.Speed
+-- import HydraTk.Library.Synth.Bpm as Synth.Bpm
+-- import HydraTk.Library.Synth.Width as Synth.Width
+-- import HydraTk.Library.Synth.Height as Synth.Height
+import HydraTk.Library.Array.Fast as Array.Fast
+import HydraTk.Library.Array.Smooth as Array.Smooth
 import HydraTk.Library.Array.Ease as Array.Ease
--- import Test.Files.CodeGenTest.Hydra.Array.Offset as Array.Offset
--- import Test.Files.CodeGenTest.Hydra.Array.Fit as Array.Fit
--- import Test.Files.CodeGenTest.Hydra.Audio.Fft as Audio.Fft
--- import Test.Files.CodeGenTest.Hydra.Audio.SetSmooth as Audio.SetSmooth
--- import Test.Files.CodeGenTest.Hydra.Audio.SetCutoff as Audio.SetCutoff
--- import Test.Files.CodeGenTest.Hydra.Audio.SetBins as Audio.SetBins
--- import Test.Files.CodeGenTest.Hydra.Audio.SetScale as Audio.SetScale
--- import Test.Files.CodeGenTest.Hydra.Audio.Hide as Audio.Hide
--- import Test.Files.CodeGenTest.Hydra.Audio.Show as Audio.Show
--- import Test.Files.CodeGenTest.Hydra.Out.Out as Out.Out
+import HydraTk.Library.Array.Offset as Array.Offset
+import HydraTk.Library.Array.Fit as Array.Fit
+-- import HydraTk.Library.Audio.Fft as Audio.Fft
+-- import HydraTk.Library.Audio.SetSmooth as Audio.SetSmooth
+-- import HydraTk.Library.Audio.SetCutoff as Audio.SetCutoff
+-- import HydraTk.Library.Audio.SetBins as Audio.SetBins
+-- import HydraTk.Library.Audio.SetScale as Audio.SetScale
+-- import HydraTk.Library.Audio.Hide as Audio.Hide
+-- import HydraTk.Library.Audio.Show as Audio.Show
+-- import HydraTk.Library.Out.Out as Out.Out
 import HydraTk.Patch (PState)
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Repr.State (StateRepr)
@@ -187,11 +187,11 @@ type HydraFamilies
   :> Synth.Bpm.F
   :> Synth.Width.F
   :> Synth.Height.F
-  :> Array.Fast.F
+  :> -} Array.Fast.F
   :> Array.Smooth.F
-  :>  -} Array.Ease.F {-
+  :> Array.Ease.F
   :> Array.Offset.F
-  :> Array.Fit.F
+  :> Array.Fit.F {-
   :> Audio.Fft.F
   :> Audio.SetSmooth.F
   :> Audio.SetCutoff.F
@@ -214,11 +214,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
 --   # Toolkit.register Audio.SetCutoff.family
 --   # Toolkit.register Audio.SetSmooth.family
 --   # Toolkit.register Audio.Fft.family
---   # Toolkit.register Array.Fit.family
---   # Toolkit.register Array.Offset.family
+  # Toolkit.register Array.Fit.family
+  # Toolkit.register Array.Offset.family
   # Toolkit.register Array.Ease.family
---   # Toolkit.register Array.Smooth.family
---   # Toolkit.register Array.Fast.family
+  # Toolkit.register Array.Smooth.family
+  # Toolkit.register Array.Fast.family
 --   # Toolkit.register Synth.Height.family
 --   # Toolkit.register Synth.Width.family
 --   # Toolkit.register Synth.Bpm.family
