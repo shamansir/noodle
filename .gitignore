@@ -8,6 +8,7 @@ package-lock.json
 .parcel-cache
 node_modules
 /dist
+/web/app.js
 /output
 index.js
 hydra.bundle.*.js
