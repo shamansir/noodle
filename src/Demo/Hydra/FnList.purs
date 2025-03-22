@@ -2,6 +2,11 @@ module HydraTk.FnList where
 
 import Prelude
 
+import Data.Array ((:))
+import Data.Array (length, intersperse, concat) as Array
+import Data.String (Pattern(..))
+import Data.String (length, split, joinWith) as String
+
 
 type Entry =
     { ord :: Int
@@ -18,12 +23,17 @@ data State
     | DONE
 
 
+newtype FnList = FnList (Array Entry)
+
+
 e :: State -> String -> String -> Int -> String -> Array String -> Entry
 e state group name ord spec examples = { state, group, name, ord, spec, examples }
 
 
-fns :: Array Entry
+fns :: FnList
 fns =
+    FnList
+
     {- Array -}
 
     [ e TODO "array" "ease" 802
@@ -58,8 +68,8 @@ osc([10,30,60].fast(0.5),0.1,1.5).out(o0)"""
         "fft = Array(4)"
         [ "osc().modulate(noise(3),()=>a.fft[0]).out(o0)"
         ]
-    , e TODO "audio" "_hide" 905 "" [ "" ]
-    , e TODO "audio" "_show" 906 "" [ "" ]
+    , e TODO "audio" "_hide" 905 "" [ ]
+    , e TODO "audio" "_show" 906 "" [ ]
     , e TODO "audio" "setBins" 903
         "setBins( numBins = 4 )"
         [ """// change color with hissing noise
@@ -644,3 +654,19 @@ shape().scrollX(()=>b).out(o0)"""
         [ "shape(99).scrollX(() => -mouse.x / width).out(o0)"
         ]
     ]
+
+
+toDocumentation :: FnList -> String
+toDocumentation (FnList entries) =
+    String.joinWith "\n" $ Array.concat $ entryToDoc <$> entries
+    where
+        entryToDoc :: Entry -> Array String
+        entryToDoc { name, spec, examples } =
+            if String.length spec > 0 && Array.length examples > 0 then
+                addMarker name spec : addMarker name "_" : examplesLines name examples
+            else if Array.length examples > 0 then
+                examplesLines name examples
+            else
+                []
+        addMarker name str = "@ " <> name <> " : " <> str
+        examplesLines name examples = addMarker name <$> (Array.concat $ Array.intersperse [ "-" ] $ map (String.split $ Pattern "\n") examples)

@@ -56,6 +56,7 @@ import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
 import HydraTk.Types (FnArg(..))
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Repr.GenOptions (genOptions, GenOptions) as Hydra
+import HydraTk.FnList as HydraFnList
 
 import Test.Spec.Assertions (shouldEqual) as C
 import Test.Spec.Util.Assertions (shouldEqual, shouldEqualStack) as U
@@ -170,6 +171,12 @@ spec = do
 
         testSingleFamilyDef (Id.toolkitR "Test") minimalGenOptions testFamilyDef
 
+      {-
+      it "writes NDF documentation" $ do
+        let fnDocs = HydraFnList.toDocumentation HydraFnList.fns
+        liftEffect $ writeTextFile UTF8 "./ndf/hydra-autodocs.ndf" fnDocs
+      -}
+
       it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.3.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
@@ -230,6 +237,7 @@ customHydraGenOptions =
   FCG.withOptions Hydra.genOptions $ \opts -> opts
       { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
       }
+
 
 modulePrefix = MCG.ModulePrefix "Test.Files.CodeGenTest" :: MCG.ModulePrefix
 

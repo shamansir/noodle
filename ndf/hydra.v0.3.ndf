@@ -92,3 +92,4 @@ hydra 0.2 0.3
 : out : out :: <what:Texture {EMP T} -> target:RenderTarget {ALL 4}> => <>
 $ render :: /-| {- render -} pure unit |-/
 $ bpm :: /-| {- bpm -} pure unit |-/
+i ndf/hydra-docs.ndf

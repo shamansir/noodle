@@ -1,0 +1,537 @@
+hydra 0.2 0.3
+@ ease : ease( ease = 'linear' )
+@ ease : _
+@ ease : shape(4).rotate([-3.14,3.14].ease('easeInOutCubic')).out(o0)
+@ fast : fast( speed = 1 )
+@ fast : _
+@ fast : osc([10,30,60].fast(2),0.1,1.5).out(o0)
+@ fast : -
+@ fast : // argument less than 1 makes transition slower
+@ fast : osc([10,30,60].fast(0.5),0.1,1.5).out(o0)
+@ fit : fit( low = 0, high = 1 )
+@ fit : _
+@ fit : shape().scrollX([0,1,2,3,4].fit(-0.2,0.2)).out(o0)
+@ offset : offset( offset = 0.5 )
+@ offset : _
+@ offset : shape(999).scrollY(.2).scrollX([-0.2,0.2])
+@ offset :   .add(
+@ offset :     shape(4).scrollY(-.2).scrollX([-0.2,0.2].offset(0.5))
+@ offset :   ).out(o0)
+@ smooth : smooth( smooth = 1 )
+@ smooth : _
+@ smooth : shape(999).scrollX([-0.2,0.2].smooth()).out(o0)
+@ fft : fft = Array(4)
+@ fft : _
+@ fft : osc().modulate(noise(3),()=>a.fft[0]).out(o0)
+@ setBins : setBins( numBins = 4 )
+@ setBins : _
+@ setBins : // change color with hissing noise
+@ setBins : a.setBins(8)
+@ setBins : osc(60,0.1,()=>a.fft[7]*3).modulate(noise(3),()=>a.fft[0]).out(o0)
+@ setCutoff : setCutoff( cutoff = 2 )
+@ setCutoff : _
+@ setCutoff : // threshold
+@ setCutoff : a.setCutoff(4)
+@ setCutoff : osc().modulate(noise(3),()=>a.fft[0]).out(o0)
+@ setScale : setScale( scale = 10 )
+@ setScale : _
+@ setScale : // the smaller the scale is, the bigger the output is
+@ setScale : a.setScale(5)
+@ setScale : osc().modulate(noise(3),()=>a.fft[0]).out(o0)
+@ setSmooth : setSmooth( smooth = 0.4 )
+@ setSmooth : _
+@ setSmooth : a.setSmooth(0.8)
+@ add : add( texture, amount = 1 )
+@ add : _
+@ add : shape().scale(0.5).add(shape(4),[0,0.25,0.5,0.75,1]).out(o0)
+@ add : -
+@ add : osc(9,0.1,1).add(osc(13,0.5,5)).out(o0)
+@ blend : blend( texture, amount = 0.5 )
+@ blend : _
+@ blend : shape().scale(0.5).blend(shape(4),[0,0.25,0.5,0.75,1]).out(o0)
+@ blend : -
+@ blend : osc(9,0.1,1).blend(osc(13,0.5,5)).out()
+@ blend : -
+@ blend : // motion-blur like feedback
+@ blend : osc().thresh().blend(o0,0.9).out(o0)
+@ diff : diff( texture )
+@ diff : _
+@ diff : osc(9,0.1,1).diff(osc(13,0.5,5)).out(o0)
+@ diff : -
+@ diff : osc(1,1,2)
+@ diff :   .diff(shape(6,1.1,0.01)
+@ diff :         .scale(()=>Math.sin(time)*0.05 + 0.9)
+@ diff :         .kaleid(15)
+@ diff :         .rotate(()=>time%360))
+@ diff :   .out()
+@ layer : layer( texture )
+@ layer : _
+@ layer : solid(1,0,0,1).layer(shape(4).color(0,1,0,()=>Math.sin(time*2))).out(o0)
+@ layer : -
+@ layer : osc(30).layer(osc(15).rotate(1).luma()).out(o0)
+@ mask : mask( texture )
+@ mask : _
+@ mask : gradient(5).mask(voronoi(),3,0.5).invert([0,1]).out(o0)
+@ mask : -
+@ mask : // mask is transparent; compare with mult
+@ mask : osc()
+@ mask :   .layer(osc(30,0.1,2).mask(shape(4)))
+@ mask :   .out(o0)", "// algae pulse
+@ mask : osc(10,-0.25,1).color(0,0,1).saturate(2).kaleid(50)
+@ mask :   .mask(noise(25,2).modulateScale(noise(0.25,0.05)))
+@ mask :   .modulateScale(osc(6,-0.5,2).kaleid(50))
+@ mask :   .mult(osc(3,-0.25,2).kaleid(50))
+@ mask :   .scale(0.5,0.5,0.75)
+@ mask :   .out(o0)
+@ mult : mult( texture, amount = 1 )
+@ mult : _
+@ mult : osc(9,0.1,2).mult(osc(13,0.5,5)).out()
+@ mult : -
+@ mult : // mult is *not* transparent; compare with mask
+@ mult : osc()
+@ mult :   .layer(osc(30,0.1,2).mult(shape(4)))
+@ mult :   .out(o0)
+@ sub : sub( texture, amount = 1 )
+@ sub : _
+@ sub : osc().sub(osc(6)).out(o0)
+@ sub : -
+@ sub : // color remapping
+@ sub : osc(6,0,1.5).modulate(noise(3).sub(gradient()),1).out(o0)
+@ b : b( scale = 1, offset )
+@ b : _
+@ b : osc(60,0.1,1.5).layer(gradient().colorama(1).b()).out(o0)
+@ brightness : brightness( amount = 0.4 )
+@ brightness : _
+@ brightness : osc(20,0,2)
+@ brightness :   .brightness( () => Math.sin(time) )
+@ brightness :   .out(o0)
+@ brightness : -
+@ brightness : // scaling noise value to 0-1
+@ brightness : noise().brightness(1).color(0.5,0.5,0.5).out(o0)
+@ color : color( r = 1, g = 1, b = 1, a = 1 )
+@ color : _
+@ color : osc().color(1,0,3).out(o0)
+@ colorama : colorama( amount = 0.005 )
+@ colorama : _
+@ colorama : // // 20Hz oscillator source
+@ colorama : // // color sequence of Red, Green, Blue, White, Black
+@ colorama : // // colorama sequence of 0.005, 0.5, 1.0 at 1/8 speed
+@ colorama : // // output to buffer o0
+@ colorama : osc(20)
+@ colorama :   .color([1,0,0,1,0],[0,1,0,1,0],[0,0,1,1,0])
+@ colorama :   .colorama([0.005,0.33,0.66,1.0].fast(0.125))
+@ colorama :   .out(o0)
+@ colorama : -
+@ colorama : // negative value is less harsh
+@ colorama : osc(30,0.1,1).colorama(-0.1).out(o0)
+@ contrast : contrast( amount = 1.6 )
+@ contrast : _
+@ contrast : // 20Hz oscillator with contrast interpolating between 0.0-5.0
+@ contrast : osc(20).contrast( () => Math.sin(time) * 5 ).out(o0)
+@ g : g( scale = 1, offset )
+@ g : _
+@ g : osc(60,0.1,1.5).layer(gradient().g()).out(o0)
+@ hue : hue( hue = 0.4 )
+@ hue : _
+@ hue : osc(30,0.1,1).hue(() => Math.sin(time)).out(o0)
+@ invert : invert( amount = 1 )
+@ invert : _
+@ invert : solid(1,1,1).invert([0,1]).out(o0)
+@ invert : -
+@ invert : osc(4,0.1,2).invert().luma().invert()
+@ invert :   .layer(osc(4,0.1,2).luma()
+@ invert :          .mask(shape(2,0.5).scrollY(-0.25))).out(o0)
+@ luma : luma( threshold = 0.5, tolerance = 0.1 )
+@ luma : _
+@ luma : osc(10,0,1).luma(0.5,0.1).out(o0)
+@ luma : -
+@ luma : osc(10,0,[0,0.5,1,2]).luma([0.1,0.25,0.75,1].fast(0.25),0.1).out(o0)
+@ luma : -
+@ luma : // luma is transparent; compare with thresh
+@ luma : osc(30).layer(osc(15).rotate(1).luma()).out(o0)
+@ posterize : posterize( bins = 3, gamma = 0.6 )
+@ posterize : _
+@ posterize : // static gradient posterized, varying bins
+@ posterize : gradient(0).posterize( [1, 5, 15, 30] , 0.5 ).out(o0)
+@ posterize : -
+@ posterize : // static gradient posterized, varying gamma
+@ posterize : gradient(0).posterize( 3, [0.1, 0.5, 1.0, 2.0] ).out(o0)
+@ posterize : -
+@ posterize : // posterize (top); compare with pixelate (bottom)
+@ posterize : osc().posterize(3,1)
+@ posterize :   .layer(osc().pixelate(16,1)
+@ posterize :     .mask(shape(2,0.5,0.001).scrollY(-0.25)))
+@ posterize :   .out(o0)
+@ r : r( scale = 1, offset )
+@ r : _
+@ r : osc(60,0.1,1.5).layer(gradient().r()).out(o0)
+@ saturate : saturate( amount = 2 )
+@ saturate : _
+@ saturate : osc(10,0,1).saturate( () => Math.sin(time) * 10 ).out(o0)
+@ shift : shift( r = 0.5, g, b, a )
+@ shift : _
+@ shift : osc().shift(0.1,0.9,0.3).out()
+@ thresh : thresh( threshold = 0.5, tolerance = 0.04 )
+@ thresh : _
+@ thresh : noise(3,0.1).thresh(0.5,0.04).out(o0)
+@ thresh : -
+@ thresh : noise(3,0.1)
+@ thresh :   .thresh( ()=>Math.sin(time/2) , [0.04,0.25,0.75,1].fast(0.25) )
+@ thresh :   .out(o0)
+@ thresh : -
+@ thresh : // thresh is *not* transparent; compare with luma
+@ thresh : osc(30).layer(osc(15).rotate(1).thresh()).out(o0)
+@ init : init( options )
+@ init : _
+@ init : // load canvas
+@ init : canvas = document.createElement("canvas")
+@ init : canvas.width = 200
+@ init : canvas.height = 200
+@ init : ctx = canvas.getContext("2d")
+@ init : ctx.fillStyle = "crimson"
+@ init : ctx.fillRect(100,50,100,100)
+@ init : s0.init({src:canvas})
+@ init : src(s0).modulate(osc().kaleid(999)).out(o0)
+@ initCam : initCam( index )
+@ initCam : _
+@ initCam : s0.initCam()
+@ initCam : src(s0).invert().out(o0)
+@ initImage : initImage( url )
+@ initImage : _
+@ initImage : s0.initImage("https://upload.wikimedia.org/wikipedia/commons/2/25/Hydra-Foto.jpg")
+@ initImage : osc(6).modulate(src(s0),1).out(o0)
+@ initScreen : // select a window
+@ initScreen : s0.initScreen()
+@ initScreen : src(s0).colorama(0.5).out(o0)
+@ initVideo : initVideo( url )
+@ initVideo : _
+@ initVideo : // default
+@ initVideo : s0.initVideo("https://media.giphy.com/media/AS9LIFttYzkc0/giphy.mp4")
+@ initVideo : src(s0).modulate(noise(3)).out(o0)
+@ kaleid : kaleid( nSides = 4 )
+@ kaleid : _
+@ kaleid : osc(25,-0.1,0.5).kaleid(50).out(o0)
+@ kaleid : -
+@ kaleid : osc(25,-0.1,0.5).kaleid(4).kaleid(4).out(o0)
+@ pixelate : pixelate( pixelX = 20, pixelY = 20 )
+@ pixelate : _
+@ pixelate : noise().pixelate(20,20).out(o0)
+@ pixelate : -
+@ pixelate : noise().pixelate(2000,1).out(o0)
+@ pixelate : -
+@ pixelate : noise()
+@ pixelate :   .mult(osc(10,0.25,1))
+@ pixelate :   .scrollY(1,0.25)
+@ pixelate :   .pixelate([100,40,20,70].fast(0.25))
+@ pixelate :   .modulateRotate(src(o0).scale(0.5),0.125)
+@ pixelate :   .diff(src(o0).rotate([-0.05,0.05].fast(0.125)))
+@ pixelate :     .out(o0)
+@ repeat : repeat( repeatX = 3, repeatY = 3, offsetX, offsetY )
+@ repeat : _
+@ repeat : shape().repeat(3.0, 3.0, 0.0, 0.0).out()
+@ repeat : -
+@ repeat : // dogtooth factory
+@ repeat : shape(1.25,0.5,0.25)
+@ repeat :   .repeat(3, 3)
+@ repeat :   .scale(2)
+@ repeat :   .repeat(5, 5, () => Math.sin(time), () => Math.sin(time/2))
+@ repeat :   .out(o0)
+@ repeatX : repeatX( reps = 3, offset )
+@ repeatX : _
+@ repeatX : shape().repeatX(3.0, 0.0).out()
+@ repeatX : -
+@ repeatX : osc(5,0,1)
+@ repeatX :   .rotate(1.57)
+@ repeatX :   .repeatX([1,2,5,10], ({time}) => Math.sin(time))
+@ repeatX :   .out()
+@ repeatY : repeatY( reps = 3, offset )
+@ repeatY : _
+@ repeatY : shape().repeatY(3.0, 0.0).out()
+@ repeatY : -
+@ repeatY : osc(5,0,1)
+@ repeatY :   .repeatY([1,2,5,10], ({time}) => Math.sin(time))
+@ repeatY :   .out()
+@ rotate : rotate( angle = 10, speed )
+@ rotate : _
+@ rotate : // constant rotation
+@ rotate : osc(50).rotate( () => time%360 ).out(o0)", "// modulate rotation speed
+@ rotate : osc(10,1,1)
+@ rotate :   .rotate( () => time%360, () => Math.sin(time*0.1)*0.05 )
+@ rotate :   .out(o0)
+@ scale : scale( amount = 1.5, xMult = 1, yMult = 1, offsetX = 0.5, offsetY = 0.5 )
+@ scale : _
+@ scale : shape().scale(1.5,1,1).out(o0)
+@ scale : -
+@ scale : // flower
+@ scale : shape().scale(1.5,[0.25,0.5,0.75,1].fast(0.25),[3,2,1])
+@ scale :   .invert([0,1].fast(0.25))
+@ scale :   .kaleid(5)
+@ scale :   .kaleid(12)
+@ scale :   .scale( ()=>Math.sin(time/5)*0.5 )
+@ scale :   .rotate(1,1)
+@ scale :   .out(o0)
+@ scroll : scroll( scrollX = 0.5, scrollY = 0.5, speedX, speedY )
+@ scroll : _
+@ scroll : shape(3).scroll(0.1,-0.3).out(o0)
+@ scrollX : scrollX( scrollX = 0.5, speed )
+@ scrollX : _
+@ scrollX : osc(10,0,1).scrollX(0.5,0).out(o0)
+@ scrollX : -
+@ scrollX : // x position
+@ scrollX : osc(10,0,1).scrollX([0,0.25,0.5,0.75,1].fast(4),0).out(o0)
+@ scrollX : -
+@ scrollX : // scroll speed
+@ scrollX : gradient(1).scrollX(0, () => Math.sin(time*0.05)*0.05 ).out(o0)", "gradient(0.125)
+@ scrollX :   .scrollX(0, ({time}) => Math.sin(time*0.05)*0.05 )
+@ scrollX :   .scrollY(0, ({time}) => Math.sin(time*0.01)*-0.07 )
+@ scrollX :   .pixelate([5,2,10],[15,8])
+@ scrollX :   .scale(0.15)
+@ scrollX :   .modulate(noise(1,0.25))
+@ scrollX :   .out()
+@ scrollY : scrollY( scrollY = 0.5, speed )
+@ scrollY : _
+@ scrollY : osc(10,0,1).scrollY(0.5,0).out(o0)
+@ scrollY : -
+@ scrollY : // y position
+@ scrollY : osc(10,0,1).scrollY([0,0.25,0.5,0.75,1].fast(4),0).out(o0)
+@ scrollY : -
+@ scrollY : // scroll speed
+@ scrollY : gradient(1).scrollY(0, ({time}) => Math.sin(time*0.05)*0.05 ).out()", "gradient(0.125)
+@ scrollY :   .scrollX(0, () => Math.sin(time*0.05)*0.05 )
+@ scrollY :   .scrollY(0, () => Math.sin(time*0.01)*-0.07 )
+@ scrollY :   .pixelate([5,2,10],[15,8])
+@ scrollY :   .scale(0.15)
+@ scrollY :   .modulate(noise(1,0.25))
+@ scrollY :   .out()
+@ modulate : modulate( texture, amount = 0.1 )
+@ modulate : _
+@ modulate : // chocolate whirlpool
+@ modulate : voronoi()
+@ modulate :   .color(0.9,0.25,0.15)
+@ modulate :   .rotate(({time})=>(time%360)/2)
+@ modulate :   .modulate(osc(25,0.1,0.5)
+@ modulate :               .kaleid(50)
+@ modulate :               .scale(({time})=>Math.sin(time*1)*0.5+1)
+@ modulate :               .modulate(noise(0.6,0.5)),
+@ modulate :               0.5)
+@ modulate :   .out(o0)
+@ modulate : -
+@ modulate : // color remapping
+@ modulate : osc(3,0,2)
+@ modulate :   .modulate(noise().add(gradient(),-1),1)
+@ modulate :   .out(o0)
+@ modulateHue : modulateHue( texture, amount = 1 )
+@ modulateHue : _
+@ modulateHue : src(o0)
+@ modulateHue :   .modulateHue(src(o0).scale(1.01),1)
+@ modulateHue :   .layer(osc(4,0.5,2).mask(shape(4,0.5,0.001)))
+@ modulateHue :   .out(o0)
+@ modulateKaleid : modulateKaleid( texture, nSides = 4 )
+@ modulateKaleid : _
+@ modulateKaleid : osc(9,-0.1,0.1)
+@ modulateKaleid :   .modulateKaleid(osc(11,0.5,0),50)
+@ modulateKaleid :   .scale(0.1,0.3)
+@ modulateKaleid :   .modulate(noise(5,0.1))
+@ modulateKaleid :   .mult(solid(1,1,0.3))
+@ modulateKaleid :   .out(o0)", "  osc(10,0.1,2)
+@ modulateKaleid :   .modulateKaleid(osc(16).kaleid(999),1)
+@ modulateKaleid :   .out(o0)
+@ modulatePixelate : modulatePixelate( texture, multiple = 10, offset = 3 )
+@ modulatePixelate : _
+@ modulatePixelate : // what lies beneath
+@ modulatePixelate : voronoi(10,1,5).brightness(()=>Math.random()*0.15)
+@ modulatePixelate :   .modulatePixelate(noise(25,0.5),100)
+@ modulatePixelate :   .out(o0)", "noise(3).modulatePixelate(noise(3).pixelate(8,8),1024,8)
+@ modulatePixelate :   .out(o0)
+@ modulateRepeat : modulateRepeat( texture, repeatX = 3, repeatY = 3, offsetX = 0.5, offsetY = 0.5 )
+@ modulateRepeat : _
+@ modulateRepeat : shape(4,0.9)
+@ modulateRepeat :   .mult(osc(3,0.5,1))
+@ modulateRepeat :   .modulateRepeat(osc(10), 3.0, 3.0, 0.5, 0.5)
+@ modulateRepeat :   .out(o0)
+@ modulateRepeatX : modulateRepeatX( texture, reps = 3, offset = 0.5 )
+@ modulateRepeatX : _
+@ modulateRepeatX : // straight lines illusion
+@ modulateRepeatX : shape(4,0.9)
+@ modulateRepeatX :   .mult(osc(4,0.25,1))
+@ modulateRepeatX :   .modulateRepeatX(osc(10), 5.0, ({time}) => Math.sin(time) * 5)
+@ modulateRepeatX :   .scale(1,0.5,0.05)
+@ modulateRepeatX :   .out(o0)
+@ modulateRepeatY : modulateRepeatY( texture, reps = 3, offset = 0.5 )
+@ modulateRepeatY : _
+@ modulateRepeatY : // morphing grid
+@ modulateRepeatY : shape(4,0.9)
+@ modulateRepeatY :   .mult(osc(4,0.25,1))
+@ modulateRepeatY :   .modulateRepeatY(osc(10), 5.0, ({time}) => Math.sin(time) * 5)
+@ modulateRepeatY :   .scale(1,0.5,0.05)
+@ modulateRepeatY :   .out(o0)
+@ modulateRotate : modulateRotate( texture, multiple = 1, offset )
+@ modulateRotate : _
+@ modulateRotate : // wormhole
+@ modulateRotate : voronoi(100,3,5)
+@ modulateRotate :   .modulateRotate(osc(1,0.5,0).kaleid(50).scale(0.5),15,0)
+@ modulateRotate :   .mult(osc(50,-0.1,8).kaleid(9))
+@ modulateRotate :   .out(o0)
+@ modulateRotate : -
+@ modulateRotate : osc().modulateRotate(shape(999,0.3,0.5),1.57).out(o0)
+@ modulateScale : modulateScale( texture, multiple = 1, offset = 1 )
+@ modulateScale : _
+@ modulateScale : // cosmic radiation
+@ modulateScale : gradient(5).repeat(50,50).kaleid([3,5,7,9].fast(0.5))
+@ modulateScale :   .modulateScale(osc(4,-0.5,0).kaleid(50).scale(0.5),15,0)
+@ modulateScale :   .out(o0)
+@ modulateScale : -
+@ modulateScale : // perspective
+@ modulateScale : shape(4).modulateScale(gradient().g(),2,0.5).out(o0)
+@ modulateScrollX : modulateScrollX( texture, scrollX = 0.5, speed )
+@ modulateScrollX : _
+@ modulateScrollX : voronoi(25,0,0)
+@ modulateScrollX :   .modulateScrollX(osc(10),0.5,0)
+@ modulateScrollX :   .out(o0)", "// different scroll and speed
+@ modulateScrollX : voronoi(25,0,0)
+@ modulateScrollX :   .modulateScrollX(osc(10),0.5,0.25)
+@ modulateScrollX :   .out(o0)
+@ modulateScrollY : modulateScrollY( texture, scrollY = 0.5, speed )
+@ modulateScrollY : _
+@ modulateScrollY : voronoi(25,0,0)
+@ modulateScrollY :   .modulateScrollY(osc(10),0.5,0)
+@ modulateScrollY :   .out(o0)", "// different scroll and speed
+@ modulateScrollY : voronoi(25,0,0)
+@ modulateScrollY :   .modulateScrollY(osc(10),0.5,0.25)
+@ modulateScrollY :   .out(o0)
+@ gradient : gradient( speed )
+@ gradient : _
+@ gradient : // gradient sequence at speeds of 1, 2 & 4
+@ gradient : gradient([1,2,4]).out(o0)
+@ gradient : -
+@ gradient : // saw oscillator
+@ gradient : gradient(0).r().repeat(16,1).scrollX(0,0.1).out(o0)
+@ noise : noise( scale = 10, offset = 0.1 )
+@ noise : _
+@ noise : noise(10, 0.1).out(o0)
+@ noise : -
+@ noise : \\ noise interpolating between different scales and offsets
+@ noise : noise( () => Math.sin(time/10)*50 , () => Math.sin(time/2)/500 )
+@ noise : .out(o0)
+@ noise :
+@ osc : osc( frequency = 60, sync = 0.1, offset )
+@ osc : _
+@ osc : // frequency
+@ osc : osc( [1,10,50,100,250,500].fast(2) ).out(o0)
+@ osc : -
+@ osc : // frequency 2
+@ osc : osc( () => Math.sin(time/10) * 100 ).out(o0)
+@ osc : -
+@ osc : // sync
+@ osc : osc( 10, [-10,-1,-0.1,0,0.1,1,10], 0 ).out(o0)
+@ osc : -
+@ osc : // offset
+@ osc : osc(10,0.1, ({time}) => Math.sin(time/10) * 100 ).out(o0)
+@ shape : shape( sides = 3, radius = 0.3, smoothing = 0.01 )
+@ shape : _
+@ shape : // triangle
+@ shape : shape(3,0.5,0.001).out(o0)
+@ shape : -
+@ shape : // ellipse
+@ shape : shape(100,0.5,0.001).out(o0)
+@ shape : -
+@ shape : // inverting blurry circle
+@ shape : shape(100,0.01,1).invert(()=>Math.sin(time)*2).out(o0)
+@ shape : -
+@ shape : \\ a... rainbow ball?
+@ shape : shape(5,0.5,0.1).repeat(19,19)
+@ shape :   .mult(osc(10,1,2))
+@ shape :   .rotate( ({time}) => time%360 )
+@ shape :   .scrollX(1,-0.25)
+@ shape :   .mult(shape(15,0.3,0.01)
+@ shape :   .rotate( ({time}) => time%360 )
+@ shape :   .scrollX(1,-0.25))
+@ shape :   .out(o0)
+@ solid : solid( r, g, b, a = 1 )
+@ solid : _
+@ solid : // cycling through red, green and blue
+@ solid : solid([1,0,0],[0,1,0],[0,0,1],1).out(o0)
+@ src : src( tex )
+@ src : _
+@ src : // feedback
+@ src : src(o0).modulate(noise(3),0.005).blend(shape(4),0.01).out(o0)
+@ voronoi : voronoi( scale = 5, speed = 0.3, blending = 0.3 )
+@ voronoi : _
+@ voronoi : voronoi(5,0.3,0.3).out(o0)
+@ voronoi : -
+@ voronoi : // fireflies
+@ voronoi : voronoi(25,2,10).color(1,1,0).brightness(0.15).out(o0)
+@ bpm : bpm = 30
+@ bpm : _
+@ bpm : // change array speed
+@ bpm : bpm = 60
+@ bpm : osc(60,0.1,[0,1.5]).out(o0)
+@ bpm : -
+@ bpm : // change array speed
+@ bpm : bpm = 15
+@ bpm : osc(60,0.1,[0,1.5]).out(o0)
+@ height : height
+@ height : _
+@ height : shape(99).scrollY(() => -mouse.y / height).out(o0)
+@ hush : hush(  )
+@ hush : _
+@ hush : // clear the buffers
+@ hush : osc().out(o0)
+@ hush : hush()
+@ mouse : mouse = { x, y }
+@ mouse : _
+@ mouse : shape(99).scroll(
+@ mouse :     () => -mouse.x / width,
+@ mouse :     () => -mouse.y / height)
+@ mouse :     .out(o0)
+@ render : render( texture = all )
+@ render : _
+@ render : osc(30,0.1,1.5).out(o0)
+@ render : noise().out(o1)
+@ render : solid(1).out(o2)
+@ render : gradient().out(o3)
+@ render : render()", "// specify display buffer
+@ render : voronoi().out(o1)
+@ render : render(o1)
+@ setFunction : setFunction( options )
+@ setFunction : _
+@ setFunction : // from https://www.shadertoy.com/view/XsfGzn
+@ setFunction : setFunction({
+@ setFunction :     name: 'chroma',
+@ setFunction :     type: 'color',
+@ setFunction :     inputs: [
+@ setFunction :       ],
+@ setFunction :     glsl: `
+@ setFunction :      float maxrb = max( _c0.r, _c0.b );
+@ setFunction :      float k = clamp( (_c0.g-maxrb)*5.0, 0.0, 1.0 );
+@ setFunction :      float dg = _c0.g;
+@ setFunction :      _c0.g = min( _c0.g, maxrb*0.8 );
+@ setFunction :      _c0 += vec4(dg - _c0.g);
+@ setFunction :      return vec4(_c0.rgb, 1.0 - k);
+@ setFunction :   `})
+@ setFunction :   osc(60,0.1,1.5).chroma().out(o0)
+@ setResolution : setResolution( width, height )
+@ setResolution : _
+@ setResolution : // make the canvas small (100 pixel x 100 pixel)
+@ setResolution : setResolution(100,100)
+@ setResolution : osc().out(o0)
+@ speed : speed = 1
+@ speed : _
+@ speed : // change overall speed
+@ speed : speed = 3
+@ speed : osc(60,0.1,[0,1.5]).out(o0)", "// change overall speed
+@ speed : speed = 0.1
+@ speed : osc(60,0.1,[0,1.5]).out(o0)
+@ time : time
+@ time : _
+@ time : // default
+@ time : shape(2,0.8).kaleid(()=>6+Math.sin(time)*4).out(o0)
+@ update : update(  )
+@ update : _
+@ update : // update is called every frame
+@ update : b = 0
+@ update : update = () => b += 0.01 * Math.sin(time)
+@ update : shape().scrollX(()=>b).out(o0)
+@ width : width
+@ width : _
+@ width : shape(99).scrollX(() => -mouse.x / width).out(o0)
