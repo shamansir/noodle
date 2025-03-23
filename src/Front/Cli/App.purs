@@ -2,12 +2,9 @@ module Cli.App where
 
 import Prelude
 
-import Debug as Debug
-
-import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Either (Either(..))
 import Data.Map as Map
-import Data.String (length, joinWith, split, Pattern(..)) as String
+import Data.String (joinWith, split, Pattern(..)) as String
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (take, dropEnd) as Array
 import Data.Foldable (fold)
@@ -16,25 +13,22 @@ import Data.Traversable (traverse_)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception (Error, throw)
-import Effect.Aff (runAff_)
 import Effect.Console (log) as Console
 
 import Control.Monad.State (modify_, get) as State
 
 import Node.HTTP (Request)
 import Node.Encoding (Encoding(..))
-import Node.Process (cwd)
-import Node.FS.Sync (readTextFile, stat, exists, mkdir', rm', rmdir, writeTextFile) as Sync
-import Node.FS.Aff (readTextFile, stat) as Async
+import Node.FS.Sync (exists, mkdir', readTextFile, writeTextFile) as Sync
 import Node.FS.Perms (permsReadWrite)
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (impair1, impair2, configureJs') as Blessed
+import Blessed.Internal.BlessedOp (impair1, impair2) as Blessed
 import Blessed.Internal.Core (Blessed)
 import Blessed ((>~))
 import Blessed (run, runAnd) as Blessed
 import Blessed.UI.Base.Screen.Method as Screen
-import Blessed.Demo (demo, logEverythingConfig) as BDemo
+import Blessed.Demo (demo) as BDemo
 
 import Web.Socket.Server (WebSocketConnection, WebSocketMessage(..), sendMessage) as WSS
 
@@ -45,23 +39,21 @@ import Options.Applicative ((<**>))
 
 import Cli.WsServer (start) as WSS
 import Cli.State (State)
-import Cli.State (init, appendHistory, informWsInitialized, currentPatchId) as CState
+import Cli.State (init, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
 import Cli.Components.PaletteTest as PaletteTest
-import Cli.Components.SidePanel.Console as CC
 import Cli.Class.CliRenderer (ConstantShift)
 import Cli.Class.CliFriendly (class CliFriendly)
 -- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
 -- import Cli.WsServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
 -- import Cli.Ndf.Apply (apply) as NdfFile
-import Front.Cli.ApplyNdf (applyNdfFile, applyNdfFileFrom, NdfFilePath(..), NdfFileContent(..))
+import Front.Cli.ApplyNdf (NdfFilePath(..), applyNdfFileFrom)
 
 -- import Cli.Components.MainScreen as MainScreen
 -- import Cli.Components.WsStatusButton as WsButton
 
 import Noodle.Id (ToolkitR, toolkitR, FamilyR, toolkit) as Id
-import Noodle.Patch (id) as Patch
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.Tagged (class ValueTagged) as VT

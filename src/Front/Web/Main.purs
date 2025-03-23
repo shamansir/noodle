@@ -7,6 +7,12 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML as HH
+import Halogen.HTML.CSS as CSS
+import Halogen.HTML.Events as HE
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Elements as HS
+-- import Halogen.Svg.Elements.None as HS
 import Halogen.VDom.Driver (runUI)
 
 main :: Effect Unit
@@ -31,6 +37,7 @@ component =
       , HH.div_ [ HH.text $ show state ]
       , HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ]
       , HH.text "Test"
+      , HS.svg [ HSA.width 100.0, HSA.height 100.0 ] []
       ]
 
   handleAction = case _ of

@@ -92,12 +92,9 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , history :: NdfFile
     , developmentLog :: Array String
     , currentDocumentation :: Maybe (DocumentationFocus sr cr)
-    -- TODO, program :: Map Id.NodeIdR Lang.Command
     -- TODO, innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     , panelsOnOff :: SidePanelsOnOff
     , commandBoxActive :: Boolean
-    -- TODO, , editors :: Editors
-    -- TODO, , knownGlslFunctions :: Array T.GlslFn
     , blockInletEditor :: Boolean -- temporary hack to handle occasional double clicks on inlets, which could be resolved with event bubbling cancelling support in my PS version of chjj Blessed
     , inletEditorCreated :: Map Shape.ValueTag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
