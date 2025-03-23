@@ -166,6 +166,15 @@ let
         sha512 = "uMODedbWbeU1Hx+oLMKkmgfhpdcoN/xyMoPMUEEd7OK6IuU0EzWsAlHW6XdTVPj6MvSRJiXjwHvZ4cyRvCkCIw==";
       };
     };
+    "browser-or-node-3.0.0" = {
+      name = "browser-or-node";
+      packageName = "browser-or-node";
+      version = "3.0.0";
+      src = fetchurl {
+        url = "https://registry.npmjs.org/browser-or-node/-/browser-or-node-3.0.0.tgz";
+        sha512 = "iczIdVJzGEYhP5DqQxYM9Hh7Ztpqqi+CXZpSmX8ALFs9ecXkQIeqRyM6TfxEfMVpwhl3dSuDvxdzzo9sUOIVBQ==";
+      };
+    };
     "buffer-alloc-1.2.0" = {
       name = "buffer-alloc";
       packageName = "buffer-alloc";
@@ -238,13 +247,13 @@ let
         sha512 = "Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==";
       };
     };
-    "call-bound-1.0.3" = {
+    "call-bound-1.0.4" = {
       name = "call-bound";
       packageName = "call-bound";
-      version = "1.0.3";
+      version = "1.0.4";
       src = fetchurl {
-        url = "https://registry.npmjs.org/call-bound/-/call-bound-1.0.3.tgz";
-        sha512 = "YTd+6wGlNlPxSuri7Y6X8tY2dmm12UMH66RpKMhiX6rsk5wXXnYgbUcOt8kiS31/AjfoTOvCsE+w8nZQLQnzHA==";
+        url = "https://registry.npmjs.org/call-bound/-/call-bound-1.0.4.tgz";
+        sha512 = "+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg==";
       };
     };
     "cardinal-2.1.1" = {
@@ -949,13 +958,13 @@ let
         sha512 = "DA8+YS+sMIVpbsuKgy+Z67L9Lxb1p05mNxRpDPNksPDEFir4vmBlUtuN9jkTGn9YMMdlBuK7XQgFiz6ws+yhSg==";
       };
     };
-    "rollup-4.34.8" = {
+    "rollup-4.37.0" = {
       name = "rollup";
       packageName = "rollup";
-      version = "4.34.8";
+      version = "4.37.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/rollup/-/rollup-4.34.8.tgz";
-        sha512 = "489gTVMzAYdiZHFVA/ig/iYFllCcWFHMvUHI1rpFmkoUtRlQxqh6/yiNqnYibjMZ2b/+FUQwldG+aLsEt6bglQ==";
+        url = "https://registry.npmjs.org/rollup/-/rollup-4.37.0.tgz";
+        sha512 = "iAtQy/L4QFU+rTJ1YUjXqJOJzuwEghqWzCEYD2FEghT7Gsy1VdABntrO4CLopA5IkflTyqNiLNwPcOJ3S7UKLg==";
       };
     };
     "safe-regex-test-1.1.0" = {
@@ -1111,13 +1120,13 @@ let
         sha512 = "viHtz3cDd/Tcr/HbNqzQCofKdF6kWUymH9LGDdskfWFoIy/HJ+RTihgjEcHfnsy1PO4e9B+y4HwgTwMrByquhg==";
       };
     };
-    "which-typed-array-1.1.18" = {
+    "which-typed-array-1.1.19" = {
       name = "which-typed-array";
       packageName = "which-typed-array";
-      version = "1.1.18";
+      version = "1.1.19";
       src = fetchurl {
-        url = "https://registry.npmjs.org/which-typed-array/-/which-typed-array-1.1.18.tgz";
-        sha512 = "qEcY+KJYlWyLH9vNbsr6/5j59AXk5ni5aakf8ldzBvGde6Iz4sxZGkJyWSAueTG7QhOvNRYb1lDdFmL5Td0QKA==";
+        url = "https://registry.npmjs.org/which-typed-array/-/which-typed-array-1.1.19.tgz";
+        sha512 = "rEvr90Bck4WZt9HHFC4DJMsjvu7x+r6bImz0/BrbWb7A2djJ8hnZMrWnHo9F8ssv0OMErasDhftrfROTyqSDrw==";
       };
     };
     "wordwrap-0.0.3" = {
@@ -1197,6 +1206,7 @@ let
       sources."blessed-0.1.81"
       sources."blessed-contrib-4.11.0"
       sources."bresenham-0.0.4"
+      sources."browser-or-node-3.0.0"
       sources."buffer-alloc-1.2.0"
       sources."buffer-alloc-unsafe-1.1.0"
       sources."buffer-fill-1.0.0"
@@ -1205,7 +1215,7 @@ let
       sources."bufferutil-4.0.9"
       sources."call-bind-1.0.8"
       sources."call-bind-apply-helpers-1.0.2"
-      sources."call-bound-1.0.3"
+      sources."call-bound-1.0.4"
       sources."cardinal-2.1.1"
       sources."chalk-1.1.3"
       sources."charm-0.1.2"
@@ -1293,7 +1303,7 @@ let
       sources."regl-1.7.0"
       sources."resolve-1.22.10"
       sources."right-now-1.0.0"
-      sources."rollup-4.34.8"
+      sources."rollup-4.37.0"
       sources."safe-regex-test-1.1.0"
       sources."sax-1.4.1"
       sources."set-function-length-1.2.2"
@@ -1322,7 +1332,7 @@ let
           sources."readable-stream-1.1.14"
         ];
       })
-      sources."which-typed-array-1.1.18"
+      sources."which-typed-array-1.1.19"
       sources."wordwrap-0.0.3"
       sources."ws-8.18.1"
       sources."x256-0.0.2"
