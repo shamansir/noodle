@@ -15,10 +15,15 @@ import Halogen.Svg.Elements as HS
 -- import Halogen.Svg.Elements.None as HS
 import Halogen.VDom.Driver (runUI)
 
+import HydraTk.Toolkit (toolkit) as Hydra
+
+import Front.Web.Components.MainScreen (component) as MainScreen
+
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
-  runUI component unit body
+  runUI (MainScreen.component Hydra.toolkit) unit body
+
 
 data Action = Increment | Decrement
 
@@ -36,7 +41,8 @@ component =
       [ HH.button [ HE.onClick \_ -> Decrement ] [ HH.text "-" ]
       , HH.div_ [ HH.text $ show state ]
       , HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ]
-      , HH.text "Test"
+      , HH.text "No chance"
+      , HH.text "Test Ok? Foo. How come my rebuild? Maybe now? And now?"
       , HS.svg [ HSA.width 100.0, HSA.height 100.0 ] []
       ]
 

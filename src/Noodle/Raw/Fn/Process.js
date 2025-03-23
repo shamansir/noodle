@@ -1,8 +1,11 @@
-// TODO: use safe-eval or https://github.com/nyariv/SandboxJS
+import * as jsEnv from "browser-or-node";
+
+console.log(jsEnv.isBrowser);
 
 import sandboxPkg from '@nyariv/sandboxjs';
 
-const Sandbox = sandboxPkg.default;
+// FIXME: `Sandbox` initialization is different in browser and in Node.js
+const Sandbox = jsEnv.isBrowser ? sandboxPkg : sandboxPkg.default;
 
 const sandbox = new Sandbox();
 

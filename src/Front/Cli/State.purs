@@ -2,7 +2,6 @@ module Cli.State where
 
 import Prelude
 
-import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..), isJust)
@@ -21,12 +20,11 @@ import Web.Socket.Server as WSS
 import Noodle.Id as Id
 import Noodle.Network (Network)
 import Noodle.Network (init, patch, addPatch, withPatch, patchesCount, toolkit) as Network
-import Noodle.Patch (getState) as Patch
+import Noodle.Patch (make, id, registerRawNode, registerRawNode', getState) as Patch
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (families, class HoldsFamilies, class HoldsFamilies) as Toolkit
+import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (make, id, registerRawNode, registerRawNode') as Patch
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
@@ -37,14 +35,11 @@ import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 
-
-import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
-import Blessed.Internal.NodeKey (RawNodeKey)
 
 -- import Cli.WsServer as WSS
 import Cli.Panels (SidePanelsOnOff, initPanelsOnOff)
-import Cli.Panels (Which(..), toggle, isOn) as Panels
+import Cli.Panels (Which, toggle, isOn) as Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
