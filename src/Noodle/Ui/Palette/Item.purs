@@ -8,6 +8,8 @@ import Data.Either (Either(..), either)
 import Color (Color)
 import Color as Color
 
+import Halogen.Svg.Attributes.Color as HC
+
 import Data.Int (toNumber) as Int
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -167,3 +169,11 @@ colorOf item =
     case item.color of
         Right color -> color
         Left _ -> Color.black -- FIXME: have a table for colorIds as in CSS, for example
+
+
+hColorOf :: Item -> HC.Color
+hColorOf = colorOf >>> convert
+    where
+        convert c =
+            case Color.toRGBA c of
+                { r, g, b, a } -> HC.RGB r g b
