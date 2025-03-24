@@ -7,7 +7,7 @@ import Type.Proxy (Proxy(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Control.Monad.State (put, modify) as State
+import Control.Monad.State (get, put, modify, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Map (toUnfoldable) as Map
@@ -24,13 +24,14 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
 
+import Noodle.Id (PatchR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
 import Noodle.Network (addPatch, patches) as Network
 import Noodle.Patch (make, id, name) as Patch
 
 import Web.State (State)
-import Web.State (empty) as CState
+import Web.State (empty, spawnPatch, registerPatch, lastPatchIndex) as CState
 import Web.Components.PatchesBar as PatchesBar
 
 type Slots = ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit )
@@ -39,25 +40,30 @@ _patchesBar = Proxy :: _ "patchesBar"
 
 data Action
     = Initialize
+    | SelectPatch Id.PatchR
+    | CreatePatch
     | FromPatchesBar PatchesBar.Output
+
 
 component :: forall query input output ps tk fs sr cr mi m. MonadEffect m => ps -> Toolkit tk fs sr cr mi -> H.Component query input output m
 component pstate toolkit =
-  H.mkComponent
-    { initialState : initialState toolkit
-    , render
-    , eval: H.mkEval H.defaultEval
-        { handleAction = handleAction pstate
-        , initialize = Just Initialize
+    H.mkComponent
+        { initialState : initialState pstate toolkit
+        , render
+        , eval: H.mkEval H.defaultEval
+            { handleAction = handleAction pstate
+            , initialize = Just Initialize
+            }
         }
-    }
 
-initialState :: forall input tk ps fs sr cr mi. Toolkit tk fs sr cr mi -> input -> State _ tk ps fs sr cr mi
-initialState toolkit _ = CState.empty toolkit
+
+initialState :: forall input tk ps fs sr cr mi. ps -> Toolkit tk fs sr cr mi -> input -> State _ tk ps fs sr cr mi
+initialState pstate toolkit _ = CState.empty pstate toolkit
+
 
 render :: forall tk ps fs sr cr mi m. State _ tk ps fs sr cr mi -> H.ComponentHTML Action Slots m
 render state =
-     HH.div_
+    HH.div_
         [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
             [ HS.g
                 []
@@ -68,7 +74,7 @@ render state =
                     ]
                 , HH.slot _patchesBar unit PatchesBar.component
                     { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
-                    , selected : state.currentPatch
+                    , selected : _.id <$> state.currentPatch
                     }
                     FromPatchesBar
                 ]
@@ -80,7 +86,16 @@ handleAction :: forall output tk ps fs sr cr mi m. MonadEffect m => ps -> Action
 handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
-        nextState <- State.modify $ \s -> s { network = s.network # Network.addPatch firstPatch }
-        State.put nextState
-    FromPatchesBar (PatchesBar.SelectPatchO patchR) ->
-        H.modify_ _ { currentPatch = Just patchR }
+        State.modify_ $ \s -> s { network = s.network # Network.addPatch firstPatch }
+    CreatePatch -> do
+        state <- State.get
+        newPatch <- H.lift $ CState.spawnPatch state
+        State.modify_ $ CState.registerPatch newPatch
+        handleAction pstate $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch
+    SelectPatch patchR -> do
+        state <- State.get
+        H.modify_ _ { currentPatch = Just { id : patchR, index : CState.lastPatchIndex state + 1 } }
+    FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
+        handleAction pstate $ SelectPatch patchR
+    FromPatchesBar PatchesBar.CreatePatch -> do
+        handleAction pstate $ CreatePatch

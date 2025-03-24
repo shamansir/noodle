@@ -53,12 +53,14 @@ type State =
 
 data Action
     = Initialize
-    | SelectPatch Id.PatchR
+    | RaiseSelectPatch Id.PatchR
+    | RaiseCreatePatch
     | Receive Input
 
 
 data Output
-    = SelectPatchO Id.PatchR
+    = SelectPatch Id.PatchR
+    | CreatePatch
 
 
 component :: forall query m. H.Component query Input Output m
@@ -101,7 +103,7 @@ render state =
         patchButton { offset, width, id, name } =
             HS.g
                 [ HSA.transform [ HSA.Translate offset barPadding ]
-                , HE.onClick $ const $ SelectPatch id
+                , HE.onClick $ const $ RaiseSelectPatch id
                 ]
                 [ HS.path
                     [ HSA.d
@@ -129,6 +131,7 @@ render state =
         addPatchButton offset =
             HS.g
                 [ HSA.transform [ HSA.Translate offset barPadding ]
+                , HE.onClick $ const $ RaiseCreatePatch
                 ]
                 [ HS.rect
                     [ HSA.x 0.0, HSA.y 0.0
@@ -151,8 +154,10 @@ render state =
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    SelectPatch patchR -> do
-        H.raise $ SelectPatchO patchR
+    RaiseSelectPatch patchR -> do
+        H.raise $ SelectPatch patchR
+    RaiseCreatePatch -> do
+        H.raise CreatePatch
     Receive input ->
         H.modify_ _
             { patches = input.patches
