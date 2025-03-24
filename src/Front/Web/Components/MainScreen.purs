@@ -6,6 +6,11 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
+import Control.Monad.State (put, modify) as State
+
+import Data.Maybe (Maybe(..))
+import Halogen.Svg.Attributes.Color as C
+
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -18,31 +23,44 @@ import Halogen.Svg.Elements as HS
 
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
+import Noodle.Network (addPatch) as Network
+import Noodle.Patch (make) as Patch
 
 import Front.Web.State (State)
-import Front.Web.State (empty, init) as State
+import Front.Web.State (empty) as CState
 
 data Action
-    = Start
+    = Initialize
 
-component :: forall query input output tk fs sr cr mi m. MonadEffect mi => Toolkit tk fs sr cr mi -> H.Component query input output m
-component toolkit =
+component :: forall query input output ps tk fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> H.Component query input output m
+component pstate toolkit =
   H.mkComponent
     { initialState : initialState toolkit
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval H.defaultEval
+        { handleAction = handleAction pstate
+        , initialize = Just Initialize
+        }
     }
 
-initialState :: forall input tk ps fs sr cr m. MonadEffect m => Toolkit tk fs sr cr m -> input -> State _ tk ps fs sr cr m
-initialState toolkit _ = State.empty toolkit
+initialState :: forall input tk ps fs sr cr m. Toolkit tk fs sr cr m -> input -> State _ tk ps fs sr cr m
+initialState toolkit _ = CState.empty toolkit
 
 render :: forall tk ps fs sr cr mi mo. State _ tk ps fs sr cr mi -> H.ComponentHTML Action () mo
 render state =
   HH.div_
-    [ HH.text "Test"
-    , HS.svg [ HSA.width 100.0, HSA.height 100.0 ] []
+    [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ] [
+        HS.rect
+            [ HSA.width 1000.0, HSA.height 1000.0
+            , HSA.fill $ Just $ C.RGB 16 15 15
+            , HSA.stroke $ Just $ C.RGB 100 100 100
+            ]
+        ]
     ]
 
-handleAction :: forall output tk ps fs sr cr mi m. Action -> H.HalogenM (State _ tk ps fs sr cr mi) Action () output m Unit
-handleAction = case _ of
-  Start -> pure unit
+handleAction :: forall output tk ps fs sr cr m. MonadEffect m => ps -> Action -> H.HalogenM (State _ tk ps fs sr cr m) Action () output m Unit
+handleAction pstate = case _ of
+  Initialize -> do
+    firstPatch <- H.lift $ Patch.make "Patch 1" pstate
+    nextState <- State.modify $ \s -> s { network = s.network # Network.addPatch firstPatch }
+    State.put nextState

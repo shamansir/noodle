@@ -17,13 +17,5 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     }
 
 
-empty :: forall loc tk ps fs sr cr m. MonadEffect m => Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
+empty :: forall loc tk ps fs sr cr m. Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
 empty toolkit = { network : Network.init toolkit }
-
-
-init :: forall loc tk ps fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> m (State loc tk ps fs sr cr m)
-init state toolkit = do
-    firstPatch <- Patch.make "Patch 1" state
-    pure
-        { network : Network.init toolkit # Network.addPatch firstPatch
-        }

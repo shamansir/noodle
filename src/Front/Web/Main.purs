@@ -16,17 +16,19 @@ import Halogen.Svg.Elements as HS
 import Halogen.VDom.Driver (runUI)
 
 import HydraTk.Toolkit (toolkit) as Hydra
+import HydraTk.Patch (init) as Hydra.Patch
 
 import Front.Web.Components.MainScreen (component) as MainScreen
 
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
-  runUI (MainScreen.component Hydra.toolkit) unit body
+  runUI (MainScreen.component Hydra.Patch.init Hydra.toolkit) unit body
 
 
 data Action = Increment | Decrement
 
+{-
 component =
   H.mkComponent
     { initialState
@@ -49,3 +51,4 @@ component =
   handleAction = case _ of
     Increment -> H.modify_ \state -> state + 1
     Decrement -> H.modify_ \state -> state - 1
+-}

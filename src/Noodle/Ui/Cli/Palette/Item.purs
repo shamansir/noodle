@@ -11,6 +11,8 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
 
+-- TODO: We intentionally store all the modes here, for now,
+-- but probably we should just ensure we can convert forth and back b/w formats in reliable way w/o any loss
 type Item =
     { color :: Maybe Color
     , repr :: String
