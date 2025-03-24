@@ -33,12 +33,13 @@ import Web.State (State)
 import Web.State (empty) as CState
 import Web.Components.PatchesBar as PatchesBar
 
-type Slots = ( patchesBar :: forall q. H.Slot q Void Unit )
+type Slots = ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit )
 
 _patchesBar = Proxy :: _ "patchesBar"
 
 data Action
     = Initialize
+    | FromPatchesBar PatchesBar.Output
 
 component :: forall query input output ps tk fs sr cr mi m. MonadEffect m => ps -> Toolkit tk fs sr cr mi -> H.Component query input output m
 component pstate toolkit =
@@ -65,10 +66,11 @@ render state =
                     , HSA.fill $ Just $ HC.RGB 16 15 15
                     , HSA.stroke $ Just $ HC.RGB 100 100 100
                     ]
-                , HH.slot_ _patchesBar unit PatchesBar.component $
+                , HH.slot _patchesBar unit PatchesBar.component
                     { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
-                    , selected : Nothing
+                    , selected : state.currentPatch
                     }
+                    FromPatchesBar
                 ]
             ]
         ]
@@ -80,3 +82,5 @@ handleAction pstate = case _ of
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
         nextState <- State.modify $ \s -> s { network = s.network # Network.addPatch firstPatch }
         State.put nextState
+    FromPatchesBar (PatchesBar.SelectPatchO patchR) ->
+        H.modify_ _ { currentPatch = Just patchR }
