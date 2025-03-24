@@ -25,6 +25,8 @@ newtype Hex = Hex String
 data Index
     = Single Int
     | Level Int Int
+    | SingleS String
+    | LevelS String Int
 
 
 type Item =
@@ -105,6 +107,32 @@ hexRgbHsl hex r g b h s l name =
     }
 
 
+strRgb :: String -> Int -> Int -> Int -> Item
+strRgb idx r g b =
+    { index : Just $ SingleS idx
+    , color : Right $ Color.rgb r g b
+    , label : idx
+    }
+
+
+str2Rgb :: String -> Int -> Int -> Int -> Int -> Item
+str2Rgb idxl idx r g b =
+    { index : Just $ LevelS idxl idx
+    , color : Right $ Color.rgb r g b
+    , label : idxl <> "-" <> show idx
+    }
+
+
+strHex :: String -> Hex -> Item
+strHex idx hexv =
+    (hex hexv idx) { index = Just $ SingleS idx }
+
+
+str2Hex :: String -> Int -> Hex -> Item
+str2Hex idxl idx hexv =
+    (hex hexv $ idxl <> "-" <> show idx) { index = Just $ LevelS idxl idx }
+
+
 fullInfo :: Item -> String
 fullInfo item =
     item.label <> "\t" <> colorValueStr <> indexString
@@ -112,6 +140,8 @@ fullInfo item =
         indexString = case item.index of
             Just (Single n) -> "\t" <> show n
             Just (Level n1 n2) -> "\t" <> show n1 <> " (" <> show n2 <> ")"
+            Just (SingleS sl) -> "\t" <> sl
+            Just (LevelS sl1 sl2) -> "\t" <> sl1 <> show sl2
             Nothing -> ""
         colorValueStr =
             case item.color of

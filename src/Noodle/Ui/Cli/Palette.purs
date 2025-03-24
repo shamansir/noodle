@@ -1,4 +1,4 @@
-module Noodle.Ui.Palette where
+module Noodle.Ui.Cli.Palette where
 
 import Noodle.Ui.Palette.Item (Item, ColorId(..), Hex(..), reprAndName, hex, reprOf, rgb)
 import Noodle.Ui.Palette.Set.Pico8 as Pico

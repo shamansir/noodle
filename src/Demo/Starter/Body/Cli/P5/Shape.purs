@@ -29,7 +29,7 @@ import Cli.Keys (NodeBoxKey)
 
 import Noodle.Id as NId
 import Noodle.Node ((#->), (@->))
-import Noodle.Ui.Palette as Palette
+import Noodle.Ui.Cli.Palette as Palette
 
 import StarterTk.Library.P5.Shape (Node, _out_shape)
 

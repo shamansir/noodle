@@ -18,7 +18,7 @@ import Blessed.Core.Style as Style
 import Blessed.Core.EndStyle as ES
 import Blessed.Core.ListStyle as LStyle
 
-import Noodle.Ui.Palette as Palette
+import Noodle.Ui.Cli.Palette as Palette
 
 
 library :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r

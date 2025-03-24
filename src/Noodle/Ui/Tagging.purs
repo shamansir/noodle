@@ -28,7 +28,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve) as ViC
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 
-import Noodle.Ui.Palette as Palette
+import Noodle.Ui.Cli.Palette as Palette
 import Noodle.Ui.Palette.Item (colorOf, reprOf) as C
 import Noodle.Ui.Palette.Item (Item, fullInfo) as Palette
 import Noodle.Ui.Palette.Set.X11 as X11

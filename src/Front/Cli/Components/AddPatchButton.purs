@@ -39,7 +39,7 @@ import Cli.Style as Style
 
 import Noodle.Network as Network
 import Noodle.Patch as Patch
-import Noodle.Ui.Palette as Palette
+import Noodle.Ui.Cli.Palette as Palette
 
 
 component ∷ forall tk s fs sr cr m. Core.Blessed (State _ tk s fs sr cr m)

@@ -31,7 +31,7 @@ import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At as At
 import Noodle.Ui.Tagging.At (class At)
 import Noodle.Ui.Tagging.At (ChannelLabel, channelLabel) as At
-import Noodle.Ui.Palette as P
+import Noodle.Ui.Cli.Palette as P
 import Noodle.Ui.Palette.Set.Pico8 as Pico8
 import Noodle.Ui.Palette.Set.X11 as X11
 import Noodle.Ui.Palette.Set.Hydra as Hydra
