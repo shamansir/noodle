@@ -33,7 +33,7 @@ import Cli.Class.CliRenderer (class CliEditor)
 
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
+import Noodle.Ui.Tagging.At (class At, ChannelLabel, StatusLine) as T
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Wiring (class Wiring)

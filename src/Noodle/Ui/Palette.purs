@@ -1,11 +1,11 @@
-module Noodle.Ui.Cli.Palette where
+module Noodle.Ui.Palette where
 
-import Noodle.Ui.Cli.Palette.Item (Item, reprName, reprOf, rgb)
-import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
+import Noodle.Ui.Palette.Item (Item, ColorId(..), Hex(..), reprAndName, hex, reprOf, rgb)
+import Noodle.Ui.Palette.Set.Pico8 as Pico
+import Noodle.Ui.Palette.Set.X11 as X11
 
 
-networkBg = reprName "#111" "background" :: Item
+networkBg = hex (Hex "#111") "background" :: Item
 itemNotSelected = Pico.trueBlue :: Item
 itemSelected = Pico.blue :: Item
 -- border = X11.darkgray :: Item
@@ -19,7 +19,7 @@ nodeFg = Pico.white :: Item
 nodeBorder = X11.gray25 :: Item
 nodeSelection = Pico.lightPeach :: Item
 linkFg = Pico.lightPeach :: Item
-focusedBorder = reprName "white" "focusedBorder" :: Item
+focusedBorder = reprAndName (ColorId "white") "focusedBorder" :: Item
 fg = Pico.white :: Item
 secondaryFg = Pico.lightGrey :: Item
 patchBg = Pico.darkerGrey :: Item

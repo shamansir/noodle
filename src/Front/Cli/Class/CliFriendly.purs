@@ -3,8 +3,8 @@ module Cli.Class.CliFriendly where
 import Prelude
 
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr) as Toolkit
-import Noodle.Ui.Cli.Tagging.At (class At) as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
+import Noodle.Ui.Tagging.At (class At) as T
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueEncode) as Ndf
 
 import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)

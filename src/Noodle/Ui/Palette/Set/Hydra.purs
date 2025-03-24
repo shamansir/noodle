@@ -1,11 +1,11 @@
-module Noodle.Ui.Cli.Palette.Set.Hydra where
+module Noodle.Ui.Palette.Set.Hydra where
 
 import Prelude
 
 import Data.Int (toNumber)
 import Data.Array (range)
 
-import Noodle.Ui.Cli.Palette.Item (Item, hsl)
+import Noodle.Ui.Palette.Item (Item, hsl)
 
 
 step :: Int -> String -> Item

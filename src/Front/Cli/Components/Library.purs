@@ -49,7 +49,7 @@ import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAn
 import Noodle.Toolkit.Family (Family, familyIdOf) as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
-import Noodle.Ui.Cli.Tagging (libraryItem) as T
+import Noodle.Ui.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Node (Node) as Noodle

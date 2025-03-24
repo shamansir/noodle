@@ -32,8 +32,8 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 
-import Noodle.Ui.Cli.Tagging.At as T
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At as T
+import Noodle.Ui.Tagging.At (ChannelLabel) as At
 
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)

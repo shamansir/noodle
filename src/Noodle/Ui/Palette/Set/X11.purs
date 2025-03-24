@@ -1,7 +1,7 @@
-module Noodle.Ui.Cli.Palette.Set.X11 where
+module Noodle.Ui.Palette.Set.X11 where
 
 
-import Noodle.Ui.Cli.Palette.Item (Item, rgb)
+import Noodle.Ui.Palette.Item (Item, rgb)
 
 
 aliceblue = rgb 240 248 255 "aliceblue" :: Item

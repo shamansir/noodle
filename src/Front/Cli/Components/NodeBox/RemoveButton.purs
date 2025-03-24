@@ -41,7 +41,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id) as RawNode
 import Noodle.Wiring (class Wiring)
 
-import Noodle.Ui.Cli.Tagging (removeButtonOut, removeButtonOver) as T
+import Noodle.Ui.Tagging (removeButtonOut, removeButtonOver) as T
 
 -- import Noodle.Node (unsafeDisconnect) as Node
 -- import Noodle.Patch (removeNode, allLinksOf, withLink) as Patch

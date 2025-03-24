@@ -32,8 +32,8 @@ import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
 import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
 import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
 import Noodle.Toolkit (Name) as Toolkit
-import Noodle.Ui.Cli.Palette.Item (Item, colorOf) as Palette
-import Noodle.Ui.Cli.Palette.AutoColor (group) as AutoColor
+import Noodle.Ui.Palette.Item (Item, colorOf) as Palette
+import Noodle.Ui.Palette.AutoColor (group) as AutoColor
 -- import Tidy.Codegen.Monad (codegenModule, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue)
 
 

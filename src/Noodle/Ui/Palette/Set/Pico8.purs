@@ -1,10 +1,10 @@
-module Noodle.Ui.Cli.Palette.Set.Pico8 where
+module Noodle.Ui.Palette.Set.Pico8 where
 
 import Prelude (negate)
 
 
 
-import Noodle.Ui.Cli.Palette.Item (Item, idxHexRgb, idx2HexRgb)
+import Noodle.Ui.Palette.Item (Item, idxHexRgb, idx2HexRgb)
 
 
 

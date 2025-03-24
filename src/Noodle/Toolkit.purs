@@ -36,7 +36,7 @@ import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.Tagged (class ValueTagged) as VT
-import Noodle.Ui.Cli.Palette.Mark (class Mark)
+import Noodle.Ui.Palette.Mark (class Mark)
 
 
 data ToolkitKey

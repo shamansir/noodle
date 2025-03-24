@@ -96,8 +96,8 @@ import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Fn.Shape.Temperament (default) as Temperament
 import Noodle.Raw.Fn.Shape (temperamentOf) as RawShape
 
-import Noodle.Ui.Cli.Tagging (inlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
+import Noodle.Ui.Tagging (inlet) as T
+import Noodle.Ui.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
 
 import Front.Cli.Actions as Actions

@@ -25,10 +25,10 @@ import Data.Newtype (class Newtype)
 import Data.String.Regex (Regex, split, regex, replace, search) as RGX
 import Data.String.Regex.Flags (global, noFlags) as RGX
 
-import Noodle.Ui.Cli.Palette.Item (colorOf) as C
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
-import Noodle.Ui.Cli.Tagging.At (class At, at, ChannelLabel)
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Palette.Item (colorOf) as C
+import Noodle.Ui.Palette.Set.X11 as X11
+import Noodle.Ui.Tagging.At (class At, at, ChannelLabel)
+import Noodle.Ui.Palette.Mark (class Mark, mark)
 
 import Blessed.Internal.NodeKey (nk) as Blessed
 import Cli.Keys (ValueEditorKey) as Key

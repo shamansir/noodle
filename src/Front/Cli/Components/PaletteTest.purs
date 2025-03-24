@@ -27,16 +27,16 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Base.Screen.Option (fullUnicode, smartCSR, title) as Screen
 
 import Noodle.Id as Id
-import Noodle.Ui.Cli.Tagging as T
-import Noodle.Ui.Cli.Tagging.At as At
-import Noodle.Ui.Cli.Tagging.At (class At)
-import Noodle.Ui.Cli.Tagging.At (ChannelLabel, channelLabel) as At
-import Noodle.Ui.Cli.Palette as P
-import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
-import Noodle.Ui.Cli.Palette.Set.Hydra as Hydra
-import Noodle.Ui.Cli.Palette.Set.Catpuccin as Catpuccin
-import Noodle.Ui.Cli.Palette.Item as Palette
+import Noodle.Ui.Tagging as T
+import Noodle.Ui.Tagging.At as At
+import Noodle.Ui.Tagging.At (class At)
+import Noodle.Ui.Tagging.At (ChannelLabel, channelLabel) as At
+import Noodle.Ui.Palette as P
+import Noodle.Ui.Palette.Set.Pico8 as Pico8
+import Noodle.Ui.Palette.Set.X11 as X11
+import Noodle.Ui.Palette.Set.Hydra as Hydra
+import Noodle.Ui.Palette.Set.Catpuccin as Catpuccin
+import Noodle.Ui.Palette.Item as Palette
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline) as ViC
 import Noodle.Fn.Shape.Temperament (Temperament(..))

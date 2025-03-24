@@ -8,7 +8,7 @@ import Data.Symbol (class IsSymbol)
 
 import Color as Color
 
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Palette.Mark (class Mark, mark)
 
 
 import Noodle.Id (Family) as Node

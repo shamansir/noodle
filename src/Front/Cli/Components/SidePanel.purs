@@ -45,7 +45,7 @@ import Cli.Style as Style
 import Cli.State (State)
 
 import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
-import Noodle.Ui.Cli.Tagging as T
+import Noodle.Ui.Tagging as T
 
 
 type SidePanel (id :: Symbol) s v = -- FIXME: `s` should be the actual state of the SidePanel: is it visible and its content

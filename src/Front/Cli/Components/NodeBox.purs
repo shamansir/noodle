@@ -77,9 +77,9 @@ import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Toolkit (class MarkToolkit)
 import Noodle.Toolkit as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
-import Noodle.Ui.Cli.Tagging (inlet, nodeLabel, outlet) as T
-import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
-import Noodle.Ui.Cli.Tagging.At (class At) as T
+import Noodle.Ui.Tagging (inlet, nodeLabel, outlet) as T
+import Noodle.Ui.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
+import Noodle.Ui.Tagging.At (class At) as T
 import Noodle.Wiring (class Wiring)
 import Signal (Signal, (~>))
 import Signal.Extra as SignalX

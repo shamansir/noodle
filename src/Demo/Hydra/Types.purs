@@ -27,8 +27,9 @@ import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (Argument, Output, empty) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
+import Noodle.Ui.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Palette.Item (colorOf) as C
+import Noodle.Ui.Palette.Set.X11 as X11
 
 
 {-
@@ -425,7 +426,7 @@ instance Mark Value where
 
 instance Mark Texture where
     mark :: Texture -> Color
-    mark = const $ fromMaybe Color.black X11.darkorange.color
+    mark = const $ C.colorOf $ X11.darkorange
     -- mark = const $ Color.rgb 148 0 211
 
 
@@ -955,7 +956,6 @@ instance Partial => ValueCodegen GlslFn where
                     , "fn" /\ mkExpression fn
                     ]
                 ]
-
 
 
 instance Partial => ValueCodegen Texture where

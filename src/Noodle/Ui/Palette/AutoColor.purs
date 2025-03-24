@@ -1,11 +1,11 @@
-module Noodle.Ui.Cli.Palette.AutoColor where
+module Noodle.Ui.Palette.AutoColor where
 
 import Prelude
 
-import Noodle.Ui.Cli.Palette.Item (Item) as Palette
-import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico8
-import Noodle.Ui.Cli.Palette.Set.Hydra (steps) as Hydra
-import Noodle.Ui.Cli.Palette.Set.Catpuccin (collectColors, latte, frappe, mocha, macchiato) as Catpuccin
+import Noodle.Ui.Palette.Item (Item) as Palette
+import Noodle.Ui.Palette.Set.Pico8 as Pico8
+import Noodle.Ui.Palette.Set.Hydra (steps) as Hydra
+import Noodle.Ui.Palette.Set.Catpuccin (collectColors, latte, frappe, mocha, macchiato) as Catpuccin
 
 
 group :: Array Palette.Item

@@ -20,8 +20,8 @@ import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
 import Cli.Keys (InfoBoxKey)
 import Cli.Style as Style
-import Noodle.Ui.Cli.Tagging (inletInfoBox, outletInfoBox, removeInfoBox) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel) as T
+import Noodle.Ui.Tagging (inletInfoBox, outletInfoBox, removeInfoBox) as T
+import Noodle.Ui.Tagging.At (class At, ChannelLabel) as T
 
 import Noodle.Id (InletR, OutletR) as Id
 

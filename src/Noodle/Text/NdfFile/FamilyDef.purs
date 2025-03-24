@@ -23,7 +23,7 @@ import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..))
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ndfLinesCount) as PC
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr)
 import Noodle.Text.NdfFile.FamilyDef.Codegen as CodeGen
-import Noodle.Ui.Cli.Tagging as F
+import Noodle.Ui.Tagging as F
 
 
 newtype FamilyDef = FamilyDef FamilyDefRec

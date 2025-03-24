@@ -34,9 +34,9 @@ import Noodle.Repr.Tagged (class ValueTagged, ValuePath) as VT
 import Noodle.Raw.Fn.Shape (ValueTag, tagAs) as Shape
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCodegen, class ParseableRepr, class ValueEncode, mkExpression, pDefaultFor, pValueFor)
-import Noodle.Ui.Cli.Palette.Mark (class Mark, mark)
-import Noodle.Ui.Cli.Palette.Item (colorOf) as C
-import Noodle.Ui.Cli.Tagging.At (class At)
+import Noodle.Ui.Palette.Mark (class Mark, mark)
+import Noodle.Ui.Palette.Item (colorOf) as C
+import Noodle.Ui.Tagging.At (class At)
 import Noodle.Text.ToCode (class ToCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError, Source, srcErrorToString)
 

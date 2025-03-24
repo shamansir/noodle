@@ -24,7 +24,7 @@ import Parsing.Combinators (between, choice) as P
 
 import Noodle.Text.Code.Target (NDF, PS)
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
-import Noodle.Ui.Cli.Tagging as F
+import Noodle.Ui.Tagging as F
 
 
 data ProcessCode

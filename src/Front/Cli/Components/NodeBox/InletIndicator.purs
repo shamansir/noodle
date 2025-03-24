@@ -35,7 +35,7 @@ import Cli.Style as Style
 
 import Noodle.Fn.Shape.Temperament (Temperament)
 
-import Noodle.Ui.Cli.Tagging (inletHover) as T
+import Noodle.Ui.Tagging (inletHover) as T
 
 
 

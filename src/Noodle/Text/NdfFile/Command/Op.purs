@@ -18,7 +18,7 @@ import Yoga.JSON (class ReadForeign, class WriteForeign, writeImpl)
 import Noodle.Id (FamilyR, family) as Id
 import Noodle.Text.ToCode (class ToCode, class ToTaggedCode, toCode, toTaggedCode)
 import Noodle.Text.Code.Target (NDF, ndf)
-import Noodle.Ui.Cli.Tagging as F
+import Noodle.Ui.Tagging as F
 import Noodle.Text.NdfFile.Types (Coord(..), EncodedValue(..), InletId(..), NodeInstanceId(..), OutletId(..))
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign)
 import Noodle.Text.NdfFile.FamilyDef (ndfLinesCount, processAssignNdfLinesCount) as FD

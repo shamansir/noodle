@@ -1,11 +1,11 @@
-module Noodle.Ui.Cli.Palette.Set.Catpuccin where
+module Noodle.Ui.Palette.Set.Catpuccin where
 
 import Prelude
 
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Ui.Cli.Palette.Item (Item, hexRgbHsl) as P
+import Noodle.Ui.Palette.Item (Item, hexRgbHsl) as P
 
 
 -- data FlavorK

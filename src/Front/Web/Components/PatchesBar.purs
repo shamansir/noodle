@@ -65,11 +65,17 @@ render state =
     []
     $ patchButton <$> state.patches
     where
-        patchButton _ =
-            HS.rect
-                [ HSA.width 20.0, HSA.height 20.0
-                , HSA.fill $ Just $ HC.RGB 150 15 15
-                , HSA.stroke $ Just $ HC.RGB 100 100 100
+        patchButton (id /\ name) =
+            HS.g []
+                [ HS.rect
+                    [ HSA.width 20.0, HSA.height 20.0
+                    , HSA.fill $ Just $ HC.RGB 150 15 15
+                    , HSA.stroke $ Just $ HC.RGB 100 100 100
+                    ]
+                , HS.text
+                    [ HSA.y 20.0, HSA.fill $ Just $ HC.RGB 150 15 15
+                    ]
+                    [ HH.text name ]
                 ]
 
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit

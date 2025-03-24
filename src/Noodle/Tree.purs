@@ -29,7 +29,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, inlets', outlets') as RawNode
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
-import Noodle.Ui.Cli.Tagging as T
+import Noodle.Ui.Tagging as T
 
 import Yoga.Tree (Tree)
 import Yoga.Tree as Tree

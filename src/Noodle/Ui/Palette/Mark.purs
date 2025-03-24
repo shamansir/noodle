@@ -1,4 +1,4 @@
-module Noodle.Ui.Cli.Palette.Mark where
+module Noodle.Ui.Palette.Mark where
 
 
 import Prelude (Unit, const, ($))

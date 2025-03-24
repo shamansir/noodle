@@ -33,7 +33,7 @@ import Noodle.Text.NdfFile.FamilyDef (FamilyDef, ProcessAssign(..))
 import Noodle.Text.NdfFile.FamilyDef (family, forceAssign) as FD
 import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
 import Noodle.Text.NdfFile.Codegen as MCG
-import Noodle.Ui.Cli.Tagging (ndfVersion, tkVersion, toolkit) as T
+import Noodle.Ui.Tagging (ndfVersion, tkVersion, toolkit) as T
 
 
 currentVersion = 0.2 :: Number

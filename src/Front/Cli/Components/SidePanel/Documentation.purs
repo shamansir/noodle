@@ -22,9 +22,9 @@ import Cli.Components.SidePanel (refresh) as SP
 import Cli.Keys as Key
 import Cli.Panels (Which(..)) as P
 
-import Noodle.Ui.Cli.Tagging as Tagging
-import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
-import Noodle.Ui.Cli.Tagging.At (Documentation, documentation) as At
+import Noodle.Ui.Tagging as Tagging
+import Noodle.Ui.Tagging.At (class At, at) as Tagged
+import Noodle.Ui.Tagging.At (Documentation, documentation) as At
 
 import Blessed.Internal.BlessedOp (BlessedOp)
 

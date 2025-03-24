@@ -44,8 +44,8 @@ import Cli.Components.NodeBox.OutletIndicator as OI
 import Noodle.Id as Id
 import Noodle.Patch (Patch)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Ui.Cli.Tagging (outlet) as T
-import Noodle.Ui.Cli.Tagging.At (class At, ChannelLabel, StatusLine) as T
+import Noodle.Ui.Tagging (outlet) as T
+import Noodle.Ui.Tagging.At (class At, ChannelLabel, StatusLine) as T
 
 
 --import Cli.Components.NodeBox.HasBody (class HasEditor, class HasEditor')

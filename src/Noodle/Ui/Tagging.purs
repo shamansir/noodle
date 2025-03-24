@@ -1,4 +1,4 @@
-module Noodle.Ui.Cli.Tagging where
+module Noodle.Ui.Tagging where
 
 import Prelude
 
@@ -28,13 +28,13 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve) as ViC
 import Noodle.Fn.Shape.Temperament (Temperament(..))
 
-import Noodle.Ui.Cli.Palette as Palette
-import Noodle.Ui.Cli.Palette.Item (colorOf) as C
-import Noodle.Ui.Cli.Palette.Item (Item, fullInfo) as Palette
-import Noodle.Ui.Cli.Palette.Set.X11 as X11
-import Noodle.Ui.Cli.Palette.Set.Pico8 as Pico
-import Noodle.Ui.Cli.Tagging.At (class At, at) as Tagged
-import Noodle.Ui.Cli.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
+import Noodle.Ui.Palette as Palette
+import Noodle.Ui.Palette.Item (colorOf, reprOf) as C
+import Noodle.Ui.Palette.Item (Item, fullInfo) as Palette
+import Noodle.Ui.Palette.Set.X11 as X11
+import Noodle.Ui.Palette.Set.Pico8 as Pico
+import Noodle.Ui.Tagging.At (class At, at) as Tagged
+import Noodle.Ui.Tagging.At (StatusLine, ChannelLabel, Documentation, InfoNode, statusLine, channelLabel, documentation, infoNode) as At
 
 
 inlet :: forall chrepr. Tagged.At At.ChannelLabel chrepr  => Int -> Id.InletR -> ValueInChannel chrepr -> Tag
@@ -169,11 +169,11 @@ glslFnItem (H.GlslFn (kind /\ _ /\ glslFn)) =
     -}
 
 paletteFg :: Palette.Item -> Tag
-paletteFg item = T.fg item.repr (T.s item.label)
+paletteFg item = T.fg (C.reprOf item) (T.s item.label)
 
 
 paletteBg :: Palette.Item -> Tag
-paletteBg item = T.bg item.repr (T.s item.label)
+paletteBg item = T.bg (C.reprOf item) (T.s item.label)
 
 
 {-

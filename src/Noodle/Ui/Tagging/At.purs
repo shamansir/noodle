@@ -1,4 +1,4 @@
-module Noodle.Ui.Cli.Tagging.At where
+module Noodle.Ui.Tagging.At where
 
 import Type.Proxy (Proxy(..))
 

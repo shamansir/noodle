@@ -53,7 +53,7 @@ import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Style as Style
 
 import Noodle.Id as Id
-import Noodle.Ui.Cli.Palette as Palette
+import Noodle.Ui.Palette as Palette
 
 
 -- TODO: forall state. BlessedOp state Effect

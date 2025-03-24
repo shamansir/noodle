@@ -30,7 +30,7 @@ import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Style as Style
 
-import Noodle.Ui.Cli.Tagging (outletHover, outletSelect) as T
+import Noodle.Ui.Tagging (outletHover, outletSelect) as T
 
 
 data Status
