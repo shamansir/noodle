@@ -32,7 +32,7 @@ import Front.Web.State (empty) as CState
 data Action
     = Initialize
 
-component :: forall query input output ps tk fs sr cr m. MonadEffect m => ps -> Toolkit tk fs sr cr m -> H.Component query input output m
+component :: forall query input output ps tk fs sr cr mi m. MonadEffect m => ps -> Toolkit tk fs sr cr mi -> H.Component query input output m
 component pstate toolkit =
   H.mkComponent
     { initialState : initialState toolkit
@@ -43,10 +43,10 @@ component pstate toolkit =
         }
     }
 
-initialState :: forall input tk ps fs sr cr m. Toolkit tk fs sr cr m -> input -> State _ tk ps fs sr cr m
+initialState :: forall input tk ps fs sr cr mi. Toolkit tk fs sr cr mi -> input -> State _ tk ps fs sr cr mi
 initialState toolkit _ = CState.empty toolkit
 
-render :: forall tk ps fs sr cr mi mo. State _ tk ps fs sr cr mi -> H.ComponentHTML Action () mo
+render :: forall tk ps fs sr cr mi m. State _ tk ps fs sr cr mi -> H.ComponentHTML Action () m
 render state =
   HH.div_
     [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ] [
@@ -58,7 +58,7 @@ render state =
         ]
     ]
 
-handleAction :: forall output tk ps fs sr cr m. MonadEffect m => ps -> Action -> H.HalogenM (State _ tk ps fs sr cr m) Action () output m Unit
+handleAction :: forall output tk ps fs sr cr mi m. MonadEffect m => ps -> Action -> H.HalogenM (State _ tk ps fs sr cr mi) Action () output m Unit
 handleAction pstate = case _ of
   Initialize -> do
     firstPatch <- H.lift $ Patch.make "Patch 1" pstate
