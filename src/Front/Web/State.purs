@@ -1,4 +1,4 @@
-module Front.Web.State where
+module Web.State where
 
 import Prelude
 

@@ -34,7 +34,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 import Cli.Keys as Key
 import Cli.State (State)
 import Cli.State (spawnPatch, registerPatch, lastPatchIndex) as CState
-import Cli.Components.PatchesListbar as PatchesListbar
+import Cli.Components.PatchesBar as PatchesBar
 import Cli.Style as Style
 
 import Noodle.Network as Network
@@ -58,8 +58,8 @@ component =
                 newPatch <- Blessed.lift' $ CState.spawnPatch state
                 nextState <- State.modify $ CState.registerPatch newPatch
 
-                PatchesListbar.updatePatches $ Network.patches nextState.network -- TODO: load patches from state in PatchesBar, just call some refresh/update
-                PatchesListbar.selectPatch $ CState.lastPatchIndex nextState
+                PatchesBar.updatePatches $ Network.patches nextState.network -- TODO: load patches from state in PatchesBar, just call some refresh/update
+                PatchesBar.selectPatch $ CState.lastPatchIndex nextState
                 -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
                 Key.mainScreen >~ Screen.render
         {-

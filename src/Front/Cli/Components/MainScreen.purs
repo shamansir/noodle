@@ -45,7 +45,7 @@ import Cli.Class.CliRenderer (class CliLocator)
 import Cli.Components.SidePanel as SP
 
 import Cli.Components.PatchBox as PatchBox
-import Cli.Components.PatchesListbar as PatchesListbar
+import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatchButton as AddPatchButton
 -- import Cli.Components.LoadFileButton as LoadFileButton
 import Cli.Components.SidePanel.Documentation (sidePanel) as Doc
@@ -97,7 +97,7 @@ component initialState =
         ]
 
         (
-        [ PatchesListbar.component $ Network.patches $ initialState.network
+        [ PatchesBar.component $ Network.patches $ initialState.network
         , AddPatchButton.component
         , PatchBox.component $ Network.toolkit initialState.network
         -- , LoadFileButton.component
@@ -120,7 +120,7 @@ component initialState =
         )
 
         $ \_ -> do
-            PatchesListbar.selectPatch 1
+            PatchesBar.selectPatch 1
             -- Key.library >~ Box.focus
             Key.mainScreen >~ Screen.render
     where

@@ -18,7 +18,7 @@ import Halogen.VDom.Driver (runUI)
 import HydraTk.Toolkit (toolkit) as Hydra
 import HydraTk.Patch (init) as Hydra.Patch
 
-import Front.Web.Components.MainScreen (component) as MainScreen
+import Web.Components.MainScreen (component) as MainScreen
 
 main :: Effect Unit
 main = HA.runHalogenAff do
