@@ -73,18 +73,21 @@ render state =
         barPadding = 7.0
         buttonPadding = 5.0
         symWidth = 10.5
-        buttonCorner = 10.0
+        slopeFactor = 5.0
         buttonHeight = 28.0
-        fontSize = 14.0
+        fontSize = 12.0
         textY = (buttonHeight / 2.0) + 1.0
         isSelected patchR = maybe false (_ == patchR) state.selected
+
         computeOffset (prevOffset /\ items) (id /\ name) =
             let
                 width = (Int.toNumber (String.length name) * symWidth + 2.0)
                 nextOffset = prevOffset + width + buttonPadding
             in
                 nextOffset /\ Array.snoc items { name, id, offset : prevOffset, width }
+
         buttonsOffset /\ patchesWithDimensions = foldl computeOffset (barPadding /\ []) state.patches
+
         patchButton { offset, width, id, name } =
             HS.g
                 [ HSA.transform [ HSA.Translate offset barPadding ]
@@ -93,8 +96,8 @@ render state =
                 [ HS.path
                     [ HSA.d
                         [ HSA.m HSA.Abs 0.0 0.0
-                        , HSA.l HSA.Abs (width - buttonCorner) 0.0
-                        , HSA.l HSA.Abs width buttonCorner
+                        , HSA.l HSA.Abs (width - slopeFactor) 0.0
+                        , HSA.l HSA.Abs width slopeFactor
                         , HSA.l HSA.Abs width buttonHeight
                         , HSA.l HSA.Abs 0.0 buttonHeight
                         , HSA.z
@@ -113,6 +116,7 @@ render state =
                     ]
                     [ HH.text name ]
                 ]
+
         addPatchButton offset =
             HS.g
                 [ HSA.transform [ HSA.Translate offset barPadding ]
@@ -120,7 +124,7 @@ render state =
                 ]
                 [ HS.rect
                     [ HSA.x 0.0, HSA.y 0.0
-                    , HSA.rx buttonCorner, HSA.ry buttonCorner
+                    , HSA.rx slopeFactor, HSA.ry slopeFactor
                     , HSA.width 30.0, HSA.height buttonHeight
                     , HSA.fill $ Just $ P.hColorOf $ _.i800 Palette.base_
                     , HSA.stroke $ Just $ P.hColorOf $ _.i100 Palette.blue
