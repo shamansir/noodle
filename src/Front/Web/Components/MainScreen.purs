@@ -24,28 +24,41 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
 
-import Noodle.Id (PatchR) as Id
+import Noodle.Id (PatchR, FamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
-import Noodle.Network (addPatch, patches) as Network
+import Noodle.Network (toolkit, addPatch, patches) as Network
 import Noodle.Patch (make, id, name) as Patch
 
 import Web.State (State)
 import Web.State (empty, spawnPatch, registerPatch, lastPatchIndex) as CState
 import Web.Components.PatchesBar as PatchesBar
+import Web.Components.Library as Library
 
-type Slots = ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit )
+type Slots =
+    ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
+    , library :: forall q. H.Slot q Library.Output Unit
+    )
 
 _patchesBar = Proxy :: _ "patchesBar"
+_library = Proxy :: _ "library"
 
 data Action
     = Initialize
     | SelectPatch Id.PatchR
     | CreatePatch
+    | SpawnNode Id.FamilyR
     | FromPatchesBar PatchesBar.Output
+    | FromLibrary Library.Output
 
 
-component :: forall query input output ps tk fs sr cr mi m. MonadEffect m => ps -> Toolkit tk fs sr cr mi -> H.Component query input output m
+component
+    :: forall query input output ps tk fs sr cr mi m
+     . MonadEffect m
+    => Toolkit.HoldsFamilies sr cr mi fs
+    => ps
+    -> Toolkit tk fs sr cr mi
+    -> H.Component query input output m
 component pstate toolkit =
     H.mkComponent
         { initialState : initialState pstate toolkit
@@ -61,7 +74,11 @@ initialState :: forall input tk ps fs sr cr mi. ps -> Toolkit tk fs sr cr mi -> 
 initialState pstate toolkit _ = CState.empty pstate toolkit
 
 
-render :: forall tk ps fs sr cr mi m. State _ tk ps fs sr cr mi -> H.ComponentHTML Action Slots m
+render
+    :: forall tk ps fs sr cr mi m
+     . Toolkit.HoldsFamilies sr cr mi fs
+    => State _ tk ps fs sr cr mi
+    -> H.ComponentHTML Action Slots m
 render state =
     HH.div_
         [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
@@ -77,6 +94,9 @@ render state =
                     , selected : _.id <$> state.currentPatch
                     }
                     FromPatchesBar
+                , HH.slot _library unit Library.component
+                    { families : Toolkit.families $ Network.toolkit state.network }
+                    FromLibrary
                 ]
             ]
         ]
@@ -95,7 +115,11 @@ handleAction pstate = case _ of
     SelectPatch patchR -> do
         state <- State.get
         H.modify_ _ { currentPatch = Just { id : patchR, index : CState.lastPatchIndex state + 1 } }
+    SpawnNode familyR -> do
+        pure unit -- TODO
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
         handleAction pstate $ CreatePatch
+    FromLibrary (Library.SelectFamily familyR) -> do
+        handleAction pstate $ SpawnNode familyR

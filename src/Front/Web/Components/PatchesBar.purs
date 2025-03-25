@@ -2,38 +2,21 @@ module Web.Components.PatchesBar where
 
 import Prelude
 
-import Effect.Class (class MonadEffect)
-
-import Data.Map (Map)
 import Data.Maybe (Maybe(..), maybe)
-import Data.Tuple (fst, snd) as Tuple
 import Data.Array (snoc) as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (length) as String
 import Data.Int (toNumber) as Int
-import Data.FunctorWithIndex (mapWithIndex)
 import Data.Foldable (foldl)
-import Data.FoldableWithIndex (foldlWithIndex)
-
-import Control.Monad.State (modify, put) as State
 
 import Halogen as H
-import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML as HH
-import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes.FontSize as HSA
-import Halogen.Svg.Attributes.Color as HC
+import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 
 import Noodle.Id (PatchR, PatchName) as Id
-import Noodle.Patch (Patch)
-import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (families, class HoldsFamilies) as Toolkit
-import Noodle.Network (addPatch) as Network
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -74,8 +57,10 @@ component =
             }
         }
 
+
 initialState :: Input -> State
 initialState { patches, selected } = { patches, selected }
+
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
@@ -89,7 +74,7 @@ render state =
         buttonPadding = 5.0
         symWidth = 10.5
         buttonCorner = 10.0
-        buttonHeight = 30.0
+        buttonHeight = 28.0
         fontSize = 14.0
         textY = (buttonHeight / 2.0) + 1.0
         isSelected patchR = maybe false (_ == patchR) state.selected
