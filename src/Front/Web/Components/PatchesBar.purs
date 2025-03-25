@@ -64,11 +64,11 @@ initialState { patches, selected } = { patches, selected }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-  HS.g
-    [ ]
-    $ Array.snoc
-        ( patchButton <$> patchesWithDimensions )
-        $ addPatchButton $ buttonsOffset + buttonPadding
+    HS.g
+        [ ]
+        $ Array.snoc
+            ( patchButton <$> patchesWithDimensions )
+            $ addPatchButton $ buttonsOffset + buttonPadding
     where
         barPadding = 7.0
         buttonPadding = 5.0

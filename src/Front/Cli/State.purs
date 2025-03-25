@@ -220,7 +220,7 @@ currentPatch s = s.currentPatch <#> _.id >>= flip patch s
 
 
 currentPatchId :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe Id.PatchR
-currentPatchId s = currentPatch s <#> Patch.id
+currentPatchId s = s.currentPatch <#> _.id
 
 
 currentPatchState :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Maybe ps)

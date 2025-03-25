@@ -8,14 +8,15 @@ import Data.Maybe (Maybe(..))
 
 import Data.Map (Map)
 import Data.Map (empty, insert) as Map
+import Data.Traversable (traverse)
 
 import Noodle.Id (PatchR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, make) as Patch
+import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
-import Noodle.Network (init, patchesCount, addPatch) as Network
+import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
 
 type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
@@ -50,7 +51,7 @@ registerPatch newPatch s =
         nextNW = s.network # Network.addPatch newPatch
     in
         s
-            { currentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch }
+            { currentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch } -- FIXME: make patch current in a separate function
             , patchIdToIndex = s.patchIdToIndex # Map.insert (Patch.id newPatch) nextPatchIndex
             , network = nextNW
             }
@@ -58,3 +59,29 @@ registerPatch newPatch s =
 
 lastPatchIndex :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Int
 lastPatchIndex s = Network.patchesCount s.network
+
+
+patch :: forall loc tk ps fs sr cr m. Id.PatchR -> State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+patch patchR = _.network >>> Network.patch patchR
+
+
+currentPatch :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+currentPatch s = s.currentPatch <#> _.id >>= flip patch s
+
+
+currentPatchId :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe Id.PatchR
+currentPatchId s = s.currentPatch <#> _.id
+
+
+currentPatchState :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Maybe ps)
+currentPatchState = traverse Patch.getState <<< currentPatch
+
+
+withPatch :: forall loc tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
+
+
+withCurrentPatch :: forall loc tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+withCurrentPatch f s = case s.currentPatch <#> _.id of
+    Just curPatchR -> withPatch curPatchR f s
+    Nothing -> s

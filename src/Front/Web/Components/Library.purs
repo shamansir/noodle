@@ -62,10 +62,9 @@ initialState { families } = { families }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-  HS.g
-    [ HSA.transform [ HSA.Translate 5.0 patchesBarHeight ] ]
-    $ background
-    : [ familyButtonsGroup ]
+    HS.g
+        [ HSA.transform [ HSA.Translate 5.0 patchesBarHeight ] ]
+        [ backdrop, familyButtonsGroup ]
     where
 
         width = 110.0
@@ -82,7 +81,7 @@ render state =
                 [ HSA.transform [ HSA.Translate 5.0 $ headerHeight + slopeFactor * 2.0 ] ]
                 $ mapWithIndex familyButton state.families
 
-        background =
+        backdrop =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
                 [ HS.path
@@ -158,11 +157,13 @@ render state =
 
         familyButton idx familyR =
             HS.g
-                [ ]
+                [
+                ]
                 [ HS.text
                     [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.blue
                     , HSA.y $ Int.toNumber idx * 20.0
                     , HSA.dominant_baseline HSA.Hanging
+                    , HE.onClick $ const $ RaiseSelectFamily familyR
                     ]
                     [ HH.text $ Id.family familyR
                     ]
