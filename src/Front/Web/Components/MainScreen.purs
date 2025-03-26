@@ -32,13 +32,21 @@ import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, setState) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
+import Noodle.Ui.Palette.Item as P
+import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+import Web.Bounds (getPosition) as Bounds
 import Web.State (State)
-import Web.State (init, spawnPatch, registerPatch, lastPatchIndex, currentPatch, currentPatchState, withCurrentPatch) as CState
+import Web.State
+    ( init
+    , spawnPatch, registerPatch, lastPatchIndex, currentPatch, currentPatchState, withCurrentPatch
+    , defaultPosition, findBounds, storeBounds
+    ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.NodeBox as NodeBox
 import Web.Class.WebRenderer (class WebLocator, ConstantShift)
+import Web.Class.WebRenderer (locateNext) as Web
 
 
 type Slots =
@@ -103,8 +111,7 @@ render state =
                 (
                     [ HS.rect
                         [ HSA.width 1000.0, HSA.height 1000.0
-                        , HSA.fill $ Just $ HC.RGB 16 15 15
-                        , HSA.stroke $ Just $ HC.RGB 100 100 100
+                        , HSA.fill $ Just $ P.hColorOf $ Palette.black
                         ]
                     , HH.slot _patchesBar unit PatchesBar.component
                         { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
@@ -114,28 +121,35 @@ render state =
                     , HH.slot _library unit Library.component
                         { families : Toolkit.families $ Network.toolkit state.network }
                         FromLibrary
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate (Library.width + 20.0) (PatchesBar.height + 15.0) ] ]
+                        nodeBoxesSlots
                     ]
-                    <> nodeBoxesSlots
                 )
             ]
         ]
     where
         nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes nodeBoxSlot) # fromMaybe []
         nodeBoxSlot rawNode =
-            HH.slot _nodeBox (RawNode.id rawNode) NodeBox.component
-                { node : rawNode }
-                $ FromNodeBox
-                $ RawNode.id rawNode
+            let
+                nodeR = RawNode.id rawNode
+                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> CState.findBounds nodeR state
+            in HH.slot _nodeBox nodeR NodeBox.component
+                { node : rawNode
+                , position : position
+                }
+                $ FromNodeBox nodeR
 
 
 handleAction
-    :: forall output tk ps fs sr cr mi m
+    :: forall output loc tk ps fs sr cr mi m
      . MonadEffect m
+    => WebLocator loc
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
     => ps
     -> Action
-    -> H.HalogenM (State _ tk ps fs sr cr mi) Action Slots output m Unit
+    -> H.HalogenM (State loc tk ps fs sr cr mi) Action Slots output m Unit
 handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
@@ -155,12 +169,21 @@ handleAction pstate = case _ of
         (mbRawNode :: Maybe (Raw.Node sr cr mi)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
         case mbRawNode of
             Just rawNode -> do
+                let
+                    nodeR = RawNode.id rawNode
+                    nodeRect = { width : 300.0, height : 70.0 }
+                    nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
                 (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
                 let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
                 case mbNodeState of
                     Just nextState -> rawNode # RawNode.setState nextState
                     Nothing -> pure unit
                 H.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+                H.modify_ _ { lastLocation = nextLoc }
+                H.modify_ $ CState.storeBounds nodeR
+                    { left : nodePos.left, top : nodePos.top
+                    , width : nodeRect.width, height : nodeRect.height
+                    }
                 pure unit
             Nothing -> pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do

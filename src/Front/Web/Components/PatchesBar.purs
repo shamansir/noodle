@@ -62,6 +62,9 @@ initialState :: Input -> State
 initialState { patches, selected } = { patches, selected }
 
 
+height = 25.0 :: Number
+
+
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
     HS.g
@@ -74,7 +77,7 @@ render state =
         buttonPadding = 5.0
         symWidth = 10.5
         slopeFactor = 5.0
-        buttonHeight = 25.0
+        buttonHeight = height
         fontSize = 12.0
         textY = (buttonHeight / 2.0) + 1.0
         isSelected patchR = maybe false (_ == patchR) state.selected

@@ -7,7 +7,7 @@ import Effect.Class (class MonadEffect)
 import Data.Maybe (Maybe(..))
 
 import Data.Map (Map)
-import Data.Map (empty, insert) as Map
+import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
 
 import Noodle.Id (PatchR, NodeR) as Id
@@ -93,3 +93,17 @@ withCurrentPatch :: forall loc tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch p
 withCurrentPatch f s = case s.currentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s
+
+
+defaultPosition = { left : 0.0, top : 0.0 }
+
+
+findBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe Bounds
+findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
+
+
+storeBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> Bounds -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+storeBounds nodeR bounds s = s { nodesBounds = s.nodesBounds # Map.insert nodeR bounds }
+
+
+-- storeBounds =

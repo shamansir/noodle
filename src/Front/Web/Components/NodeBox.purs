@@ -32,11 +32,13 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 
 type Input sterpr chrepr m =
     { node :: Raw.Node sterpr chrepr m
+    , position :: { left :: Number, top :: Number }
     }
 
 
 type State sterpr chrepr m =
     { node :: Raw.Node sterpr chrepr m
+    , position :: { left :: Number, top :: Number }
     }
 
 
@@ -62,13 +64,13 @@ component =
 
 
 initialState :: forall sterpr chrepr mi. Input sterpr chrepr mi -> State sterpr chrepr mi
-initialState { node } = { node }
+initialState { node, position } = { node, position }
 
 
 render :: forall m sterpr chrepr mi. State sterpr chrepr mi -> H.ComponentHTML (Action sterpr chrepr mi) () m
-render { node } =
+render { node, position } =
     HS.g
-        [ HSA.transform [ HSA.Translate 200.0 80.0 ] ]
+        [ HSA.transform [ HSA.Translate position.left position.top ] ]
         (
             HS.path
                 [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]

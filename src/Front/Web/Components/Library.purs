@@ -60,6 +60,10 @@ initialState :: Input -> State
 initialState { families } = { families }
 
 
+width = 110.0 :: Number
+height = 900.0 :: Number
+
+
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
     HS.g
@@ -67,8 +71,6 @@ render state =
         [ backdrop, familyButtonsGroup ]
     where
 
-        width = 110.0
-        height = 900.0
         slopeFactor = 5.0
         patchesBarHeight = 45.0
         headerHeight = 20.0

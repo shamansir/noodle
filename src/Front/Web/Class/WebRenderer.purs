@@ -46,7 +46,7 @@ instance WebLocator ConstantShift where
         let
             nextPos =
                 { left : 16.0 + left + 2.0
-                , top : top + 2.0
+                , top : top + 30.0
                 }
         in NextAfter nextPos /\ nextPos
     locateNext First _ = NextAfter { left : 16.0, top : 0.0 } /\ { left : 16.0, top : 0.0 }
