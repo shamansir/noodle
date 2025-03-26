@@ -254,12 +254,7 @@ _component
             }
 
     State.modify_ (\s -> s
-        { lastShift = -- FIXME: should record last location
-            { left : s.lastShift.left + 1
-            , top : s.lastShift.top + 1
-            }
-        , nodeKeysMap = Map.insert nodeR keys.nodeBox s.nodeKeysMap
-        , locations   = Map.insert nodeR location s.locations
+        { nodeKeysMap = Map.insert nodeR keys.nodeBox s.nodeKeysMap
         , lastKeys = keys
         }
     )
@@ -402,53 +397,13 @@ updateCodeFor stateRef family update = do
     pure unit
 
 
-{- REM
-logUpdateToConsole :: forall tk fs pstate fstate strepr chrepr m
-     . MonadEffect m
-    => Show fstate
-    => Show chrepr
-    => Raw.NodeChanges fstate chrepr
-    -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
-logUpdateToConsole updates =
-    CC.log $ show updates
--}
-
-
-
-{- REM
-logDataCommand
-    :: forall tk fs pstate fstate strepr chrepr m
-     . MonadEffect m
-    => Ref (State loc tk pstate fs strepr chrepr m)
-    -> Raw.NodeChanges fstate chrepr
-    -> m Unit
-logDataCommand stateRef update =
-    case update.focus of
-        InletUpdate inletR ->
-            case Map.lookup inletR $ Map.mapKeys Tuple.snd update.inlets of
-                Just wrapRepr -> do
-                    -- REM flip logNdfCommandByRef stateRef $ Cmd.Send (Cmd.nodeId $ reflect' nodeId) (Cmd.inletAlias $ reflect' inlet) $ Cmd.encodedValue $ encode wrapRepr
-                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
-                    pure unit
-                Nothing -> pure unit
-        OutletUpdate outletR ->
-            case Map.lookup outletR $ Map.mapKeys Tuple.snd update.outlets of
-                Just wrapRepr -> do
-                    -- REM flip logNdfCommandByRef stateRef $ Cmd.SendO (Cmd.nodeId $ reflect' nodeId) (Cmd.outletAlias $ reflect' outlet) $ Cmd.encodedValue $ encode wrapRepr
-                    -- REM liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh -- FIXME: use `Blessed.impairN`
-                    pure unit
-                Nothing -> pure unit
-        _ -> pure unit
--}
-
-
 onMove :: forall loc tk ps fs sr cr m. Id.NodeR -> NodeBoxKey -> NodeBoxKey -> EventJson -> BlessedOp (State loc tk ps fs sr cr m) Effect
 onMove nodeR nodeKey _ _ = do
     II.hide
     OI.hide
     -- let rawNk = NodeKey.toRaw nodeKey
     newBounds <- Bounds.collect nodeR nodeKey
-    state <- State.modify \s -> s { locations = Map.update (updatePos newBounds) nodeR s.locations }
+    state <- State.modify \s -> s { nodesBounds = Map.update (updatePos newBounds) nodeR s.nodesBounds }
     Blessed.runOnUnit $ do
         traverse_ CLink.update $ Map.filter (CLink.of_ >>> Id.connectedTo nodeR) state.links
         -- for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) CLink.update

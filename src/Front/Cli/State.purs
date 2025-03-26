@@ -76,7 +76,6 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
     , wsServer :: Maybe { server :: WSS.WebSocketServer, connection :: Array WSS.WebSocketConnection }
     , lastUpdate :: Map Id.NodeR (Raw.NodeChanges sr cr)
-    , lastShift :: { left :: Int, top :: Int }
     , lastClickedOutlet :: Maybe OutletInfo
     , lastLink :: Maybe (LinkCmpState Unit) -- it is needed for the next Blessed keys for link
     , links :: Map Id.LinkR (LinkCmpState Unit) -- links should have unique IDs across patches so we don't risk anything, arent't we?
@@ -94,7 +93,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , inletEditorCreated :: Map Shape.ValueTag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , lastLocation :: loc
-    , locations :: Map Id.NodeR Bounds
+    , nodesBounds :: Map Id.NodeR Bounds
     , mouseOverFocus :: Maybe Focus
     , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
     }
@@ -135,7 +134,6 @@ init state toolkit = do
         , initPatchesFrom : state
         , wsServer : Nothing
         , lastUpdate : Map.empty
-        , lastShift : { left : 0, top : 0 }
         , lastKeys :
             { nodeBox : Key.nodeBox
             , inletsBox : Key.inletsBox
@@ -165,7 +163,7 @@ init state toolkit = do
         -- , knownGlslFunctions : Glsl.knownFns
         -- , linkWasMadeHack : false
         , lastLocation : firstLocation
-        , locations : Map.empty
+        , nodesBounds : Map.empty
         , mouseOverFocus : Nothing
         , ndfInstances : Map.empty
         }

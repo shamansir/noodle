@@ -20,6 +20,7 @@ import HydraTk.Patch (init) as Hydra.Patch
 
 import Web.Components.MainScreen (component) as MainScreen
 
+
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody

@@ -10,7 +10,7 @@ import Data.Map (Map)
 import Data.Map (empty, insert) as Map
 import Data.Traversable (traverse)
 
-import Noodle.Id (PatchR) as Id
+import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
@@ -18,22 +18,30 @@ import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
+import Web.Class.WebRenderer (class WebLocator, firstLocation)
+import Web.Bounds (Bounds)
+
 
 type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { network :: Network tk ps fs sr cr m
     , initPatchesFrom :: ps
     , patchIdToIndex :: Map Id.PatchR Int
+    , lastLocation :: loc
     , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
+    , nodesBounds :: Map Id.NodeR Bounds
     }
 
 
-empty :: forall loc tk ps fs sr cr m. ps -> Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
-empty fromState toolkit =
+init :: forall loc tk ps fs sr cr m. WebLocator loc => ps -> Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
+init patchState toolkit =
     { network : Network.init toolkit
-    , initPatchesFrom : fromState
+    , initPatchesFrom : patchState
     , patchIdToIndex : Map.empty
     , currentPatch : Nothing
+    , lastLocation : firstLocation
+    , nodesBounds : Map.empty
     }
+
 
 spawnPatch :: forall loc tk ps fs sr cr mp m. MonadEffect m => State loc tk ps fs sr cr mp -> m (Patch ps fs sr cr mp)
 spawnPatch s = do

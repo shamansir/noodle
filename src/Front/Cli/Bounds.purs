@@ -53,28 +53,6 @@ collect _ node = do
     pure { top, left, width, height }
 
 
-{- REM
-loadOrCollect
-    :: forall subj key mo tk s fs r mi
-    .  K.Extends K.Element subj
-    => K.IsSubject subj
-    -- => MonadEffect m
-    => IsSymbol key
-    => MonadThrow Error mo
-    => Id.NodeR
-    -> NodeKey subj key
-    -> BlessedOpGet (State loc tk s fs r mi) mo NodeBounds
-loadOrCollect nodeId nodeKey = do
-    locations <- _.locations <$> State.get
-    -- liftEffect $ Console.log $ ( show $ Map.lookup nodeId locations )
-    case Map.lookup nodeId locations of
-        Just nodeBounds -> pure nodeBounds
-        Nothing -> collect nodeId nodeKey
-            -- FIXME: pure { top : 0, left : 0, width : 0, height : 0 },
-            -- since we update bounds every time in the state, there's no need to collect them
--}
-
-
 outletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
 outletPos n outletIdx =
     -- { x : n.left + 1 + (outletIdx * 4)

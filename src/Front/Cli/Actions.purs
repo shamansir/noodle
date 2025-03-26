@@ -228,7 +228,7 @@ tryCallingInletEditor nodeBoxKey rawNode inletR inletIdx mbValueEditorOp = do
                 State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
                 CC.log "Send current value in the editor"
                 _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
-                nodeBounds <- case Map.lookup nodeR state.locations of
+                nodeBounds <- case Map.lookup nodeR state.nodesBounds of
                                 Just bounds -> pure bounds
                                 Nothing -> Bounds.collect nodeR nodeBoxKey
                 let inletPos = Bounds.inletPos nodeBounds inletIdx

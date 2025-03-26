@@ -238,53 +238,53 @@ onPress
     -> _
     -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 onPress mbValueEditorOp familyR patchR nodeBoxKey inletIndex rawNode inletR _ _ = do
-        state <- State.get
-        -- FIXME: load current patch from the state
-        case state.lastClickedOutlet /\ CState.patch patchR state of
-            Just lco /\ Just curPatch ->
-                if nodeBoxKey /= lco.nodeKey then do
+    state <- State.get
+    -- FIXME: load current patch from the state
+    case state.lastClickedOutlet /\ CState.patch patchR state of
+        Just lco /\ Just curPatch ->
+            if nodeBoxKey /= lco.nodeKey then do
 
-                    -- CC.log "inlet press"
-                    OI.hide
+                -- CC.log "inlet press"
+                OI.hide
 
-                    let
-                        (mbPrevLink :: Maybe (LinkCmpState Unit)) =
-                            -- CLink.findTo (RawNode.id rawNode) inletR state.links
-                            Patch.linksMap curPatch
-                                # Links.findTo (RawNode.id rawNode) inletR
-                                # Array.head
-                                >>= \link -> Map.lookup (RawLink.id link) state.links
-                        outletSrcR = lco.outletId
-                        nodeSrcR = lco.nodeId
-                        nodeSrcBoxKey = lco.nodeKey
-                        outletIndex = lco.index
-                        inletTrgR = inletR
-                        nodeTrgR = RawNode.id rawNode
-                        nodeTrgBoxKey = nodeBoxKey
+                let
+                    (mbPrevLink :: Maybe (LinkCmpState Unit)) =
+                        -- CLink.findTo (RawNode.id rawNode) inletR state.links
+                        Patch.linksMap curPatch
+                            # Links.findTo (RawNode.id rawNode) inletR
+                            # Array.head
+                            >>= \link -> Map.lookup (RawLink.id link) state.links
+                    outletSrcR = lco.outletId
+                    nodeSrcR = lco.nodeId
+                    nodeSrcBoxKey = lco.nodeKey
+                    outletIndex = lco.index
+                    inletTrgR = inletR
+                    nodeTrgR = RawNode.id rawNode
+                    nodeTrgBoxKey = nodeBoxKey
 
-                    nextPatch /\ isDisconnected <- Actions.disconnectLastAtInlet Actions.Track rawNode inletR curPatch
+                nextPatch /\ isDisconnected <- Actions.disconnectLastAtInlet Actions.Track rawNode inletR curPatch
 
-                    case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of -- FIXME: we already have target node here, no need to search for it
-                        Just rawNodeSrc /\ Just rawNodeTrg -> do
-                            -- CC.log "both nodes were found"
+                case Patch.findRawNode nodeSrcR nextPatch /\ Patch.findRawNode nodeTrgR nextPatch of -- FIXME: we already have target node here, no need to search for it
+                    Just rawNodeSrc /\ Just rawNodeTrg -> do
+                        -- CC.log "both nodes were found"
 
-                            Actions.connect
-                                Actions.Track
-                                { key : nodeSrcBoxKey, node : rawNodeSrc, outlet : outletSrcR, outletIndex }
-                                { key : nodeTrgBoxKey, node : rawNodeTrg, inlet  : inletTrgR,  inletIndex  }
-                                nextPatch
+                        Actions.connect
+                            Actions.Track
+                            { key : nodeSrcBoxKey, node : rawNodeSrc, outlet : outletSrcR, outletIndex }
+                            { key : nodeTrgBoxKey, node : rawNodeTrg, inlet  : inletTrgR,  inletIndex  }
+                            nextPatch
 
-                        _ -> pure unit
+                    _ -> pure unit
 
-                    pure unit
-                else pure unit
-            _ -> do
-                Actions.tryCallingInletEditor nodeBoxKey rawNode inletR inletIndex mbValueEditorOp
+                pure unit
+            else pure unit
+        _ -> do
+            Actions.tryCallingInletEditor nodeBoxKey rawNode inletR inletIndex mbValueEditorOp
 
-        State.modify_
-            (_ { lastClickedOutlet = Nothing })
+    State.modify_
+        (_ { lastClickedOutlet = Nothing })
 
-        Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
+    Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
 
 
 -- onLinkClick :: forall id tk pstate fs strepr chrepr mi mo. Wiring mo => Id.PatchR -> Raw.Link -> LinkCmpState Unit -> Line <^> id → {- EventJson → -} BlessedOp (State _ tk pstate fs strepr chrepr mi) mo

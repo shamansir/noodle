@@ -74,7 +74,7 @@ render state =
         buttonPadding = 5.0
         symWidth = 10.5
         slopeFactor = 5.0
-        buttonHeight = 28.0
+        buttonHeight = 25.0
         fontSize = 12.0
         textY = (buttonHeight / 2.0) + 1.0
         isSelected patchR = maybe false (_ == patchR) state.selected

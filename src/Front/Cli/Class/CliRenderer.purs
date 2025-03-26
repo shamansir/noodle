@@ -26,7 +26,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Components.ValueEditor (ValueEditor)
 
 
-class CliLocator :: Type -> Constraint -- Monoid?
+class CliLocator :: Type -> Constraint
 class CliLocator x where
     firstLocation :: x
     locateNext :: x -> { width :: Int, height :: Int } -> x /\ { left :: Int, top :: Int }
