@@ -70,10 +70,43 @@ render { node } =
     HS.g
         [ HSA.transform [ HSA.Translate 200.0 80.0 ] ]
         (
-            HS.text
+            HS.path
+                [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]
+                , HSA.d
+                    [ HSA.m HSA.Abs titleBarWidth channelBarHeight
+                    , HSA.l HSA.Abs 0.0 $ channelBarHeight + slopeFactor
+                    , HSA.l HSA.Abs 0.0 $ titleY - slopeFactor
+                    , HSA.l HSA.Abs titleBarWidth titleY
+                    , HSA.z
+                    ]
+                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.yellow
+                , HSA.stroke $ Just $ P.hColorOf $ _.i100 Palette.yellow
+                , HSA.strokeWidth 1.5
+                ]
+            : HS.path
+                [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
+                , HSA.d
+                    [ HSA.m HSA.Abs 0.0 (slopeFactor * 2.0)
+                    , HSA.l HSA.Abs slopeFactor slopeFactor
+                    , HSA.l HSA.Abs (nodeWidth * 0.7) slopeFactor
+                    , HSA.l HSA.Abs (nodeWidth * 0.7 + slopeFactor) 0.0
+                    , HSA.l HSA.Abs (nodeWidth - slopeFactor) 0.0
+                    , HSA.l HSA.Abs nodeWidth slopeFactor
+                    , HSA.l HSA.Abs nodeWidth (bodyHeight - slopeFactor)
+                    , HSA.l HSA.Abs (nodeWidth - slopeFactor) bodyHeight
+                    , HSA.l HSA.Abs slopeFactor bodyHeight
+                    , HSA.l HSA.Abs 0.0 (bodyHeight - slopeFactor)
+                    , HSA.z
+                    ]
+                , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
+                ]
+            : HS.text
                 [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.yellow
+                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px titleFontSize
+                , HSA.dominant_baseline HSA.Hanging
                 , HSA.transform
                     [ HSA.Translate 0.0 titleY
+                    , HSA.Translate 0.0 (-slopeFactor - 2.0)
                     , HSA.Rotate 270.0 0.0 0.0
                     ]
                 ]
@@ -91,12 +124,14 @@ render { node } =
         channelBarHeight = 15.0
         channelBarWidth = nodeWidth - titleWidth
         bodyHeight = 70.0
-        titleWidth = 10.0
+        titleWidth = 20.0
+        titleBarWidth = titleWidth - slopeFactor
         channelFontSize = 9.0
+        titleFontSize = 11.0
         connectorRadius = 5.0
         maxChannelsCount = max inletsCount outletsCount
         nodeWidth = titleWidth + (channelStep * Int.toNumber maxChannelsCount)
-        titleY = channelBarHeight + bodyHeight - (slopeFactor * 2.0)
+        titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
         -- fullHeight = channelBarHeight + bodyHeight + channelBarHeight
         slopeFactor = 5.0
