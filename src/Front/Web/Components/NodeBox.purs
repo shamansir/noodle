@@ -23,22 +23,23 @@ import Halogen.Svg.Elements as HS
 
 import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, shape) as RawNode
+import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
 
-type Input sterpr chrepr m =
-    { node :: Raw.Node sterpr chrepr m
+type Input strepr chrepr m =
+    { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
     }
 
 
-type State sterpr chrepr m =
-    { node :: Raw.Node sterpr chrepr m
+type State strepr chrepr m =
+    { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
+    , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
     }
 
 
@@ -51,20 +52,25 @@ data Output
     = Output
 
 
-component :: forall query m sterpr chrepr mi. H.Component query (Input sterpr chrepr mi) Output m
+data Query strepr chrepr a
+    = QueryUpdate (RawNode.NodeChanges strepr chrepr) a
+
+
+component :: forall m strepr chrepr mi. H.Component (Query strepr chrepr) (Input strepr chrepr mi) Output m
 component =
     H.mkComponent
         { initialState
         , render
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
+            , handleQuery = handleQuery
             , receive = Just <<< Receive
             }
         }
 
 
 initialState :: forall sterpr chrepr mi. Input sterpr chrepr mi -> State sterpr chrepr mi
-initialState { node, position } = { node, position }
+initialState { node, position } = { node, position, latestUpdate : Nothing }
 
 
 render :: forall m sterpr chrepr mi. State sterpr chrepr mi -> H.ComponentHTML (Action sterpr chrepr mi) () m
@@ -231,3 +237,10 @@ handleAction = case _ of
         H.modify_ _
             { node = input.node
             }
+
+
+handleQuery :: forall action output sterpr chrepr mi m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr mi) action () output m (Maybe a)
+handleQuery = case _ of
+    QueryUpdate changes a -> do
+        H.modify_ _ { latestUpdate = Just changes }
+        pure $ Just a

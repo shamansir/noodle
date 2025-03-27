@@ -4,12 +4,13 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
-import Debug as Debug
-
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, put, modify, modify_) as State
+
+import Signal (Signal, (~>))
+import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
@@ -26,6 +27,7 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
+import Halogen.Subscription as HSS
 
 import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -33,7 +35,7 @@ import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spaw
 import Noodle.Network (toolkit, addPatch, patches) as Network
 import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, setState) as RawNode
+import Noodle.Raw.Node (NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -52,10 +54,10 @@ import Web.Class.WebRenderer (class WebLocator, ConstantShift)
 import Web.Class.WebRenderer (locateNext) as Web
 
 
-type Slots =
+type Slots sr cr =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output Unit
-    , nodeBox :: forall q. H.Slot q NodeBox.Output Id.NodeR
+    , nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
     )
 
 
@@ -67,11 +69,12 @@ _nodeBox = Proxy :: _ "nodeBox"
 type Locator = ConstantShift -- TODO: move to some root App config?
 
 
-data Action
+data Action sr cr
     = Initialize
     | SelectPatch Id.PatchR
     | CreatePatch
     | SpawnNode Id.FamilyR
+    | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromNodeBox Id.NodeR NodeBox.Output
@@ -105,7 +108,7 @@ render
     :: forall tk ps fs sr cr mi m
      . Toolkit.HoldsFamilies sr cr mi fs
     => State _ tk ps fs sr cr mi
-    -> H.ComponentHTML Action Slots m
+    -> H.ComponentHTML (Action sr cr) (Slots sr cr) m
 render state =
     HH.div_
         [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
@@ -135,8 +138,8 @@ render state =
         nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes nodeBoxSlot) # fromMaybe []
         nodeBoxSlot rawNode =
             let
-                nodeR = Debug.spy "nodeR" $ RawNode.id rawNode
-                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> Debug.spy "find-bounds" (CState.findBounds nodeR state)
+                nodeR = RawNode.id rawNode
+                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> CState.findBounds nodeR state
             in HH.slot _nodeBox nodeR NodeBox.component
                 { node : rawNode
                 , position : position
@@ -151,8 +154,8 @@ handleAction
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
     => ps
-    -> Action
-    -> H.HalogenM (State loc tk ps fs sr cr mi) Action Slots output m Unit
+    -> Action sr cr
+    -> H.HalogenM (State loc tk ps fs sr cr mi) (Action sr cr) (Slots sr cr) output m Unit
 handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
@@ -172,15 +175,23 @@ handleAction pstate = case _ of
         case mbRawNode of
             Just rawNode -> do
                 let
-                    nodeR = Debug.spy "nodeR" $ RawNode.id rawNode
-                    _ = Debug.spy "last-loc" $ state.lastLocation
+                    nodeR = RawNode.id rawNode
                     nodeRect = { width : 300.0, height : 70.0 }
-                    nextLoc /\ nodePos = Debug.spy "locate-next" $ Web.locateNext state.lastLocation nodeRect
+                    nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
                 (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
                 let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
                 case mbNodeState of
                     Just nextState -> rawNode # RawNode.setState nextState
                     Nothing -> pure unit
+
+                _ <- H.subscribe =<< do
+                    { emitter, listener } <- H.liftEffect HSS.create
+                    H.liftEffect
+                        $  Signal.runSignal
+                        $  RawNode.subscribeChanges rawNode
+                        ~> PassUpdate nodeR
+                        ~> HSS.notify listener
+                    pure emitter
                 H.modify_
                     $   (CState.withCurrentPatch $ Patch.registerRawNode rawNode)
                     >>> CState.storeBounds nodeR
@@ -197,4 +208,6 @@ handleAction pstate = case _ of
     FromLibrary (Library.SelectFamily familyR) -> do
         handleAction pstate $ SpawnNode familyR
     FromNodeBox nodeR NodeBox.Output ->
+        pure unit
+    PassUpdate nodeR update ->
         pure unit
