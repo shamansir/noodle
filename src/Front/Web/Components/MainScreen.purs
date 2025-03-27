@@ -4,6 +4,8 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
+import Debug as Debug
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
@@ -12,6 +14,7 @@ import Control.Monad.State (get, put, modify, modify_) as State
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array (reverse) as Array
 
 import Halogen as H
 import Halogen.Aff as HA
@@ -123,7 +126,7 @@ render state =
                         FromLibrary
                     , HS.g
                         [ HSA.transform [ HSA.Translate (Library.width + 20.0) (PatchesBar.height + 15.0) ] ]
-                        nodeBoxesSlots
+                        $ Array.reverse nodeBoxesSlots
                     ]
                 )
             ]
@@ -132,8 +135,8 @@ render state =
         nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes nodeBoxSlot) # fromMaybe []
         nodeBoxSlot rawNode =
             let
-                nodeR = RawNode.id rawNode
-                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> CState.findBounds nodeR state
+                nodeR = Debug.spy "nodeR" $ RawNode.id rawNode
+                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> Debug.spy "find-bounds" (CState.findBounds nodeR state)
             in HH.slot _nodeBox nodeR NodeBox.component
                 { node : rawNode
                 , position : position
@@ -154,7 +157,6 @@ handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
         State.modify_ $ CState.registerPatch firstPatch
-        handleAction pstate $ SpawnNode $ Id.unsafeFamilyR "voronoi"
     CreatePatch -> do
         state <- State.get
         newPatch <- H.lift $ CState.spawnPatch state
@@ -170,20 +172,22 @@ handleAction pstate = case _ of
         case mbRawNode of
             Just rawNode -> do
                 let
-                    nodeR = RawNode.id rawNode
+                    nodeR = Debug.spy "nodeR" $ RawNode.id rawNode
+                    _ = Debug.spy "last-loc" $ state.lastLocation
                     nodeRect = { width : 300.0, height : 70.0 }
-                    nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
+                    nextLoc /\ nodePos = Debug.spy "locate-next" $ Web.locateNext state.lastLocation nodeRect
                 (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
                 let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
                 case mbNodeState of
                     Just nextState -> rawNode # RawNode.setState nextState
                     Nothing -> pure unit
-                H.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
-                H.modify_ _ { lastLocation = nextLoc }
-                H.modify_ $ CState.storeBounds nodeR
-                    { left : nodePos.left, top : nodePos.top
-                    , width : nodeRect.width, height : nodeRect.height
-                    }
+                H.modify_
+                    $   (CState.withCurrentPatch $ Patch.registerRawNode rawNode)
+                    >>> CState.storeBounds nodeR
+                            { left : nodePos.left, top : nodePos.top
+                            , width : nodeRect.width, height : nodeRect.height
+                            }
+                    >>> _ { lastLocation = nextLoc }
                 pure unit
             Nothing -> pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
