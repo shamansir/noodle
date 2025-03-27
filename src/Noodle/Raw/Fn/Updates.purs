@@ -2,6 +2,7 @@ module Noodle.Raw.Fn.Updates where
 
 import Prelude
 
+import Data.Maybe (Maybe)
 import Data.Map (Map)
 import Data.Map (toUnfoldable) as Map
 import Data.Bifunctor (lmap,bimap)

@@ -8,6 +8,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, put, modify, modify_) as State
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
@@ -29,14 +30,16 @@ import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
 
+import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, addPatch, patches) as Network
 import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (NodeChanges, id, setState, subscribeChanges) as RawNode
+import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
@@ -81,13 +84,14 @@ data Action sr cr
 
 
 component
-    :: forall query input output tk ps fs sr cr mi m
-     . MonadEffect m
-    => Toolkit.HoldsFamilies sr cr mi fs
+    :: forall query input output tk ps fs sr cr m
+     . Wiring m
+    => HasFallback cr
+    => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
     => ps
-    -> Toolkit tk fs sr cr mi
+    -> Toolkit tk fs sr cr m
     -> H.Component query input output m
 component pstate toolkit =
     H.mkComponent
@@ -100,14 +104,14 @@ component pstate toolkit =
         }
 
 
-initialState :: forall input tk ps fs sr cr mi. ps -> Toolkit tk fs sr cr mi -> input -> State Locator tk ps fs sr cr mi
+initialState :: forall input tk ps fs sr cr m. ps -> Toolkit tk fs sr cr m -> input -> State Locator tk ps fs sr cr m
 initialState pstate toolkit _ = CState.init pstate toolkit
 
 
 render
-    :: forall tk ps fs sr cr mi m
-     . Toolkit.HoldsFamilies sr cr mi fs
-    => State _ tk ps fs sr cr mi
+    :: forall tk ps fs sr cr m
+     . Toolkit.HoldsFamilies sr cr m fs
+    => State _ tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr) m
 render state =
     HH.div_
@@ -148,14 +152,15 @@ render state =
 
 
 handleAction
-    :: forall output loc tk ps fs sr cr mi m
-     . MonadEffect m
+    :: forall output loc tk ps fs sr cr m
+     . Wiring m
     => WebLocator loc
     => Toolkit.FromPatchState tk ps sr
+    => HasFallback cr
     => ValueTagged cr
     => ps
     -> Action sr cr
-    -> H.HalogenM (State loc tk ps fs sr cr mi) (Action sr cr) (Slots sr cr) output m Unit
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr) (Slots sr cr) output m Unit
 handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
@@ -171,13 +176,14 @@ handleAction pstate = case _ of
     SpawnNode familyR -> do
         state <- State.get
         let toolkit = Network.toolkit state.network
-        (mbRawNode :: Maybe (Raw.Node sr cr mi)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
+        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
         case mbRawNode of
             Just rawNode -> do
                 let
                     nodeR = RawNode.id rawNode
                     nodeRect = { width : 300.0, height : 70.0 }
                     nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
+                H.lift $ RawNode._runOnInletUpdates rawNode
                 (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
                 let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
                 case mbNodeState of
@@ -199,7 +205,7 @@ handleAction pstate = case _ of
                             , width : nodeRect.width, height : nodeRect.height
                             }
                     >>> _ { lastLocation = nextLoc }
-                pure unit
+                H.lift $ RawNode.run rawNode
             Nothing -> pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
@@ -210,4 +216,4 @@ handleAction pstate = case _ of
     FromNodeBox nodeR NodeBox.Output ->
         pure unit
     PassUpdate nodeR update ->
-        pure unit
+        H.tell _nodeBox nodeR $ NodeBox.QueryUpdate update

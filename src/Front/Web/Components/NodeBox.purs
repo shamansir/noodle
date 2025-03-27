@@ -6,8 +6,11 @@ import Prelude
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
+import Data.Map (lookup) as Map
+import Data.Map.Extra (mapKeys) as MapX
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (length, toUpper) as String
 import Data.Int (toNumber) as Int
@@ -20,11 +23,13 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.Extra as HSX
 
 import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
+import Noodle.Repr.ValueInChannel (resolve) as ViC
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -56,7 +61,7 @@ data Query strepr chrepr a
     = QueryUpdate (RawNode.NodeChanges strepr chrepr) a
 
 
-component :: forall m strepr chrepr mi. H.Component (Query strepr chrepr) (Input strepr chrepr mi) Output m
+component :: forall strepr chrepr m. H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component =
     H.mkComponent
         { initialState
@@ -69,12 +74,12 @@ component =
         }
 
 
-initialState :: forall sterpr chrepr mi. Input sterpr chrepr mi -> State sterpr chrepr mi
+initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
 initialState { node, position } = { node, position, latestUpdate : Nothing }
 
 
-render :: forall m sterpr chrepr mi. State sterpr chrepr mi -> H.ComponentHTML (Action sterpr chrepr mi) () m
-render { node, position } =
+render :: forall m sterpr chrepr m. State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
+render { node, position, latestUpdate } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ] ]
         (
@@ -141,8 +146,16 @@ render { node, position } =
         nodeWidth = titleWidth + (channelStep * Int.toNumber maxChannelsCount)
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
+        valueOfInlet inletR = latestUpdate <#> _.inlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR
+        valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR
         -- fullHeight = channelBarHeight + bodyHeight + channelBarHeight
         slopeFactor = 5.0
+        renderValue = ViC.resolve
+            { accept : \v -> HS.text [] [ HH.text "VAL" ]
+            , decline : HSX.none
+            , empty : HSX.none
+            , missingKey : const HSX.none
+            }
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ] ]
@@ -158,6 +171,7 @@ render { node, position } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
+                , maybe HSX.none renderValue $ valueOfInlet inletDef.name
                 ]
         renderOulet idx outletDef =
             HS.g
@@ -175,6 +189,7 @@ render { node, position } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]
                     [ HH.text $ String.toUpper $ Id.outletRName outletDef.name ]
+                , maybe HSX.none renderValue $ valueOfOutlet outletDef.name
                 ]
         renderInlets =
             HS.g
@@ -230,7 +245,7 @@ render { node, position } =
 
 
 
-handleAction :: forall m sterpr chrepr mi. Action sterpr chrepr mi -> H.HalogenM (State sterpr chrepr mi) (Action sterpr chrepr mi) () Output m Unit
+handleAction :: forall sterpr chrepr m. Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive input ->
@@ -239,7 +254,7 @@ handleAction = case _ of
             }
 
 
-handleQuery :: forall action output sterpr chrepr mi m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr mi) action () output m (Maybe a)
+handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of
     QueryUpdate changes a -> do
         H.modify_ _ { latestUpdate = Just changes }
