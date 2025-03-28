@@ -5,10 +5,12 @@ import Prelude
 import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
+import Data.Bounded (class Bounded)
 
 import Data.Map (Map)
-import Data.Map (empty, insert, lookup) as Map
+import Data.Map (empty, insert, lookup, size) as Map
 import Data.Traversable (traverse)
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -25,11 +27,24 @@ import Web.Bounds (Bounds)
 type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { network :: Network tk ps fs sr cr m
     , initPatchesFrom :: ps
-    , patchIdToIndex :: Map Id.PatchR Int
+    , patchIdToIndex :: Map Id.PatchR PatchIndex
     , lastLocation :: loc
-    , currentPatch :: Maybe { index :: Int, id :: Id.PatchR }
-    , nodesBounds :: Map Id.NodeR Bounds
+    , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
+    , nodesBounds :: Map Id.NodeR (Bounds /\ ZIndex)
     }
+
+
+newtype PatchIndex = PatchIndex Int
+newtype ZIndex = ZIndex Int
+
+
+derive newtype instance Eq ZIndex
+derive newtype instance Ord ZIndex
+
+
+instance Bounded ZIndex where
+    top = ZIndex 1000
+    bottom = ZIndex 0
 
 
 init :: forall loc tk ps fs sr cr m. WebLocator loc => ps -> Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
@@ -55,7 +70,7 @@ registerPatch :: forall loc tk ps fs sr cr m. Patch ps fs sr cr m -> State loc t
 registerPatch newPatch s =
     let
         patchesCount = s.network # Network.patchesCount
-        nextPatchIndex = patchesCount + 1
+        nextPatchIndex = PatchIndex $ patchesCount + 1
         nextNW = s.network # Network.addPatch newPatch
     in
         s
@@ -65,8 +80,12 @@ registerPatch newPatch s =
             }
 
 
-lastPatchIndex :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Int
-lastPatchIndex s = Network.patchesCount s.network
+lastPatchIndex :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> PatchIndex
+lastPatchIndex s = PatchIndex $ Network.patchesCount s.network
+
+
+indexOfPatch :: forall loc tk ps fs sr cr m. Id.PatchR -> State loc tk ps fs sr cr m -> Maybe PatchIndex
+indexOfPatch patchR = _.patchIdToIndex >>> Map.lookup patchR
 
 
 patch :: forall loc tk ps fs sr cr m. Id.PatchR -> State loc tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
@@ -98,12 +117,17 @@ withCurrentPatch f s = case s.currentPatch <#> _.id of
 defaultPosition = { left : 0.0, top : 0.0 }
 
 
-findBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe Bounds
+findBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe (Bounds /\ ZIndex)
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
 
 
 storeBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> Bounds -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
-storeBounds nodeR bounds s = s { nodesBounds = s.nodesBounds # Map.insert nodeR bounds }
+storeBounds nodeR bounds s = s
+    { nodesBounds
+        = s.nodesBounds
+            # Map.insert nodeR
+                (bounds /\ (ZIndex $ Map.size s.nodesBounds))
+    }
 
 
 -- storeBounds =

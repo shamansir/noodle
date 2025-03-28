@@ -7,6 +7,7 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
+import Data.Functor.Extra ((<$$>))
 
 import Data.Text.Format as T
 
@@ -67,7 +68,7 @@ instance ToCode NDF opts CommandOp where
             Disconnect (NodeInstanceId fromNode) (OutletId eOutletId) (NodeInstanceId toNode) (InletId eInletId) -> ">< " <> fromNode <> " " <> eitherToCode eOutletId <> " " <> toNode <> " " <> eitherToCode eInletId
             Comment content -> "# " <> content
             Import path -> "i " <> path
-            Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> map Id.family <$> items) <> " |"
+            Order items -> "* " <> "| " <> (String.joinWith " | " $ String.joinWith " " <$> Id.family <$$> items) <> " |"
             Documentation familyR docLine -> "@ " <> show familyR <> " : " <> docLine
         where
             eitherToCode (Right index) = show index
@@ -91,7 +92,7 @@ instance ToTaggedCode NDF opts CommandOp where
             Disconnect (NodeInstanceId fromNode) eOutletId (NodeInstanceId toNode) eInletId -> F.operator "><" <> T.space <> F.nodeId fromNode <> T.space <> eOutletToCode eOutletId <> T.space <> F.nodeId toNode <> T.space <> eInletToCode eInletId
             Comment content -> T.mark (T.s "#") $ F.comment content
             Import path -> T.mark (F.operator "i") $ F.filePath path
-            Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> (map (Id.family >>> F.orderItem) <$> items)
+            Order items -> T.mark (F.operator "*") $ T.wrap (F.orderSplit "|") (F.orderSplit "|") $ T.joinWith (T.space <> F.orderSplit "|" <> T.space) $ T.joinWith T.space <$> ((Id.family >>> F.orderItem) <$$> items)
             Documentation familyR docLine -> F.operator "@" <> T.space <> F.family (Id.family familyR) <> T.space <> F.operator ":" <> T.space <> F.documentation docLine
         where
             eInletToCode  (InletId  (Right iindex)) = F.inletIdx iindex

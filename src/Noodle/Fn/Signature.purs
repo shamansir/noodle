@@ -11,6 +11,7 @@ import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
 import Data.Bifunctor (class Bifunctor)
+import Data.Functor.Extra ((<$$>))
 
 import Type.Proxy (Proxy(..))
 
@@ -296,11 +297,11 @@ _showManually :: forall arg out. (arg -> String) -> (out -> String) -> Signature
 _showManually showArg showOut = unwrap >>> case _ of
         name /\ args /\ outs ->
             if Array.length args > 0 && Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> map showArg <$> args) <> " -> " <> String.joinWith " " (show <$> map showOut <$> outs) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> showArg <$$> args) <> " -> " <> String.joinWith " " (show <$> showOut <$$> outs) <> ">"
             else if Array.length args > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> map showArg <$> args) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> showArg <$$> args) <> ">"
             else if Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> map showOut <$> outs) <> ">"
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> showOut <$$> outs) <> ">"
             else
                  "<" <> String.pascalCase name <> ">"
 

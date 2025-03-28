@@ -21,6 +21,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes, find, filter, length) as Array
 import Data.Traversable (traverse_)
+import Data.Functor.Extra ((<##>))
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -347,7 +348,7 @@ mapRawNodes
     -> Patch pstate families strepr chrepr m
     -> Array x
 mapRawNodes f (Patch _ _ _ _ rawNodes _) =
-    Array.concat $ Map.toUnfoldable rawNodes <#> Tuple.snd <#> map f
+    Array.concat $ Map.toUnfoldable rawNodes <#> Tuple.snd <##> f
 
 
 mapAllNodes
@@ -370,7 +371,7 @@ withNodes
     -> Patch pstate families strepr chrepr m
     -> Array x
 withNodes f familyId (Patch _ _ _ nodes _ _) =
-    Map.lookup (Id.familyR familyId) nodes <#> map nodeToX # fromMaybe []
+    Map.lookup (Id.familyR familyId) nodes <##> nodeToX # fromMaybe []
     where nodeToX hn = HN.withNode hn (unsafeCoerce >>> f)
 
 
@@ -381,7 +382,7 @@ withRawNodes
     -> Patch pstate families strepr chrepr m
     -> Array x
 withRawNodes f familyR (Patch _ _ _ _ rawNodes _) =
-    (Map.lookup familyR rawNodes <#> map f) # fromMaybe []
+    (Map.lookup familyR rawNodes <##> f) # fromMaybe []
 
 
 withAnyNodes

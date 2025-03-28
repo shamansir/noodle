@@ -14,6 +14,7 @@ import Data.Traversable (sequence, class Traversable)
 import Data.Foldable (foldl)
 import Data.Newtype as NT
 import Data.UniqueHash (toString) as UH
+import Data.Functor.Extra ((<##>))
 
 import Data.Text.Format as T
 
@@ -101,7 +102,7 @@ toPathTree
     -> Network tk pstate families strepr chrepr mp
     -> m (NetworkPathTree chrepr a)
 toPathTree makeVal =
-    toTree (toPathNode >>> makeVal) <#> map extractPaths
+    toTree (toPathNode >>> makeVal) <##> extractPaths
 
 
 toPathNode :: forall pstate families strepr chrepr mp a. TreeNode pstate families strepr chrepr mp a -> PathTreeNode chrepr a

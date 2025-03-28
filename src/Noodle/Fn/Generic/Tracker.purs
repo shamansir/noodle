@@ -9,6 +9,7 @@ import Signal (get) as Signal
 import Data.Maybe (Maybe)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\))
+import Data.Functor.Extra ((<$$>))
 
 import Noodle.Id (InletR, OutletR)
 import Noodle.Fn.Generic.Updates as U
@@ -54,7 +55,7 @@ mapState f { state, inlets, outlets, all } =
 mapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> Tracker state inlets outlets -> Tracker state inlets' outlets
 mapInlets f { state, inlets, outlets, all } =
     { state
-    , inlets : map f <$> inlets
+    , inlets : f <$$> inlets
     , outlets
     , all : U.mergedMapInlets f <$> all
     }
@@ -64,6 +65,6 @@ mapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> Tra
 mapOutlets f { state, inlets, outlets, all } =
     { state
     , inlets
-    , outlets : map f <$> outlets
+    , outlets : f <$$> outlets
     , all : U.mergedMapOutlets f <$> all
     }

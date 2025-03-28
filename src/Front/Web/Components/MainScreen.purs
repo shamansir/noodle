@@ -15,8 +15,11 @@ import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (reverse) as Array
+import Data.Array (sortWith) as Array
+import Data.Bifunctor (lmap)
+import Data.Functor.Extra ((<$$>), (<##>))
 
 import Halogen as H
 import Halogen.Aff as HA
@@ -48,7 +51,7 @@ import Web.Bounds (getPosition) as Bounds
 import Web.State (State)
 import Web.State
     ( init
-    , spawnPatch, registerPatch, lastPatchIndex, currentPatch, currentPatchState, withCurrentPatch
+    , spawnPatch, registerPatch, lastPatchIndex, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
     , defaultPosition, findBounds, storeBounds
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
@@ -136,20 +139,28 @@ render state =
                         FromLibrary
                     , HS.g
                         [ HSA.transform [ HSA.Translate (Library.width + 20.0) (PatchesBar.height + 15.0) ] ]
-                        $ Array.reverse nodeBoxesSlots
+                        nodeBoxesSlots
                     ]
                 )
             ]
         ]
     where
-        nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes nodeBoxSlot) # fromMaybe []
-        nodeBoxSlot rawNode =
+        nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes findRenderData <#> Array.sortWith _.zIndex <##> nodeBoxSlot) # fromMaybe []
+        findRenderData rawNode =
             let
                 nodeR = RawNode.id rawNode
-                position = fromMaybe CState.defaultPosition $ Bounds.getPosition <$> CState.findBounds nodeR state
+                (position /\ zIndex) =
+                    fromMaybe (CState.defaultPosition /\ top)
+                         $ lmap Bounds.getPosition
+                        <$> CState.findBounds nodeR state
+            in
+                { rawNode, position, zIndex }
+        nodeBoxSlot { rawNode, position } =
+            let
+                nodeR = RawNode.id rawNode
             in HH.slot _nodeBox nodeR NodeBox.component
                 { node : rawNode
-                , position : position
+                , position
                 }
                 $ FromNodeBox nodeR
 
@@ -175,7 +186,11 @@ handleAction pstate = case _ of
         handleAction pstate $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch
     SelectPatch patchR -> do
         state <- State.get
-        H.modify_ _ { currentPatch = Just { id : patchR, index : CState.lastPatchIndex state + 1 } }
+        H.modify_ _
+            { currentPatch =
+                CState.indexOfPatch patchR state
+                    <#> (\pIndex -> { id : patchR, index : pIndex })
+            }
     SpawnNode familyR -> do
         state <- State.get
         let toolkit = Network.toolkit state.network

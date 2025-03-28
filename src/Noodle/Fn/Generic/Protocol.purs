@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Functor.Extra ((<$$>), (<$$$>))
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -115,7 +116,7 @@ imapState f g { initial, getInlets, getOutlets, getState, modifyInlets, modifyOu
         }
     , getInlets
     , getOutlets
-    , getState : map f <$> getState
+    , getState : f <$$> getState
     , modifyInlets
     , modifyOutlets
     , modifyState : \modifyF -> modifyState (g <<< modifyF <<< f)
@@ -129,7 +130,7 @@ imapInlets f g { initial, getInlets, getOutlets, getState, modifyInlets, modifyO
         , inlets  : f initial.inlets
         , outlets : initial.outlets
         }
-    , getInlets : map (map f) <$> getInlets
+    , getInlets : f <$$$> getInlets
     , getOutlets
     , getState
     , modifyInlets : \modifyF -> modifyInlets (map g <<< modifyF <<< f)
@@ -146,7 +147,7 @@ imapOutlets f g { initial, getInlets, getOutlets, getState, modifyInlets, modify
         , outlets : f initial.outlets
         }
     , getInlets
-    , getOutlets : map (map f) <$> getOutlets
+    , getOutlets : f <$$$> getOutlets
     , getState
     , modifyInlets
     , modifyOutlets : \modifyF -> modifyOutlets (map g <<< modifyF <<< f)

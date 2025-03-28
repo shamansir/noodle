@@ -9,6 +9,7 @@ import Data.String (joinWith, toUpper) as String
 import Data.Array (length) as Array
 import Data.Array ((:))
 import Data.Newtype (unwrap)
+import Data.Functor.Extra ((<$$>))
 
 import Type.Proxy (Proxy(..))
 
@@ -486,27 +487,27 @@ instance PossiblyToSignature HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
         HT.Empty -> Nothing
         HT.Start src ->
             case (unwrap <$> possiblyToSignature ph src :: Maybe (SignatureS HT.Value Unit)) of
-                Just (name /\ args /\ outs) -> Just $ sigs $ name /\ (map HT.V <$> args) /\ (map (const HT.OT) <$> outs)
+                Just (name /\ args /\ outs) -> Just $ sigs $ name /\ (HT.V <$$> args) /\ (const HT.OT <$$> outs)
                 Nothing -> Nothing
         HT.BlendOf { what, with } blend ->
             case unwrap $ toSignature ph blend :: SignatureS HT.Value Unit of
-                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (HT.V <$$> args) <> [ i "with" $ HT.T with ]) /\ (const HT.OT <$$> outs)
         HT.Filter texture cop ->
             case unwrap $ toSignature ph cop :: SignatureS HT.Value Unit of
-                name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((HT.V <$$> args) <> [ i "texture" $ HT.T texture ]) /\ (const HT.OT <$$> outs)
         HT.ModulateWith { what, with } mod ->
             case unwrap $ toSignature ph mod :: SignatureS HT.Value Unit of
-                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (map HT.V <$> args) <> [ i "with" $ HT.T with ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((i "what" $ HT.T what) : (HT.V <$$> args) <> [ i "with" $ HT.T with ]) /\ (const HT.OT <$$> outs)
         HT.Geometry texture gmt ->
             case unwrap $ toSignature ph gmt :: SignatureS HT.Value Unit of
-                name /\ args /\ outs -> Just $ sigs $ name /\ ((map HT.V <$> args) <> [ i "texture" $ HT.T texture ]) /\ (map (const HT.OT) <$> outs)
+                name /\ args /\ outs -> Just $ sigs $ name /\ ((HT.V <$$> args) <> [ i "texture" $ HT.T texture ]) /\ (const HT.OT <$$> outs)
         HT.CallGlslFn { over, mbWith } fnRef ->
             case unwrap $ toSignature ph fnRef :: SignatureS HT.TOrV HT.GlslFnOut of
                 name /\ args /\ outs -> Just $ sigs $ name /\ ((i "over" $ HT.T over) : args <>
                     case mbWith of
                         Just with -> [ i "with" $ HT.T with ]
                         Nothing -> [ ]
-                    ) /\ (map (const HT.OT) <$> outs)
+                    ) /\ (const HT.OT <$$> outs)
 
 
 instance PossiblyToSignature HYDRA_V HT.Value Unit HT.HydraFnId where

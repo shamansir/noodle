@@ -6,6 +6,7 @@ import Type.Proxy (Proxy)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
+import Data.Functor.Extra ((<$$>))
 import Data.Text.Format as T
 import Data.String (contains, split, trim, indexOf, splitAt, drop, joinWith, Pattern(..)) as String
 import Data.String.CodeUnits (singleton, dropRight) as String
@@ -107,7 +108,7 @@ _processAutoCode src =
                 toInletName str = String.dropRight 1 $ String.drop 1 str
                 findInlets definition =
                     case RGX.match inletsRegex definition of
-                        Just matches -> Array.catMaybes $ map toInletName <$> NEA.toArray matches
+                        Just matches -> Array.catMaybes $ toInletName <$$> NEA.toArray matches
                         Nothing -> []
                 replaceInlets definition =
                     RGX.replace inletsRegex "$1" definition

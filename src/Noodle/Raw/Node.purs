@@ -20,6 +20,7 @@ import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Newtype (wrap) as NT
+import Data.Functor.Extra ((<##>))
 
 import Signal (Signal, (~>))
 import Signal.Extra (runSignal) as SignalX
@@ -274,7 +275,7 @@ subscribeInlets (Node _ shape tracker _ _) = Tuple.snd <$> tracker.inlets <#> or
 
 
 _subscribeInlets :: forall state chrepr m. Node state chrepr m -> Signal (Fn.InletsUpdate /\ OrderedInletsValues chrepr)
-_subscribeInlets (Node _ shape tracker _ _) = tracker.inlets <#> map (orderInlets shape)
+_subscribeInlets (Node _ shape tracker _ _) = tracker.inlets <##> orderInlets shape
 
 
 subscribeOutlet :: forall state chrepr m. Id.OutletR -> Node state chrepr m -> Signal (ValueInChannel chrepr)

@@ -18,6 +18,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Functor.Extra ((<$$>))
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen
@@ -786,7 +787,7 @@ withCodegenApply a =
         ctor /\ Rec fields ->
             exprApp
                 (hydraCtor_ ctor)
-                [ exprRecord (map mkExpression <$> fields)
+                [ exprRecord (mkExpression <$$> fields)
                 ]
 
 
