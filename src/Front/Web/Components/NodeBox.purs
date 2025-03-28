@@ -29,6 +29,7 @@ import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
+import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (resolve) as ViC
 
 import Noodle.Ui.Palette.Item as P
@@ -61,7 +62,7 @@ data Query strepr chrepr a
     = QueryUpdate (RawNode.NodeChanges strepr chrepr) a
 
 
-component :: forall strepr chrepr m. H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+component :: forall strepr chrepr m. WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component =
     H.mkComponent
         { initialState
@@ -78,7 +79,7 @@ initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr ch
 initialState { node, position } = { node, position, latestUpdate : Nothing }
 
 
-render :: forall m sterpr chrepr m. State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
+render :: forall sterpr chrepr m. WriteChannelRepr chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
 render { node, position, latestUpdate } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ] ]
@@ -140,6 +141,7 @@ render { node, position, latestUpdate } =
         titleWidth = 20.0
         titleBarWidth = titleWidth - slopeFactor
         channelFontSize = 9.0
+        valueFontSize = 9.0
         titleFontSize = 11.0
         connectorRadius = 5.0
         maxChannelsCount = max inletsCount outletsCount
@@ -150,8 +152,15 @@ render { node, position, latestUpdate } =
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR
         -- fullHeight = channelBarHeight + bodyHeight + channelBarHeight
         slopeFactor = 5.0
-        renderValue = ViC.resolve
-            { accept : \v -> HS.text [] [ HH.text "VAL" ]
+        renderValue v =
+            HS.text
+                [ HSA.fill $ Just $ P.hColorOf Palette.paper
+                , HSA.dominant_baseline HSA.Hanging
+                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
+                ]
+                [ HH.text $ writeChannelRepr v ]
+        renderViCValue = ViC.resolve
+            { accept : renderValue
             , decline : HSX.none
             , empty : HSX.none
             , missingKey : const HSX.none
@@ -171,7 +180,9 @@ render { node, position, latestUpdate } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
-                , maybe HSX.none renderValue $ valueOfInlet inletDef.name
+                , HS.g
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (-channelBarHeight) ] ]
+                    [ maybe HSX.none renderViCValue $ valueOfInlet inletDef.name ]
                 ]
         renderOulet idx outletDef =
             HS.g
@@ -189,7 +200,9 @@ render { node, position, latestUpdate } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]
                     [ HH.text $ String.toUpper $ Id.outletRName outletDef.name ]
-                , maybe HSX.none renderValue $ valueOfOutlet outletDef.name
+                , HS.g
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) channelBarHeight ] ]
+                    [ maybe HSX.none renderViCValue $ valueOfOutlet outletDef.name ]
                 ]
         renderInlets =
             HS.g

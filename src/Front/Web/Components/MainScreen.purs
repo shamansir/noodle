@@ -40,6 +40,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
@@ -87,6 +88,7 @@ component
     :: forall query input output tk ps fs sr cr m
      . Wiring m
     => HasFallback cr
+    => WriteChannelRepr cr
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
@@ -111,6 +113,7 @@ initialState pstate toolkit _ = CState.init pstate toolkit
 render
     :: forall tk ps fs sr cr m
      . Toolkit.HoldsFamilies sr cr m fs
+    => WriteChannelRepr cr
     => State _ tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr) m
 render state =
