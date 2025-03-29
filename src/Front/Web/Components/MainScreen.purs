@@ -54,7 +54,7 @@ import Web.Bounds (getPosition) as Bounds
 import Web.State (State)
 import Web.State
     ( init
-    , spawnPatch, registerPatch, lastPatchIndex, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
     , defaultPosition, findBounds, storeBounds, updatePosition
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
@@ -120,7 +120,8 @@ initialState pstate toolkit _ = CState.init pstate toolkit
 
 render
     :: forall tk ps fs sr cr m
-     . Toolkit.HoldsFamilies sr cr m fs
+     . MonadEffect m
+    => Toolkit.HoldsFamilies sr cr m fs
     => WriteChannelRepr cr
     => State _ tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr) m
@@ -133,6 +134,11 @@ render state =
                     [ HS.rect
                         [ HSA.width 1000.0, HSA.height 1000.0
                         , HSA.fill $ Just $ P.hColorOf $ Palette.black
+                        , HE.onClick $ const PatchAreaClick
+                        , HE.onMouseMove \mevt -> PatchAreaMouseMove
+                            { x : (Int.toNumber $ Mouse.clientX mevt) - patchAreaX
+                            , y : (Int.toNumber $ Mouse.clientY mevt) - patchAreaY
+                            }
                         ]
                     , HH.slot _patchesBar unit PatchesBar.component
                         { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
@@ -144,10 +150,6 @@ render state =
                         FromLibrary
                     , HS.g
                         [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
-                        , HE.onMouseMove \mevt -> PatchAreaMouseMove
-                            { x : (Int.toNumber $ Mouse.clientX mevt) - patchAreaX
-                            , y : (Int.toNumber $ Mouse.clientY mevt) - patchAreaY
-                            }
                         , HE.onClick $ const PatchAreaClick
                         ]
                         nodeBoxesSlots
@@ -245,15 +247,12 @@ handleAction pstate = case _ of
                 H.modify_ $ CState.updatePosition nodeR { left : x, top : y }
             Nothing -> pure unit
     PatchAreaClick -> do
-        pure unit
-        {-
         state <- State.get
         case state.draggingNode of
             Just nodeR -> do
                 State.put $ state { draggingNode = Nothing }
                 H.tell _nodeBox nodeR NodeBox.QueryDragEnd
             Nothing -> pure unit
-        -}
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
@@ -263,11 +262,11 @@ handleAction pstate = case _ of
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- State.get
         case state.draggingNode of
-            Just otherNodeR -> do
-                State.put $ state { draggingNode = Nothing }
-                H.tell _nodeBox otherNodeR NodeBox.QueryDragEnd
             Nothing -> do
                 State.put $ state { draggingNode = Just nodeR }
                 H.tell _nodeBox nodeR NodeBox.QueryDragStart
+            Just otherNodeR -> do
+                State.put $ state { draggingNode = Nothing }
+                H.tell _nodeBox otherNodeR NodeBox.QueryDragEnd
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.QueryUpdate update

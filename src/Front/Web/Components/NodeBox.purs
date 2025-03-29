@@ -2,7 +2,7 @@ module Web.Components.NodeBox where
 
 import Prelude
 
-import Debug as Debug
+import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map (lookup) as Map
@@ -23,6 +23,10 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
+
+import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.MouseEvent (toEvent) as ME
+import Web.Event.Event (preventDefault, stopPropagation) as WE
 
 import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Raw.Node (Node) as Raw
@@ -52,7 +56,7 @@ type State strepr chrepr m =
 data Action sterpr chrepr m
     = Initialize
     | Receive (Input sterpr chrepr m)
-    | HeaderClick
+    | HeaderClick MouseEvent
 
 
 data Output
@@ -65,7 +69,7 @@ data Query strepr chrepr a
     | QueryDragEnd a
 
 
-component :: forall strepr chrepr m. WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+component :: forall strepr chrepr m. MonadEffect m => WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component =
     H.mkComponent
         { initialState
@@ -93,7 +97,7 @@ render { node, position, latestUpdate, beingDragged } =
         ]
         (
             HS.g
-                [ HE.onClick $ const $ HeaderClick ]
+                [ HE.onClick HeaderClick ]
                 [ HS.path
                     [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]
                     , HSA.d
@@ -269,7 +273,7 @@ render { node, position, latestUpdate, beingDragged } =
 
 
 
-handleAction :: forall sterpr chrepr m. Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
+handleAction :: forall sterpr chrepr m. MonadEffect m => Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive input ->
@@ -277,7 +281,8 @@ handleAction = case _ of
             { node = input.node
             , position = input.position
             }
-    HeaderClick ->
+    HeaderClick evt -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
         H.raise HeaderWasClicked
 
 
