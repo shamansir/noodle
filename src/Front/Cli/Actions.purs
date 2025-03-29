@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, modify_) as State
+import Control.Monad.Extra (whenJust)
 
 import Data.Maybe (Maybe(..), isNothing)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -175,20 +176,17 @@ disconnect
     -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 disconnect trackCmd patchR rawLink linkState _ = do
     curState <- State.get
-    let mbPatch = CState.patch patchR curState
-    case mbPatch of
-        Just patch -> do
-            (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
-            State.modify_ $ CState.replacePatch patchR nextPatch
-            State.modify_ \s ->
-                let
-                    nextLinks = CLink.forget linkState s.links
-                in s { links = nextLinks }
-            Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
-            when (doTrack trackCmd) $ CL.trackCommand $ QOp.disconnect rawLink
-            SidePanel.refresh $ TP.sidePanel
-            Key.mainScreen >~ Screen.render
-        Nothing -> pure unit
+    whenJust (CState.patch patchR curState) \patch -> do
+        (nextPatch /\ _) <- Blessed.lift' $ Patch.disconnectRaw rawLink patch
+        State.modify_ $ CState.replacePatch patchR nextPatch
+        State.modify_ \s ->
+            let
+                nextLinks = CLink.forget linkState s.links
+            in s { links = nextLinks }
+        Blessed.runOnUnit $ Key.patchBox >~ CLink.remove linkState
+        when (doTrack trackCmd) $ CL.trackCommand $ QOp.disconnect rawLink
+        SidePanel.refresh $ TP.sidePanel
+        Key.mainScreen >~ Screen.render
 
 
 tryCallingInletEditor
@@ -207,41 +205,31 @@ tryCallingInletEditor nodeBoxKey rawNode inletR inletIdx mbValueEditorOp = do
     let
         nodeR = RawNode.id rawNode
         familyR = Id.familyOf nodeR
-    if not state.blockInletEditor && isNothing state.inletEditorOpenedFrom then do
-        -- CC.log "Value editor is not blocked and not opened, try to open if exact one will be found"
+    when (not state.blockInletEditor && isNothing state.inletEditorOpenedFrom) $ do
         -- TODO: also don't call if there is at least one link incoming
-        let nodeR = RawNode.id rawNode
         vicCurValue <- RawNode.atInlet inletR rawNode
         let
             curValue = ViC.toFallback vicCurValue
             curValueTag = VT.valueTag (VT.Inlet familyR inletR) curValue
 
-        case mbValueEditorOp of
-            Just { create, inject, transpose } -> do
-                if not $ CState.inletEditorCreated curValueTag state then do
-                    CC.log "Exact editor wasn't created, call `create` on it"
-                    _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
-                    State.modify_ $ CState.markInletEditorCreated curValueTag
-                else do
-                    CC.log "Skip creating the editor"
-                CC.log "Remember the source node & inlet of the opened editor"
-                State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
-                CC.log "Send current value in the editor"
-                _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
-                nodeBounds <- case Map.lookup nodeR state.nodesBounds of
-                                Just bounds -> pure bounds
-                                Nothing -> Bounds.collect nodeR nodeBoxKey
-                let inletPos = Bounds.inletPos nodeBounds inletIdx
-                CC.log "Transpose the editor"
-                _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y }
-                pure unit
-            Nothing ->
-                pure unit
-                -- CC.log "No matching editor was found, skip"
-    else
-        pure unit
-        -- CC.log "Editor is either blocked or opened already, don't call it"
-    --CC.log "And don't block opening editor anymore"
+        whenJust mbValueEditorOp \{ create, inject, transpose } -> do
+            if not $ CState.inletEditorCreated curValueTag state then do
+                CC.log "Exact editor wasn't created, call `create` on it"
+                _ <- Blessed.runOnUnit $ Blessed.runEffect unit create
+                State.modify_ $ CState.markInletEditorCreated curValueTag
+            else do
+                CC.log "Skip creating the editor"
+            CC.log "Remember the source node & inlet of the opened editor"
+            State.modify_ $ _ { inletEditorOpenedFrom = Just (rawNode /\ inletR) }
+            CC.log "Send current value in the editor"
+            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ inject $ ViC.toFallback vicCurValue -- $ create *> (inject $ ViC.toFallback vicCurValue)
+            nodeBounds <- case Map.lookup nodeR state.nodesBounds of
+                            Just bounds -> pure bounds
+                            Nothing -> Bounds.collect nodeR nodeBoxKey
+            let inletPos = Bounds.inletPos nodeBounds inletIdx
+            CC.log "Transpose the editor"
+            _ <- Blessed.runOnUnit $ Blessed.runEffect unit $ transpose { x : inletPos.x, y : inletPos.y }
+            pure unit
     State.modify_ $ _ { blockInletEditor = false }
 
 removeNode
@@ -254,22 +242,19 @@ removeNode
     -> BlessedOp (State _ tk pstate fs strepr chrepr mi) mo
 removeNode trackCmd patchR nodeR nodeBoxKey = do
     state <- State.get
-    let mbCurrentPatch = CState.patch patchR state
-    case mbCurrentPatch of
-        Just currentPatch -> do
-            nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo nodeR currentPatch
-            let nextLinks /\ linksToRemove = CLink.forgetAllFromTo nodeR state.links
-            State.modify_ (\s ->
-                s
-                    # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
-                    # _ { links = nextLinks }
-            )
-            Blessed.runOnUnit $ CLink.removeAllOf Key.patchBox linksToRemove
-            nodeBoxKey >~ BNode.detach
-            State.modify_
-                $ CState.replacePatch (Patch.id currentPatch)
-                $ Patch.removeNode nodeR nextCurrentPatch
-            when (doTrack trackCmd) $ CL.trackCommand $ QOp.removeNode nodeR
-            SidePanel.refresh TP.sidePanel
-            Key.mainScreen >~ Screen.render
-        Nothing -> pure unit
+    whenJust (CState.patch patchR state) \currentPatch -> do
+        nextCurrentPatch <- Blessed.lift' $ Patch.disconnectAllFromTo nodeR currentPatch
+        let nextLinks /\ linksToRemove = CLink.forgetAllFromTo nodeR state.links
+        State.modify_ (\s ->
+            s
+                # CState.replacePatch (Patch.id currentPatch) nextCurrentPatch
+                # _ { links = nextLinks }
+        )
+        Blessed.runOnUnit $ CLink.removeAllOf Key.patchBox linksToRemove
+        nodeBoxKey >~ BNode.detach
+        State.modify_
+            $ CState.replacePatch (Patch.id currentPatch)
+            $ Patch.removeNode nodeR nextCurrentPatch
+        when (doTrack trackCmd) $ CL.trackCommand $ QOp.removeNode nodeR
+        SidePanel.refresh TP.sidePanel
+        Key.mainScreen >~ Screen.render

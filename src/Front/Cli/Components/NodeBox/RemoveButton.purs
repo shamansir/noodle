@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Text.Output.Blessed (singleLine) as T
 
 import Control.Monad.State (get) as State
+import Control.Monad.Extra (whenJust)
 
 import Blessed as B
 
@@ -71,11 +72,9 @@ component topOffset family node keys =
                 OI.hide
                 II.hide
                 state <- State.get
-                let mbCurrentPatch = CState.currentPatch state
-                case mbCurrentPatch of
-                    Just currentPatch -> do
+                whenJust (CState.currentPatch state)
+                    \currentPatch -> do
                         Actions.removeNode Actions.Track (Patch.id currentPatch) (RawNode.id node) keys.nodeBox
-                    Nothing -> pure unit
         , Core.on Element.MouseOver
             \_ _ -> do
                 keys.removeButton >~ Box.setContent $ T.singleLine $ T.removeButtonOver

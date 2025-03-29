@@ -15,6 +15,7 @@ import Type.Proxy (Proxy(..))
 import Control.Monad.State (get, modify, modify_, put) as State
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.Extra (whenJust)
 
 import Data.Maybe (Maybe(..), isJust, isNothing, fromMaybe)
 import Data.Text.Output.Blessed (singleLine) as T
@@ -168,14 +169,12 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
 sendFromEditor :: forall tk pstate fs strepr chrepr m. Ndf.ValueEncode chrepr => Ref (State _ tk pstate fs strepr chrepr m) -> Id.NodeR -> Id.InletR -> chrepr -> Effect Unit
 sendFromEditor stateRef nodeR inletR reprV = do
     state <- Ref.read stateRef
-    case state.inletEditorOpenedFrom of
-        Just (editorRawNode /\ editorInletR) -> do
+    whenJust state.inletEditorOpenedFrom
+        \(editorRawNode /\ editorInletR) -> do
             -- Blessed.runM' stateRef $ CC.log "Editor has submitted a value, clear opened source and send value to inlet"
             stateRef # Ref.modify_ (_ { inletEditorOpenedFrom = Nothing }) -- FIXME: could the editor component execute onSubmit in `BlessedOp`?
             RawNode.sendIn editorInletR reprV editorRawNode
             Blessed.runM' stateRef $ CL.trackCommand $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue reprV
-        Nothing ->
-            pure unit
 
 
 onMouseOver

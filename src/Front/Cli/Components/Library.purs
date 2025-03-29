@@ -2,6 +2,7 @@ module Cli.Components.Library where
 
 
 import Control.Monad.State (get, modify_) as State
+import Control.Monad.Extra (whenJust)
 
 import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
@@ -133,8 +134,8 @@ onFamilySelect =
         let toolkit = Network.toolkit state.network
         let families = Toolkit.families toolkit
         let mbSelectedFamily = families !! selected
-        _ <- case (/\) <$> mbSelectedFamily <*> mbCurrentPatchR of
-            Just (familyR /\ curPatchR) ->
+        _ <- whenJust ((/\) <$> mbSelectedFamily <*> mbCurrentPatchR)
+            \(familyR /\ curPatchR) ->
                 case Toolkit.withFamilyUnsafe
                         (spawnAndRender
                             toolkit
@@ -142,7 +143,8 @@ onFamilySelect =
                         ) familyR toolkit of
                     Just op -> op
                     Nothing ->
-                        case Toolkit.withRawFamily -- Toolkit.withAnyFamily
+                        whenJust
+                            (Toolkit.withRawFamily -- Toolkit.withAnyFamily
                                 (spawnAndRenderRaw
                                     toolkit
                                     curPatchR
@@ -150,11 +152,8 @@ onFamilySelect =
                                 )
                                 familyR
                                 toolkit
-                            of
-                            Just op -> op
-                            Nothing -> pure unit
-            Nothing -> pure unit
-
+                            )
+                            identity
         pure unit
 
 
@@ -176,10 +175,8 @@ spawnAndRenderRaw
 spawnAndRenderRaw toolkit patchR familyR _ = do
     (mbRawNode :: Maybe (Raw.Node strepr chrepr m)) <- Blessed.lift' $ Toolkit.spawnAnyRaw familyR toolkit
 
-    case mbRawNode of
-        Just rawNode -> do
-            registerAndRenderGivenRawNode patchR rawNode
-        Nothing -> pure unit
+    whenJust mbRawNode \rawNode -> do
+        registerAndRenderGivenRawNode patchR rawNode
 
 
 registerAndRenderGivenRawNode
@@ -203,9 +200,8 @@ registerAndRenderGivenRawNode patchR rawNode = do
     (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
     let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
 
-    case mbNodeState of
-        Just nextState -> rawNode # RawNode.setState nextState
-        Nothing -> pure unit
+    whenJust mbNodeState
+        \nextState -> rawNode # RawNode.setState nextState
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 

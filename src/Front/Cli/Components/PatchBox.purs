@@ -63,11 +63,3 @@ component toolkit =
 
         $ \_ -> do
             pure unit
-            {-
-            let mbEditor = Hydra.createEditorFor (H.Value $ H.Number 0.0) $ const $ pure unit
-            case mbEditor of
-                Just (_ /\ editor) -> do
-                    editor
-                Nothing -> pure unit
-                    -- Key.patchBox ~> Node.append editor
-            -}

@@ -15,6 +15,7 @@ import Data.Array (head) as Array
 import Data.Newtype (unwrap) as NT
 
 import Control.Monad.State (get, modify, modify_) as State
+import Control.Monad.Extra (whenJust)
 
 import Parsing (runParser) as P
 
@@ -118,25 +119,20 @@ applyNdfCommandOp
 applyNdfCommandOp toolkit curPatchR = case _ of
     Ndf.MakeNode familyR (Ndf.Coord coordX) (Ndf.Coord coordY) instanceId -> do
         mbRawNode <- Toolkit.spawnAnyRaw familyR toolkit
-        case mbRawNode of
-            Just rawNode -> do
-                Library.registerAndRenderGivenRawNode curPatchR rawNode
-                state <- State.modify $ CState.registerNdfInstance instanceId $ RawNode.id rawNode
-                case CState.findNodeKey (RawNode.id rawNode) state of
-                    Just nodeBoxKey -> do
-                        nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
-                        nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
-                        -- FIXME: record new position in the state
-                    Nothing -> pure unit
-                pure unit
-            Nothing -> pure unit
+        whenJust mbRawNode \rawNode -> do
+            Library.registerAndRenderGivenRawNode curPatchR rawNode
+            state <- State.modify $ CState.registerNdfInstance instanceId $ RawNode.id rawNode
+            whenJust (CState.findNodeKey (RawNode.id rawNode) state)
+                \nodeBoxKey -> do
+                    nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
+                    nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
+                    -- FIXME: record new position in the state
     Ndf.Move instanceId (Ndf.Coord coordX) (Ndf.Coord coordY) -> do
         state <- State.get
-        case CState.findNodeIdByNdfInstance instanceId state >>= flip CState.findNodeKey state of
-            Just nodeBoxKey -> do
+        whenJust (CState.findNodeIdByNdfInstance instanceId state >>= flip CState.findNodeKey state)
+            \nodeBoxKey -> do
                 nodeBoxKey >~ Element.setTop  $ Offset.px $ coordY
                 nodeBoxKey >~ Element.setLeft $ Offset.px $ coordX
-            Nothing -> pure unit
     Ndf.Connect fromInstanceId ndfOutletId toInstanceId ndfInletId -> do
         state <- State.get
         let
@@ -157,11 +153,9 @@ applyNdfCommandOp toolkit curPatchR = case _ of
                     , linkStart : { key : srcNodeKey, node : sourceNode, outlet : outletR, outletIndex : outletIndex }
                     , linkEnd :   { key : trgNodeKey, node : targetNode, inlet  : inletR,  inletIndex :  inletIndex  }
                     }
-        case mbConnection of
-            Just { currentPatch, linkStart, linkEnd } -> do
+        whenJust mbConnection $
+            \{ currentPatch, linkStart, linkEnd } -> do
                 Actions.connect Actions.DontTrack linkStart linkEnd currentPatch
-            Nothing -> pure unit
-        pure unit
     Ndf.Disconnect fromInstanceId ndfOutletId toInstanceId ndfInletId -> do
         state <- State.get
         let
@@ -176,10 +170,9 @@ applyNdfCommandOp toolkit curPatchR = case _ of
                 topLink      <- Patch.linksMap currentPatch # Links.findBetween (fromNodeR /\ outletR) (toNodeR /\ inletR) # Array.head
                 linkState    <- CState.findLinkState (RawLink.id topLink) state
                 pure $ topLink /\ linkState
-        case mbConnection of
-            Just (link /\ linkState) ->
+        whenJust mbConnection $
+            \(link /\ linkState) ->
                 Actions.disconnect Actions.DontTrack curPatchR link linkState unit
-            Nothing -> pure unit
     Ndf.Send instanceId ndfInletId encodedValue -> do
         state <- State.get
         let
@@ -191,10 +184,9 @@ applyNdfCommandOp toolkit curPatchR = case _ of
                 valueTag <- RawShape.tagOfInlet inletR $ RawNode.shape targetNode
                 reprValue <- toRepr (Ndf.EncodedType $ NT.unwrap valueTag) encodedValue
                 pure { inletR, targetNode, valueInChannel : ViC.accept reprValue }
-        case mbTarget of
-            Just { inletR, targetNode, valueInChannel } ->
+        whenJust mbTarget
+            \{ inletR, targetNode, valueInChannel } ->
                 RawNode.sendIn_ inletR valueInChannel targetNode
-            Nothing -> pure unit
     Ndf.SendO instanceId ndfOutletId encodedValue -> do
         state <- State.get
         let
@@ -206,19 +198,17 @@ applyNdfCommandOp toolkit curPatchR = case _ of
                 valueTag <- RawShape.tagOfOutlet outletR $ RawNode.shape targetNode
                 reprValue <- toRepr (Ndf.EncodedType $ NT.unwrap valueTag) encodedValue
                 pure { outletR, targetNode, valueInChannel : ViC.accept reprValue }
-        case mbTarget of
-            Just { outletR, targetNode, valueInChannel } ->
+        whenJust mbTarget
+            \{ outletR, targetNode, valueInChannel } ->
                 RawNode.sendOut_ outletR valueInChannel targetNode
-            Nothing -> pure unit
     Ndf.RemoveNode instanceId -> do
         state <- State.get
         let
             mbNodeR = CState.findNodeIdByNdfInstance instanceId state
             mbNodeBoxKey = mbNodeR >>= \nodeR -> CState.findNodeKey nodeR state
-        case (/\) <$> mbNodeR <*> mbNodeBoxKey of
-            Just (nodeR /\ nodeBoxKey) ->
+        whenJust ((/\) <$> mbNodeR <*> mbNodeBoxKey)
+            \(nodeR /\ nodeBoxKey) ->
                 Actions.removeNode Actions.DontTrack curPatchR nodeR nodeBoxKey
-            Nothing -> pure unit
     Ndf.Import filePath ->
         applyNdfFileFrom toolkit $ NdfFilePath filePath
     _ -> pure unit

@@ -9,6 +9,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, put, modify, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.Extra (whenJust)
 
 import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
@@ -210,49 +211,46 @@ handleAction pstate = case _ of
         state <- State.get
         let toolkit = Network.toolkit state.network
         (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
-        case mbRawNode of
-            Just rawNode -> do
-                let
-                    nodeR = RawNode.id rawNode
-                    nodeRect = { width : 300.0, height : 70.0 }
-                    nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
-                H.lift $ RawNode._runOnInletUpdates rawNode
-                (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
-                let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
-                case mbNodeState of
-                    Just nextState -> rawNode # RawNode.setState nextState
-                    Nothing -> pure unit
+        whenJust mbRawNode \rawNode -> do
+            let
+                nodeR = RawNode.id rawNode
+                nodeRect = { width : 300.0, height : 70.0 }
+                nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
+            H.lift $ RawNode._runOnInletUpdates rawNode
+            (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
+            let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+            whenJust mbNodeState
+                \nextState -> rawNode # RawNode.setState nextState
 
-                _ <- H.subscribe =<< do
-                    { emitter, listener } <- H.liftEffect HSS.create
-                    H.liftEffect
-                        $  Signal.runSignal
-                        $  RawNode.subscribeChanges rawNode
-                        ~> PassUpdate nodeR
-                        ~> HSS.notify listener
-                    pure emitter
-                H.modify_
-                    $   (CState.withCurrentPatch $ Patch.registerRawNode rawNode)
-                    >>> CState.storeBounds nodeR
-                            { left : nodePos.left, top : nodePos.top
-                            , width : nodeRect.width, height : nodeRect.height
-                            }
-                    >>> _ { lastLocation = nextLoc }
-                H.lift $ RawNode.run rawNode
-            Nothing -> pure unit
+            _ <- H.subscribe =<< do
+                { emitter, listener } <- H.liftEffect HSS.create
+                H.liftEffect
+                    $  Signal.runSignal
+                    $  RawNode.subscribeChanges rawNode
+                    ~> PassUpdate nodeR
+                    ~> HSS.notify listener
+                pure emitter
+
+            H.modify_
+                $   (CState.withCurrentPatch $ Patch.registerRawNode rawNode)
+                >>> CState.storeBounds nodeR
+                        { left : nodePos.left, top : nodePos.top
+                        , width : nodeRect.width, height : nodeRect.height
+                        }
+                >>> _ { lastLocation = nextLoc }
+
+            H.lift $ RawNode.run rawNode
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
-        case state.draggingNode of
-            Just nodeR -> do
+        whenJust state.draggingNode
+            \nodeR -> do
                 H.modify_ $ CState.updatePosition nodeR { left : x, top : y }
-            Nothing -> pure unit
     PatchAreaClick -> do
         state <- State.get
-        case state.draggingNode of
-            Just nodeR -> do
+        whenJust state.draggingNode
+            \nodeR -> do
                 State.put $ state { draggingNode = Nothing }
                 H.tell _nodeBox nodeR NodeBox.QueryDragEnd
-            Nothing -> pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do

@@ -2,6 +2,40 @@ module Cli.Components.NodeBox where
 
 import Prelude
 
+import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.State (get, modify, modify_) as State
+import Control.Monad.Extra (whenJust)
+
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
+import Effect.Exception (Error)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+
+import Data.Array as Array
+import Data.Foldable (for_, traverse_)
+import Data.Lens.Lens.Product (_1)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Map.Extra as Map
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.String as String
+import Data.Symbol (class IsSymbol)
+import Data.Text.Output.Blessed (singleLine) as T
+import Data.TraversableWithIndex (traverseWithIndex)
+import Data.Tuple (fst, snd) as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
+
+
+import Signal (Signal, (~>))
+import Signal.Extra as SignalX
+
+import Type.Proxy (Proxy(..))
+import Type.Proxy (Proxy)
+
+
 import Blessed ((>~))
 import Blessed as B
 import Blessed.Core.Coord ((<+>))
@@ -18,6 +52,7 @@ import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.UI.Boxes.Box.Option as Box
+
 import Cli.Bounds as Bounds
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw, class CliLocator)
@@ -39,28 +74,8 @@ import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as CState
 import Cli.State (State)
 import Cli.Style as Style
 import Cli.WsServer as WSS
-import Control.Monad.Error.Class (class MonadThrow)
-import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.State (get, modify, modify_) as State
-import Data.Array as Array
-import Data.Foldable (for_, traverse_)
-import Data.Lens.Lens.Product (_1)
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Map.Extra as Map
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.String as String
-import Data.Symbol (class IsSymbol)
-import Data.Text.Output.Blessed (singleLine) as T
-import Data.TraversableWithIndex (traverseWithIndex)
-import Data.Tuple (fst, snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Console (log) as Console
-import Effect.Exception (Error)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
+
+
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Id as Id
 import Noodle.Node (Node) as Noodle
@@ -81,10 +96,6 @@ import Noodle.Ui.Tagging (inlet, nodeLabel, outlet) as T
 import Noodle.Ui.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Noodle.Ui.Tagging.At (class At) as T
 import Noodle.Wiring (class Wiring)
-import Signal (Signal, (~>))
-import Signal.Extra as SignalX
-import Type.Proxy (Proxy(..))
-import Type.Proxy (Proxy)
 
 
 width :: Id.FamilyR -> Int -> Int -> Dimension
@@ -241,9 +252,8 @@ _component
 
     -- liftEffect $ Console.log "before render cli"
     -- liftEffect $ Console.log "test second line"
-    case mbNodeOp of
-        Just nodeOp -> Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
-        Nothing -> pure unit
+    whenJust mbNodeOp
+        \nodeOp -> Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
 
     let
         location =
@@ -359,15 +369,13 @@ renderUpdate _ ptk nodeR inletsKeysMap outletsKeysMap update = do
     Key.mainScreen >~ Screen.render
     where
         updateInlet (iidx /\ inletR) vicRepr =
-            case Map.lookup inletR inletsKeysMap of
-                Just inletKey -> do
+            whenJust (Map.lookup inletR inletsKeysMap)
+                \inletKey ->
                     inletKey >~ Box.setContent $ T.singleLine $ T.inlet iidx inletR vicRepr
-                Nothing -> pure unit
         updateOutlet (oidx /\ outletR) vicRepr =
-            case Map.lookup outletR outletsKeysMap of
-                Just outletKey -> do
+            whenJust (Map.lookup outletR outletsKeysMap)
+                \outletKey ->
                     outletKey >~ Box.setContent $ T.singleLine $ T.outlet oidx outletR vicRepr
-                Nothing -> pure unit
         updateStatusLineAsInlet moInletR (iidx /\ inletR) vicRepr =
             when (moInletR == inletR) $
                 SL.inletStatus (Id.familyOf nodeR) iidx inletR vicRepr
@@ -389,10 +397,9 @@ updateCodeFor stateRef family update = do
     flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
     liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh -- FIXME: use `Blessed.impairN`
     state <- liftEffect $ Ref.read stateRef
-    case state.wsServer of
-        Just serverState ->
+    whenJust state.wsServer
+        \serverState ->
             liftEffect $ flip WSS.broadcastProgram serverState $ Lang.formProgram state.program
-        Nothing -> pure unit
     -}
     pure unit
 
