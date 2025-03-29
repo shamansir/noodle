@@ -1,5 +1,6 @@
 module Data.Map.Extra
     ( type (/->)
+    , update'
     , lookupBy
     , lookupBy'
     , stringifyKeys
@@ -28,8 +29,10 @@ import Data.Tuple (Tuple(..), uncurry)
 infixr 6 type Map as /->
 
 
+update' :: forall k v. Ord k => (v -> v) -> k -> Map k v -> Map k v
+update' f = Map.update $ Just <<< f
 
--- lookupBy :: forall k v. Ord k => (k -> Boolean) -> (k /-> v) -> Maybe v
+
 lookupBy :: forall k v. Ord k => (k -> Boolean) -> Map k v -> Maybe v
 lookupBy f = Map.filterKeys f >>> Map.values >>> List.head
 
@@ -45,31 +48,12 @@ stringifyKeys f = foldrWithIndex (Map.insert <<< f) Map.empty
 -- below, from https://raw.githubusercontent.com/colehaus/purescript-probability/refs/tags/v5.2.0/src/Data/Map/Extras.purs
 
 
-{-
-mapMaybe :: forall k v u. Ord k => (v -> Maybe u) -> Map k v -> Map k u
-mapMaybe f = Map.mapMaybeWithKey (const f)
-
-
-mapMaybeWithKey :: forall k v u. Ord k => (k -> v -> Maybe u) -> Map k v -> Map k u
-mapMaybeWithKey f m = foldlWithIndex f' Map.empty m
-  where
-    f' k acc v = maybe acc (flip (Map.insert k) acc) $ f k v
--}
-
 mapKeys :: forall j k v. Ord j => Ord k => (k -> j) -> Map k v -> Map j v
 mapKeys f = mapKeysMaybeWithValueWith (Just <<< f) (\k v _ -> Just (Tuple (f k) v))
 
 mapKeysMaybe :: forall j k v. Ord j => Ord k => (k -> Maybe j) -> Map k v -> Map j v
 mapKeysMaybe f = mapKeysMaybeWithValueWith f (\k v _ -> (_ `Tuple` v) <$> f k)
 
--- | The value at the greater of the two original keys is used as the first argument to c.
-{-
-mapKeysWith :: forall j k v. Ord j => Ord k => (v -> v -> v) -> (k -> j) -> Map k v -> Map j v
-mapKeysWith f g = mapKeysMaybeWithValueWith (Just <<< g) h
-  where
-    h k v (Just v') = Just (Tuple (g k) (f v v'))
-    h k v Nothing = Just (Tuple (g k) v)
--}
 
 withKeys :: forall k a b. Ord k => (k -> b) -> Map k a -> Map k b
 withKeys f = Map.mapMaybeWithKey (const <<< Just <<< f)

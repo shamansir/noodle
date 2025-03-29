@@ -8,9 +8,11 @@ import Data.Maybe (Maybe(..))
 import Data.Bounded (class Bounded)
 
 import Data.Map (Map)
-import Data.Map (empty, insert, lookup, size) as Map
+import Data.Map (empty, insert, lookup, size, update) as Map
+import Data.Map.Extra (update') as MapX
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (lmap)
 
 import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -31,6 +33,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , lastLocation :: loc
     , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
     , nodesBounds :: Map Id.NodeR (Bounds /\ ZIndex)
+    , draggingNode :: Maybe Id.NodeR
     }
 
 
@@ -55,6 +58,7 @@ init patchState toolkit =
     , currentPatch : Nothing
     , lastLocation : firstLocation
     , nodesBounds : Map.empty
+    , draggingNode : Nothing
     }
 
 
@@ -130,4 +134,9 @@ storeBounds nodeR bounds s = s
     }
 
 
--- storeBounds =
+updatePosition :: forall loc tk ps fs sr cr m. Id.NodeR -> { left :: Number, top :: Number } -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+updatePosition nodeR { left, top } s = s
+    { nodesBounds
+        = s.nodesBounds
+            # MapX.update' (lmap $ _ { left = left, top = top }) nodeR
+    }

@@ -18,6 +18,7 @@ import Data.Map (toUnfoldable) as Map
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
+import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
 import Data.Functor.Extra ((<$$>), (<##>))
 
@@ -32,6 +33,8 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
+
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
@@ -52,7 +55,7 @@ import Web.State (State)
 import Web.State
     ( init
     , spawnPatch, registerPatch, lastPatchIndex, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
-    , defaultPosition, findBounds, storeBounds
+    , defaultPosition, findBounds, storeBounds, updatePosition
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -82,6 +85,8 @@ data Action sr cr
     | CreatePatch
     | SpawnNode Id.FamilyR
     | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
+    | PatchAreaMouseMove { x :: Number, y :: Number }
+    | PatchAreaClick
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromNodeBox Id.NodeR NodeBox.Output
@@ -138,13 +143,21 @@ render state =
                         { families : Toolkit.families $ Network.toolkit state.network }
                         FromLibrary
                     , HS.g
-                        [ HSA.transform [ HSA.Translate (Library.width + 20.0) (PatchesBar.height + 15.0) ] ]
+                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
+                        , HE.onMouseMove \mevt -> PatchAreaMouseMove
+                            { x : (Int.toNumber $ Mouse.clientX mevt) - patchAreaX
+                            , y : (Int.toNumber $ Mouse.clientY mevt) - patchAreaY
+                            }
+                        , HE.onClick $ const PatchAreaClick
+                        ]
                         nodeBoxesSlots
                     ]
                 )
             ]
         ]
     where
+        patchAreaX = Library.width + 20.0
+        patchAreaY = PatchesBar.height + 15.0
         nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes findRenderData <#> Array.sortWith _.zIndex <##> nodeBoxSlot) # fromMaybe []
         findRenderData rawNode =
             let
@@ -225,13 +238,36 @@ handleAction pstate = case _ of
                     >>> _ { lastLocation = nextLoc }
                 H.lift $ RawNode.run rawNode
             Nothing -> pure unit
+    PatchAreaMouseMove { x, y } -> do
+        state <- State.get
+        case state.draggingNode of
+            Just nodeR -> do
+                H.modify_ $ CState.updatePosition nodeR { left : x, top : y }
+            Nothing -> pure unit
+    PatchAreaClick -> do
+        pure unit
+        {-
+        state <- State.get
+        case state.draggingNode of
+            Just nodeR -> do
+                State.put $ state { draggingNode = Nothing }
+                H.tell _nodeBox nodeR NodeBox.QueryDragEnd
+            Nothing -> pure unit
+        -}
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
         handleAction pstate $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) -> do
         handleAction pstate $ SpawnNode familyR
-    FromNodeBox nodeR NodeBox.Output ->
-        pure unit
+    FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
+        state <- State.get
+        case state.draggingNode of
+            Just otherNodeR -> do
+                State.put $ state { draggingNode = Nothing }
+                H.tell _nodeBox otherNodeR NodeBox.QueryDragEnd
+            Nothing -> do
+                State.put $ state { draggingNode = Just nodeR }
+                H.tell _nodeBox nodeR NodeBox.QueryDragStart
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.QueryUpdate update

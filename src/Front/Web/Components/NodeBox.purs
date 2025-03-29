@@ -2,8 +2,7 @@ module Web.Components.NodeBox where
 
 import Prelude
 
-
-import Prelude
+import Debug as Debug
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map (lookup) as Map
@@ -45,6 +44,7 @@ type Input strepr chrepr m =
 type State strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
+    , beingDragged :: Boolean
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
     }
 
@@ -52,14 +52,17 @@ type State strepr chrepr m =
 data Action sterpr chrepr m
     = Initialize
     | Receive (Input sterpr chrepr m)
+    | HeaderClick
 
 
 data Output
-    = Output
+    = HeaderWasClicked
 
 
 data Query strepr chrepr a
     = QueryUpdate (RawNode.NodeChanges strepr chrepr) a
+    | QueryDragStart a
+    | QueryDragEnd a
 
 
 component :: forall strepr chrepr m. WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
@@ -76,55 +79,63 @@ component =
 
 
 initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
-initialState { node, position } = { node, position, latestUpdate : Nothing }
+initialState { node, position } =
+    { node, position
+    , latestUpdate : Nothing
+    , beingDragged : false
+    }
 
 
 render :: forall sterpr chrepr m. WriteChannelRepr chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
-render { node, position, latestUpdate } =
+render { node, position, latestUpdate, beingDragged } =
     HS.g
-        [ HSA.transform [ HSA.Translate position.left position.top ] ]
+        [ HSA.transform [ HSA.Translate position.left position.top ]
+        ]
         (
-            HS.path
-                [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]
-                , HSA.d
-                    [ HSA.m HSA.Abs titleBarWidth channelBarHeight
-                    , HSA.l HSA.Abs 0.0 $ channelBarHeight + slopeFactor
-                    , HSA.l HSA.Abs 0.0 $ titleY - slopeFactor
-                    , HSA.l HSA.Abs titleBarWidth titleY
-                    , HSA.z
+            HS.g
+                [ HE.onClick $ const $ HeaderClick ]
+                [ HS.path
+                    [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]
+                    , HSA.d
+                        [ HSA.m HSA.Abs titleBarWidth channelBarHeight
+                        , HSA.l HSA.Abs 0.0 $ channelBarHeight + slopeFactor
+                        , HSA.l HSA.Abs 0.0 $ titleY - slopeFactor
+                        , HSA.l HSA.Abs titleBarWidth titleY
+                        , HSA.z
+                        ]
+                    , HSA.fill $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                    , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                    , HSA.strokeWidth 1.5
                     ]
-                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.yellow
-                , HSA.stroke $ Just $ P.hColorOf $ _.i100 Palette.yellow
-                , HSA.strokeWidth 1.5
-                ]
-            : HS.path
-                [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
-                , HSA.d
-                    [ HSA.m HSA.Abs 0.0 (slopeFactor * 2.0)
-                    , HSA.l HSA.Abs slopeFactor slopeFactor
-                    , HSA.l HSA.Abs (nodeWidth * 0.7) slopeFactor
-                    , HSA.l HSA.Abs (nodeWidth * 0.7 + slopeFactor) 0.0
-                    , HSA.l HSA.Abs (nodeWidth - slopeFactor) 0.0
-                    , HSA.l HSA.Abs nodeWidth slopeFactor
-                    , HSA.l HSA.Abs nodeWidth (bodyHeight - slopeFactor)
-                    , HSA.l HSA.Abs (nodeWidth - slopeFactor) bodyHeight
-                    , HSA.l HSA.Abs slopeFactor bodyHeight
-                    , HSA.l HSA.Abs 0.0 (bodyHeight - slopeFactor)
-                    , HSA.z
+                , HS.path
+                    [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
+                    , HSA.d
+                        [ HSA.m HSA.Abs 0.0 (slopeFactor * 2.0)
+                        , HSA.l HSA.Abs slopeFactor slopeFactor
+                        , HSA.l HSA.Abs (nodeWidth * 0.7) slopeFactor
+                        , HSA.l HSA.Abs (nodeWidth * 0.7 + slopeFactor) 0.0
+                        , HSA.l HSA.Abs (nodeWidth - slopeFactor) 0.0
+                        , HSA.l HSA.Abs nodeWidth slopeFactor
+                        , HSA.l HSA.Abs nodeWidth (bodyHeight - slopeFactor)
+                        , HSA.l HSA.Abs (nodeWidth - slopeFactor) bodyHeight
+                        , HSA.l HSA.Abs slopeFactor bodyHeight
+                        , HSA.l HSA.Abs 0.0 (bodyHeight - slopeFactor)
+                        , HSA.z
+                        ]
+                    , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                     ]
-                , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
-                ]
-            : HS.text
-                [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.yellow
-                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px titleFontSize
-                , HSA.dominant_baseline HSA.Hanging
-                , HSA.transform
-                    [ HSA.Translate 0.0 titleY
-                    , HSA.Translate 0.0 (-slopeFactor - 2.0)
-                    , HSA.Rotate 270.0 0.0 0.0
+                , HS.text
+                    [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.yellow
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px titleFontSize
+                    , HSA.dominant_baseline HSA.Hanging
+                    , HSA.transform
+                        [ HSA.Translate 0.0 titleY
+                        , HSA.Translate 0.0 (-slopeFactor - 2.0)
+                        , HSA.Rotate 270.0 0.0 0.0
+                        ]
                     ]
+                    [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
-                [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
             : renderInlets
             : renderOutlets
             : []
@@ -264,11 +275,20 @@ handleAction = case _ of
     Receive input ->
         H.modify_ _
             { node = input.node
+            , position = input.position
             }
+    HeaderClick ->
+        H.raise HeaderWasClicked
 
 
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of
     QueryUpdate changes a -> do
         H.modify_ _ { latestUpdate = Just changes }
+        pure $ Just a
+    QueryDragStart a -> do
+        H.modify_ _ { beingDragged = true }
+        pure $ Just a
+    QueryDragEnd a -> do
+        H.modify_ _ { beingDragged = false }
         pure $ Just a
