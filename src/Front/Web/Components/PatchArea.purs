@@ -44,6 +44,7 @@ import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
 import Noodle.Patch (Patch)
 import Noodle.Patch (getState) as Patch
+import Noodle.Raw.Link (Link) as Raw
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, addPatch, patches) as Network
@@ -85,51 +86,50 @@ _nodeBox = Proxy :: _ "nodeBox"
 defaultPosition = { left : 0.0, top : 0.0 }
 
 
-type State loc tk ps fs sr cr m =
-    { lastLocation :: loc
-    , toolkit :: Toolkit tk fs sr cr m -- Maybe only store Nodes and Links here?
-    , mbPatch :: Maybe (Patch ps fs sr cr m) -- Maybe only store Nodes and Links here?
+type State loc ps sr cr m =
+    { offset :: { left :: Number, top :: Number }
+    , state :: ps
+    , lastLocation :: loc
+    , nodes :: Array (Raw.Node sr cr m)
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
+    , links :: Array Raw.Link
     , draggingNode :: Maybe Id.NodeR
     }
 
 
-type Input tk ps fs sr cr m =
+type Input ps sr cr m =
     { state :: ps
-    , mbPatch :: Maybe (Patch ps fs sr cr m)
-    , toolkit :: Toolkit tk fs sr cr m
+    , offset :: { left :: Number, top :: Number }
+    , nodes :: Array (Raw.Node sr cr m)
+    , links :: Array Raw.Link
     }
 
 
-data Action tk ps fs sr cr m
+data Action ps sr cr m
     = Initialize
-    | Receive (Input tk ps fs sr cr m)
-    | SpawnNode Id.FamilyR
+    | Receive (Input ps sr cr m)
     | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
     | PatchAreaMouseMove { x :: Number, y :: Number }
     | PatchAreaClick
     | FromNodeBox Id.NodeR NodeBox.Output
 
 
-data Output ps fs sr cr m
-    = UpdatePatch (Patch ps fs sr cr m) -- FIXME: probably we shouldn't update patch like this, or could we?
+type Output
+    = Unit
 
 
-data Query a
-    = QuerySpawnNode Id.FamilyR a
+data Query sr cr m a
+    = ApplyNewNode (Raw.Node sr cr m) a
+    | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
 
 
 component
-    :: forall loc tk ps fs sr cr m
-     . Wiring m
+    :: forall loc ps sr cr m
+     . MonadEffect m
     => WebLocator loc
-    => Toolkit.FromPatchState tk ps sr
-    => HasFallback cr
     => WriteChannelRepr cr
-    => Toolkit.HoldsFamilies sr cr m fs
-    => ValueTagged cr
     => Proxy loc
-    -> H.Component Query (Input tk ps fs sr cr m) (Output ps fs sr cr m) m
+    -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
 component ploc =
     H.mkComponent
         { initialState : initialState ploc
@@ -143,23 +143,24 @@ component ploc =
         }
 
 
-initialState :: forall loc tk fs ps sr cr m. WebLocator loc => Proxy loc -> Input tk ps fs sr cr m -> State loc tk ps fs sr cr m
-initialState _ { mbPatch, toolkit } =
+initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
+initialState _ { state, offset, nodes, links } =
     { lastLocation : firstLocation
-    , mbPatch
-    , toolkit
+    , state
+    , offset
+    , nodes
+    , links
     , nodesBounds : Map.empty
     , draggingNode : Nothing
     }
 
 
 render
-    :: forall loc tk ps fs sr cr m
+    :: forall loc ps sr cr m
      . MonadEffect m
-    => Toolkit.HoldsFamilies sr cr m fs
     => WriteChannelRepr cr
-    => State loc tk ps fs sr cr m
-    -> H.ComponentHTML (Action tk ps fs sr cr m) (Slots sr cr) m
+    => State loc ps sr cr m
+    -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
 render state =
     HS.g
         []
@@ -168,8 +169,8 @@ render state =
             , HSA.fill $ Just $ P.hColorOf $ Palette.black
             , HE.onClick $ const PatchAreaClick
             , HE.onMouseMove \mevt -> PatchAreaMouseMove
-                { x : (Int.toNumber $ Mouse.clientX mevt)
-                , y : (Int.toNumber $ Mouse.clientY mevt)
+                { x : (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
+                , y : (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
                 }
             ]
         , HS.g
@@ -178,7 +179,7 @@ render state =
             $ nodeBoxesSlots
         ]
     where
-        nodeBoxesSlots = (state.mbPatch <#> Patch.mapAllNodes findRenderData <#> Array.sortWith _.zIndex <##> nodeBoxSlot) # fromMaybe []
+        nodeBoxesSlots = (state.nodes <#> findRenderData # Array.sortWith _.zIndex <#> nodeBoxSlot)
         findRenderData rawNode =
             let
                 nodeR = RawNode.id rawNode
@@ -199,56 +200,15 @@ render state =
 
 
 handleAction
-    :: forall loc tk ps fs sr cr m
-     . Wiring m
-    => WebLocator loc
-    => Toolkit.FromPatchState tk ps sr
-    => HasFallback cr
-    => ValueTagged cr
-    => Action tk ps fs sr cr m
-    -> H.HalogenM (State loc tk ps fs sr cr m) (Action tk ps fs sr cr m) (Slots sr cr) (Output ps fs sr cr m) m Unit
+    :: forall loc ps sr cr m
+     . WebLocator loc
+    => Action ps sr cr m
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { mbPatch, toolkit, state } ->
-        H.modify_ _ { mbPatch = mbPatch, toolkit = toolkit }
-    SpawnNode familyR -> do
-        state <- State.get
-        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR state.toolkit
-        whenJust mbRawNode \rawNode -> do
-            let
-                nodeR = RawNode.id rawNode
-                nodeRect = { width : 300.0, height : 70.0 }
-                nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
-            H.lift $ RawNode._runOnInletUpdates rawNode
-
-            whenJust state.mbPatch \curPatch -> do
-                (patchState :: ps) <- Patch.getState curPatch
-                let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
-                whenJust mbNodeState
-                    \nextState -> rawNode # RawNode.setState nextState
-
-                _ <- H.subscribe =<< do
-                    { emitter, listener } <- H.liftEffect HSS.create
-                    H.liftEffect
-                        $  Signal.runSignal
-                        $  RawNode.subscribeChanges rawNode
-                        ~> PassUpdate nodeR
-                        ~> HSS.notify listener
-                    pure emitter
-
-                H.modify_
-                    $   (\s -> s { mbPatch = Patch.registerRawNode rawNode <$> s.mbPatch })
-                    >>> storeBounds nodeR
-                            { left : nodePos.left, top : nodePos.top
-                            , width : nodeRect.width, height : nodeRect.height
-                            }
-                    >>> _ { lastLocation = nextLoc }
-
-                H.lift $ RawNode.run rawNode
-
-                nextState <- State.get
-                whenJust nextState.mbPatch \curPatch' ->
-                    H.raise $ UpdatePatch curPatch'
+    Receive { state, offset, nodes, links } ->
+        H.modify_ _
+            { state = state, offset = offset, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
         whenJust state.draggingNode
@@ -259,44 +219,52 @@ handleAction = case _ of
         whenJust state.draggingNode
             \nodeR -> do
                 State.put $ state { draggingNode = Nothing }
-                H.tell _nodeBox nodeR NodeBox.QueryDragEnd
+                H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- State.get
         case state.draggingNode of
             Nothing -> do
                 State.put $ state { draggingNode = Just nodeR }
-                H.tell _nodeBox nodeR NodeBox.QueryDragStart
+                H.tell _nodeBox nodeR NodeBox.ApplyDragStart
             Just otherNodeR -> do
                 State.put $ state { draggingNode = Nothing }
-                H.tell _nodeBox otherNodeR NodeBox.QueryDragEnd
+                H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
     FromNodeBox nodeR (NodeBox.InletWasClicked inletDef) -> do
         pure unit
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) -> do
         pure unit
     PassUpdate nodeR update ->
-        H.tell _nodeBox nodeR $ NodeBox.QueryUpdate update
+        H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
 
 
 handleQuery
-    :: forall loc tk ps fs sr cr m a
-     . Wiring m
-    => WebLocator loc
-    => Toolkit.FromPatchState tk ps sr
-    => HasFallback cr
-    => ValueTagged cr
-    => Query a
-    -> H.HalogenM (State loc tk ps fs sr cr m) (Action tk ps fs sr cr m) (Slots sr cr) (Output ps fs sr cr m) m (Maybe a)
+    :: forall loc ps sr cr m a
+     . WebLocator loc
+    => Query sr cr m a
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m (Maybe a)
 handleQuery = case _ of
-    QuerySpawnNode familyR a -> do
-        handleAction $ SpawnNode familyR
+    ApplyNewNode rawNode a -> do
+        state <- State.get
+        let
+            nodeRect = { width : 300.0, height : 70.0 }
+            nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
+        H.modify_
+            $ _ { lastLocation = nextLoc }
+            >>> storeBounds (RawNode.id rawNode)
+                { left : nodePos.left, top : nodePos.top
+                , width : nodeRect.width, height : nodeRect.height
+                }
+        pure $ Just a
+    ApplyUpdate nodeR update a -> do
+        handleAction $ PassUpdate nodeR update
         pure $ Just a
 
 
-findBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe (Bounds /\ NodeZIndex)
+findBounds :: forall loc ps sr cr m. Id.NodeR -> State loc ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
 
 
-storeBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> Bounds -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+storeBounds :: forall loc ps sr cr m. Id.NodeR -> Bounds -> State loc ps sr cr m -> State loc ps sr cr m
 storeBounds nodeR bounds s = s
     { nodesBounds
         = s.nodesBounds
@@ -305,7 +273,7 @@ storeBounds nodeR bounds s = s
     }
 
 
-updatePosition :: forall loc tk ps fs sr cr m. Id.NodeR -> { left :: Number, top :: Number } -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+updatePosition :: forall loc ps sr cr m. Id.NodeR -> { left :: Number, top :: Number } -> State loc ps sr cr m -> State loc ps sr cr m
 updatePosition nodeR { left, top } s = s
     { nodesBounds
         = s.nodesBounds

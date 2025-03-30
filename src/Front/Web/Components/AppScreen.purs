@@ -9,7 +9,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Control.Monad.State (get, put, modify, modify_) as State
 import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.Extra (whenJust)
+import Control.Monad.Extra (whenJust, whenJust_)
 
 import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
@@ -43,7 +43,7 @@ import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, addPatch, patches) as Network
-import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes, nodesCount) as Patch
+import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes, nodesCount, getState, allNodes, links) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -66,10 +66,10 @@ import Web.Class.WebRenderer (class WebLocator, ConstantShift)
 import Web.Class.WebRenderer (locateNext) as Web
 
 
-type Slots ps fs sr cr m =
+type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output Unit
-    , patchArea :: H.Slot PatchArea.Query (PatchArea.Output ps fs sr cr m) Unit
+    , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
     )
 
 
@@ -78,13 +78,15 @@ _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
 
 
-data Action ps fs sr cr m
+data Action sr cr
     = Initialize
     | SelectPatch Id.PatchR
     | CreatePatch
+    | SpawnNode Id.FamilyR
+    | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea (PatchArea.Output ps fs sr cr m)
+    | FromPatchArea PatchArea.Output
 
 
 component
@@ -126,7 +128,7 @@ render
     => WriteChannelRepr cr
     => Proxy loc
     -> State tk ps fs sr cr m
-    -> H.ComponentHTML (Action ps fs sr cr m) (Slots ps fs sr cr m) m
+    -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
 render ploc state =
     HH.div_
         [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
@@ -149,9 +151,10 @@ render ploc state =
                         [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
                         ]
                         [ HH.slot _patchArea unit (PatchArea.component ploc)
-                            { state : state.initPatchesFrom
-                            , toolkit : Network.toolkit state.network
-                            , mbPatch : CState.currentPatch state
+                            { offset : { left : patchAreaX, top : patchAreaY }
+                            , state : state.initPatchesFrom
+                            , nodes : curPatchNodes
+                            , links : curPatchLinks
                             }
                             FromPatchArea
                         ]
@@ -160,6 +163,8 @@ render ploc state =
             ]
         ]
         where
+            curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
+            curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
 
@@ -171,8 +176,8 @@ handleAction
     => HasFallback cr
     => ValueTagged cr
     => ps
-    -> Action ps fs sr cr m
-    -> H.HalogenM (State tk ps fs sr cr m) (Action ps fs sr cr m) (Slots ps fs sr cr m) output m Unit
+    -> Action sr cr
+    -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr) (Slots sr cr m) output m Unit
 handleAction pstate = case _ of
     Initialize -> do
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
@@ -189,11 +194,48 @@ handleAction pstate = case _ of
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
+    SpawnNode familyR -> do
+        state <- State.get
+        let toolkit = Network.toolkit state.network
+        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
+        whenJust mbRawNode \rawNode -> do
+            let
+                nodeR = RawNode.id rawNode
+            H.lift $ RawNode._runOnInletUpdates rawNode
+
+            mbCurrentPatch <- CState.currentPatch <$> State.get
+            whenJust mbCurrentPatch \curPatch -> do
+                (patchState :: ps) <- Patch.getState curPatch
+                let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
+                whenJust mbNodeState
+                    \nextState -> rawNode # RawNode.setState nextState
+
+                _ <- H.subscribe =<< do
+                    { emitter, listener } <- H.liftEffect HSS.create
+                    H.liftEffect
+                        $  Signal.runSignal
+                        $  RawNode.subscribeChanges rawNode
+                        ~> PassUpdate (Patch.id curPatch) nodeR
+                        ~> HSS.notify listener
+                    pure emitter
+
+                H.modify_
+                    $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+
+                H.tell _patchArea unit $ PatchArea.ApplyNewNode rawNode
+
+                H.lift $ RawNode.run rawNode
+    PassUpdate patchR nodeR update ->
+        State.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
+            if (Patch.id curPatch == patchR) then
+                H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
+            else
+                pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
         handleAction pstate $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
-        H.tell _patchArea unit $ PatchArea.QuerySpawnNode familyR
-    FromPatchArea (PatchArea.UpdatePatch nextPatch) ->
-        H.modify_ $ CState.withCurrentPatch $ const nextPatch
+        handleAction pstate $ SpawnNode familyR
+    FromPatchArea unit ->
+        pure unit

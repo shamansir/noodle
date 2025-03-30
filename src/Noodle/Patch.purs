@@ -361,6 +361,13 @@ mapAllNodes f patch@(Patch _ _ _ nodes _ _) =
       toRawCnv hn = HN.withNode hn (Node.toRaw >>> RawNode.toReprableState)
 
 
+allNodes
+    :: forall pstate families strepr chrepr m
+    .  Patch pstate families strepr chrepr m
+    -> Array (Raw.Node strepr chrepr m)
+allNodes = mapAllNodes identity
+
+
 withNodes
     :: forall f fstate is os x pstate families strepr chrepr m
     .  RegisteredFamily (F f fstate is os chrepr m) families

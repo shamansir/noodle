@@ -68,9 +68,9 @@ data Output
 
 
 data Query strepr chrepr a
-    = QueryUpdate (RawNode.NodeChanges strepr chrepr) a
-    | QueryDragStart a
-    | QueryDragEnd a
+    = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
+    | ApplyDragStart a
+    | ApplyDragEnd a
 
 
 component :: forall strepr chrepr m. MonadEffect m => WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
@@ -297,12 +297,12 @@ handleAction = case _ of
 
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of
-    QueryUpdate changes a -> do
+    ApplyChanges changes a -> do
         H.modify_ _ { latestUpdate = Just changes }
         pure $ Just a
-    QueryDragStart a -> do
+    ApplyDragStart a -> do
         H.modify_ _ { beingDragged = true }
         pure $ Just a
-    QueryDragEnd a -> do
+    ApplyDragEnd a -> do
         H.modify_ _ { beingDragged = false }
         pure $ Just a
