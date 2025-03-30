@@ -6,8 +6,6 @@ import Prim.Boolean (True, False)
 import Prim.Row as R
 import Prim.RowList as RL
 
-import Debug as Debug
-
 import Type.Data.List (class IsMember)
 import Type.Data.List.Extra (class LMap, class MapDown, mapDown)
 import Type.Proxy (Proxy(..))
@@ -22,6 +20,7 @@ import Data.UniqueHash (generate) as UH
 import Data.Array (singleton, cons, concat, catMaybes, find, filter, length) as Array
 import Data.Traversable (traverse_)
 import Data.Functor.Extra ((<##>))
+import Data.Foldable (foldr)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -416,3 +415,9 @@ linksMap (Patch _ _ _ _ _ links) = links
 
 links :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Array Raw.Link
 links = linksMap >>> Links.all
+
+
+nodesCount :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Int
+nodesCount (Patch _ _ _ nodes rawNodes _)
+    = foldr (Array.length >>> (+)) 0 nodes
+    + foldr (Array.length >>> (+)) 0 rawNodes

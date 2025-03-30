@@ -43,7 +43,7 @@ import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, addPatch, patches) as Network
-import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes) as Patch
+import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes, nodesCount) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -133,7 +133,11 @@ render ploc state =
             [ HS.g
                 []
                 (
-                    [ HH.slot _patchesBar unit PatchesBar.component
+                    [ HS.rect
+                        [ HSA.width 1000.0, HSA.height 1000.0
+                        , HSA.fill $ Just $ P.hColorOf $ Palette.black
+                        ]
+                    , HH.slot _patchesBar unit PatchesBar.component
                         { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
                         , selected : _.id <$> state.currentPatch
                         }
@@ -141,20 +145,16 @@ render ploc state =
                     , HH.slot _library unit Library.component
                         { families : Toolkit.families $ Network.toolkit state.network }
                         FromLibrary
-                    , case CState.currentPatch state of
-                        Just currentPatch ->
-                            HS.g
-                                [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
-                                ]
-                                [ HH.slot _patchArea unit (PatchArea.component ploc)
-                                    { state : state.initPatchesFrom
-                                    , toolkit : Network.toolkit state.network
-                                    , patch : currentPatch
-                                    }
-                                    FromPatchArea
-                                ]
-                        Nothing ->
-                            HSX.none
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
+                        ]
+                        [ HH.slot _patchArea unit (PatchArea.component ploc)
+                            { state : state.initPatchesFrom
+                            , toolkit : Network.toolkit state.network
+                            , mbPatch : CState.currentPatch state
+                            }
+                            FromPatchArea
+                        ]
                     ]
                 )
             ]
@@ -193,7 +193,7 @@ handleAction pstate = case _ of
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
         handleAction pstate $ CreatePatch
-    FromLibrary (Library.SelectFamily familyR) -> do
+    FromLibrary (Library.SelectFamily familyR) ->
         H.tell _patchArea unit $ PatchArea.QuerySpawnNode familyR
     FromPatchArea (PatchArea.UpdatePatch nextPatch) ->
         H.modify_ $ CState.withCurrentPatch $ const nextPatch

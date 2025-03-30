@@ -2,8 +2,6 @@ module Noodle.Patch.Links where
 
 import Prelude
 
-import Debug as Debug
-
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (Map)
 import Data.Map (empty, insert, alter, delete, lookup, values, filter, filterKeys) as Map
