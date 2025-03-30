@@ -57,10 +57,14 @@ data Action sterpr chrepr m
     = Initialize
     | Receive (Input sterpr chrepr m)
     | HeaderClick MouseEvent
+    | InletClick  MouseEvent RawShape.InletDefR
+    | OutletClick MouseEvent RawShape.OutletDefR
 
 
 data Output
     = HeaderWasClicked
+    | InletWasClicked  RawShape.InletDefR
+    | OutletWasClicked RawShape.OutletDefR
 
 
 data Query strepr chrepr a
@@ -284,7 +288,12 @@ handleAction = case _ of
     HeaderClick evt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
         H.raise HeaderWasClicked
-
+    InletClick evt inletDef -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
+        H.raise $ InletWasClicked inletDef
+    OutletClick evt outletDef -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
+        H.raise $ OutletWasClicked outletDef
 
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of

@@ -1,4 +1,4 @@
-module Web.Components.MainScreen where
+module Web.Components.PatchArea where
 
 import Prelude
 
@@ -15,10 +15,13 @@ import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Map (toUnfoldable) as Map
+import Data.Map (Map)
+import Data.Map (empty, lookup, insert, toUnfoldable, size) as Map
+import Data.Map.Extra (update') as MapX
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
+import Data.Array ((:))
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
 import Data.Functor.Extra ((<$$>), (<##>))
@@ -39,6 +42,8 @@ import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
+import Noodle.Patch (Patch)
+import Noodle.Patch (getState) as Patch
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, addPatch, patches) as Network
@@ -51,124 +56,133 @@ import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+import Web.Bounds (Bounds)
 import Web.Bounds (getPosition) as Bounds
-import Web.State (State)
-import Web.State
-    ( init
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
-    , defaultPosition, findBounds, storeBounds, updatePosition
-    ) as CState
-import Web.Components.PatchesBar as PatchesBar
-import Web.Components.Library as Library
 import Web.Components.NodeBox as NodeBox
-import Web.Class.WebRenderer (class WebLocator, ConstantShift)
+import Web.Class.WebRenderer (class WebLocator, ConstantShift, firstLocation, locateNext)
 import Web.Class.WebRenderer (locateNext) as Web
 
 
-type Slots sr cr =
-    ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
-    , library :: forall q. H.Slot q Library.Output Unit
-    , nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
-    )
-
-
-_patchesBar = Proxy :: _ "patchesBar"
-_library = Proxy :: _ "library"
-_nodeBox = Proxy :: _ "nodeBox"
+newtype NodeZIndex = ZIndex Int
+derive newtype instance Eq NodeZIndex
+derive newtype instance Ord NodeZIndex
+instance Bounded NodeZIndex where
+    top = ZIndex 1000
+    bottom = ZIndex 0
 
 
 type Locator = ConstantShift -- TODO: move to some root App config?
 
 
+type Slots sr cr =
+    ( nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
+    )
+
+
+_nodeBox = Proxy :: _ "nodeBox"
+
+
+defaultPosition = { left : 0.0, top : 0.0 }
+
+
+type State loc tk ps fs sr cr m =
+    { lastLocation :: loc
+    , toolkit :: Toolkit tk fs sr cr m
+    , patch :: Patch ps fs sr cr m
+    , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
+    , draggingNode :: Maybe Id.NodeR
+    }
+
+
+type Input tk ps fs sr cr m =
+    { state :: ps
+    , patch :: Patch ps fs sr cr m
+    , toolkit :: Toolkit tk fs sr cr m
+    }
+
+
 data Action sr cr
     = Initialize
-    | SelectPatch Id.PatchR
-    | CreatePatch
     | SpawnNode Id.FamilyR
     | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
     | PatchAreaMouseMove { x :: Number, y :: Number }
     | PatchAreaClick
-    | FromPatchesBar PatchesBar.Output
-    | FromLibrary Library.Output
     | FromNodeBox Id.NodeR NodeBox.Output
 
 
+data Output ps fs sr cr m
+    = UpdatePatch (Patch ps fs sr cr m)
+
+
+data Query a
+    = QuerySpawnNode Id.FamilyR a
+
+
 component
-    :: forall query input output tk ps fs sr cr m
+    :: forall loc tk ps fs sr cr m
      . Wiring m
+    => WebLocator loc
+    => Toolkit.FromPatchState tk ps sr
     => HasFallback cr
     => WriteChannelRepr cr
     => Toolkit.HoldsFamilies sr cr m fs
-    => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
-    => ps
-    -> Toolkit tk fs sr cr m
-    -> H.Component query input output m
-component pstate toolkit =
+    => Proxy loc
+    -> H.Component Query (Input tk ps fs sr cr m) (Output ps fs sr cr m) m
+component ploc =
     H.mkComponent
-        { initialState : initialState pstate toolkit
-        , render
+        { initialState : initialState ploc
+        , render : render
         , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction pstate
+            { handleAction = handleAction
             , initialize = Just Initialize
             }
         }
 
 
-initialState :: forall input tk ps fs sr cr m. ps -> Toolkit tk fs sr cr m -> input -> State Locator tk ps fs sr cr m
-initialState pstate toolkit _ = CState.init pstate toolkit
+initialState :: forall loc tk fs ps sr cr m. WebLocator loc => Proxy loc -> Input tk ps fs sr cr m -> State loc tk ps fs sr cr m
+initialState _ { patch, toolkit } =
+    { lastLocation : firstLocation
+    , patch
+    , toolkit
+    , nodesBounds : Map.empty
+    , draggingNode : Nothing
+    }
 
 
 render
-    :: forall tk ps fs sr cr m
+    :: forall loc tk ps fs sr cr m
      . MonadEffect m
     => Toolkit.HoldsFamilies sr cr m fs
     => WriteChannelRepr cr
-    => State _ tk ps fs sr cr m
+    => State loc tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr) m
 render state =
-    HH.div_
-        [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
-            [ HS.g
-                []
-                (
-                    [ HS.rect
-                        [ HSA.width 1000.0, HSA.height 1000.0
-                        , HSA.fill $ Just $ P.hColorOf $ Palette.black
-                        , HE.onClick $ const PatchAreaClick
-                        , HE.onMouseMove \mevt -> PatchAreaMouseMove
-                            { x : (Int.toNumber $ Mouse.clientX mevt) - patchAreaX
-                            , y : (Int.toNumber $ Mouse.clientY mevt) - patchAreaY
-                            }
-                        ]
-                    , HH.slot _patchesBar unit PatchesBar.component
-                        { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
-                        , selected : _.id <$> state.currentPatch
-                        }
-                        FromPatchesBar
-                    , HH.slot _library unit Library.component
-                        { families : Toolkit.families $ Network.toolkit state.network }
-                        FromLibrary
-                    , HS.g
-                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
-                        , HE.onClick $ const PatchAreaClick
-                        ]
-                        nodeBoxesSlots
-                    ]
-                )
+    HS.g
+        []
+        [ HS.rect
+            [ HSA.width 1000.0, HSA.height 1000.0
+            , HSA.fill $ Just $ P.hColorOf $ Palette.black
+            , HE.onClick $ const PatchAreaClick
+            , HE.onMouseMove \mevt -> PatchAreaMouseMove
+                { x : (Int.toNumber $ Mouse.clientX mevt)
+                , y : (Int.toNumber $ Mouse.clientY mevt)
+                }
             ]
+        , HS.g
+            [ HE.onClick $ const PatchAreaClick
+            ]
+            $ nodeBoxesSlots
         ]
     where
-        patchAreaX = Library.width + 20.0
-        patchAreaY = PatchesBar.height + 15.0
-        nodeBoxesSlots = (CState.currentPatch state <#> Patch.mapAllNodes findRenderData <#> Array.sortWith _.zIndex <##> nodeBoxSlot) # fromMaybe []
+        nodeBoxesSlots = state.patch # Patch.mapAllNodes findRenderData # Array.sortWith _.zIndex <#> nodeBoxSlot
         findRenderData rawNode =
             let
                 nodeR = RawNode.id rawNode
                 (position /\ zIndex) =
-                    fromMaybe (CState.defaultPosition /\ top)
+                    fromMaybe (defaultPosition /\ top)
                          $ lmap Bounds.getPosition
-                        <$> CState.findBounds nodeR state
+                        <$> findBounds nodeR state
             in
                 { rawNode, position, zIndex }
         nodeBoxSlot { rawNode, position } =
@@ -182,43 +196,27 @@ render state =
 
 
 handleAction
-    :: forall output loc tk ps fs sr cr m
+    :: forall loc tk ps fs sr cr m
      . Wiring m
     => WebLocator loc
     => Toolkit.FromPatchState tk ps sr
     => HasFallback cr
     => ValueTagged cr
-    => ps
-    -> Action sr cr
-    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr) (Slots sr cr) output m Unit
-handleAction pstate = case _ of
-    Initialize -> do
-        firstPatch <- H.lift $ Patch.make "Patch 1" pstate
-        State.modify_ $ CState.registerPatch firstPatch
-    CreatePatch -> do
-        state <- State.get
-        newPatch <- H.lift $ CState.spawnPatch state
-        State.modify_ $ CState.registerPatch newPatch
-        handleAction pstate $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch
-    SelectPatch patchR -> do
-        state <- State.get
-        H.modify_ _
-            { currentPatch =
-                CState.indexOfPatch patchR state
-                    <#> (\pIndex -> { id : patchR, index : pIndex })
-            }
+    => Action sr cr
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr) (Slots sr cr) (Output ps fs sr cr m) m Unit
+handleAction = case _ of
+    Initialize -> pure unit
     SpawnNode familyR -> do
         state <- State.get
-        let toolkit = Network.toolkit state.network
-        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
+        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR state.toolkit
         whenJust mbRawNode \rawNode -> do
             let
                 nodeR = RawNode.id rawNode
                 nodeRect = { width : 300.0, height : 70.0 }
                 nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
             H.lift $ RawNode._runOnInletUpdates rawNode
-            (mbPatchState :: Maybe ps) <- CState.currentPatchState =<< State.get
-            let (mbNodeState :: Maybe sr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+            (patchState :: ps) <- (_.patch >>> Patch.getState) =<< State.get
+            let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
             whenJust mbNodeState
                 \nextState -> rawNode # RawNode.setState nextState
 
@@ -232,31 +230,27 @@ handleAction pstate = case _ of
                 pure emitter
 
             H.modify_
-                $   (CState.withCurrentPatch $ Patch.registerRawNode rawNode)
-                >>> CState.storeBounds nodeR
+                $   (\s -> s { patch = Patch.registerRawNode rawNode s.patch })
+                >>> storeBounds nodeR
                         { left : nodePos.left, top : nodePos.top
                         , width : nodeRect.width, height : nodeRect.height
                         }
                 >>> _ { lastLocation = nextLoc }
 
             H.lift $ RawNode.run rawNode
+
+            State.get <#> _.patch >>= (H.raise <<< UpdatePatch)
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
         whenJust state.draggingNode
             \nodeR -> do
-                H.modify_ $ CState.updatePosition nodeR { left : x, top : y }
+                H.modify_ $ updatePosition nodeR { left : x, top : y }
     PatchAreaClick -> do
         state <- State.get
         whenJust state.draggingNode
             \nodeR -> do
                 State.put $ state { draggingNode = Nothing }
                 H.tell _nodeBox nodeR NodeBox.QueryDragEnd
-    FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
-        handleAction pstate $ SelectPatch patchR
-    FromPatchesBar PatchesBar.CreatePatch -> do
-        handleAction pstate $ CreatePatch
-    FromLibrary (Library.SelectFamily familyR) -> do
-        handleAction pstate $ SpawnNode familyR
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- State.get
         case state.draggingNode of
@@ -266,5 +260,45 @@ handleAction pstate = case _ of
             Just otherNodeR -> do
                 State.put $ state { draggingNode = Nothing }
                 H.tell _nodeBox otherNodeR NodeBox.QueryDragEnd
+    FromNodeBox nodeR (NodeBox.InletWasClicked inletDef) -> do
+        pure unit
+    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) -> do
+        pure unit
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.QueryUpdate update
+
+
+handleQuery
+    :: forall loc tk ps fs sr cr m a
+     . Wiring m
+    => WebLocator loc
+    => Toolkit.FromPatchState tk ps sr
+    => HasFallback cr
+    => ValueTagged cr
+    => Query a
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr) (Slots sr cr) (Output ps fs sr cr m) m (Maybe a)
+handleQuery = case _ of
+    QuerySpawnNode familyR a -> do
+        handleAction $ SpawnNode familyR
+        pure $ Just a
+
+
+findBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe (Bounds /\ NodeZIndex)
+findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
+
+
+storeBounds :: forall loc tk ps fs sr cr m. Id.NodeR -> Bounds -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+storeBounds nodeR bounds s = s
+    { nodesBounds
+        = s.nodesBounds
+            # Map.insert nodeR
+                (bounds /\ (ZIndex $ Map.size s.nodesBounds))
+    }
+
+
+updatePosition :: forall loc tk ps fs sr cr m. Id.NodeR -> { left :: Number, top :: Number } -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+updatePosition nodeR { left, top } s = s
+    { nodesBounds
+        = s.nodesBounds
+            # MapX.update' (lmap $ _ { left = left, top = top }) nodeR
+    }

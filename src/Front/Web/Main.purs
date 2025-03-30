@@ -5,6 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 
+import Type.Proxy (Proxy(..))
+
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -20,10 +22,11 @@ import Halogen.VDom.Driver (runUI)
 import HydraTk.Toolkit (toolkit) as Hydra
 import HydraTk.Patch (init) as Hydra.Patch
 
-import Web.Components.MainScreen (component) as MainScreen
+import Web.Class.WebRenderer (ConstantShift)
+import Web.Components.AppScreen (component) as AppScreen
 
 
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
-  runUI (H.hoist liftEffect $ MainScreen.component Hydra.Patch.init Hydra.toolkit) unit body
+  runUI (H.hoist liftEffect $ AppScreen.component (Proxy :: _ ConstantShift) Hydra.Patch.init Hydra.toolkit) unit body
