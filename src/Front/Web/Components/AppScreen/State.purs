@@ -5,25 +5,18 @@ import Prelude
 import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
-import Data.Bounded (class Bounded)
 
 import Data.Map (Map)
-import Data.Map (empty, insert, lookup, size, update) as Map
-import Data.Map.Extra (update') as MapX
+import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Bifunctor (lmap)
 
-import Noodle.Id (PatchR, NodeR) as Id
+import Noodle.Id (PatchR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
-
-import Web.Class.WebRenderer (class WebLocator, firstLocation)
-import Web.Bounds (Bounds)
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =

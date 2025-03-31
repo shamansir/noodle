@@ -15,6 +15,7 @@ import Data.String (length, toUpper) as String
 import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Newtype (wrap) as NT
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -56,6 +57,7 @@ type State strepr chrepr m =
 data Action sterpr chrepr m
     = Initialize
     | Receive (Input sterpr chrepr m)
+    | MouseMove MouseEvent
     | HeaderClick MouseEvent
     | InletClick  MouseEvent RawShape.InletDefR
     | OutletClick MouseEvent RawShape.OutletDefR
@@ -63,6 +65,7 @@ data Action sterpr chrepr m
 
 data Output
     = HeaderWasClicked
+    | ReportMouseMove MouseEvent
     | InletWasClicked  RawShape.InletDefR
     | OutletWasClicked RawShape.OutletDefR
 
@@ -98,6 +101,7 @@ render :: forall sterpr chrepr m. WriteChannelRepr chrepr => State sterpr chrepr
 render { node, position, latestUpdate, beingDragged } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
+        , HE.onMouseMove MouseMove
         ]
         (
             HS.g
@@ -186,7 +190,9 @@ render { node, position, latestUpdate, beingDragged } =
             }
         renderInlet idx inletDef =
             HS.g
-                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ] ]
+                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
+                , HE.onClick $ flip InletClick $ NT.wrap inletDef
+                ]
                 [ HS.circle
                     [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
                     , HSA.r connectorRadius
@@ -205,7 +211,9 @@ render { node, position, latestUpdate, beingDragged } =
                 ]
         renderOulet idx outletDef =
             HS.g
-                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ] ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
+                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
+                , HE.onClick $ flip OutletClick $ NT.wrap outletDef
+                ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
                     [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
                     , HSA.r connectorRadius
@@ -294,6 +302,9 @@ handleAction = case _ of
     OutletClick evt outletDef -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
         H.raise $ OutletWasClicked outletDef
+    MouseMove evt -> do
+        H.raise $ ReportMouseMove evt
+
 
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of

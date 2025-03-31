@@ -4,55 +4,33 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (class MonadEffect)
 
 import Control.Monad.State (get, put, modify, modify_) as State
-import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Extra (whenJust)
-
-import Signal (Signal, (~>))
-import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, lookup, insert, toUnfoldable, size) as Map
+import Data.Map (empty, lookup, insert, size) as Map
 import Data.Map.Extra (update') as MapX
-import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
-import Data.Array ((:))
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
-import Data.Functor.Extra ((<$$>), (<##>))
 
 import Halogen as H
-import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML as HH
-import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
-import Halogen.Subscription as HSS
 
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 
-import Noodle.Wiring (class Wiring)
-import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
-import Noodle.Patch (Patch)
-import Noodle.Patch (getState) as Patch
+import Noodle.Id (NodeR) as Id
 import Noodle.Raw.Link (Link) as Raw
-import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
-import Noodle.Network (toolkit, addPatch, patches) as Network
-import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes, nodesCount) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
-import Noodle.Repr.Tagged (class ValueTagged)
-import Noodle.Repr.HasFallback (class HasFallback)
+import Noodle.Raw.Node (NodeChanges, id) as RawNode
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -60,8 +38,8 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Web.Bounds (Bounds)
 import Web.Bounds (getPosition) as Bounds
 import Web.Components.NodeBox as NodeBox
-import Web.Class.WebRenderer (class WebLocator, ConstantShift, firstLocation, locateNext)
-import Web.Class.WebRenderer (locateNext) as Web
+import Web.Class.WebRenderer (class WebLocator, ConstantShift)
+import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 
 
 newtype NodeZIndex = ZIndex Int
@@ -145,7 +123,7 @@ component ploc =
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
 initialState _ { state, offset, nodes, links } =
-    { lastLocation : firstLocation
+    { lastLocation : Web.firstLocation
     , state
     , offset
     , nodes
@@ -233,6 +211,12 @@ handleAction = case _ of
         pure unit
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) -> do
         pure unit
+    FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
+        state <- State.get
+        handleAction $ PatchAreaMouseMove $
+            { x : (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
+            , y : (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
+            }
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
 

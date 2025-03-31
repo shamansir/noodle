@@ -4,46 +4,27 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-
 import Control.Monad.State (get, put, modify, modify_) as State
-import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Extra (whenJust, whenJust_)
 
-import Signal (Signal, (~>))
+import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
-import Data.Tuple (fst, snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (sortWith) as Array
-import Data.Int (toNumber) as Int
-import Data.Bifunctor (lmap)
-import Data.Functor.Extra ((<$$>), (<##>))
 
 import Halogen as H
-import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML as HH
-import Halogen.HTML.CSS as CSS
-import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
-import Halogen.Svg.Elements.Extra as HSX
 import Halogen.Subscription as HSS
 
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-
 import Noodle.Wiring (class Wiring)
-import Noodle.Id (PatchR, FamilyR, NodeR, unsafeFamilyR) as Id
-import Noodle.Toolkit (Toolkit, ToolkitKey)
+import Noodle.Id (PatchR, FamilyR, NodeR) as Id
+import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
-import Noodle.Network (toolkit, addPatch, patches) as Network
-import Noodle.Patch (make, id, name, registerRawNode, mapAllNodes, nodesCount, getState, allNodes, links) as Patch
+import Noodle.Network (toolkit, patches) as Network
+import Noodle.Patch (make, id, name, registerRawNode, getState, allNodes, links) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -52,18 +33,15 @@ import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
-import Web.Bounds (getPosition) as Bounds
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, currentPatchState, withCurrentPatch
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
-import Web.Components.NodeBox as NodeBox
-import Web.Class.WebRenderer (class WebLocator, ConstantShift)
-import Web.Class.WebRenderer (locateNext) as Web
+import Web.Class.WebRenderer (class WebLocator)
 
 
 type Slots sr cr m =
