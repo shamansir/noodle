@@ -17,28 +17,28 @@ import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
 
+type Position =
+    { from :: { x :: Number, y :: Number }
+    , to   :: { x :: Number, y :: Number }
+    }
+
+
 type Input =
     { id :: Id.LinkR
     , connector :: RawLink.Connector
-    , position ::
-        { from :: { x :: Number, y :: Number }
-        , to   :: { x :: Number, y :: Number }
-        }
+    , position :: Position
     }
 
 
 type State =
     { id :: Id.LinkR
     , connector :: RawLink.Connector
-    , position ::
-        { from :: { x :: Number, y :: Number }
-        , to   :: { x :: Number, y :: Number }
-        }
+    , position :: Position
     }
 
 
-type Action
-    = Unit
+data Action
+    = Receive Input
 
 
 type Output
@@ -52,6 +52,7 @@ component =
         , render
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
+            , receive = Just <<< Receive
             }
         }
 
@@ -62,16 +63,21 @@ initialState { id, connector, position } = { id, connector, position }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-    HS.line
-        [ HSA.x1 state.position.from.x
-        , HSA.y1 state.position.from.y
-        , HSA.x2 state.position.to.x
-        , HSA.y2 state.position.to.y
-        , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
-        , HSA.strokeWidth 2.0
-        ]
+    linkShape state.position
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
-    _ -> pure unit
+    Receive { id, connector, position } -> H.put { id, connector, position }
+
+
+linkShape :: forall action slots m. Position -> H.ComponentHTML action slots m
+linkShape position =
+    HS.line
+        [ HSA.x1 position.from.x
+        , HSA.y1 position.from.y
+        , HSA.x2 position.to.x
+        , HSA.y2 position.to.y
+        , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
+        , HSA.strokeWidth 2.0
+        ]

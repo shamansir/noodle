@@ -27,6 +27,7 @@ import Halogen.Svg.Elements.Extra as HSX
 
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (toEvent) as ME
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.Event.Event (preventDefault, stopPropagation) as WE
 
 import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
@@ -65,9 +66,9 @@ data Action sterpr chrepr m
 
 data Output
     = HeaderWasClicked
-    | ReportMouseMove MouseEvent
+    | ReportMouseMove  MouseEvent
     | InletWasClicked  RawShape.InletDefR
-    | OutletWasClicked RawShape.OutletDefR
+    | OutletWasClicked RawShape.OutletDefR { x :: Number, y :: Number }
 
 
 data Query strepr chrepr a
@@ -108,16 +109,16 @@ connectorRadius = 5.0 :: Number
 -- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
 inletRelPos :: Int -> { x :: Number, y :: Number }
 inletRelPos idx =
-    { x : titleWidth + Int.toNumber idx * channelStep
-    , y : connectorRadius / 2.0 + 2.0 -- channelBarHeight / 2.0
+    { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
+    , y : channelBarHeight / 2.0
     }
 
 
 -- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
 outletRelPos :: Int -> { x :: Number, y :: Number }
 outletRelPos idx =
-    { x : titleWidth + Int.toNumber idx * channelStep
-    , y : channelBarHeight + bodyHeight
+    { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
+    , y : channelBarHeight + bodyHeight + (channelBarHeight / 2.0)
     }
 
 
@@ -312,15 +313,18 @@ handleAction = case _ of
             { node = input.node
             , position = input.position
             }
-    HeaderClick evt -> do
-        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
+    HeaderClick mevt -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise HeaderWasClicked
-    InletClick evt inletDef -> do
-        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
+    InletClick mevt inletDef -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletDef
-    OutletClick evt outletDef -> do
-        H.liftEffect $ WE.stopPropagation $ ME.toEvent evt
-        H.raise $ OutletWasClicked outletDef
+    OutletClick mevt outletDef -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
+        let
+            posX = Int.toNumber $ Mouse.clientX mevt
+            posY = Int.toNumber $ Mouse.clientY mevt
+        H.raise $ OutletWasClicked outletDef { x : posX, y : posY }
     MouseMove evt -> do
         H.raise $ ReportMouseMove evt
 

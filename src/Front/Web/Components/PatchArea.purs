@@ -17,6 +17,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
+import Data.Newtype (unwrap) as NT
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -24,6 +25,7 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.Extra as HSX
 
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 
@@ -84,7 +86,7 @@ type LinkEndDef =
 data LockingTask
     = NoLock
     | DraggingNode Id.NodeR
-    | Connecting LinkStartDef
+    | Connecting LinkStartDef { x :: Number, y :: Number }
 
 
 type State loc ps sr cr m =
@@ -182,8 +184,16 @@ render state =
         , HS.g
             [  ]
             $ linksSlots
+        , case state.lockOn of
+            Connecting { fromNode, fromOutlet } mousePos ->
+                notYetConnectedLink
+                    { from : outletPos $ fromNode /\ (_.name $ NT.unwrap fromOutlet)
+                    , to : mousePos
+                    }
+            _ -> HSX.none
         ]
     where
+        notYetConnectedLink = LinkCmp.linkShape
         nodesWithCells = state.nodes <#> findCell
         cellToTuple { rawNode, position, zIndex } = RawNode.id rawNode /\ { rawNode, position, zIndex }
         nodesToCellsMap = Map.fromFoldable $ cellToTuple <$> nodesWithCells
@@ -249,9 +259,13 @@ handleAction = case _ of
             { state = state, offset = offset, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
-        whenJust (draggingNode state)
-            \nodeR -> do
+        case state.lockOn of
+            DraggingNode nodeR ->
                 H.modify_ $ updatePosition nodeR { left : x, top : y }
+            Connecting linkStart _ ->
+                H.modify_ _ { lockOn = Connecting linkStart { x, y } }
+            NoLock ->
+                pure unit
     PatchAreaClick -> do
         state <- State.get
         whenJust (draggingNode state)
@@ -270,12 +284,20 @@ handleAction = case _ of
     FromNodeBox nodeR (NodeBox.InletWasClicked inletDef) -> do
         state <- State.get
         whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
-            if (fromNode /= nodeR) then
+            when (fromNode /= nodeR) $
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletDef }
-            else
-                State.modify_ _ { lockOn = NoLock }
-    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) ->
-        State.modify_ _ { lockOn = Connecting { fromNode : nodeR, fromOutlet : outletDef } }
+        State.modify_ _ { lockOn = NoLock }
+    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef pos) -> do
+        state <- State.get
+        State.modify_ _
+            { lockOn = Connecting
+                { fromNode : nodeR
+                , fromOutlet : outletDef
+                }
+                { x : pos.x - state.offset.left
+                , y : pos.y - state.offset.top
+                }
+            }
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
         state <- State.get
         handleAction $ PatchAreaMouseMove $
@@ -314,14 +336,14 @@ handleQuery = case _ of
 draggingNode :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe Id.NodeR
 draggingNode = _.lockOn >>> case _ of
     DraggingNode nodeR -> Just nodeR
-    Connecting _ -> Nothing
+    Connecting _ _ -> Nothing
     NoLock -> Nothing
 
 
 creatingLink :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe LinkStartDef
 creatingLink = _.lockOn >>> case _ of
     DraggingNode _ -> Nothing
-    Connecting linkStart -> Just linkStart
+    Connecting linkStart _ -> Just linkStart
     NoLock -> Nothing
 
 
