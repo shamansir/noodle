@@ -97,6 +97,30 @@ initialState { node, position } =
     }
 
 
+-- everything below in this paragraph has to be at top level to allow calculating links' positions from `PatchArea`
+channelStep = 55.0 :: Number
+titleWidth = 20.0 :: Number
+bodyHeight = 70.0 :: Number -- FIXME: could be changed by custom node renderer
+channelBarHeight = 15.0 :: Number
+connectorRadius = 5.0 :: Number
+
+
+-- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
+inletRelPos :: Int -> { x :: Number, y :: Number }
+inletRelPos idx =
+    { x : titleWidth + Int.toNumber idx * channelStep
+    , y : connectorRadius / 2.0 + 2.0 -- channelBarHeight / 2.0
+    }
+
+
+-- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
+outletRelPos :: Int -> { x :: Number, y :: Number }
+outletRelPos idx =
+    { x : titleWidth + Int.toNumber idx * channelStep
+    , y : channelBarHeight + bodyHeight
+    }
+
+
 render :: forall sterpr chrepr m. WriteChannelRepr chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
 render { node, position, latestUpdate, beingDragged } =
     HS.g
@@ -157,16 +181,11 @@ render { node, position, latestUpdate, beingDragged } =
         outletsDefs = RawShape.outlets $ RawNode.shape node
         inletsCount = Array.length inletsDefs
         outletsCount = Array.length outletsDefs
-        channelStep = 55.0
-        channelBarHeight = 15.0
         channelBarWidth = nodeWidth - titleWidth
-        bodyHeight = 70.0
-        titleWidth = 20.0
         titleBarWidth = titleWidth - slopeFactor
         channelFontSize = 9.0
         valueFontSize = 9.0
         titleFontSize = 11.0
-        connectorRadius = 5.0
         maxChannelsCount = max inletsCount outletsCount
         nodeWidth = titleWidth + (channelStep * Int.toNumber maxChannelsCount)
         titleY = channelBarHeight + bodyHeight

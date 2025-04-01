@@ -11,7 +11,7 @@ import Control.Monad.Extra (whenJust)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, lookup, insert, size) as Map
+import Data.Map (empty, lookup, insert, size, fromFoldable) as Map
 import Data.Map.Extra (update') as MapX
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
@@ -27,10 +27,12 @@ import Halogen.Svg.Elements as HS
 
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 
-import Noodle.Id (NodeR) as Id
+import Noodle.Id (NodeR, InletR, OutletR, LinkR) as Id
 import Noodle.Raw.Link (Link) as Raw
+import Noodle.Raw.Link (id, connector) as RawLink
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (NodeChanges, id) as RawNode
+import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
+import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -38,6 +40,7 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Web.Bounds (Bounds)
 import Web.Bounds (getPosition) as Bounds
 import Web.Components.NodeBox as NodeBox
+import Web.Components.Link as LinkCmp
 import Web.Class.WebRenderer (class WebLocator, ConstantShift)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 
@@ -55,13 +58,33 @@ type Locator = ConstantShift -- TODO: move to some root App config?
 
 type Slots sr cr =
     ( nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
+    , link :: forall q. H.Slot q LinkCmp.Output Id.LinkR
     )
 
 
 _nodeBox = Proxy :: _ "nodeBox"
+_link = Proxy :: _ "link"
 
 
 defaultPosition = { left : 0.0, top : 0.0 }
+
+
+type LinkStartDef =
+    { fromNode :: Id.NodeR
+    , fromOutlet :: RawShape.OutletDefR
+    }
+
+
+type LinkEndDef =
+    { toNode :: Id.NodeR
+    , toInlet :: RawShape.InletDefR
+    }
+
+
+data LockingTask
+    = NoLock
+    | DraggingNode Id.NodeR
+    | Connecting LinkStartDef
 
 
 type State loc ps sr cr m =
@@ -71,7 +94,7 @@ type State loc ps sr cr m =
     , nodes :: Array (Raw.Node sr cr m)
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
     , links :: Array Raw.Link
-    , draggingNode :: Maybe Id.NodeR
+    , lockOn :: LockingTask
     }
 
 
@@ -90,10 +113,11 @@ data Action ps sr cr m
     | PatchAreaMouseMove { x :: Number, y :: Number }
     | PatchAreaClick
     | FromNodeBox Id.NodeR NodeBox.Output
+    | FromLink Id.LinkR LinkCmp.Output
 
 
-type Output
-    = Unit
+data Output
+    = Connect (LinkStartDef /\ LinkEndDef)
 
 
 data Query sr cr m a
@@ -129,7 +153,7 @@ initialState _ { state, offset, nodes, links } =
     , nodes
     , links
     , nodesBounds : Map.empty
-    , draggingNode : Nothing
+    , lockOn : NoLock
     }
 
 
@@ -155,10 +179,17 @@ render state =
             [ HE.onClick $ const PatchAreaClick
             ]
             $ nodeBoxesSlots
+        , HS.g
+            [  ]
+            $ linksSlots
         ]
     where
-        nodeBoxesSlots = (state.nodes <#> findRenderData # Array.sortWith _.zIndex <#> nodeBoxSlot)
-        findRenderData rawNode =
+        nodesWithCells = state.nodes <#> findCell
+        cellToTuple { rawNode, position, zIndex } = RawNode.id rawNode /\ { rawNode, position, zIndex }
+        nodesToCellsMap = Map.fromFoldable $ cellToTuple <$> nodesWithCells
+        nodeBoxesSlots = (nodesWithCells # Array.sortWith _.zIndex <#> nodeBoxSlot)
+        linksSlots = state.links <#> linkSlot
+        findCell rawNode =
             let
                 nodeR = RawNode.id rawNode
                 (position /\ zIndex) =
@@ -175,6 +206,35 @@ render state =
                 , position
                 }
                 $ FromNodeBox nodeR
+        inletPos (nodeR /\ inletR) =
+            Map.lookup nodeR nodesToCellsMap
+            <#> (\{ position, rawNode } ->
+                let
+                    inletIdx = fromMaybe (-1) $ RawShape.indexOfInlet inletR $ RawNode.shape rawNode
+                    relPos = NodeBox.inletRelPos inletIdx
+                in { x : position.left + relPos.x, y : position.top + relPos.y })
+            # fromMaybe { x : 0.0, y : 0.0 }
+        outletPos (nodeR /\ outletR) =
+            Map.lookup nodeR nodesToCellsMap
+            <#> (\{ position, rawNode } ->
+                let
+                    outletIdx = fromMaybe (-1) $ RawShape.indexOfOutlet outletR $ RawNode.shape rawNode
+                    relPos = NodeBox.outletRelPos outletIdx
+                in { x : position.left + relPos.x, y : position.top + relPos.y })
+            # fromMaybe { x : 0.0, y : 0.0 }
+        linkSlot rawLink =
+            let
+                linkR = RawLink.id rawLink
+                connector = RawLink.connector rawLink
+            in HH.slot _link linkR LinkCmp.component
+                { connector
+                , id : linkR
+                , position :
+                    { from : outletPos connector.from
+                    , to : inletPos connector.to
+                    }
+                }
+                $ FromLink linkR
 
 
 handleAction
@@ -189,28 +249,33 @@ handleAction = case _ of
             { state = state, offset = offset, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
-        whenJust state.draggingNode
+        whenJust (draggingNode state)
             \nodeR -> do
                 H.modify_ $ updatePosition nodeR { left : x, top : y }
     PatchAreaClick -> do
         state <- State.get
-        whenJust state.draggingNode
+        whenJust (draggingNode state)
             \nodeR -> do
-                State.put $ state { draggingNode = Nothing }
+                State.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- State.get
-        case state.draggingNode of
+        case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
-                State.put $ state { draggingNode = Just nodeR }
+                State.modify_ _ { lockOn = DraggingNode nodeR }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
             Just otherNodeR -> do
-                State.put $ state { draggingNode = Nothing }
+                State.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
     FromNodeBox nodeR (NodeBox.InletWasClicked inletDef) -> do
-        pure unit
-    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) -> do
-        pure unit
+        state <- State.get
+        whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
+            if (fromNode /= nodeR) then
+                H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletDef }
+            else
+                State.modify_ _ { lockOn = NoLock }
+    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef) ->
+        State.modify_ _ { lockOn = Connecting { fromNode : nodeR, fromOutlet : outletDef } }
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
         state <- State.get
         handleAction $ PatchAreaMouseMove $
@@ -219,6 +284,8 @@ handleAction = case _ of
             }
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
+    FromLink linkR _ ->
+        pure unit -- TODO
 
 
 handleQuery
@@ -242,6 +309,20 @@ handleQuery = case _ of
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
         pure $ Just a
+
+
+draggingNode :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe Id.NodeR
+draggingNode = _.lockOn >>> case _ of
+    DraggingNode nodeR -> Just nodeR
+    Connecting _ -> Nothing
+    NoLock -> Nothing
+
+
+creatingLink :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe LinkStartDef
+creatingLink = _.lockOn >>> case _ of
+    DraggingNode _ -> Nothing
+    Connecting linkStart -> Just linkStart
+    NoLock -> Nothing
 
 
 findBounds :: forall loc ps sr cr m. Id.NodeR -> State loc ps sr cr m -> Maybe (Bounds /\ NodeZIndex)

@@ -5,13 +5,15 @@ import Prelude
 import Type.Proxy (Proxy(..))
 
 import Control.Monad.State (get, put, modify, modify_) as State
-import Control.Monad.Extra (whenJust, whenJust_)
+import Control.Monad.Extra (whenJust, whenJust2, whenJust_)
 
 import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (unwrap) as NT
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -24,7 +26,7 @@ import Noodle.Id (PatchR, FamilyR, NodeR) as Id
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
-import Noodle.Patch (make, id, name, registerRawNode, getState, allNodes, links) as Patch
+import Noodle.Patch (make, id, name, findRawNode, registerRawNode, getState, allNodes, links, connectRaw) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -33,10 +35,11 @@ import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -215,5 +218,21 @@ handleAction pstate = case _ of
         handleAction pstate $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
         handleAction pstate $ SpawnNode familyR
-    FromPatchArea unit ->
-        pure unit
+    FromPatchArea (PatchArea.Connect (source /\ target)) -> do
+        mbCurrentPatch <- CState.currentPatch <$> State.get
+        whenJust mbCurrentPatch \curPatch -> do
+            whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
+                \srcNode dstNode -> do
+                    nextPatch /\ _ <-
+                        H.lift $ Patch.connectRaw
+                            (NT.unwrap source.fromOutlet # _.name)
+                            (NT.unwrap target.toInlet # _.name)
+                            srcNode
+                            dstNode
+                            curPatch
+                    H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
+            pure unit
+            {- Blessed.runOnUnit $ CLink.on Element.Click
+                (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< disconnect trackCmd patchR rawLink lstate)
+                linkState
+            -}

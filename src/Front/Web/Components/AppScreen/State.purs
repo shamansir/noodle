@@ -89,6 +89,10 @@ withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch
 withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
 
 
+replacePatch :: forall tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+replacePatch patchR = withPatch patchR <<< const
+
+
 withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
 withCurrentPatch f s = case s.currentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s

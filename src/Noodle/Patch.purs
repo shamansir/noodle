@@ -156,6 +156,7 @@ findNode nodeR = nonRawNodes >>> Array.find (\hn -> HN.withNode hn (Node.id >>> 
 
 
  -- FIXME: not the fastest way, use `Map.lookup`, but anyway we need to unfold it since it is grouped by family (but we have family accessible in NodeR)
+ -- FIXME: it is actually `findAnyNode`
 findRawNode :: forall pstate strepr chrepr m families. Id.NodeR -> Patch pstate families strepr chrepr m -> Maybe (Raw.Node strepr chrepr m)
 findRawNode nodeR = mapAllNodes identity >>> Array.find (RawNode.id >>> (_ == nodeR))
 
