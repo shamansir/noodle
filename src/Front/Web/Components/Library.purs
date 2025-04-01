@@ -18,6 +18,8 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 
+import Web.Paths as Paths
+
 import Noodle.Id (FamilyR, family) as Id
 
 import Noodle.Ui.Palette.Item as P
@@ -87,21 +89,7 @@ render state =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
                 [ HS.path
-                     [ HSA.d
-                        [ HSA.m HSA.Abs 0.0 slopeFactor
-                        , HSA.l HSA.Abs slopeFactor slopeFactor
-                        , HSA.l HSA.Abs (slopeFactor * 2.0) 0.0
-                        , HSA.l HSA.Abs (width - slopeFactor * 2.0) 0.0
-                        , HSA.l HSA.Abs (width - slopeFactor) slopeFactor
-                        , HSA.l HSA.Abs width slopeFactor
-                        , HSA.l HSA.Abs width $ headerHeight + slopeFactor
-                        , HSA.l HSA.Abs (width - slopeFactor) headerHeight
-                        , HSA.l HSA.Abs (width * 0.7 + slopeFactor) headerHeight
-                        , HSA.l HSA.Abs (width * 0.7) $ headerHeight + slopeFactor
-                        , HSA.l HSA.Abs slopeFactor $ headerHeight + slopeFactor
-                        , HSA.l HSA.Abs 0.0 $ headerHeight + (2.0 * slopeFactor)
-                        , HSA.z
-                        ]
+                    [ HSA.d $ Paths.libraryTop { slope : slopeFactor, width, height : headerHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.magenta
                     , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
                     , HSA.strokeWidth 2.0
@@ -116,19 +104,7 @@ render state =
                 , HS.g
                     [ HSA.transform [ HSA.Translate 0.0 bottomBarY ] ]
                     [ HS.path
-                        [ HSA.d
-                            [ HSA.m HSA.Abs 0.0 (-1.0 * slopeFactor)
-                            , HSA.l HSA.Abs slopeFactor 0.0
-                            , HSA.l HSA.Abs (width - slopeFactor) 0.0
-                            , HSA.l HSA.Abs width (-1.0 * slopeFactor)
-                            , HSA.l HSA.Abs width $ bottomBarHeight - slopeFactor
-                            , HSA.l HSA.Abs (width - slopeFactor) $ bottomBarHeight - slopeFactor
-                            , HSA.l HSA.Abs (width - slopeFactor * 2.0) bottomBarHeight
-                            , HSA.l HSA.Abs (slopeFactor * 2.0) bottomBarHeight
-                            , HSA.l HSA.Abs slopeFactor $ bottomBarHeight - slopeFactor
-                            , HSA.l HSA.Abs 0.0 $ bottomBarHeight - slopeFactor
-                            , HSA.z
-                            ]
+                        [ HSA.d $ Paths.libraryBottom { slope : slopeFactor, width, height : bottomBarHeight }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.magenta
                         , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
                         , HSA.strokeWidth 2.0
@@ -137,19 +113,7 @@ render state =
                 , HS.g
                     [ HSA.transform [ HSA.Translate 0.0 headerHeight ] ]
                     [ HS.path
-                        [ HSA.d
-                            [ HSA.m HSA.Abs 0.0 (slopeFactor * 2.0)
-                            , HSA.l HSA.Abs slopeFactor slopeFactor
-                            , HSA.l HSA.Abs (width * 0.7) slopeFactor
-                            , HSA.l HSA.Abs (width * 0.7 + slopeFactor) 0.0
-                            , HSA.l HSA.Abs (width - slopeFactor) 0.0
-                            , HSA.l HSA.Abs width slopeFactor
-                            , HSA.l HSA.Abs width (bodyRelBottomY - slopeFactor)
-                            , HSA.l HSA.Abs (width - slopeFactor) bodyRelBottomY
-                            , HSA.l HSA.Abs slopeFactor bodyRelBottomY
-                            , HSA.l HSA.Abs 0.0 (bodyRelBottomY - slopeFactor)
-                            , HSA.z
-                            ]
+                        [ HSA.d $ Paths.libraryBody { slope : slopeFactor, width, height : bodyRelBottomY }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.blue
                         , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.blue
                         , HSA.strokeWidth 2.0

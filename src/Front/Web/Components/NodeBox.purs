@@ -40,6 +40,8 @@ import Noodle.Repr.ValueInChannel (resolve) as ViC
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+import Web.Paths as Paths
+
 
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
@@ -132,33 +134,15 @@ render { node, position, latestUpdate, beingDragged } =
             HS.g
                 [ HE.onClick HeaderClick ]
                 [ HS.path
-                    [ HSA.transform [ HSA.Translate (-2.0) 0.0 ]
-                    , HSA.d
-                        [ HSA.m HSA.Abs titleBarWidth channelBarHeight
-                        , HSA.l HSA.Abs 0.0 $ channelBarHeight + slopeFactor
-                        , HSA.l HSA.Abs 0.0 $ titleY - slopeFactor
-                        , HSA.l HSA.Abs titleBarWidth titleY
-                        , HSA.z
-                        ]
+                    [ HSA.transform [ HSA.Translate (-2.0) channelBarHeight ]
+                    , HSA.d $ Paths.nodeTitle { slope : slopeFactor, width : titleBarWidth, height : titleY - channelBarHeight }
                     , HSA.fill $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
                     , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
                     , HSA.strokeWidth 1.5
                     ]
                 , HS.path
                     [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
-                    , HSA.d
-                        [ HSA.m HSA.Abs 0.0 (slopeFactor * 2.0)
-                        , HSA.l HSA.Abs slopeFactor slopeFactor
-                        , HSA.l HSA.Abs (nodeWidth * 0.7) slopeFactor
-                        , HSA.l HSA.Abs (nodeWidth * 0.7 + slopeFactor) 0.0
-                        , HSA.l HSA.Abs (nodeWidth - slopeFactor) 0.0
-                        , HSA.l HSA.Abs nodeWidth slopeFactor
-                        , HSA.l HSA.Abs nodeWidth (bodyHeight - slopeFactor)
-                        , HSA.l HSA.Abs (nodeWidth - slopeFactor) bodyHeight
-                        , HSA.l HSA.Abs slopeFactor bodyHeight
-                        , HSA.l HSA.Abs 0.0 (bodyHeight - slopeFactor)
-                        , HSA.z
-                        ]
+                    , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : nodeWidth, height : bodyHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                     ]
                 , HS.text
@@ -256,21 +240,7 @@ render { node, position, latestUpdate, beingDragged } =
                 [ HSA.transform [ HSA.Translate titleWidth 0.0 ] ]
                 (
                     HS.path
-                        [ HSA.d
-                            [ HSA.m HSA.Abs 0.0 0.0
-                            , HSA.l HSA.Abs channelBarWidth 0.0
-                            , HSA.l HSA.Abs channelBarWidth slopeFactor
-                            , HSA.l HSA.Abs (channelBarWidth + slopeFactor) slopeFactor
-                            , HSA.l HSA.Abs (channelBarWidth + slopeFactor) channelBarHeight
-                            , HSA.l HSA.Abs channelBarWidth (channelBarHeight + slopeFactor)
-                            , HSA.l HSA.Abs channelBarWidth channelBarHeight
-                            , HSA.l HSA.Abs 0.0 channelBarHeight
-                            , HSA.l HSA.Abs 0.0 (channelBarHeight + slopeFactor)
-                            , HSA.l HSA.Abs (-slopeFactor) channelBarHeight
-                            , HSA.l HSA.Abs (-slopeFactor) slopeFactor
-                            , HSA.l HSA.Abs 0.0 slopeFactor
-                            , HSA.z
-                            ]
+                        [ HSA.d $ Paths.channelBarTop { slope : slopeFactor, width : channelBarWidth, height : channelBarHeight }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
                         ]
                     : [ HS.g
@@ -282,20 +252,7 @@ render { node, position, latestUpdate, beingDragged } =
                 [ HSA.transform [ HSA.Translate titleWidth $ channelBarHeight + bodyHeight ] ]
                 (
                     HS.path
-                        [ HSA.d
-                            [ HSA.m HSA.Abs 0.0 (-slopeFactor)
-                            , HSA.l HSA.Abs 0.0 0.0
-                            , HSA.l HSA.Abs channelBarWidth 0.0
-                            , HSA.l HSA.Abs channelBarWidth (-slopeFactor)
-                            , HSA.l HSA.Abs (channelBarWidth + slopeFactor) 0.0
-                            , HSA.l HSA.Abs (channelBarWidth + slopeFactor) (channelBarHeight - slopeFactor)
-                            , HSA.l HSA.Abs channelBarWidth (channelBarHeight - slopeFactor)
-                            , HSA.l HSA.Abs channelBarWidth channelBarHeight
-                            , HSA.l HSA.Abs 0.0 channelBarHeight
-                            , HSA.l HSA.Abs (-slopeFactor) (channelBarHeight - slopeFactor)
-                            , HSA.l HSA.Abs (-slopeFactor) 0.0
-                            , HSA.z
-                            ]
+                        [ HSA.d $ Paths.channelBarBottom { slope : slopeFactor, width : channelBarWidth, height : channelBarHeight }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
                         ]
                     : [ HS.g

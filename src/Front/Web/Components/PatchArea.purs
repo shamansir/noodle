@@ -287,6 +287,7 @@ handleAction = case _ of
             when (fromNode /= nodeR) $
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletDef }
         State.modify_ _ { lockOn = NoLock }
+        -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef pos) -> do
         state <- State.get
         State.modify_ _
