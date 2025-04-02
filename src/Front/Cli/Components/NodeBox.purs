@@ -255,14 +255,6 @@ _component
     whenJust mbNodeOp
         \nodeOp -> Blessed.lift $ Blessed.runM' nodeStateRef nodeOp
 
-    let
-        location =
-            { left : pos.left + 1
-            , top : pos.top + 1
-            , width : boxWidth
-            , height : boxHeight
-            }
-
     State.modify_ (\s -> s
         { nodeKeysMap = Map.insert nodeR keys.nodeBox s.nodeKeysMap
         , lastKeys = keys

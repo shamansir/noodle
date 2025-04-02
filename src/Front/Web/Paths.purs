@@ -108,16 +108,4 @@ libraryBottom p =
 
 
 libraryBody :: RectParams -> Array HSA.PathCommand
-libraryBody p =
-    [ HSA.m HSA.Abs 0.0 (p.slope * 2.0)
-    , HSA.l HSA.Abs p.slope p.slope
-    , HSA.l HSA.Abs (p.width * 0.7) p.slope
-    , HSA.l HSA.Abs (p.width * 0.7 + p.slope) 0.0
-    , HSA.l HSA.Abs (p.width - p.slope) 0.0
-    , HSA.l HSA.Abs p.width p.slope
-    , HSA.l HSA.Abs p.width (p.height - p.slope)
-    , HSA.l HSA.Abs (p.width - p.slope) p.height
-    , HSA.l HSA.Abs p.slope p.height
-    , HSA.l HSA.Abs 0.0 (p.height - p.slope)
-    , HSA.z
-    ]
+libraryBody = nodeBodyBg

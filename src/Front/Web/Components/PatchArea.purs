@@ -38,6 +38,8 @@ import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (class At) as T
 
 import Web.Bounds (Bounds)
 import Web.Bounds (getPosition) as Bounds
@@ -131,7 +133,7 @@ component
     :: forall loc ps sr cr m
      . MonadEffect m
     => WebLocator loc
-    => WriteChannelRepr cr
+    => T.At At.ChannelLabel cr
     => Proxy loc
     -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
 component ploc =
@@ -162,7 +164,7 @@ initialState _ { state, offset, nodes, links } =
 render
     :: forall loc ps sr cr m
      . MonadEffect m
-    => WriteChannelRepr cr
+    => T.At At.ChannelLabel cr
     => State loc ps sr cr m
     -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
 render state =

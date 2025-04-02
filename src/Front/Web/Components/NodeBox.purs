@@ -35,12 +35,17 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
-import Noodle.Repr.ValueInChannel (resolve) as ViC
+import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
+
+import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (class At) as T
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+import Noodle.Ui.Tagging as T
 
 import Web.Paths as Paths
+import Web.Formatting as WF
 
 
 type Input strepr chrepr m =
@@ -79,7 +84,7 @@ data Query strepr chrepr a
     | ApplyDragEnd a
 
 
-component :: forall strepr chrepr m. MonadEffect m => WriteChannelRepr chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+component :: forall strepr chrepr m. MonadEffect m => T.At At.ChannelLabel chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component =
     H.mkComponent
         { initialState
@@ -124,7 +129,7 @@ outletRelPos idx =
     }
 
 
-render :: forall sterpr chrepr m. WriteChannelRepr chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
+render :: forall sterpr chrepr m. T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
 render { node, position, latestUpdate, beingDragged } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
@@ -175,23 +180,23 @@ render { node, position, latestUpdate, beingDragged } =
         nodeWidth = titleWidth + (channelStep * Int.toNumber maxChannelsCount)
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
-        valueOfInlet inletR = latestUpdate <#> _.inlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR
-        valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR
+        valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
+        valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
         -- fullHeight = channelBarHeight + bodyHeight + channelBarHeight
         slopeFactor = 5.0
-        renderValue v =
-            HS.text
+        {- renderValue oidx outletR v =
+            HS.g
                 [ HSA.fill $ Just $ P.hColorOf Palette.paper
                 , HSA.dominant_baseline HSA.Hanging
                 , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                 ]
-                [ HH.text $ writeChannelRepr v ]
+                [ T.outlet oidx outletR vicRepr ]
         renderViCValue = ViC.resolve
             { accept : renderValue
             , decline : HSX.none
             , empty : HSX.none
             , missingKey : const HSX.none
-            }
+            } -}
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
@@ -210,8 +215,11 @@ render { node, position, latestUpdate, beingDragged } =
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (-channelBarHeight) ] ]
-                    [ maybe HSX.none renderViCValue $ valueOfInlet inletDef.name ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (-channelBarHeight) ]
+                    , HSA.fill $ Just $ P.hColorOf Palette.paper
+                    , HSA.dominant_baseline HSA.Hanging
+                    ]
+                    [ WF.renderFormatting $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 ]
         renderOulet idx outletDef =
             HS.g
@@ -232,8 +240,11 @@ render { node, position, latestUpdate, beingDragged } =
                     ]
                     [ HH.text $ String.toUpper $ Id.outletRName outletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) channelBarHeight ] ]
-                    [ maybe HSX.none renderViCValue $ valueOfOutlet outletDef.name ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) channelBarHeight ]
+                    , HSA.fill $ Just $ P.hColorOf Palette.paper
+                    , HSA.dominant_baseline HSA.Hanging
+                    ]
+                    [ WF.renderFormatting $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
                 ]
         renderInlets =
             HS.g

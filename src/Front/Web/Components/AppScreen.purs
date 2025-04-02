@@ -34,6 +34,8 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (class At) as T
 
 
 import Web.Components.AppScreen.State (State)
@@ -75,7 +77,7 @@ component
      . Wiring m
     => WebLocator loc
     => HasFallback cr
-    => WriteChannelRepr cr
+    => T.At At.ChannelLabel cr
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
@@ -106,7 +108,7 @@ render
     => Toolkit.FromPatchState tk ps sr
     => HasFallback cr
     => ValueTagged cr
-    => WriteChannelRepr cr
+    => T.At At.ChannelLabel cr
     => Proxy loc
     -> State tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
