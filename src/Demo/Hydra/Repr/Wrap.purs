@@ -37,6 +37,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, class ValueCode
 import Noodle.Ui.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Palette.Item (colorOf) as C
 import Noodle.Ui.Tagging.At (class At)
+import Noodle.Ui.Tagging.At (StatusLine, ChannelLabel, Documentation) as At
 import Noodle.Text.ToCode (class ToCode)
 import Noodle.Text.FromCode (class CanParse, class FromCode, fromCode, fromParser, SourceError, Source, srcErrorToString)
 
@@ -44,7 +45,7 @@ import HydraTk.Types as HT
 import HydraTk.Repr.Parser as RP
 import HydraTk.Repr.Target (HYDRA_V, hydraV)
 import HydraTk.Repr.Target (_encode) as H
-import HydraTk.Repr.Show (class HydraShow, hShow)
+import HydraTk.Repr.Show (class HydraShow, hShow, class HydraToChannelLabel, toChannelLabel, HChannelLabel)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen (exprApp, exprCtor, exprIdent, exprRecord, exprString, typeCtor)
@@ -413,8 +414,16 @@ instance Mark WrapRepr where
     -}
 
 
-instance At x WrapRepr where
+instance At At.StatusLine WrapRepr where
     at _ repr = T.fgc (mark repr) $ T.s $ hShow repr
+
+
+instance At At.Documentation WrapRepr where
+    at _ repr = T.fgc (mark repr) $ T.s $ hShow repr
+
+
+instance At At.ChannelLabel WrapRepr where
+    at _ repr = T.fgc (mark repr) $ T.s $ toChannelLabel repr
 
 
 instance ValueEncode WrapRepr where
@@ -721,3 +730,33 @@ instance CodegenRepr WrapRepr where
                     (genError valueStr)
                     mkExpression
                     (fromCode hydraV unit valueStr :: Either SourceError res)
+
+
+instance HydraToChannelLabel WrapRepr where
+    toChannelLabel :: WrapRepr -> HChannelLabel
+    toChannelLabel = case _ of
+        Value v -> toChannelLabel v
+        Unit u -> toChannelLabel u
+        Texture tex -> toChannelLabel tex
+        TOrV (HT.T t) -> toChannelLabel t
+        TOrV (HT.V v) -> toChannelLabel v
+        OutputN on -> toChannelLabel on
+        SourceN sn -> toChannelLabel sn
+        TODO todo -> toChannelLabel todo
+        Context ctx -> toChannelLabel ctx
+        UpdateFn fn -> toChannelLabel fn
+        Source src -> toChannelLabel src
+        Url url -> toChannelLabel url
+        GlslFn glsl -> toChannelLabel glsl
+        SourceOptions opts -> toChannelLabel opts
+        Values vals -> toChannelLabel vals
+        Ease ease -> toChannelLabel ease
+        Audio audio -> toChannelLabel audio
+        AudioBin bin -> toChannelLabel bin
+        ExtSource ext -> toChannelLabel ext
+        DepFn fn -> toChannelLabel fn
+        Target trg -> toChannelLabel trg
+        -- Products products -> toChannelLabel products
+        -- Product product -> toChannelLabel product
+        CBS cbs -> toChannelLabel cbs
+        WRError err -> "ERR"
