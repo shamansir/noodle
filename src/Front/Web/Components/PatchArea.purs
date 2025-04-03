@@ -93,6 +93,7 @@ data LockingTask
 
 type State loc ps sr cr m =
     { offset :: { left :: Number, top :: Number }
+    , size :: { width :: Number, height :: Number }
     , state :: ps
     , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m)
@@ -105,6 +106,7 @@ type State loc ps sr cr m =
 type Input ps sr cr m =
     { state :: ps
     , offset :: { left :: Number, top :: Number }
+    , size :: { width :: Number, height :: Number }
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
     }
@@ -150,10 +152,11 @@ component ploc =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { state, offset, nodes, links } =
+initialState _ { state, offset, size, nodes, links } =
     { lastLocation : Web.firstLocation
     , state
     , offset
+    , size
     , nodes
     , links
     , nodesBounds : Map.empty
@@ -171,7 +174,7 @@ render state =
     HS.g
         []
         [ HS.rect
-            [ HSA.width 1000.0, HSA.height 1000.0
+            [ HSA.width state.size.width, HSA.height state.size.height
             , HSA.fill $ Just $ P.hColorOf $ Palette.black
             , HE.onClick $ const PatchAreaClick
             , HE.onMouseMove \mevt -> PatchAreaMouseMove

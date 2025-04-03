@@ -182,21 +182,7 @@ render { node, position, latestUpdate, beingDragged } =
         channelNameShift = connectorRadius + 4.0
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
-        -- fullHeight = channelBarHeight + bodyHeight + channelBarHeight
         slopeFactor = 5.0
-        {- renderValue oidx outletR v =
-            HS.g
-                [ HSA.fill $ Just $ P.hColorOf Palette.paper
-                , HSA.dominant_baseline HSA.Hanging
-                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
-                ]
-                [ T.outlet oidx outletR vicRepr ]
-        renderViCValue = ViC.resolve
-            { accept : renderValue
-            , decline : HSX.none
-            , empty : HSX.none
-            , missingKey : const HSX.none
-            } -}
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]

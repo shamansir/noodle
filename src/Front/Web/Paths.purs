@@ -109,3 +109,19 @@ libraryBottom p =
 
 libraryBody :: RectParams -> Array HSA.PathCommand
 libraryBody = nodeBodyBg
+
+
+statusBar :: RectParams -> Array HSA.PathCommand
+statusBar p =
+    -- M2.4,0 L10,0 L10,0.9 L9.7,1.2 L1.2,1.2 L0.9,0.9 L0.6,0.9 L0.3,0.6 L1.8,0.6 Z
+    [ HSA.m HSA.Abs (p.width * 0.3) 0.0
+    , HSA.l HSA.Abs p.width 0.0
+    , HSA.l HSA.Abs p.width (p.height - p.slope)
+    , HSA.l HSA.Abs (p.width - p.slope) p.height
+    , HSA.l HSA.Abs (p.slope * 4.0) p.height
+    , HSA.l HSA.Abs (p.slope * 3.0) (p.height - p.slope)
+    , HSA.l HSA.Abs (p.slope * 2.0) (p.height - p.slope)
+    , HSA.l HSA.Abs (p.slope * 1.0) (p.height - p.slope * 2.0)
+    , HSA.l HSA.Abs ((p.width * 0.3) - (p.height - p.slope * 2.0)) (p.height - p.slope * 2.0)
+    , HSA.z
+    ]

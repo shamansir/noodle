@@ -14,6 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
+import Data.Text.Format (nil) as T
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -46,6 +47,7 @@ import Web.Components.AppScreen.State
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
+import Web.Components.StatusBar as StatusBar
 import Web.Class.WebRenderer (class WebLocator)
 
 
@@ -53,12 +55,14 @@ type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output Unit
     , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
+    , statusBar :: forall q. H.Slot q StatusBar.Output Unit
     )
 
 
 _library = Proxy :: _ "library"
 _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
+_statusBar = Proxy :: _ "statusBar"
 
 
 data Action sr cr
@@ -114,12 +118,12 @@ render
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
 render ploc state =
     HH.div_
-        [ HS.svg [ HSA.width 1000.0, HSA.height 1000.0 ]
+        [ HS.svg [ HSA.width width, HSA.height height ]
             [ HS.g
                 []
                 (
                     [ HS.rect
-                        [ HSA.width 1000.0, HSA.height 1000.0
+                        [ HSA.width width, HSA.height height
                         , HSA.fill $ Just $ P.hColorOf $ Palette.black
                         ]
                     , HH.slot _patchesBar unit PatchesBar.component
@@ -135,21 +139,36 @@ render ploc state =
                         ]
                         [ HH.slot _patchArea unit (PatchArea.component ploc)
                             { offset : { left : patchAreaX, top : patchAreaY }
+                            , size : { width : patchAreaWidth, height : patchAreaHeight }
                             , state : state.initPatchesFrom
                             , nodes : curPatchNodes
                             , links : curPatchLinks
                             }
                             FromPatchArea
                         ]
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate 0.0 statusBarY ]
+                        ]
+                        [ HH.slot_ _statusBar unit StatusBar.component
+                            { content : T.nil
+                            , width : statusBarWidth
+                            }
+                        ]
                     ]
                 )
             ]
         ]
         where
+            width = 1000.0
+            height = 1000.0
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
+            statusBarY = height - StatusBar.height - 10.0
+            patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
+            patchAreaWidth = width - Library.width - 20.0
+            statusBarWidth = width * 0.99
 
 
 handleAction
