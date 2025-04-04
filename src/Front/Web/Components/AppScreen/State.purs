@@ -9,6 +9,7 @@ import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
+import Data.Text.Format (Tag) as T
 
 import Noodle.Id (PatchR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -24,6 +25,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , initPatchesFrom :: ps
     , patchIdToIndex :: Map Id.PatchR PatchIndex
     , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
+    , statusBarContent :: Maybe T.Tag
     }
 
 
@@ -36,6 +38,7 @@ init patchState toolkit =
     , initPatchesFrom : patchState
     , patchIdToIndex : Map.empty
     , currentPatch : Nothing
+    , statusBarContent : Nothing
     }
 
 

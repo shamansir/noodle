@@ -15,7 +15,8 @@ import Data.String (length, toUpper) as String
 import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
-import Data.Newtype (wrap) as NT
+import Data.Newtype (unwrap, wrap) as NT
+import Data.Text.Format as T
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -30,14 +31,15 @@ import Web.UIEvent.MouseEvent (toEvent) as ME
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.Event.Event (preventDefault, stopPropagation) as WE
 
-import Noodle.Id (FamilyR, family, familyOf, inletRName, outletRName) as Id
+import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
+import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
 
-import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
 import Noodle.Ui.Palette.Item as P
@@ -67,15 +69,23 @@ data Action sterpr chrepr m
     | Receive (Input sterpr chrepr m)
     | MouseMove MouseEvent
     | HeaderClick MouseEvent
-    | InletClick  MouseEvent RawShape.InletDefR
-    | OutletClick MouseEvent RawShape.OutletDefR
+    | InletClick  MouseEvent Id.InletR
+    | OutletClick MouseEvent Id.OutletR
+    | NodeBodyOver
+    | NodeBodyOut
+    | InletOver RawShape.InletDefR (ValueInChannel chrepr)
+    | InletOut Id.InletR
+    | OutletOver RawShape.OutletDefR (ValueInChannel chrepr)
+    | OutletOut Id.OutletR
 
 
 data Output
     = HeaderWasClicked
     | ReportMouseMove  MouseEvent
-    | InletWasClicked  RawShape.InletDefR
-    | OutletWasClicked RawShape.OutletDefR { x :: Number, y :: Number }
+    | InletWasClicked  Id.InletR
+    | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
+    | UpdateStatusBar T.Tag
+    | ClearStatusBar
 
 
 data Query strepr chrepr a
@@ -84,7 +94,7 @@ data Query strepr chrepr a
     | ApplyDragEnd a
 
 
-component :: forall strepr chrepr m. MonadEffect m => T.At At.ChannelLabel chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+component :: forall strepr chrepr m. MonadEffect m => T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component =
     H.mkComponent
         { initialState
@@ -129,7 +139,7 @@ outletRelPos idx =
     }
 
 
-render :: forall sterpr chrepr m. T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
+render :: forall sterpr chrepr m. T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
 render { node, position, latestUpdate, beingDragged } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
@@ -162,6 +172,12 @@ render { node, position, latestUpdate, beingDragged } =
                     ]
                     [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
+            : HS.g
+                [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
+                , HE.onMouseOver $ const NodeBodyOver
+                , HE.onMouseOut $ const NodeBodyOut
+                ]
+                [ HS.rect [ HSA.width bodyWidth, HSA.height bodyHeight ] ]
             : renderInlets
             : renderOutlets
             : []
@@ -177,7 +193,8 @@ render { node, position, latestUpdate, beingDragged } =
         valueFontSize = 9.0
         titleFontSize = 11.0
         maxChannelsCount = max inletsCount outletsCount
-        nodeWidth = titleWidth + (channelStep * Int.toNumber maxChannelsCount)
+        bodyWidth = channelStep * Int.toNumber maxChannelsCount
+        nodeWidth = titleWidth + bodyWidth
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
@@ -186,7 +203,9 @@ render { node, position, latestUpdate, beingDragged } =
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
-                , HE.onClick $ flip InletClick $ NT.wrap inletDef
+                , HE.onClick $ flip InletClick inletDef.name
+                , HE.onMouseOver $ const $ InletOver (NT.wrap inletDef) $ valueOfInlet inletDef.name
+                , HE.onMouseOut  $ const $ InletOut inletDef.name
                 ]
                 [ HS.circle
                     [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
@@ -210,7 +229,9 @@ render { node, position, latestUpdate, beingDragged } =
         renderOulet idx outletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
-                , HE.onClick $ flip OutletClick $ NT.wrap outletDef
+                , HE.onClick $ flip OutletClick outletDef.name
+                , HE.onMouseOver $ const $ OutletOver (NT.wrap outletDef) $ valueOfOutlet outletDef.name
+                , HE.onMouseOut  $ const $ OutletOut outletDef.name
                 ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
                     [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
@@ -259,7 +280,7 @@ render { node, position, latestUpdate, beingDragged } =
 
 
 
-handleAction :: forall sterpr chrepr m. MonadEffect m => Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
+handleAction :: forall sterpr chrepr m. MonadEffect m => T.At At.StatusLine chrepr => Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive input ->
@@ -270,15 +291,31 @@ handleAction = case _ of
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise HeaderWasClicked
-    InletClick mevt inletDef -> do
+    InletClick mevt inletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise $ InletWasClicked inletDef
-    OutletClick mevt outletDef -> do
+        H.raise $ InletWasClicked inletR
+    OutletClick mevt outletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         let
             posX = Int.toNumber $ Mouse.clientX mevt
             posY = Int.toNumber $ Mouse.clientY mevt
-        H.raise $ OutletWasClicked outletDef { x : posX, y : posY }
+        H.raise $ OutletWasClicked outletR { x : posX, y : posY }
+    NodeBodyOver ->
+        pure unit
+    NodeBodyOut ->
+        pure unit
+    InletOver inletDef vic -> do
+        state <- H.get
+        let inlet = NT.unwrap inletDef
+        H.raise $ UpdateStatusBar $ T.inletStatusLine (RawNode.family state.node) inlet.order inlet.name vic
+    InletOut _ ->
+        H.raise $ ClearStatusBar
+    OutletOver outletDef vic -> do
+        state <- H.get
+        let outlet = NT.unwrap outletDef
+        H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
+    OutletOut _ ->
+        H.raise $ ClearStatusBar
     MouseMove evt -> do
         H.raise $ ReportMouseMove evt
 

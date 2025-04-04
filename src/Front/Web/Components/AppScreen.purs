@@ -35,7 +35,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
-import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
 
@@ -55,7 +55,7 @@ type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output Unit
     , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
-    , statusBar :: forall q. H.Slot q StatusBar.Output Unit
+    , statusBar :: H.Slot StatusBar.Query StatusBar.Output Unit
     )
 
 
@@ -82,6 +82,7 @@ component
     => WebLocator loc
     => HasFallback cr
     => T.At At.ChannelLabel cr
+    => T.At At.StatusLine cr
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
     => ValueTagged cr
@@ -112,6 +113,7 @@ render
     => Toolkit.FromPatchState tk ps sr
     => HasFallback cr
     => ValueTagged cr
+    => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => Proxy loc
     -> State tk ps fs sr cr m
@@ -150,7 +152,7 @@ render ploc state =
                         [ HSA.transform [ HSA.Translate 0.0 statusBarY ]
                         ]
                         [ HH.slot_ _statusBar unit StatusBar.component
-                            { content : T.nil
+                            { content : fromMaybe T.nil state.statusBarContent
                             , width : statusBarWidth
                             }
                         ]
@@ -246,14 +248,14 @@ handleAction pstate = case _ of
                 \srcNode dstNode -> do
                     nextPatch /\ _ <-
                         H.lift $ Patch.connectRaw
-                            (NT.unwrap source.fromOutlet # _.name)
-                            (NT.unwrap target.toInlet # _.name)
+                            source.fromOutlet
+                            target.toInlet
                             srcNode
                             dstNode
                             curPatch
                     H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
             pure unit
-            {- Blessed.runOnUnit $ CLink.on Element.Click
-                (\lstate -> const <<< Blessed.lift <<< Blessed.runM' stateRef <<< disconnect trackCmd patchR rawLink lstate)
-                linkState
-            -}
+    FromPatchArea (PatchArea.UpdateStatusBar tag) ->
+        H.modify_ _ { statusBarContent = Just tag }
+    FromPatchArea PatchArea.ClearStatusBar ->
+        H.modify_ _ { statusBarContent = Nothing }

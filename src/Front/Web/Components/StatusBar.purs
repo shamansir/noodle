@@ -44,16 +44,21 @@ type Output
     = Unit
 
 
+data Query a
+    = UpdateContent T.Tag a
+
+
 height = 25.0
 
 
-component :: forall query m. H.Component query Input Output m
+component :: forall m. H.Component Query Input Output m
 component =
     H.mkComponent
         { initialState
         , render
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
+            , handleQuery = handleQuery
             , receive = Just <<< Receive
             }
         }
@@ -77,3 +82,10 @@ render state =
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
     Receive { content, width } -> H.put { content, width }
+
+
+handleQuery :: forall action output m a. Query a -> H.HalogenM State action () output m (Maybe a)
+handleQuery = case _ of
+    UpdateContent content a -> do
+        H.modify_ _ { content = content }
+        pure $ Just a

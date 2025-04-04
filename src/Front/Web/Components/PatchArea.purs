@@ -18,6 +18,7 @@ import Data.Array (sortWith) as Array
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
 import Data.Newtype (unwrap) as NT
+import Data.Text.Format (Tag) as T
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -38,7 +39,7 @@ import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
-import Noodle.Ui.Tagging.At (ChannelLabel) as At
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
 import Web.Bounds (Bounds)
@@ -73,22 +74,22 @@ _link = Proxy :: _ "link"
 defaultPosition = { left : 0.0, top : 0.0 }
 
 
-type LinkStartDef =
+type LinkStart =
     { fromNode :: Id.NodeR
-    , fromOutlet :: RawShape.OutletDefR
+    , fromOutlet :: Id.OutletR
     }
 
 
-type LinkEndDef =
+type LinkEnd =
     { toNode :: Id.NodeR
-    , toInlet :: RawShape.InletDefR
+    , toInlet :: Id.InletR
     }
 
 
 data LockingTask
     = NoLock
     | DraggingNode Id.NodeR
-    | Connecting LinkStartDef { x :: Number, y :: Number }
+    | Connecting LinkStart { x :: Number, y :: Number }
 
 
 type State loc ps sr cr m =
@@ -123,7 +124,9 @@ data Action ps sr cr m
 
 
 data Output
-    = Connect (LinkStartDef /\ LinkEndDef)
+    = Connect (LinkStart /\ LinkEnd)
+    | UpdateStatusBar T.Tag
+    | ClearStatusBar
 
 
 data Query sr cr m a
@@ -135,6 +138,7 @@ component
     :: forall loc ps sr cr m
      . MonadEffect m
     => WebLocator loc
+    => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => Proxy loc
     -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
@@ -167,6 +171,7 @@ initialState _ { state, offset, size, nodes, links } =
 render
     :: forall loc ps sr cr m
      . MonadEffect m
+    => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => State loc ps sr cr m
     -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
@@ -192,7 +197,7 @@ render state =
         , case state.lockOn of
             Connecting { fromNode, fromOutlet } mousePos ->
                 notYetConnectedLink
-                    { from : outletPos $ fromNode /\ (_.name $ NT.unwrap fromOutlet)
+                    { from : outletPos $ fromNode /\ fromOutlet
                     , to : mousePos
                     }
             _ -> HSX.none
@@ -286,19 +291,19 @@ handleAction = case _ of
             Just otherNodeR -> do
                 State.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
-    FromNodeBox nodeR (NodeBox.InletWasClicked inletDef) -> do
+    FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
         state <- State.get
         whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
             when (fromNode /= nodeR) $
-                H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletDef }
+                H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         State.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
-    FromNodeBox nodeR (NodeBox.OutletWasClicked outletDef pos) -> do
+    FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
         state <- State.get
         State.modify_ _
             { lockOn = Connecting
                 { fromNode : nodeR
-                , fromOutlet : outletDef
+                , fromOutlet : outletR
                 }
                 { x : pos.x - state.offset.left
                 , y : pos.y - state.offset.top
@@ -310,6 +315,10 @@ handleAction = case _ of
             { x : (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
             , y : (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
             }
+    FromNodeBox nodeR (NodeBox.UpdateStatusBar tag) -> do
+        H.raise $ UpdateStatusBar tag
+    FromNodeBox nodeR (NodeBox.ClearStatusBar) -> do
+        H.raise $ ClearStatusBar
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR _ ->
@@ -346,7 +355,7 @@ draggingNode = _.lockOn >>> case _ of
     NoLock -> Nothing
 
 
-creatingLink :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe LinkStartDef
+creatingLink :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe LinkStart
 creatingLink = _.lockOn >>> case _ of
     DraggingNode _ -> Nothing
     Connecting linkStart _ -> Just linkStart
