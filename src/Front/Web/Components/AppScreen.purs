@@ -19,6 +19,7 @@ import Data.Text.Format (nil) as T
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
@@ -122,7 +123,7 @@ render
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
 render ploc state =
     HH.div
-        [ HHP.style $ "position: absolute; left: " <> show 0.0 <> "px; top: " <> show 0.0 <> "px;" ]
+        [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
         [ HS.svg [ HSA.width width, HSA.height height ]
             [ HS.g
                 []
@@ -148,7 +149,7 @@ render ploc state =
             ]
         , HH.div_
             [ HH.div
-                [ HHP.style $ "position: absolute; left: " <> show statusBarX <> "px; top: " <> show statusBarY <> "px;" ]
+                [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
                 [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
             ]
         ]

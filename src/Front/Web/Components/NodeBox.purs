@@ -50,6 +50,7 @@ import Noodle.Ui.Tagging as T
 
 import Web.Paths as Paths
 import Web.Formatting as WF
+import Web.Layer (TargetLayer(..))
 
 
 type Input strepr chrepr m =
@@ -243,7 +244,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     ]
-                    [ WF.renderFormatting $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
+                    [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 ]
         renderOulet idx outletDef =
             HS.g
@@ -273,7 +274,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     ]
-                    [ WF.renderFormatting $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
+                    [ WF.renderFormatting SVG $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
                 ]
         renderInlets =
             HS.g

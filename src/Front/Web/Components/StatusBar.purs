@@ -10,6 +10,7 @@ import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
@@ -79,7 +80,6 @@ render SVG state =
             , HSA.fill $ Just $ P.hColorOf $ _.i800 Palette.yellow
             , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
             ]
-        , WF.renderFormatting state.content
         ]
     where
         slopeFactor = 5.0
@@ -87,8 +87,8 @@ render SVG state =
 
 render HTML state =
     HH.div
-        []
-        [ HH.text "Status Bar" ]
+        [ HHP.position HHP.Rel { x : state.width * 0.3, y : 5.0 } ]
+        [ WF.renderFormatting HTML state.content ]
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
