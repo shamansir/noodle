@@ -23,6 +23,7 @@ import Data.Text.Format (Tag) as T
 
 import Web.Paths (statusBar) as P
 import Web.Formatting as WF
+import Web.Layer (TargetLayer(..))
 
 
 type Input =
@@ -52,11 +53,11 @@ data Query a
 height = 25.0
 
 
-component :: forall m. H.Component Query Input Output m
-component =
+component :: forall m. TargetLayer -> H.Component Query Input Output m
+component layer =
     H.mkComponent
         { initialState
-        , render
+        , render : render layer
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
             , handleQuery = handleQuery
@@ -69,8 +70,8 @@ initialState :: Input -> State
 initialState { content, width } = { content, width }
 
 
-render :: forall m. State -> H.ComponentHTML Action () m
-render state =
+render :: forall m. TargetLayer -> State -> H.ComponentHTML Action () m
+render SVG state =
     HS.g
         []
         [ HS.path
@@ -82,6 +83,12 @@ render state =
         ]
     where
         slopeFactor = 5.0
+
+
+render HTML state =
+    HH.div
+        []
+        [ HH.text "Status Bar" ]
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit

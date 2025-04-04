@@ -18,6 +18,7 @@ import Data.Text.Format (nil) as T
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
@@ -49,13 +50,14 @@ import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Class.WebRenderer (class WebLocator)
+import Web.Layer (TargetLayer(..))
 
 
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output Unit
     , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
-    , statusBar :: H.Slot StatusBar.Query StatusBar.Output Unit
+    , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     )
 
 
@@ -119,7 +121,8 @@ render
     -> State tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
 render ploc state =
-    HH.div_
+    HH.div
+        [ HHP.style $ "position: absolute; left: " <> show 0.0 <> "px; top: " <> show 0.0 <> "px;" ]
         [ HS.svg [ HSA.width width, HSA.height height ]
             [ HS.g
                 []
@@ -128,36 +131,25 @@ render ploc state =
                         [ HSA.width width, HSA.height height
                         , HSA.fill $ Just $ P.hColorOf $ Palette.black
                         ]
-                    , HH.slot _patchesBar unit PatchesBar.component
-                        { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
-                        , selected : _.id <$> state.currentPatch
-                        }
-                        FromPatchesBar
-                    , HH.slot _library unit Library.component
-                        { families : Toolkit.families $ Network.toolkit state.network }
-                        FromLibrary
                     , HS.g
-                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ]
-                        ]
-                        [ HH.slot _patchArea unit (PatchArea.component ploc)
-                            { offset : { left : patchAreaX, top : patchAreaY }
-                            , size : { width : patchAreaWidth, height : patchAreaHeight }
-                            , state : state.initPatchesFrom
-                            , nodes : curPatchNodes
-                            , links : curPatchLinks
-                            }
-                            FromPatchArea
-                        ]
+                        [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                        [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
                     , HS.g
-                        [ HSA.transform [ HSA.Translate 0.0 statusBarY ]
-                        ]
-                        [ HH.slot_ _statusBar unit StatusBar.component
-                            { content : fromMaybe T.nil state.statusBarContent
-                            , width : statusBarWidth
-                            }
-                        ]
+                        [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
+                        [ HH.slot _library unit Library.component libraryInput FromLibrary ]
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
+                        [ HH.slot _patchArea unit (PatchArea.component ploc) patchAreaInput FromPatchArea ]
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
+                        [ HH.slot_ _statusBar SVG (StatusBar.component SVG) statusBarInput ]
                     ]
                 )
+            ]
+        , HH.div_
+            [ HH.div
+                [ HHP.style $ "position: absolute; left: " <> show statusBarX <> "px; top: " <> show statusBarY <> "px;" ]
+                [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
             ]
         ]
         where
@@ -167,10 +159,30 @@ render ploc state =
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
+            libraryX = 5.0
+            libraryY = PatchesBar.height + 15.0
+            statusBarX = 0.0
             statusBarY = height - StatusBar.height - 10.0
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
+
+            libraryInput = { families : Toolkit.families $ Network.toolkit state.network } :: Library.Input
+            patchAreaInput =
+                { offset : { left : patchAreaX, top : patchAreaY }
+                , size : { width : patchAreaWidth, height : patchAreaHeight }
+                , state : state.initPatchesFrom
+                , nodes : curPatchNodes
+                , links : curPatchLinks
+                } :: PatchArea.Input ps sr cr m
+            patchesBarInput =
+                { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
+                , selected : _.id <$> state.currentPatch
+                } :: PatchesBar.Input
+            statusBarInput =
+                { content : fromMaybe T.nil state.statusBarContent
+                , width : statusBarWidth
+                } :: StatusBar.Input
 
 
 handleAction

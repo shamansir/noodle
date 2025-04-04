@@ -69,12 +69,11 @@ height = 900.0 :: Number
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
     HS.g
-        [ HSA.transform [ HSA.Translate 5.0 patchesBarHeight ] ]
+        [ ]
         [ backdrop, familyButtonsGroup ]
     where
 
         slopeFactor = 5.0
-        patchesBarHeight = 45.0
         headerHeight = 20.0
         bottomBarHeight = 20.0
         bodyRelBottomY = height - bottomBarHeight - headerHeight
