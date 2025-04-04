@@ -240,7 +240,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (-channelBarHeight) ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (-channelBarHeight) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     ]
@@ -270,7 +270,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     ]
                     [ HH.text $ String.toUpper $ Id.outletRName outletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) channelBarHeight ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) channelBarHeight ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     ]

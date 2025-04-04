@@ -22,7 +22,7 @@ import Web.Layer (TargetLayer(..))
 
 
 renderFormatting :: forall p i. TargetLayer -> Tag -> HH.HTML p i
-renderFormatting SVG = case _ of
+renderFormatting SVG = case _ of -- FIXME: use TSpan?
     Plain str -> HS.text [] [ HH.text str ]
     Empty -> HSX.none
     Format (Fg fgColor) tag ->

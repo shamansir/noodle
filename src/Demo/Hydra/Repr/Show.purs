@@ -97,7 +97,7 @@ instance HydraShow H.Texture where
     hShow = case _ of
         H.Empty -> "∅" -- "?"
         H.Start src -> "• " <> hShow src
-        H.BlendOf { what, with } blend -> hShow with <> " + " <> hShow what <> " >~  ░ " <> hShow blend
+        H.BlendOf { what, with } blend -> hShow with <> " + " <> hShow what <> " >~ ░ " <> hShow blend
         H.Filter texture op -> hShow texture <> " >~ ƒ " <> hShow op
         H.ModulateWith { what, with } mod -> hShow with <> " + " <> hShow what <> " >~ ¤ " <> hShow mod
         H.Geometry texture gmt -> hShow texture <> " >~ ■ " <> hShow gmt
@@ -105,20 +105,6 @@ instance HydraShow H.Texture where
             case mbWith of
                 Just with -> hShow with <> " | " <> hShow over <> " >~ $ " <> hShow glslFn
                 Nothing -> hShow over <> " >~ $ " <> hShow glslFn
-
-
-        {-
-        BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ " <> show blend
-        Filter texture op -> show texture <> " >~ " <> show op
-        ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ " <> show mod
-        Geometry texture gmt -> show texture <> " >~ " <> show gmt
-        -}
-        {-
-        BlendOf { what, with } blend -> show with <> " + " <> show what <> " >~ Blend " <> show blend
-        Filter texture op -> show texture <> " >~ Filter " <> show op
-        ModulateWith { what, with } mod -> show with <> " + " <> show what <> " >~ Modulate " <> show mod
-        Geometry texture gmt -> show texture <> " >~ Geom " <> show gmt
-        -}
 
 
 instance HydraShow H.Blend where

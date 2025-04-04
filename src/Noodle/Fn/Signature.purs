@@ -297,11 +297,11 @@ _showManually :: forall arg out. (arg -> String) -> (out -> String) -> Signature
 _showManually showArg showOut = unwrap >>> case _ of
         name /\ args /\ outs ->
             if Array.length args > 0 && Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> showArg <$$> args) <> " -> " <> String.joinWith " " (show <$> showOut <$$> outs) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (argValue <$> showArg <$$> args) <> " -> " <> String.joinWith " " (outValue <$> showOut <$$> outs) <> ">"
             else if Array.length args > 0 then
-                "<" <> String.pascalCase name <> " " <> String.joinWith " " (show <$> showArg <$$> args) <> ">"
+                "<" <> String.pascalCase name <> " " <> String.joinWith " " (argValue <$> showArg <$$> args) <> ">"
             else if Array.length outs > 0 then
-                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (show <$> showOut <$$> outs) <> ">"
+                "<" <> String.pascalCase name <> " -> " <> String.joinWith " " (outValue <$> showOut <$$> outs) <> ">"
             else
                  "<" <> String.pascalCase name <> ">"
 
