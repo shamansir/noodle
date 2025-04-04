@@ -22,6 +22,7 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Data.Text.Format (Tag) as T
 
 import Web.Paths (statusBar) as P
+import Web.Formatting as WF
 
 
 type Input =
@@ -70,10 +71,14 @@ initialState { content, width } = { content, width }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-    HS.path
-        [ HSA.d $ P.statusBar { slope : slopeFactor, height, width : state.width }
-        , HSA.fill $ Just $ P.hColorOf $ _.i800 Palette.yellow
-        , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
+    HS.g
+        []
+        [ HS.path
+            [ HSA.d $ P.statusBar { slope : slopeFactor, height, width : state.width }
+            , HSA.fill $ Just $ P.hColorOf $ _.i800 Palette.yellow
+            , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
+            ]
+        , WF.renderFormatting state.content
         ]
     where
         slopeFactor = 5.0

@@ -157,7 +157,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                 [ HS.path
                     [ HSA.transform [ HSA.Translate (-2.0) channelBarHeight ]
                     , HSA.d $ Paths.nodeTitle { slope : slopeFactor, width : titleBarWidth, height : titleY - channelBarHeight }
-                    , HSA.fill $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                    , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
                     , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
                     , HSA.strokeWidth 1.5
                     ]
