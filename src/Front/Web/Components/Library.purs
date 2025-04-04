@@ -92,7 +92,7 @@ render state =
                     [ HSA.d $ Paths.libraryTop { slope : slopeFactor, width, height : headerHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.magenta
                     , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
-                    , HSA.strokeWidth 2.0
+                    , HSA.strokeWidth 1.0
                     ]
                 , HS.text
                     [ HSA.stroke $ Just $ P.hColorOf $ _.i50 Palette.blue
@@ -100,14 +100,14 @@ render state =
                     , HSA.y 7.0
                     , HSA.dominant_baseline HSA.Hanging
                     ]
-                    [ HH.text "/ LIBRARY" ]
+                    [ HH.text "LIBRARY" ]
                 , HS.g
                     [ HSA.transform [ HSA.Translate 0.0 bottomBarY ] ]
                     [ HS.path
                         [ HSA.d $ Paths.libraryBottom { slope : slopeFactor, width, height : bottomBarHeight }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.magenta
                         , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
-                        , HSA.strokeWidth 2.0
+                        , HSA.strokeWidth 1.0
                         ]
                     ]
                 , HS.g
@@ -116,7 +116,7 @@ render state =
                         [ HSA.d $ Paths.libraryBody { slope : slopeFactor, width, height : bodyRelBottomY }
                         , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.blue
                         , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.blue
-                        , HSA.strokeWidth 2.0
+                        , HSA.strokeWidth 1.0
                         ]
                     ]
                 ]

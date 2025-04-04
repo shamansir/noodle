@@ -30,8 +30,10 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (toEvent) as ME
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.Event.Event (preventDefault, stopPropagation) as WE
+import Web.HTML.Common (ClassName(..))
 
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
+import Noodle.Id (Temperament(..))
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
@@ -56,11 +58,18 @@ type Input strepr chrepr m =
     }
 
 
+data MFocus chrepr
+    = IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
+    | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
+    | IsOverBody
+
+
 type State strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
     , beingDragged :: Boolean
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
+    , mouseFocus :: Maybe (MFocus chrepr)
     }
 
 
@@ -71,12 +80,8 @@ data Action sterpr chrepr m
     | HeaderClick MouseEvent
     | InletClick  MouseEvent Id.InletR
     | OutletClick MouseEvent Id.OutletR
-    | NodeBodyOver
-    | NodeBodyOut
-    | InletOver RawShape.InletDefR (ValueInChannel chrepr)
-    | InletOut Id.InletR
-    | OutletOver RawShape.OutletDefR (ValueInChannel chrepr)
-    | OutletOut Id.OutletR
+    | ChangeFocus (MFocus chrepr)
+    | ClearFocus
 
 
 data Output
@@ -112,6 +117,7 @@ initialState { node, position } =
     { node, position
     , latestUpdate : Nothing
     , beingDragged : false
+    , mouseFocus : Nothing
     }
 
 
@@ -140,7 +146,7 @@ outletRelPos idx =
 
 
 render :: forall sterpr chrepr m. T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
-render { node, position, latestUpdate, beingDragged } =
+render { node, position, latestUpdate, beingDragged, mouseFocus } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
         , HE.onMouseMove MouseMove
@@ -157,6 +163,9 @@ render { node, position, latestUpdate, beingDragged } =
                     ]
                 , HS.path
                     [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
+                    , HE.onMouseOver $ const $ ChangeFocus IsOverBody
+                    , HE.onMouseOut $ const ClearFocus
+                    -- , HSA.class_ $ ClassName "noodle-capture-events"
                     , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : nodeWidth, height : bodyHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                     ]
@@ -172,12 +181,6 @@ render { node, position, latestUpdate, beingDragged } =
                     ]
                     [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
-            : HS.g
-                [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
-                , HE.onMouseOver $ const NodeBodyOver
-                , HE.onMouseOut $ const NodeBodyOut
-                ]
-                [ HS.rect [ HSA.width bodyWidth, HSA.height bodyHeight ] ]
             : renderInlets
             : renderOutlets
             : []
@@ -197,18 +200,34 @@ render { node, position, latestUpdate, beingDragged } =
         nodeWidth = titleWidth + bodyWidth
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
+        slopeFactor = 5.0
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
-        slopeFactor = 5.0
+        fillForInlet inletDef =
+            if isOverInlet inletDef.name then
+                Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
+            else Nothing
+        strokeForInlet inletDef = Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
+        fillForOulet outletDef = if isOverOutlet outletDef.name then Just $ P.hColorOf $ _.i200 Palette.blue else Nothing
+        strokeForOutlet outletDef = Just $ P.hColorOf $ _.i200 $ Palette.blue
+        isOverInlet inletR = case mouseFocus of
+            Just (IsOverInlet inletDef _) -> (_.name $ NT.unwrap inletDef) == inletR
+            _ -> false
+        isOverOutlet outletR = case mouseFocus of
+            Just (IsOverOutlet outletDef _) -> (_.name $ NT.unwrap outletDef) == outletR
+            _ -> false
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
                 , HE.onClick $ flip InletClick inletDef.name
-                , HE.onMouseOver $ const $ InletOver (NT.wrap inletDef) $ valueOfInlet inletDef.name
-                , HE.onMouseOut  $ const $ InletOut inletDef.name
+                , HE.onMouseOver $ const $ ChangeFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
+                , HE.onMouseOut  $ const $ ClearFocus
+                , HSA.class_ $ ClassName "noodle-capture-events"
                 ]
                 [ HS.circle
-                    [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
+                    [ HSA.fill $ fillForInlet inletDef
+                    , HSA.stroke $ strokeForInlet inletDef
+                    , HSA.strokeWidth 1.0
                     , HSA.r connectorRadius
                     , HSA.cy $ connectorRadius / 2.0 + 2.0 -- channelBarHeight / 2.0
                     ]
@@ -230,11 +249,14 @@ render { node, position, latestUpdate, beingDragged } =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
                 , HE.onClick $ flip OutletClick outletDef.name
-                , HE.onMouseOver $ const $ OutletOver (NT.wrap outletDef) $ valueOfOutlet outletDef.name
-                , HE.onMouseOut  $ const $ OutletOut outletDef.name
+                , HE.onMouseOver $ const $ ChangeFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
+                , HE.onMouseOut  $ const $ ClearFocus
+                , HSA.class_ $ ClassName "noodle-capture-events"
                 ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
-                    [ HSA.fill $ Just $ P.hColorOf $ _.i200 Palette.blue
+                    [ HSA.fill $ fillForOulet outletDef
+                    , HSA.stroke $ strokeForOutlet outletDef
+                    , HSA.strokeWidth 1.0
                     , HSA.r connectorRadius
                     , HSA.cy $ connectorRadius + 2.0 -- channelBarHeight / 2.0
                     ]
@@ -300,21 +322,21 @@ handleAction = case _ of
             posX = Int.toNumber $ Mouse.clientX mevt
             posY = Int.toNumber $ Mouse.clientY mevt
         H.raise $ OutletWasClicked outletR { x : posX, y : posY }
-    NodeBodyOver ->
-        pure unit
-    NodeBodyOut ->
-        pure unit
-    InletOver inletDef vic -> do
-        state <- H.get
-        let inlet = NT.unwrap inletDef
-        H.raise $ UpdateStatusBar $ T.inletStatusLine (RawNode.family state.node) inlet.order inlet.name vic
-    InletOut _ ->
-        H.raise $ ClearStatusBar
-    OutletOver outletDef vic -> do
-        state <- H.get
-        let outlet = NT.unwrap outletDef
-        H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
-    OutletOut _ ->
+    ChangeFocus focus -> do
+        H.modify_ _ { mouseFocus = Just focus }
+        case focus of
+            IsOverInlet inletDef vic -> do
+                state <- H.get
+                let inlet = NT.unwrap inletDef
+                H.raise $ UpdateStatusBar $ T.inletStatusLine (RawNode.family state.node) inlet.order inlet.name vic
+            IsOverOutlet outletDef vic -> do
+                state <- H.get
+                let outlet = NT.unwrap outletDef
+                H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
+            IsOverBody ->
+                pure unit
+    ClearFocus -> do
+        H.modify_ _ { mouseFocus = Nothing }
         H.raise $ ClearStatusBar
     MouseMove evt -> do
         H.raise $ ReportMouseMove evt
