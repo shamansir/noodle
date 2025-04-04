@@ -34,3 +34,4 @@ node_modules.*
 node-modules.*
 /tests.mute
 src/Demo/_Gen
+spago.before.dhall
