@@ -56,7 +56,7 @@ import Web.Layer (TargetLayer(..))
 
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
-    , library :: forall q. H.Slot q Library.Output Unit
+    , library :: forall q. H.Slot q Library.Output TargetLayer
     , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     )
@@ -137,7 +137,7 @@ render ploc state =
                         [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
-                        [ HH.slot _library unit Library.component libraryInput FromLibrary ]
+                        [ HH.slot _library SVG (Library.component SVG) libraryInput FromLibrary ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
                         [ HH.slot _patchArea unit (PatchArea.component ploc) patchAreaInput FromPatchArea ]
@@ -151,6 +151,9 @@ render ploc state =
             [ HH.div
                 [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
                 [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
+            , HH.div
+                [ HHP.position HHP.Abs { x : libraryX, y : libraryY } ]
+                [ HH.slot _library HTML (Library.component HTML) libraryInput FromLibrary ]
             ]
         ]
         where

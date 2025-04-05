@@ -11,14 +11,20 @@ import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
 
+import CSS as CSS
+import CSS.Overflow as CSS
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties hiding (style) as HHP
+import Halogen.HTML.CSS as HHP
+import Halogen.HTML.Properties.Extra as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 
 import Web.Paths as Paths
+import Web.Layer (TargetLayer(..))
 
 import Noodle.Id (FamilyR, family) as Id
 
@@ -46,11 +52,11 @@ data Output
     = SelectFamily Id.FamilyR
 
 
-component :: forall query m. H.Component query Input Output m
-component =
+component :: forall query m. TargetLayer -> H.Component query Input Output m
+component layer =
     H.mkComponent
         { initialState
-        , render
+        , render : render layer
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
             , receive = Just <<< Receive
@@ -62,28 +68,30 @@ initialState :: Input -> State
 initialState { families } = { families }
 
 
+slopeFactor = 5.0 :: Number
+fontSize = 12.0 :: Number
 width = 110.0 :: Number
 height = 900.0 :: Number
+headerHeight = 20.0 :: Number
+bottomBarHeight = 20.0 :: Number
+bodyHeight = height - bottomBarHeight - headerHeight
+bodyRelBottomY = bodyHeight :: Number
+bottomBarY = height - bottomBarHeight :: Number
 
 
-render :: forall m. State -> H.ComponentHTML Action () m
-render state =
+render :: forall m. TargetLayer -> State -> H.ComponentHTML Action () m
+render SVG state =
     HS.g
         [ ]
-        [ backdrop, familyButtonsGroup ]
+        -- [ backdrop, familyButtonsGroup ]
+        [ backdrop ]
     where
-
-        slopeFactor = 5.0
-        headerHeight = 20.0
-        bottomBarHeight = 20.0
-        bodyRelBottomY = height - bottomBarHeight - headerHeight
-        bottomBarY = height - bottomBarHeight
-        fontSize = 12.0
-
+        {-
         familyButtonsGroup =
             HS.g
                 [ HSA.transform [ HSA.Translate 5.0 $ headerHeight + slopeFactor * 2.0 ] ]
                 $ mapWithIndex familyButton state.families
+        -}
 
         backdrop =
             HS.g
@@ -122,6 +130,7 @@ render state =
                     ]
                 ]
 
+        {-
         familyButton idx familyR =
             HS.g
                 [
@@ -135,6 +144,41 @@ render state =
                     ]
                     [ HH.text $ Id.family familyR
                     ]
+                ]
+        -}
+
+
+render HTML state =
+    HH.div
+        [ HHP.style $ do
+            CSS.position CSS.relative
+            CSS.left $ CSS.px 5.0
+            CSS.top $ CSS.px $ headerHeight + slopeFactor * 2.0
+            CSS.maxWidth $ CSS.px $ width - 5.0
+            CSS.maxHeight $ CSS.px $ bodyHeight - slopeFactor * 4.0
+            CSS.overflowY CSS.scroll
+            CSS.overflowX CSS.hidden
+            CSS.lineHeight $ CSS.px 20.0
+            CSS.fontSize $ CSS.px fontSize
+            -- HHP.position HHP.Rel { x : 5.0, y : headerHeight + slopeFactor * 2.0 }
+        ]
+        $ mapWithIndex familyButton state.families
+
+    where
+        familyButton idx familyR =
+            HH.span
+                [ HHP.style $ do
+                    CSS.display CSS.block
+
+                    -- CSS.overflow CSS.hidden
+                    CSS.color $ P.colorOf $ _.i100 Palette.blue
+                -- HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.blue
+                -- , HSA.y $ Int.toNumber idx * 20.0
+                -- , HSA.dominant_baseline HSA.Hanging
+                -- , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
+                , HE.onClick $ const $ RaiseSelectFamily familyR
+                ]
+                [ HH.text $ Id.family familyR
                 ]
 
 

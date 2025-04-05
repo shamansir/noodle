@@ -20,6 +20,7 @@ to generate this file without the comments in this block.
   , "console"
   , "const"
   , "control"
+  , "css"
   , "debug"
   , "effect"
   , "either"
