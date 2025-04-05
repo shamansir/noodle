@@ -8,3 +8,33 @@ body {
 .noodle-capture-events {
     pointer-events: bounding-box;
 }
+
+.library-scrollbar::-webkit-scrollbar {
+    display: none;
+    visibility: hidden;
+    width: 4px;
+    height: 4px;
+}
+
+.library-scrollbar:hover::-webkit-scrollbar {
+    display: block;
+}
+
+/* #F1D67E rgb(241, 214, 126) yellow-150 */
+/* #ECCB60 rgb(236, 203, 96) yellow-200 *
+/* #DFB431 rgb(223, 180, 49) yellow-300 */
+/* #AD8301 rgb(173, 131, 1) yellow-600 */
+/* #3A2D04 rgb(58, 45, 4) yellow-900 */
+/* #66A0C8 rgb(102, 160, 200) blue-300 */
+/* #1A4F8C rgb(26, 79, 140) blue-700 */
+/* #12253B rgb(18, 37, 59) blue-900 */
+
+.library-scrollbar:hover::-webkit-scrollbar-thumb { /* Foreground */
+    /* border-radius: 1px; */
+    background-color: rgba(102, 160, 200, 0.8);
+}
+.library-scrollbar:hover::-webkit-scrollbar-track { /* Background */
+    /* -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); */
+    /* background-color: rgba(18,37,59,0.6); */
+    background-color: transparent;
+}

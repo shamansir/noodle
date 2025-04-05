@@ -11,6 +11,7 @@ import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
 
+-- import Color (transparent) as C
 import CSS as CSS
 import CSS.Overflow as CSS
 import Halogen as H
@@ -70,7 +71,7 @@ initialState { families } = { families }
 
 slopeFactor = 5.0 :: Number
 fontSize = 12.0 :: Number
-width = 110.0 :: Number
+width = 125.0 :: Number
 height = 900.0 :: Number
 headerHeight = 20.0 :: Number
 bottomBarHeight = 20.0 :: Number
@@ -154,13 +155,15 @@ render HTML state =
             CSS.position CSS.relative
             CSS.left $ CSS.px 5.0
             CSS.top $ CSS.px $ headerHeight + slopeFactor * 2.0
-            CSS.maxWidth $ CSS.px $ width - 5.0
+            CSS.maxWidth $ CSS.px width
             CSS.maxHeight $ CSS.px $ bodyHeight - slopeFactor * 4.0
             CSS.overflowY CSS.scroll
             CSS.overflowX CSS.hidden
             CSS.lineHeight $ CSS.px 20.0
             CSS.fontSize $ CSS.px fontSize
+            -- CSS.backgroundColor $ C.transparent
             -- HHP.position HHP.Rel { x : 5.0, y : headerHeight + slopeFactor * 2.0 }
+        , HHP.class_ $ H.ClassName "library-scrollbar"
         ]
         $ mapWithIndex familyButton state.families
 

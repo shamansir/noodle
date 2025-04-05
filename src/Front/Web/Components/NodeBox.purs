@@ -30,7 +30,6 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (toEvent) as ME
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.Event.Event (preventDefault, stopPropagation) as WE
-import Web.HTML.Common (ClassName(..))
 
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
@@ -224,7 +223,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                 , HE.onClick $ flip InletClick inletDef.name
                 , HE.onMouseOver $ const $ ChangeFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
                 , HE.onMouseOut  $ const $ ClearFocus
-                , HSA.class_ $ ClassName "noodle-capture-events"
+                , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ]
                 [ HS.circle
                     [ HSA.fill $ fillForInlet inletDef
@@ -254,7 +253,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                 , HE.onClick $ flip OutletClick outletDef.name
                 , HE.onMouseOver $ const $ ChangeFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
                 , HE.onMouseOut  $ const $ ClearFocus
-                , HSA.class_ $ ClassName "noodle-capture-events"
+                , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
                     [ HSA.fill $ fillForOulet outletDef
