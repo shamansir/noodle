@@ -10,11 +10,24 @@ data Position
     | Abs
 
 
--- positionAt :: Position -> { x :: Number, y :: Number } ->
-position :: forall r i. Position → { x ∷ Number , y ∷ Number } → HHP.IProp ( style ∷ String | r ) i
-position pos { x, y } =
-    HHP.style $ "position: " <> posString <> "; left: " <> show x <> "px; top: " <> show y <> "px;"
+position :: forall r i. Position -> { x :: Number , y :: Number } -> HHP.IProp ( style :: String | r ) i
+position pos =
+    HHP.style <<< position_ pos
+
+
+position_ :: Position -> { x :: Number, y :: Number } -> String
+position_ pos { x, y } =
+    "position: " <> posString <> "; left: " <> show x <> "px; top: " <> show y <> "px;"
     where
         posString = case pos of
             Abs -> "absolute"
             Rel -> "relative"
+
+
+fontSize :: forall r i. Number -> HHP.IProp ( style :: String | r ) i
+fontSize =
+    HHP.style <<< fontSize_
+
+
+fontSize_ :: Number -> String
+fontSize_ n = "font-size: " <> show n <> "px;"

@@ -78,6 +78,7 @@ render state =
         bottomBarHeight = 20.0
         bodyRelBottomY = height - bottomBarHeight - headerHeight
         bottomBarY = height - bottomBarHeight
+        fontSize = 12.0
 
         familyButtonsGroup =
             HS.g
@@ -94,12 +95,13 @@ render state =
                     , HSA.strokeWidth 1.0
                     ]
                 , HS.text
-                    [ HSA.stroke $ Just $ P.hColorOf $ _.i50 Palette.blue
+                    [ HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
                     , HSA.x 6.0
                     , HSA.y 7.0
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
                     , HSA.dominant_baseline HSA.Hanging
                     ]
-                    [ HH.text "LIBRARY" ]
+                    [ HH.text ": LIBRARY" ]
                 , HS.g
                     [ HSA.transform [ HSA.Translate 0.0 bottomBarY ] ]
                     [ HS.path
@@ -128,6 +130,7 @@ render state =
                     [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.blue
                     , HSA.y $ Int.toNumber idx * 20.0
                     , HSA.dominant_baseline HSA.Hanging
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
                     , HE.onClick $ const $ RaiseSelectFamily familyR
                     ]
                     [ HH.text $ Id.family familyR

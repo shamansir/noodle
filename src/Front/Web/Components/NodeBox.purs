@@ -187,12 +187,14 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
             : []
         )
     where
+        slopeFactor = 5.0
         inletsDefs = RawShape.inlets $ RawNode.shape node
         outletsDefs = RawShape.outlets $ RawNode.shape node
         inletsCount = Array.length inletsDefs
         outletsCount = Array.length outletsDefs
         channelBarWidth = nodeWidth - titleWidth
         titleBarWidth = titleWidth - slopeFactor
+        fontSize = 12.0
         channelFontSize = 9.0
         valueFontSize = 9.0
         titleFontSize = 11.0
@@ -201,7 +203,6 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
         nodeWidth = titleWidth + bodyWidth
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
-        slopeFactor = 5.0
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
         fillForInlet inletDef =
@@ -243,6 +244,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (-channelBarHeight) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 ]
@@ -273,6 +275,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) channelBarHeight ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     ]
                     [ WF.renderFormatting SVG $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
                 ]

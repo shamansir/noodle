@@ -10,7 +10,8 @@ import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
+import Halogen.HTML.Properties as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position_, fontSize_) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
@@ -87,8 +88,10 @@ render SVG state =
 
 render HTML state =
     HH.div
-        [ HHP.position HHP.Rel { x : state.width * 0.3, y : 5.0 } ]
+        [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
         [ WF.renderFormatting HTML state.content ]
+    where
+        fontSize = 9.0
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
