@@ -125,3 +125,12 @@ statusBar p =
     , HSA.l HSA.Abs ((p.width * 0.3) - (p.height - p.slope * 2.0)) (p.height - p.slope * 2.0)
     , HSA.z
     ]
+
+
+removeButton :: { size :: Number } -> Array HSA.PathCommand
+removeButton p =
+    [ HSA.m HSA.Abs 0.0 0.0
+    , HSA.l HSA.Abs p.size p.size
+    , HSA.m HSA.Abs 0.0 p.size
+    , HSA.l HSA.Abs p.size 0.0
+    ]

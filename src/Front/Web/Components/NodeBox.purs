@@ -4,19 +4,24 @@ import Prelude
 
 import Effect.Class (class MonadEffect)
 
-import Data.Maybe (Maybe(..), maybe)
-import Data.Map (lookup) as Map
-import Data.Map.Extra (mapKeys) as MapX
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
-import Data.Tuple (snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.String (length, toUpper) as String
-import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Int (toNumber) as Int
+import Data.Map (lookup) as Map
+import Data.Map.Extra (mapKeys) as MapX
+import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap, wrap) as NT
+import Data.String (length, toUpper) as String
 import Data.Text.Format as T
+import Data.Tuple (snd) as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
+
+import Web.Event.Event (preventDefault, stopPropagation) as WE
+import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.MouseEvent (toEvent) as ME
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -26,30 +31,23 @@ import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
 
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.MouseEvent (toEvent) as ME
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-import Web.Event.Event (preventDefault, stopPropagation) as WE
-
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
+import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
-import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
-
-import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
-import Noodle.Ui.Tagging.At (class At) as T
-
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
+import Noodle.Ui.Tagging.At (class At) as T
 
-import Web.Paths as Paths
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
+import Web.Paths as Paths
 
 
 type Input strepr chrepr m =
@@ -62,6 +60,7 @@ data MFocus chrepr
     = IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
     | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
     | IsOverBody
+    | IsOverNode
 
 
 type State strepr chrepr m =
@@ -78,6 +77,8 @@ data Action sterpr chrepr m
     | Receive (Input sterpr chrepr m)
     | MouseMove MouseEvent
     | HeaderClick MouseEvent
+    | DragButtonClick MouseEvent
+    | RemoveButtonClick MouseEvent
     | InletClick  MouseEvent Id.InletR
     | OutletClick MouseEvent Id.OutletR
     | ChangeFocus (MFocus chrepr)
@@ -150,6 +151,8 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
         , HE.onMouseMove MouseMove
+        -- , HE.onMouseOver $ const $ ChangeFocus IsOverNode
+        -- , HE.onMouseOut $ const ClearFocus
         ]
         (
             HS.g
@@ -166,7 +169,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     , HE.onMouseOver $ const $ ChangeFocus IsOverBody
                     , HE.onMouseOut $ const ClearFocus
                     -- , HSA.class_ $ ClassName "noodle-capture-events"
-                    , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : nodeWidth, height : bodyHeight }
+                    , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : nodeWidth {- bodyWidth -}, height : bodyHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                     ]
                 , HS.text
@@ -180,6 +183,38 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                         ]
                     ]
                     [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
+                ]
+            : ({- if isFocused then -}
+                HS.g
+                    [ HE.onClick DragButtonClick
+                    , HSA.transform [ HSA.Translate 0.0 0.0 ]
+                    ]
+                    [ HS.circle
+                        [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
+                        , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                        ]
+                    , HS.text
+                        [ HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 22.0
+                        , HSA.dominant_baseline HSA.Central
+                        , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
+                        ]
+                        [ HH.text "✣" ]
+                    ]
+                {- else HSX.none -})
+            : HS.g
+                [ HE.onClick RemoveButtonClick
+                , HSA.transform [ HSA.Translate nodeWidth (titleY / 2.0)]
+                ]
+                [ HS.circle
+                    [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
+                    , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                    ]
+                , HS.path
+                    [ HSA.d $ Paths.removeButton { size : 10.0 } --  $ Paths.removeButton { size : 10.0 }
+                    , HSA.fill   $ Just $ P.hColorOf $ if isFocused then _.i100 Palette.yellow else _.i900 Palette.yellow
+                    , HSA.stroke $ Just $ P.hColorOf $ if isFocused then _.i100 Palette.yellow else _.i900 Palette.yellow
+                    ]
                 ]
             : renderInlets
             : renderOutlets
@@ -213,10 +248,15 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
         strokeForOutlet outletDef = Just $ P.hColorOf $ _.i200 $ Palette.blue
         isOverInlet inletR = case mouseFocus of
             Just (IsOverInlet inletDef _) -> (_.name $ NT.unwrap inletDef) == inletR
+            Just _ -> false
             _ -> false
         isOverOutlet outletR = case mouseFocus of
             Just (IsOverOutlet outletDef _) -> (_.name $ NT.unwrap outletDef) == outletR
+            Just _ -> false
             _ -> false
+        isFocused = case mouseFocus of
+            Just _ -> true
+            Nothing -> false
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
@@ -304,7 +344,6 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                 )
 
 
-
 handleAction :: forall sterpr chrepr m. MonadEffect m => T.At At.StatusLine chrepr => Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
@@ -314,6 +353,12 @@ handleAction = case _ of
             , position = input.position
             }
     HeaderClick mevt -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
+        H.raise HeaderWasClicked
+    DragButtonClick mevt -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
+        H.raise HeaderWasClicked
+    RemoveButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise HeaderWasClicked
     InletClick mevt inletR -> do
@@ -337,6 +382,8 @@ handleAction = case _ of
                 let outlet = NT.unwrap outletDef
                 H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
             IsOverBody ->
+                pure unit
+            IsOverNode ->
                 pure unit
     ClearFocus -> do
         H.modify_ _ { mouseFocus = Nothing }
