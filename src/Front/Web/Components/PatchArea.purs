@@ -125,6 +125,7 @@ data Action ps sr cr m
 
 data Output
     = Connect (LinkStart /\ LinkEnd)
+    | RemoveNode Id.NodeR
     | UpdateStatusBar T.Tag
     | ClearStatusBar
 
@@ -319,6 +320,8 @@ handleAction = case _ of
         H.raise $ UpdateStatusBar tag
     FromNodeBox nodeR (NodeBox.ClearStatusBar) -> do
         H.raise $ ClearStatusBar
+    FromNodeBox nodeR (NodeBox.RemoveButtonWasClicked) -> do
+        H.raise $ RemoveNode nodeR
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR _ ->

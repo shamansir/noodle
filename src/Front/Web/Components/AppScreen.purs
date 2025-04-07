@@ -29,7 +29,7 @@ import Noodle.Id (PatchR, FamilyR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
-import Noodle.Patch (make, id, name, findRawNode, registerRawNode, getState, allNodes, links, connectRaw) as Patch
+import Noodle.Patch (make, id, name, findRawNode, registerRawNode, getState, allNodes, links, connectRaw, disconnectAllFromTo, removeNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -249,11 +249,9 @@ handleAction pstate = case _ of
 
                 H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
-        State.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
-            if (Patch.id curPatch == patchR) then
+        State.get >>= CState.currentPatch >>> whenJust_ \curPatch ->
+            when (Patch.id curPatch == patchR) $
                 H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
-            else
-                pure unit
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
@@ -273,8 +271,12 @@ handleAction pstate = case _ of
                             dstNode
                             curPatch
                     H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
-            pure unit
     FromPatchArea (PatchArea.UpdateStatusBar tag) ->
         H.modify_ _ { statusBarContent = Just tag }
     FromPatchArea PatchArea.ClearStatusBar ->
         H.modify_ _ { statusBarContent = Nothing }
+    FromPatchArea (PatchArea.RemoveNode nodeR) -> do
+        mbCurrentPatch <- CState.currentPatch <$> State.get
+        whenJust mbCurrentPatch \curPatch -> do
+            nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
+            H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)

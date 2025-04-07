@@ -90,6 +90,7 @@ data Output
     | ReportMouseMove  MouseEvent
     | InletWasClicked  Id.InletR
     | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
+    | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
     | ClearStatusBar
 
@@ -360,7 +361,7 @@ handleAction = case _ of
         H.raise HeaderWasClicked
     RemoveButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise HeaderWasClicked
+        H.raise RemoveButtonWasClicked
     InletClick mevt inletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
