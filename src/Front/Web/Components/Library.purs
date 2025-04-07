@@ -2,6 +2,8 @@ module Web.Components.Library where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
+
 import Data.Maybe (Maybe(..), maybe)
 import Data.Array ((:))
 import Data.Array (snoc) as Array
@@ -26,11 +28,14 @@ import Halogen.Svg.Elements as HS
 
 import Web.Paths as Paths
 import Web.Layer (TargetLayer(..))
+import Web.Formatting (renderFormatting) as WF
 
 import Noodle.Id (FamilyR, family) as Id
+import Noodle.Toolkit (class MarkToolkit)
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+import Noodle.Ui.Tagging as T
 
 
 type Input =
@@ -53,11 +58,11 @@ data Output
     = SelectFamily Id.FamilyR
 
 
-component :: forall query m. TargetLayer -> H.Component query Input Output m
-component layer =
+component :: forall tk query m. MarkToolkit tk => Proxy tk -> TargetLayer -> H.Component query Input Output m
+component ptk layer =
     H.mkComponent
         { initialState
-        , render : render layer
+        , render : render ptk layer
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
             , receive = Just <<< Receive
@@ -80,8 +85,8 @@ bodyRelBottomY = bodyHeight :: Number
 bottomBarY = height - bottomBarHeight :: Number
 
 
-render :: forall m. TargetLayer -> State -> H.ComponentHTML Action () m
-render SVG state =
+render :: forall tk m. MarkToolkit tk => Proxy tk -> TargetLayer -> State -> H.ComponentHTML Action () m
+render _ SVG state =
     HS.g
         [ ]
         -- [ backdrop, familyButtonsGroup ]
@@ -149,7 +154,7 @@ render SVG state =
         -}
 
 
-render HTML state =
+render ptk HTML state =
     HH.div
         [ HHP.style $ do
             CSS.position CSS.relative
@@ -172,16 +177,13 @@ render HTML state =
             HH.span
                 [ HHP.style $ do
                     CSS.display CSS.block
-
                     -- CSS.overflow CSS.hidden
-                    CSS.color $ P.colorOf $ _.i100 Palette.blue
-                -- HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.blue
-                -- , HSA.y $ Int.toNumber idx * 20.0
-                -- , HSA.dominant_baseline HSA.Hanging
-                -- , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
+                    -- CSS.color $ P.colorOf $ T.ma -- _.i100 Palette.blue
+                    CSS.backgroundColor $ P.colorOf $ _.i900 Palette.blue
                 , HE.onClick $ const $ RaiseSelectFamily familyR
                 ]
-                [ HH.text $ Id.family familyR
+                [ WF.renderFormatting HTML $ T.libraryItem ptk familyR
+                -- HH.text $ Id.family familyR
                 ]
 
 

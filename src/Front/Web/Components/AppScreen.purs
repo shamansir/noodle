@@ -26,7 +26,7 @@ import Halogen.Subscription as HSS
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
-import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch (make, id, name, findRawNode, registerRawNode, getState, allNodes, links, connectRaw) as Patch
@@ -84,6 +84,7 @@ component
      . Wiring m
     => WebLocator loc
     => HasFallback cr
+    => MarkToolkit tk
     => T.At At.ChannelLabel cr
     => T.At At.StatusLine cr
     => Toolkit.HoldsFamilies sr cr m fs
@@ -114,6 +115,7 @@ render
     => WebLocator loc
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
+    => MarkToolkit tk
     => HasFallback cr
     => ValueTagged cr
     => T.At At.StatusLine cr
@@ -137,7 +139,7 @@ render ploc state =
                         [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
-                        [ HH.slot _library SVG (Library.component SVG) libraryInput FromLibrary ]
+                        [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
                         [ HH.slot _patchArea unit (PatchArea.component ploc) patchAreaInput FromPatchArea ]
@@ -153,12 +155,13 @@ render ploc state =
                 [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
             , HH.div
                 [ HHP.position HHP.Abs { x : libraryX, y : libraryY } ]
-                [ HH.slot _library HTML (Library.component HTML) libraryInput FromLibrary ]
+                [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
             ]
         ]
         where
             width = 1000.0
             height = 1000.0
+            (ptk :: _ tk) = Proxy
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             patchAreaX = Library.width + 20.0
