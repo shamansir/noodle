@@ -125,6 +125,7 @@ data Action ps sr cr m
 
 data Output
     = Connect (LinkStart /\ LinkEnd)
+    | Disconnect Id.LinkR
     | RemoveNode Id.NodeR
     | UpdateStatusBar T.Tag
     | ClearStatusBar
@@ -204,7 +205,7 @@ render state =
             _ -> HSX.none
         ]
     where
-        notYetConnectedLink = LinkCmp.linkShape
+        notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
         nodesWithCells = state.nodes <#> findCell
         cellToTuple { rawNode, position, zIndex } = RawNode.id rawNode /\ { rawNode, position, zIndex }
         nodesToCellsMap = Map.fromFoldable $ cellToTuple <$> nodesWithCells
@@ -324,8 +325,8 @@ handleAction = case _ of
         H.raise $ RemoveNode nodeR
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
-    FromLink linkR _ ->
-        pure unit -- TODO
+    FromLink linkR (LinkCmp.WasClicked) ->
+        H.raise $ Disconnect linkR
 
 
 handleQuery

@@ -40,7 +40,7 @@ import Noodle.Id (PatchR, FamilyR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, class MarkToolkit)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
-import Noodle.Patch (make, id, name, findRawNode, registerRawNode, getState, allNodes, links, connectRaw, disconnectAllFromTo, removeNode) as Patch
+import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
@@ -298,6 +298,12 @@ handleAction pstate = case _ of
                             dstNode
                             curPatch
                     H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
+    FromPatchArea (PatchArea.Disconnect linkR) -> do
+        mbCurrentPatch <- CState.currentPatch <$> State.get
+        whenJust mbCurrentPatch \curPatch -> do
+            whenJust (Patch.findRawLink linkR curPatch) \rawLink -> do
+                nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
+                H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
     FromPatchArea (PatchArea.UpdateStatusBar tag) ->
         H.modify_ _ { statusBarContent = Just tag }
     FromPatchArea PatchArea.ClearStatusBar ->

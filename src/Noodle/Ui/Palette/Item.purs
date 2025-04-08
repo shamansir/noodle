@@ -176,4 +176,12 @@ hColorOf = colorOf >>> convert
     where
         convert c =
             case Color.toRGBA c of
-                { r, g, b, a } -> HC.RGB r g b
+                { r, g, b, a } -> HC.RGBA r g b a
+
+
+transparent :: Item
+transparent =
+    { color : Right $ Color.rgba 0 0 0 1.0
+    , label : "transparent"
+    , index : Nothing
+    }

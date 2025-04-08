@@ -39,10 +39,11 @@ type State =
 
 data Action
     = Receive Input
+    | Clicked
 
 
-type Output
-    = Unit
+data Output
+    = WasClicked
 
 
 component :: forall query m. H.Component query Input Output m
@@ -63,21 +64,30 @@ initialState { id, connector, position } = { id, connector, position }
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-    linkShape state.position
+    HS.g
+        [ HE.onClick $ const Clicked ]
+        [ linkShape { strokeWidth : 5.0, strokeColor : P.transparent } state.position -- so that clickable are is wider
+        , linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta } state.position
+        ]
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
     Receive { id, connector, position } -> H.put { id, connector, position }
+    Clicked -> H.raise WasClicked
 
 
-linkShape :: forall action slots m. Position -> H.ComponentHTML action slots m
-linkShape position =
+linkShapeNotYetConnected :: forall action slots m. Position -> H.ComponentHTML action slots m
+linkShapeNotYetConnected = linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta }
+
+
+linkShape :: forall action slots m. { strokeWidth :: Number, strokeColor :: P.Item } -> Position -> H.ComponentHTML action slots m
+linkShape p position =
     HS.line
         [ HSA.x1 position.from.x
         , HSA.y1 position.from.y
         , HSA.x2 position.to.x
         , HSA.y2 position.to.y
-        , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
-        , HSA.strokeWidth 2.0
+        , HSA.stroke $ Just $ P.hColorOf p.strokeColor
+        , HSA.strokeWidth p.strokeWidth
         ]
