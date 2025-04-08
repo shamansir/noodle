@@ -21,7 +21,8 @@ import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Networ
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
-    { network :: Network tk ps fs sr cr m
+    { size :: Maybe { width :: Number, height :: Number }
+    , network :: Network tk ps fs sr cr m
     , initPatchesFrom :: ps
     , patchIdToIndex :: Map Id.PatchR PatchIndex
     , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
@@ -34,7 +35,8 @@ newtype PatchIndex = PatchIndex Int
 
 init :: forall tk ps fs sr cr m. ps -> Toolkit tk fs sr cr m -> State tk ps fs sr cr m
 init patchState toolkit =
-    { network : Network.init toolkit
+    { size : Nothing
+    , network : Network.init toolkit
     , initPatchesFrom : patchState
     , patchIdToIndex : Map.empty
     , currentPatch : Nothing

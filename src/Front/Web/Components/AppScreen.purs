@@ -2,6 +2,8 @@ module Web.Components.AppScreen where
 
 import Prelude
 
+import Effect.Class (liftEffect)
+
 import Type.Proxy (Proxy(..))
 
 import Control.Monad.State (get, put, modify, modify_) as State
@@ -15,6 +17,7 @@ import Data.Map (toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
+import Data.Int (toNumber) as Int
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -23,6 +26,14 @@ import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
+import Halogen.Query.Event (eventListener)
+
+import Web.Event.Event as E
+import Web.HTML (Window, window) as Web
+import Web.HTML.HTMLDocument as HTMLDocument
+import Web.HTML.Window (toEventTarget, fromEventTarget, innerWidth, innerHeight) as Window
+import Web.UIEvent.KeyboardEvent as KE
+import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
@@ -77,6 +88,7 @@ data Action sr cr
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromPatchArea PatchArea.Output
+    | HandleResize
 
 
 component
@@ -159,8 +171,8 @@ render ploc state =
             ]
         ]
         where
-            width = 1000.0
-            height = 1000.0
+            width  = fromMaybe 1000.0 $ _.width  <$> state.size
+            height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
@@ -203,8 +215,23 @@ handleAction
     -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr) (Slots sr cr m) output m Unit
 handleAction pstate = case _ of
     Initialize -> do
+        window <- H.liftEffect $ Web.window
+        H.subscribe' \_ ->
+            eventListener
+                (E.EventType "resize")
+                (Window.toEventTarget window)
+                (E.target >=> (const $ Just HandleResize))
+
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
         State.modify_ $ CState.registerPatch firstPatch
+
+        handleAction pstate HandleResize
+    HandleResize -> do
+        window <- H.liftEffect $ Web.window
+        newWidth <- H.liftEffect $ Window.innerWidth window
+        newHeight <- H.liftEffect $ Window.innerHeight window
+        H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
+        pure unit
     CreatePatch -> do
         state <- State.get
         newPatch <- H.lift $ CState.spawnPatch state
@@ -233,7 +260,7 @@ handleAction pstate = case _ of
                 whenJust mbNodeState
                     \nextState -> rawNode # RawNode.setState nextState
 
-                _ <- H.subscribe =<< do
+                _ <- H.subscribe =<< do -- TODO: make one emitter for all nodes to be a bus with all the changes in the patch
                     { emitter, listener } <- H.liftEffect HSS.create
                     H.liftEffect
                         $  Signal.runSignal
