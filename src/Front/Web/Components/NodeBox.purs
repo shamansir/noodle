@@ -53,22 +53,25 @@ import Web.Paths as Paths
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
+    , size :: { width :: Number, height :: Number }
+    , inFocus :: Boolean
     }
 
 
-data MFocus chrepr
+data InsideFocus chrepr
     = IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
     | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
     | IsOverBody
-    | IsOverNode
 
 
 type State strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: { left :: Number, top :: Number }
+    , size :: { width :: Number, height :: Number }
+    , inFocus :: Boolean
     , beingDragged :: Boolean
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
-    , mouseFocus :: Maybe (MFocus chrepr)
+    , mouseFocus :: Maybe (InsideFocus chrepr)
     }
 
 
@@ -81,7 +84,7 @@ data Action sterpr chrepr m
     | RemoveButtonClick MouseEvent
     | InletClick  MouseEvent Id.InletR
     | OutletClick MouseEvent Id.OutletR
-    | ChangeFocus (MFocus chrepr)
+    | ChangeFocus (InsideFocus chrepr)
     | ClearFocus
 
 
@@ -115,8 +118,8 @@ component =
 
 
 initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
-initialState { node, position } =
-    { node, position
+initialState { node, position, size, inFocus } =
+    { node, position, size, inFocus
     , latestUpdate : Nothing
     , beingDragged : false
     , mouseFocus : Nothing
@@ -148,7 +151,7 @@ outletRelPos idx =
 
 
 render :: forall sterpr chrepr m. T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
-render { node, position, latestUpdate, beingDragged, mouseFocus } =
+render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
         , HE.onMouseMove MouseMove
@@ -185,38 +188,39 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
                     ]
                     [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
-            : ({- if isFocused then -}
-                HS.g
-                    [ HE.onClick DragButtonClick
-                    , HSA.transform [ HSA.Translate 0.0 0.0 ]
+            : ( if inFocus then
+                    HS.g
+                        [ HE.onClick DragButtonClick
+                        , HSA.transform [ HSA.Translate 0.0 0.0 ]
+                        ]
+                        [ HS.circle
+                            [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
+                            , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                            ]
+                        , HS.text
+                            [ HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                            , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 22.0
+                            , HSA.dominant_baseline HSA.Central
+                            , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
+                            ]
+                            [ HH.text "✣" ]
+                        ]
+                else HSX.none)
+            : ( if inFocus then HS.g
+                    [ HE.onClick RemoveButtonClick
+                    , HSA.transform [ HSA.Translate nodeWidth (titleY / 2.0)]
                     ]
                     [ HS.circle
                         [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
                         , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
                         ]
-                    , HS.text
-                        [ HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
-                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 22.0
-                        , HSA.dominant_baseline HSA.Central
-                        , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
+                    , HS.path
+                        [ HSA.d $ Paths.removeButton { size : 10.0 } --  $ Paths.removeButton { size : 10.0 }
+                        , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                        , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
                         ]
-                        [ HH.text "✣" ]
                     ]
-                {- else HSX.none -})
-            : HS.g
-                [ HE.onClick RemoveButtonClick
-                , HSA.transform [ HSA.Translate nodeWidth (titleY / 2.0)]
-                ]
-                [ HS.circle
-                    [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
-                    , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
-                    ]
-                , HS.path
-                    [ HSA.d $ Paths.removeButton { size : 10.0 } --  $ Paths.removeButton { size : 10.0 }
-                    , HSA.fill   $ Just $ P.hColorOf $ if isFocused then _.i100 Palette.yellow else _.i900 Palette.yellow
-                    , HSA.stroke $ Just $ P.hColorOf $ if isFocused then _.i100 Palette.yellow else _.i900 Palette.yellow
-                    ]
-                ]
+                else HSX.none)
             : renderInlets
             : renderOutlets
             : []
@@ -255,9 +259,6 @@ render { node, position, latestUpdate, beingDragged, mouseFocus } =
             Just (IsOverOutlet outletDef _) -> (_.name $ NT.unwrap outletDef) == outletR
             Just _ -> false
             _ -> false
-        isFocused = case mouseFocus of
-            Just _ -> true
-            Nothing -> false
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
@@ -352,6 +353,7 @@ handleAction = case _ of
         H.modify_ _
             { node = input.node
             , position = input.position
+            , inFocus = input.inFocus
             }
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
@@ -383,8 +385,6 @@ handleAction = case _ of
                 let outlet = NT.unwrap outletDef
                 H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
             IsOverBody ->
-                pure unit
-            IsOverNode ->
                 pure unit
     ClearFocus -> do
         H.modify_ _ { mouseFocus = Nothing }

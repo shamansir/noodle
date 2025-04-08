@@ -11,12 +11,16 @@ import Control.Monad.Extra (whenJust)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (Map)
-import Data.Map (empty, lookup, insert, size, fromFoldable) as Map
+import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values) as Map
 import Data.Map.Extra (update') as MapX
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith) as Array
+import Data.Set (Set)
+import Data.Set (empty, insert, member, fromFoldable) as Set
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
+import Data.Foldable (foldl, foldr)
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (Tag) as T
 
@@ -43,7 +47,7 @@ import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
 import Web.Bounds (Bounds)
-import Web.Bounds (getPosition) as Bounds
+import Web.Bounds (getPosition, getSize) as Bounds
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Class.WebRenderer (class WebLocator, ConstantShift)
@@ -101,6 +105,7 @@ type State loc ps sr cr m =
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
     , links :: Array Raw.Link
     , lockOn :: LockingTask
+    , focusedNodes :: Set Id.NodeR
     }
 
 
@@ -167,6 +172,7 @@ initialState _ { state, offset, size, nodes, links } =
     , links
     , nodesBounds : Map.empty
     , lockOn : NoLock
+    , focusedNodes : Set.empty
     }
 
 
@@ -207,25 +213,29 @@ render state =
     where
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
         nodesWithCells = state.nodes <#> findCell
-        cellToTuple { rawNode, position, zIndex } = RawNode.id rawNode /\ { rawNode, position, zIndex }
+        cellToTuple cell = RawNode.id cell.rawNode /\ cell
         nodesToCellsMap = Map.fromFoldable $ cellToTuple <$> nodesWithCells
         nodeBoxesSlots = (nodesWithCells # Array.sortWith _.zIndex <#> nodeBoxSlot)
         linksSlots = state.links <#> linkSlot
         findCell rawNode =
             let
                 nodeR = RawNode.id rawNode
+                mbBounds = findBounds nodeR state
+                size = fromMaybe bottom $ Bounds.getSize <$> Tuple.fst <$> mbBounds -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
                 (position /\ zIndex) =
                     fromMaybe (defaultPosition /\ top)
                          $ lmap Bounds.getPosition
-                        <$> findBounds nodeR state
+                        <$> mbBounds
             in
-                { rawNode, position, zIndex }
-        nodeBoxSlot { rawNode, position } =
+                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes }
+        nodeBoxSlot { rawNode, position, inFocus, size } =
             let
                 nodeR = RawNode.id rawNode
             in HH.slot _nodeBox nodeR NodeBox.component
                 { node : rawNode
                 , position
+                , size
+                , inFocus
                 }
                 $ FromNodeBox nodeR
         inletPos (nodeR /\ inletR) =
@@ -277,7 +287,7 @@ handleAction = case _ of
             Connecting linkStart _ ->
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
             NoLock ->
-                pure unit
+                H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
     PatchAreaClick -> do
         state <- State.get
         whenJust (draggingNode state)
@@ -350,6 +360,15 @@ handleQuery = case _ of
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
         pure $ Just a
+
+
+findFocusedNodes :: { x :: Number, y :: Number } -> Map Id.NodeR (Bounds /\ NodeZIndex) -> Set Id.NodeR
+findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
+    where
+        convertMap :: Map Id.NodeR (Bounds /\ NodeZIndex) -> Array (Id.NodeR /\ (Bounds /\ NodeZIndex))
+        convertMap = Map.toUnfoldable
+        foldF (nodeR /\ ({ width, height, top, left } /\ _)) set =
+            if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set
 
 
 draggingNode :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe Id.NodeR
