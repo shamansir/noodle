@@ -353,6 +353,7 @@ handleAction = case _ of
         H.modify_ _
             { node = input.node
             , position = input.position
+            , size = input.size
             , inFocus = input.inFocus
             }
     HeaderClick mevt -> do

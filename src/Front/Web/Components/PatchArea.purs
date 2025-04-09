@@ -33,6 +33,7 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
 
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 
 import Noodle.Id (NodeR, InletR, OutletR, LinkR) as Id
 import Noodle.Raw.Link (Link) as Raw
@@ -99,6 +100,7 @@ data LockingTask
 type State loc ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
+    , zoom :: Number
     , state :: ps
     , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m)
@@ -113,6 +115,7 @@ type Input ps sr cr m =
     { state :: ps
     , offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
+    , zoom :: Number
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
     }
@@ -123,6 +126,7 @@ data Action ps sr cr m
     | Receive (Input ps sr cr m)
     | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
     | PatchAreaMouseMove { x :: Number, y :: Number }
+    | WheelChange { dx :: Number, dy :: Number }
     | PatchAreaClick
     | FromNodeBox Id.NodeR NodeBox.Output
     | FromLink Id.LinkR LinkCmp.Output
@@ -134,6 +138,7 @@ data Output
     | RemoveNode Id.NodeR
     | UpdateStatusBar T.Tag
     | ClearStatusBar
+    | Zoom Number
 
 
 data Query sr cr m a
@@ -163,11 +168,12 @@ component ploc =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { state, offset, size, nodes, links } =
+initialState _ { state, offset, size, zoom, nodes, links } =
     { lastLocation : Web.firstLocation
     , state
     , offset
     , size
+    , zoom
     , nodes
     , links
     , nodesBounds : Map.empty
@@ -191,24 +197,34 @@ render state =
             , HSA.fill $ Just $ P.hColorOf $ Palette.black
             , HE.onClick $ const PatchAreaClick
             , HE.onMouseMove \mevt -> PatchAreaMouseMove
-                { x : (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
-                , y : (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
+                { x : ((Int.toNumber $ Mouse.clientX mevt) - state.offset.left) / state.zoom
+                , y : ((Int.toNumber $ Mouse.clientY mevt) - state.offset.top)  / state.zoom
+                }
+            , HE.onWheel \wevt -> WheelChange
+                { dx : Wheel.deltaX wevt
+                , dy : Wheel.deltaY wevt
                 }
             ]
         , HS.g
-            [ HE.onClick $ const PatchAreaClick
+            ( if state.zoom /= 1.0
+                then [ HSA.transform [ HSA.Scale state.zoom state.zoom ] ]
+                else [ ]
+            )
+            [ HS.g
+                [ HE.onClick $ const PatchAreaClick
+                ]
+                $ nodeBoxesSlots
+            , HS.g
+                [  ]
+                $ linksSlots
+            , case state.lockOn of
+                Connecting { fromNode, fromOutlet } mousePos ->
+                    notYetConnectedLink
+                        { from : outletPos $ fromNode /\ fromOutlet
+                        , to : mousePos
+                        }
+                _ -> HSX.none
             ]
-            $ nodeBoxesSlots
-        , HS.g
-            [  ]
-            $ linksSlots
-        , case state.lockOn of
-            Connecting { fromNode, fromOutlet } mousePos ->
-                notYetConnectedLink
-                    { from : outletPos $ fromNode /\ fromOutlet
-                    , to : mousePos
-                    }
-            _ -> HSX.none
         ]
     where
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
@@ -276,9 +292,9 @@ handleAction
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { state, offset, nodes, links } ->
+    Receive { state, offset, size, nodes, links, zoom } ->
         H.modify_ _
-            { state = state, offset = offset, nodes = nodes, links = links }
+            { state = state, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
         state <- State.get
         case state.lockOn of
@@ -288,6 +304,8 @@ handleAction = case _ of
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
             NoLock ->
                 H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
+    WheelChange { dy } ->
+        H.raise $ Zoom dy
     PatchAreaClick -> do
         state <- State.get
         whenJust (draggingNode state)

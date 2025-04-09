@@ -73,7 +73,7 @@ render state =
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
-    Receive { id, connector, position } -> H.put { id, connector, position }
+    Receive { id, connector, position } -> H.modify_ _ { id = id, connector = connector, position = position }
     Clicked -> H.raise WasClicked
 
 

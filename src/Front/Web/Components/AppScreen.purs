@@ -190,6 +190,7 @@ render ploc state =
             patchAreaInput =
                 { offset : { left : patchAreaX, top : patchAreaY }
                 , size : { width : patchAreaWidth, height : patchAreaHeight }
+                , zoom : state.zoom
                 , state : state.initPatchesFrom
                 , nodes : curPatchNodes
                 , links : curPatchLinks
@@ -285,6 +286,8 @@ handleAction pstate = case _ of
         handleAction pstate $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
         handleAction pstate $ SpawnNode familyR
+    FromPatchArea (PatchArea.Zoom dy) ->
+        H.modify_ $ \s -> s { zoom = min 3.0 $ max 0.3 $ s.zoom + (dy * 0.1) }
     FromPatchArea (PatchArea.Connect (source /\ target)) -> do
         mbCurrentPatch <- CState.currentPatch <$> State.get
         whenJust mbCurrentPatch \curPatch -> do

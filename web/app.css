@@ -1,8 +1,13 @@
+html {
+    overflow: hidden;
+}
+
 body {
     font-family: "JetBrains Mono", monospace;
     font-optical-sizing: auto;
     font-weight: 300;
     font-style: normal;
+    overflow: hidden;
 }
 
 .noodle-capture-events {
