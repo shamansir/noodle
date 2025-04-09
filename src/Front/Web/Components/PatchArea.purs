@@ -138,7 +138,7 @@ data Output
     | RemoveNode Id.NodeR
     | UpdateStatusBar T.Tag
     | ClearStatusBar
-    | Zoom Number
+    | TryZoom Number
 
 
 data Query sr cr m a
@@ -305,7 +305,7 @@ handleAction = case _ of
             NoLock ->
                 H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
     WheelChange { dy } ->
-        H.raise $ Zoom dy
+        H.raise $ TryZoom dy
     PatchAreaClick -> do
         state <- State.get
         whenJust (draggingNode state)

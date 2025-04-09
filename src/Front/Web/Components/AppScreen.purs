@@ -23,6 +23,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
+import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
@@ -32,6 +33,7 @@ import Web.Event.Event as E
 import Web.HTML (Window, window) as Web
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (toEventTarget, fromEventTarget, innerWidth, innerHeight) as Window
+import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.KeyboardEvent as KE
 import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
@@ -81,6 +83,8 @@ _statusBar = Proxy :: _ "statusBar"
 
 data Action sr cr
     = Initialize
+    | GlobalKeyDown KeyboardEvent
+    | GlobalKeyUp KeyboardEvent
     | SelectPatch Id.PatchR
     | CreatePatch
     | SpawnNode Id.FamilyR
@@ -223,6 +227,18 @@ handleAction pstate = case _ of
                 (Window.toEventTarget window)
                 (E.target >=> (const $ Just HandleResize))
 
+        H.subscribe' \_ ->
+            eventListener
+                (KET.keydown)
+                (Window.toEventTarget window)
+                (KE.fromEvent >=> (Just <<< GlobalKeyDown))
+
+        H.subscribe' \_ ->
+            eventListener
+                (KET.keyup)
+                (Window.toEventTarget window)
+                (KE.fromEvent >=> (Just <<< GlobalKeyUp))
+
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
         State.modify_ $ CState.registerPatch firstPatch
 
@@ -286,8 +302,10 @@ handleAction pstate = case _ of
         handleAction pstate $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
         handleAction pstate $ SpawnNode familyR
-    FromPatchArea (PatchArea.Zoom dy) ->
-        H.modify_ $ \s -> s { zoom = min 3.0 $ max 0.3 $ s.zoom + (dy * 0.1) }
+    FromPatchArea (PatchArea.TryZoom dy) -> do
+        state <- H.get
+        when state.shiftPressed $
+            H.put $ state { zoom = min 3.0 $ max 0.3 $ state.zoom + (dy * 0.1) }
     FromPatchArea (PatchArea.Connect (source /\ target)) -> do
         mbCurrentPatch <- CState.currentPatch <$> State.get
         whenJust mbCurrentPatch \curPatch -> do
@@ -316,3 +334,7 @@ handleAction pstate = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+    GlobalKeyDown kevt ->
+        H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+    GlobalKeyUp kevt ->
+        H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
