@@ -39,7 +39,7 @@ import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
-import Noodle.Toolkit (Toolkit, class MarkToolkit)
+import Noodle.Toolkit (Toolkit, class MarkToolkit, class HasChRepr)
 import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
@@ -48,6 +48,8 @@ import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subs
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
@@ -105,6 +107,8 @@ component
     => T.At At.StatusLine cr
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.FromPatchState tk ps sr
+    => HasChRepr tk cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
     => Proxy loc
     -> ps
@@ -134,6 +138,8 @@ render
     => MarkToolkit tk
     => HasFallback cr
     => ValueTagged cr
+    => HasChRepr tk cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => Proxy loc
@@ -158,7 +164,7 @@ render ploc state =
                         [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                        [ HH.slot _patchArea unit (PatchArea.component ploc) patchAreaInput FromPatchArea ]
+                        [ HH.slot _patchArea unit (PatchArea.component ptk ploc) patchAreaInput FromPatchArea ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
                         [ HH.slot_ _statusBar SVG (StatusBar.component SVG) statusBarInput ]

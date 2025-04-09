@@ -2,6 +2,8 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Type.Proxy (Proxy)
+
 import Effect.Class (class MonadEffect)
 
 import Data.Array ((:))
@@ -33,6 +35,8 @@ import Halogen.Svg.Elements.Extra as HSX
 
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
@@ -104,13 +108,22 @@ data Query strepr chrepr a
     | ApplyDragEnd a
 
 
-component :: forall strepr chrepr m. MonadEffect m => T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
-component =
+component
+    :: forall tk strepr chrepr m
+     . MonadEffect m
+    => MarkToolkit tk
+    => HasChRepr tk chrepr
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => T.At At.StatusLine chrepr
+    => T.At At.ChannelLabel chrepr
+    => Proxy tk
+    -> H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+component ptk =
     H.mkComponent
         { initialState
         , render
         , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction
+            { handleAction = handleAction ptk
             , handleQuery = handleQuery
             , receive = Just <<< Receive
             }
@@ -346,8 +359,17 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                 )
 
 
-handleAction :: forall sterpr chrepr m. MonadEffect m => T.At At.StatusLine chrepr => Action sterpr chrepr m -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
-handleAction = case _ of
+handleAction
+    :: forall tk sterpr chrepr m
+     . MonadEffect m
+    => MarkToolkit tk
+    => HasChRepr tk chrepr
+    => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
+    => T.At At.StatusLine chrepr
+    => Proxy tk
+    -> Action sterpr chrepr m
+    -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
+handleAction ptk = case _ of
     Initialize -> pure unit
     Receive input ->
         H.modify_ _
@@ -385,8 +407,11 @@ handleAction = case _ of
                 state <- H.get
                 let outlet = NT.unwrap outletDef
                 H.raise $ UpdateStatusBar $ T.outletStatusLine (RawNode.family state.node) outlet.order outlet.name vic
-            IsOverBody ->
-                pure unit
+            IsOverBody -> do
+                state <- H.get
+                case state.latestUpdate of
+                    Just latestUpdate -> H.raise $ UpdateStatusBar $ T.nodeStatusLine ptk (RawNode.id state.node) latestUpdate
+                    Nothing -> H.raise $ UpdateStatusBar $ T.familyStatusLine ptk $ RawNode.family state.node
     ClearFocus -> do
         H.modify_ _ { mouseFocus = Nothing }
         H.raise $ ClearStatusBar

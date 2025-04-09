@@ -35,13 +35,16 @@ import Halogen.Svg.Elements.Extra as HSX
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 
-import Noodle.Id (NodeR, InletR, OutletR, LinkR) as Id
+import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
+import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id, connector) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
@@ -147,17 +150,21 @@ data Query sr cr m a
 
 
 component
-    :: forall loc ps sr cr m
+    :: forall tk loc ps sr cr m
      . MonadEffect m
     => WebLocator loc
+    => MarkToolkit tk
+    => HasChRepr tk cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => Proxy loc
+    => Proxy tk
+    -> Proxy loc
     -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
-component ploc =
+component ptk ploc =
     H.mkComponent
         { initialState : initialState ploc
-        , render : render
+        , render : render ptk
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
             , initialize = Just Initialize
@@ -183,13 +190,17 @@ initialState _ { state, offset, size, zoom, nodes, links } =
 
 
 render
-    :: forall loc ps sr cr m
+    :: forall loc tk ps sr cr m
      . MonadEffect m
+    => MarkToolkit tk
+    => HasChRepr tk cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => State loc ps sr cr m
+    => Proxy tk
+    -> State loc ps sr cr m
     -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
-render state =
+render ptk state =
     HS.g
         []
         [ HS.rect
@@ -247,7 +258,7 @@ render state =
         nodeBoxSlot { rawNode, position, inFocus, size } =
             let
                 nodeR = RawNode.id rawNode
-            in HH.slot _nodeBox nodeR NodeBox.component
+            in HH.slot _nodeBox nodeR (NodeBox.component ptk)
                 { node : rawNode
                 , position
                 , size
