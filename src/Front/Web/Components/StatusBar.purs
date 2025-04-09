@@ -2,10 +2,8 @@ module Web.Components.StatusBar where
 
 import Prelude
 
-
-import Prelude
-
 import Data.Maybe (Maybe(..))
+import Data.String (take) as String
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -31,21 +29,24 @@ import Web.Layer (TargetLayer(..))
 type Input =
     { content :: T.Tag
     , width :: Number
+    , currentZoom :: Number
     }
 
 
 type State =
     { content :: T.Tag
     , width :: Number
+    , currentZoom :: Number
     }
 
 
 data Action
     = Receive Input
+    | RequestToResetZoom
 
 
-type Output
-    = Unit
+data Output
+    = ResetZoom
 
 
 data Query a
@@ -69,7 +70,7 @@ component layer =
 
 
 initialState :: Input -> State
-initialState { content, width } = { content, width }
+initialState { content, width, currentZoom } = { content, width, currentZoom }
 
 
 render :: forall m. TargetLayer -> State -> H.ComponentHTML Action () m
@@ -78,25 +79,50 @@ render SVG state =
         []
         [ HS.path
             [ HSA.d $ P.statusBar { slope : slopeFactor, height, width : state.width }
-            , HSA.fill $ Just $ P.hColorOf $ _.i800 Palette.yellow
+            , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.yellow
             , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
             ]
+        , if state.currentZoom /= 1.0 then
+            HS.g
+                [ HSA.transform
+                    [ HSA.Translate (state.width - zoomTextWidth - 10.0) 10.0 ] ]
+                [ HS.text
+                    [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
+                    , HSA.dominant_baseline HSA.Central
+                    ]
+                    [ HH.text $ String.take 5 $ show state.currentZoom ]
+                , HS.circle
+                    [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
+                    , HSA.r 5.0
+                    , HSA.cx $ zoomTextWidth + 5.0
+                    , HSA.cy 0.0
+                    , HE.onClick $ const RequestToResetZoom
+                    ]
+                ]
+            else HH.text ""
         ]
     where
+        zoomTextWidth = 35.0
         slopeFactor = 5.0
+        fontSize = 9.0
 
 
 render HTML state =
     HH.div
-        [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
-        [ WF.renderFormatting HTML state.content ]
+        []
+        [ HH.div
+            [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
+            [ WF.renderFormatting HTML state.content ]
+        ]
     where
         fontSize = 9.0
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
-    Receive { content, width } -> H.put { content, width }
+    Receive { content, width, currentZoom } -> H.put { content, width, currentZoom }
+    RequestToResetZoom -> H.raise ResetZoom
 
 
 handleQuery :: forall action output m a. Query a -> H.HalogenM State action () output m (Maybe a)

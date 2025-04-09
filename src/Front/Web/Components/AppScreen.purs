@@ -94,6 +94,7 @@ data Action sr cr
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromPatchArea PatchArea.Output
+    | FromStatusBar StatusBar.Output
     | HandleResize
 
 
@@ -167,7 +168,7 @@ render ploc state =
                         [ HH.slot _patchArea unit (PatchArea.component ptk ploc) patchAreaInput FromPatchArea ]
                     , HS.g
                         [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
-                        [ HH.slot_ _statusBar SVG (StatusBar.component SVG) statusBarInput ]
+                        [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
                     ]
                 )
             ]
@@ -212,6 +213,7 @@ render ploc state =
             statusBarInput =
                 { content : fromMaybe T.nil state.statusBarContent
                 , width : statusBarWidth
+                , currentZoom : state.zoom
                 } :: StatusBar.Input
 
 
@@ -340,6 +342,8 @@ handleAction pstate = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+    FromStatusBar StatusBar.ResetZoom ->
+        H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
     GlobalKeyUp kevt ->
