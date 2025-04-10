@@ -301,6 +301,13 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
+                , HS.rect
+                    [ HSA.fill $ Just $ P.hColorOf P.transparent
+                    , HSA.width channelStep
+                    , HSA.height channelBarHeight
+                    , HSA.x $ -connectorRadius - 2.0
+                    , HSA.y $ -3.0
+                    ]
                 ]
         renderOulet idx outletDef =
             HS.g
@@ -332,6 +339,13 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     ]
                     [ WF.renderFormatting SVG $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
+                , HS.rect
+                    [ HSA.fill $ Just $ P.hColorOf P.transparent
+                    , HSA.width channelStep
+                    , HSA.height channelBarHeight
+                    , HSA.x $ -connectorRadius - 2.0
+                    , HSA.y 0.0
+                    ]
                 ]
         renderInlets =
             HS.g

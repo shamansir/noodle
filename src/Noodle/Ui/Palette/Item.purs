@@ -181,7 +181,7 @@ hColorOf = colorOf >>> convert
 
 transparent :: Item
 transparent =
-    { color : Right $ Color.rgba 0 0 0 1.0
+    { color : Right $ Color.rgba 0 0 0 0.0
     , label : "transparent"
     , index : Nothing
     }
