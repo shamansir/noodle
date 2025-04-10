@@ -15,7 +15,7 @@ import Data.Map (lookup) as Map
 import Data.Map.Extra (mapKeys) as MapX
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap, wrap) as NT
-import Data.String (length, toUpper) as String
+import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
@@ -142,7 +142,7 @@ initialState { node, position, size, inFocus } =
 -- everything below in this paragraph has to be at top level to allow calculating links' positions from `PatchArea`
 channelStep = 55.0 :: Number
 titleWidth = 20.0 :: Number
-bodyHeight = 70.0 :: Number -- FIXME: could be changed by custom node renderer
+bodyHeight = 72.0 :: Number -- FIXME: could be changed by custom node renderer
 channelBarHeight = 15.0 :: Number
 connectorRadius = 5.0 :: Number
 
@@ -199,7 +199,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                         , HSA.Rotate 270.0 0.0 0.0
                         ]
                     ]
-                    [ HH.text $ Id.family $ Id.familyOf $ RawNode.id node ]
+                    [ HH.text $ fitTitle $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
             : ( if inFocus then
                     HS.g
@@ -240,6 +240,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
         )
     where
         slopeFactor = 5.0
+        titleMaxChars = 8
         inletsDefs = RawShape.inlets $ RawNode.shape node
         outletsDefs = RawShape.outlets $ RawNode.shape node
         inletsCount = Array.length inletsDefs
@@ -255,6 +256,9 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
         nodeWidth = titleWidth + bodyWidth
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
+        fitTitle title =
+            if String.length title <= titleMaxChars then title
+            else "…" <> String.drop (String.length title - titleMaxChars) title
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
         fillForInlet inletDef =

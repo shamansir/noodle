@@ -33,28 +33,30 @@ https://noodle.labs.jb.gg
 * `purs` compiler `v0.15.9`, it is not yet updated/checked on the latest version;
 * `npm install` is needed;
 
-## Running
-
-From _starter_ toolkit:
+## Running Terminal User Interface
 
 `sh ./run-cli.sh -t starter`
 `sh ./run-cli.sh -t hydra`
 
-### Run with commands from the file:
+## Running Web Interface
 
-`sh ./run-cli.sh -f ./ndf/starter.v0.1.ndf`
+`sh ./run-web-serve.sh`
 
-### Run both with toolkit and commands from the file
+For Hot Code Replacement, `sh ./run-web-watch.sh` could be run in parallel, but it sometimes doesn't update and in the modern `spago` versions this possibility was removed.
+
+### Run with toolkit and commands from the file
 
 Will rewrite previous node definitions if they intersect
 
 `sh ./run-cli.sh -t starter -f ./ndf/starter.v0.1.ndf`
+`sh ./run-cli.sh -t hydra -f ./ndf/hydra.v0.3.ndf`
 
 ## Generate Toolkit Code
 
 Generate code for _starter_ toolkit with `purescript-codegen` using the given definition file
 
 `sh ./run-cli.sh -g ./ndf/starter.v0.1.ndf -t starter`
+`sh ./run-cli.sh -g ./ndf/hydra.v0.3.ndf -t hydra`
 
 By default the generated code will be located in `./src/Demo/_Gen/Starter` directory (`./src/Demo/_Gen/<TOOLKIT-NAME>`). This could cause having double modules, though, i.e. fail to compile/start after the generation process, since generated modules for toolkit could have the exact same name as the toolkit sources already provided in the repository, or just the sources that were generated previously before current run. In this case ensure that you don't need the previous sources at this location or have them commited to version control, and delete the target directory before generating new ones.
 
