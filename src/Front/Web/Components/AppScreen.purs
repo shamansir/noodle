@@ -17,7 +17,7 @@ import Data.Map (toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
-import Data.Int (toNumber) as Int
+import Data.Int (round, toNumber) as Int
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -149,28 +149,32 @@ render
 render ploc state =
     HH.div
         [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
-        [ HS.svg [ HSA.width width, HSA.height height ]
-            [ HS.g
-                []
-                (
-                    [ HS.rect
-                        [ HSA.width width, HSA.height height
-                        , HSA.fill $ Just $ P.hColorOf $ Palette.black
+        [ HH.canvas [ HHP.id "target-canvas", HHP.width $ Int.round width, HHP.height $ Int.round height ]
+        , HH.div
+            [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
+            [ HS.svg [ HSA.width width, HSA.height height ]
+                [ HS.g
+                    []
+                    (
+                        [ HS.rect
+                            [ HSA.width width, HSA.height height
+                            , HSA.fill $ Just $ P.hColorOf $ Palette.black
+                            ]
+                        , HS.g
+                            [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                            [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
+                        , HS.g
+                            [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
+                            [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
+                        , HS.g
+                            [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
+                            [ HH.slot _patchArea unit (PatchArea.component ptk ploc) patchAreaInput FromPatchArea ]
+                        , HS.g
+                            [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
+                            [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
                         ]
-                    , HS.g
-                        [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
-                        [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
-                    , HS.g
-                        [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
-                        [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
-                    , HS.g
-                        [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                        [ HH.slot _patchArea unit (PatchArea.component ptk ploc) patchAreaInput FromPatchArea ]
-                    , HS.g
-                        [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
-                        [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
-                    ]
-                )
+                    )
+                ]
             ]
         , HH.div_
             [ HH.div
@@ -182,6 +186,7 @@ render ploc state =
             ]
         ]
         where
+            svgRootStyle = "position: absolute; left: 0; top: 0;"
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
