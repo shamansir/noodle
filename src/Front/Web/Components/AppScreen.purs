@@ -2,6 +2,8 @@ module Web.Components.AppScreen where
 
 import Prelude
 
+import Debug as Debug
+
 import Effect.Class (liftEffect)
 
 import Type.Proxy (Proxy(..))
@@ -18,6 +20,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber) as Int
+import Data.String (toLower) as String
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -186,7 +189,6 @@ render ploc state =
             ]
         ]
         where
-            svgRootStyle = "position: absolute; left: 0; top: 0;"
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
@@ -253,7 +255,7 @@ handleAction pstate = case _ of
                 (KE.fromEvent >=> (Just <<< GlobalKeyUp))
 
         firstPatch <- H.lift $ Patch.make "Patch 1" pstate
-        State.modify_ $ CState.registerPatch firstPatch
+        H.modify_ $ CState.registerPatch firstPatch
 
         handleAction pstate HandleResize
     HandleResize -> do
@@ -263,19 +265,19 @@ handleAction pstate = case _ of
         H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
         pure unit
     CreatePatch -> do
-        state <- State.get
+        state <- H.get
         newPatch <- H.lift $ CState.spawnPatch state
-        State.modify_ $ CState.registerPatch newPatch
+        H.modify_ $ CState.registerPatch newPatch
         handleAction pstate $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch
     SelectPatch patchR -> do
-        state <- State.get
+        state <- H.get
         H.modify_ _
             { currentPatch =
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
     SpawnNode familyR -> do
-        state <- State.get
+        state <- H.get
         let toolkit = Network.toolkit state.network
         (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
         whenJust mbRawNode \rawNode -> do
@@ -283,7 +285,7 @@ handleAction pstate = case _ of
                 nodeR = RawNode.id rawNode
             H.lift $ RawNode._runOnInletUpdates rawNode
 
-            mbCurrentPatch <- CState.currentPatch <$> State.get
+            mbCurrentPatch <- CState.currentPatch <$> H.get
             whenJust mbCurrentPatch \curPatch -> do
                 (patchState :: ps) <- Patch.getState curPatch
                 let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
@@ -306,7 +308,7 @@ handleAction pstate = case _ of
 
                 H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
-        State.get >>= CState.currentPatch >>> whenJust_ \curPatch ->
+        H.get >>= CState.currentPatch >>> whenJust_ \curPatch ->
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
@@ -320,7 +322,7 @@ handleAction pstate = case _ of
         when state.shiftPressed $
             H.put $ state { zoom = min 3.0 $ max 0.3 $ state.zoom + (dy * 0.1) }
     FromPatchArea (PatchArea.Connect (source /\ target)) -> do
-        mbCurrentPatch <- CState.currentPatch <$> State.get
+        mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
                 \srcNode dstNode -> do
@@ -333,7 +335,7 @@ handleAction pstate = case _ of
                             curPatch
                     H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
     FromPatchArea (PatchArea.Disconnect linkR) -> do
-        mbCurrentPatch <- CState.currentPatch <$> State.get
+        mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust (Patch.findRawLink linkR curPatch) \rawLink -> do
                 nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
@@ -343,13 +345,14 @@ handleAction pstate = case _ of
     FromPatchArea PatchArea.ClearStatusBar ->
         H.modify_ _ { statusBarContent = Nothing }
     FromPatchArea (PatchArea.RemoveNode nodeR) -> do
-        mbCurrentPatch <- CState.currentPatch <$> State.get
+        mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
-    GlobalKeyDown kevt ->
+    GlobalKeyDown kevt -> do
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+        when (String.toLower (KE.key kevt) == "escape") $ H.tell _patchArea unit PatchArea.CancelConnecting
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }

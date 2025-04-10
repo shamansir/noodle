@@ -147,6 +147,7 @@ data Output
 data Query sr cr m a
     = ApplyNewNode (Raw.Node sr cr m) a
     | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
+    | CancelConnecting a
 
 
 component
@@ -312,7 +313,7 @@ handleAction = case _ of
         H.modify_ _
             { state = state, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
-        state <- State.get
+        state <- H.get
         case state.lockOn of
             DraggingNode nodeR ->
                 H.modify_ $ updatePosition nodeR { left : x, top : y }
@@ -323,30 +324,33 @@ handleAction = case _ of
     WheelChange { dy } ->
         H.raise $ TryZoom dy
     PatchAreaClick -> do
-        state <- State.get
+        state <- H.get
         whenJust (draggingNode state)
             \nodeR -> do
-                State.modify_ _ { lockOn = NoLock }
+                H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
+        whenJust (creatingLink state)
+            \_ -> do
+                H.modify_ _ { lockOn = NoLock }
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
-        state <- State.get
+        state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
-                State.modify_ _ { lockOn = DraggingNode nodeR }
+                H.modify_ _ { lockOn = DraggingNode nodeR }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
             Just otherNodeR -> do
-                State.modify_ _ { lockOn = NoLock }
+                H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
     FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
-        state <- State.get
+        state <- H.get
         whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
             when (fromNode /= nodeR) $
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
-        State.modify_ _ { lockOn = NoLock }
+        H.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
-        state <- State.get
-        State.modify_ _
+        state <- H.get
+        H.modify_ _
             { lockOn = Connecting
                 { fromNode : nodeR
                 , fromOutlet : outletR
@@ -356,7 +360,7 @@ handleAction = case _ of
                 }
             }
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
-        state <- State.get
+        state <- H.get
         handleAction $ PatchAreaMouseMove $
             { x : (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
             , y : (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
@@ -380,7 +384,7 @@ handleQuery
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m (Maybe a)
 handleQuery = case _ of
     ApplyNewNode rawNode a -> do
-        state <- State.get
+        state <- H.get
         let
             nodeRect = { width : 300.0, height : 70.0 }
             nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
@@ -393,6 +397,9 @@ handleQuery = case _ of
         pure $ Just a
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
+        pure $ Just a
+    CancelConnecting a -> do
+        H.modify_ _ { lockOn = NoLock }
         pure $ Just a
 
 
