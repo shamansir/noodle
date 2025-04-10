@@ -100,5 +100,5 @@ linkShape p position =
         , HSA.y2 position.to.y
         , HSA.stroke $ Just $ P.hColorOf p.strokeColor
         , HSA.strokeWidth p.strokeWidth
-        , HHP.class_ $ H.ClassName $ if p.handleEvents then "noodle-enable-events" else "noodle-disable-events"
+        , HSA.class_ $ H.ClassName $ if p.handleEvents then "noodle-enable-events" else "noodle-disable-events"
         ]
