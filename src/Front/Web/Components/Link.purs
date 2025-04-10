@@ -4,9 +4,12 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 
+import Record as Record
+
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
@@ -27,6 +30,7 @@ type Input =
     { id :: Id.LinkR
     , connector :: RawLink.Connector
     , position :: Position
+    , handleEvents :: Boolean
     }
 
 
@@ -34,11 +38,13 @@ type State =
     { id :: Id.LinkR
     , connector :: RawLink.Connector
     , position :: Position
+    , handleEvents :: Boolean
     }
 
 
 data Action
     = Receive Input
+    | Skip
     | Clicked
 
 
@@ -59,29 +65,33 @@ component =
 
 
 initialState :: Input -> State
-initialState { id, connector, position } = { id, connector, position }
+initialState { id, connector, position, handleEvents } = { id, connector, position, handleEvents }
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
     HS.g
-        [ HE.onClick $ const Clicked ]
-        [ linkShape { strokeWidth : 5.0, strokeColor : P.transparent } state.position -- so that clickable are is wider
-        , linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta } state.position
+        [ HE.onClick $ const $ if state.handleEvents then Clicked else Skip
+        , HHP.class_ $ H.ClassName $ if state.handleEvents then "noodle-enable-events" else "noodle-disable-events"
+        ]
+        [ linkShape { strokeWidth : 5.0, strokeColor : P.transparent, handleEvents : state.handleEvents } state.position -- so that clickable area is wider
+        , linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta, handleEvents : state.handleEvents  } state.position
         ]
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
-    Receive { id, connector, position } -> H.modify_ _ { id = id, connector = connector, position = position }
+    Receive { id, connector, position, handleEvents } ->
+        H.modify_ _ { id = id, connector = connector, position = position, handleEvents = handleEvents }
+    Skip -> pure unit
     Clicked -> H.raise WasClicked
 
 
 linkShapeNotYetConnected :: forall action slots m. Position -> H.ComponentHTML action slots m
-linkShapeNotYetConnected = linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta }
+linkShapeNotYetConnected = linkShape { strokeWidth : 2.0, strokeColor : _.i200 Palette.magenta, handleEvents : false }
 
 
-linkShape :: forall action slots m. { strokeWidth :: Number, strokeColor :: P.Item } -> Position -> H.ComponentHTML action slots m
+linkShape :: forall action slots m. { strokeWidth :: Number, strokeColor :: P.Item, handleEvents :: Boolean } -> Position -> H.ComponentHTML action slots m
 linkShape p position =
     HS.line
         [ HSA.x1 position.from.x
@@ -90,4 +100,5 @@ linkShape p position =
         , HSA.y2 position.to.y
         , HSA.stroke $ Just $ P.hColorOf p.strokeColor
         , HSA.strokeWidth p.strokeWidth
+        , HHP.class_ $ H.ClassName $ if p.handleEvents then "noodle-enable-events" else "noodle-disable-events"
         ]

@@ -281,6 +281,10 @@ render ptk state =
                     relPos = NodeBox.outletRelPos outletIdx
                 in { x : position.left + relPos.x, y : position.top + relPos.y })
             # fromMaybe { x : 0.0, y : 0.0 }
+        handleLinkEvents = case state.lockOn of
+            NoLock -> true
+            DraggingNode _ -> false
+            Connecting _ _ -> false
         linkSlot rawLink =
             let
                 linkR = RawLink.id rawLink
@@ -292,6 +296,7 @@ render ptk state =
                     { from : outletPos connector.from
                     , to : inletPos connector.to
                     }
+                , handleEvents : handleLinkEvents
                 }
                 $ FromLink linkR
 

@@ -10,6 +10,14 @@ body {
     overflow: hidden;
 }
 
+.noodle-enable-events {
+    pointer-events: all;
+}
+
+.noodle-disable-events {
+    pointer-events: none;
+}
+
 .noodle-capture-events {
     pointer-events: bounding-box;
 }
