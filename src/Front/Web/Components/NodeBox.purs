@@ -240,14 +240,13 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
         )
     where
         slopeFactor = 5.0
-        titleMaxChars = 8
+        titleMaxChars = 8 -- bodyHeight / 9.0 (fontCharWidth)
         inletsDefs = RawShape.inlets $ RawNode.shape node
         outletsDefs = RawShape.outlets $ RawNode.shape node
         inletsCount = Array.length inletsDefs
         outletsCount = Array.length outletsDefs
         channelBarWidth = nodeWidth - titleWidth
         titleBarWidth = titleWidth - slopeFactor
-        fontSize = 12.0
         channelFontSize = 9.0
         valueFontSize = 9.0
         titleFontSize = 11.0
@@ -294,6 +293,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                 , HS.text
                     [ HSA.x channelNameShift
                     , HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
+                    , HSA.transform [ HSA.Translate 0.0 0.5 ]
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]

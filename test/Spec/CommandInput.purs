@@ -17,14 +17,10 @@ import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Fn.Shape.Temperament (Temperament(..)) as Temp
 
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr(..))
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..))
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr(..))
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Sum as Sum
--- import Example.Toolkit.Minimal.Node.Stateful as Stateful
--- import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
--- import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
--- import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
--- import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
 import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit, MINIMAL,  minimalTk) as Minimal
 
 import Noodle.Text.NdfFile.Command.FromInput as FI

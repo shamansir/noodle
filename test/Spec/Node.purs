@@ -33,8 +33,10 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
-import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..), MinimalStRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr(..)) as MinimalRepr
 import Example.Toolkit.Minimal.Node.Sample as Sample
 import Example.Toolkit.Minimal.Node.SampleHC as SampleHC
 import Example.Toolkit.Minimal.Node.Sum as Sum
@@ -280,9 +282,7 @@ spec = do
 
             pure unit
 
-
-
-    describe "working with state" $ do
+    describe "working with node state" $ do
 
         it "modifying state in the node processing function" $ liftEffect $ do
             (statefulNode :: Stateful.Node) <- Stateful.makeNode
@@ -307,16 +307,18 @@ spec = do
             stateC <- Node.state statefulNode
             stateC `shouldEqual` "***-x-0-0-5-12"
 
+    describe "working with patch state" $ do
+
         it "modifying state in a patch-state-bound node from outside" $ liftEffect $ do
             (modifiesPStateNode :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
             modifiesPStateNode # Node._listenUpdatesAndRun
             stateBefore <- Node.state modifiesPStateNode
-            stateBefore `shouldEqual` (Patch.State { intVal : 0, strVal : "0*0*" } /\ "o+0+0")
-            modifiesPStateNode # Node.modifyState (map $ (<>) "<<<-")
+            stateBefore `shouldEqual` (ModifiesPatch.State $ { intVal : 0, strVal : "0*0*" } /\ "o+0+0")
+            modifiesPStateNode # Node.modifyState (\(ModifiesPatch.State st) -> ModifiesPatch.State $ map ((<>) "<<<-") st)
             _ <- modifiesPStateNode #-> Stateful.a_in /\ 5
             _ <- modifiesPStateNode #-> Stateful.b_in /\ 7
             stateC <- Node.state modifiesPStateNode
-            stateC `shouldEqual` (Patch.State { intVal : 17, strVal : "12*5*0*0*" } /\ "<<<-o+0+0+5+12")
+            stateC `shouldEqual` (ModifiesPatch.State $ { intVal : 17, strVal : "12*5*0*0*" } /\ "<<<-o+0+0+5+12")
 
     describe "raw nodes" $ do
 

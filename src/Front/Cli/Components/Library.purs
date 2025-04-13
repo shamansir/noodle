@@ -237,7 +237,7 @@ spawnAndRender toolkit patchR family = do
     (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
     let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR familyId)
 
-    traverse_ (flip Node.setState node) $ StRepr.from =<< mbNodeState
+    whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
 

@@ -12,7 +12,7 @@ import Noodle.Repr.ValueInChannel (accept) as ViC
 
 import Noodle.Raw.FromToRec as RR
 
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..))
 
 
 spec :: Spec Unit

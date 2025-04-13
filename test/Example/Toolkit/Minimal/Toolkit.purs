@@ -12,8 +12,10 @@ import Effect (Effect)
 
 import Noodle.Id (FamilyR, toolkitR, family) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey) as Noodle
-import Noodle.Toolkit (empty, register) as Toolkit
+import Noodle.Toolkit (empty, register, class FromPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families, F)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (from, to) as StRepr
 
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
@@ -23,8 +25,10 @@ import Example.Toolkit.Minimal.Node.Sample as Sample
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..)) as MR
+import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as MR
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
 
 
 foreign import data MINIMAL :: Noodle.ToolkitKey
@@ -39,6 +43,7 @@ type MyFamilies
     :> Sum.F
     :> Concat.F
     :> Stateful.F
+    :> ModifiesPatch.F
     :> TNil
 
 
@@ -61,7 +66,13 @@ toolkit
     $ Toolkit.register Sum.family
     $ Toolkit.register Concat.family
     $ Toolkit.register Stateful.family
+    $ Toolkit.register ModifiesPatch.family
     $ Toolkit.empty minimalTk (Id.toolkitR "my-toolkit")
+
+
+instance Toolkit.FromPatchState MINIMAL MinimalStRepr ModifiesPatch.State where
+    loadFromPatch :: Proxy MINIMAL -> Id.FamilyR -> MinimalStRepr -> Maybe ModifiesPatch.State
+    loadFromPatch _ _ = StRepr.from
 
 
 instance PossiblyToSignature MINIMAL (ValueInChannel MinimalVRepr) (ValueInChannel MinimalVRepr) Id.FamilyR where

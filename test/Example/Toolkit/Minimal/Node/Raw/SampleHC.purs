@@ -18,8 +18,11 @@ import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Raw.Toolkit.Family (make, spawn) as RawFamily
 
 import Example.Toolkit.Minimal.Node.Raw.Sample as Src
-import Example.Toolkit.Minimal.Repr (MinimalVRepr, MinimalStRepr)
-import Example.Toolkit.Minimal.Repr (MinimalStRepr(..)) as MinimalRepr
+
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as MinimalRepr
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr(..)) as MinimalRepr
 
 
 shape :: Raw.Shape

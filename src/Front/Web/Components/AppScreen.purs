@@ -289,6 +289,7 @@ handleAction pstate = case _ of
             whenJust mbCurrentPatch \curPatch -> do
                 (patchState :: ps) <- Patch.getState curPatch
                 let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
+                -- whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
                 whenJust mbNodeState
                     \nextState -> rawNode # RawNode.setState nextState
 

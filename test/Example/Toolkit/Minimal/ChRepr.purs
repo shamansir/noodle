@@ -1,4 +1,4 @@
-module Example.Toolkit.Minimal.Repr where
+module Example.Toolkit.Minimal.ChRepr where
 
 import Prelude
 
@@ -6,28 +6,21 @@ import Partial.Unsafe (unsafePartial)
 
 import Type.Proxy (Proxy)
 
-import Data.Newtype (unwrap, wrap) as NT
+import Data.Newtype (unwrap) as NT
 -- import Data.String.Read (read)
 import Data.Int (fromString, toStringAs, decimal) as Int
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (Tuple, uncurry, curry)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Bifunctor (bimap)
 
 import Noodle.Repr.HasFallback (class HasFallback)
-import Noodle.Repr.ChRepr (class ReadChannelRepr, class WriteChannelRepr, readChannelRepr, writeChannelRepr)
-import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class ToValueInChannel)
+import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChannel)
 import Noodle.Repr.ValueInChannel (accept, decline) as ViC
 import Noodle.Repr.Tagged (class ValueTagged, ValuePath) as VT
 import Noodle.Raw.Fn.Shape (ValueTag, tagAs)
-import Noodle.Repr.StRepr (class StRepr)
 
-import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, exprOp, typeCtor, typeOp, binaryOp)
+import Tidy.Codegen (exprCtor, exprIdent, exprInt, exprString, typeCtor)
 
-import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
+import Noodle.Text.NdfFile.Types (EncodedType, EncodedValue(..))
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pTypeFor, pDefaultFor, pValueFor, class ParseableRepr)
-
-import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
 
 import Yoga.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
@@ -39,22 +32,11 @@ data MinimalVRepr
     | Str String
 
 
-data MinimalStRepr
-    = NoSt
-    | UnitSt
-    | StrSt String
-    | PState ((Int /\ String) /\ String)
-
-
 derive instance Eq MinimalVRepr
 
 
 instance HasFallback MinimalVRepr where
     fallback = None
-
-
-instance HasFallback MinimalStRepr where
-    fallback = NoSt
 
 
 instance FromValueInChannel MinimalVRepr MinimalVRepr where fromValueInChannel = identity
@@ -99,28 +81,9 @@ instance VT.ValueTagged MinimalVRepr where
     acceptByTag _ { current, incoming } = current == incoming
 
 
-instance StRepr Unit MinimalStRepr where
-    to = const UnitSt
-    from = case _ of
-        UnitSt -> Just unit
-        _ -> Nothing
-instance StRepr String MinimalStRepr where
-    to = StrSt
-    from = case _ of
-        StrSt str -> Just str
-        _ -> Nothing
-instance StRepr (Tuple Patch.State String) MinimalStRepr where
-    to :: Patch.State /\ String -> MinimalStRepr
-    to = bimap (NT.unwrap >>> unpackP) identity >>> PState
-        where unpackP { intVal, strVal } = intVal /\ strVal
-    from :: MinimalStRepr -> Maybe (Patch.State /\ String)
-    from = case _ of
-        PState ((intVal /\ strVal) /\ nodeVal) -> Just $ (NT.wrap { intVal, strVal }) /\ nodeVal
-        _ -> Nothing
-
 
 instance CodegenRepr MinimalVRepr where
-    reprModule = const "Example.Toolkit.Minimal.Repr"
+    reprModule = const "Example.Toolkit.Minimal.ChRepr"
     reprTypeName = const "MinimalVRepr"
     reprType = const $ unsafePartial $ typeCtor "MinimalVRepr"
     pDefaultFor = const $ unsafePartial $ \mbType ->
@@ -143,41 +106,6 @@ instance CodegenRepr MinimalVRepr where
                      _ -> if (valueStr == "unit")
                                 then exprIdent "unit"
                                 else exprCtor "None"
-    fTypeFor prepr = pTypeFor prepr
-    fDefaultFor prepr = pDefaultFor prepr
-    fValueFor prepr = pValueFor prepr
-
-
-instance CodegenRepr MinimalStRepr where
-    reprModule = const "Example.Toolkit.Minimal.Repr"
-    reprTypeName = const "MinimalStRepr"
-    reprType = const $ unsafePartial $ typeCtor "MinimalStRepr"
-    pDefaultFor = const $ unsafePartial $ \mbType ->
-        case NT.unwrap <$> mbType of
-            Just "UnitSt" -> exprIdent "unit"
-            Just "StrSt" -> exprString ""
-            Just "PState" ->
-                exprOp (exprInt 0)
-                    [ binaryOp "/\\" $ exprString ""
-                    , binaryOp "/\\" $ exprString ""
-                    ]
-            _ -> exprIdent "unit"
-    pTypeFor = const $ unsafePartial $ \mbType ->
-                  case NT.unwrap <$> mbType of
-                    Just "StrSt" -> typeCtor "String"
-                    Just "UnitSt" -> typeCtor "Unit"
-                    Just "PState" ->
-                        typeOp (typeCtor "Int")
-                            [ binaryOp "/\\" $ typeCtor "String"
-                            , binaryOp "/\\" $ typeCtor "String"
-                            ]
-                    _ -> typeCtor "Unit"
-    pValueFor = const $ unsafePartial $ \mbType (EncodedValue valueStr) ->
-                  case NT.unwrap <$> mbType of
-                     Just "StrSt" -> exprString valueStr
-                     Just "UnitSt" -> exprIdent "unit"
-                     Just "PState" -> exprIdent "foo" -- FIXME:
-                     _ -> exprIdent "unit"
     fTypeFor prepr = pTypeFor prepr
     fDefaultFor prepr = pDefaultFor prepr
     fValueFor prepr = pValueFor prepr

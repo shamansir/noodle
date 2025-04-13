@@ -31,7 +31,8 @@ import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
 import Example.Toolkit.Minimal.Node.Raw.Sum as RawSum
 import Example.Toolkit.Minimal.Node.Raw.Stateful as RawStateful
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
 import Example.Toolkit.Minimal.Toolkit (Toolkit, toolkit, MINIMAL,  minimalTk) as My
 
 

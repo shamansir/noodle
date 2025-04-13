@@ -21,10 +21,9 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
+import Noodle.Repr.HasFallback (class HasFallback)
 
-import Example.Toolkit.Minimal.PatchState (State(..), default) as Patch
-import Example.Toolkit.Minimal.Repr (MinimalVRepr)
-
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
 
 
 _modifiesPatch :: NId.Family "modifiesPatch"
@@ -49,20 +48,26 @@ type OutletsRow =
     ( sum :: Int )
 
 
-type State = String
+newtype State = State ({ intVal :: Int, strVal :: String } /\ String)
+
+
+derive newtype instance Eq State
+derive newtype instance Show State
 
 
 type Shape   = Noodle.Shape Inlets Outlets
-type Process = Noodle.Process (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
-type Node    = Noodle.Node   "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
-type Family  = Noodle.Family "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
-type F       = Noodle.F      "modifiesPatch" (Patch.State /\ State) InletsRow OutletsRow MinimalVRepr Effect
+type Process = Noodle.Process State InletsRow OutletsRow MinimalVRepr Effect
+type Node    = Noodle.Node   "modifiesPatch" State InletsRow OutletsRow MinimalVRepr Effect
+type Family  = Noodle.Family "modifiesPatch" State InletsRow OutletsRow MinimalVRepr Effect
+type F       = Noodle.F      "modifiesPatch" State InletsRow OutletsRow MinimalVRepr Effect
 
 
 defaultI :: Record InletsRow
 defaultI = { a : 0, b : 0 }
 defaultO :: Record OutletsRow
 defaultO = { sum : 0 }
+defaultState :: State
+defaultState = State $ { intVal : 0, strVal : "" } /\ "o"
 
 
 a_in    = Noodle.Inlet :: _ "a"
@@ -75,7 +80,7 @@ family :: Family
 family =
     Family.make
         _modifiesPatch
-        (Patch.default /\ "o")
+        defaultState
         (Noodle.Shape :: Shape)
         defaultI
         defaultO
@@ -92,11 +97,14 @@ sumAndStore = do
     a <- Fn.receive a_in
     b <- Fn.receive b_in
     State.modify_
-        \(Patch.State { intVal, strVal } /\ s) ->
-            Patch.State
+        \(State ({ intVal, strVal } /\ s)) -> State $
             { intVal : intVal + (a + b)
             , strVal : show (a + b) <> "*" <> strVal
             }
             /\
             (s <> "+" <> show (a + b))
     Fn.send sum_out $ a + b
+
+
+instance HasFallback State where
+    fallback = defaultState

@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family (Family) as Noodle
 import Noodle.Toolkit.Family (make, spawn) as Family
 import Noodle.Toolkit.Families (F) as Noodle
 
-import Example.Toolkit.Minimal.Repr (MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
 import Example.Toolkit.Minimal.Node.Sample as Src
 
 

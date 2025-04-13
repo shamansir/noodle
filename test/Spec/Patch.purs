@@ -4,22 +4,35 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
+import Data.Maybe (Maybe(..))
+import Data.Traversable (traverse_)
+
+import Control.Monad.Extra (whenJust)
+
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
 import Test.Spec.Assertions (fail, shouldEqual)
 
+import Noodle.Id (familyR) as Id
 import Noodle.Patch (Patch)
-import Noodle.Patch (make, fromToolkit, registerGivenNode, registerNode, registerRawNode, mapAllNodes, connect, disconnect) as Patch
-import Noodle.Node (run) as Node
+import Noodle.Patch as Patch
+import Noodle.Node (run, setState) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
+import Noodle.Toolkit (loadFromPatch) as Toolkit
+import Noodle.Repr.StRepr (class StRepr, from, to) as StRepr
 
 import Example.Toolkit.Minimal.Toolkit as MinimalToolkit
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as Ch
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr(..)) as St
 import Example.Toolkit.Minimal.Node.Sum as Sum
 import Example.Toolkit.Minimal.Node.Concat as Concat
+import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.Node.Raw.Concat as RawConcat
+import Example.Toolkit.Minimal.PatchState (State(..), default) as Patch
 
 
 spec :: Spec Unit
@@ -191,8 +204,29 @@ spec = do
         pending' "it is possible to operate with patch state from outside" $ liftEffect $ do
             pure unit
 
-        pending' "it is possible to operate with patch state from inside the node" $ liftEffect $ do
-            pure unit
+        it "it is possible to operate with patch state from inside the node" $ liftEffect $ do
+            (modifiesPatchA :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
+            (modifiesPatchB :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
+
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" $ St.PState $ (0 /\ "foo") /\ "bar"
+            let patchWithNodes =
+                    emptyPatch
+                    # Patch.registerNode modifiesPatchA
+                    # Patch.registerNode modifiesPatchB
+
+            (curState :: MinimalStRepr) <- Patch.getState patchWithNodes
+
+            _ <- Node.run modifiesPatchA
+            _ <- Node.run modifiesPatchB
+
+            let (mbNodeState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState
+            whenJust mbNodeState $ flip Node.setState modifiesPatchA
+
+            modifiesPatchA #-> ModifiesPatch.a_in /\ 4
+
+            (stateAfter :: MinimalStRepr) <- Patch.getState patchWithNodes
+
+            stateAfter `shouldEqual` (St.PState $ (4 /\ "4*foo") /\ "bar+4")
 
     describe "iterating through nodes" $ do
 

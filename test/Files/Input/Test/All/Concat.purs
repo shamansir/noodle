@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Newtype (class Newtype)
 import Effect (Effect)
-import Example.Toolkit.Minimal.Repr (MinimalVRepr(..))
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..))
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
 import Noodle.Fn.Shape (I, O)

@@ -51,7 +51,8 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), wi
 -- import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Toolkit (Name) as Toolkit
 
-import Example.Toolkit.Minimal.Repr (MinimalStRepr, MinimalVRepr)
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
 
 import HydraTk.Types (FnArg(..))
 import HydraTk.Repr.Wrap (WrapRepr)
@@ -66,15 +67,15 @@ minimalGenOptions :: FCG.Options MinimalStRepr MinimalVRepr
 minimalGenOptions = FCG.Options
   { temperamentAlgorithm : Temperament.defaultAlgorithm
   , monadAt : { module_ : "Effect", type_ : "Effect" }
-  , chreprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalVRepr" }
-  , streprAt : { module_ : "Example.Toolkit.Minimal.Repr", type_ : "MinimalStRepr" }
+  , chreprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalVRepr" }
+  , streprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalStRepr" }
   , familyModuleName : MCG.moduleName' modulePrefix $ Id.toolkitR "Test"
   , pstrepr : (Proxy :: _ MinimalStRepr)
   , pchrepr : (Proxy :: _ MinimalVRepr)
   , infoComment : Nothing
   , tkImports : unsafePartial $
     [ declImportAs "Data.String" [ importValue "length" ] "String"
-    , declImport "Example.Toolkit.Minimal.Repr" [ importTypeAll "MinimalVRepr", importTypeAll "MinimalStRepr" ]
+    , declImport "Example.Toolkit.Minimal.ChRepr" [ importTypeAll "MinimalVRepr", importTypeAll "MinimalStRepr" ]
     ]
   , familyImports : Id.family >>> (unsafePartial $ case _ of
     "concat" ->
