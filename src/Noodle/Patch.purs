@@ -27,16 +27,16 @@ import Unsafe.Coerce (unsafeCoerce)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
-import Signal (Signal)
-import Signal (get) as Signal
+import Signal (Signal, (~>))
+import Signal (get, foldp, merge, runSignal) as Signal
 import Signal.Channel (Channel, channel)
-import Signal.Channel (subscribe) as Channel
+import Signal.Channel (subscribe, send) as Channel
 
 import Noodle.Id (PatchR, Family, FamilyR, NodeR, LinkR, PatchName, PatchR, patchR, familyR, familyOf, Inlet, Outlet, InletR, OutletR) as Id
 import Noodle.Link (FromId, ToId, cancel) as Link
 import Noodle.Link (Link)
 import Noodle.Node (Node)
-import Noodle.Node (id, family, toRaw, connect) as Node
+import Noodle.Node (id, family, toRaw, connect, subscribeState) as Node
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
@@ -53,6 +53,7 @@ import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChan
 import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit (class FromToPatchState, putInPatch) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Wiring (class Wiring)
 
@@ -407,6 +408,18 @@ withAnyNodes f familyR (Patch _ _ _ nodes rawNodes _) =
                 Nothing -> []
     where
         toRawCnv hn = HN.withNode hn (Node.toRaw >>> RawNode.toReprableState)
+
+
+stateChangesFrom :: forall tk f fstate is os chrepr mp pstate. Toolkit.FromToPatchState tk pstate fstate => Proxy tk -> pstate -> Node f fstate is os chrepr mp -> Signal pstate
+stateChangesFrom ptk curState node = Signal.foldp (Toolkit.putInPatch ptk $ Node.id node) curState $ Node.subscribeState node
+
+
+trackStateChangesFrom :: forall tk fs f fstate strepr is os chrepr m mp pstate. Toolkit.FromToPatchState tk pstate fstate => MonadEffect m => Proxy tk -> Node f fstate is os chrepr mp -> Patch pstate fs strepr chrepr mp -> m Unit
+trackStateChangesFrom ptk node patch@(Patch _ _ changes _ _ _) = liftEffect $ do
+    curState <- getState patch
+    let
+        mergedChanges = stateChangesFrom ptk curState node ~> Channel.send changes
+    Signal.runSignal mergedChanges
 
 
 subscribeState :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Signal pstate

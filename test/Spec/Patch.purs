@@ -9,6 +9,10 @@ import Data.Traversable (traverse_)
 
 import Control.Monad.Extra (whenJust)
 
+import Signal (Signal)
+import Signal (get) as Signal
+import Signal.Channel  as Channel
+
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, pending, describe, it, pending', itOnly)
@@ -208,25 +212,27 @@ spec = do
             (modifiesPatchA :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
             (modifiesPatchB :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
 
-            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" $ St.PState $ (0 /\ "foo") /\ "bar"
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" Patch.default
             let patchWithNodes =
                     emptyPatch
                     # Patch.registerNode modifiesPatchA
                     # Patch.registerNode modifiesPatchB
 
-            (curState :: MinimalStRepr) <- Patch.getState patchWithNodes
+            (curState :: Patch.State) <- Patch.getState patchWithNodes
+
+            let (mbNodeState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState
+            whenJust mbNodeState $ flip Node.setState modifiesPatchA
+            _ <- Patch.trackStateChangesFrom MinimalToolkit.minimalTk modifiesPatchA patchWithNodes
+
+            modifiesPatchA #-> ModifiesPatch.a_in /\ 4
+            modifiesPatchA #-> ModifiesPatch.b_in /\ 3
 
             _ <- Node.run modifiesPatchA
             _ <- Node.run modifiesPatchB
 
-            let (mbNodeState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState
-            whenJust mbNodeState $ flip Node.setState modifiesPatchA
+            (patchState :: Patch.State) <- Patch.getState patchWithNodes
 
-            modifiesPatchA #-> ModifiesPatch.a_in /\ 4
-
-            (stateAfter :: MinimalStRepr) <- Patch.getState patchWithNodes
-
-            stateAfter `shouldEqual` (St.PState $ (4 /\ "4*foo") /\ "bar+4")
+            patchState `shouldEqual` (Patch.State $ { intVal : 7, strVal : "7*" })
 
     describe "iterating through nodes" $ do
 

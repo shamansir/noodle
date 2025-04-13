@@ -15,7 +15,7 @@ https://noodle.labs.jb.gg
   * With `purescript-overlay` it allows to select compiler and `spago`, and `spago build` and all the commands below should work there in theory;
   * `nix develop` works, where you can do `spago build` and `spago run`;
   * `nix build` works;
-  * `nix run` is not yet working, something with the terminal output;
+  * `nix run` works;
 
 ## Installing
 
@@ -25,6 +25,7 @@ https://noodle.labs.jb.gg
 
 * `nix shell` should work
 * `nix build` also should work
+* `nix run` also should work
 
 ### Other way
 

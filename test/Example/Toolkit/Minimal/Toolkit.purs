@@ -7,12 +7,13 @@ import Data.Maybe (Maybe(..))
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import Type.Proxy (Proxy(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
 
-import Noodle.Id (FamilyR, toolkitR, family) as Id
+import Noodle.Id (FamilyR, NodeR, toolkitR, family) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey) as Noodle
-import Noodle.Toolkit (empty, register, class FromPatchState) as Toolkit
+import Noodle.Toolkit (empty, register, class FromToPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families, F)
 import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from, to) as StRepr
@@ -27,8 +28,10 @@ import Example.Toolkit.Minimal.Node.Concat as Concat
 import Example.Toolkit.Minimal.Node.Stateful as Stateful
 import Example.Toolkit.Minimal.Node.ModifiesPatch as ModifiesPatch
 import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
-import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as MR
+import Example.Toolkit.Minimal.ChRepr (MinimalVRepr(..)) as Ch
 import Example.Toolkit.Minimal.StRepr (MinimalStRepr)
+import Example.Toolkit.Minimal.StRepr (MinimalStRepr(..)) as St
+import Example.Toolkit.Minimal.PatchState (State(..), default) as Patch
 
 
 foreign import data MINIMAL :: Noodle.ToolkitKey
@@ -70,28 +73,30 @@ toolkit
     $ Toolkit.empty minimalTk (Id.toolkitR "my-toolkit")
 
 
-instance Toolkit.FromPatchState MINIMAL MinimalStRepr ModifiesPatch.State where
-    loadFromPatch :: Proxy MINIMAL -> Id.FamilyR -> MinimalStRepr -> Maybe ModifiesPatch.State
-    loadFromPatch _ _ = StRepr.from
+instance Toolkit.FromToPatchState MINIMAL Patch.State ModifiesPatch.State where
+    loadFromPatch :: Proxy MINIMAL -> Id.FamilyR -> Patch.State -> Maybe ModifiesPatch.State
+    loadFromPatch _ _ (Patch.State { intVal, strVal }) = Just $ ModifiesPatch.State $ { intVal, strVal } /\ "" -- FIXME: take current value
+    putInPatch :: Proxy MINIMAL -> Id.NodeR -> ModifiesPatch.State -> Patch.State -> Patch.State
+    putInPatch _ _ (ModifiesPatch.State (pstate /\ _)) _ = Patch.State pstate
 
 
 instance PossiblyToSignature MINIMAL (ValueInChannel MinimalVRepr) (ValueInChannel MinimalVRepr) Id.FamilyR where
     possiblyToSignature _ = Id.family >>> case _ of
         "sample" -> Just
             $ sig "sample"
-                [ Sig.in_ "foo" $ MR.Int 1, Sig.in_ "c" $ MR.Int 2, Sig.in_ "bar" $ MR.Str "5" ]
-                [ Sig.out_ "foo" $ MR.Str "1", Sig.out_ "bar" $ MR.Int 12 ]
+                [ Sig.in_ "foo" $ Ch.Int 1, Sig.in_ "c" $ Ch.Int 2, Sig.in_ "bar" $ Ch.Str "5" ]
+                [ Sig.out_ "foo" $ Ch.Str "1", Sig.out_ "bar" $ Ch.Int 12 ]
         "sum" -> Just
             $ sig "sum"
-                [ Sig.in_ "a" $ MR.Int 0, Sig.in_ "b" $ MR.Int 0 ]
-                [ Sig.out_ "sum" $ MR.Int 0 ]
+                [ Sig.in_ "a" $ Ch.Int 0, Sig.in_ "b" $ Ch.Int 0 ]
+                [ Sig.out_ "sum" $ Ch.Int 0 ]
         "concat" -> Just
             $ sig "concat"
-                [ Sig.in_ "left" $ MR.Str "", Sig.in_ "right" $ MR.Str "" ]
-                [ Sig.out_ "out" $ MR.Str "", Sig.out_ "len" $ MR.Int 0 ]
+                [ Sig.in_ "left" $ Ch.Str "", Sig.in_ "right" $ Ch.Str "" ]
+                [ Sig.out_ "out" $ Ch.Str "", Sig.out_ "len" $ Ch.Int 0 ]
         "stateful" -> Just
             $ sig "stateful"
-                [ Sig.in_ "a" $ MR.Int 0, Sig.in_ "b" $ MR.Int 0 ]
-                [ Sig.out_ "sum" $ MR.Int 0 ]
+                [ Sig.in_ "a" $ Ch.Int 0, Sig.in_ "b" $ Ch.Int 0 ]
+                [ Sig.out_ "sum" $ Ch.Int 0 ]
         _ -> Nothing
         >>> map Sig.toChanneled

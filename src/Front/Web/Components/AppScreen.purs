@@ -43,7 +43,7 @@ import Web.UIEvent.KeyboardEvent.EventTypes as KET
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, class MarkToolkit, class HasChRepr)
-import Noodle.Toolkit (families, class HoldsFamilies, class FromPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
+import Noodle.Toolkit (families, class HoldsFamilies, class FromToPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
@@ -110,7 +110,7 @@ component
     => T.At At.ChannelLabel cr
     => T.At At.StatusLine cr
     => Toolkit.HoldsFamilies sr cr m fs
-    => Toolkit.FromPatchState tk ps sr
+    => Toolkit.FromToPatchState tk ps sr
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
@@ -138,7 +138,7 @@ render
      . Wiring m
     => WebLocator loc
     => Toolkit.HoldsFamilies sr cr m fs
-    => Toolkit.FromPatchState tk ps sr
+    => Toolkit.FromToPatchState tk ps sr
     => MarkToolkit tk
     => HasFallback cr
     => ValueTagged cr
@@ -227,7 +227,7 @@ render ploc state =
 handleAction
     :: forall output tk ps fs sr cr m
      . Wiring m
-    => Toolkit.FromPatchState tk ps sr
+    => Toolkit.FromToPatchState tk ps sr
     => HasFallback cr
     => ValueTagged cr
     => ps

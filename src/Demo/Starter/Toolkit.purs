@@ -16,9 +16,9 @@ import StarterTk.Patch (PState)
 import Effect (Effect)
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
-import Noodle.Id (Family, FamilyR, family, group, toolkitR, unsafeGroupR) as Id
+import Noodle.Id (Family, FamilyR, family, group, toolkitR, unsafeGroupR, NodeR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromToPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Node (Node)
@@ -154,11 +154,13 @@ instance MarkToolkit STARTER where
   markFamily ptk = const <<< markGroup ptk
 
 
-instance FromPatchState STARTER PState StateRepr where
+instance FromToPatchState STARTER PState StateRepr where
   loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
   loadFromPatch _ familyR _ = case Id.family familyR of
     "custom" -> Just StateRepr
     _ -> Nothing
+  putInPatch :: Proxy _ -> Id.NodeR -> StateRepr -> PState -> PState
+  putInPatch _ _ _ = identity
 
 
 instance PossiblyToSignature STARTER (ValueInChannel ValueRepr) (ValueInChannel ValueRepr) Id.FamilyR where

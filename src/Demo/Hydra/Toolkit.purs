@@ -1,22 +1,30 @@
 module HydraTk.Toolkit where
 
 import Prelude
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+
 import Color as Color
+
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
+
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil, class Put)
 import Type.Proxy (Proxy(..))
-import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group) as Id
+
+import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group, NodeR) as Id
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromPatchState, markGroup)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromToPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (fallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
+
 import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
+
 import HydraTk.Library.Feed.Number as Feed.Number
 import HydraTk.Library.Feed.Pi as Feed.Pi
 import HydraTk.Library.Feed.Array as Feed.Array
@@ -104,12 +112,12 @@ import HydraTk.Library.Audio.SetScale as Audio.SetScale
 import HydraTk.Library.Audio.Hide as Audio.Hide
 import HydraTk.Library.Audio.Show as Audio.Show
 import HydraTk.Library.Out.Out as Out.Out
-import HydraTk.Patch (PState)
+import HydraTk.Patch (PState(..))
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Types as HT
 import HydraTk.Repr.Wrap as HW
-import Data.Tuple.Nested ((/\))
+
 
 type HydraFamilies :: Families
 type HydraFamilies
@@ -421,11 +429,13 @@ instance MarkToolkit HYDRA where
     )
   markFamily ptk = const <<< markGroup ptk
 
-instance FromPatchState HYDRA PState StateRepr where
+instance FromToPatchState HYDRA PState StateRepr where
   loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
   loadFromPatch _ familyR _ = case Id.family familyR of
     "custom" -> Just fallback
     _ -> Nothing
+  putInPatch :: Proxy _ -> Id.NodeR -> StateRepr -> PState -> PState
+  putInPatch _ _ _ = identity
 
 instance PossiblyToSignature HYDRA (ValueInChannel WrapRepr) (ValueInChannel WrapRepr) Id.FamilyR where
   possiblyToSignature _ = Id.family

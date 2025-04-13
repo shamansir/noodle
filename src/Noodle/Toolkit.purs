@@ -14,6 +14,8 @@ import Effect.Exception (throw)
 import Unsafe.Coerce (unsafeCoerce)
 
 import Color (Color)
+import Signal (Signal, (~>))
+import Signal (foldp) as Signal
 
 import Data.Symbol (class IsSymbol)
 import Data.Array (catMaybes) as Array
@@ -24,9 +26,11 @@ import Data.Tuple (snd) as Tuple
 import Data.Foldable (foldl)
 
 import Noodle.Node (Node)
+import Noodle.Node (subscribeState) as Node
 import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (subscribeState) as RawNode
 import Noodle.Raw.Toolkit.Family (Family) as Raw
-import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR, unsafeFamilyR) as Id
+import Noodle.Id (Family, FamilyR, GroupR, familyR, ToolkitR, unsafeFamilyR, NodeR) as Id
 import Noodle.Toolkit.HoldsFamily (HoldsFamily, holdFamily)
 import Noodle.Toolkit.HoldsFamily (withFamily) as HF
 import Noodle.Toolkit.Family (Family)
@@ -274,8 +278,9 @@ class IsToolkit (tk :: ToolkitKey) where
     groupOf :: Proxy tk -> Id.FamilyR -> Id.GroupR
 
 
-class FromPatchState (tk :: ToolkitKey) pstate strepr where
-    loadFromPatch :: Proxy tk -> Id.FamilyR -> {- TODO : pass current state? : strepr -> -} pstate -> Maybe strepr
+class FromToPatchState (tk :: ToolkitKey) pstate fstate where
+    loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> Maybe fstate
+    putInPatch :: Proxy tk -> Id.NodeR -> fstate -> pstate -> pstate
 
 
 class IsToolkit tk <= MarkToolkit (tk :: ToolkitKey) where

@@ -58,7 +58,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.Tagged (class ValueTagged) as VT
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class HoldsFamilies, class FromPatchState) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, class FromToPatchState) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Text.NdfFile (codegen, failedLines, hasFailedLines) as NdfFile
@@ -150,7 +150,7 @@ runBlessedInterface
     => HasFallback strepr
     => FCG.ParseableRepr chrepr
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
-    => Toolkit.FromPatchState tk ps strepr
+    => Toolkit.FromToPatchState tk ps strepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => VT.ValueTagged chrepr
     => CliFriendly tk fs chrepr Effect

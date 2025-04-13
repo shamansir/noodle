@@ -25,7 +25,7 @@ import Node.FS.Aff (readTextFile, stat) as Async
 
 import Noodle.Id (FamilyR, PatchR) as Id
 import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit (spawnAnyRaw, class FromPatchState) as Toolkit
+import Noodle.Toolkit (spawnAnyRaw, class FromToPatchState) as Toolkit
 import Noodle.Patch (id, connectRaw, disconnectRaw, findRawNode, linksMap) as Patch
 import Noodle.Patch.Links (findBetween) as Links
 import Noodle.Raw.Node (id, shape, sendIn_, sendOut_) as RawNode
@@ -73,7 +73,7 @@ applyNdfFileFrom
     => VT.ValueTagged cr
     => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Toolkit.FromPatchState tk s sr
+    => Toolkit.FromToPatchState tk s sr
     => CliFriendly tk fs cr Effect
     => Toolkit tk fs sr cr Effect
     -> NdfFilePath
@@ -90,7 +90,7 @@ applyNdfFile
     => VT.ValueTagged cr
     => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Toolkit.FromPatchState tk s sr
+    => Toolkit.FromToPatchState tk s sr
     => CliFriendly tk fs cr Effect
     => Toolkit tk fs sr cr Effect
     -> Id.PatchR
@@ -110,7 +110,7 @@ applyNdfCommandOp
     => VT.ValueTagged cr
     => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Toolkit.FromPatchState tk s sr
+    => Toolkit.FromToPatchState tk s sr
     => CliFriendly tk fs cr Effect
     => Toolkit tk fs sr cr Effect
     -> Id.PatchR
@@ -222,7 +222,7 @@ _applyNdfFileContent
     => VT.ValueTagged cr
     => ParseableRepr cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => Toolkit.FromPatchState tk s sr
+    => Toolkit.FromToPatchState tk s sr
     => CliFriendly tk fs cr Effect
     => Toolkit tk fs sr cr Effect
     -> Either err NdfFileContent

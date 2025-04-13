@@ -46,7 +46,7 @@ import Noodle.Repr.StRepr (class StRepr)
 import Noodle.Repr.StRepr (from) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
-import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromPatchState, loadFromPatch, withFamilyUnsafe, withRawFamily) as Toolkit
+import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromToPatchState, loadFromPatch, putInPatch, withFamilyUnsafe, withRawFamily) as Toolkit
 import Noodle.Toolkit.Family (Family, familyIdOf) as Toolkit
 import Noodle.Toolkit.Families (F, class RegisteredFamily)
 import Noodle.Toolkit (Toolkit)
@@ -80,7 +80,7 @@ component
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr Effect fs
-    => Toolkit.FromPatchState tk ps strepr
+    => Toolkit.FromToPatchState tk ps strepr
     => CliFriendly tk fs chrepr Effect
     => Toolkit tk fs strepr chrepr Effect
     -> Core.Blessed (State loc tk ps fs strepr chrepr Effect) -- TODO: the only thing that makes it require `Effect` is `Core.on List.Select` handler, may be there's a way to overcome it ...
@@ -122,7 +122,7 @@ onFamilySelect
     => VT.ValueTagged chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => Toolkit.HoldsFamilies strepr chrepr m fs
-    => Toolkit.FromPatchState tk pstate strepr
+    => Toolkit.FromToPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => BlessedOp (State loc tk pstate fs strepr chrepr m) m
 onFamilySelect =
@@ -165,7 +165,7 @@ spawnAndRenderRaw
     => VT.ValueTagged chrepr
     => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.FromPatchState tk pstate strepr
+    => Toolkit.FromToPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
@@ -187,7 +187,7 @@ registerAndRenderGivenRawNode
     => VT.ValueTagged chrepr
     -- => Toolkit.HoldsFamilies strepr chrepr m fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.FromPatchState tk pstate strepr
+    => Toolkit.FromToPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     -- => Toolkit tk fs strepr chrepr m
     => Id.PatchR
@@ -224,7 +224,7 @@ spawnAndRender
     => StRepr fstate strepr
     => RegisteredFamily (F f fstate is os chrepr m) fs
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
-    => Toolkit.FromPatchState tk pstate strepr
+    => Toolkit.FromToPatchState tk pstate strepr
     => CliFriendly tk fs chrepr m
     => Toolkit tk fs strepr chrepr m
     -> Id.PatchR
