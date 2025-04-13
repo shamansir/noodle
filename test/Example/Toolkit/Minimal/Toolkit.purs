@@ -74,8 +74,8 @@ toolkit
 
 
 instance Toolkit.FromToPatchState MINIMAL Patch.State ModifiesPatch.State where
-    loadFromPatch :: Proxy MINIMAL -> Id.FamilyR -> Patch.State -> Maybe ModifiesPatch.State
-    loadFromPatch _ _ (Patch.State { intVal, strVal }) = Just $ ModifiesPatch.State $ { intVal, strVal } /\ "" -- FIXME: take current value
+    loadFromPatch :: Proxy MINIMAL -> Id.FamilyR -> Patch.State -> ModifiesPatch.State -> Maybe ModifiesPatch.State
+    loadFromPatch _ _ (Patch.State { intVal, strVal }) (ModifiesPatch.State (_ /\ str)) = Just $ ModifiesPatch.State $ { intVal, strVal } /\ str
     putInPatch :: Proxy MINIMAL -> Id.NodeR -> ModifiesPatch.State -> Patch.State -> Patch.State
     putInPatch _ _ (ModifiesPatch.State (pstate /\ _)) _ = Patch.State pstate
 

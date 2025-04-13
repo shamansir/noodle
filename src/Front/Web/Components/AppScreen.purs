@@ -47,7 +47,7 @@ import Noodle.Toolkit (families, class HoldsFamilies, class FromToPatchState, sp
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, setState, subscribeChanges) as RawNode
+import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, state, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
@@ -288,7 +288,8 @@ handleAction pstate = case _ of
             mbCurrentPatch <- CState.currentPatch <$> H.get
             whenJust mbCurrentPatch \curPatch -> do
                 (patchState :: ps) <- Patch.getState curPatch
-                let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState
+                (curState :: sr) <- RawNode.state rawNode
+                let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState curState
                 -- whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
                 whenJust mbNodeState
                     \nextState -> rawNode # RawNode.setState nextState

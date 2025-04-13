@@ -43,7 +43,7 @@ import Noodle.Fn.Shape.Temperament (Temperament(..))
 import Noodle.Id (PatchR, FamilyR, Family, familyR, familyOf, unsafeFamilyR, unsafeInletR, unsafeOutletR) as Id
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 import Noodle.Repr.StRepr (class StRepr)
-import Noodle.Repr.StRepr (from) as StRepr
+import Noodle.Repr.StRepr (from, to) as StRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Network (toolkit) as Network
 import Noodle.Toolkit (class HoldsFamilies, families, spawn, spawnAnyRaw, withAnyFamily, class FromToPatchState, loadFromPatch, putInPatch, withFamilyUnsafe, withRawFamily) as Toolkit
@@ -54,10 +54,10 @@ import Noodle.Ui.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Node (Node) as Noodle
-import Noodle.Node (id, setState) as Node
+import Noodle.Node (id, state, setState) as Node
 import Noodle.Patch (id, registerNode, registerRawNode) as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, make, setState, sendIn) as RawNode
+import Noodle.Raw.Node (id, make, state, setState, sendIn) as RawNode
 import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
 import Noodle.Raw.Toolkit.Family (Family) as Raw
 import Noodle.Text.NdfFile.Command.Quick as QOp
@@ -198,7 +198,11 @@ registerAndRenderGivenRawNode patchR rawNode = do
 
     -- we load the default initial node state for the family
     (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
-    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) familyR
+    (curNodeState :: strepr) <- RawNode.state rawNode
+    let
+        (mbNodeState :: Maybe strepr) =
+            mbPatchState >>= \pstate ->
+                Toolkit.loadFromPatch (Proxy :: _ tk) familyR pstate curNodeState
 
     whenJust mbNodeState
         \nextState -> rawNode # RawNode.setState nextState
@@ -235,7 +239,11 @@ spawnAndRender toolkit patchR family = do
 
     (node :: Noodle.Node f fstate is os chrepr m) <- Blessed.lift' $ Toolkit.spawn familyId toolkit
     (mbPatchState :: Maybe pstate) <- CState.currentPatchState =<< State.get
-    let (mbNodeState :: Maybe strepr) = mbPatchState >>= Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR familyId)
+    (curNodeState :: strepr) <- StRepr.to <$> Node.state node
+    let
+        (mbNodeState :: Maybe strepr) =
+            mbPatchState >>= \pstate ->
+                Toolkit.loadFromPatch (Proxy :: _ tk) (Id.familyR familyId) pstate curNodeState
 
     whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
 

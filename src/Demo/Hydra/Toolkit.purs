@@ -430,8 +430,8 @@ instance MarkToolkit HYDRA where
   markFamily ptk = const <<< markGroup ptk
 
 instance FromToPatchState HYDRA PState StateRepr where
-  loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
-  loadFromPatch _ familyR _ = case Id.family familyR of
+  loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> StateRepr -> Maybe StateRepr
+  loadFromPatch _ familyR _ _ = case Id.family familyR of
     "custom" -> Just fallback
     _ -> Nothing
   putInPatch :: Proxy _ -> Id.NodeR -> StateRepr -> PState -> PState

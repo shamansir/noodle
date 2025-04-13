@@ -279,7 +279,7 @@ class IsToolkit (tk :: ToolkitKey) where
 
 
 class FromToPatchState (tk :: ToolkitKey) pstate fstate where
-    loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> Maybe fstate
+    loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> fstate -> Maybe fstate
     putInPatch :: Proxy tk -> Id.NodeR -> fstate -> pstate -> pstate
 
 

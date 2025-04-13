@@ -21,7 +21,7 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Noodle.Id (familyR) as Id
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
-import Noodle.Node (run, setState) as Node
+import Noodle.Node (run, state, setState) as Node
 import Noodle.Node ((<-@), (#->))
 import Noodle.Raw.Node (family) as RawNode
 import Noodle.Toolkit (loadFromPatch) as Toolkit
@@ -220,8 +220,10 @@ spec = do
 
             (curState :: Patch.State) <- Patch.getState patchWithNodes
 
-            let (mbNodeState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState
-            whenJust mbNodeState $ flip Node.setState modifiesPatchA
+            (modPatchAState :: ModifiesPatch.State) <- Node.state modifiesPatchA
+
+            let (mbModPatchAState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState modPatchAState
+            whenJust mbModPatchAState $ flip Node.setState modifiesPatchA
             _ <- Patch.trackStateChangesFrom MinimalToolkit.minimalTk modifiesPatchA patchWithNodes
 
             modifiesPatchA #-> ModifiesPatch.a_in /\ 4

@@ -154,8 +154,8 @@ instance MarkToolkit STARTER where
 
 
 instance FromToPatchState STARTER PState StateRepr where
-  loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> Maybe StateRepr
-  loadFromPatch _ familyR _ = case Id.family familyR of
+  loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> StateRepr -> Maybe StateRepr
+  loadFromPatch _ familyR _ _ = case Id.family familyR of
     "custom" -> Just StateRepr
     _ -> Nothing
   putInPatch :: Proxy _ -> Id.NodeR -> StateRepr -> PState -> PState
