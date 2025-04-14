@@ -28,15 +28,16 @@ import Signal.Extra (runSignal) as SignalX
 
 import Noodle.Id (Inlet, Outlet, Family(..), NodeR, InletR, OutletR, FamilyR, family, familyR, inletR, outletR, nodeR_, inletRName, outletRName) as Id
 import Noodle.Fn (Fn)
-import Noodle.Fn (make, run', toRaw) as Fn
+import Noodle.Fn (make, run', toRaw, toReprableState) as Fn
 import Noodle.Fn.Shape (Shape, Inlets, Outlets, class ContainsAllInlets, class ContainsAllOutlets, class InletsDefs, class OutletsDefs)
 import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Fn.Signature (Signature)
 import Noodle.Fn.Signature (Argument, Output, arg, out) as Sig
 import Noodle.Fn.Process (Process)
 import Noodle.Fn.Protocol (Protocol)
-import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState) as Protocol
+import Noodle.Fn.Protocol (make, getInlets, getOutlets, getRecInlets, getRecOutlets, getState, _sendIn, _sendOut, _unsafeSendIn, _unsafeSendOut, modifyState, toReprableState) as Protocol
 import Noodle.Fn.Tracker (Tracker)
+import Noodle.Fn.Tracker (toReprableState) as Tracker
 import Noodle.Fn.Updates (UpdateFocus, InletsUpdate(..)) as Fn
 import Noodle.Fn.Updates (toRecord) as Updates
 -- import Noodle.Fn.Process (ProcessM)
@@ -50,6 +51,8 @@ import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, cla
 import Noodle.Repr.ValueInChannel (inbetween, inbetween', toMaybe, accept, inbetweenB, toFallback, _reportMissingKey) as ViC
 import Noodle.Repr.Tagged (class ValueTagged, valueTag, inlet, outlet) as VT
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
+import Noodle.Repr.StRepr (class StRepr)
+import Noodle.Repr.StRepr (from, to) as StRepr
 import Noodle.Link (Link)
 import Noodle.Link (fromRaw, fromNode, toNode, cancel) as Link
 import Noodle.Raw.Node (Node(..), InletsValues, InitialInletsValues, OutletsValues, InitialOutletsValues, NodeChanges, orderInlets, orderOutlets) as Raw
@@ -572,3 +575,13 @@ toRaw (Node nodeR shape tracker protocol fn) =
         tracker
         protocol
         $ Fn.toRaw fn
+
+
+toReprableState :: forall f state is os strepr chrepr m. HasFallback state => StRepr state strepr => Node f state is os chrepr m -> Node f strepr is os chrepr m
+toReprableState (Node nodeR shape tracker protocol fn) =
+    Node
+        nodeR
+        shape
+        (Tracker.toReprableState tracker)
+        (Protocol.toReprableState protocol)
+        (Fn.toReprableState fn)

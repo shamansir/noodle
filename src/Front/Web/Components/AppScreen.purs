@@ -306,6 +306,8 @@ handleAction pstate = case _ of
                 H.modify_
                     $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 
+                Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
+
                 H.tell _patchArea unit $ PatchArea.ApplyNewNode rawNode
 
                 H.lift $ RawNode.run rawNode

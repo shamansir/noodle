@@ -4,6 +4,7 @@ module Noodle.Fn.Protocol
   , getState, modifyState
   , getInlets, getOutlets
   , getRecInlets, getRecOutlets
+  , toReprableState
   , _sendOut, _unsafeSendOut
   , _sendIn, _unsafeSendIn
   )
@@ -32,6 +33,7 @@ import Noodle.Repr.HasFallback (class HasFallback)
 -- import Noodle.Repr.ChRepr (ensureTo, unwrap) as ChRepr
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel, class FromValuesInChannelRow, class ToValuesInChannelRow)
 import Noodle.Repr.ValueInChannel (accept, fromValueInChannel) as ViC
+import Noodle.Repr.StRepr (class StRepr)
 
 
 type Protocol state (is :: Row Type) (os :: Row Type) chrepr = Raw.Protocol state chrepr
@@ -82,6 +84,10 @@ getRecOutlets p = p.getOutlets unit <#> Tuple.snd <#> toRec Id.outletRName
 
 modifyState :: forall state is os chrepr. (state -> state) -> Protocol state is os chrepr -> Effect Unit
 modifyState = Raw.modifyState
+
+
+toReprableState :: forall state is os strepr chrepr. HasFallback state => StRepr state strepr => Protocol state is os chrepr -> Protocol strepr is os chrepr
+toReprableState = Raw.toReprableState
 
 
 -- private: doesn't check if outlet is in `os`

@@ -12,6 +12,7 @@ module Noodle.Fn.Process
   , runM
 --   , runFreeM
   , toRaw
+  , toReprableState
   , toRawWithReprableState
   , join
   , mkRunner
@@ -193,5 +194,9 @@ toRaw :: forall state is os m a chrepr. ProcessM state is os chrepr m a -> Raw.P
 toRaw = unwrap
 
 
+toReprableState :: forall state strepr is os m a chrepr. HasFallback state => StRepr state strepr => ProcessM state is os chrepr m a -> ProcessM strepr is os chrepr m a
+toReprableState = unwrap >>> Raw.toReprableState >>> wrap
+
+
 toRawWithReprableState :: forall state strepr is os m a chrepr. HasFallback state => StRepr state strepr => ProcessM state is os chrepr m a -> Raw.ProcessM strepr chrepr m a
-toRawWithReprableState = toRaw >>> Raw.toReprableState
+toRawWithReprableState = unwrap >>> Raw.toReprableState

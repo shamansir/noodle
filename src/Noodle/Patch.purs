@@ -40,7 +40,7 @@ import Noodle.Node (id, family, toRaw, connect, subscribeState) as Node
 import Noodle.Node.Has (class HasInlet, class HasOutlet)
 import Noodle.Node.HoldsNode (HoldsNode, holdNode)
 import Noodle.Node.HoldsNode (withNode) as HN
-import Noodle.Raw.Node (connect) as RawNode
+import Noodle.Raw.Node (connect, subscribeState) as RawNode
 import Noodle.Patch.Links (Links)
 import Noodle.Patch.Links (init, track, forget, forgetRaw, findRaw, trackRaw, findAllFrom, findAllTo, forgetAllFrom, forgetAllTo, all) as Links
 import Noodle.Raw.Link (Link) as Raw
@@ -414,11 +414,23 @@ stateChangesFrom :: forall tk f fstate is os chrepr mp pstate. Toolkit.FromToPat
 stateChangesFrom ptk curState node = Signal.foldp (Toolkit.putInPatch ptk $ Node.id node) curState $ Node.subscribeState node
 
 
+stateChangesFromRaw :: forall tk strepr chrepr mp pstate. Toolkit.FromToPatchState tk pstate strepr => Proxy tk -> pstate -> Raw.Node strepr chrepr mp -> Signal pstate
+stateChangesFromRaw ptk curState rawNode = Signal.foldp (Toolkit.putInPatch ptk $ RawNode.id rawNode) curState $ RawNode.subscribeState rawNode
+
+
 trackStateChangesFrom :: forall tk fs f fstate strepr is os chrepr m mp pstate. Toolkit.FromToPatchState tk pstate fstate => MonadEffect m => Proxy tk -> Node f fstate is os chrepr mp -> Patch pstate fs strepr chrepr mp -> m Unit
 trackStateChangesFrom ptk node patch@(Patch _ _ changes _ _ _) = liftEffect $ do
     curState <- getState patch
     let
         mergedChanges = stateChangesFrom ptk curState node ~> Channel.send changes
+    Signal.runSignal mergedChanges
+
+
+trackStateChangesFromRaw :: forall tk fs strepr chrepr m mp pstate. Toolkit.FromToPatchState tk pstate strepr => MonadEffect m => Proxy tk -> Raw.Node strepr chrepr mp -> Patch pstate fs strepr chrepr mp -> m Unit
+trackStateChangesFromRaw ptk node patch@(Patch _ _ changes _ _ _) = liftEffect $ do
+    curState <- getState patch
+    let
+        mergedChanges = stateChangesFromRaw ptk curState node ~> Channel.send changes
     Signal.runSignal mergedChanges
 
 

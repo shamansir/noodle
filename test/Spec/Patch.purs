@@ -208,7 +208,32 @@ spec = do
         pending' "it is possible to operate with patch state from outside" $ liftEffect $ do
             pure unit
 
-        it "it is possible to operate with patch state from inside the node" $ liftEffect $ do
+        it "it is possible to operate with patch state from inside a node" $ liftEffect $ do
+            (modifiesPatch :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
+
+            emptyPatch <- Patch.fromToolkit MinimalToolkit.toolkit "test" Patch.default
+            let patchWithNodes =
+                    emptyPatch
+                    # Patch.registerNode modifiesPatch
+
+            (curState :: Patch.State) <- Patch.getState patchWithNodes
+
+            (modPatchState :: ModifiesPatch.State) <- Node.state modifiesPatch
+
+            let (mbModPatchState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState modPatchState
+            whenJust mbModPatchState $ flip Node.setState modifiesPatch
+            _ <- Patch.trackStateChangesFrom MinimalToolkit.minimalTk modifiesPatch patchWithNodes
+
+            modifiesPatch #-> ModifiesPatch.a_in /\ 4
+            modifiesPatch #-> ModifiesPatch.b_in /\ 3
+
+            _ <- Node.run modifiesPatch
+
+            (patchState :: Patch.State) <- Patch.getState patchWithNodes
+
+            patchState `shouldEqual` (Patch.State $ { intVal : 7, strVal : "7*" })
+
+        it "it is possible to operate with patch state from inside two nodes" $ liftEffect $ do
             (modifiesPatchA :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
             (modifiesPatchB :: ModifiesPatch.Node) <- ModifiesPatch.makeNode
 
@@ -225,16 +250,20 @@ spec = do
             let (mbModPatchAState :: Maybe ModifiesPatch.State) = Toolkit.loadFromPatch MinimalToolkit.minimalTk (Id.familyR ModifiesPatch._modifiesPatch) curState modPatchAState
             whenJust mbModPatchAState $ flip Node.setState modifiesPatchA
             _ <- Patch.trackStateChangesFrom MinimalToolkit.minimalTk modifiesPatchA patchWithNodes
+            _ <- Patch.trackStateChangesFrom MinimalToolkit.minimalTk modifiesPatchB patchWithNodes
 
             modifiesPatchA #-> ModifiesPatch.a_in /\ 4
             modifiesPatchA #-> ModifiesPatch.b_in /\ 3
+
+            modifiesPatchB #-> ModifiesPatch.a_in /\ 13
+            modifiesPatchB #-> ModifiesPatch.b_in /\ 20
 
             _ <- Node.run modifiesPatchA
             _ <- Node.run modifiesPatchB
 
             (patchState :: Patch.State) <- Patch.getState patchWithNodes
 
-            patchState `shouldEqual` (Patch.State $ { intVal : 7, strVal : "7*" })
+            patchState `shouldEqual` (Patch.State $ { intVal : 33, strVal : "33*" })
 
     describe "iterating through nodes" $ do
 

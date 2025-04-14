@@ -13,6 +13,7 @@ import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.FromToRec (toRec)
 import Noodle.Raw.Fn.Tracker as Raw
 import Noodle.Repr.ValueInChannel (ValueInChannel, class ToValuesInChannelRow)
+import Noodle.Repr.StRepr (class StRepr)
 
 
 type Tracker state (is :: Row Type) (os :: Row Type) chrepr = Raw.Tracker state chrepr
@@ -48,6 +49,10 @@ atInlet = Raw.atInlet
 
 atOutlet :: forall state is os chrepr. OutletR -> Tracker state is os chrepr -> Effect (Maybe (ValueInChannel chrepr))
 atOutlet = Raw.atOutlet
+
+
+toReprableState :: forall state strepr is os chrepr. StRepr state strepr => Tracker state is os chrepr -> Tracker strepr is os chrepr
+toReprableState = Raw.toReprableState
 
 
 -- atInletRec :: forall i is os state repr din. Row.Cons i din is is => IsSymbol i => Inlet i -> Tracker state is os repr -> Effect din

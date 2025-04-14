@@ -54,8 +54,8 @@ import Noodle.Ui.Tagging (libraryItem) as T
 import Noodle.Wiring (class Wiring)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Node (Node) as Noodle
-import Noodle.Node (id, state, setState) as Node
-import Noodle.Patch (id, registerNode, registerRawNode) as Patch
+import Noodle.Node (id, state, setState, toReprableState) as Node
+import Noodle.Patch (id, registerNode, registerRawNode, trackStateChangesFrom, trackStateChangesFromRaw) as Patch
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id, make, state, setState, sendIn) as RawNode
 import Noodle.Raw.Fn.Shape (make, empty, tagAs) as RawShape
@@ -209,6 +209,10 @@ registerAndRenderGivenRawNode patchR rawNode = do
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 
+    -- TODO: merge all current patch operations in one block
+    curPatch <- CState.currentPatch <$> State.get
+    whenJust curPatch $ Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode
+
     nextPos <- NodeBox.componentRaw patchR familyR rawNode
 
     CL.trackCommand $ QOp.makeNode (RawNode.id rawNode) nextPos
@@ -248,6 +252,10 @@ spawnAndRender toolkit patchR family = do
     whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
 
     State.modify_ $ CState.withCurrentPatch $ Patch.registerNode node
+
+    -- TODO: merge all current patch operations in one block
+    curPatch <- CState.currentPatch <$> State.get
+    whenJust curPatch $ Patch.trackStateChangesFrom (Proxy :: _ tk) $ (Node.toReprableState node :: Noodle.Node f strepr is os chrepr m)
 
     nextPos <- NodeBox.component patchR familyId node
 
