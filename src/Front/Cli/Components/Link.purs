@@ -55,9 +55,6 @@ import Cli.Style as Style
 import Noodle.Id as Id
 
 
--- TODO: forall state. BlessedOp state Effect
-
-
 type LinksCmps s = Map Id.LinkR (LinkCmpState s) -- Map Id.PatchR (Map Id.Link (LinkCmpState Unit))
 
 
@@ -87,8 +84,6 @@ type LinkCalc =
 
 type LinkHandler s = forall id. IsSymbol id => LinkCmpState s -> Line <^> id -> EventJson -> BlessedOp s Effect
 
-
--- FIXME: pass data from state as arguments and make Links independent from State type
 
 
 create

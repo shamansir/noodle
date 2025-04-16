@@ -2,12 +2,17 @@ module HydraTk.Patch where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 
-import Prelude
+import Halogen (RefLabel)
 
 
-data PState = PState
+newtype PState =
+    PState
+        { canvasRef :: Maybe RefLabel }
 
 
 init :: PState
-init = PState
+init =
+    PState
+        { canvasRef : Nothing }
