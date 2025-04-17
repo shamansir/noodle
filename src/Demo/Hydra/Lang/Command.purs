@@ -3,31 +3,12 @@ module HydraTk.Lang.Command where
 import Prelude
 
 
-import Data.Maybe(Maybe(..))
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Map.Extra as Map
-import Data.List as List
-import Data.Array ((:))
-import Data.Array (length) as Array
-import Data.Foldable (foldr)
-import Data.Traversable (sequence)
-import Data.String as String
-
-import Noodle.Id as Id
--- import Noodle.Node.MapsFolds.Flatten as R
-
 import Noodle.Fn.Signature as Sig
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.Code.Target (PS, JS, JS_DISPLAY, pureScript, javaScript, javaScriptToDisplay)
-import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, state, NodeChanges) as RawNode
-import Noodle.Patch (Patch)
-import Noodle.Patch (mapAllNodes) as Patch
-import Noodle.Repr.ValueInChannel (toMaybe) as ViC
 
 import HydraTk.Types as H
-import HydraTk.Repr.Show as H
+import HydraTk.Repr.Show (hShow) as H
 -- import Toolkit.Hydra.Lang.Glsl as Glsl
 
 

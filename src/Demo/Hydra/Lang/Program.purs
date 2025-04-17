@@ -2,7 +2,6 @@ module HydraTk.Lang.Program where
 
 import Prelude
 
-
 import Prelude (class Show, show) as Core
 
 import Effect.Class (class MonadEffect)
@@ -15,7 +14,7 @@ import Data.Map as Map
 import Data.Map.Extra as Map
 import Data.List as List
 import Data.Array ((:))
-import Data.Array (length) as Array
+import Data.Array (length, fromFoldable) as Array
 import Data.Foldable (foldr)
 import Data.Traversable (sequence)
 import Data.String as String
@@ -52,7 +51,8 @@ class ToHydraCommand a where -- FIXME: temporary typeclass while we testing Hydr
 instance ToHydraCommand StateRepr where
     toHydraCommand familyR outValue =
         case Id.family familyR /\ outValue of
-            _ -> Just Unknown
+            "out" /\ Cmd command -> Just command
+            _ -> Nothing
 
 
 empty :: Program
@@ -257,7 +257,7 @@ changesToCommand familyR update =
 
 
 formProgram :: Map Id.NodeR Command -> Program
-formProgram = const empty
+formProgram = Map.values >>> Array.fromFoldable >>> Program
 
 
 {-
