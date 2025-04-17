@@ -57,7 +57,7 @@ value =
         , marker $ "VA" /\ uncurry HT.VArray /\
                     ((/\)
                         <$> (defer \_ -> values)
-                        <*> (fromMaybe HT.Linear <$> optionMaybe (string " $$ " *> defer \_ -> ease))
+                        <*> (fromMaybe (HT.Ease HT.Linear) <$> optionMaybe (string " $$ " *> defer \_ -> ease))
                     )
         , marker $ "D" /\ HT.Dep /\ fn
         ]
@@ -181,11 +181,11 @@ extSource =
 ease :: Parser String HT.Ease
 ease = --pure HT.Linear
     foldMarkers
-        [ marker $ "LIN" /\ const HT.Linear /\ string "E"
+        [ marker $ "LIN" /\ const (HT.Ease HT.Linear) /\ string "E"
         , marker $ "FST" /\ HT.Fast /\ defer \_ -> value
         , marker $ "SMT" /\ HT.Smooth /\ defer \_ -> value
         , marker $ "OFF" /\ HT.Offset /\ defer \_ -> value
-        , marker $ "IOC" /\ const HT.InOutCubic /\ string "E"
+        , marker $ "IOC" /\ const (HT.Ease HT.InOutCubic) /\ string "E"
         , marker $ "FIT" /\ fit /\ do
                                 low <- value
                                 _ <- string " < "

@@ -200,12 +200,12 @@ instance HydraShow H.Values where
 instance HydraShow H.Ease where
     hShow :: H.Ease -> String
     hShow = case _ of
-        H.Linear -> "Linear"
+        H.Ease H.Linear -> "Linear"
+        H.Ease H.InOutCubic -> "InOutCubic"
         H.Fast v -> "Fast " <> hShow v
         H.Smooth v -> "Smooth " <> hShow v
         H.Fit { low, high } -> "Fit " <> hShow low <> " < " <> hShow high
         H.Offset v -> "Offset " <> hShow v
-        H.InOutCubic -> "InOutCubic"
 
 
 instance HydraShow H.AudioSource where
@@ -370,12 +370,12 @@ instance HydraToChannelLabel H.Values where
 instance HydraToChannelLabel H.Ease where
     toChannelLabel :: H.Ease -> HChannelLabel
     toChannelLabel = case _ of
-        H.Linear -> "╱"
+        H.Ease H.Linear -> "╱"
+        H.Ease H.InOutCubic -> "⊰"
         H.Fast _ -> "⏭"
         H.Smooth _ -> "↝"
         H.Fit _ -> "⇔"
         H.Offset _ -> "⏼"
-        H.InOutCubic -> "⊰"
 
 
 instance HydraToChannelLabel H.AudioSource where

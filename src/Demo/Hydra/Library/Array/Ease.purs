@@ -41,10 +41,10 @@ type Family = Noodle.Family "ease" State InletsRow OutletsRow WrapRepr Effect
 type F = Noodle.F "ease" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { arr: HT.Values [], ease: HT.Linear }
+defaultI = { arr: HT.Values [], ease: HT.Ease HT.Linear }
 
 defaultO :: Record OutletsRow
-defaultO = { arr: HT.VArray (HT.Values []) HT.Linear }
+defaultO = { arr: HT.VArray (HT.Values []) $ HT.Ease HT.Linear }
 
 defaultSt :: State
 defaultSt = State unit

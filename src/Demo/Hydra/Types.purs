@@ -71,6 +71,7 @@ data Value
     -- TODO: Glsl
 
 
+derive instance Eq EaseType
 derive instance Eq Ease
 derive instance Eq Values
 derive instance Eq Value
@@ -235,9 +236,13 @@ data OutputN -- FIXME: Replace with newtype over Int? Bounded, for example
     -- | ...
 
 
-data Ease
+data EaseType -- TODO : `CSS.TimingFunction`
     = Linear
     | InOutCubic
+
+
+data Ease
+    = Ease EaseType
     | Fast Value -- amount
     | Smooth Value -- amount
     | Fit { low :: Value, high :: Value }
@@ -406,7 +411,7 @@ instance HasFallback Url where fallback = noUrl
 instance HasFallback GlslFn where fallback = defaultGlslFn
 instance HasFallback SourceOptions where fallback = defaultSourceOptions
 instance HasFallback Values where fallback = noValues
-instance HasFallback Ease where fallback = Linear
+instance HasFallback Ease where fallback = Ease Linear
 instance HasFallback AudioSource where fallback = Silence
 instance HasFallback AudioBin where fallback = AudioBin 0
 
@@ -530,6 +535,11 @@ data OTOrV
     | OV
 
 
+data EOrV
+    = E EaseType
+    | EV Value
+
+
 data FnArg
     = TArg Texture
     | VArg Value
@@ -544,7 +554,7 @@ data FnArg
     | AudioArg
     | AudioBinsArg Int
     | OutputArg OutputN
-    | EaseArg Ease
+    | EaseArg EaseType
     | SourceArg SourceN
 
 
@@ -563,7 +573,7 @@ instance Mark FnArg where
         AudioArg -> Color.rgb 173 255 47
         AudioBinsArg _ -> Color.rgb 238 230 133
         OutputArg output -> mark output
-        EaseArg ease -> mark ease
+        EaseArg ease -> mark $ Ease ease
         SourceArg source -> mark source
 
 
@@ -581,7 +591,7 @@ instance Mark FnOut where
         OutTexture -> mark Empty
         OutValues -> mark $ Values []
         OutValue -> mark None
-        OutEase -> mark Linear
+        OutEase -> mark $ Ease Linear
 
 
 
@@ -665,10 +675,10 @@ class DefaultOf a where
     default :: a
 
 
-newtype HydraFnId = HydraFnId String
+newtype HydraApiFunctionId = HydraApiFunctionId String
 
 
-derive instance Newtype HydraFnId _
+derive instance Newtype HydraApiFunctionId _
 
 
 hydraAlias_ = "HT" :: String
@@ -683,105 +693,190 @@ hydraType_ :: forall a. Partial => String -> CST.Type a
 hydraType_ ctor = typeCtor $ hydraPrefix_ <> ctor
 
 
-data ApplyArgs_
+data HydraApiArguments v
     = Zero
-    | One Value
-    | Rec (Array (String /\ Value))
+    | One v
+    | Rec (Array (String /\ v))
 
 
 -- FIMXE: generate from NDF
-class CodegenApply_ a where
-    codegenApply :: a -> String /\ ApplyArgs_ -- TODO: intersects with `ToFn` ?
 
 
-instance CodegenApply_ From where
-    codegenApply = case _ of
-        Gradient { speed } -> "Gradient" /\ Rec [ "speed" /\ speed ]
-        Noise { scale, offset } -> "Noise" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        Osc { frequency, sync, offset } -> "Osc" /\ Rec [ "frequency" /\ frequency, "sync" /\ sync, "offset" /\ offset ]
-        Shape { sides, radius, smoothing } -> "Shape" /\ Rec [ "sides" /\ sides, "radius" /\ radius, "smoothing" /\ smoothing ]
-        Solid { r, g, b, a } -> "Solid" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
-        Voronoi { scale, speed, blending } -> "Voronoi" /\ Rec [ "scale" /\ scale, "speed" /\ speed, "blending" /\ blending ]
+class HydraApiFunction a where
+    constructor :: a -> String
+    hydraFunction :: a -> String /\ HydraApiArguments Value -- always returns Texture
 
 
-instance CodegenApply_ Blend where
-    codegenApply = case _ of
-        Blend value -> "Blend" /\ One value
-        Add value -> "Add" /\ One value
-        Diff -> "Diff" /\ Zero
-        Layer value -> "Layer" /\ One value
-        Mask -> "Mask" /\ Zero
-        Mult value -> "Mult" /\ One value
-        Sub value -> "Sub" /\ One value
+
+class HydraApiMethod over arg a | a -> over arg where
+    mConstructor :: a -> String
+    hydraMethod :: a -> String /\ HydraApiArguments arg
 
 
-instance CodegenApply_ ColorOp where
-    codegenApply = case _ of
-        R { scale, offset } -> "R" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        G { scale, offset } -> "G" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        B { scale, offset } -> "B" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        A { scale, offset } -> "A" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
-        Posterize { bins, gamma } -> "Posterize" /\ Rec [ "bins" /\ bins, "gamma" /\ gamma ]
-        Shift { r, g, b, a } -> "Shift" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
-        Color { r, g, b, a } -> "Color" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
-        Luma { threshold, tolerance } -> "Luma" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
-        Thresh { threshold, tolerance } -> "Thresh" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
-        Invert value -> "Invert" /\ One value
-        Contrast value -> "Contrast" /\ One value
-        Saturate value -> "Saturate" /\ One value
-        Hue value -> "Hue" /\ One value
-        Colorama value -> "Colorama" /\ One value
-        Brightness value -> "Brightness" /\ One value
+
+-- \{ [\w\s,]+\}
 
 
-instance CodegenApply_ Modulate where
-    codegenApply = case _ of
-        Modulate value -> "Modulate" /\ One value
-        ModHue value -> "ModHue" /\ One value
-        ModKaleid { nSides } -> "ModKaleid" /\ Rec [ "nSides" /\ nSides ]
-        ModPixelate { multiple, offset } -> "ModPixelate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
-        ModRepeat { repeatX, repeatY, offsetX, offsetY } ->
-            "ModRepeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
-        ModRepeatX { reps, offset } -> "ModRepeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
-        ModRepeatY { reps, offset } -> "ModRepeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
-        ModRotate { multiple, offset } -> "ModRotate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
-        ModScale { multiple, offset } -> "ModScale" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
-        ModScroll { scrollX, scrollY, speedX, speedY } -> "ModScroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
-        ModScrollX { scrollX, speed } -> "ModScrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
-        ModScrollY { scrollY, speed } -> "ModScrollY" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
+instance HydraApiFunction From where
+    constructor = case _ of
+        Gradient _ -> "Gradient"
+        Noise _ -> "Noise"
+        Osc _ -> "Osc"
+        Shape _ -> "Shape"
+        Solid _ -> "Solid"
+        Voronoi _ -> "Voronoi"
+    hydraFunction = case _ of
+        Gradient { speed } -> "gradient" /\ Rec [ "speed" /\ speed ]
+        Noise { scale, offset } -> "noise" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        Osc { frequency, sync, offset } -> "osc" /\ Rec [ "frequency" /\ frequency, "sync" /\ sync, "offset" /\ offset ]
+        Shape { sides, radius, smoothing } -> "shape" /\ Rec [ "sides" /\ sides, "radius" /\ radius, "smoothing" /\ smoothing ]
+        Solid { r, g, b, a } -> "solid" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Voronoi { scale, speed, blending } -> "voronoi" /\ Rec [ "scale" /\ scale, "speed" /\ speed, "blending" /\ blending ]
 
 
-instance CodegenApply_ Geometry where
-    codegenApply = case _ of
-        GKaleid { nSides } -> "GKaleid" /\ Rec [ "nSides" /\ nSides ]
-        GPixelate { pixelX, pixelY } -> "GPixelate" /\ Rec [ "pixelX" /\ pixelX, "pixelY" /\ pixelY ]
+instance HydraApiFunction Geometry where
+    constructor = case _ of
+        GKaleid _ -> "GKaleid"
+        GPixelate _ -> "GPixelate"
+        GRepeat _ ->
+            "GRepeat"
+        GRepeatX _ -> "GRepeatX"
+        GRepeatY _ -> "GRepeatY"
+        GRotate _ -> "GRotate"
+        GScale _ ->
+            "GScale"
+        GScroll _ -> "GScroll"
+        GScrollX _ -> "GScrollX"
+        GScrollY _ -> "GScrollY"
+    hydraFunction = case _ of
+        GKaleid { nSides } -> "kaleid" /\ Rec [ "nSides" /\ nSides ]
+        GPixelate { pixelX, pixelY } -> "pixelate" /\ Rec [ "pixelX" /\ pixelX, "pixelY" /\ pixelY ]
         GRepeat { repeatX, repeatY, offsetX, offsetY } ->
-            "GRepeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
-        GRepeatX { reps, offset } -> "GRepeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
-        GRepeatY { reps, offset } -> "GRepeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
-        GRotate { angle, speed } -> "GRotate" /\ Rec [ "angle" /\ angle, "speed" /\ speed ]
+            "repeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        GRepeatX { reps, offset } -> "repeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        GRepeatY { reps, offset } -> "repeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        GRotate { angle, speed } -> "rotate" /\ Rec [ "angle" /\ angle, "speed" /\ speed ]
         GScale { amount, xMult, yMult, offsetX, offsetY } ->
-            "GScale" /\ Rec [ "amount" /\ amount, "xMult" /\ xMult, "yMult" /\ yMult, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
-        GScroll { scrollX, scrollY, speedX, speedY } -> "GScroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
-        GScrollX { scrollX, speed } -> "GScrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
-        GScrollY { scrollY, speed } -> "GScrollY" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
+            "scale" /\ Rec [ "amount" /\ amount, "xMult" /\ xMult, "yMult" /\ yMult, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
+        GScrollX { scrollX, speed } -> "scrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
+        GScrollY { scrollY, speed } -> "scrolly" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
 
 
-instance CodegenApply_ Ease where
-    codegenApply = case _ of
-        Linear -> "Linear" /\ Zero
-        InOutCubic -> "InOutCubic" /\ Zero
-        Fast value -> "Fast" /\ One value
-        Smooth value -> "Smooth" /\ One value
-        Fit { low, high } ->
-            "Fit" /\ Rec [ "low" /\ low, "high" /\ high ]
-        Offset value ->
-            "Offset" /\ One value
+instance HydraApiFunction ColorOp where
+    constructor = case _ of
+        R _ -> "R"
+        G _ -> "G"
+        B _ -> "B"
+        A _ -> "A"
+        Posterize _ -> "Posterize"
+        Shift _ -> "Shift"
+        Color _ -> "Color"
+        Luma _ -> "Luma"
+        Thresh _ -> "Thresh"
+        Invert _ -> "Invert"
+        Contrast _ -> "Contrast"
+        Saturate _ -> "Saturate"
+        Hue _ -> "Hue"
+        Colorama _ -> "Colorama"
+        Brightness _ -> "Brightness"
+    hydraFunction = case _ of
+        R { scale, offset } -> "r" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        G { scale, offset } -> "g" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        B { scale, offset } -> "b" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        A { scale, offset } -> "a" /\ Rec [ "scale" /\ scale, "offset" /\ offset ]
+        Posterize { bins, gamma } -> "posterize" /\ Rec [ "bins" /\ bins, "gamma" /\ gamma ]
+        Shift { r, g, b, a } -> "shift" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Color { r, g, b, a } -> "color" /\ Rec [ "r" /\ r, "g" /\ g, "b" /\ b, "a" /\ a ]
+        Luma { threshold, tolerance } -> "luma" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
+        Thresh { threshold, tolerance } -> "thresh" /\ Rec [ "threshold" /\ threshold, "tolerance" /\ tolerance ]
+        Invert value -> "invert" /\ One value
+        Contrast value -> "contrast" /\ One value
+        Saturate value -> "saturate" /\ One value
+        Hue value -> "hue" /\ One value
+        Colorama value -> "colorama" /\ One value
+        Brightness value -> "brightness" /\ One value
 
 
-withCodegenApply :: forall a. Partial => CodegenApply_ a => a -> CST.Expr Void
-withCodegenApply a =
-    case codegenApply a of
+instance HydraApiFunction Blend where
+    constructor = case _ of
+        Blend _ -> "Blend"
+        Add _ -> "Add"
+        Diff -> "Diff"
+        Layer _ -> "Layer"
+        Mask -> "Mask"
+        Mult _ -> "Mult"
+        Sub _ -> "Sub"
+    hydraFunction = case _ of
+        Blend value -> "blend" /\ One value
+        Add value -> "add" /\ One value
+        Diff -> "diff" /\ Zero
+        Layer value -> "layer" /\ One value
+        Mask -> "mask" /\ Zero
+        Mult value -> "mult" /\ One value
+        Sub value -> "sub" /\ One value
+
+
+instance HydraApiFunction Modulate where
+    constructor = case _ of
+        Modulate _ -> "Modulate"
+        ModHue _ -> "ModHue"
+        ModKaleid _ -> "ModKaleid"
+        ModPixelate _ -> "ModPixelate"
+        ModRepeat _ -> "ModRepeat"
+        ModRepeatX _ -> "ModRepeatX"
+        ModRepeatY _ -> "ModRepeatY"
+        ModRotate _ -> "ModRotate"
+        ModScale _ -> "ModScale"
+        ModScroll _ -> "ModScroll"
+        ModScrollX _ -> "ModScrollX"
+        ModScrollY _ -> "ModScrollY"
+    hydraFunction = case _ of
+        Modulate value -> "modulate" /\ One value
+        ModHue value -> "modulateHue" /\ One value
+        ModKaleid { nSides } -> "modulateKaleid" /\ Rec [ "nSides" /\ nSides ]
+        ModPixelate { multiple, offset } -> "modulatePixelate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModRepeat { repeatX, repeatY, offsetX, offsetY } ->
+            "modulateRepeat" /\ Rec [ "repeatX" /\ repeatX, "repeatY" /\ repeatY, "offsetX" /\ offsetX, "offsetY" /\ offsetY ]
+        ModRepeatX { reps, offset } -> "modulateRepeatX" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        ModRepeatY { reps, offset } -> "modulateRepeatY" /\ Rec [ "reps" /\ reps, "offset" /\ offset ]
+        ModRotate { multiple, offset } -> "modulateRotate" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModScale { multiple, offset } -> "modulateScale" /\ Rec [ "multiple" /\ multiple, "offset" /\ offset ]
+        ModScroll { scrollX, scrollY, speedX, speedY } -> "modulateScroll" /\ Rec [ "scrollX" /\ scrollX, "scrollY" /\ scrollY, "speedX" /\ speedX, "speedY" /\ speedY ]
+        ModScrollX { scrollX, speed } -> "modulateScrollX" /\ Rec [ "scrollX" /\ scrollX, "speed" /\ speed ]
+        ModScrollY { scrollY, speed } -> "modulateScrollY" /\ Rec [ "scrollY" /\ scrollY, "speed" /\ speed ]
+
+
+instance HydraApiMethod Values EOrV Ease where
+    mConstructor = case _ of
+        Ease _ -> "Ease"
+        Fast _ -> "Fast"
+        Smooth _ -> "Smooth"
+        Fit _ -> "Fit"
+        Offset _ -> "Offset"
+    hydraMethod = case _ of
+        Ease arg -> "ease" /\ One (E arg)
+        Fast value -> "fast" /\ One (EV value)
+        Smooth value -> "smooth" /\ One (EV value)
+        Fit { low, high } -> "fit" /\ Rec [ "low" /\ EV low, "high" /\ EV high ]
+        Offset value -> "ease" /\ One (EV value)
+
+
+codegenHydraFn :: forall a. Partial => HydraApiFunction a => a -> CST.Expr Void
+codegenHydraFn a =
+    case (hydraFunction a :: String /\ HydraApiArguments Value) of
+        ctor /\ Zero -> hydraCtor_ ctor
+        ctor /\ One val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
+        ctor /\ Rec fields ->
+            exprApp
+                (hydraCtor_ ctor)
+                [ exprRecord (mkExpression <$$> fields)
+                ]
+
+
+codegenHydraMethod :: forall o v a. Partial => ValueCodegen v => HydraApiMethod o v a => a -> CST.Expr Void
+codegenHydraMethod a =
+    case (hydraMethod a :: String /\ HydraApiArguments v) of
         ctor /\ Zero -> hydraCtor_ ctor
         ctor /\ One val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
         ctor /\ Rec fields ->
@@ -821,9 +916,23 @@ instance Partial => ValueCodegen TOrV where
         V val -> exprApp (hydraCtor_ "V") [ mkExpression val ]
 
 
+instance Partial => ValueCodegen EaseType where
+    mkExpression :: EaseType -> CST.Expr Void
+    mkExpression = exprString <<< case _ of
+        Linear -> "linear"
+        InOutCubic -> "easeInOutCubic"
+
+
+instance Partial => ValueCodegen EOrV where
+    mkExpression :: EOrV -> CST.Expr Void
+    mkExpression = case _ of
+        E ease -> exprApp (hydraCtor_ "E") [ mkExpression ease ]
+        EV val -> exprApp (hydraCtor_ "EV") [ mkExpression val ]
+
+
 instance Partial => ValueCodegen Ease where
     mkExpression :: Ease -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraMethod
 
 
 instance Partial => ValueCodegen DepFn where
@@ -839,27 +948,27 @@ instance Partial => ValueCodegen AudioBin where
 
 instance Partial => ValueCodegen From where
     mkExpression :: From -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraFn
 
 
 instance Partial => ValueCodegen Blend where
     mkExpression :: Blend -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraFn
 
 
 instance Partial => ValueCodegen ColorOp where
     mkExpression :: ColorOp -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraFn
 
 
 instance Partial => ValueCodegen Modulate where
     mkExpression :: Modulate -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraFn
 
 
 instance Partial => ValueCodegen Geometry where
     mkExpression :: Geometry -> CST.Expr Void
-    mkExpression = withCodegenApply
+    mkExpression = codegenHydraFn
 
 
 instance Partial => ValueCodegen GlslFnRef where

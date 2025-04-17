@@ -27,7 +27,7 @@ import HydraTk.Types
 import HydraTk.Repr.Show (hShow)
 import HydraTk.Repr.Wrap
 import HydraTk.Repr.Wrap (WrapRepr(..)) as W
-import HydraTk.Types (AudioBin(..), Values(..), GlslFn(..)) as T
+import HydraTk.Types (Ease(..), AudioBin(..), Values(..), GlslFn(..)) as T
 -- import Hydra.Lang.Fn as Lang
 import HydraTk.Repr.Target (_encode, _decode) as Hydra
 
@@ -60,8 +60,8 @@ wrapReprSamples =
     , Value Height
     , Value Pi
     , Value $ Fft $ T.AudioBin 1
-    , Value $ VArray (T.Values []) Linear
-    , Value $ VArray (T.Values [ MouseX, Time, Pi, Number 4.5, None, Pi ]) Linear
+    , Value $ VArray (T.Values []) $ T.Ease Linear
+    , Value $ VArray (T.Values [ MouseX, Time, Pi, Number 4.5, None, Pi ]) $ T.Ease Linear
     , Value $ VArray (T.Values []) $ Fast $ Number 7.0
     , Value $ VArray (T.Values []) $ Fit { low : Number 1.0, high : Number 2.5 }
     -- , Value $ Dep $ JsExpr $ Val $ Number 3.0

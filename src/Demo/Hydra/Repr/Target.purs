@@ -218,12 +218,12 @@ instance ToCode HYDRA_V opts HT.Values where
 instance ToCode HYDRA_V opts HT.Ease where
     toCode :: Proxy HYDRA_V -> opts -> HT.Ease -> String
     toCode _ _ = case _ of
-        HT.Linear -> "LIN E"
+        HT.Ease HT.Linear -> "LIN E"
+        HT.Ease HT.InOutCubic -> "IOC E"
         HT.Fast v -> "FST " <> _encode v
         HT.Smooth v -> "SMT " <> _encode v
         HT.Fit { low, high } -> "FIT " <> _encode low <> " < " <> _encode high
         HT.Offset v -> "OFF " <> _encode v
-        HT.InOutCubic -> "IOC E"
 
 
 instance ToCode HYDRA_V opts HT.AudioSource where
@@ -444,12 +444,11 @@ instance ToSignature HYDRA_V HT.Value Unit HT.Geometry where
 instance ToSignature HYDRA_V HT.Value Unit HT.Ease where
     toSignature :: Proxy _ -> HT.Ease -> Signature HT.Value Unit
     toSignature = const $ sigs <<< case _ of
-        HT.Linear -> "linear" /\ [] /\ [ o "out" unit ]
-        HT.Fast v -> "fast" /\ [ i "v" v ] /\ [ o "out" unit ]
-        HT.Smooth v -> "smooth" /\ [ i "v" v ] /\ [ o "out" unit ]
+        HT.Ease _ -> "ease" /\ [ ] /\ [ o "out" unit ] -- FIXME: easing is skipped
+        HT.Fast v -> "fast" /\ [ i "speed" v ] /\ [ o "out" unit ]
+        HT.Smooth v -> "smooth" /\ [ i "smooth" v ] /\ [ o "out" unit ]
         HT.Fit { low, high } -> "fit" /\ [ i "low" low, i "high" high ] /\ [ o "out" unit ]
         HT.Offset v -> "offset" /\ [ i "v" v ] /\ [ o "out" unit ]
-        HT.InOutCubic -> "inOutCubic" /\ [] /\ [ o "out" unit ]
 
 
 instance ToSignature HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFn where
@@ -510,12 +509,12 @@ instance PossiblyToSignature HYDRA_V HT.TOrV HT.OTOrV HT.Texture where
                     ) /\ (const HT.OT <$$> outs)
 
 
-instance PossiblyToSignature HYDRA_V HT.Value Unit HT.HydraFnId where
-    possiblyToSignature :: Proxy _ -> HT.HydraFnId -> Maybe (Signature HT.Value Unit)
+instance PossiblyToSignature HYDRA_V HT.Value Unit HT.HydraApiFunctionId where
+    possiblyToSignature :: Proxy _ -> HT.HydraApiFunctionId -> Maybe (Signature HT.Value Unit)
     possiblyToSignature _ = unwrap >>> fromKnownFn
 
 
-instance PossiblyToSignature HYDRA_V HT.FnArg HT.FnOut HT.HydraFnId where
+instance PossiblyToSignature HYDRA_V HT.FnArg HT.FnOut HT.HydraApiFunctionId where
     possiblyToSignature _ = unwrap >>> defaultsFor
 
 
