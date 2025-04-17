@@ -19,10 +19,13 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, pDefaultFor)
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..))
 
 import HydraTk.Types as HT
+import HydraTk.Lang.Command as HL
 
+import HydraTk.Library.Out.Out as Out
 
 data StateRepr
     = Val HT.Value
+    | Cmd HL.Command
 
 
 instance HasFallback StateRepr where
@@ -32,11 +35,18 @@ instance HasFallback StateRepr where
 pState = Proxy :: _ StateRepr
 
 
-instance (NT.Newtype w Unit) => StRepr w StateRepr where
-  to :: w -> StateRepr
-  to = NT.unwrap >>> (const $ Val HT.None)
-  from :: StateRepr -> Maybe w
-  from = map NT.wrap <<< (const $ Just unit)
+instance StRepr Out.State StateRepr where
+    to :: Out.State -> StateRepr
+    to (Out.State cmd) = Cmd cmd
+    from :: StateRepr -> Maybe Out.State
+    from = case _ of
+        Cmd command -> Just $ Out.State command
+        _ -> Nothing
+else instance (NT.Newtype w Unit) => StRepr w StateRepr where
+    to :: w -> StateRepr
+    to = NT.unwrap >>> (const $ Val HT.None)
+    from :: StateRepr -> Maybe w
+    from = map NT.wrap <<< (const $ Just unit)
 
 
 

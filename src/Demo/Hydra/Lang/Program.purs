@@ -1,7 +1,8 @@
-module HydraTk.Lang where
-
+module HydraTk.Lang.Program where
 
 import Prelude
+
+
 import Prelude (class Show, show) as Core
 
 import Effect.Class (class MonadEffect)
@@ -26,46 +27,18 @@ import Noodle.Fn.Signature as Sig
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.Code.Target (PS, JS, JS_DISPLAY, pureScript, javaScript, javaScriptToDisplay)
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (id, atOutlet, NodeChanges) as RawNode
+import Noodle.Raw.Node (id, state, NodeChanges) as RawNode
 import Noodle.Patch (Patch)
 import Noodle.Patch (mapAllNodes) as Patch
 import Noodle.Repr.ValueInChannel (toMaybe) as ViC
 
 import HydraTk.Types as H
+import HydraTk.Lang.Command (Command(..))
 import HydraTk.Repr.Wrap (WrapRepr(..))
+import HydraTk.Repr.State (StateRepr(..))
 import HydraTk.Repr.Show as H
 -- import Toolkit.Hydra.Lang.Glsl as Glsl
 
-
-data Single
-    = WithAudio H.AudioSource H.OnAudio
-    | WithSynth H.OnSynth
-    | WithSource H.SourceN H.OnSource
-    | SynthSet H.SynthProp
-
-
-data Command
-    = Unknown
-    | Single Single
-    | Chain H.OutputN H.Texture
-
-
-instance Show Single where
-    show :: Single -> String
-    show = case _ of
-        WithAudio src _ -> "withAudio " <> H.hShow src
-        WithSynth syn -> "withSynth " -- <> H.hShow syn
-        WithSource src syn -> "withSrc " <> H.hShow src <> " " -- <> H.hShow syn
-        SynthSet prop -> "synthSet"
-        -- WithAudio n -> "withAudio " <> show n
-
-
-instance Show Command where
-    show :: Command -> String
-    show = case _ of
-        Unknown -> "Unknown"
-        Chain output texture -> H.hShow output <> " <> " <> H.hShow texture
-        Single single -> show  "1 " <> show single
 
 
 data Program =
@@ -76,7 +49,7 @@ class ToHydraCommand a where -- FIXME: temporary typeclass while we testing Hydr
     toHydraCommand :: Id.FamilyR -> a -> Maybe Command
 
 
-instance ToHydraCommand WrapRepr where
+instance ToHydraCommand StateRepr where
     toHydraCommand familyR outValue =
         case Id.family familyR /\ outValue of
             _ -> Just Unknown
@@ -93,88 +66,6 @@ printToJavaScript = toCode javaScript unit
 instance Show a => Show Program where
   show :: Program -> String
   show (Program cmds) = show cmds
-
-
-instance ToCode PS opts Command where
-    toCode _ opts  = case _ of
-        Unknown -> "{- unknown -}"
-        Single _ -> "{- single -}"
-        Chain _ _ -> "{- chain -}"
-
-        {- }
-        End output texture -> "IMPLEMENT" -- quickPurs texture <> "\n\t# " <> Sig.toPureScript' (Sig.sig1 "out" $ "output" /\ output)
-        Pair cmdA cmdB -> quickPurs cmdA <> "\n" <> quickPurs cmdB
-        One (WithAudio onaudio) -> "IMPLEMENT" -- quickPurs onaudio
-        One (Render H.Four) -> "renderAll"
-        One (Render (H.Output outN)) -> "IMPLEMENT" -- quickPurs outN <> " # render"
-        One (Speed val) -> "IMPLEMENT" -- quickPurs val <> " # speed"
-        One (Bpm val) -> "IMPLEMENT" -- quickPurs val <> " # bpm"
-        One Hush -> "hush"
-        One (Init so) -> "init" -- FIXME: quickPurs so <> " # init"
-        One (InitScreen src) -> "IMPLEMENT" -- quickPurs src <> " # initScreen"
-        One (InitCam src) -> "IMPLEMENT" -- quickPurs src <> " # initCam"
-        One (InitCamIdx src index) -> "IMPLEMENT" -- quickPurs src <> " # initCamIdx " <> quickPurs index
-        One (Clear src) -> "IMPLEMENT" -- quickPurs src <> " # clear"
-        One (SetResolution width height) -> "IMPLEMENT" -- "{ width : " <> quickPurs width <> ", height : " <> quickPurs height <> " # setResolution"
-        Continue texture -> "IMPLEMENT" -- "." <> quickPurs texture
-        -}
-        where
-            quickPurs :: forall a. ToCode PS opts a => a -> String
-            quickPurs = toCode pureScript opts
-else instance ToCode JS opts Command where
-    toCode _ opts = case _ of
-        Unknown -> "/* unknown */"
-        Single _ -> "/* single */"
-        Chain _ _ -> "/* chain */"
-
-
-        {-
-        End output texture ->
-            -- case Debug.spy "tex" texture of
-            case texture of
-                H.Empty -> ""
-                _ -> "IMPLEMENT" -- quickJs texture <> "\n\t." <> Sig.toJavaScript' (Sig.sig1 "out" $ "output" /\ output)
-        Pair cmdA cmdB -> quickJs cmdA <> "\n" <> quickJs cmdB
-        One (WithAudio onaudio) -> "IMPLEMENT" -- quickJs onaudio
-        -- One (InitCam src index) -> quickJs src <> ".initCam( " <> quickJs index <> " )"
-        One (Render H.Four) -> "render()"
-        One (Render (H.Output outN)) -> "IMPLEMENT" -- quickJs outN <> ".render()"
-        One (Speed val) -> "IMPLEMENT" -- "speed = " <> quickJs val
-        One (Bpm val) -> "IMPLEMENT" -- "bpm = " <> quickJs val
-        One Hush -> "hush()"
-        One (Init so) -> "init" -- FIXME: quickJs so <> " # init"
-        One (InitScreen src) -> "IMPLEMENT" -- "initScreen( " <> quickJs src <> " )"
-        One (InitCam src) -> "IMPLEMENT" -- "initCam( " <> quickJs src <> " )"
-        One (InitCamIdx src index) -> "IMPLEMENT" -- "initCam( " <> quickJs src <> " , " <> quickJs index <> " )"
-        One (Clear so) -> "IMPLEMENT" -- quickJs so <> ".clear()"
-        One (SetResolution width height) -> "IMPLEMENT" -- "setResolution( " <> quickJs width <> " , " <> quickJs height <> " )"
-        Continue texture -> "IMPLEMENT" -- "." <> quickJs texture
-        where
-            quickJs :: forall a. ToCode JS opts a => a -> String
-            quickJs = toCode javaScript opts
-        -}
-
-
-{-
-collectGlslUsage :: forall a. Program a -> Array H.GlslFn
-collectGlslUsage prg = fold checkCmdForRefs [] prg
-    where
-        checkCmdForRefs (Continue tex) arr = checkTexForRefs tex <> arr
-        checkCmdForRefs (End _ tex) arr = checkTexForRefs tex <> arr
-        checkCmdForRefs _ arr = arr
-        checkTexForRefs (H.BlendOf { with, what } _) = checkTexForRefs with <> checkTexForRefs what
-        checkTexForRefs (H.Filter tex _) = checkTexForRefs tex
-        checkTexForRefs (H.ModulateWith { with, what } _) = checkTexForRefs with <> checkTexForRefs what
-        checkTexForRefs (H.Geometry tex _) = checkTexForRefs tex
-        checkTexForRefs (H.CallGlslFn { over, mbWith } fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs over <> case mbWith of
-            Just with -> checkTexForRefs with
-            Nothing -> mempty
-        checkTexForRefs _ = []
-        fnRefToGlslFn (H.GlslFnRef fn) = Nothing -- FIXME: Map.lookup (Sig.name fn) Glsl.knownFnsMap
-        addIfJust :: _
-        addIfJust (Just glslFn) arr = glslFn : arr
-        addIfJust Nothing arr = arr
--}
 
 
 instance ToCode PS opts Program where
@@ -242,6 +133,29 @@ codeOrder familyR = case Id.family familyR of
         "render" -> 3
 
         _ -> 4
+
+
+{-
+collectGlslUsage :: forall a. Program a -> Array H.GlslFn
+collectGlslUsage prg = fold checkCmdForRefs [] prg
+    where
+        checkCmdForRefs (Continue tex) arr = checkTexForRefs tex <> arr
+        checkCmdForRefs (End _ tex) arr = checkTexForRefs tex <> arr
+        checkCmdForRefs _ arr = arr
+        checkTexForRefs (H.BlendOf { with, what } _) = checkTexForRefs with <> checkTexForRefs what
+        checkTexForRefs (H.Filter tex _) = checkTexForRefs tex
+        checkTexForRefs (H.ModulateWith { with, what } _) = checkTexForRefs with <> checkTexForRefs what
+        checkTexForRefs (H.Geometry tex _) = checkTexForRefs tex
+        checkTexForRefs (H.CallGlslFn { over, mbWith } fnRef) = addIfJust (fnRefToGlslFn fnRef) $ checkTexForRefs over <> case mbWith of
+            Just with -> checkTexForRefs with
+            Nothing -> mempty
+        checkTexForRefs _ = []
+        fnRefToGlslFn (H.GlslFnRef fn) = Nothing -- FIXME: Map.lookup (Sig.name fn) Glsl.knownFnsMap
+        addIfJust :: _
+        addIfJust (Just glslFn) arr = glslFn : arr
+        addIfJust Nothing arr = arr
+-}
+
 
 
 {- IMPLEMENT -}
@@ -347,45 +261,12 @@ formProgram = const empty
 
 
 {-
-instance Core.Show Texture where
-    show (Filter _ c) = "color <- " <> Core.show c
-    show (ModulateWith ca _ cb) = "mod <- " <> Core.show ca <> " <- " <> Core.show cb
-    show (Geometry _ c) = "geom <- " <> Core.show c
-    show (BlendOf ca _ cb) = "blend <- " <> Core.show ca <> " <- " <> Core.show cb
-    show (From _) = "src"
-    show None = "none"
--}
-
-
-{-}
-instance Core.Show Command where
-    show Unknown = "unknown"
-    show End = "end"
-    show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
-    show (One (WithFrom from)) = "with from"
-    show (One (WithAudio str)) = "with audio"
-    show (One (InitCam str)) = "init cam"
-    show (One (Render _)) = "render"
-    show (Continue (Filter _)) = "cont with color"
-    show (Continue (WithModulate _)) = "cont with mod"
-    show (Continue (WithGeometry _)) = "cont with geom"
-    show (Continue (WithSource _)) = "cont with src"
-    show (To from) = "out"
--}
-
-{-}
-instance Core.Show a => Core.Show (Program a) where
-    show :: Program a -> String
-    show (Program items a) = Core.show items <> "    " <> Core.show a -}
-
-
-{-
 commandOf :: forall a. Program a -> Command
 commandOf (Program cmd _) = cmd
 -}
 
 
-collectHydraCommands :: forall ps fs sr cr m. MonadEffect m => ToHydraCommand cr => Patch ps fs sr cr m -> m (Map Id.NodeR Command)
+collectHydraCommands :: forall ps fs sr cr m. MonadEffect m => ToHydraCommand sr => Patch ps fs sr cr m -> m (Map Id.NodeR Command)
 collectHydraCommands =
     map Map.catMaybes <<< sequence <<< Map.fromFoldable <<< Patch.mapAllNodes toCommandTuple
     where
@@ -396,6 +277,6 @@ collectHydraCommands =
             let familyR = Id.familyOf $ RawNode.id rawNode
             in
                 if producesCode familyR then
-                    RawNode.atOutlet (Id.unsafeOutletR "out") rawNode <#> ViC.toMaybe <#> map (toHydraCommand familyR) <#> join
+                    RawNode.state rawNode <#> toHydraCommand familyR
                 else
                     pure Nothing

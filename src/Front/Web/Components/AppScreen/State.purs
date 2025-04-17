@@ -19,7 +19,7 @@ import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
-import HydraTk.Lang (Program) as Hydra
+import HydraTk.Lang.Program (Program) as Hydra
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =

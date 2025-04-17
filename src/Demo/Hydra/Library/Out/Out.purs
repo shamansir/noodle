@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Newtype (class Newtype)
 import Effect (Effect)
+import Control.Monad.State (put) as State
 import HydraTk.Repr.Wrap (WrapRepr(..))
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Process as Noodle
@@ -19,6 +20,7 @@ import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
 import HydraTk.Types as HT
+import HydraTk.Lang.Command as HL
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -34,7 +36,7 @@ type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (what :: HT.Texture, target :: HT.RenderTarget)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
-newtype State = State Unit
+newtype State = State HL.Command
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
 type Node = Noodle.Node "out" State InletsRow OutletsRow WrapRepr Effect
 type Family = Noodle.Family "out" State InletsRow OutletsRow WrapRepr Effect
@@ -47,7 +49,7 @@ defaultO :: Record OutletsRow
 defaultO = {}
 
 defaultSt :: State
-defaultSt = State unit
+defaultSt = State HL.Unknown
 
 _in_what = Noodle.Inlet :: _ "what"
 _in_target = Noodle.Inlet :: _ "target"
@@ -59,8 +61,15 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 outP :: Process
-outP = {- EMPTY PROCESS -}
-    pure unit
+outP = do
+    what <- Fn.receive _in_what
+    target <- Fn.receive _in_target
+    let
+      outputN = case target of
+        HT.Four -> HT.Output0
+        (HT.Output outputN) -> outputN
+    State.put $ State $ HL.Chain outputN what
+
 
 instance HasFallback State where
   fallback = defaultSt

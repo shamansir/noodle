@@ -72,7 +72,7 @@ import Web.Components.StatusBar as StatusBar
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Layer (TargetLayer(..))
 
-import HydraTk.Lang (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
+import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
 
 
 type Slots sr cr m =
@@ -117,7 +117,7 @@ component
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
-    => Hydra.ToHydraCommand cr
+    => Hydra.ToHydraCommand sr
     => Proxy loc
     -> ps
     -> Toolkit tk fs sr cr m
@@ -232,7 +232,7 @@ handleAction
     :: forall output tk ps fs sr cr m
      . Wiring m
     => Toolkit.FromToPatchState tk ps sr
-    => Hydra.ToHydraCommand cr
+    => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
     => ps
