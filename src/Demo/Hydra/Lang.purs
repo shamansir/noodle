@@ -4,6 +4,8 @@ module HydraTk.Lang where
 import Prelude
 import Prelude (class Show, show) as Core
 
+import Effect.Class (class MonadEffect)
+
 import Data.Symbol (class IsSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe(Maybe(..))
@@ -14,6 +16,7 @@ import Data.List as List
 import Data.Array ((:))
 import Data.Array (length) as Array
 import Data.Foldable (foldr)
+import Data.Traversable (sequence)
 import Data.String as String
 
 import Noodle.Id as Id
@@ -22,7 +25,11 @@ import Noodle.Id as Id
 import Noodle.Fn.Signature as Sig
 import Noodle.Text.ToCode (class ToCode, toCode)
 import Noodle.Text.Code.Target (PS, JS, JS_DISPLAY, pureScript, javaScript, javaScriptToDisplay)
-import Noodle.Raw.Node (NodeChanges) as RawNode
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (id, atOutlet, NodeChanges) as RawNode
+import Noodle.Patch (Patch)
+import Noodle.Patch (mapAllNodes) as Patch
+import Noodle.Repr.ValueInChannel (toMaybe) as ViC
 
 import HydraTk.Types as H
 import HydraTk.Repr.Wrap (WrapRepr(..))
@@ -65,8 +72,22 @@ data Program =
     Program (Array Command)
 
 
+class ToHydraCommand a where -- FIXME: temporary typeclass while we testing Hydra universally, remove it after
+    toHydraCommand :: Id.FamilyR -> a -> Maybe Command
+
+
+instance ToHydraCommand WrapRepr where
+    toHydraCommand familyR outValue =
+        case Id.family familyR /\ outValue of
+            _ -> Just Unknown
+
+
 empty :: Program
 empty = Program []
+
+
+printToJavaScript :: Program -> String
+printToJavaScript = toCode javaScript unit
 
 
 instance Show a => Show Program where
@@ -156,29 +177,27 @@ collectGlslUsage prg = fold checkCmdForRefs [] prg
 -}
 
 
-{-
-instance ToCode PS opts (Program a) where
-    toCode _ opts (Program cmd _) = toCode pureScript opts cmd
-else instance ToCode JS opts (Program a) where
-    toCode _ opts prg@(Program cmd _) =
-        let glslUsage = collectGlslUsage prg
+instance ToCode PS opts Program where
+    toCode _ opts (Program cmds) = "PROGRAM" -- IMPLEMENT toCode pureScript opts cmd
+else instance ToCode JS opts Program where
+    toCode _ opts prg@(Program cmds) =
+        let glslUsage = [] -- IMPLEMENT collectGlslUsage prg
         in
         "/* GENERATED CODE */\n\n" <>
         ( if Array.length glslUsage > 0
             then "IMPLEMENT" -- String.joinWith "\n\n" (toCode javaScript opts <$> collectGlslUsage prg) <> "\n\n"
             else ""
         )
-        <> toCode javaScript opts cmd
-else instance ToCode JS_DISPLAY opts (Program a) where
-    toCode _ opts prg@(Program cmd _) =
-        let glslUsage = collectGlslUsage prg
+        <> String.joinWith "\n\n" (toCode javaScript opts <$> cmds)
+else instance ToCode JS_DISPLAY opts Program where
+    toCode _ opts prg@(Program cmds) =
+        let glslUsage = [] -- IMPLEMENT collectGlslUsage prg
         in
         ( if Array.length glslUsage > 0
             then "IMPLEMENT" -- String.joinWith "\n\n" (toCode javaScriptToDisplay opts <$> collectGlslUsage prg) <> "\n\n"
             else ""
         )
-        <> toCode javaScript opts cmd
--}
+        <> String.joinWith "\n\n" (toCode javaScript opts <$> cmds)
 
 
 producesCode :: Id.FamilyR -> Boolean
@@ -322,10 +341,9 @@ changesToCommand familyR update =
 -}
 
 
-{-
+
 formProgram :: Map Id.NodeR Command -> Program
-formProgram = Map.values >>> List.foldl append empty
--}
+formProgram = const empty
 
 
 {-
@@ -365,3 +383,19 @@ instance Core.Show a => Core.Show (Program a) where
 commandOf :: forall a. Program a -> Command
 commandOf (Program cmd _) = cmd
 -}
+
+
+collectHydraCommands :: forall ps fs sr cr m. MonadEffect m => ToHydraCommand cr => Patch ps fs sr cr m -> m (Map Id.NodeR Command)
+collectHydraCommands =
+    map Map.catMaybes <<< sequence <<< Map.fromFoldable <<< Patch.mapAllNodes toCommandTuple
+    where
+        toCommandTuple :: Raw.Node sr cr m -> Id.NodeR /\ m (Maybe Command)
+        toCommandTuple rawNode = RawNode.id rawNode /\ extractCommandFromNode rawNode
+        extractCommandFromNode :: Raw.Node sr cr m -> m (Maybe Command)
+        extractCommandFromNode rawNode =
+            let familyR = Id.familyOf $ RawNode.id rawNode
+            in
+                if producesCode familyR then
+                    RawNode.atOutlet (Id.unsafeOutletR "out") rawNode <#> ViC.toMaybe <#> map (toHydraCommand familyR) <#> join
+                else
+                    pure Nothing

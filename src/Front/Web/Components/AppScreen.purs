@@ -5,6 +5,7 @@ import Prelude
 import Debug as Debug
 
 import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
 
 import Type.Proxy (Proxy(..))
 
@@ -15,7 +16,7 @@ import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Map (toUnfoldable) as Map
+import Data.Map (empty, toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
@@ -71,6 +72,8 @@ import Web.Components.StatusBar as StatusBar
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Layer (TargetLayer(..))
 
+import HydraTk.Lang (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
+
 
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
@@ -114,6 +117,7 @@ component
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
+    => Hydra.ToHydraCommand cr
     => Proxy loc
     -> ps
     -> Toolkit tk fs sr cr m
@@ -228,6 +232,7 @@ handleAction
     :: forall output tk ps fs sr cr m
      . Wiring m
     => Toolkit.FromToPatchState tk ps sr
+    => Hydra.ToHydraCommand cr
     => HasFallback cr
     => ValueTagged cr
     => ps
@@ -312,9 +317,11 @@ handleAction pstate = case _ of
 
                 H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
-        H.get >>= CState.currentPatch >>> whenJust_ \curPatch ->
+        H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
+            collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
+            H.liftEffect $ Console.log $ Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction pstate $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do

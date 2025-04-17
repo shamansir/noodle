@@ -19,7 +19,7 @@ import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
-import HydraTk.Lang (Program)
+import HydraTk.Lang (Program) as Hydra
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
@@ -31,6 +31,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , patchIdToIndex :: Map Id.PatchR PatchIndex
     , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
     , statusBarContent :: Maybe T.Tag
+    , hydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
     }
 
 
@@ -47,6 +48,7 @@ init patchState toolkit =
     , patchIdToIndex : Map.empty
     , currentPatch : Nothing
     , statusBarContent : Nothing
+    , hydraProgram : Nothing
     }
 
 
