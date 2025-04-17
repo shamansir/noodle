@@ -1,4 +1,4 @@
-module Demo.Hydra.Lang where
+module HydraTk.Lang where
 
 
 import Prelude
@@ -26,37 +26,30 @@ import Noodle.Raw.Node (NodeChanges) as RawNode
 
 import HydraTk.Types as H
 import HydraTk.Repr.Wrap (WrapRepr(..))
+import HydraTk.Repr.Show as H
 -- import Toolkit.Hydra.Lang.Glsl as Glsl
 
 
 data Single
-    = WithAudio H.OnAudio
-    | Speed H.Value
-    | Bpm H.Value
-    | Hush
-    | Init H.SourceOptions
-    -- TODO : join under `WithSource`
-    | InitCam H.Source
-    | InitCamIdx H.Source H.Value
-    | InitScreen H.Source
-    | Clear H.Source
-    | SetResolution H.Value H.Value
-    | Render H.RenderTarget
+    = WithAudio H.AudioSource H.OnAudio
+    | WithSynth H.OnSynth
+    | WithSource H.SourceN H.OnSource
+    | SynthSet H.SynthProp
 
 
 data Command
     = Unknown
-    | End H.OutputN H.Texture
-    | Pair Command Command -- parent -> child ?
-    -- | Batch (Array Command)
-    | One Single
-    | Continue H.Texture
+    | Single Single
+    | Chain H.OutputN H.Texture
 
 
 instance Show Single where
     show :: Single -> String
     show = case _ of
-        _ -> "TODO / FIXME"
+        WithAudio src _ -> "withAudio " <> H.hShow src
+        WithSynth syn -> "withSynth " -- <> H.hShow syn
+        WithSource src syn -> "withSrc " <> H.hShow src <> " " -- <> H.hShow syn
+        SynthSet prop -> "synthSet"
         -- WithAudio n -> "withAudio " <> show n
 
 
@@ -64,83 +57,30 @@ instance Show Command where
     show :: Command -> String
     show = case _ of
         Unknown -> "Unknown"
-        End output texture -> "IMPLEMENT" -- ". " <> show output <> " <> " <> show texture
-        Pair texA texB -> show texA <> " /\\ " <> show texB
-        One single -> show  "1 " <> show single
-        Continue tex -> "IMPLEMENT" -- "~ " <> show tex
+        Chain output texture -> H.hShow output <> " <> " <> H.hShow texture
+        Single single -> show  "1 " <> show single
 
 
-data Program a = -- same as Writer?
-    Program Command a
+data Program =
+    Program (Array Command)
 
 
-instance Semigroup Command where
-    append = Pair
+empty :: Program
+empty = Program []
 
 
-empty :: Program Unit
-empty = Program Unknown unit
-
-
-append :: Program Unit -> Command -> Program Unit
-append (Program Unknown _) Unknown = Program Unknown unit
-append (Program Unknown _) cmd = Program cmd unit
-append (Program cmd _) Unknown = Program cmd unit
-append (Program cmdA _) cmdB = Program (Pair cmdA cmdB) unit
-
-
-instance Show a => Show (Program a) where
-  show :: Program a -> String
-  show (Program cmd a) = show a <> " <- " <> show cmd
-
-
-unfold :: forall a. Program a -> Array Command
-unfold (Program cmd _) =
-    unfoldCmd cmd
-    where
-        unfoldCmd = case _ of
-            Pair cmdA cmdB -> Pair cmdA cmdB : (unfoldCmd cmdA <> unfoldCmd cmdB)
-            otherCmd -> [ otherCmd ]
-
-
-fold :: forall a b. (Command -> b -> b) -> b -> Program a -> b
-fold f b = foldr f b <<< unfold
-
-
--- instance Semigroup (Program Unit) where
---     append :: Program Unit -> Program Unit -> Program Unit
---     append (Program cmdA _) (Program cmdB _) =
---         Program ( cmdA <> cmdB ) unit
-
-
-instance Semigroup a => Semigroup (Program a) where
-    append :: Program a -> Program a -> Program a
-    append (Program cmdA a) (Program cmdB b) =
-        Program ( cmdA <> cmdB ) (a <> b)
-
-
-instance Functor Program where
-    map :: forall a b. (a -> b) -> Program a -> Program b
-    map fa (Program aitems a) =
-        Program aitems $ fa a
-
-
-instance Apply Program where
-    apply :: forall a b. Program (a -> b) -> Program a -> Program b
-    apply (Program fitems fa) (Program aitems a) =
-        Program (fitems <> aitems) $ fa a
-
-
-instance Bind Program where
-    bind :: forall a b. Program a -> (a -> Program b) -> Program b
-    bind (Program aitems aval) f =
-        case f aval of
-            Program bitems b -> Program (aitems <> bitems) b
+instance Show a => Show Program where
+  show :: Program -> String
+  show (Program cmds) = show cmds
 
 
 instance ToCode PS opts Command where
     toCode _ opts  = case _ of
         Unknown -> "{- unknown -}"
+        Single _ -> "{- single -}"
+        Chain _ _ -> "{- chain -}"
+
+        {- }
         End output texture -> "IMPLEMENT" -- quickPurs texture <> "\n\t# " <> Sig.toPureScript' (Sig.sig1 "out" $ "output" /\ output)
         Pair cmdA cmdB -> quickPurs cmdA <> "\n" <> quickPurs cmdB
         One (WithAudio onaudio) -> "IMPLEMENT" -- quickPurs onaudio
@@ -156,12 +96,18 @@ instance ToCode PS opts Command where
         One (Clear src) -> "IMPLEMENT" -- quickPurs src <> " # clear"
         One (SetResolution width height) -> "IMPLEMENT" -- "{ width : " <> quickPurs width <> ", height : " <> quickPurs height <> " # setResolution"
         Continue texture -> "IMPLEMENT" -- "." <> quickPurs texture
+        -}
         where
             quickPurs :: forall a. ToCode PS opts a => a -> String
             quickPurs = toCode pureScript opts
 else instance ToCode JS opts Command where
     toCode _ opts = case _ of
         Unknown -> "/* unknown */"
+        Single _ -> "/* single */"
+        Chain _ _ -> "/* chain */"
+
+
+        {-
         End output texture ->
             -- case Debug.spy "tex" texture of
             case texture of
@@ -185,8 +131,10 @@ else instance ToCode JS opts Command where
         where
             quickJs :: forall a. ToCode JS opts a => a -> String
             quickJs = toCode javaScript opts
+        -}
 
 
+{-
 collectGlslUsage :: forall a. Program a -> Array H.GlslFn
 collectGlslUsage prg = fold checkCmdForRefs [] prg
     where
@@ -205,8 +153,10 @@ collectGlslUsage prg = fold checkCmdForRefs [] prg
         addIfJust :: _
         addIfJust (Just glslFn) arr = glslFn : arr
         addIfJust Nothing arr = arr
+-}
 
 
+{-
 instance ToCode PS opts (Program a) where
     toCode _ opts (Program cmd _) = toCode pureScript opts cmd
 else instance ToCode JS opts (Program a) where
@@ -228,7 +178,7 @@ else instance ToCode JS_DISPLAY opts (Program a) where
             else ""
         )
         <> toCode javaScript opts cmd
-
+-}
 
 
 producesCode :: Id.FamilyR -> Boolean
@@ -372,8 +322,10 @@ changesToCommand familyR update =
 -}
 
 
-formProgram :: Map Id.NodeR Command -> Program Unit
+{-
+formProgram :: Map Id.NodeR Command -> Program
 formProgram = Map.values >>> List.foldl append empty
+-}
 
 
 {-

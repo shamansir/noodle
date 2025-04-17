@@ -19,6 +19,8 @@ import Noodle.Patch (id, make, getState) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
+import HydraTk.Lang (Program)
+
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe { width :: Number, height :: Number }

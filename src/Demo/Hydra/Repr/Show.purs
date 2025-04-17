@@ -259,7 +259,6 @@ instance HydraShow H.RenderTarget where
     hShow (H.Output oN) = hShow oN
 
 
-
 type HChannelLabel = String
 
 

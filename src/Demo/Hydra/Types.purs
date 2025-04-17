@@ -19,6 +19,7 @@ import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Functor.Extra ((<$$>))
+import Data.Int (toNumber) as Int
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen
@@ -322,6 +323,29 @@ data OnAudio
     | Hide AudioSource
 
 
+data OnSynth
+    = Render RenderTarget
+    | Update UpdateFn
+    | SetResolution Int Int
+    | Hush
+    | SetFunction GlslFnCode
+
+
+data OnSource
+    = Init SourceOptions
+    | InitCam Int
+    | InitImage Url
+    | InitVideo Url
+    -- InitStream
+    | InitScreen
+    | Clear
+
+
+data SynthProp
+    = Speed Number
+    | Bpm Int
+
+
 noUrl :: Url
 noUrl = Url ""
 
@@ -553,6 +577,7 @@ data FnArg
     | ValuesArg Values
     | AudioArg
     | AudioBinsArg Int
+    | WidthHeightArg Int
     | OutputArg OutputN
     | EaseArg EaseType
     | SourceArg SourceN
@@ -572,6 +597,7 @@ instance Mark FnArg where
         GlslFnArg -> Color.rgb 139 137 137
         AudioArg -> Color.rgb 173 255 47
         AudioBinsArg _ -> Color.rgb 238 230 133
+        WidthHeightArg _ -> mark Width
         OutputArg output -> mark output
         EaseArg ease -> mark $ Ease ease
         SourceArg source -> mark source
@@ -696,6 +722,7 @@ hydraType_ ctor = typeCtor $ hydraPrefix_ <> ctor
 data HydraApiArguments v
     = Zero
     | One v
+    | OneN String v
     | Rec (Array (String /\ v))
 
 
@@ -708,7 +735,7 @@ class HydraApiFunction a where
 
 
 
-class HydraApiMethod over arg a | a -> over arg where
+class HydraApiMethod (over :: Type) arg a | a -> over arg where
     mConstructor :: a -> String
     hydraMethod :: a -> String /\ HydraApiArguments arg
 
@@ -738,13 +765,11 @@ instance HydraApiFunction Geometry where
     constructor = case _ of
         GKaleid _ -> "GKaleid"
         GPixelate _ -> "GPixelate"
-        GRepeat _ ->
-            "GRepeat"
+        GRepeat _ -> "GRepeat"
         GRepeatX _ -> "GRepeatX"
         GRepeatY _ -> "GRepeatY"
         GRotate _ -> "GRotate"
-        GScale _ ->
-            "GScale"
+        GScale _ -> "GScale"
         GScroll _ -> "GScroll"
         GScrollX _ -> "GScrollX"
         GScrollY _ -> "GScrollY"
@@ -862,11 +887,62 @@ instance HydraApiMethod Values EOrV Ease where
         Offset value -> "ease" /\ One (EV value)
 
 
+instance HydraApiMethod AudioSource Value OnAudio where
+    mConstructor = case _ of
+        Show _ -> "Show"
+        SetBins _ _ -> "SetBins"
+        SetCutoff _ _ -> "SetCutoff"
+        SetScale _ _ -> "SetScale"
+        SetSmooth _ _ -> "SetSmooth"
+        Hide _ -> "Hide"
+    hydraMethod = case _ of
+        Show _ -> "show" /\ Zero
+        SetBins _ n -> "setBins" /\ OneN "numBins" (Number $ Int.toNumber n)
+        SetCutoff _ n -> "setCutoff" /\ OneN "cutoff" (Number n)
+        SetScale _ n -> "setScale" /\ OneN "scale" (Number n)
+        SetSmooth _ n -> "setSmooth" /\ OneN "smooth" (Number n)
+        Hide _ -> "hide" /\ Zero
+
+
+instance HydraApiMethod Unit FnArg OnSynth where
+    mConstructor = case _ of
+        Render _ -> "Render"
+        Update _ -> "Update"
+        SetResolution _ _ -> "SetResolution"
+        Hush -> "Hush"
+        SetFunction _ -> "SetFunction"
+    hydraMethod = case _ of
+        Render trg -> "render" /\ One (RenderTargetArg trg)
+        Update _ -> "update" /\ One UpdateFnArg
+        SetResolution w h -> "setResolution" /\ Rec [ "width" /\ WidthHeightArg w, "height" /\ WidthHeightArg h ]
+        Hush -> "hush" /\ Zero
+        SetFunction glsl -> "setFunction" /\ One GlslFnArg
+
+
+instance HydraApiMethod SourceN FnArg OnSource where
+    mConstructor = case _ of
+        Init _ -> "Init"
+        InitCam _ -> "InitCam"
+        InitImage _ -> "InitImage"
+        InitVideo _ -> "InitImage"
+        InitScreen -> "InitScreen"
+        Clear -> "Clear"
+    hydraMethod = case _ of
+        Init sopts -> "show" /\ One (OptionsArg sopts)
+        InitCam idx -> "initCam" /\ OneN "index" (CamIndexArg idx)
+        InitImage url -> "initCam" /\ OneN "url" (UrlArg url)
+        InitVideo url -> "initVideo" /\ OneN "url" (UrlArg url)
+        InitScreen -> "initScreen" /\ Zero
+        Clear -> "clear" /\ Zero
+
+
+
 codegenHydraFn :: forall a. Partial => HydraApiFunction a => a -> CST.Expr Void
 codegenHydraFn a =
     case (hydraFunction a :: String /\ HydraApiArguments Value) of
-        ctor /\ Zero -> hydraCtor_ ctor
-        ctor /\ One val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
+        ctor /\ Zero       -> hydraCtor_ ctor
+        ctor /\ One val    -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
+        ctor /\ OneN _ val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
         ctor /\ Rec fields ->
             exprApp
                 (hydraCtor_ ctor)
@@ -877,8 +953,9 @@ codegenHydraFn a =
 codegenHydraMethod :: forall o v a. Partial => ValueCodegen v => HydraApiMethod o v a => a -> CST.Expr Void
 codegenHydraMethod a =
     case (hydraMethod a :: String /\ HydraApiArguments v) of
-        ctor /\ Zero -> hydraCtor_ ctor
-        ctor /\ One val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
+        ctor /\ Zero       -> hydraCtor_ ctor
+        ctor /\ One val    -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
+        ctor /\ OneN _ val -> exprApp (hydraCtor_ ctor) [ mkExpression val ]
         ctor /\ Rec fields ->
             exprApp
                 (hydraCtor_ ctor)
