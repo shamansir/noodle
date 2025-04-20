@@ -26,12 +26,16 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Fn.Signature (Signature)
-import Noodle.Fn.Signature (Argument, Output, empty) as Sig
+import Noodle.Fn.Signature (Signature, class ToSignature)
+import Noodle.Fn.Signature (Argument, Output, empty, sig', toPureScript, toJavaScript) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Palette.Item (colorOf) as C
 import Noodle.Ui.Palette.Set.X11 as X11
+
+import Noodle.Text.ToCode (class ToCode, toPureScript, toPureScript', toJavaScript, toJavaScript')
+import Noodle.Text.Code.Target (PS, JS, pureScript, javaScript)
+
 
 
 {-
@@ -741,6 +745,31 @@ class HydraApiMethod (over :: Type) arg a | a -> over arg where
 
 
 
+functionToPureScript :: forall a. HydraApiFunction a => a -> String
+functionToPureScript = signatureHydraFn >>> Sig.toPureScript -- FIXME: implement automatic `ToCode` instance
+
+
+methodToPureScript :: forall over arg a. ToCode PS Unit arg => HydraApiMethod over arg a => a -> String
+methodToPureScript = methodToPureScript' unit -- FIXME: implement automatic `ToCode` instance
+
+
+methodToPureScript' :: forall opts over arg a. ToCode PS opts arg => opts -> HydraApiMethod over arg a => a -> String
+methodToPureScript' opts = signatureHydraMethod >>> toPureScript' opts -- FIXME: implement automatic `ToCode` instance
+
+
+functionToJavaScript :: forall a. HydraApiFunction a => a -> String
+functionToJavaScript = signatureHydraFn >>> Sig.toJavaScript -- FIXME: implement automatic `ToCode` instance
+
+
+methodToJavaScript :: forall over arg a. ToCode JS Unit arg => HydraApiMethod over arg a => a -> String
+methodToJavaScript = methodToJavaScript' unit -- FIXME: implement automatic `ToCode` instance
+
+
+methodToJavaScript' :: forall opts over arg a. ToCode JS opts arg => opts -> HydraApiMethod over arg a => a -> String
+methodToJavaScript' opts = signatureHydraMethod >>> toJavaScript' opts -- FIXME: implement automatic `ToCode` instance
+
+
+
 -- \{ [\w\s,]+\}
 
 
@@ -935,6 +964,32 @@ instance HydraApiMethod SourceN FnArg OnSource where
         InitScreen -> "initScreen" /\ Zero
         Clear -> "clear" /\ Zero
 
+
+data HydraApi = HydraApi
+
+
+instance HydraApiFunction a => ToSignature HydraApi Value out a where
+    toSignature :: Proxy HydraApi -> a -> Signature Value out
+    toSignature = const signatureHydraFn
+else instance HydraApiMethod over arg a => ToSignature HydraApi arg out a where
+    toSignature :: Proxy HydraApi -> a -> Signature arg out
+    toSignature = const signatureHydraMethod
+
+
+signatureHydraFn :: forall a out. HydraApiFunction a => a -> Signature Value out -- TODO: out is always `Texture` (?)
+signatureHydraFn a = case (hydraFunction a :: String /\ HydraApiArguments Value) of
+        ctor /\ Zero       -> Sig.sig' ctor [] []
+        ctor /\ One val    -> Sig.sig' ctor [ "amount" /\ val ] []
+        ctor /\ OneN name val -> Sig.sig' ctor [ name /\ val ] []
+        ctor /\ Rec fields -> Sig.sig' ctor fields []
+
+
+signatureHydraMethod :: forall over arg out a. HydraApiMethod over arg a => a -> Signature arg out  -- TODO: out is always `Texture` (?)
+signatureHydraMethod a = case (hydraMethod a :: String /\ HydraApiArguments arg) of
+        ctor /\ Zero       -> Sig.sig' ctor [] []
+        ctor /\ One val    -> Sig.sig' ctor [ "amount" /\ val ] []
+        ctor /\ OneN name val -> Sig.sig' ctor [ name /\ val ] []
+        ctor /\ Rec fields -> Sig.sig' ctor fields []
 
 
 codegenHydraFn :: forall a. Partial => HydraApiFunction a => a -> CST.Expr Void
@@ -1209,3 +1264,99 @@ instance Partial => ValueCodegen UpdateFn where
     mkExpression :: UpdateFn -> CST.Expr Void
     mkExpression = case _ of
         UpdateFn _ -> exprApp (hydraCtor_ "UpdateFn") [ exprLambda [ binderVar "ctx" ] $ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
+
+
+valueToJavaScript :: Value -> String
+valueToJavaScript = case _ of
+    None -> "null"
+    Undefined -> "undefined"
+    Number n -> show n
+    Time -> "time"
+    MouseX -> "mouse.x"
+    MouseY -> "mouse.y"
+    Width -> "width"
+    Height -> "height"
+    Pi -> "Math.PI"
+    Fft bin -> "a.fft[]" -- FIXME
+    VArray values ease -> "/* values array */" -- FIXME
+    Dep depFn -> "/* dep-fn */" -- FIXME
+
+
+valueToPureScript :: Value -> String
+valueToPureScript = case _ of
+    None -> "H.none"
+    Undefined -> "H.undefined_"
+    Number n -> "H.number " <> show n
+    Time -> "H.time"
+    MouseX -> "H.mouseX"
+    MouseY -> "H.mouseY"
+    Width -> "H.width"
+    Height -> "H.height"
+    Pi -> "H.pi"
+    Fft bin -> "H.fft 0" -- FIXME
+    VArray values ease -> "[ {- values array -} ]" -- FIXME
+    Dep depFn -> "identity {- dep-fn -}" -- FIXME
+
+
+outputNToJavaScript :: OutputN -> String
+outputNToJavaScript = case _ of
+    Output0 -> "o0"
+    Output1 -> "o1"
+    Output2 -> "o2"
+    Output3 -> "o3"
+    Output4 -> "o4"
+
+
+outputNToPureScript :: OutputN -> String
+outputNToPureScript = case _ of
+    Output0 -> "o0"
+    Output1 -> "o1"
+    Output2 -> "o2"
+    Output3 -> "o3"
+    Output4 -> "o4"
+
+
+textureToJavaScript :: Texture -> String
+textureToJavaScript = case _ of
+   Empty -> "(function() {})"
+   Start src -> "/* start */"
+   Filter texture colorOp -> textureToJavaScript texture <> "." <> functionToJavaScript colorOp
+   BlendOf { what, with } blendOp -> textureToJavaScript what <> "." <> functionToJavaScript blendOp
+   ModulateWith { what, with } modulateOp -> textureToJavaScript what <> "." <> functionToJavaScript modulateOp
+   Geometry texture geomOp -> textureToJavaScript texture <> "." <> functionToJavaScript geomOp
+   CallGlslFn _ _ -> "/* glsl */"
+
+
+textureToPureScript :: Texture -> String
+textureToPureScript = case _ of
+   Empty -> "(function() {})"
+   Start src -> "/* start */"
+   Filter texture colorOp -> textureToPureScript texture <> "." <> functionToPureScript colorOp
+   BlendOf { what, with } blendOp -> textureToPureScript what <> "." <> functionToPureScript blendOp
+   ModulateWith { what, with } modulateOp -> textureToPureScript what <> "." <> functionToPureScript modulateOp
+   Geometry texture geomOp -> textureToPureScript texture <> "." <> functionToPureScript geomOp
+   CallGlslFn _ _ -> "/* glsl */"
+
+
+instance ToCode JS opts Value where
+    toCode = const $ const $ valueToJavaScript
+
+
+instance ToCode PS opts Value where
+    toCode = const $ const $ valueToPureScript
+
+
+instance ToCode JS opts Texture where
+    toCode = const $ const $ textureToJavaScript
+
+
+instance ToCode PS opts Texture where
+    toCode = const $ const $ textureToJavaScript
+
+
+instance ToCode JS opts OutputN where
+    toCode = const $ const $ outputNToJavaScript
+
+
+instance ToCode PS opts OutputN where
+    toCode = const $ const $ outputNToPureScript

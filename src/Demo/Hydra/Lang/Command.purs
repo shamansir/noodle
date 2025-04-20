@@ -2,6 +2,8 @@ module HydraTk.Lang.Command where
 
 import Prelude
 
+import Data.Tuple.Nested ((/\))
+
 
 import Noodle.Fn.Signature as Sig
 import Noodle.Text.ToCode (class ToCode, toCode)
@@ -47,7 +49,7 @@ instance ToCode PS opts Command where
     toCode _ opts  = case _ of
         Unknown -> "{- unknown -}"
         Single _ -> "{- single -}"
-        Chain _ _ -> "{- chain -}"
+        Chain outputN texture -> H.textureToPureScript texture <> "\n\t# " <> Sig.toPureScript (Sig.sig1 "out" $ "output" /\ outputN)
 
         {- }
         End output texture -> "IMPLEMENT" -- quickPurs texture <> "\n\t# " <> Sig.toPureScript' (Sig.sig1 "out" $ "output" /\ output)
@@ -66,16 +68,14 @@ instance ToCode PS opts Command where
         One (SetResolution width height) -> "IMPLEMENT" -- "{ width : " <> quickPurs width <> ", height : " <> quickPurs height <> " # setResolution"
         Continue texture -> "IMPLEMENT" -- "." <> quickPurs texture
         -}
-        where
-            quickPurs :: forall a. ToCode PS opts a => a -> String
-            quickPurs = toCode pureScript opts
 else instance ToCode JS opts Command where
     toCode _ opts = case _ of
         Unknown -> "/* unknown */"
         Single _ -> "/* single */"
-        Chain _ _ -> "/* chain */"
-
-
+        Chain outputN texture ->
+            case texture of
+                H.Empty -> ""
+                _ -> H.textureToJavaScript texture <> "\n\t# " <> Sig.toJavaScript (Sig.sig1 "out" $ "output" /\ outputN)
         {-
         End output texture ->
             -- case Debug.spy "tex" texture of
@@ -97,9 +97,6 @@ else instance ToCode JS opts Command where
         One (Clear so) -> "IMPLEMENT" -- quickJs so <> ".clear()"
         One (SetResolution width height) -> "IMPLEMENT" -- "setResolution( " <> quickJs width <> " , " <> quickJs height <> " )"
         Continue texture -> "IMPLEMENT" -- "." <> quickJs texture
-        where
-            quickJs :: forall a. ToCode JS opts a => a -> String
-            quickJs = toCode javaScript opts
         -}
 
 

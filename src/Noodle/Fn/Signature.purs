@@ -21,7 +21,8 @@ import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel, class FromValueInChannel)
 import Noodle.Repr.ValueInChannel (fromValueInChannel, accept, empty) as ViC
 
-import Noodle.Text.ToCode (class ToCode, toCode)
+import Noodle.Text.ToCode (class ToCode)
+import Noodle.Text.ToCode (toPureScript, toPureScript', toJavaScript, toJavaScript') as ToCode
 import Noodle.Text.Code.Target (JS, PS, pureScript, javaScript)
 
 -- import Toolkit.Hydra.Types
@@ -321,7 +322,7 @@ instance ToCode JS opts arg => ToCode JS opts (Signature arg out) where
     toCode :: Proxy JS -> opts -> Signature arg out -> String
     toCode _ opts sig = case args sig of
         [] -> name sig <> "()"
-        arguments -> fnsJs (name sig) $ toCode javaScript opts <$> Tuple.snd <$> arguments
+        arguments -> fnsJs (name sig) $ ToCode.toJavaScript' opts <$> Tuple.snd <$> arguments
         where
             fnsJs :: String -> Array String -> String
             fnsJs name vals = name <> "( " <> (String.joinWith ", " vals) <> " )"
@@ -331,23 +332,23 @@ instance ToCode PS opts arg => ToCode PS opts (Signature arg out) where
     toCode :: Proxy PS -> opts -> Signature arg out -> String
     toCode _ opts sig = case args sig of
         [] -> name sig
-        arguments -> fnsPs (name sig) $ toCode pureScript opts <$> Tuple.snd <$> arguments
+        arguments -> fnsPs (name sig) $ ToCode.toPureScript' opts <$> Tuple.snd <$> arguments
         where
             fnsPs :: String -> Array String -> String
             fnsPs name vals = name <> " " <> (String.joinWith " " vals)
 
 
-toPureScript :: forall opts arg out. ToCode PS opts arg => opts -> Signature arg out -> String
-toPureScript = toCode pureScript
+toPureScript :: forall arg out. ToCode PS Unit arg => Signature arg out -> String
+toPureScript = ToCode.toPureScript
 
 
-toPureScript' :: forall arg out. ToCode PS Unit arg => Signature arg out -> String
-toPureScript' = toPureScript unit
+toPureScript' :: forall opts arg out. ToCode PS opts arg => opts -> Signature arg out -> String
+toPureScript' = ToCode.toPureScript'
 
 
-toJavaScript :: forall opts arg out. ToCode PS opts arg => opts -> Signature arg out -> String
-toJavaScript = toCode pureScript
+toJavaScript :: forall arg out. ToCode JS Unit arg => Signature arg out -> String
+toJavaScript = ToCode.toJavaScript
 
 
-toJavaScript' :: forall arg out. ToCode PS Unit arg => Signature arg out -> String
-toJavaScript' = toJavaScript unit
+toJavaScript' :: forall opts arg out. ToCode JS opts arg => opts -> Signature arg out -> String
+toJavaScript' = ToCode.toJavaScript'

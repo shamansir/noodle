@@ -10,7 +10,7 @@ import Type.Proxy (Proxy)
 
 import Data.Text.Format as T
 
-import Noodle.Text.Code.Target (Target)
+import Noodle.Text.Code.Target (Target, JS, PS, javaScript, pureScript)
 
 
 class ToCode (target :: Target) opts a where
@@ -19,6 +19,23 @@ class ToCode (target :: Target) opts a where
 
 class ToTaggedCode (target :: Target) opts a where
     toTaggedCode :: Proxy target -> opts -> a -> T.Tag
+
+
+toJavaScript' :: forall opts a. ToCode JS opts a => opts -> a -> String
+toJavaScript' = toCode javaScript
+
+
+toPureScript' :: forall opts a. ToCode PS opts a => opts -> a -> String
+toPureScript' = toCode pureScript
+
+
+toJavaScript :: forall a. ToCode JS Unit a => a -> String
+toJavaScript = toJavaScript' unit
+
+
+toPureScript :: forall a. ToCode PS Unit a => a -> String
+toPureScript = toPureScript' unit
+
 
 
 {-

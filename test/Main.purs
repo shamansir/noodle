@@ -19,6 +19,7 @@ import Test.Spec.Patch (spec) as Patch
 import Test.Spec.NdfFile (spec) as NdfFile
 import Test.Spec.NdfCodegen (spec) as NdfCodegen
 import Test.Spec.HydraReprParsing (spec) as HydraReprParsing
+import Test.Spec.HydraToCode (spec) as HydraToCode
 import Test.Spec.NodesAndRecords (spec) as NodesAndRecords
 import Test.Spec.CommandInput (spec) as CommandInput
 
@@ -43,6 +44,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
     NdfCodegen.spec
   describe "Hydra Repr parsing"
     HydraReprParsing.spec
+  describe "Hydra Repr to Code"
+    HydraToCode.spec
   describe "Nodes and Purescript records"
     NodesAndRecords.spec
   describe "Command Input"
