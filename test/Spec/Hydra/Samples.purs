@@ -52,13 +52,44 @@ programSamples =
     ,
         { program :
           [ Chain Output2
+              $ Geometry
+                (Start $ From $ Shape { sides : Number 4.0, radius : Pi, smoothing : Number 2.0 })
+              $ GRotate { angle : Number 60.0, speed : Number 2.0 }
+          ]
+        , jsExpr : [ "shape( 4.0, Math.PI, 2.0 )", ".rotate( 60.0, 2.0 )", ".out( o2 )" ]
+        , pursExpr : ""
+        }
+    ,
+        { program :
+          [ Chain Output2
+              $ Filter
+                (Start $ From $ Shape { sides : Number 4.0, radius : Pi, smoothing : Number 2.0 })
+              $ Contrast $ Number 11.0
+          ]
+        , jsExpr : [ "shape( 4.0, Math.PI, 2.0 )", ".contrast( 11.0 )", ".out( o2 )" ]
+        , pursExpr : ""
+        }
+    ,
+        { program :
+          [ Chain Output2
               $ BlendOf
                 { what : Start $ From $ Noise { scale : Width, offset : Height }
-                , with : Start $ From $ Solid { r : Number 1.0, g : Number 0.65, b : Number 0.30, a : Number 0.5 }
+                , with : Start $ From $ Solid { r : Number 1.0, g : Number 0.65, b : Number 0.3, a : Number 0.5 }
                 }
               $ Add $ Number 20.0
           ]
-        , jsExpr : [ "noise( width, height )", ".add( solid( 1.0, 0.65, 0.30, 0.5 ), 20.0 )", ".out( o2 )" ]
+        , jsExpr : [ "noise( width, height )", ".add( solid( 1.0, 0.65, 0.3, 0.5 ), 20.0 )", ".out( o2 )" ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Chain Output1
+              $ ModulateWith
+                { what : Start $ From $ Noise { scale : Width, offset : Height }
+                , with : Start $ From $ Solid { r : Number 1.0, g : Number 0.65, b : Number 0.3, a : Number 0.5 }
+                }
+              $ Modulate $ Number 25.0
+          ]
+        , jsExpr : [ "noise( width, height )", ".modulate( solid( 1.0, 0.65, 0.3, 0.5 ), 25.0 )", ".out( o1 )" ]
         , pursExpr : ""
         }
     ] <#> \r ->

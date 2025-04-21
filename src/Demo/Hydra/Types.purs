@@ -26,8 +26,8 @@ import Tidy.Codegen
 
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
-import Noodle.Fn.Signature (Signature, class ToSignature)
-import Noodle.Fn.Signature (Argument, Output, empty, sig', toPureScript, toJavaScript) as Sig
+import Noodle.Fn.Signature (Signature(..), class ToSignature)
+import Noodle.Fn.Signature (Argument, Output, empty, sig', toPureScript, toJavaScript, arg) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Palette.Item (colorOf) as C
@@ -769,6 +769,20 @@ methodToJavaScript' :: forall opts over arg a. ToCode JS opts arg => opts -> Hyd
 methodToJavaScript' opts = signatureHydraMethod >>> toJavaScript' opts -- FIXME: implement automatic `ToCode` instance
 
 
+-- FIXME: use some special class / instance?
+texFunctionToJavaScript :: forall a. HydraApiFunction a => Texture -> a -> String
+texFunctionToJavaScript tex tofn =
+    case signatureHydraFn tofn of
+        Sig (name /\ args /\ outs) -> Sig.toJavaScript $ Sig $ name /\ (Sig.arg "texture" (T tex) : (V <$$> args)) /\ outs
+
+
+-- FIXME: use some special class / instance?
+texFunctionToPureScript :: forall a. HydraApiFunction a => Texture -> a -> String
+texFunctionToPureScript tex tofn =
+    case signatureHydraFn tofn of
+        Sig (name /\ args /\ outs) -> Sig.toPureScript $ Sig $ name /\ (Sig.arg "texture" (T tex) : (V <$$> args)) /\ outs
+
+
 
 -- \{ [\w\s,]+\}
 
@@ -1319,15 +1333,15 @@ textureToJavaScript = case _ of
             From src -> functionToJavaScript src
             Load outputN -> "src( " <> outputNToJavaScript outputN <> " )"
             External sourceN ext -> ""
-    Filter texture colorOp -> textureToJavaScript texture <> "." <> functionToJavaScript colorOp
+    Filter texture colorOp ->
+        textureToJavaScript texture
+        <> "\n\t." <> functionToJavaScript colorOp
     BlendOf { what, with } blendOp ->
         textureToJavaScript what
-        <> "\n\t." <> textureToJavaScript with
-        <> "\n\t." <> functionToJavaScript blendOp
+        <> "\n\t." <> texFunctionToJavaScript with blendOp
     ModulateWith { what, with } modulateOp ->
         textureToJavaScript what
-        <> "\n\t." <> textureToJavaScript with
-        <> "\n\t." <> functionToJavaScript modulateOp
+        <> "\n\t." <> texFunctionToJavaScript with modulateOp
     Geometry texture geomOp ->
         textureToJavaScript texture
         <> "\n\t." <> functionToJavaScript geomOp
@@ -1358,7 +1372,7 @@ instance ToCode JS opts Texture where
 
 
 instance ToCode PS opts Texture where
-    toCode = const $ const $ textureToJavaScript
+    toCode = const $ const $ textureToPureScript
 
 
 instance ToCode JS opts OutputN where
@@ -1367,3 +1381,15 @@ instance ToCode JS opts OutputN where
 
 instance ToCode PS opts OutputN where
     toCode = const $ const $ outputNToPureScript
+
+
+instance ToCode JS opts TOrV where
+    toCode = const $ const $ case _ of
+        T tex -> textureToJavaScript tex
+        V val -> valueToJavaScript val
+
+
+instance ToCode PS opts TOrV where
+    toCode = const $ const $ case _ of
+        T tex -> textureToPureScript tex
+        V val -> valueToPureScript val
