@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.String (joinWith) as String
 
 
 import Noodle.Fn.Signature (Signature(..))
@@ -17,7 +18,8 @@ import HydraTk.Types
 import HydraTk.Repr.Wrap
 import HydraTk.Repr.Wrap (WrapRepr(..)) as W
 import HydraTk.Types (Ease(..), AudioBin(..), Values(..), GlslFn(..)) as T
-import HydraTk.Lang.Program (Program)
+import HydraTk.Lang.Command (Command(..))
+import HydraTk.Lang.Program (Program(..))
 
 
 textureSamples :: Array Texture
@@ -31,7 +33,39 @@ textureSamples =
 
 
 programSamples :: Array { program :: Program, jsExpr :: String, pursExpr :: String }
-programSamples = []
+programSamples =
+    [
+        { program : [ Chain Output0 $ Start $ From $ Noise { scale : Number 10.0, offset : Number 0.1 } ]
+        , jsExpr : [ "noise( 10.0, 0.1 )", ".out( o0 )" ]
+        , pursExpr : ""
+        }
+    ,
+        { program : [ Chain Output0 $ Start $ From $ Noise { scale : Number 1.5, offset : MouseX } ]
+        , jsExpr : [ "noise( 1.5, mouse.x )", ".out( o0 )" ]
+        , pursExpr : ""
+        }
+    ,
+        { program : [ Chain Output2 $ Start $ From $ Osc { frequency : Number 60.0, sync : Number 0.1, offset : Number 0.0 } ]
+        , jsExpr : [ "osc( 60.0, 0.1, 0.0 )", ".out( o2 )" ]
+        , pursExpr : ""
+        }
+    ,
+        { program :
+          [ Chain Output2
+              $ BlendOf
+                { what : Start $ From $ Noise { scale : Width, offset : Height }
+                , with : Start $ From $ Solid { r : Number 1.0, g : Number 0.65, b : Number 0.30, a : Number 0.5 }
+                }
+              $ Add $ Number 20.0
+          ]
+        , jsExpr : [ "noise( width, height )", ".add( solid( 1.0, 0.65, 0.30, 0.5 ), 20.0 )", ".out( o2 )" ]
+        , pursExpr : ""
+        }
+    ] <#> \r ->
+        { program : Program r.program
+        , jsExpr : "/* GENERATED CODE */\n\n" <> String.joinWith "\n\t" r.jsExpr
+        , pursExpr : r.pursExpr
+        }
 
 
 -- TODO: use fuzzy generator

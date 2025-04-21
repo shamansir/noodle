@@ -1308,34 +1308,41 @@ outputNToJavaScript = case _ of
 
 
 outputNToPureScript :: OutputN -> String
-outputNToPureScript = case _ of
-    Output0 -> "o0"
-    Output1 -> "o1"
-    Output2 -> "o2"
-    Output3 -> "o3"
-    Output4 -> "o4"
+outputNToPureScript = outputNToJavaScript
 
 
 textureToJavaScript :: Texture -> String
 textureToJavaScript = case _ of
-   Empty -> "(function() {})"
-   Start src -> "/* start */"
-   Filter texture colorOp -> textureToJavaScript texture <> "." <> functionToJavaScript colorOp
-   BlendOf { what, with } blendOp -> textureToJavaScript what <> "." <> functionToJavaScript blendOp
-   ModulateWith { what, with } modulateOp -> textureToJavaScript what <> "." <> functionToJavaScript modulateOp
-   Geometry texture geomOp -> textureToJavaScript texture <> "." <> functionToJavaScript geomOp
-   CallGlslFn _ _ -> "/* glsl */"
+    Empty -> "(function() {})"
+    Start src ->
+        case src of
+            From src -> functionToJavaScript src
+            Load outputN -> "src( " <> outputNToJavaScript outputN <> " )"
+            External sourceN ext -> ""
+    Filter texture colorOp -> textureToJavaScript texture <> "." <> functionToJavaScript colorOp
+    BlendOf { what, with } blendOp ->
+        textureToJavaScript what
+        <> "\n\t." <> textureToJavaScript with
+        <> "\n\t." <> functionToJavaScript blendOp
+    ModulateWith { what, with } modulateOp ->
+        textureToJavaScript what
+        <> "\n\t." <> textureToJavaScript with
+        <> "\n\t." <> functionToJavaScript modulateOp
+    Geometry texture geomOp ->
+        textureToJavaScript texture
+        <> "\n\t." <> functionToJavaScript geomOp
+    CallGlslFn _ _ -> "/* glsl */"
 
 
 textureToPureScript :: Texture -> String
 textureToPureScript = case _ of
-   Empty -> "(function() {})"
-   Start src -> "/* start */"
-   Filter texture colorOp -> textureToPureScript texture <> "." <> functionToPureScript colorOp
-   BlendOf { what, with } blendOp -> textureToPureScript what <> "." <> functionToPureScript blendOp
-   ModulateWith { what, with } modulateOp -> textureToPureScript what <> "." <> functionToPureScript modulateOp
-   Geometry texture geomOp -> textureToPureScript texture <> "." <> functionToPureScript geomOp
-   CallGlslFn _ _ -> "/* glsl */"
+    Empty -> "(function() {})"
+    Start src -> "/* start */"
+    Filter texture colorOp -> textureToPureScript texture <> "." <> functionToPureScript colorOp
+    BlendOf { what, with } blendOp -> textureToPureScript what <> "." <> functionToPureScript blendOp
+    ModulateWith { what, with } modulateOp -> textureToPureScript what <> "." <> functionToPureScript modulateOp
+    Geometry texture geomOp -> textureToPureScript texture <> "." <> functionToPureScript geomOp
+    CallGlslFn _ _ -> "/* glsl */"
 
 
 instance ToCode JS opts Value where

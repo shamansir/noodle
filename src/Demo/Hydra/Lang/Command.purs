@@ -49,7 +49,9 @@ instance ToCode PS opts Command where
     toCode _ opts  = case _ of
         Unknown -> "{- unknown -}"
         Single _ -> "{- single -}"
-        Chain outputN texture -> H.textureToPureScript texture <> "\n\t# " <> Sig.toPureScript (Sig.sig1 "out" $ "output" /\ outputN)
+        Chain outputN texture ->
+            H.textureToPureScript texture <> "\n\t# "
+                <> Sig.toPureScript (Sig.sig1 "out" $ "output" /\ outputN)
 
         {- }
         End output texture -> "IMPLEMENT" -- quickPurs texture <> "\n\t# " <> Sig.toPureScript' (Sig.sig1 "out" $ "output" /\ output)
@@ -75,7 +77,8 @@ else instance ToCode JS opts Command where
         Chain outputN texture ->
             case texture of
                 H.Empty -> ""
-                _ -> H.textureToJavaScript texture <> "\n\t# " <> Sig.toJavaScript (Sig.sig1 "out" $ "output" /\ outputN)
+                _ -> H.textureToJavaScript texture <> "\n\t."
+                    <> Sig.toJavaScript (Sig.sig1 "out" $ "output" /\ outputN)
         {-
         End output texture ->
             -- case Debug.spy "tex" texture of

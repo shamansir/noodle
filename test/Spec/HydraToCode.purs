@@ -10,7 +10,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..), either)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Test.Spec (Spec, describe, it)
+import Test.Spec (Spec, describe, describeOnly, it)
 import Test.Spec.Assertions
 
 import Test.Spec.Util.Parsing (parses)
@@ -31,6 +31,7 @@ import HydraTk.Types (Ease(..), AudioBin(..), Values(..), GlslFn(..)) as T
 -- import Hydra.Lang.Fn as Lang
 import HydraTk.Repr.Target (_encode, _decode) as Hydra
 import Noodle.Text.ToCode (class ToCode, toCode, toJavaScript)
+import Test.Spec.Util.Assertions (shouldEqual, shouldEqualStack) as U
 
 -- import Data.FromToFile (encode, decode)
 
@@ -47,7 +48,7 @@ spec = do
             prev
             *>
             (it ("works for program " <> show idx) $ -- <> " : " <> hShow programRec.program) $
-                toJavaScript programRec.program `shouldEqual` programRec.jsExpr -- TODO
+                toJavaScript programRec.program `U.shouldEqualStack` programRec.jsExpr
             )
         )
         (pure unit)
