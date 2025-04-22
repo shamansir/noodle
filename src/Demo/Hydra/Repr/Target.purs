@@ -2,7 +2,7 @@ module HydraTk.Repr.Target where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith, toUpper) as String
@@ -130,7 +130,7 @@ instance ToCode HYDRA_V opts HT.Source where
     toCode :: Proxy HYDRA_V -> opts -> HT.Source -> String
     toCode _ _ = case _ of
         HT.Load outputN -> "O " <> _encode outputN
-        HT.External sourceN def -> "X " <> _encode sourceN <> PM._argSep <> _encode def <> PM._argsEnd
+        HT.External def -> "X " <> _encode def
         HT.From (HT.Gradient { speed }) -> "G " <> _encode speed <> PM._argsEnd
         HT.From (HT.Noise { scale, offset }) -> "N " <> _encode scale <> PM._argSep <> _encode offset <> PM._argsEnd
         HT.From (HT.Osc { frequency, sync, offset }) -> "OSC " <> _encode frequency <> PM._argSep <> _encode sync <> PM._argSep <> _encode offset <> PM._argsEnd
@@ -218,6 +218,7 @@ instance ToCode HYDRA_V opts HT.Values where
 instance ToCode HYDRA_V opts HT.Ease where
     toCode :: Proxy HYDRA_V -> opts -> HT.Ease -> String
     toCode _ _ = case _ of
+        HT.NoEase -> "NON E"
         HT.Ease HT.Linear -> "LIN E"
         HT.Ease HT.InOutCubic -> "IOC E"
         HT.Fast v -> "FST " <> _encode v
@@ -441,14 +442,15 @@ instance ToSignature HYDRA_V HT.Value Unit HT.Geometry where
         HT.GScrollY { scrollY, speed } -> "scrollY" /\ [ i "scrollY" scrollY, i "speed" speed ] /\ [ o "out" unit ]
 
 
-instance ToSignature HYDRA_V HT.Value Unit HT.Ease where
-    toSignature :: Proxy _ -> HT.Ease -> Signature HT.Value Unit
+instance ToSignature HYDRA_V HT.EOrV Unit HT.Ease where
+    toSignature :: Proxy _ -> HT.Ease -> Signature HT.EOrV Unit
     toSignature = const $ sigs <<< case _ of
-        HT.Ease _ -> "ease" /\ [ ] /\ [ o "out" unit ] -- FIXME: easing is skipped
-        HT.Fast v -> "fast" /\ [ i "speed" v ] /\ [ o "out" unit ]
-        HT.Smooth v -> "smooth" /\ [ i "smooth" v ] /\ [ o "out" unit ]
-        HT.Fit { low, high } -> "fit" /\ [ i "low" low, i "high" high ] /\ [ o "out" unit ]
-        HT.Offset v -> "offset" /\ [ i "v" v ] /\ [ o "out" unit ]
+        HT.NoEase -> "noEase" /\ [ ] /\ [ o "out" unit ] -- FIXME: easing is skipped
+        HT.Ease ease -> "ease" /\ [ i "easing" $ HT.E ease ] /\ [ o "out" unit ] -- FIXME: easing is skipped
+        HT.Fast v -> "fast" /\ [ i "speed" $ HT.EV v ] /\ [ o "out" unit ]
+        HT.Smooth v -> "smooth" /\ [ i "smooth" $ HT.EV v ] /\ [ o "out" unit ]
+        HT.Fit { low, high } -> "fit" /\ [ i "low" $ HT.EV low, i "high" $ HT.EV high ] /\ [ o "out" unit ]
+        HT.Offset v -> "offset" /\ [ i "v" $ HT.EV  v ] /\ [ o "out" unit ]
 
 
 instance ToSignature HYDRA_V HT.GlslFnArg HT.GlslFnOut HT.GlslFn where
@@ -476,7 +478,7 @@ instance PossiblyToSignature HYDRA_V HT.Value Unit HT.Source where
     possiblyToSignature :: Proxy _ -> HT.Source -> Maybe (Signature HT.Value Unit)
     possiblyToSignature ph = case _ of
         HT.Load outputN -> Nothing -- TODO: could be converted to `src()`
-        HT.External sourceN ext -> Nothing -- TODO: could be converted to `src()` ?
+        HT.External ext -> Nothing -- TODO: could be converted to `src()` ?
         HT.From from -> Just $ toSignature ph from
 
 

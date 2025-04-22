@@ -44,7 +44,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { out: HT.VArray (HT.Values []) $ HT.Ease HT.Linear }
+defaultO = { out: HT.VArray (HT.Values []) HT.NoEase }
 
 defaultSt :: State
 defaultSt = State unit

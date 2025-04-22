@@ -2,7 +2,7 @@ module HydraTk.Repr.Show where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
 import Data.String (joinWith) as String
 import Data.Newtype (class Newtype, unwrap, wrap)
@@ -81,6 +81,7 @@ instance HydraShow H.Value where
         H.None -> "<None>"
         H.Undefined -> "<Undefined>"
         H.Number n -> "#" <> show n
+        H.VArray vals H.NoEase -> "<" <> hShow vals <> ">"
         H.VArray vals ease -> "<" <> hShow vals <> " at " <> hShow ease <> ">"
         H.Dep fn -> "<Dep " <> hShow fn <> ">"
         H.Time -> "<Time>"
@@ -159,7 +160,7 @@ instance HydraShow H.Source where
     hShow = case _ of
         H.From from -> hShow from
         H.Load outputN -> "Load " <> hShow outputN
-        H.External sourceN ext -> "External " <> hShow sourceN <> " " <> hShow ext
+        H.External sourceN -> "External " <> hShow sourceN
 
 
 instance HydraShow H.Url where
@@ -200,6 +201,7 @@ instance HydraShow H.Values where
 instance HydraShow H.Ease where
     hShow :: H.Ease -> String
     hShow = case _ of
+        H.NoEase -> "NoEase"
         H.Ease H.Linear -> "Linear"
         H.Ease H.InOutCubic -> "InOutCubic"
         H.Fast v -> "Fast " <> hShow v
@@ -342,8 +344,8 @@ instance HydraToChannelLabel H.Source where
     toChannelLabel :: H.Source -> HChannelLabel
     toChannelLabel = case _ of
         H.From from -> toChannelLabel from
-        H.Load from -> toChannelLabel from
-        H.External src _ -> toChannelLabel src
+        H.Load out -> toChannelLabel out
+        H.External src -> toChannelLabel src
 
 
 instance HydraToChannelLabel H.Url where
@@ -369,6 +371,7 @@ instance HydraToChannelLabel H.Values where
 instance HydraToChannelLabel H.Ease where
     toChannelLabel :: H.Ease -> HChannelLabel
     toChannelLabel = case _ of
+        H.NoEase -> "|"
         H.Ease H.Linear -> "╱"
         H.Ease H.InOutCubic -> "⊰"
         H.Fast _ -> "⏭"

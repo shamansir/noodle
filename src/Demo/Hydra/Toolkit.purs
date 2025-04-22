@@ -443,7 +443,7 @@ instance PossiblyToSignature HYDRA (ValueInChannel WrapRepr) (ValueInChannel Wra
         "number" -> Just $ sig "number" [] [ Sig.out_ "out" $ HW.Value (HT.Number 0.0) ]
         "pi" -> Just $ sig "pi" [] [ Sig.out_ "out" $ HW.Value HT.Pi ]
         "array" -> Just $ sig "array" []
-          [ Sig.out_ "out" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.out_ "out" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase) ]
         "expression" -> Just $ sig "expression" [] [ Sig.out_ "out" $ HW.Value (HT.Dep HT.NoAction) ]
         "time" -> Just $ sig "time" [] [ Sig.out_ "time" $ HW.Value HT.Time ]
         "mouse" -> Just $ sig "mouse" []
@@ -755,22 +755,22 @@ instance PossiblyToSignature HYDRA (ValueInChannel WrapRepr) (ValueInChannel Wra
         "height" -> Just $ sig "height" [] [ Sig.out_ "h" $ HW.Value HT.Height ]
         "fast" -> Just $ sig "fast"
           [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "speed" $ HW.Value (HT.Number 1.0) ]
-          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase) ]
         "smooth" -> Just $ sig "smooth"
           [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "smooth" $ HW.Value (HT.Number 1.0) ]
-          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase) ]
         "ease" -> Just $ sig "ease"
-          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "ease" $ HW.Ease $ HT.Ease HT.Linear ]
-          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "ease" $ HW.Ease HT.NoEase ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase ) ]
         "offset" -> Just $ sig "offset"
           [ Sig.in_ "arr" $ HW.Values (HT.Values []), Sig.in_ "offset" $ HW.Value (HT.Number 0.5) ]
-          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase) ]
         "fit" -> Just $ sig "fit"
           [ Sig.in_ "arr" $ HW.Values (HT.Values [])
           , Sig.in_ "low" $ HW.Value (HT.Number 0.0)
           , Sig.in_ "high" $ HW.Value (HT.Number 1.0)
           ]
-          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) $ HT.Ease HT.Linear) ]
+          [ Sig.out_ "arr" $ HW.Value (HT.VArray (HT.Values []) HT.NoEase) ]
         "fft" -> Just $ sig "fft" [ Sig.in_ "bin" $ HW.AudioBin (HT.AudioBin 0) ]
           [ Sig.out_ "fft" $ HW.Value HT.None ]
         "setSmooth" -> Just $ sig "setSmooth"

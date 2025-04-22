@@ -73,7 +73,13 @@ instance ToCode PS opts Command where
 else instance ToCode JS opts Command where
     toCode _ opts = case _ of
         Unknown -> "/* unknown */"
-        Single _ -> "/* single */"
+        Single (WithSynth method) -> H.methodToJavaScript method
+        Single (WithAudio audioSrc method) -> "a." <> H.methodToJavaScript method
+        Single (WithSource sourceN method) -> H.sourceNToJavaScript sourceN <> "." <> H.methodToJavaScript method
+        Single (SynthSet propSet) -> case propSet of
+            H.Speed speed -> "speed = " <> show speed
+            H.Bpm bpm -> "bpm = " <> show bpm
+            H.SetUpdateFn _ -> "update = " <> "() => () /* UPDATE-FN */"
         Chain outputN texture ->
             case texture of
                 H.Empty -> ""

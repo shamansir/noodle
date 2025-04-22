@@ -57,7 +57,7 @@ value =
         , marker $ "VA" /\ uncurry HT.VArray /\
                     ((/\)
                         <$> (defer \_ -> values)
-                        <*> (fromMaybe (HT.Ease HT.Linear) <$> optionMaybe (string " $$ " *> defer \_ -> ease))
+                        <*> (fromMaybe HT.NoEase <$> optionMaybe (string " $$ " *> defer \_ -> ease))
                     )
         , marker $ "D" /\ HT.Dep /\ fn
         ]
@@ -158,13 +158,7 @@ source =
         , marker $ "SCP" /\ (HT.From <<< HT.Shape) /\ parseArgs3V \sides radius smoothing -> { sides, radius, smoothing }
         , marker $ "V" /\ (HT.From <<< HT.Voronoi) /\ parseArgs3V \scale speed blending -> { scale, speed, blending }
         , marker $ "O" /\ HT.Load /\ outputN
-        , marker $ "X" /\ uncurry HT.External /\ do
-            src <- sourceN
-            _ <- string PM._argSep
-            def <- extSource
-            _ <- string PM._argsEnd
-            pure $ src /\ def
-
+        , marker $ "X" /\ HT.External /\ sourceN
         ]
 
 
@@ -191,7 +185,7 @@ ease = --pure HT.Linear
                                 _ <- string " < "
                                 high <- value
                                 pure $ low /\ high
-
+        , marker $ "NON" /\ const HT.NoEase /\ string "E"
         ]
     where
         fit (low /\ high) = HT.Fit { low, high }

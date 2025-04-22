@@ -150,7 +150,7 @@ data From
 data Source
     = From From
     | Load OutputN
-    | External SourceN ExtSource
+    | External SourceN
     -- | ..
 
 
@@ -247,7 +247,8 @@ data EaseType -- TODO : `CSS.TimingFunction`
 
 
 data Ease
-    = Ease EaseType
+    = NoEase
+    | Ease EaseType
     | Fast Value -- amount
     | Smooth Value -- amount
     | Fit { low :: Value, high :: Value }
@@ -319,12 +320,12 @@ newtype Url = Url String
 
 
 data OnAudio
-    = Show AudioSource
-    | SetBins AudioSource Int
-    | SetCutoff AudioSource Number
-    | SetScale AudioSource Number
-    | SetSmooth AudioSource Number
-    | Hide AudioSource
+    = Show
+    | SetBins Int
+    | SetCutoff Number
+    | SetScale Number
+    | SetSmooth Number
+    | Hide
 
 
 data OnSynth
@@ -348,6 +349,7 @@ data OnSource
 data SynthProp
     = Speed Number
     | Bpm Int
+    | SetUpdateFn UpdateFn -- TODO
 
 
 noUrl :: Url
@@ -917,12 +919,14 @@ instance HydraApiFunction Modulate where
 
 instance HydraApiMethod Values EOrV Ease where
     mConstructor = case _ of
+        NoEase -> "NoEase"
         Ease _ -> "Ease"
         Fast _ -> "Fast"
         Smooth _ -> "Smooth"
         Fit _ -> "Fit"
         Offset _ -> "Offset"
     hydraMethod = case _ of
+        NoEase -> "" /\ Zero -- FIXME
         Ease arg -> "ease" /\ One (E arg)
         Fast value -> "fast" /\ One (EV value)
         Smooth value -> "smooth" /\ One (EV value)
@@ -932,19 +936,19 @@ instance HydraApiMethod Values EOrV Ease where
 
 instance HydraApiMethod AudioSource Value OnAudio where
     mConstructor = case _ of
-        Show _ -> "Show"
-        SetBins _ _ -> "SetBins"
-        SetCutoff _ _ -> "SetCutoff"
-        SetScale _ _ -> "SetScale"
-        SetSmooth _ _ -> "SetSmooth"
-        Hide _ -> "Hide"
+        Show -> "Show"
+        SetBins _ -> "SetBins"
+        SetCutoff _ -> "SetCutoff"
+        SetScale _ -> "SetScale"
+        SetSmooth _ -> "SetSmooth"
+        Hide -> "Hide"
     hydraMethod = case _ of
-        Show _ -> "show" /\ Zero
-        SetBins _ n -> "setBins" /\ OneN "numBins" (Number $ Int.toNumber n)
-        SetCutoff _ n -> "setCutoff" /\ OneN "cutoff" (Number n)
-        SetScale _ n -> "setScale" /\ OneN "scale" (Number n)
-        SetSmooth _ n -> "setSmooth" /\ OneN "smooth" (Number n)
-        Hide _ -> "hide" /\ Zero
+        Show -> "show" /\ Zero
+        SetBins n -> "setBins" /\ OneN "numBins" (Number $ Int.toNumber n)
+        SetCutoff n -> "setCutoff" /\ OneN "cutoff" (Number n)
+        SetScale n -> "setScale" /\ OneN "scale" (Number n)
+        SetSmooth n -> "setSmooth" /\ OneN "smooth" (Number n)
+        Hide -> "hide" /\ Zero
 
 
 instance HydraApiMethod Unit FnArg OnSynth where
@@ -971,7 +975,7 @@ instance HydraApiMethod SourceN FnArg OnSource where
         InitScreen -> "InitScreen"
         Clear -> "Clear"
     hydraMethod = case _ of
-        Init sopts -> "show" /\ One (OptionsArg sopts)
+        Init sopts -> "init" /\ One (OptionsArg sopts)
         InitCam idx -> "initCam" /\ OneN "index" (CamIndexArg idx)
         InitImage url -> "initCam" /\ OneN "url" (UrlArg url)
         InitVideo url -> "initVideo" /\ OneN "url" (UrlArg url)
@@ -1140,11 +1144,9 @@ instance Partial => ValueCodegen Source where
             exprApp (hydraCtor_ "From") [ mkExpression from ]
         Load outputN ->
             exprApp (hydraCtor_ "Load") [ mkExpression outputN ]
-        External sourceN extSource ->
-            exprApp (hydraCtor_ "External")
-                [ mkExpression sourceN
-                , mkExpression extSource
-                ]
+        External extSource ->
+            exprApp (hydraCtor_ "External") [ mkExpression extSource ]
+
 
 instance Partial => ValueCodegen OutputN where
     mkExpression :: OutputN -> CST.Expr Void
@@ -1291,8 +1293,12 @@ valueToJavaScript = case _ of
     Width -> "width"
     Height -> "height"
     Pi -> "Math.PI"
-    Fft bin -> "a.fft[]" -- FIXME
-    VArray values ease -> "/* values array */" -- FIXME
+    Fft (AudioBin bin) -> "() => a.fft[" <> show bin <> "]" -- FIXME
+    VArray values ease ->
+        valuesToJavaScript values
+        <> case ease of
+            NoEase -> ""
+            theEase -> "." <> methodToJavaScript theEase
     Dep depFn -> "/* dep-fn */" -- FIXME
 
 
@@ -1325,6 +1331,15 @@ outputNToPureScript :: OutputN -> String
 outputNToPureScript = outputNToJavaScript
 
 
+sourceNToJavaScript :: SourceN -> String
+sourceNToJavaScript = case _ of
+    Source0 -> "s0"
+
+
+sourceNToPureScript :: SourceN -> String
+sourceNToPureScript = sourceNToJavaScript
+
+
 textureToJavaScript :: Texture -> String
 textureToJavaScript = case _ of
     Empty -> "(function() {})"
@@ -1332,7 +1347,7 @@ textureToJavaScript = case _ of
         case src of
             From src -> functionToJavaScript src
             Load outputN -> "src( " <> outputNToJavaScript outputN <> " )"
-            External sourceN ext -> ""
+            External sourceN -> "src( " <> sourceNToJavaScript sourceN <> " )"
     Filter texture colorOp ->
         textureToJavaScript texture
         <> "\n\t." <> functionToJavaScript colorOp
@@ -1357,6 +1372,50 @@ textureToPureScript = case _ of
     ModulateWith { what, with } modulateOp -> textureToPureScript what <> "." <> functionToPureScript modulateOp
     Geometry texture geomOp -> textureToPureScript texture <> "." <> functionToPureScript geomOp
     CallGlslFn _ _ -> "/* glsl */"
+
+
+valuesToJavaScript :: Values -> String
+valuesToJavaScript (Values values) =
+    "[ " <> (String.joinWith ", " $ valueToJavaScript <$> values) <> " ]"
+
+
+renderTargetToJavaScript :: RenderTarget -> String
+renderTargetToJavaScript renderTrg =
+    case renderTrg of
+        Four -> "/* FOUR */"
+        Output outputN -> outputNToJavaScript outputN
+
+
+fnArgToJavaScript :: FnArg -> String
+fnArgToJavaScript = case _ of
+    TArg texture -> textureToJavaScript texture
+    VArg val -> valueToJavaScript val
+    UrlArg (Url str) -> show str
+    OptionsArg opts -> "{ src : canvas }" -- FIXME
+    CamIndexArg n -> show n
+    ValuesArg values -> valuesToJavaScript values
+    AudioArg -> "/* AUDIO */"
+    UpdateFnArg -> "/* UPDATE-FN */"
+    SideArg -> "/* SIDE */"
+    GlslFnArg -> "/* GLSL-FN */"
+    EaseArg ease -> easeToJavaScript ease
+    OutputArg outputN -> outputNToJavaScript outputN
+    RenderTargetArg rTarget -> renderTargetToJavaScript rTarget
+    WidthHeightArg whval -> show whval
+    AudioBinsArg n -> show n
+    SourceArg sourceN -> sourceNToJavaScript sourceN
+
+
+easeToJavaScript :: EaseType -> String
+easeToJavaScript = case _ of
+    Linear -> "'linear'"
+    InOutCubic -> "'inOutCubic'"
+
+
+easeToPureScript :: EaseType -> String
+easeToPureScript = case _ of
+    Linear -> "\"linear\""
+    InOutCubic -> "\"inOutCubic\""
 
 
 instance ToCode JS opts Value where
@@ -1393,3 +1452,19 @@ instance ToCode PS opts TOrV where
     toCode = const $ const $ case _ of
         T tex -> textureToPureScript tex
         V val -> valueToPureScript val
+
+
+instance ToCode JS opts EOrV where
+    toCode = const $ const $ case _ of
+        E ease -> easeToJavaScript ease
+        EV val -> valueToJavaScript val
+
+
+instance ToCode PS opts EOrV where
+    toCode = const $ const $ case _ of
+        E ease -> easeToPureScript ease
+        EV val -> valueToPureScript val
+
+
+instance ToCode JS opts FnArg where
+    toCode = const $ const $ fnArgToJavaScript

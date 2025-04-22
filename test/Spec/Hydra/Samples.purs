@@ -4,7 +4,8 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.String (joinWith) as String
+import Data.String as String
+import Data.Array as Array
 
 
 import Noodle.Fn.Signature (Signature(..))
@@ -17,8 +18,8 @@ import Noodle.Text.FromCode (fromCode, SourceError, srcErrorToString)
 import HydraTk.Types
 import HydraTk.Repr.Wrap
 import HydraTk.Repr.Wrap (WrapRepr(..)) as W
-import HydraTk.Types (Ease(..), AudioBin(..), Values(..), GlslFn(..)) as T
-import HydraTk.Lang.Command (Command(..))
+import HydraTk.Types (Ease(..), AudioBin(..), Values(..), GlslFn(..), OnSynth(..), SourceOptions(..), Canvas(..)) as T
+import HydraTk.Lang.Command (Command(..), Single(..))
 import HydraTk.Lang.Program (Program(..))
 
 
@@ -36,17 +37,26 @@ programSamples :: Array { program :: Program, jsExpr :: String, pursExpr :: Stri
 programSamples =
     [
         { program : [ Chain Output0 $ Start $ From $ Noise { scale : Number 10.0, offset : Number 0.1 } ]
-        , jsExpr : [ "noise( 10.0, 0.1 )", ".out( o0 )" ]
+        , jsExpr :
+          [ "noise( 10.0, 0.1 )"
+          , indent ".out( o0 )"
+          ]
         , pursExpr : ""
         }
     ,
         { program : [ Chain Output0 $ Start $ From $ Noise { scale : Number 1.5, offset : MouseX } ]
-        , jsExpr : [ "noise( 1.5, mouse.x )", ".out( o0 )" ]
+        , jsExpr :
+          [ "noise( 1.5, mouse.x )"
+          , indent ".out( o0 )"
+          ]
         , pursExpr : ""
         }
     ,
         { program : [ Chain Output2 $ Start $ From $ Osc { frequency : Number 60.0, sync : Number 0.1, offset : Number 0.0 } ]
-        , jsExpr : [ "osc( 60.0, 0.1, 0.0 )", ".out( o2 )" ]
+        , jsExpr :
+          [ "osc( 60.0, 0.1, 0.0 )"
+          , indent ".out( o2 )"
+          ]
         , pursExpr : ""
         }
     ,
@@ -56,7 +66,11 @@ programSamples =
                 (Start $ From $ Shape { sides : Number 4.0, radius : Pi, smoothing : Number 2.0 })
               $ GRotate { angle : Number 60.0, speed : Number 2.0 }
           ]
-        , jsExpr : [ "shape( 4.0, Math.PI, 2.0 )", ".rotate( 60.0, 2.0 )", ".out( o2 )" ]
+        , jsExpr :
+          [ "shape( 4.0, Math.PI, 2.0 )"
+          , indent ".rotate( 60.0, 2.0 )"
+          , indent ".out( o2 )"
+          ]
         , pursExpr : ""
         }
     ,
@@ -66,7 +80,11 @@ programSamples =
                 (Start $ From $ Shape { sides : Number 4.0, radius : Pi, smoothing : Number 2.0 })
               $ Contrast $ Number 11.0
           ]
-        , jsExpr : [ "shape( 4.0, Math.PI, 2.0 )", ".contrast( 11.0 )", ".out( o2 )" ]
+        , jsExpr :
+          [ "shape( 4.0, Math.PI, 2.0 )"
+          , indent ".contrast( 11.0 )"
+          , indent ".out( o2 )"
+          ]
         , pursExpr : ""
         }
     ,
@@ -78,7 +96,11 @@ programSamples =
                 }
               $ Add $ Number 20.0
           ]
-        , jsExpr : [ "noise( width, height )", ".add( solid( 1.0, 0.65, 0.3, 0.5 ), 20.0 )", ".out( o2 )" ]
+        , jsExpr :
+          [ "noise( width, height )"
+          , indent ".add( solid( 1.0, 0.65, 0.3, 0.5 ), 20.0 )"
+          , indent ".out( o2 )"
+          ]
         , pursExpr : ""
         }
       , { program :
@@ -89,14 +111,113 @@ programSamples =
                 }
               $ Modulate $ Number 25.0
           ]
-        , jsExpr : [ "noise( width, height )", ".modulate( solid( 1.0, 0.65, 0.3, 0.5 ), 25.0 )", ".out( o1 )" ]
+        , jsExpr :
+          [ "noise( width, height )"
+          , indent ".modulate( solid( 1.0, 0.65, 0.3, 0.5 ), 25.0 )"
+          , indent ".out( o1 )"
+          ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Chain Output0
+              $ Filter
+                  (Start $ From $ Gradient { speed : Number 0.0 })
+              $ Posterize { bins : VArray (T.Values [ Number 1.0, Number 5.0, Number 15.0, Number 30.0, Pi ]) $ T.Ease Linear, gamma : Number 0.5 }
+          ]
+        , jsExpr :
+          [ "gradient( 0.0 )"
+          , indent ".posterize( [ 1.0, 5.0, 15.0, 30.0, Math.PI ].ease( 'linear' ), 0.5 )"
+          , indent ".out( o0 )"
+          ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Single $ WithSynth $ T.SetResolution 100 100
+          , Chain Output0
+              $ Filter
+                  (Start $ From $ Gradient { speed : Fft $ T.AudioBin 2 })
+              $ Invert $ Number 2.0
+          , Single $ WithSynth $ Hush
+          ]
+        , jsExpr :
+          [ "setResolution( 100, 100 )"
+          , empty
+          , "gradient( () => a.fft[2] )"
+          , indent ".invert( 2.0 )"
+          , indent ".out( o0 )"
+          , empty
+          , "hush()"
+          ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Single $ WithSource Source0 $ InitCam 0
+          , Chain Output0
+              $ Filter
+                  (Start $ External Source0)
+              $ Invert $ Number 1.0
+          ]
+        , jsExpr :
+          [ "s0.initCam( 0 )"
+          , empty
+          , "src( s0 )"
+          , indent ".invert( 1.0 )"
+          , indent ".out( o0 )"
+          ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Single $ WithSource Source0 $ Init $ T.SourceOptions { src : T.Canvas }
+          , Chain Output0
+              $ ModulateWith
+                { what : Start $ External Source0
+                , with : Geometry (Start $ From $ Osc { frequency : Number 60.0, sync : Number 0.1, offset : Number 0.0 }) $ GKaleid { nSides : Number 999.0 }
+                }
+              $ Modulate $ Number 0.1
+          ]
+        , jsExpr :
+          [ "s0.init( { src : canvas } )"
+          , empty
+          , "src( s0 )"
+          , indent ".modulate( osc( 60.0, 0.1, 0.0 )"
+          , indent $ indent ".kaleid( 999.0 ), 0.1 ) , 0.1 )"
+          , indent ".out( o0 )"
+          ]
+        , pursExpr : ""
+        }
+      , { program :
+          [ Single $ SynthSet $ Speed 3.0
+          , Single $ SynthSet $ Bpm 60
+          , Single $ WithAudio Mic $ SetScale 20.0
+          , Chain Output0 $ Start $ From $ Osc { frequency : Number 60.0, sync : Number 0.1, offset : VArray (T.Values [ Number 0.0, Number 1.5 ]) $ T.Ease InOutCubic }
+          , Chain Output1 $ Start $ From $ Osc { frequency : Number 60.0, sync : Number 0.1, offset : VArray (T.Values [ Number 0.0, Number 1.5 ]) $ T.Fast Pi }
+          , Single $ WithSynth $ Render Four
+          ]
+        , jsExpr :
+          [ "speed = 3.0"
+          , empty
+          , "bpm = 60"
+          , empty
+          , "a.setScale( 20.0 )"
+          , empty
+          , "osc( 60.0, 0.1, [ 0.0, 1.5 ].ease( 'inOutCubic' ) )"
+          , indent ".out( o0 )"
+          , empty
+          , "osc( 60.0, 0.1, [ 0.0, 1.5 ].fast( Math.PI ) )"
+          , indent ".out( o1 )"
+          , empty
+          , "render( /* FOUR */ )"
+          ]
         , pursExpr : ""
         }
     ] <#> \r ->
         { program : Program r.program
-        , jsExpr : "/* GENERATED CODE */\n\n" <> String.joinWith "\n\t" r.jsExpr
+        , jsExpr : "/* GENERATED CODE */\n\n" <> String.joinWith "\n" r.jsExpr
         , pursExpr : r.pursExpr
         }
+    where
+      empty = ""
+      indent str = "\t" <> str
 
 
 -- TODO: use fuzzy generator
@@ -191,15 +312,7 @@ wrapSamples =
       , jsExpr : ""
       , pursExpr : ""
       }
-    , { sample : Texture $ Start $ External Source0 $ Camera 2
-      , jsExpr : ""
-      , pursExpr : ""
-      }
-    , { sample : Texture $ Start $ External Source0 Video
-      , jsExpr : ""
-      , pursExpr : ""
-      }
-    , { sample : Texture $ Start $ External Source0 $ Sketch "foobar"
+    , { sample : Texture $ Start $ External Source0
       , jsExpr : ""
       , pursExpr : ""
       }
