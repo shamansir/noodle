@@ -27,6 +27,7 @@ import HydraTk.Lang.Program (Program) as Hydra
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe { width :: Number, height :: Number }
     , zoom :: Number
+    , bgOpacity :: Number
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
     , patchIdToIndex :: Map Id.PatchR PatchIndex
@@ -44,6 +45,7 @@ init :: forall tk ps fs sr cr m. Toolkit tk fs sr cr m -> State tk ps fs sr cr m
 init toolkit =
     { size : Nothing
     , zoom : 1.0
+    , bgOpacity : 1.0
     , shiftPressed : false
     , network : Network.init toolkit
     , patchIdToIndex : Map.empty

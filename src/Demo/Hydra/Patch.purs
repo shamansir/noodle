@@ -18,6 +18,7 @@ newtype PState =
 init :: forall m. MonadEffect m => m PState
 init =
     liftEffect runHydra *> pure (PState { canvasRef : Nothing })
+    -- liftEffect runHydra >>= (const $ pure (PState { canvasRef : Nothing }))
 
 
 foreign import runHydra :: Effect Unit

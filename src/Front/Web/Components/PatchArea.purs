@@ -29,6 +29,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
+import Halogen.Svg.Attributes.Color.Extra as HCColorX
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
 
@@ -104,6 +105,7 @@ type State loc ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
+    , bgOpacity :: Number
     , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m)
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
@@ -118,6 +120,7 @@ type Input ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
+    , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
     , mbState :: Maybe ps
@@ -176,12 +179,13 @@ component ptk ploc =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { mbState, offset, size, zoom, nodes, links } =
+initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links } =
     { lastLocation : Web.firstLocation
     , mbState
     , offset
     , size
     , zoom
+    , bgOpacity
     , nodes
     , links
     , nodesBounds : Map.empty
@@ -206,7 +210,7 @@ render ptk state =
         []
         [ HS.rect
             [ HSA.width state.size.width, HSA.height state.size.height
-            , HSA.fill $ Just $ P.hColorOf $ Palette.black
+            , HSA.fill $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
             , HE.onClick $ const PatchAreaClick
             , HE.onMouseMove \mevt -> PatchAreaMouseMove
                 { x : ((Int.toNumber $ Mouse.clientX mevt) - state.offset.left) / state.zoom

@@ -30,6 +30,7 @@ import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.Color.Extra as HCColorX
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
 import Halogen.Query.Event (eventListener)
@@ -172,7 +173,7 @@ render ploc _ state =
                     (
                         [ HS.rect
                             [ HSA.width width, HSA.height height
-                            , HSA.fill $ Just $ P.hColorOf $ Palette.black
+                            , HSA.fill $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
                             ]
                         , HS.g
                             [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
@@ -221,6 +222,7 @@ render ploc _ state =
                 { offset : { left : patchAreaX, top : patchAreaY }
                 , size : { width : patchAreaWidth, height : patchAreaHeight }
                 , zoom : state.zoom
+                , bgOpacity : state.bgOpacity
                 , mbState : curPatchState
                 , nodes : curPatchNodes
                 , links : curPatchLinks
