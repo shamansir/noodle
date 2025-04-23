@@ -45,7 +45,7 @@ init :: forall tk ps fs sr cr m. Toolkit tk fs sr cr m -> State tk ps fs sr cr m
 init toolkit =
     { size : Nothing
     , zoom : 1.0
-    , bgOpacity : 1.0
+    , bgOpacity : 0.1
     , shiftPressed : false
     , network : Network.init toolkit
     , patchIdToIndex : Map.empty

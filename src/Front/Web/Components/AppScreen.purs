@@ -15,7 +15,7 @@ import Control.Monad.Extra (whenJust, whenJust2, whenJust_)
 import Signal ((~>))
 import Signal (runSignal) as Signal
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Map (empty, toUnfoldable) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
@@ -27,9 +27,10 @@ import Data.Traversable (traverse_)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
-import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Attributes.Color.Extra as HCColorX
 import Halogen.Svg.Elements as HS
 import Halogen.Subscription as HSS
@@ -74,7 +75,8 @@ import Web.Components.StatusBar as StatusBar
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Layer (TargetLayer(..))
 
-import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
+import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
+import HydraTk.Patch (resize) as Hydra -- FIXME
 
 
 type Slots sr cr m =
@@ -163,7 +165,10 @@ render
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
 render ploc _ state =
     HH.div
-        [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
+        [ HHP.style
+            $ "background-color: " <> HC.printColor (Just solidBackground) <> ";"
+            <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
+        ]
         [ HH.canvas [ HHP.id "target-canvas", HHP.ref canvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
         , HH.div
             [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
@@ -173,7 +178,7 @@ render ploc _ state =
                     (
                         [ HS.rect
                             [ HSA.width width, HSA.height height
-                            , HSA.fill $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
+                            , HSA.fill $ Just backgroundWithAlpha -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
                             ]
                         , HS.g
                             [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
@@ -201,6 +206,8 @@ render ploc _ state =
             ]
         ]
         where
+            solidBackground = P.hColorOf Palette.black
+            backgroundWithAlpha = fromMaybe solidBackground $ HCColorX.setAlpha state.bgOpacity solidBackground
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
@@ -284,6 +291,7 @@ handleAction = case _ of
         newWidth <- H.liftEffect $ Window.innerWidth window
         newHeight <- H.liftEffect $ Window.innerHeight window
         H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
+        H.liftEffect $ Hydra.resize newWidth newHeight
         pure unit
     CreatePatch -> do
         state <- H.get

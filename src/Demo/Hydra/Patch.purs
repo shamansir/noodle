@@ -22,3 +22,4 @@ init =
 
 
 foreign import runHydra :: Effect Unit
+foreign import resize :: Int -> Int -> Effect Unit

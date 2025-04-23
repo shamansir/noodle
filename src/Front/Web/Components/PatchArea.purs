@@ -210,7 +210,7 @@ render ptk state =
         []
         [ HS.rect
             [ HSA.width state.size.width, HSA.height state.size.height
-            , HSA.fill $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
+            , HSA.fill $ Just backgroundColor -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
             , HE.onClick $ const PatchAreaClick
             , HE.onMouseMove \mevt -> PatchAreaMouseMove
                 { x : ((Int.toNumber $ Mouse.clientX mevt) - state.offset.left) / state.zoom
@@ -243,6 +243,7 @@ render ptk state =
             ]
         ]
     where
+        backgroundColor = fromMaybe (P.hColorOf Palette.black) $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
         nodesWithCells = state.nodes <#> findCell
         cellToTuple cell = RawNode.id cell.rawNode /\ cell
