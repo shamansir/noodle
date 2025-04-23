@@ -22,6 +22,7 @@ import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber) as Int
 import Data.String (toLower) as String
+import Data.Traversable (traverse_)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -44,7 +45,7 @@ import Web.UIEvent.KeyboardEvent.EventTypes as KET
 import Noodle.Wiring (class Wiring)
 import Noodle.Id (PatchR, FamilyR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, class MarkToolkit, class HasChRepr)
-import Noodle.Toolkit (families, class HoldsFamilies, class FromToPatchState, spawnAnyRaw, loadFromPatch) as Toolkit
+import Noodle.Toolkit (families, class HoldsFamilies, class InitPatchState, class FromToPatchState, initPatch, spawnAnyRaw, loadFromPatch) as Toolkit
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
@@ -63,7 +64,7 @@ import Noodle.Ui.Tagging.At (class At) as T
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState'
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -113,28 +114,33 @@ component
     => T.At At.ChannelLabel cr
     => T.At At.StatusLine cr
     => Toolkit.HoldsFamilies sr cr m fs
+    => Toolkit.InitPatchState tk ps m
     => Toolkit.FromToPatchState tk ps sr
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
     => Hydra.ToHydraCommand sr
     => Proxy loc
-    -> ps
+    -> Proxy ps
     -> Toolkit tk fs sr cr m
     -> H.Component query input output m
-component ploc pstate toolkit =
+component ploc pps toolkit =
     H.mkComponent
-        { initialState : initialState pstate toolkit
-        , render : render ploc
+        { initialState : initialState toolkit
+        , render : render ploc pps
         , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction pstate
+            { handleAction = handleAction
             , initialize = Just Initialize
             }
         }
 
 
-initialState :: forall input tk ps fs sr cr m. ps -> Toolkit tk fs sr cr m -> input -> State tk ps fs sr cr m
-initialState pstate toolkit _ = CState.init pstate toolkit
+initialState :: forall input tk ps fs sr cr m. Toolkit tk fs sr cr m -> input -> State tk ps fs sr cr m
+initialState toolkit _ = CState.init toolkit
+
+
+canvasRef :: H.RefLabel
+canvasRef = H.RefLabel "target-canvas"
 
 
 render
@@ -151,12 +157,13 @@ render
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => Proxy loc
+    -> Proxy ps
     -> State tk ps fs sr cr m
     -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
-render ploc state =
+render ploc _ state =
     HH.div
         [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
-        [ HH.canvas [ HHP.id "target-canvas", HHP.width $ Int.round width, HHP.height $ Int.round height ]
+        [ HH.canvas [ HHP.id "target-canvas", HHP.ref canvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
         , HH.div
             [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
             [ HS.svg [ HSA.width width, HSA.height height ]
@@ -198,6 +205,7 @@ render ploc state =
             (ptk :: _ tk) = Proxy
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
+            curPatchState = CState.currentPatchState' state
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
             libraryX = 5.0
@@ -213,7 +221,7 @@ render ploc state =
                 { offset : { left : patchAreaX, top : patchAreaY }
                 , size : { width : patchAreaWidth, height : patchAreaHeight }
                 , zoom : state.zoom
-                , state : state.initPatchesFrom
+                , mbState : curPatchState
                 , nodes : curPatchNodes
                 , links : curPatchLinks
                 } :: PatchArea.Input ps sr cr m
@@ -231,16 +239,17 @@ render ploc state =
 handleAction
     :: forall output tk ps fs sr cr m
      . Wiring m
+    => Toolkit.InitPatchState tk ps m
     => Toolkit.FromToPatchState tk ps sr
     => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
-    => ps
-    -> Action sr cr
+    => Action sr cr
     -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr) (Slots sr cr m) output m Unit
-handleAction pstate = case _ of
+handleAction = case _ of
     Initialize -> do
         window <- H.liftEffect $ Web.window
+
         H.subscribe' \_ ->
             eventListener
                 (E.EventType "resize")
@@ -259,10 +268,15 @@ handleAction pstate = case _ of
                 (Window.toEventTarget window)
                 (KE.fromEvent >=> (Just <<< GlobalKeyUp))
 
-        firstPatch <- H.lift $ Patch.make "Patch 1" pstate
-        H.modify_ $ CState.registerPatch firstPatch
+        {- H.getHTMLElementRef canvasRef >>= traverse_ \element -> do
+            ?wh -- TODO
+        -}
 
-        handleAction pstate HandleResize
+        state <- H.get
+        firstPatch <- H.lift $ CState.spawnPatch state
+        H.modify_ $ CState.registerPatch firstPatch.state firstPatch.patch
+
+        handleAction HandleResize
     HandleResize -> do
         window <- H.liftEffect $ Web.window
         newWidth <- H.liftEffect $ Window.innerWidth window
@@ -272,8 +286,8 @@ handleAction pstate = case _ of
     CreatePatch -> do
         state <- H.get
         newPatch <- H.lift $ CState.spawnPatch state
-        H.modify_ $ CState.registerPatch newPatch
-        handleAction pstate $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch
+        H.modify_ $ CState.registerPatch newPatch.state newPatch.patch
+        handleAction $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch.patch
     SelectPatch patchR -> do
         state <- H.get
         H.modify_ _
@@ -323,11 +337,11 @@ handleAction pstate = case _ of
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
             H.liftEffect $ Console.log $ Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
-        handleAction pstate $ SelectPatch patchR
+        handleAction $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
-        handleAction pstate $ CreatePatch
+        handleAction $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
-        handleAction pstate $ SpawnNode familyR
+        handleAction $ SpawnNode familyR
     FromPatchArea (PatchArea.TryZoom dy) -> do
         state <- H.get
         when state.shiftPressed $

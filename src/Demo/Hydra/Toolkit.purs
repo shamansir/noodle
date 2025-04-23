@@ -17,7 +17,7 @@ import Type.Proxy (Proxy(..))
 import Noodle.Id (toolkitR, family, FamilyR, unsafeGroupR, group, NodeR) as Id
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
-import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class FromToPatchState, markGroup)
+import Noodle.Toolkit (Toolkit, ToolkitKey, class MarkToolkit, class IsToolkit, class HasChRepr, class InitPatchState, class FromToPatchState, markGroup)
 import Noodle.Toolkit (empty, register) as Toolkit
 import Noodle.Toolkit.Families (Families, F, class RegisteredFamily)
 import Noodle.Repr.HasFallback (fallback)
@@ -113,6 +113,7 @@ import HydraTk.Library.Audio.Hide as Audio.Hide
 import HydraTk.Library.Audio.Show as Audio.Show
 import HydraTk.Library.Out.Out as Out.Out
 import HydraTk.Patch (PState(..))
+import HydraTk.Patch (init) as Patch
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Types as HT
@@ -428,6 +429,10 @@ instance MarkToolkit HYDRA where
         _ -> Color.rgb 255 255 255
     )
   markFamily ptk = const <<< markGroup ptk
+
+instance MonadEffect m => InitPatchState HYDRA PState m where
+  initPatch :: Proxy _ -> m PState
+  initPatch = const $ Patch.init
 
 instance FromToPatchState HYDRA PState StateRepr where
   loadFromPatch :: Proxy _ -> Id.FamilyR -> PState -> StateRepr -> Maybe StateRepr

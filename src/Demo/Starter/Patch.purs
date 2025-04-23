@@ -6,5 +6,5 @@ import Prelude
 data PState = PState
 
 
-init :: PState
-init = PState
+init :: forall m. Applicative m => m PState
+init = pure PState

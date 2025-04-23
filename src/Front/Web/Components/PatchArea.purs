@@ -104,23 +104,23 @@ type State loc ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
-    , state :: ps
     , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m)
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
     , links :: Array Raw.Link
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
+    , mbState :: Maybe ps
     }
 
 
 type Input ps sr cr m =
-    { state :: ps
-    , offset :: { left :: Number, top :: Number }
+    { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
+    , mbState :: Maybe ps
     }
 
 
@@ -176,9 +176,9 @@ component ptk ploc =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { state, offset, size, zoom, nodes, links } =
+initialState _ { mbState, offset, size, zoom, nodes, links } =
     { lastLocation : Web.firstLocation
-    , state
+    , mbState
     , offset
     , size
     , zoom
@@ -309,9 +309,9 @@ handleAction
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { state, offset, size, nodes, links, zoom } ->
+    Receive { mbState, offset, size, nodes, links, zoom } ->
         H.modify_ _
-            { state = state, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links }
+            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links }
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of

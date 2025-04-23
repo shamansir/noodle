@@ -121,13 +121,17 @@ runWith =
     case _ of
         JustRun tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
-                Hydra -> runBlessedInterface Starter.Patch.init Starter.toolkit $ pure unit
+                Starter -> Starter.Patch.init >>= \pState -> runBlessedInterface pState Starter.toolkit $ pure unit
+                Hydra ->   Hydra.Patch.init   >>= \pState -> runBlessedInterface pState Hydra.toolkit   $ pure unit
                 User _  -> pure unit -- FIXME
         LoadNetworkFrom ndfFilePath tkKey ->
             case tkKey of
-                Starter -> runBlessedInterface Starter.Patch.init Starter.toolkit $ applyNdfFileFrom Starter.toolkit ndfFilePath
-                Hydra -> runBlessedInterface Hydra.Patch.init Hydra.toolkit $ applyNdfFileFrom Hydra.toolkit ndfFilePath
+                Starter ->
+                    Starter.Patch.init >>=
+                        (\pState -> runBlessedInterface pState Starter.toolkit $ applyNdfFileFrom Starter.toolkit ndfFilePath)
+                Hydra ->
+                    Hydra.Patch.init >>= -- FIXME: CLI state doesn't need it
+                        (\pState -> runBlessedInterface pState Hydra.toolkit $ applyNdfFileFrom Hydra.toolkit ndfFilePath)
                 User _  -> pure unit -- FIXME
         GenerateToolkitFrom (NdfFilePath fromFile) tkKey (GenTargetPath genTargetDir) -> do
             case tkKey of

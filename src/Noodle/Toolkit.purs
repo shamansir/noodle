@@ -278,6 +278,10 @@ class IsToolkit (tk :: ToolkitKey) where
     groupOf :: Proxy tk -> Id.FamilyR -> Id.GroupR
 
 
+class InitPatchState (tk :: ToolkitKey) pstate m where
+    initPatch :: Proxy tk -> m pstate
+
+
 class FromToPatchState (tk :: ToolkitKey) pstate fstate where
     loadFromPatch :: Proxy tk -> Id.FamilyR -> pstate -> fstate -> Maybe fstate
     putInPatch :: Proxy tk -> Id.NodeR -> fstate -> pstate -> pstate

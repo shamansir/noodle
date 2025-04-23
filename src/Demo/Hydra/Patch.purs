@@ -2,6 +2,9 @@ module HydraTk.Patch where
 
 import Prelude
 
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+
 import Data.Maybe (Maybe(..))
 
 import Halogen (RefLabel)
@@ -12,7 +15,9 @@ newtype PState =
         { canvasRef :: Maybe RefLabel }
 
 
-init :: PState
+init :: forall m. MonadEffect m => m PState
 init =
-    PState
-        { canvasRef : Nothing }
+    liftEffect runHydra *> pure (PState { canvasRef : Nothing })
+
+
+foreign import runHydra :: Effect Unit
