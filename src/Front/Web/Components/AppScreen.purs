@@ -16,12 +16,13 @@ import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Map (empty, toUnfoldable) as Map
+import Data.Map (empty, toUnfoldable, size) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber) as Int
 import Data.String (toLower) as String
+import Data.Array (length) as Array
 import Data.Traversable (traverse_)
 
 import Halogen as H
@@ -76,7 +77,7 @@ import Web.Class.WebRenderer (class WebLocator)
 import Web.Layer (TargetLayer(..))
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
-import HydraTk.Patch (resize) as Hydra -- FIXME
+import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 
 
 type Slots sr cr m =
@@ -345,7 +346,10 @@ handleAction = case _ of
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
-            H.liftEffect $ Console.log $ Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
+            when (Map.size collectedCommands > 0) $ H.liftEffect $ do
+                let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
+                Hydra.executeHydra program
+                Console.log program
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do

@@ -1284,8 +1284,8 @@ instance Partial => ValueCodegen UpdateFn where
 
 valueToJavaScript :: Value -> String
 valueToJavaScript = case _ of
-    None -> "null"
-    Undefined -> "undefined"
+    None -> "/* null */" -- FIXME: Hydra breaks when `null` is passed as an argument to Hydra function
+    Undefined -> "/* undefined */" -- FIXME: Hydra breaks when `undefined` is passed as an argument to Hydra function
     Number n -> show n
     Time -> "time"
     MouseX -> "mouse.x"
