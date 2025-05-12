@@ -139,7 +139,7 @@ instance MonadEffect m => CliRawRenderer STARTER StarterFamilies ValueRepr m whe
 
 
 instance CliEditor STARTER ValueRepr where
-  editorFor _ _ _ _ _ = VR.editorFor
+  cliEditorFor _ _ _ _ _ = VR.cliEditorFor
 
 
 instance MarkToolkit STARTER where

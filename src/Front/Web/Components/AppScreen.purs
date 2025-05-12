@@ -83,7 +83,7 @@ import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output TargetLayer
-    , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output Unit
+    , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     )
 
@@ -189,7 +189,7 @@ render ploc _ state =
                             [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
                         , HS.g
                             [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                            [ HH.slot _patchArea unit (PatchArea.component ptk ploc) patchAreaInput FromPatchArea ]
+                            [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput FromPatchArea ]
                         , HS.g
                             [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
                             [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
@@ -204,6 +204,9 @@ render ploc _ state =
             , HH.div
                 [ HHP.position HHP.Abs { x : libraryX, y : libraryY } ]
                 [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
+            , HH.div
+                [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
+                [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
             ]
         ]
         where
@@ -338,13 +341,13 @@ handleAction = case _ of
 
                 Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
 
-                H.tell _patchArea unit $ PatchArea.ApplyNewNode rawNode
+                H.tell _patchArea SVG $ PatchArea.ApplyNewNode rawNode
 
                 H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
         H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
             when (Patch.id curPatch == patchR) $
-                H.tell _patchArea unit $ PatchArea.ApplyUpdate nodeR update
+                H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
             when (Map.size collectedCommands > 0) $ H.liftEffect $ do
                 let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
@@ -392,6 +395,6 @@ handleAction = case _ of
         H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt -> do
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
-        when (String.toLower (KE.key kevt) == "escape") $ H.tell _patchArea unit PatchArea.CancelConnecting
+        when (String.toLower (KE.key kevt) == "escape") $ H.tell _patchArea SVG PatchArea.CancelConnecting
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }

@@ -53,6 +53,7 @@ import Noodle.Ui.Tagging.At (class At) as T
 
 import Web.Bounds (Bounds)
 import Web.Bounds (getPosition, getSize) as Bounds
+import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Class.WebRenderer (class WebLocator, ConstantShift)
@@ -164,11 +165,12 @@ component
     => T.At At.ChannelLabel cr
     => Proxy tk
     -> Proxy loc
+    -> TargetLayer
     -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
-component ptk ploc =
+component ptk ploc trg =
     H.mkComponent
         { initialState : initialState ploc
-        , render : render ptk
+        , render : render trg ptk
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
             , initialize = Just Initialize
@@ -202,10 +204,11 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => Proxy tk
+    => TargetLayer
+    -> Proxy tk
     -> State loc ps sr cr m
     -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
-render ptk state =
+render SVG ptk state =
     HS.g
         []
         [ HS.rect
@@ -305,6 +308,9 @@ render ptk state =
                 , handleEvents : handleLinkEvents
                 }
                 $ FromLink linkR
+
+
+render HTML ptk state = HH.div [] []
 
 
 handleAction

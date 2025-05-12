@@ -545,8 +545,8 @@ instance ValueEncode ValueRepr where
     encodeValue = encodeValueImpl
 
 
-editorFor :: ValueInChannel ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
-editorFor = ViC.toMaybe >>> case _ of
+cliEditorFor :: ValueInChannel ValueRepr -> Maybe (ValueEditor ValueRepr Unit Effect)
+cliEditorFor = ViC.toMaybe >>> case _ of
     Just (VNumber _) ->
         Just $ VE.imap (maybe VNone VNumber) extractNum VNumeric.editor
             where

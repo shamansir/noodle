@@ -65,4 +65,4 @@ class CliRawRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
 
 
 class CliEditor (tk :: ToolkitKey) repr | tk -> repr where
-    editorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)
+    cliEditorFor :: Proxy tk -> Id.FamilyR -> NodeBoxKey -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)

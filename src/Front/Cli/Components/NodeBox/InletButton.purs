@@ -59,7 +59,7 @@ import Cli.Keys (patchBox, mainScreen) as Key
 import Cli.State (State)
 import Cli.State (patch, replacePatch, inletEditorCreated, markInletEditorCreated) as CState
 import Cli.Style (inletsOutlets) as Style
-import Cli.Class.CliRenderer (class CliEditor, editorFor)
+import Cli.Class.CliRenderer (class CliEditor, cliEditorFor)
 import Cli.State (Focus(..)) as Focus
 
 import Cli.Components.NodeBox.InfoBox as IB
@@ -142,7 +142,7 @@ component stateRef patchR buttonKey nodeBoxKey infoBoxKey rawNode inletR inletId
         nodeR = RawNode.id rawNode
         familyR = Id.familyOf nodeR
         temper = fromMaybe Temperament.default $ RawShape.temperamentOf inletR $ RawNode.shape rawNode
-        (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = editorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
+        (mbValueEditor :: Maybe (ValueEditor chrepr Unit Effect)) = cliEditorFor (Proxy :: _ tk) familyR nodeBoxKey nodeR inletR vicRepr
         (mbValueEditorOp :: Maybe (ValueEditorComp chrepr Unit Effect)) =
             (\f -> f (ViC.toFallback vicRepr) $ sendFromEditor stateRef nodeR inletR)
             <$> mbValueEditor

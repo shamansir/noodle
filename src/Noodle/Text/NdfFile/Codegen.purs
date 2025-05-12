@@ -138,7 +138,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , instValue "renderCliRaw" _5binders $ exprCtor "Nothing" -- exprApp (exprCtor "Just") [ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
             ]
         , declInstance Nothing [ ] "CliEditor" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_ ]
-            [ instValue "editorFor" (binderWildcard : _5binders) $ exprCtor "Nothing"
+            [ instValue "cliEditorFor" (binderWildcard : _5binders) $ exprCtor "Nothing"
             ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
             [ instValue "markGroup" [ binderWildcard ]

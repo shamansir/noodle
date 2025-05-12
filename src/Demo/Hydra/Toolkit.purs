@@ -410,7 +410,7 @@ instance MonadEffect m => CliRawRenderer HYDRA HydraFamilies WrapRepr m where
   renderCliRaw _ _ _ _ _ = Nothing
 
 instance CliEditor HYDRA WrapRepr where
-  editorFor _ _ _ _ _ _ = Nothing
+  cliEditorFor _ _ _ _ _ _ = Nothing
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>
