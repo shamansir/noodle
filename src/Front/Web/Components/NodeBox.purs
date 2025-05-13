@@ -53,6 +53,8 @@ import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Paths as Paths
 
+import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
+
 
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
@@ -86,7 +88,8 @@ data Action sterpr chrepr m
     | HeaderClick MouseEvent
     | DragButtonClick MouseEvent
     | RemoveButtonClick MouseEvent
-    | InletClick  MouseEvent Id.InletR
+    | InletClick MouseEvent Id.InletR
+    | InletValueClick MouseEvent Id.InletR (ValueInChannel chrepr)
     | OutletClick MouseEvent Id.OutletR
     | ChangeFocus (InsideFocus chrepr)
     | ClearFocus
@@ -94,8 +97,9 @@ data Action sterpr chrepr m
 
 data Output
     = HeaderWasClicked
-    | ReportMouseMove  MouseEvent
-    | InletWasClicked  Id.InletR
+    | ReportMouseMove MouseEvent
+    | InletWasClicked Id.InletR
+    | InletValueWasClicked Id.InletR ValueEditor.EditorId
     | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
     | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
@@ -303,6 +307,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
+                    , HE.onClick $ \mevt -> InletValueClick mevt inletDef.name $ valueOfInlet inletDef.name
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 , HS.rect
@@ -408,6 +413,9 @@ handleAction ptk = case _ of
     InletClick mevt inletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
+    InletValueClick mevt inletR vic -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
+        H.raise $ InletValueWasClicked inletR $ ValueEditor.EditorId "string"
     OutletClick mevt outletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         let

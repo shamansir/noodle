@@ -56,6 +56,7 @@ import Web.Bounds (getPosition, getSize) as Bounds
 import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
+import Web.Components.ValueEditor as ValueEditor
 import Web.Class.WebRenderer (class WebLocator, ConstantShift)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 
@@ -74,6 +75,7 @@ type Locator = ConstantShift -- TODO: move to some root App config?
 type Slots sr cr =
     ( nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
     , link :: forall q. H.Slot q LinkCmp.Output Id.LinkR
+    , valueEditor :: forall q. H.Slot q (ValueEditor.Output cr) ValueEditor.EditorId
     )
 
 
@@ -114,6 +116,11 @@ type State loc ps sr cr m =
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
+    , mbCurrentEditor :: Maybe
+        { node :: Id.NodeR
+        , inlet :: Id.InletR
+        , editor :: ValueEditor.EditorId
+        }
     }
 
 
@@ -193,6 +200,7 @@ initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links } =
     , nodesBounds : Map.empty
     , lockOn : NoLock
     , focusedNodes : Set.empty
+    , mbCurrentEditor : Nothing
     }
 
 
@@ -310,7 +318,10 @@ render SVG ptk state =
                 $ FromLink linkR
 
 
-render HTML ptk state = HH.div [] []
+render HTML ptk state =
+    case state.mbCurrentEditor of
+        Just { node, inlet, editor } -> HH.div [] [ HH.text "Editor" ]
+        Nothing -> HH.div [] []
 
 
 handleAction
@@ -359,6 +370,15 @@ handleAction = case _ of
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         H.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
+    FromNodeBox nodeR (NodeBox.InletValueWasClicked inletR editorId) -> do
+        H.modify_ _
+            { mbCurrentEditor = Just $
+                { node : nodeR
+                , inlet : inletR
+                , editor : editorId
+                }
+            }
+        -- H.raise $ RemoveNode nodeR
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
         state <- H.get
         H.modify_ _
@@ -382,6 +402,7 @@ handleAction = case _ of
         H.raise $ ClearStatusBar
     FromNodeBox nodeR (NodeBox.RemoveButtonWasClicked) -> do
         H.raise $ RemoveNode nodeR
+
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR (LinkCmp.WasClicked) ->

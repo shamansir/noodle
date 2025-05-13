@@ -14,6 +14,10 @@ import Halogen (Component, RefLabel) as H
 newtype EditorId = EditorId String
 
 
+data Output v
+    = SendValue v
+
+
 type ValueEditor v state m
     =  v -- initial value
     -> (v -> Effect Unit) -- send value
