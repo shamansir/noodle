@@ -24,6 +24,7 @@ import Halogen (Component, RefLabel) as H
 import Halogen.VDom.DOM.Prop (ElemRef)
 
 import Web.Components.ValueEditor (ValueEditor)
+import Web.Components.ValueEditor (EditorId) as ValueEditor
 
 
 class WebLocator :: Type -> Constraint
@@ -64,5 +65,13 @@ class WebRawRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
     renderWebRaw :: forall fstate query input output. Proxy tk -> Proxy fs -> Id.FamilyR -> H.RefLabel -> Raw.Node fstate repr m -> Maybe (H.Component query input output m)
 
 
+type InletPath =
+    { family :: Id.FamilyR
+    , node :: Id.NodeR
+    , inlet :: Id.InletR
+    }
+
+
 class WebEditor (tk :: ToolkitKey) repr | tk -> repr where
-    webEditorFor :: Proxy tk -> Id.FamilyR -> H.RefLabel -> Id.NodeR {- Raw.Node fstate repr m -} -> Id.InletR -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)
+    webEditorFor :: Proxy tk -> InletPath -> ValueInChannel repr -> Maybe ValueEditor.EditorId
+    spawnWebEditor :: Proxy tk -> H.RefLabel -> ValueEditor.EditorId -> InletPath -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)

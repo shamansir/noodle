@@ -24,6 +24,12 @@ import Noodle.Repr.HasFallback (fallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 import Cli.Class.CliRenderer (class CliRenderer, class CliRawRenderer, class CliEditor)
+import Web.Class.WebRenderer (class WebRenderer, class WebRawRenderer, class WebEditor)
+import Web.Class.WebRenderer (InletPath) as WR
+import Web.Components.ValueEditor (ValueEditor)
+import Web.Components.ValueEditor (EditorId) as ValueEditor
+
+import Halogen (Component, RefLabel) as H
 
 import HydraTk.Library.Feed.Number as Feed.Number
 import HydraTk.Library.Feed.Pi as Feed.Pi
@@ -411,6 +417,12 @@ instance MonadEffect m => CliRawRenderer HYDRA HydraFamilies WrapRepr m where
 
 instance CliEditor HYDRA WrapRepr where
   cliEditorFor _ _ _ _ _ _ = Nothing
+
+instance WebEditor HYDRA WrapRepr where
+  webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
+  webEditorFor _ _ _ = Nothing
+  spawnWebEditor :: Proxy HYDRA -> H.RefLabel -> ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr Unit Effect)
+  spawnWebEditor _ _ _ _ _ = Nothing
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>

@@ -57,7 +57,7 @@ import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
-import Web.Class.WebRenderer (class WebLocator, ConstantShift)
+import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 
 
@@ -170,6 +170,7 @@ component
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => WebEditor tk cr
     => Proxy tk
     -> Proxy loc
     -> TargetLayer
@@ -212,6 +213,7 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => WebEditor tk cr
     => TargetLayer
     -> Proxy tk
     -> State loc ps sr cr m

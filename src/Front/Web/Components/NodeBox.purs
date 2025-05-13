@@ -52,7 +52,7 @@ import Noodle.Ui.Tagging.At (class At) as T
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Paths as Paths
-
+import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
 
 
@@ -120,6 +120,7 @@ component
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => T.At At.StatusLine chrepr
     => T.At At.ChannelLabel chrepr
+    => WebEditor tk chrepr
     => Proxy tk
     -> H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
 component ptk =
@@ -389,6 +390,7 @@ handleAction
     => HasChRepr tk chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => T.At At.StatusLine chrepr
+    => WebEditor tk chrepr
     => Proxy tk
     -> Action sterpr chrepr m
     -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit

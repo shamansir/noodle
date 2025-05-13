@@ -73,7 +73,7 @@ import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
-import Web.Class.WebRenderer (class WebLocator)
+import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
@@ -124,6 +124,7 @@ component
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
     => Hydra.ToHydraCommand sr
+    => WebEditor tk cr
     => Proxy loc
     -> Proxy ps
     -> Toolkit tk fs sr cr m
@@ -160,6 +161,7 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => WebEditor tk cr
     => Proxy loc
     -> Proxy ps
     -> State tk ps fs sr cr m
