@@ -28,6 +28,7 @@ import Data.Text.Format (Tag) as T
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
@@ -37,6 +38,8 @@ import Halogen.Svg.Elements.Extra as HSX
 
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
+import DOM.HTML.Indexed.InputType (InputType(..)) as I
+import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 
 import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
@@ -75,7 +78,7 @@ type Locator = ConstantShift -- TODO: move to some root App config?
 
 
 type Slots sr cr =
-    ( nodeBox :: H.Slot (NodeBox.Query sr cr) NodeBox.Output Id.NodeR
+    ( nodeBox :: H.Slot (NodeBox.Query sr cr) (NodeBox.Output cr) Id.NodeR
     , link :: forall q. H.Slot q LinkCmp.Output Id.LinkR
     , valueEditor :: forall q. H.Slot q (ValueEditor.Output cr) ValueEditor.EditorId
     )
@@ -118,7 +121,7 @@ type State loc ps sr cr m =
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
-    , mbCurrentEditor :: Maybe ValueEditor.Def
+    , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     }
 
 
@@ -130,7 +133,7 @@ type Input ps sr cr m =
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
     , mbState :: Maybe ps
-    , mbCurrentEditor :: Maybe ValueEditor.Def
+    , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     }
 
 
@@ -141,18 +144,18 @@ data Action ps sr cr m
     | PatchAreaMouseMove { x :: Number, y :: Number }
     | WheelChange { dx :: Number, dy :: Number }
     | PatchAreaClick
-    | FromNodeBox Id.NodeR NodeBox.Output
+    | FromNodeBox Id.NodeR (NodeBox.Output cr)
     | FromLink Id.LinkR LinkCmp.Output
 
 
-data Output
+data Output cr
     = Connect (LinkStart /\ LinkEnd)
     | Disconnect Id.LinkR
     | RemoveNode Id.NodeR
     | UpdateStatusBar T.Tag
     | ClearStatusBar
     | TryZoom Number
-    | RequestValueEditor ValueEditor.Def
+    | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
 
 
 data Query sr cr m a
@@ -174,7 +177,7 @@ component
     => Proxy tk
     -> Proxy loc
     -> TargetLayer
-    -> H.Component (Query sr cr m) (Input ps sr cr m) Output m
+    -> H.Component (Query sr cr m) (Input ps sr cr m) (Output cr) m
 component ptk ploc trg =
     H.mkComponent
         { initialState : initialState ploc
@@ -323,15 +326,33 @@ render SVG ptk state =
 
 render HTML ptk state =
     case Debug.spy "HTML: editor" state.mbCurrentEditor of
-        Just { node, inlet, editor } -> HH.div [] [ HH.text "Editor" ]
+        Just (nodeR /\ { inlet, editor }) ->
+            HH.input
+                [ HHP.type_ I.InputNumber
+                , HHP.width 40, HHP.height 9
+                , HHP.min 0.0
+                , HHP.max 20.0
+                , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
+                    <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
+                    <> "border-radius: 5px; "
+                    <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
+                    -- <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
+                -- , HP.step $ I.Step step
+                -- , HP.value $ show val
+                -- , HE.onValueInput (Number.fromString >>> maybe def handler)
+                ]
         Nothing -> HH.div [] []
+    where
+        inputBorderColor = _.i600 $ Palette.yellow
+        inputTextColor = _.i100 $ Palette.cyan
+        inputBackgroundColor = _.i900 $ Palette.yellow
 
 
 handleAction
     :: forall loc ps sr cr m
      . WebLocator loc
     => Action ps sr cr m
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m Unit
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive { mbState, offset, size, nodes, links, zoom, mbCurrentEditor } ->
@@ -373,15 +394,16 @@ handleAction = case _ of
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         H.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
-    FromNodeBox nodeR (NodeBox.InletValueWasClicked inletR editorId) -> do
+    FromNodeBox nodeR (NodeBox.InletValueWasClicked inletR pos editorId vic) -> do
         let _ = Debug.spy "patch: inlet value click" unit
         let editorDef =
-                { node : nodeR
-                , inlet : inletR
+                { inlet : inletR
                 , editor : editorId
+                , pos
+                , currentValue : vic
                 }
-        H.modify_ _ { mbCurrentEditor = Just editorDef }
-        H.raise $ RequestValueEditor editorDef
+        H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ editorDef }
+        H.raise $ RequestValueEditor nodeR editorDef
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
         state <- H.get
         H.modify_ _
@@ -416,7 +438,7 @@ handleQuery
     :: forall loc ps sr cr m a
      . WebLocator loc
     => Query sr cr m a
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m (Maybe a)
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m (Maybe a)
 handleQuery = case _ of
     ApplyNewNode rawNode a -> do
         state <- H.get

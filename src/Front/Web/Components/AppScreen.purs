@@ -83,7 +83,7 @@ import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output TargetLayer
-    , patchArea :: H.Slot (PatchArea.Query sr cr m) PatchArea.Output TargetLayer
+    , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     )
 
@@ -104,7 +104,7 @@ data Action sr cr
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea PatchArea.Output
+    | FromPatchArea (PatchArea.Output cr)
     | FromStatusBar StatusBar.Output
     | HandleResize
 
@@ -394,8 +394,8 @@ handleAction = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
-    FromPatchArea (PatchArea.RequestValueEditor valueEditor) -> do
-        H.modify_ _ { mbCurrentEditor = Just valueEditor }
+    FromPatchArea (PatchArea.RequestValueEditor nodeR valueEditor) -> do
+        H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt -> do

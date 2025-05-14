@@ -11,8 +11,9 @@ import Data.Map (Map)
 import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
+import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Id (PatchR) as Id
+import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class InitPatchState, initPatch) as Toolkit
 import Noodle.Toolkit.Families (Families)
@@ -36,7 +37,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbCurrentPatchState :: Maybe ps -- FIXME: it's data duplication, but we store it here, because getting it from Network is effectful and we need it on `render` for the user's Patch component
     , mbStatusBarContent :: Maybe T.Tag
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
-    , mbCurrentEditor :: Maybe ValueEditor.Def
+    , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     }
 
 

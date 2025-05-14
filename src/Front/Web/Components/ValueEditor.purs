@@ -9,16 +9,18 @@ import Data.Maybe (fromMaybe) as M
 
 import Noodle.Id as Id
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
+import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 import Halogen (Component, RefLabel) as H
 
 newtype EditorId = EditorId String
 
 
-type Def =
-    { node :: Id.NodeR
-    , inlet :: Id.InletR
+type Def repr =
+    { inlet :: Id.InletR
+    , pos :: { x :: Number, y :: Number }
     , editor :: EditorId
+    , currentValue :: ValueInChannel repr
     }
 
 

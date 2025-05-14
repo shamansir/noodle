@@ -97,11 +97,11 @@ data Action sterpr chrepr m
     | ClearFocus
 
 
-data Output
+data Output chrepr
     = HeaderWasClicked
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
-    | InletValueWasClicked Id.InletR ValueEditor.EditorId
+    | InletValueWasClicked Id.InletR { x :: Number, y :: Number } ValueEditor.EditorId (ValueInChannel chrepr)
     | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
     | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
@@ -124,7 +124,7 @@ component
     => T.At At.ChannelLabel chrepr
     => WebEditor tk chrepr
     => Proxy tk
-    -> H.Component (Query strepr chrepr) (Input strepr chrepr m) Output m
+    -> H.Component (Query strepr chrepr) (Input strepr chrepr m) (Output chrepr) m
 component ptk =
     H.mkComponent
         { initialState
@@ -396,7 +396,7 @@ handleAction
     => WebEditor tk chrepr
     => Proxy tk
     -> Action sterpr chrepr m
-    -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () Output m Unit
+    -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () (Output chrepr) m Unit
 handleAction ptk = case _ of
     Initialize -> pure unit
     Receive input ->
@@ -422,7 +422,7 @@ handleAction ptk = case _ of
     InletValueClick mevt inletR vic -> do
         let _ = Debug.spy "inlet value click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise $ InletValueWasClicked inletR $ ValueEditor.EditorId "string"
+        H.raise $ InletValueWasClicked inletR { x: 0.0, y : 0.0 } (ValueEditor.EditorId "string") vic
     OutletClick mevt outletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         let
