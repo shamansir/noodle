@@ -34,6 +34,7 @@ to generate this file without the comments in this block.
   , "halogen-css"
   , "halogen-subscriptions"
   , "halogen-svg-elems"
+  , "halogen-vdom"
   , "identity"
   , "integers"
   , "language-cst-parser"

@@ -22,6 +22,7 @@ import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
 import HydraTk.Lang.Program (Program) as Hydra
+import Web.Components.ValueEditor (Def) as ValueEditor
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
@@ -31,10 +32,11 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
     , patchIdToIndex :: Map Id.PatchR PatchIndex
-    , currentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
-    , currentPatchState :: Maybe ps -- FIXME: it's data duplication, but we store it here, because getting it from Network is effectful and we need it on `render` for the user's Patch component
-    , statusBarContent :: Maybe T.Tag
-    , hydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
+    , mbCurrentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
+    , mbCurrentPatchState :: Maybe ps -- FIXME: it's data duplication, but we store it here, because getting it from Network is effectful and we need it on `render` for the user's Patch component
+    , mbStatusBarContent :: Maybe T.Tag
+    , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
+    , mbCurrentEditor :: Maybe ValueEditor.Def
     }
 
 
@@ -49,10 +51,11 @@ init toolkit =
     , shiftPressed : false
     , network : Network.init toolkit
     , patchIdToIndex : Map.empty
-    , currentPatch : Nothing
-    , currentPatchState : Nothing
-    , statusBarContent : Nothing
-    , hydraProgram : Nothing
+    , mbCurrentPatch : Nothing
+    , mbCurrentPatchState : Nothing
+    , mbStatusBarContent : Nothing
+    , mbHydraProgram : Nothing
+    , mbCurrentEditor : Nothing
     }
 
 
@@ -74,8 +77,8 @@ registerPatch patchState newPatch s =
         nextNW = s.network # Network.addPatch newPatch
     in
         s
-            { currentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch } -- FIXME: make patch current in a separate function
-            , currentPatchState = Just patchState
+            { mbCurrentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch } -- FIXME: make patch current in a separate function
+            , mbCurrentPatchState = Just patchState
             , patchIdToIndex = s.patchIdToIndex # Map.insert (Patch.id newPatch) nextPatchIndex
             , network = nextNW
             }
@@ -94,11 +97,11 @@ patch patchR = _.network >>> Network.patch patchR
 
 
 currentPatch :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
-currentPatch s = s.currentPatch <#> _.id >>= flip patch s
+currentPatch s = s.mbCurrentPatch <#> _.id >>= flip patch s
 
 
 currentPatchId :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe Id.PatchR
-currentPatchId s = s.currentPatch <#> _.id
+currentPatchId s = s.mbCurrentPatch <#> _.id
 
 
 currentPatchState :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Maybe ps)
@@ -106,7 +109,7 @@ currentPatchState = traverse Patch.getState <<< currentPatch
 
 
 currentPatchState' :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe ps
-currentPatchState' = _.currentPatchState
+currentPatchState' = _.mbCurrentPatchState
 
 
 withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
@@ -118,6 +121,6 @@ replacePatch patchR = withPatch patchR <<< const
 
 
 withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-withCurrentPatch f s = case s.currentPatch <#> _.id of
+withCurrentPatch f s = case s.mbCurrentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s

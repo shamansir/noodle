@@ -2,6 +2,8 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Debug as Debug
+
 import Type.Proxy (Proxy)
 
 import Effect.Class (class MonadEffect)
@@ -308,6 +310,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
+                    , HSA.class_ $ H.ClassName "noodle-capture-events"
                     , HE.onClick $ \mevt -> InletValueClick mevt inletDef.name $ valueOfInlet inletDef.name
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
@@ -413,9 +416,11 @@ handleAction ptk = case _ of
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked
     InletClick mevt inletR -> do
+        let _ = Debug.spy "inlet click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
     InletValueClick mevt inletR vic -> do
+        let _ = Debug.spy "inlet value click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletValueWasClicked inletR $ ValueEditor.EditorId "string"
     OutletClick mevt outletR -> do

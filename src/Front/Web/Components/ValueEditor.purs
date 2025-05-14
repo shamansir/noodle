@@ -7,11 +7,19 @@ import Effect (Effect)
 import Data.Maybe (Maybe)
 import Data.Maybe (fromMaybe) as M
 
+import Noodle.Id as Id
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 
 import Halogen (Component, RefLabel) as H
 
 newtype EditorId = EditorId String
+
+
+type Def =
+    { node :: Id.NodeR
+    , inlet :: Id.InletR
+    , editor :: EditorId
+    }
 
 
 data Output v

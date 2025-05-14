@@ -2,6 +2,8 @@ module Web.Components.PatchArea where
 
 import Prelude
 
+import Debug as Debug
+
 import Type.Proxy (Proxy(..))
 
 import Effect.Class (class MonadEffect)
@@ -116,11 +118,7 @@ type State loc ps sr cr m =
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
-    , mbCurrentEditor :: Maybe
-        { node :: Id.NodeR
-        , inlet :: Id.InletR
-        , editor :: ValueEditor.EditorId
-        }
+    , mbCurrentEditor :: Maybe ValueEditor.Def
     }
 
 
@@ -132,6 +130,7 @@ type Input ps sr cr m =
     , nodes :: Array (Raw.Node sr cr m)
     , links :: Array Raw.Link
     , mbState :: Maybe ps
+    , mbCurrentEditor :: Maybe ValueEditor.Def
     }
 
 
@@ -153,6 +152,7 @@ data Output
     | UpdateStatusBar T.Tag
     | ClearStatusBar
     | TryZoom Number
+    | RequestValueEditor ValueEditor.Def
 
 
 data Query sr cr m a
@@ -189,7 +189,7 @@ component ptk ploc trg =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links } =
+initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links, mbCurrentEditor } =
     { lastLocation : Web.firstLocation
     , mbState
     , offset
@@ -201,7 +201,7 @@ initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links } =
     , nodesBounds : Map.empty
     , lockOn : NoLock
     , focusedNodes : Set.empty
-    , mbCurrentEditor : Nothing
+    , mbCurrentEditor
     }
 
 
@@ -256,6 +256,7 @@ render SVG ptk state =
             ]
         ]
     where
+        _ = Debug.spy "SVG: editor" state.mbCurrentEditor
         backgroundColor = fromMaybe (P.hColorOf Palette.black) $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
         nodesWithCells = state.nodes <#> findCell
@@ -321,7 +322,7 @@ render SVG ptk state =
 
 
 render HTML ptk state =
-    case state.mbCurrentEditor of
+    case Debug.spy "HTML: editor" state.mbCurrentEditor of
         Just { node, inlet, editor } -> HH.div [] [ HH.text "Editor" ]
         Nothing -> HH.div [] []
 
@@ -333,9 +334,9 @@ handleAction
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) Output m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { mbState, offset, size, nodes, links, zoom } ->
+    Receive { mbState, offset, size, nodes, links, zoom, mbCurrentEditor } ->
         H.modify_ _
-            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links }
+            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links, mbCurrentEditor = mbCurrentEditor }
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of
@@ -373,14 +374,14 @@ handleAction = case _ of
         H.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.InletValueWasClicked inletR editorId) -> do
-        H.modify_ _
-            { mbCurrentEditor = Just $
+        let _ = Debug.spy "patch: inlet value click" unit
+        let editorDef =
                 { node : nodeR
                 , inlet : inletR
                 , editor : editorId
                 }
-            }
-        -- H.raise $ RemoveNode nodeR
+        H.modify_ _ { mbCurrentEditor = Just editorDef }
+        H.raise $ RequestValueEditor editorDef
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
         state <- H.get
         H.modify_ _

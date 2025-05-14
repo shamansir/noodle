@@ -239,13 +239,14 @@ render ploc _ state =
                 , mbState : curPatchState
                 , nodes : curPatchNodes
                 , links : curPatchLinks
+                , mbCurrentEditor : state.mbCurrentEditor
                 } :: PatchArea.Input ps sr cr m
             patchesBarInput =
                 { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
-                , selected : _.id <$> state.currentPatch
+                , selected : _.id <$> state.mbCurrentPatch
                 } :: PatchesBar.Input
             statusBarInput =
-                { content : fromMaybe T.nil state.statusBarContent
+                { content : fromMaybe T.nil state.mbStatusBarContent
                 , width : statusBarWidth
                 , currentZoom : state.zoom
                 } :: StatusBar.Input
@@ -307,7 +308,7 @@ handleAction = case _ of
     SelectPatch patchR -> do
         state <- H.get
         H.modify_ _
-            { currentPatch =
+            { mbCurrentPatch =
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
@@ -385,14 +386,16 @@ handleAction = case _ of
                 nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
                 H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
     FromPatchArea (PatchArea.UpdateStatusBar tag) ->
-        H.modify_ _ { statusBarContent = Just tag }
+        H.modify_ _ { mbStatusBarContent = Just tag }
     FromPatchArea PatchArea.ClearStatusBar ->
-        H.modify_ _ { statusBarContent = Nothing }
+        H.modify_ _ { mbStatusBarContent = Nothing }
     FromPatchArea (PatchArea.RemoveNode nodeR) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+    FromPatchArea (PatchArea.RequestValueEditor valueEditor) -> do
+        H.modify_ _ { mbCurrentEditor = Just valueEditor }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt -> do
