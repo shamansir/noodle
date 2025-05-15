@@ -29,6 +29,7 @@ import Data.Text.Format (Tag) as T
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
@@ -262,22 +263,12 @@ render SVG ptk state =
         _ = Debug.spy "SVG: editor" state.mbCurrentEditor
         backgroundColor = fromMaybe (P.hColorOf Palette.black) $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
-        nodesWithCells = state.nodes <#> findCell
-        cellToTuple cell = RawNode.id cell.rawNode /\ cell
-        nodesToCellsMap = Map.fromFoldable $ cellToTuple <$> nodesWithCells
+        nodesWithCells = _makeNodesWithCells state
+        nodesToCellsMap = _makeNodesToCellsMap state
         nodeBoxesSlots = (nodesWithCells # Array.sortWith _.zIndex <#> nodeBoxSlot)
         linksSlots = state.links <#> linkSlot
-        findCell rawNode =
-            let
-                nodeR = RawNode.id rawNode
-                mbBounds = findBounds nodeR state
-                size = fromMaybe bottom $ Bounds.getSize <$> Tuple.fst <$> mbBounds -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
-                (position /\ zIndex) =
-                    fromMaybe (defaultPosition /\ top)
-                         $ lmap Bounds.getPosition
-                        <$> mbBounds
-            in
-                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes }
+        inletPos = _inletPosition nodesToCellsMap
+        outletPos = _outletPosition nodesToCellsMap
         nodeBoxSlot { rawNode, position, inFocus, size } =
             let
                 nodeR = RawNode.id rawNode
@@ -288,22 +279,6 @@ render SVG ptk state =
                 , inFocus
                 }
                 $ FromNodeBox nodeR
-        inletPos (nodeR /\ inletR) =
-            Map.lookup nodeR nodesToCellsMap
-            <#> (\{ position, rawNode } ->
-                let
-                    inletIdx = fromMaybe (-1) $ RawShape.indexOfInlet inletR $ RawNode.shape rawNode
-                    relPos = NodeBox.inletRelPos inletIdx
-                in { x : position.left + relPos.x, y : position.top + relPos.y })
-            # fromMaybe { x : 0.0, y : 0.0 }
-        outletPos (nodeR /\ outletR) =
-            Map.lookup nodeR nodesToCellsMap
-            <#> (\{ position, rawNode } ->
-                let
-                    outletIdx = fromMaybe (-1) $ RawShape.indexOfOutlet outletR $ RawNode.shape rawNode
-                    relPos = NodeBox.outletRelPos outletIdx
-                in { x : position.left + relPos.x, y : position.top + relPos.y })
-            # fromMaybe { x : 0.0, y : 0.0 }
         handleLinkEvents = case state.lockOn of
             NoLock -> true
             DraggingNode _ -> false
@@ -326,8 +301,9 @@ render SVG ptk state =
 
 render HTML ptk state =
     case Debug.spy "HTML: editor" state.mbCurrentEditor of
-        Just (nodeR /\ { inlet, editor }) ->
-            HH.input
+        Just (nodeR /\ { inlet, editor, pos }) ->
+            let theInletPos = inletPos (nodeR /\ inlet)
+            in HH.input
                 [ HHP.type_ I.InputNumber
                 , HHP.width 40, HHP.height 9
                 , HHP.min 0.0
@@ -336,16 +312,85 @@ render HTML ptk state =
                     <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
                     <> "border-radius: 5px; "
                     <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
-                    -- <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
+                    <> HHP.position_ HHP.Abs { x : theInletPos.x, y : theInletPos.y }
                 -- , HP.step $ I.Step step
                 -- , HP.value $ show val
                 -- , HE.onValueInput (Number.fromString >>> maybe def handler)
                 ]
         Nothing -> HH.div [] []
     where
+        nodesToCellsMap = _makeNodesToCellsMap state
+        inletPos = _inletPosition nodesToCellsMap
         inputBorderColor = _.i600 $ Palette.yellow
         inputTextColor = _.i100 $ Palette.cyan
         inputBackgroundColor = _.i900 $ Palette.yellow
+
+
+type NodeCell_ sr cr m =
+    { inFocus :: Boolean
+    , position ::
+        { left :: Number
+        , top :: Number
+        }
+    , rawNode :: Raw.Node sr cr m
+    , size ::
+        { width :: Number
+        , height :: Number
+        }
+    , zIndex :: NodeZIndex
+    }
+
+
+_makeNodesWithCells
+    :: forall loc ps sr cr m
+     . State loc ps sr cr m
+    -> Array (NodeCell_ sr cr m)
+_makeNodesWithCells state =
+    state.nodes <#> findCell
+    where
+        findCell rawNode =
+            let
+                nodeR = RawNode.id rawNode
+                mbBounds = findBounds nodeR state
+                size = fromMaybe bottom $ Bounds.getSize <$> Tuple.fst <$> mbBounds -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
+                (position /\ zIndex) =
+                    fromMaybe (defaultPosition /\ top)
+                         $ lmap Bounds.getPosition
+                        <$> mbBounds
+            in
+                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes }
+
+
+_makeNodesToCellsMap
+    :: forall loc ps sr cr m
+     . State loc ps sr cr m
+    -> Map Id.NodeR (NodeCell_ sr cr m)
+_makeNodesToCellsMap state =
+    Map.fromFoldable $ cellToTuple <$> _makeNodesWithCells state
+    where
+        cellToTuple cell = RawNode.id cell.rawNode /\ cell
+
+
+_inletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.InletR) -> { x :: Number, y :: Number }
+_inletPosition nodesToCellsMap (nodeR /\ inletR) =
+    Map.lookup nodeR nodesToCellsMap
+    <#> (\{ position, rawNode } ->
+        let
+            inletIdx = fromMaybe (-1) $ RawShape.indexOfInlet inletR $ RawNode.shape rawNode
+            relPos = NodeBox.inletRelPos inletIdx
+        in { x : position.left + relPos.x, y : position.top + relPos.y })
+    # fromMaybe { x : 0.0, y : 0.0 }
+
+
+_outletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.OutletR) -> { x :: Number, y :: Number }
+_outletPosition nodesToCellsMap (nodeR /\ outletR) =
+    Map.lookup nodeR nodesToCellsMap
+    <#> (\{ position, rawNode } ->
+        let
+            outletIdx = fromMaybe (-1) $ RawShape.indexOfOutlet outletR $ RawNode.shape rawNode
+            relPos = NodeBox.outletRelPos outletIdx
+        in { x : position.left + relPos.x, y : position.top + relPos.y })
+    # fromMaybe { x : 0.0, y : 0.0 }
 
 
 handleAction
