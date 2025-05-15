@@ -157,12 +157,14 @@ data Output cr
     | ClearStatusBar
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
+    | InformBoundsUpdatedInLayer (Map Id.NodeR (Bounds /\ NodeZIndex))
 
 
 data Query sr cr m a
     = ApplyNewNode (Raw.Node sr cr m) a
     | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
+    | ApplyOtherLayerBoundsUpdate (Map Id.NodeR (Bounds /\ NodeZIndex)) a
 
 
 component
@@ -406,8 +408,9 @@ handleAction = case _ of
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of
-            DraggingNode nodeR ->
+            DraggingNode nodeR -> do
                 H.modify_ $ updatePosition nodeR { left : x, top : y }
+                _informOtherLayersAboutNewBounds
             Connecting linkStart _ ->
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
             NoLock ->
@@ -472,7 +475,6 @@ handleAction = case _ of
         H.raise $ ClearStatusBar
     FromNodeBox nodeR (NodeBox.RemoveButtonWasClicked) -> do
         H.raise $ RemoveNode nodeR
-
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR (LinkCmp.WasClicked) ->
@@ -496,6 +498,7 @@ handleQuery = case _ of
                 { left : nodePos.left, top : nodePos.top
                 , width : nodeRect.width, height : nodeRect.height
                 }
+        _informOtherLayersAboutNewBounds
         pure $ Just a
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
@@ -503,6 +506,13 @@ handleQuery = case _ of
     CancelConnecting a -> do
         H.modify_ _ { lockOn = NoLock }
         pure $ Just a
+    ApplyOtherLayerBoundsUpdate nodesBounds a -> do
+        H.modify_ _ { nodesBounds = nodesBounds }
+        pure $ Just a
+
+
+_informOtherLayersAboutNewBounds :: forall loc ps sr cr m. H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
+_informOtherLayersAboutNewBounds = void $ H.get >>= (_.nodesBounds >>> InformBoundsUpdatedInLayer >>> H.raise)
 
 
 findFocusedNodes :: { x :: Number, y :: Number } -> Map Id.NodeR (Bounds /\ NodeZIndex) -> Set Id.NodeR

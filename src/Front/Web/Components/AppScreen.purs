@@ -396,6 +396,8 @@ handleAction = case _ of
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
     FromPatchArea (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
+    FromPatchArea (PatchArea.InformBoundsUpdatedInLayer nodesBounds) -> do
+        H.tell _patchArea HTML $ PatchArea.ApplyOtherLayerBoundsUpdate nodesBounds
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt -> do
