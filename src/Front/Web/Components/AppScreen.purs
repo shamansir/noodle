@@ -124,7 +124,7 @@ component
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
     => Hydra.ToHydraCommand sr
-    => WebEditor tk cr
+    => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
     -> Toolkit tk fs sr cr m
@@ -161,7 +161,7 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => WebEditor tk cr
+    => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
     -> State tk ps fs sr cr m

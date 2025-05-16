@@ -232,6 +232,7 @@ tryCallingInletEditor nodeBoxKey rawNode inletR inletIdx mbValueEditorOp = do
             pure unit
     State.modify_ $ _ { blockInletEditor = false }
 
+
 removeNode
     :: forall tk pstate fs strepr chrepr mi mo
      . Wiring mo

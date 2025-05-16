@@ -28,6 +28,7 @@ import Web.Class.WebRenderer (class WebRenderer, class WebRawRenderer, class Web
 import Web.Class.WebRenderer (InletPath) as WR
 import Web.Components.ValueEditor (ValueEditor)
 import Web.Components.ValueEditor (EditorId) as ValueEditor
+import Web.Components.ValueEditor.Number as NumberVE
 
 import Halogen (Component, RefLabel) as H
 
@@ -418,11 +419,11 @@ instance MonadEffect m => CliRawRenderer HYDRA HydraFamilies WrapRepr m where
 instance CliEditor HYDRA WrapRepr where
   cliEditorFor _ _ _ _ _ _ = Nothing
 
-instance WebEditor HYDRA WrapRepr where
-  webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
-  webEditorFor _ _ _ = Nothing
-  spawnWebEditor :: Proxy HYDRA -> H.RefLabel -> ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr Unit Effect)
-  spawnWebEditor _ _ _ _ _ = Nothing
+instance WebEditor HYDRA WrapRepr m where
+  -- webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
+  -- webEditorFor _ _ _ = Nothing
+  spawnWebEditor :: Proxy HYDRA -> {- H.RefLabel -> -} ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr Unit m)
+  spawnWebEditor _ {- _ -} _ _ _ = Just NumberVE.editor
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>

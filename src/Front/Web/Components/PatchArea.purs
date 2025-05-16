@@ -63,7 +63,7 @@ import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
-import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor)
+import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor, spawnWebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 
 
@@ -81,12 +81,13 @@ type Locator = ConstantShift -- TODO: move to some root App config?
 type Slots sr cr =
     ( nodeBox :: H.Slot (NodeBox.Query sr cr) (NodeBox.Output cr) Id.NodeR
     , link :: forall q. H.Slot q LinkCmp.Output Id.LinkR
-    , valueEditor :: forall q. H.Slot q (ValueEditor.Output cr) ValueEditor.EditorId
+    , valueEditor :: H.Slot ValueEditor.Query (ValueEditor.Output cr) ValueEditor.EditorId
     )
 
 
 _nodeBox = Proxy :: _ "nodeBox"
 _link = Proxy :: _ "link"
+_valueEditor = Proxy :: _ "valueEditor"
 
 
 defaultPosition = { left : 0.0, top : 0.0 }
@@ -176,7 +177,7 @@ component
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => WebEditor tk cr
+    => WebEditor tk cr m
     => Proxy tk
     -> Proxy loc
     -> TargetLayer
@@ -219,7 +220,7 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
-    => WebEditor tk cr
+    => WebEditor tk cr m
     => TargetLayer
     -> Proxy tk
     -> State loc ps sr cr m
@@ -303,29 +304,20 @@ render SVG ptk state =
 
 render HTML ptk state =
     case Debug.spy "HTML: editor" state.mbCurrentEditor of
-        Just (nodeR /\ { inlet, editor, pos }) ->
-            let theInletPos = inletPos (nodeR /\ inlet)
-            in HH.input
-                [ HHP.type_ I.InputNumber
-                , HHP.width 40, HHP.height 9
-                , HHP.min 0.0
-                , HHP.max 20.0
-                , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
-                    <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
-                    <> "border-radius: 5px; "
-                    <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
-                    <> HHP.position_ HHP.Abs { x : theInletPos.x, y : theInletPos.y }
-                -- , HP.step $ I.Step step
-                -- , HP.value $ show val
-                -- , HE.onValueInput (Number.fromString >>> maybe def handler)
-                ]
+        Just (nodeR /\ { inlet, editor, pos, currentValue }) ->
+            let
+                theInletPos = inletPos (nodeR /\ inlet)
+                inletPath = { node : nodeR, inlet }
+                -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
+                mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
+            in
+                case mbWebEditorComp of
+                    Just valueEditor -> HH.slot_ _valueEditor editor valueEditor ValueEditor.Input
+                    Nothing -> HH.div [] []
         Nothing -> HH.div [] []
     where
         nodesToCellsMap = _makeNodesToCellsMap state
         inletPos = _inletPosition nodesToCellsMap
-        inputBorderColor = _.i600 $ Palette.yellow
-        inputTextColor = _.i100 $ Palette.cyan
-        inputBackgroundColor = _.i900 $ Palette.yellow
 
 
 type NodeCell_ sr cr m =

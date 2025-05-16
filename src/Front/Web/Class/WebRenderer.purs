@@ -66,12 +66,11 @@ class WebRawRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
 
 
 type InletPath =
-    { family :: Id.FamilyR
-    , node :: Id.NodeR
+    { node :: Id.NodeR
     , inlet :: Id.InletR
     }
 
 
-class WebEditor (tk :: ToolkitKey) repr | tk -> repr where
-    webEditorFor :: Proxy tk -> InletPath -> ValueInChannel repr -> Maybe ValueEditor.EditorId
-    spawnWebEditor :: Proxy tk -> H.RefLabel -> ValueEditor.EditorId -> InletPath -> ValueInChannel repr -> Maybe (ValueEditor repr Unit Effect)
+class WebEditor (tk :: ToolkitKey) repr m | tk -> repr where
+    -- webEditorFor :: Proxy tk -> InletPath -> ValueInChannel repr -> Maybe ValueEditor.EditorId
+    spawnWebEditor :: Proxy tk -> {- H.RefLabel -> -} ValueEditor.EditorId -> InletPath -> ValueInChannel repr -> Maybe (ValueEditor repr Unit m)

@@ -15,6 +15,9 @@ import Halogen (Component, RefLabel) as H
 
 newtype EditorId = EditorId String
 
+derive instance Eq EditorId
+derive instance Ord EditorId
+
 
 type Def repr =
     { inlet :: Id.InletR
@@ -24,19 +27,29 @@ type Def repr =
     }
 
 
+data Input = Input
+
+
 data Output v
     = SendValue v
 
 
-type ValueEditor v state m
+{- type ValueEditor v state m
     =  v -- initial value
     -> (v -> Effect Unit) -- send value
     -> ValueEditorComp v state m
+-}
 
+
+data Query a
+    = Query a
+
+
+type ValueEditor v state m = ValueEditorComp v state m
 
 
 type ValueEditorComp v state m =
-    forall query input output. H.Component query input output m
+    H.Component Query Input (Output v) m
 {-
     { create :: BlessedOp state m
     , inject :: v -> BlessedOp state m

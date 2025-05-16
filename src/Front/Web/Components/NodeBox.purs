@@ -122,7 +122,7 @@ component
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => T.At At.StatusLine chrepr
     => T.At At.ChannelLabel chrepr
-    => WebEditor tk chrepr
+    => WebEditor tk chrepr m
     => Proxy tk
     -> H.Component (Query strepr chrepr) (Input strepr chrepr m) (Output chrepr) m
 component ptk =
@@ -393,7 +393,7 @@ handleAction
     => HasChRepr tk chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => T.At At.StatusLine chrepr
-    => WebEditor tk chrepr
+    => WebEditor tk chrepr m
     => Proxy tk
     -> Action sterpr chrepr m
     -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () (Output chrepr) m Unit
