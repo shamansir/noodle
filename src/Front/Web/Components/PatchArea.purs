@@ -17,7 +17,7 @@ import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values
 import Data.Map.Extra (update') as MapX
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (sortWith) as Array
+import Data.Array (sortWith, find) as Array
 import Data.Set (Set)
 import Data.Set (empty, insert, member, fromFoldable) as Set
 import Data.Int (toNumber) as Int
@@ -48,10 +48,12 @@ import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id, connector) as RawLink
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (NodeChanges, id, shape) as RawNode
+import Noodle.Raw.Node (NodeChanges, id, shape, sendIn) as RawNode
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
+import Noodle.Repr.ValueInChannel (toFallback) as ViC
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
@@ -117,7 +119,7 @@ type State loc ps sr cr m =
     , zoom :: Number
     , bgOpacity :: Number
     , lastLocation :: loc
-    , nodes :: Array (Raw.Node sr cr m)
+    , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
     , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
     , links :: Array Raw.Link
     , lockOn :: LockingTask
@@ -173,6 +175,7 @@ component
      . MonadEffect m
     => WebLocator loc
     => MarkToolkit tk
+    => HasFallback cr
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
@@ -217,6 +220,7 @@ render
      . MonadEffect m
     => MarkToolkit tk
     => HasChRepr tk cr
+    => HasFallback cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
@@ -263,7 +267,6 @@ render SVG ptk state =
             ]
         ]
     where
-        _ = Debug.spy "SVG: editor" state.mbCurrentEditor
         backgroundColor = fromMaybe (P.hColorOf Palette.black) $ HCColorX.setAlpha state.bgOpacity $ P.hColorOf Palette.black
         notYetConnectedLink = LinkCmp.linkShapeNotYetConnected
         nodesWithCells = _makeNodesWithCells state
@@ -303,16 +306,22 @@ render SVG ptk state =
 
 
 render HTML ptk state =
-    case Debug.spy "HTML: editor" state.mbCurrentEditor of
+    case state.mbCurrentEditor of
         Just (nodeR /\ { inlet, editor, pos, currentValue }) ->
             let
                 theInletPos = inletPos (nodeR /\ inlet)
                 inletPath = { node : nodeR, inlet }
                 -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
                 mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
+                mbTargetNode = state.nodes # Array.find (RawNode.id >>> (_ == nodeR))
+                sendValue value = case Debug.spy "node found" mbTargetNode of
+                    Just rawNode -> RawNode.sendIn inlet (Debug.spy "send value" value) rawNode
+                    Nothing -> pure unit
             in
                 case mbWebEditorComp of
-                    Just valueEditor -> HH.slot_ _valueEditor editor valueEditor ValueEditor.Input
+                    Just valueEditor ->
+                        HH.slot_ _valueEditor editor (valueEditor sendValue) -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
+                            { pos : theInletPos, currentValue : ViC.toFallback currentValue }
                     Nothing -> HH.div [] []
         Nothing -> HH.div [] []
     where
@@ -434,7 +443,7 @@ handleAction = case _ of
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         H.modify_ _ { lockOn = NoLock }
         -- TODO ApplyDragEnd if node was dragged
-    FromNodeBox nodeR (NodeBox.InletValueWasClicked inletR pos editorId vic) -> do
+    FromNodeBox nodeR (NodeBox.InletValueWasClicked pos inletR editorId vic) -> do
         let _ = Debug.spy "patch: inlet value click" unit
         let editorDef =
                 { inlet : inletR

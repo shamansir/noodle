@@ -1,9 +1,12 @@
-module Web.Components.ValueEditor.Number where
+module Web.Components.ValueEditor.Numeric where
 
 import Prelude
 
+import Debug as Debug
 
-import Data.Maybe (Maybe(..))
+
+import Data.Maybe (Maybe(..), maybe)
+import Data.Number as Number
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -12,6 +15,7 @@ import Halogen.HTML.Events as HE
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
 import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 
+import Noodle.Repr.HasFallback (fallback, class HasFallback)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
@@ -21,19 +25,21 @@ import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 
 import Web.Components.ValueEditor as VE
 
-data Action = Increment | Decrement
+
+data Action repr
+    = Skip
+    | SendValue repr
 
 
-
-editor :: forall repr m. H.Component VE.Query VE.Input (VE.Output repr) m
-editor =
+editor :: forall repr m. HasFallback repr => Monad m => (repr -> Maybe Number) -> (Number -> repr) -> VE.ValueEditor repr Unit m
+editor fromRepr toRepr sendValue =
     H.mkComponent
         { initialState
         , render
-        , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+        , eval : H.mkEval H.defaultEval { handleAction = handleAction }
         }
     where
-    initialState _ = 0
+    initialState { pos, currentValue } = { pos, currentValue }
 
     render state =
         HH.input
@@ -45,20 +51,18 @@ editor =
                 <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
                 <> "border-radius: 5px; "
                 <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
-                <> HHP.position_ HHP.Abs { x : theInletPos.x + 7.0, y : theInletPos.y - 20.0 }
+                <> HHP.position_ HHP.Abs { x : state.pos.x + 7.0, y : state.pos.y - 20.0 }
             -- , HP.step $ I.Step step
-            -- , HP.value $ show val
-            -- , HE.onValueInput (Number.fromString >>> maybe def handler)
+            , HHP.value $ maybe "-" show $ fromRepr state.currentValue
+            , HE.onValueInput (Number.fromString >>> map toRepr >>> Debug.spy "repr" >>> maybe Skip SendValue)
             ]
 
-    theInletPos = { x : 200.0, y : 200.0 } -- FIXME
-
     handleAction = case _ of
-        Decrement ->
-            H.modify_ \state -> state - 1
+        Skip ->
+            pure unit
 
-        Increment ->
-            H.modify_ \state -> state + 1
+        SendValue val ->
+            H.lift $ sendValue val
 
     inputBorderColor = _.i600 $ Palette.yellow
     inputTextColor = _.i100 $ Palette.cyan

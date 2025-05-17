@@ -27,29 +27,31 @@ type Def repr =
     }
 
 
-data Input = Input
+type Input v =
+    { pos ::
+        { x :: Number
+        , y :: Number
+        }
+    , currentValue :: v
+    }
 
 
 data Output v
     = SendValue v
 
 
-{- type ValueEditor v state m
-    =  v -- initial value
-    -> (v -> Effect Unit) -- send value
+type ValueEditor v state m
+    =  (v -> m Unit) -- send value
     -> ValueEditorComp v state m
--}
+
 
 
 data Query a
     = Query a
 
 
-type ValueEditor v state m = ValueEditorComp v state m
-
-
 type ValueEditorComp v state m =
-    H.Component Query Input (Output v) m
+    H.Component Query (Input v) (Output v) m
 {-
     { create :: BlessedOp state m
     , inject :: v -> BlessedOp state m

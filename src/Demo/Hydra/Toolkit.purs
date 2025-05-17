@@ -28,7 +28,7 @@ import Web.Class.WebRenderer (class WebRenderer, class WebRawRenderer, class Web
 import Web.Class.WebRenderer (InletPath) as WR
 import Web.Components.ValueEditor (ValueEditor)
 import Web.Components.ValueEditor (EditorId) as ValueEditor
-import Web.Components.ValueEditor.Number as NumberVE
+import Web.Components.ValueEditor.Numeric as NumericVE
 
 import Halogen (Component, RefLabel) as H
 
@@ -122,6 +122,7 @@ import HydraTk.Library.Out.Out as Out.Out
 import HydraTk.Patch (PState(..))
 import HydraTk.Patch (init) as Patch
 import HydraTk.Repr.Wrap (WrapRepr)
+import HydraTk.Repr.Wrap (WrapRepr(..)) as W
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Types as HT
 import HydraTk.Repr.Wrap as HW
@@ -419,11 +420,17 @@ instance MonadEffect m => CliRawRenderer HYDRA HydraFamilies WrapRepr m where
 instance CliEditor HYDRA WrapRepr where
   cliEditorFor _ _ _ _ _ _ = Nothing
 
-instance WebEditor HYDRA WrapRepr m where
+instance Monad m => WebEditor HYDRA WrapRepr m where
   -- webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
   -- webEditorFor _ _ _ = Nothing
   spawnWebEditor :: Proxy HYDRA -> {- H.RefLabel -> -} ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr Unit m)
-  spawnWebEditor _ {- _ -} _ _ _ = Just NumberVE.editor
+  spawnWebEditor _ {- _ -} _ _ _ =
+    Just $ NumericVE.editor toNumber fromNumber
+    where
+      toNumber = case _ of -- FIXME: use some typeclass
+        W.Value (HT.Number n) -> Just n
+        _ -> Nothing
+      fromNumber = W.Value <<< HT.Number
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>

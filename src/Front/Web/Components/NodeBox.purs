@@ -91,7 +91,7 @@ data Action sterpr chrepr m
     | DragButtonClick MouseEvent
     | RemoveButtonClick MouseEvent
     | InletClick MouseEvent Id.InletR
-    | InletValueClick MouseEvent Id.InletR (ValueInChannel chrepr)
+    | InletValueClick MouseEvent { x :: Number, y :: Number } Id.InletR (ValueInChannel chrepr)
     | OutletClick MouseEvent Id.OutletR
     | ChangeFocus (InsideFocus chrepr)
     | ClearFocus
@@ -101,7 +101,7 @@ data Output chrepr
     = HeaderWasClicked
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
-    | InletValueWasClicked Id.InletR { x :: Number, y :: Number } ValueEditor.EditorId (ValueInChannel chrepr)
+    | InletValueWasClicked { x :: Number, y :: Number } Id.InletR ValueEditor.EditorId (ValueInChannel chrepr)
     | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
     | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
@@ -284,7 +284,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
             _ -> false
         renderInlet idx inletDef =
             HS.g
-                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
+                [ HSA.transform [ HSA.Translate inletPos.x inletPos.y ]
                 , HE.onClick $ flip InletClick inletDef.name
                 , HE.onMouseOver $ const $ ChangeFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
                 , HE.onMouseOut  $ const $ ClearFocus
@@ -311,7 +311,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     , HSA.class_ $ H.ClassName "noodle-capture-events"
-                    , HE.onClick $ \mevt -> InletValueClick mevt inletDef.name $ valueOfInlet inletDef.name
+                    , HE.onClick $ \mevt -> InletValueClick mevt inletPos inletDef.name $ valueOfInlet inletDef.name
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 , HS.rect
@@ -322,9 +322,10 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.y $ -3.0
                     ]
                 ]
+            where inletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderOulet idx outletDef =
             HS.g
-                [ HSA.transform [ HSA.Translate (Int.toNumber idx * channelStep) 0.0 ]
+                [ HSA.transform [ HSA.Translate outletPos.x outletPos.y ]
                 , HE.onClick $ flip OutletClick outletDef.name
                 , HE.onMouseOver $ const $ ChangeFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
                 , HE.onMouseOut  $ const $ ClearFocus
@@ -360,6 +361,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     , HSA.y 0.0
                     ]
                 ]
+            where outletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderInlets =
             HS.g
                 [ HSA.transform [ HSA.Translate titleWidth 0.0 ] ]
@@ -419,10 +421,10 @@ handleAction ptk = case _ of
         let _ = Debug.spy "inlet click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
-    InletValueClick mevt inletR vic -> do
+    InletValueClick mevt pos inletR vic -> do
         let _ = Debug.spy "inlet value click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise $ InletValueWasClicked inletR { x: 0.0, y : 0.0 } (ValueEditor.EditorId "string") vic
+        H.raise $ InletValueWasClicked pos inletR (ValueEditor.EditorId "number") vic
     OutletClick mevt outletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         let
@@ -455,6 +457,7 @@ handleAction ptk = case _ of
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
+        let _ = Debug.spy "apply update" unit
         H.modify_ _ { latestUpdate = Just changes }
         pure $ Just a
     ApplyDragStart a -> do
