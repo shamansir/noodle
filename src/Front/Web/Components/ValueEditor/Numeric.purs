@@ -26,20 +26,24 @@ import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 import Web.Components.ValueEditor as VE
 
 
-data Action repr
+data Action repr m
     = Skip
     | SendValue repr
+    | Receive (VE.Input repr m)
 
 
 editor :: forall repr m. HasFallback repr => Monad m => (repr -> Maybe Number) -> (Number -> repr) -> VE.ValueEditor repr Unit m
-editor fromRepr toRepr sendValue =
+editor fromRepr toRepr =
     H.mkComponent
         { initialState
         , render
-        , eval : H.mkEval H.defaultEval { handleAction = handleAction }
+        , eval : H.mkEval H.defaultEval
+            { handleAction = handleAction
+            , receive = Just <<< Receive
+            }
         }
     where
-    initialState { pos, currentValue } = { pos, currentValue }
+    initialState { pos, currentValue, send } = { pos, currentValue, send }
 
     render state =
         HH.input
@@ -61,8 +65,12 @@ editor fromRepr toRepr sendValue =
         Skip ->
             pure unit
 
-        SendValue val ->
-            H.lift $ sendValue val
+        SendValue val -> do
+            state <- H.get
+            H.lift $ state.send val
+
+        Receive { pos, currentValue, send } ->
+            H.modify_ _ { pos = pos, currentValue = currentValue, send = send }
 
     inputBorderColor = _.i600 $ Palette.yellow
     inputTextColor = _.i100 $ Palette.cyan

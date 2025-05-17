@@ -309,7 +309,8 @@ render HTML ptk state =
     case state.mbCurrentEditor of
         Just (nodeR /\ { inlet, editor, pos, currentValue }) ->
             let
-                theInletPos = inletPos (nodeR /\ inlet)
+                theInletPos = inletPos (nodeR /\ inlet) # \{x, y} -> { x, y : y - 25.0 }
+                _ = Debug.spy "inlet" inlet
                 inletPath = { node : nodeR, inlet }
                 -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
                 mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
@@ -320,8 +321,8 @@ render HTML ptk state =
             in
                 case mbWebEditorComp of
                     Just valueEditor ->
-                        HH.slot_ _valueEditor editor (valueEditor sendValue) -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
-                            { pos : theInletPos, currentValue : ViC.toFallback currentValue }
+                        HH.slot_ _valueEditor editor valueEditor -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
+                            { pos : theInletPos, currentValue : ViC.toFallback currentValue, send : sendValue }
                     Nothing -> HH.div [] []
         Nothing -> HH.div [] []
     where
