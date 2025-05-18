@@ -126,6 +126,9 @@ type State loc ps sr cr m =
     , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
+        -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
+        --        but here we have access to all the nodes and rendering happens inside `PatchArea`,
+        --        so we store it twice for now, solve it later somehow
     }
 
 
@@ -150,6 +153,7 @@ data Action ps sr cr m
     | PatchAreaClick
     | FromNodeBox Id.NodeR (NodeBox.Output cr)
     | FromLink Id.LinkR LinkCmp.Output
+    | FromValueEditor Id.NodeR Id.InletR (ValueEditor.Output cr)
 
 
 data Output cr
@@ -160,6 +164,7 @@ data Output cr
     | ClearStatusBar
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
+    | CloseValueEditor
     | InformBoundsUpdatedInLayer (Map Id.NodeR (Bounds /\ NodeZIndex))
 
 
@@ -167,6 +172,7 @@ data Query sr cr m a
     = ApplyNewNode (Raw.Node sr cr m) a
     | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
+    | ValueEditorClosedByUser a
     | ApplyOtherLayerBoundsUpdate (Map Id.NodeR (Bounds /\ NodeZIndex)) a
 
 
@@ -314,15 +320,11 @@ render HTML ptk state =
                 inletPath = { node : nodeR, inlet }
                 -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
                 mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
-                mbTargetNode = state.nodes # Array.find (RawNode.id >>> (_ == nodeR))
-                sendValue value = case Debug.spy "node found" mbTargetNode of
-                    Just rawNode -> RawNode.sendIn inlet (Debug.spy "send value" value) rawNode
-                    Nothing -> pure unit
             in
                 case mbWebEditorComp of
                     Just valueEditor ->
-                        HH.slot_ _valueEditor editor valueEditor -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
-                            { pos : theInletPos, currentValue : ViC.toFallback currentValue, send : sendValue }
+                        HH.slot _valueEditor editor valueEditor -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
+                            { pos : theInletPos, currentValue : ViC.toFallback currentValue } $ FromValueEditor nodeR inlet
                     Nothing -> HH.div [] []
         Nothing -> HH.div [] []
     where
@@ -399,7 +401,8 @@ _outletPosition nodesToCellsMap (nodeR /\ outletR) =
 
 handleAction
     :: forall loc ps sr cr m
-     . WebLocator loc
+     . MonadEffect m
+    => WebLocator loc
     => Action ps sr cr m
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
 handleAction = case _ of
@@ -481,11 +484,20 @@ handleAction = case _ of
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR (LinkCmp.WasClicked) ->
         H.raise $ Disconnect linkR
+    FromValueEditor nodeR inletR (ValueEditor.SendValue value) -> do
+        state <- H.get
+        whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
+            $ RawNode.sendIn inletR (Debug.spy "send value" value)
+    FromValueEditor _ _ ValueEditor.CloseEditor -> do
+        H.modify_ _ { mbCurrentEditor = Nothing }
+        H.raise CloseValueEditor
+
 
 
 handleQuery
     :: forall loc ps sr cr m a
-     . WebLocator loc
+     . MonadEffect m
+    => WebLocator loc
     => Query sr cr m a
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m (Maybe a)
 handleQuery = case _ of
@@ -504,6 +516,9 @@ handleQuery = case _ of
         pure $ Just a
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
+        pure $ Just a
+    ValueEditorClosedByUser a -> do
+        H.modify_ _ { mbCurrentEditor = Nothing }
         pure $ Just a
     CancelConnecting a -> do
         H.modify_ _ { lockOn = NoLock }

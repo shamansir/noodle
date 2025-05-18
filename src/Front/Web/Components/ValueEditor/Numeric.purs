@@ -7,13 +7,17 @@ import Debug as Debug
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Number as Number
+import Data.String as String
 
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Events as HE
+
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
 import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
+import Web.UIEvent.KeyboardEvent as KE
+import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 import Noodle.Repr.HasFallback (fallback, class HasFallback)
 import Noodle.Ui.Palette.Item as P
@@ -26,13 +30,14 @@ import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 import Web.Components.ValueEditor as VE
 
 
-data Action repr m
+data Action repr
     = Skip
     | SendValue repr
-    | Receive (VE.Input repr m)
+    | CloseEditor
+    | Receive (VE.Input repr)
 
 
-editor :: forall repr m. HasFallback repr => Monad m => (repr -> Maybe Number) -> (Number -> repr) -> VE.ValueEditor repr Unit m
+editor :: forall repr m. HasFallback repr => Monad m => (repr -> Maybe Number) -> (Number -> repr) -> VE.ValueEditor repr m
 editor fromRepr toRepr =
     H.mkComponent
         { initialState
@@ -43,14 +48,14 @@ editor fromRepr toRepr =
             }
         }
     where
-    initialState { pos, currentValue, send } = { pos, currentValue, send }
+    initialState { pos, currentValue } = { pos, currentValue }
 
     render state =
         HH.input
             [ HHP.type_ I.InputNumber
             , HHP.width 40, HHP.height 9
-            , HHP.min 0.0
-            , HHP.max 20.0
+            -- , HHP.min 0.0
+            -- , HHP.max 20.0
             , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
                 <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
                 <> "border-radius: 5px; "
@@ -59,6 +64,12 @@ editor fromRepr toRepr =
             -- , HP.step $ I.Step step
             , HHP.value $ maybe "-" show $ fromRepr state.currentValue
             , HE.onValueInput (Number.fromString >>> map toRepr >>> Debug.spy "repr" >>> maybe Skip SendValue)
+            -- , HE.onValueChange (Debug.spy "onValueChange" >>> const Skip)
+            , HE.onKeyUp (\kevt ->
+                    if (String.toLower (KE.key kevt) == "escape") || (String.toLower (KE.key kevt) == "enter")
+                        then Debug.spy "close editor" CloseEditor
+                        else Skip
+                )
             ]
 
     handleAction = case _ of
@@ -66,11 +77,13 @@ editor fromRepr toRepr =
             pure unit
 
         SendValue val -> do
-            state <- H.get
-            H.lift $ state.send val
+            H.raise $ VE.SendValue val
 
-        Receive { pos, currentValue, send } ->
-            H.modify_ _ { pos = pos, currentValue = currentValue, send = send }
+        CloseEditor ->
+            H.raise $ VE.CloseEditor
+
+        Receive { pos, currentValue } ->
+            H.modify_ _ { pos = pos, currentValue = currentValue }
 
     inputBorderColor = _.i600 $ Palette.yellow
     inputTextColor = _.i100 $ Palette.cyan

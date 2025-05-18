@@ -398,10 +398,14 @@ handleAction = case _ of
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
     FromPatchArea (PatchArea.InformBoundsUpdatedInLayer nodesBounds) -> do
         H.tell _patchArea HTML $ PatchArea.ApplyOtherLayerBoundsUpdate nodesBounds
+    FromPatchArea PatchArea.CloseValueEditor ->
+        H.modify_ $ _ { mbCurrentEditor = Nothing }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     GlobalKeyDown kevt -> do
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
-        when (String.toLower (KE.key kevt) == "escape") $ H.tell _patchArea SVG PatchArea.CancelConnecting
+        when (String.toLower (KE.key kevt) == "escape") $ do
+            H.tell _patchArea SVG PatchArea.CancelConnecting
+            H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }

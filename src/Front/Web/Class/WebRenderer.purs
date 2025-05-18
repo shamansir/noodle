@@ -73,4 +73,4 @@ type InletPath =
 
 class WebEditor (tk :: ToolkitKey) repr m | tk -> repr where
     -- webEditorFor :: Proxy tk -> InletPath -> ValueInChannel repr -> Maybe ValueEditor.EditorId
-    spawnWebEditor :: Proxy tk -> {- H.RefLabel -> -} ValueEditor.EditorId -> InletPath -> ValueInChannel repr -> Maybe (ValueEditor repr Unit m)
+    spawnWebEditor :: Proxy tk -> {- H.RefLabel -> -} ValueEditor.EditorId -> InletPath -> ValueInChannel repr -> Maybe (ValueEditor repr m)

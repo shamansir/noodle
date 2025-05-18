@@ -423,7 +423,7 @@ instance CliEditor HYDRA WrapRepr where
 instance Monad m => WebEditor HYDRA WrapRepr m where
   -- webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
   -- webEditorFor _ _ _ = Nothing
-  spawnWebEditor :: Proxy HYDRA -> {- H.RefLabel -> -} ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr Unit m)
+  spawnWebEditor :: Proxy HYDRA -> {- H.RefLabel -> -} ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr m)
   spawnWebEditor _ {- _ -} _ _ _ =
     Just $ NumericVE.editor toNumber fromNumber
     where
