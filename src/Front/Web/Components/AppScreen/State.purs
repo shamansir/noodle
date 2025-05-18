@@ -38,6 +38,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbStatusBarContent :: Maybe T.Tag
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
+    , commandInputActive :: Boolean
     }
 
 
@@ -57,6 +58,7 @@ init toolkit =
     , mbStatusBarContent : Nothing
     , mbHydraProgram : Nothing
     , mbCurrentEditor : Nothing
+    , commandInputActive : false
     }
 
 

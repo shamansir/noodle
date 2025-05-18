@@ -63,6 +63,7 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
+import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
@@ -264,7 +265,8 @@ render ploc _ state =
                 , currentZoom : state.zoom
                 } :: StatusBar.Input
             commandInputInput =
-                { pos : { x : 0.0, y : 0.0 }
+                { pos : { x : width / 2.0, y : height / 2.0 }
+                , active : state.commandInputActive
                 } :: CommandInput.Input
 
 
@@ -421,13 +423,25 @@ handleAction = case _ of
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->
-        pure unit
+        case cmdResult of
+            FI.FromFamily familyR rawNode ->
+                handleAction $ RegisterNode rawNode
+            FI.CustomNode signature rawNode ->
+                handleAction $ RegisterNode rawNode
+            FI.CannotSpawn familyR ->
+                pure unit
+                -- FIXME: log error: CC.log $ "family not found: " <> Id.family familyR
+            FI.UnknownCommand command ->
+                pure unit
+                -- FIXME: log error: CC.log $ "parse error " <> command
     FromCommandInput CommandInput.CloseCommandInput ->
-        pure unit
+        H.modify_ _ { commandInputActive = false }
     GlobalKeyDown kevt -> do
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
         when (String.toLower (KE.key kevt) == "escape") $ do
             H.tell _patchArea SVG PatchArea.CancelConnecting
             H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
+        when (String.toLower (KE.key kevt) == "tab") $ do
+            H.modify_ \s -> s { commandInputActive = not s.commandInputActive }
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
