@@ -47,7 +47,7 @@ For Hot Code Replacement, `sh ./run-web-watch.sh` could be run in parallel, but 
 
 ### Run with toolkit and commands from the file
 
-Will rewrite previous node definitions if they intersect
+Will rewrite previous node definitions if they intersect.
 
 `sh ./run-cli.sh -t starter -f ./ndf/starter.v0.1.ndf`
 `sh ./run-cli.sh -t hydra -f ./ndf/hydra.v0.3.ndf`
