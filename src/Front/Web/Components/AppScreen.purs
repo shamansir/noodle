@@ -52,7 +52,7 @@ import Noodle.Toolkit (families, class HoldsFamilies, class InitPatchState, clas
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, state, setState, subscribeChanges) as RawNode
+import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, family, state, setState, subscribeChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
@@ -62,7 +62,7 @@ import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
@@ -73,6 +73,7 @@ import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
+import Web.Components.CommandInput as CommandInput
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -85,6 +86,7 @@ type Slots sr cr m =
     , library :: forall q. H.Slot q Library.Output TargetLayer
     , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
+    , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     )
 
 
@@ -92,20 +94,23 @@ _library = Proxy :: _ "library"
 _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
+_commandInput = Proxy :: _ "commandInput"
 
 
-data Action sr cr
+data Action sr cr m
     = Initialize
     | GlobalKeyDown KeyboardEvent
     | GlobalKeyUp KeyboardEvent
     | SelectPatch Id.PatchR
     | CreatePatch
-    | SpawnNode Id.FamilyR
+    | SpawnNodeOf Id.FamilyR
+    | RegisterNode (Raw.Node sr cr m)
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromPatchArea (PatchArea.Output cr)
     | FromStatusBar StatusBar.Output
+    | FromCommandInput (CommandInput.Output sr cr m)
     | HandleResize
 
 
@@ -114,6 +119,7 @@ component
      . Wiring m
     => WebLocator loc
     => HasFallback cr
+    => HasFallback sr
     => MarkToolkit tk
     => T.At At.ChannelLabel cr
     => T.At At.StatusLine cr
@@ -123,6 +129,7 @@ component
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
+    => ParseableRepr cr
     => Hydra.ToHydraCommand sr
     => WebEditor tk cr m
     => Proxy loc
@@ -156,16 +163,18 @@ render
     => Toolkit.FromToPatchState tk ps sr
     => MarkToolkit tk
     => HasFallback cr
+    => HasFallback sr
     => ValueTagged cr
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => ParseableRepr cr
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
     -> State tk ps fs sr cr m
-    -> H.ComponentHTML (Action sr cr) (Slots sr cr m) m
+    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
 render ploc _ state =
     HH.div
         [ HHP.style
@@ -209,9 +218,11 @@ render ploc _ state =
             , HH.div
                 [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
                 [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
+            , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
             ]
         ]
         where
+            toolkit = Network.toolkit state.network
             solidBackground = P.hColorOf Palette.black
             backgroundWithAlpha = fromMaybe solidBackground $ HCColorX.setAlpha state.bgOpacity solidBackground
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
@@ -230,7 +241,9 @@ render ploc _ state =
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
 
-            libraryInput = { families : Toolkit.families $ Network.toolkit state.network } :: Library.Input
+            libraryInput =
+                { families : Toolkit.families toolkit
+                } :: Library.Input
             patchAreaInput =
                 { offset : { left : patchAreaX, top : patchAreaY }
                 , size : { width : patchAreaWidth, height : patchAreaHeight }
@@ -250,6 +263,9 @@ render ploc _ state =
                 , width : statusBarWidth
                 , currentZoom : state.zoom
                 } :: StatusBar.Input
+            commandInputInput =
+                { pos : { x : 0.0, y : 0.0 }
+                } :: CommandInput.Input
 
 
 handleAction
@@ -260,8 +276,8 @@ handleAction
     => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
-    => Action sr cr
-    -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr) (Slots sr cr m) output m Unit
+    => Action sr cr m
+    -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
 handleAction = case _ of
     Initialize -> do
         window <- H.liftEffect $ Web.window
@@ -312,41 +328,43 @@ handleAction = case _ of
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
-    SpawnNode familyR -> do
+    SpawnNodeOf familyR -> do
         state <- H.get
         let toolkit = Network.toolkit state.network
         (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
-        whenJust mbRawNode \rawNode -> do
-            let
-                nodeR = RawNode.id rawNode
-            H.lift $ RawNode._runOnInletUpdates rawNode
+        whenJust mbRawNode (handleAction <<< RegisterNode)
+    RegisterNode rawNode -> do
+        let
+            familyR = RawNode.family rawNode
+            nodeR = RawNode.id rawNode
+        H.lift $ RawNode._runOnInletUpdates rawNode
 
-            mbCurrentPatch <- CState.currentPatch <$> H.get
-            whenJust mbCurrentPatch \curPatch -> do
-                (patchState :: ps) <- Patch.getState curPatch
-                (curState :: sr) <- RawNode.state rawNode
-                let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState curState
-                -- whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
-                whenJust mbNodeState
-                    \nextState -> rawNode # RawNode.setState nextState
+        mbCurrentPatch <- CState.currentPatch <$> H.get
+        whenJust mbCurrentPatch \curPatch -> do
+            (patchState :: ps) <- Patch.getState curPatch
+            (curState :: sr) <- RawNode.state rawNode
+            let (mbNodeState :: Maybe sr) = Toolkit.loadFromPatch (Proxy :: _ tk) familyR patchState curState
+            -- whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
+            whenJust mbNodeState
+                \nextState -> rawNode # RawNode.setState nextState
 
-                _ <- H.subscribe =<< do -- TODO: make one emitter for all nodes to be a bus with all the changes in the patch
-                    { emitter, listener } <- H.liftEffect HSS.create
-                    H.liftEffect
-                        $  Signal.runSignal
-                        $  RawNode.subscribeChanges rawNode
-                        ~> PassUpdate (Patch.id curPatch) nodeR
-                        ~> HSS.notify listener
-                    pure emitter
+            _ <- H.subscribe =<< do -- TODO: make one emitter for all nodes to be a bus with all the changes in the patch
+                { emitter, listener } <- H.liftEffect HSS.create
+                H.liftEffect
+                    $  Signal.runSignal
+                    $  RawNode.subscribeChanges rawNode
+                    ~> PassUpdate (Patch.id curPatch) nodeR
+                    ~> HSS.notify listener
+                pure emitter
 
-                H.modify_
-                    $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+            H.modify_
+                $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
 
-                Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
+            Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
 
-                H.tell _patchArea SVG $ PatchArea.ApplyNewNode rawNode
+            H.tell _patchArea SVG $ PatchArea.ApplyNewNode rawNode
 
-                H.lift $ RawNode.run rawNode
+            H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
         H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
             when (Patch.id curPatch == patchR) $
@@ -361,7 +379,7 @@ handleAction = case _ of
     FromPatchesBar PatchesBar.CreatePatch -> do
         handleAction $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
-        handleAction $ SpawnNode familyR
+        handleAction $ SpawnNodeOf familyR
     FromPatchArea (PatchArea.TryZoom dy) -> do
         state <- H.get
         when state.shiftPressed $
@@ -402,6 +420,10 @@ handleAction = case _ of
         H.modify_ $ _ { mbCurrentEditor = Nothing }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
+    FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->
+        pure unit
+    FromCommandInput CommandInput.CloseCommandInput ->
+        pure unit
     GlobalKeyDown kevt -> do
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
         when (String.toLower (KE.key kevt) == "escape") $ do
