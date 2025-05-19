@@ -4,14 +4,13 @@ import Prelude
 
 import Effect.Class (class MonadEffect)
 
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Number as Number
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Int as Int
 import Data.String as String
 
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Properties as HHP
+import Halogen.HTML.Properties (height, style, type_, width) as HHP
 import Halogen.HTML.Events as HE
 
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
@@ -23,7 +22,7 @@ import Noodle.Id (FamilyR) as Id
 import Noodle.Toolkit (Toolkit, class HoldsFamilies)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.Tagged (class ValueTagged)
-import Noodle.Repr.HasFallback (fallback, class HasFallback)
+import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -32,7 +31,7 @@ import Noodle.Text.NdfFile.Command.FromInput (CommandResult, tryExecute) as FI
 
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Attributes.Color.Extra as HCColorX
-import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position_) as HHP
 
 
 

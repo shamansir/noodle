@@ -166,6 +166,7 @@ data Output cr
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
     | InformBoundsUpdatedInLayer (Map Id.NodeR (Bounds /\ NodeZIndex))
+    | LockUpdate LockingTask
 
 
 data Query sr cr m a
@@ -416,8 +417,9 @@ handleAction = case _ of
             DraggingNode nodeR -> do
                 H.modify_ $ updatePosition nodeR { left : x, top : y }
                 _informOtherLayersAboutNewBounds
-            Connecting linkStart _ ->
+            Connecting linkStart _ -> do
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
+                informLockUpdate
             NoLock ->
                 H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
     WheelChange { dy } ->
@@ -428,24 +430,29 @@ handleAction = case _ of
             \nodeR -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
+                informLockUpdate
         whenJust (creatingLink state)
             \_ -> do
                 H.modify_ _ { lockOn = NoLock }
+                informLockUpdate
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
                 H.modify_ _ { lockOn = DraggingNode nodeR }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
+                informLockUpdate
             Just otherNodeR -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
+                informLockUpdate
     FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
         state <- H.get
         whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
             when (fromNode /= nodeR) $
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         H.modify_ _ { lockOn = NoLock }
+        informLockUpdate
         -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.InletValueWasClicked pos inletR editorId vic) -> do
         let _ = Debug.spy "patch: inlet value click" unit
@@ -468,6 +475,7 @@ handleAction = case _ of
                 , y : pos.y - state.offset.top
                 }
             }
+        informLockUpdate
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
         state <- H.get
         handleAction $ PatchAreaMouseMove $
@@ -491,6 +499,8 @@ handleAction = case _ of
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.modify_ _ { mbCurrentEditor = Nothing }
         H.raise CloseValueEditor
+    where
+        informLockUpdate = H.get <#> _.lockOn >>= (H.raise <<< LockUpdate)
 
 
 
@@ -522,6 +532,7 @@ handleQuery = case _ of
         pure $ Just a
     CancelConnecting a -> do
         H.modify_ _ { lockOn = NoLock }
+        H.raise $ LockUpdate NoLock
         pure $ Just a
     ApplyOtherLayerBoundsUpdate nodesBounds a -> do
         H.modify_ _ { nodesBounds = nodesBounds }

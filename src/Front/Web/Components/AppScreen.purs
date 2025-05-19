@@ -68,15 +68,18 @@ import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState'
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', PatchStats
+    , extractHelpContext
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Components.CommandInput as CommandInput
+import Web.Components.HelpText as HelpText
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
+
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
@@ -88,6 +91,7 @@ type Slots sr cr m =
     , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
+    , helpText :: forall q o. H.Slot q o Unit
     )
 
 
@@ -96,6 +100,7 @@ _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
 _commandInput = Proxy :: _ "commandInput"
+_helpText = Proxy :: _ "helpText"
 
 
 data Action sr cr m
@@ -220,6 +225,7 @@ render ploc _ state =
                 [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
                 [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
             , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
+            , HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
             ]
         ]
         where
@@ -268,6 +274,11 @@ render ploc _ state =
                 { pos : { x : width / 2.0, y : height / 2.0 }
                 , active : state.commandInputActive
                 } :: CommandInput.Input
+            curPatchStats =
+                { nodesCount : Array.length curPatchNodes
+                , linksCount : Array.length curPatchLinks
+                , lockOn : state.lastCurPatchLock
+                } :: CState.PatchStats
 
 
 handleAction
@@ -420,6 +431,8 @@ handleAction = case _ of
         H.tell _patchArea HTML $ PatchArea.ApplyOtherLayerBoundsUpdate nodesBounds
     FromPatchArea PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
+    FromPatchArea (PatchArea.LockUpdate lockUpdate) ->
+        H.modify_ $ _ { lastCurPatchLock = lockUpdate }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->

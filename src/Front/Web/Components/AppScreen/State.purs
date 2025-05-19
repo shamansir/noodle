@@ -12,6 +12,7 @@ import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array (length) as Array
 
 import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -23,12 +24,16 @@ import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 
 import HydraTk.Lang.Program (Program) as Hydra
+
 import Web.Components.ValueEditor (Def) as ValueEditor
+import Web.Components.HelpText (Context(..)) as HelpText
+import Web.Components.PatchArea (Input, LockingTask(..)) as PatchArea
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe { width :: Number, height :: Number }
     , zoom :: Number
+    , uiHidden :: Boolean
     , bgOpacity :: Number
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
@@ -36,9 +41,10 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbCurrentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
     , mbCurrentPatchState :: Maybe ps -- FIXME: it's data duplication, but we store it here, because getting it from Network is effectful and we need it on `render` for the user's Patch component
     , mbStatusBarContent :: Maybe T.Tag
-    , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra itself
+    , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra toolkit itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , commandInputActive :: Boolean
+    , lastCurPatchLock :: PatchArea.LockingTask -- FIXME: also data duplication for `LockingTask`, but we need to know what `PatchArea` performs now to show the corresponding help
     }
 
 
@@ -49,6 +55,7 @@ init :: forall tk ps fs sr cr m. Toolkit tk fs sr cr m -> State tk ps fs sr cr m
 init toolkit =
     { size : Nothing
     , zoom : 1.0
+    , uiHidden : false
     , bgOpacity : 0.1
     , shiftPressed : false
     , network : Network.init toolkit
@@ -59,6 +66,7 @@ init toolkit =
     , mbHydraProgram : Nothing
     , mbCurrentEditor : Nothing
     , commandInputActive : false
+    , lastCurPatchLock : PatchArea.NoLock
     }
 
 
@@ -127,3 +135,30 @@ withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs
 withCurrentPatch f s = case s.mbCurrentPatch <#> _.id of
     Just curPatchR -> withPatch curPatchR f s
     Nothing -> s
+
+
+type PatchStats =
+    { lockOn :: PatchArea.LockingTask
+    , nodesCount :: Int
+    , linksCount :: Int
+    }
+
+
+extractHelpContext :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> PatchStats -> HelpText.Context
+extractHelpContext state pStats =
+    if state.commandInputActive then HelpText.CommandInputOpen
+    else case state.mbCurrentEditor of
+        Just _ ->
+            HelpText.EnteringValue
+        Nothing ->
+            case pStats.lockOn of
+                PatchArea.DraggingNode _ ->
+                    HelpText.DraggingNode
+                PatchArea.Connecting _ _ ->
+                    HelpText.CreatingLink
+                PatchArea.NoLock ->
+                    HelpText.Start
+                        { hasLinks : pStats.linksCount > 0
+                        , hasNodes : pStats.nodesCount > 0
+                        , zoomChanged : state.zoom /= 1.0
+                        }
