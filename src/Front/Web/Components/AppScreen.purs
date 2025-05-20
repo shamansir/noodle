@@ -67,7 +67,7 @@ import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
-    ( init
+    ( init, log
     , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', PatchStats
     , extractHelpContext
     ) as CState
@@ -233,7 +233,7 @@ render ploc _ state =
                 [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
             , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
             , HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
-            , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state
+            , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) $ Debug.spy "log" state.log
             ]
         ]
         where
@@ -328,6 +328,8 @@ handleAction = case _ of
         state <- H.get
         firstPatch <- H.lift $ CState.spawnPatch state
         H.modify_ $ CState.registerPatch firstPatch.state firstPatch.patch
+
+        H.modify_ $ CState.log "Initialize"
 
         handleAction HandleResize
     HandleResize -> do

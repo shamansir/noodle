@@ -4,18 +4,24 @@ import Prelude
 
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
+import Data.Newtype (class Newtype, wrap, unwrap)
 
 import Web.Components.SidePanel (SidePanel)
-import Web.Components.AppScreen.State (State)
 
 import Noodle.Ui.Tagging as T
 
 
-sidePanel :: forall tk ps fs sr cr m. SidePanel "console" (State tk ps fs sr cr m) Boolean
+newtype LogLine = LogLine String
+
+
+derive instance Newtype LogLine _
+
+
+sidePanel :: SidePanel "console" (Array LogLine) Boolean
 sidePanel =
     { title : "console"
     , char : const 'L'
     , isOn : identity
-    , next : const $ pure $ true /\ [ T.s "Command", T.s "Log" ]
+    , next : \logLines -> pure $ true /\ (T.s <$> unwrap <$> logLines)  -- const $ pure $ true /\ [ T.s "Command", T.s "Log" ]
     , onToggle : identity
     }

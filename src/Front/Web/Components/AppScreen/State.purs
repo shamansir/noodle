@@ -12,7 +12,7 @@ import Data.Map (empty, insert, lookup) as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (length) as Array
+import Data.Array (length, snoc) as Array
 
 import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -28,6 +28,7 @@ import HydraTk.Lang.Program (Program) as Hydra
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
 import Web.Components.PatchArea (Input, LockingTask(..)) as PatchArea
+import Web.Components.SidePanel.Console (LogLine(..)) as Console
 
 
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
@@ -45,6 +46,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , commandInputActive :: Boolean
     , lastCurPatchLock :: PatchArea.LockingTask -- FIXME: also data duplication for `LockingTask`, but we need to know what `PatchArea` performs now to show the corresponding help
+    , log :: Array Console.LogLine
     }
 
 
@@ -67,6 +69,7 @@ init toolkit =
     , mbCurrentEditor : Nothing
     , commandInputActive : false
     , lastCurPatchLock : PatchArea.NoLock
+    , log : []
     }
 
 
@@ -162,3 +165,11 @@ extractHelpContext state pStats =
                         , hasNodes : pStats.nodesCount > 0
                         , zoomChanged : state.zoom /= 1.0
                         }
+
+
+log :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+log logLine s = s { log = Array.snoc s.log $ Console.LogLine logLine }
+
+
+logSome :: forall tk ps fs sr cr m. Array String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+logSome logLines s = s { log = s.log <> (Console.LogLine <$> logLines) }

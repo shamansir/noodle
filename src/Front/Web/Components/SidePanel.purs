@@ -70,6 +70,7 @@ panel config =
         Initialize -> do
             srec <- H.get
             v /\ tags <- H.liftEffect $ config.next srec.state
-            H.put $ { value : Just v, tags, state : srec.state }
+            H.put { value : Just v, tags, state : srec.state }
         Receive s -> do
-            H.modify_ _ { state = s }
+            v /\ tags <- H.liftEffect $ config.next s
+            H.put { value : Just v, tags, state : s }
