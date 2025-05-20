@@ -14,7 +14,7 @@ import Cli.Components.SidePanel (SidePanel)
 import Cli.Components.SidePanel (refresh) as SP
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
-import Cli.Panels (Which(..)) as P
+import Front.Shared.Panels (Which(..)) as P
 
 import Blessed.Internal.BlessedOp (BlessedOp)
 

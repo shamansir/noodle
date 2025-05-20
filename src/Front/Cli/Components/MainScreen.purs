@@ -38,7 +38,7 @@ import Noodle.Ui.Tagging.At (ChannelLabel) as At
 import Cli.Keys (mainScreen, library) as Key
 import Cli.State (State)
 import Cli.State (formatHistory, isPanelOn) as CState
-import Cli.Panels (Which(..)) as P
+import Front.Shared.Panels (Which(..)) as P
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (class CliLocator)
 

@@ -1,4 +1,4 @@
-module Cli.Panels where
+module Front.Shared.Panels where
 
 import Prelude
 
@@ -20,6 +20,10 @@ data Which
     | HydraCode
     | Console
     | Tree
+
+
+derive instance Eq Which
+derive instance Ord Which
 
 
 -- FIXME: by logic, those are just parts of the `State`, may be make them a direct members and store only toggles here

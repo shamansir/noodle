@@ -38,8 +38,8 @@ import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 import Blessed.Internal.NodeKey as NodeKey
 
 -- import Cli.WsServer as WSS
-import Cli.Panels (SidePanelsOnOff, initPanelsOnOff)
-import Cli.Panels (Which, toggle, isOn) as Panels
+import Front.Shared.Panels (SidePanelsOnOff, initPanelsOnOff)
+import Front.Shared.Panels (Which, toggle, isOn) as Panels
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K

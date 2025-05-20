@@ -12,7 +12,7 @@ import Cli.State (togglePanel, isPanelOn) as CState
 import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
-import Cli.Panels (Which(..)) as P
+import Front.Shared.Panels (Which(..)) as P
 
 
 data Status

@@ -77,8 +77,13 @@ import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Components.CommandInput as CommandInput
 import Web.Components.HelpText as HelpText
+import Web.Components.SidePanel (SidePanel)
+import Web.Components.SidePanel (panel) as SidePanel
+import Web.Components.SidePanel.Console (sidePanel) as SP.ConsoleLog
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
+
+import Front.Shared.Panels (Which(..)) as Panels
 
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
@@ -92,6 +97,7 @@ type Slots sr cr m =
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     , helpText :: forall q o. H.Slot q o Unit
+    , sidePanel :: forall q o. H.Slot q o (TargetLayer /\ Panels.Which)
     )
 
 
@@ -101,6 +107,7 @@ _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
 _commandInput = Proxy :: _ "commandInput"
 _helpText = Proxy :: _ "helpText"
+_sidePanel = Proxy :: _ "sidePanel"
 
 
 data Action sr cr m
@@ -226,6 +233,7 @@ render ploc _ state =
                 [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
             , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
             , HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
+            , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state
             ]
         ]
         where

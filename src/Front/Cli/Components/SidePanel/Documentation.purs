@@ -20,7 +20,7 @@ import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel (refresh) as SP
 import Cli.Keys as Key
-import Cli.Panels (Which(..)) as P
+import Front.Shared.Panels (Which(..)) as P
 
 import Noodle.Ui.Tagging as Tagging
 import Noodle.Ui.Tagging.At (class At, at) as Tagged
