@@ -31,11 +31,18 @@ import Web.Components.PatchArea (Input, LockingTask(..)) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 
 
+data UiMode
+    = CanvasFullyVisible
+    | TransparentOverlay Number -- semi-transparent overlay over canvas
+    | SolidOverlay UiMode -- solid color over the canvas (canvas not visible), keeps previous mode to get back to it
+    | OnlyCanvas UiMode -- UI is hidden, keeps previous mode to get back to it
+
+
 type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe { width :: Number, height :: Number }
     , zoom :: Number
-    , uiHidden :: Boolean
-    , bgOpacity :: Number
+    , uiMode :: UiMode
+    , helpText :: Boolean
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
     , patchIdToIndex :: Map Id.PatchR PatchIndex
@@ -57,9 +64,9 @@ init :: forall tk ps fs sr cr m. Toolkit tk fs sr cr m -> State tk ps fs sr cr m
 init toolkit =
     { size : Nothing
     , zoom : 1.0
-    , uiHidden : false
-    , bgOpacity : 0.1
+    , uiMode : TransparentOverlay 0.1
     , shiftPressed : false
+    , helpText : true
     , network : Network.init toolkit
     , patchIdToIndex : Map.empty
     , mbCurrentPatch : Nothing
@@ -154,17 +161,21 @@ extractHelpContext state pStats =
         Just _ ->
             HelpText.EnteringValue
         Nothing ->
-            case pStats.lockOn of
-                PatchArea.DraggingNode _ ->
-                    HelpText.DraggingNode
-                PatchArea.Connecting _ _ ->
-                    HelpText.CreatingLink
-                PatchArea.NoLock ->
-                    HelpText.Start
-                        { hasLinks : pStats.linksCount > 0
-                        , hasNodes : pStats.nodesCount > 0
-                        , zoomChanged : state.zoom /= 1.0
-                        }
+            case state.uiMode of
+                OnlyCanvas _ ->
+                    HelpText.InterfaceHidden
+                _ ->
+                    case pStats.lockOn of
+                        PatchArea.DraggingNode _ ->
+                            HelpText.DraggingNode
+                        PatchArea.Connecting _ _ ->
+                            HelpText.CreatingLink
+                        PatchArea.NoLock ->
+                            HelpText.Start
+                                { hasLinks : pStats.linksCount > 0
+                                , hasNodes : pStats.nodesCount > 0
+                                , zoomChanged : state.zoom /= 1.0
+                                }
 
 
 log :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m

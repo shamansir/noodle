@@ -68,6 +68,7 @@ import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init, log
+    , UiMode(..)
     , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', PatchStats
     , extractHelpContext
     ) as CState
@@ -195,51 +196,65 @@ render ploc _ state =
             <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
         ]
         [ HH.canvas [ HHP.id "target-canvas", HHP.ref canvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
-        , HH.div
-            [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
-            [ HS.svg [ HSA.width width, HSA.height height ]
-                [ HS.g
-                    []
-                    (
-                        [ HS.rect
-                            [ HSA.width width, HSA.height height
-                            , HSA.fill $ Just backgroundWithAlpha -- FIXME: `bgOpacity` for PatchArea & AppScreen multiples
-                            ]
-                        , HS.g
-                            [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
-                            [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
-                        , HS.g
-                            [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
-                            [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
-                        , HS.g
-                            [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                            [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput FromPatchArea ]
-                        , HS.g
-                            [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
-                            [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+        , case Debug.spy "uiMode" state.uiMode of
+            CState.OnlyCanvas _ ->
+                HH.div [] []
+            _ ->
+                HH.div
+                    [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
+                    [ HS.svg [ HSA.width width, HSA.height height ]
+                        [ HS.g
+                            []
+                            (
+                                [ HS.rect
+                                    [ HSA.width width, HSA.height height
+                                    , HSA.fill $ case state.uiMode of
+                                        CState.OnlyCanvas _ -> Nothing -- Just <| P.hColorOf P.transparent
+                                        CState.CanvasFullyVisible -> Nothing
+                                        CState.TransparentOverlay opacity -> Just $ backgroundWithAlpha opacity
+                                        CState.SolidOverlay _ -> Just solidBackground
+                                    ]
+                                , HS.g
+                                    [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                                    [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
+                                , HS.g
+                                    [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
+                                    [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
+                                , HS.g
+                                    [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
+                                    [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput FromPatchArea ]
+                                , HS.g
+                                    [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
+                                    [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+                                ]
+                            )
                         ]
-                    )
-                ]
-            ]
-        , HH.div_
-            [ HH.div
-                [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
-                [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
-            , HH.div
-                [ HHP.position HHP.Abs { x : libraryX, y : libraryY } ]
-                [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
-            , HH.div
-                [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
-                [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
-            , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
-            , HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
-            , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) $ Debug.spy "log" state.log
-            ]
+                    ]
+        , case state.uiMode of
+            CState.OnlyCanvas _ ->
+                HH.div [] []
+            _ ->
+                HH.div_
+                    [ HH.div
+                        [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
+                        [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
+                    , HH.div
+                        [ HHP.position HHP.Abs { x : libraryX, y : libraryY } ]
+                        [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
+                    , HH.div
+                        [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
+                        [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
+                    , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
+                    , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) $ Debug.spy "log" state.log
+                    ]
+        , if state.helpText
+            then HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
+            else HH.div [] []
         ]
         where
             toolkit = Network.toolkit state.network
             solidBackground = P.hColorOf Palette.black
-            backgroundWithAlpha = fromMaybe solidBackground $ HCColorX.setAlpha state.bgOpacity solidBackground
+            backgroundWithAlpha bgOpacity = fromMaybe solidBackground $ HCColorX.setAlpha bgOpacity solidBackground
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
@@ -263,7 +278,7 @@ render ploc _ state =
                 { offset : { left : patchAreaX, top : patchAreaY }
                 , size : { width : patchAreaWidth, height : patchAreaHeight }
                 , zoom : state.zoom
-                , bgOpacity : state.bgOpacity
+                , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
                 , nodes : curPatchNodes
                 , links : curPatchLinks
@@ -333,8 +348,8 @@ handleAction = case _ of
 
         handleAction HandleResize
     HandleResize -> do
-        window <- H.liftEffect $ Web.window
-        newWidth <- H.liftEffect $ Window.innerWidth window
+        window    <- H.liftEffect $ Web.window
+        newWidth  <- H.liftEffect $ Window.innerWidth window
         newHeight <- H.liftEffect $ Window.innerHeight window
         H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
         H.liftEffect $ Hydra.resize newWidth newHeight
@@ -460,11 +475,28 @@ handleAction = case _ of
     FromCommandInput CommandInput.CloseCommandInput ->
         H.modify_ _ { commandInputActive = false }
     GlobalKeyDown kevt -> do
-        H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
-        when (String.toLower (KE.key kevt) == "escape") $ do
+        let keyName = Debug.spy "keyname" $ String.toLower $ KE.key kevt
+        let keyCode = Debug.spy "keycode" $ String.toLower $ KE.code kevt
+        let shiftPressed = Debug.spy "shiftPressed" $ KE.shiftKey kevt
+        let controlPressed = Debug.spy "controlPressed" $ KE.ctrlKey kevt
+        H.modify_ $ _ { shiftPressed = shiftPressed }
+        when (keyName == "escape") $ do
             H.tell _patchArea SVG PatchArea.CancelConnecting
             H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
-        when (String.toLower (KE.key kevt) == "tab") $ do
+        when (keyName == "tab") $ do
             H.modify_ \s -> s { commandInputActive = not s.commandInputActive }
+        when (keyCode == "space") $ do
+            H.modify_ \s -> s { uiMode =
+                if not shiftPressed then
+                    case s.uiMode of
+                        CState.OnlyCanvas prev -> prev
+                        other -> CState.OnlyCanvas other
+                else
+                    case s.uiMode of
+                        CState.SolidOverlay prev -> prev
+                        other -> CState.SolidOverlay other
+            }
+        when ((keyName == "h") && controlPressed) $ do
+            H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
