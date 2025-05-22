@@ -124,8 +124,8 @@ type State ps sr cr m =
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
     , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
-    {- OUT -} , lockOn :: LockingTask
-    {- OUT -} , focusedNodes :: Set Id.NodeR
+    , lockOn :: LockingTask
+    , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
         -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
@@ -170,13 +170,14 @@ data Output cr
     | CloseValueEditor
     | MoveNode Id.NodeR { left :: Number, top :: Number }
     -- | FocusUpdate (Set Id.NodeR)
-    | LockUpdate LockingTask
+    | RefreshHelp
 
 
 data Query sr cr a
     = ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
+    | QueryLock (LockingTask -> a)
 
 
 component
@@ -400,7 +401,7 @@ _outletPosition nodesToCellsMap (nodeR /\ outletR) =
 
 
 handleAction
-    :: forall loc ps sr cr m
+    :: forall ps sr cr m
      . MonadEffect m
     => Action ps sr cr m
     -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
@@ -416,7 +417,7 @@ handleAction = case _ of
                 H.raise $ MoveNode nodeR { left : x, top : y }
             Connecting linkStart _ -> do
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
-                informLockUpdate
+                H.raise RefreshHelp
             NoLock ->
                 H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
     WheelChange { dy } ->
@@ -427,29 +428,29 @@ handleAction = case _ of
             \nodeR -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
-                informLockUpdate
+                H.raise RefreshHelp
         whenJust (creatingLink state)
             \_ -> do
                 H.modify_ _ { lockOn = NoLock }
-                informLockUpdate
+                H.raise RefreshHelp
     FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
         state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
                 H.modify_ _ { lockOn = DraggingNode nodeR }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
-                informLockUpdate
+                H.raise RefreshHelp
             Just otherNodeR -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
-                informLockUpdate
+                H.raise RefreshHelp
     FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
         state <- H.get
         whenJust (creatingLink state) \{ fromNode, fromOutlet } ->
             when (fromNode /= nodeR) $
                 H.raise $ Connect $ { fromNode, fromOutlet } /\ { toNode : nodeR, toInlet : inletR }
         H.modify_ _ { lockOn = NoLock }
-        informLockUpdate
+        H.raise RefreshHelp
         -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.InletValueWasClicked pos inletR editorId vic) -> do
         let _ = Debug.spy "patch: inlet value click" unit
@@ -472,7 +473,7 @@ handleAction = case _ of
                 , y : pos.y - state.offset.top
                 }
             }
-        informLockUpdate
+        H.raise RefreshHelp
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
         state <- H.get
         handleAction $ PatchAreaMouseMove $
@@ -496,8 +497,7 @@ handleAction = case _ of
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.modify_ _ { mbCurrentEditor = Nothing }
         H.raise CloseValueEditor
-    where
-        informLockUpdate = H.get <#> _.lockOn >>= (H.raise <<< LockUpdate)
+        H.raise RefreshHelp
 
 
 
@@ -528,8 +528,11 @@ handleQuery = case _ of
         pure $ Just a
     CancelConnecting a -> do
         H.modify_ _ { lockOn = NoLock }
-        H.raise $ LockUpdate NoLock
         pure $ Just a
+    QueryLock reply -> do
+        { lockOn } <- H.get
+        pure $ Just $ reply lockOn
+        -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
 
 findFocusedNodes :: { x :: Number, y :: Number } -> NodesBounds -> Set Id.NodeR
@@ -555,7 +558,7 @@ creatingLink = _.lockOn >>> case _ of
     NoLock -> Nothing
 
 
-findBounds :: forall loc ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
+findBounds :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
 
 

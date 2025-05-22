@@ -12,7 +12,7 @@ import Type.Proxy (Proxy(..))
 
 import Data.Symbol (class IsSymbol)
 import Data.Map (Map)
-import Data.Map (empty, alter, lookup, toUnfoldable, update) as Map
+import Data.Map (empty, alter, lookup, toUnfoldable, update, size) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
@@ -448,6 +448,10 @@ linksMap (Patch _ _ _ _ _ links) = links
 
 links :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Array Raw.Link
 links = linksMap >>> Links.all
+
+
+linksCount :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Int
+linksCount = linksMap >>> Map.size
 
 
 nodesCount :: forall pstate families strepr chrepr m. Patch pstate families strepr chrepr m -> Int

@@ -51,6 +51,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , zoom :: Number
     , uiMode :: UiMode
     , helpText :: Boolean
+    , helpContext :: HelpText.Context
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
     , mbCurrentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
@@ -70,16 +71,14 @@ type PatchInfo loc ps =
     { index :: PatchIndex
     , lastLocation :: loc
     , nodesBounds :: PatchArea.NodesBounds
-    , lockOn :: PatchArea.LockingTask
-    , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
     }
 
 
 type PatchStats =
-    { lockOn :: PatchArea.LockingTask
-    , nodesCount :: Int
+    { nodesCount :: Int
     , linksCount :: Int
+    , lockOn :: PatchArea.LockingTask
     }
 
 
@@ -90,6 +89,7 @@ init toolkit =
     , uiMode : TransparentOverlay 0.1
     , shiftPressed : false
     , helpText : true
+    , helpContext : HelpText.Unknown
     , network : Network.init toolkit
     , mbCurrentPatch : Nothing
     , patches : Map.empty
@@ -186,8 +186,6 @@ initPatchInfo _ pIndex pState =
     { index : pIndex
     , lastLocation : Web.firstLocation
     , nodesBounds : Map.empty
-    , lockOn : PatchArea.NoLock
-    , focusedNodes : Set.empty
     , mbState : Just pState
     }
 
@@ -225,24 +223,8 @@ updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> { left :
 updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.updatePosition nodeR pos }
 
 
-updatePatchLock :: forall tk ps fs sr cr m. Id.PatchR -> PatchArea.LockingTask -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
-updatePatchLock patchR lock = withPatchInfo patchR $ _ { lockOn = lock }
-
-
-defaultStats :: PatchStats
-defaultStats =
-    { nodesCount : 0
-    , linksCount : 0
-    , lockOn : PatchArea.NoLock
-    }
-
-
--- patchStats :: forall tk ps fs sr cr m. Id.PatchR -> State _ tk ps fs sr cr m -> Maybe PatchStats
--- patchStats = patchStats
-
-
-extractHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
-extractHelpContext state pStats =
+nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
+nextHelpContext state pStats =
     if state.commandInputActive then HelpText.CommandInputOpen
     else case state.mbCurrentEditor of
         Just _ ->

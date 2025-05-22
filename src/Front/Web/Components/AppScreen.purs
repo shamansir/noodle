@@ -70,7 +70,7 @@ import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init, log, UiMode(..), spawnPatch, registerPatch, indexOfPatch
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
-    , PatchStats, registerNewNode, updateNodePosition, extractHelpContext, updatePatchLock
+    , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -155,10 +155,29 @@ component ploc pps toolkit =
         { initialState : initialState ploc toolkit
         , render : render ploc pps
         , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction ploc
+            { handleAction = handleAction ploc >=> const updateHelpContext
             , initialize = Just Initialize
             }
         }
+    where
+        updateHelpContext :: H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
+        updateHelpContext = do
+            state <- H.get
+            let
+                mbCurrentPatch = CState.currentPatch state
+                nodesCount = mbCurrentPatch <#> Patch.nodesCount # fromMaybe 0
+                linksCount = mbCurrentPatch <#> Patch.linksCount # fromMaybe 0
+            mbLockOn <- H.request _patchArea SVG PatchArea.QueryLock
+            H.modify_ _
+                { helpContext =
+                    CState.nextHelpContext state
+                        { nodesCount
+                        , linksCount
+                        , lockOn : fromMaybe PatchArea.NoLock mbLockOn
+                    }
+                }
+            pure unit
+
 
 
 initialState :: forall input loc tk ps fs sr cr m. Proxy loc -> Toolkit tk fs sr cr m -> input -> State loc tk ps fs sr cr m
@@ -247,7 +266,7 @@ render ploc _ state =
                     , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
                     ]
         , if state.helpText
-            then HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
+            then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
         ]
         where
@@ -257,10 +276,12 @@ render ploc _ state =
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
-            mbCurPatchId = CState.currentPatch state <#> Patch.id
-            curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
-            curPatchNodesBounds = CState.currentPatchInfo state <#> _.nodesBounds # fromMaybe Map.empty
-            curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
+            mbCurrentPatch     = CState.currentPatch state
+            mbCurrentPatchInfo = CState.currentPatchInfo state
+            mbCurPatchId  = mbCurrentPatch <#> Patch.id
+            curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
+            curPatchLinks = mbCurrentPatch <#> Patch.links # fromMaybe []
+            curPatchNodesBounds = mbCurrentPatchInfo <#> _.nodesBounds # fromMaybe Map.empty
             curPatchState = CState.currentPatchState' state
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
@@ -299,11 +320,6 @@ render ploc _ state =
                 { pos : { x : width / 2.0, y : height / 2.0 }
                 , active : state.commandInputActive
                 } :: CommandInput.Input
-            curPatchStats =
-                { nodesCount : Array.length curPatchNodes
-                , linksCount : Array.length curPatchLinks
-                , lockOn : CState.currentPatchInfo state <#> _.lockOn # fromMaybe PatchArea.NoLock
-                } :: CState.PatchStats
 
 
 handleAction
@@ -460,8 +476,8 @@ handleAction ploc = case _ of
         H.modify_ $ CState.updateNodePosition patchR nodeR pos
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
-    FromPatchArea (Just patchR) (PatchArea.LockUpdate lockUpdate) ->
-        H.modify_ $ CState.updatePatchLock patchR lockUpdate
+    FromPatchArea _ PatchArea.RefreshHelp ->
+        pure unit -- Help is refreshed on every `handleAction` cycle above
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->
