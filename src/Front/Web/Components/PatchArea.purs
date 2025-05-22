@@ -113,6 +113,9 @@ data LockingTask
     | Connecting LinkStart { x :: Number, y :: Number }
 
 
+type NodesBounds = Map Id.NodeR (Bounds /\ NodeZIndex)
+
+
 type State loc ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
@@ -120,7 +123,7 @@ type State loc ps sr cr m =
     , bgOpacity :: Number
     , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
-    , nodesBounds :: Map Id.NodeR (Bounds /\ NodeZIndex)
+    , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
@@ -165,7 +168,7 @@ data Output cr
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
-    | InformBoundsUpdatedInLayer (Map Id.NodeR (Bounds /\ NodeZIndex))
+    | InformBoundsUpdate NodesBounds
     | LockUpdate LockingTask
 
 
@@ -174,7 +177,7 @@ data Query sr cr m a
     | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
-    | ApplyOtherLayerBoundsUpdate (Map Id.NodeR (Bounds /\ NodeZIndex)) a
+    | ApplyBoundsUpdate NodesBounds a
 
 
 component
@@ -353,7 +356,7 @@ _makeNodesWithCells
      . State loc ps sr cr m
     -> Array (NodeCell_ sr cr m)
 _makeNodesWithCells state =
-    state.nodes <#> findCell
+    Debug.spy "nodes with cells" ((Debug.spy "nodes in PA" state.nodes) <#> findCell)
     where
         findCell rawNode =
             let
@@ -534,19 +537,19 @@ handleQuery = case _ of
         H.modify_ _ { lockOn = NoLock }
         H.raise $ LockUpdate NoLock
         pure $ Just a
-    ApplyOtherLayerBoundsUpdate nodesBounds a -> do
+    ApplyBoundsUpdate nodesBounds a -> do
         H.modify_ _ { nodesBounds = nodesBounds }
         pure $ Just a
 
 
 _informOtherLayersAboutNewBounds :: forall loc ps sr cr m. H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
-_informOtherLayersAboutNewBounds = void $ H.get >>= (_.nodesBounds >>> InformBoundsUpdatedInLayer >>> H.raise)
+_informOtherLayersAboutNewBounds = void $ H.get >>= (_.nodesBounds >>> InformBoundsUpdate >>> H.raise)
 
 
-findFocusedNodes :: { x :: Number, y :: Number } -> Map Id.NodeR (Bounds /\ NodeZIndex) -> Set Id.NodeR
+findFocusedNodes :: { x :: Number, y :: Number } -> NodesBounds -> Set Id.NodeR
 findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
     where
-        convertMap :: Map Id.NodeR (Bounds /\ NodeZIndex) -> Array (Id.NodeR /\ (Bounds /\ NodeZIndex))
+        convertMap :: NodesBounds -> Array (Id.NodeR /\ (Bounds /\ NodeZIndex))
         convertMap = Map.toUnfoldable
         foldF (nodeR /\ ({ width, height, top, left } /\ _)) set =
             if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set

@@ -27,7 +27,7 @@ import HydraTk.Lang.Program (Program) as Hydra
 
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
-import Web.Components.PatchArea (Input, LockingTask(..)) as PatchArea
+import Web.Components.PatchArea (LockingTask(..), NodesBounds) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 
 
@@ -52,6 +52,7 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra toolkit itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , commandInputActive :: Boolean
+    , nodesBounds :: Map Id.PatchR PatchArea.NodesBounds -- FIXME: data duplication as well, choose where we want to store them for sure, maybe since we pass them through HTML/SVG anyway, store everything in `AppScreen` is better
     , lastCurPatchLock :: PatchArea.LockingTask -- FIXME: also data duplication for `LockingTask`, but we need to know what `PatchArea` performs now to show the corresponding help
     , log :: Array Console.LogLine
     }
@@ -76,6 +77,7 @@ init toolkit =
     , mbCurrentEditor : Nothing
     , commandInputActive : false
     , lastCurPatchLock : PatchArea.NoLock
+    , nodesBounds : Map.empty
     , log : []
     }
 

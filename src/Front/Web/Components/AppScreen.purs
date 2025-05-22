@@ -16,7 +16,7 @@ import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Map (empty, toUnfoldable, size) as Map
+import Data.Map (empty, toUnfoldable, size, insert, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
@@ -69,7 +69,7 @@ import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init, log
     , UiMode(..)
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', PatchStats
+    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, PatchStats
     , extractHelpContext
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
@@ -122,7 +122,7 @@ data Action sr cr m
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea (PatchArea.Output cr)
+    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output cr)
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | HandleResize
@@ -196,40 +196,39 @@ render ploc _ state =
             <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
         ]
         [ HH.canvas [ HHP.id "target-canvas", HHP.ref canvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
-        , case Debug.spy "uiMode" state.uiMode of
-            CState.OnlyCanvas _ ->
-                HH.div [] []
-            _ ->
-                HH.div
-                    [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
-                    [ HS.svg [ HSA.width width, HSA.height height ]
-                        [ HS.g
+        , HH.div
+            [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
+            [ HS.svg [ HSA.width width, HSA.height height ]
+                [ HS.g
+                    []
+                    ( case state.uiMode of
+                        CState.OnlyCanvas _ ->
                             []
-                            (
-                                [ HS.rect
-                                    [ HSA.width width, HSA.height height
-                                    , HSA.fill $ case state.uiMode of
-                                        CState.OnlyCanvas _ -> Nothing -- Just <| P.hColorOf P.transparent
-                                        CState.CanvasFullyVisible -> Nothing
-                                        CState.TransparentOverlay opacity -> Just $ backgroundWithAlpha opacity
-                                        CState.SolidOverlay _ -> Just solidBackground
-                                    ]
-                                , HS.g
-                                    [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
-                                    [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
-                                , HS.g
-                                    [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
-                                    [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
-                                , HS.g
-                                    [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                                    [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput FromPatchArea ]
-                                , HS.g
-                                    [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
-                                    [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+                        _ ->
+                            [ HS.rect
+                                [ HSA.width width, HSA.height height
+                                , HSA.fill $ case state.uiMode of
+                                    CState.OnlyCanvas _ -> Nothing -- Just <| P.hColorOf P.transparent
+                                    CState.CanvasFullyVisible -> Nothing
+                                    CState.TransparentOverlay opacity -> Just $ backgroundWithAlpha opacity
+                                    CState.SolidOverlay _ -> Just solidBackground
                                 ]
-                            )
-                        ]
-                    ]
+                            , HS.g
+                                [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                                [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
+                            , HS.g
+                                [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
+                                [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
+                            , HS.g
+                                [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
+                                [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput $ FromPatchArea mbCurPatchId ]
+                            , HS.g
+                                [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
+                                [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+                            ]
+                    )
+                ]
+            ]
         , case state.uiMode of
             CState.OnlyCanvas _ ->
                 HH.div [] []
@@ -243,9 +242,9 @@ render ploc _ state =
                         [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
                     , HH.div
                         [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
-                        [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput FromPatchArea ]
+                        [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
-                    , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) $ Debug.spy "log" state.log
+                    , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
                     ]
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component $ CState.extractHelpContext state curPatchStats
@@ -258,6 +257,7 @@ render ploc _ state =
             width  = fromMaybe 1000.0 $ _.width  <$> state.size
             height = fromMaybe 1000.0 $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
+            mbCurPatchId = CState.currentPatch state <#> Patch.id
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             curPatchState = CState.currentPatchState' state
@@ -280,7 +280,7 @@ render ploc _ state =
                 , zoom : state.zoom
                 , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
-                , nodes : curPatchNodes
+                , nodes : Debug.spy "nodes" curPatchNodes
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
                 } :: PatchArea.Input ps sr cr m
@@ -366,6 +366,9 @@ handleAction = case _ of
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
+        whenJust (state.nodesBounds # Map.lookup patchR) \nodesBounds -> do
+            H.tell _patchArea SVG $ PatchArea.ApplyBoundsUpdate nodesBounds
+            H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
     SpawnNodeOf familyR -> do
         state <- H.get
         let toolkit = Network.toolkit state.network
@@ -418,11 +421,11 @@ handleAction = case _ of
         handleAction $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
         handleAction $ SpawnNodeOf familyR
-    FromPatchArea (PatchArea.TryZoom dy) -> do
+    FromPatchArea _ (PatchArea.TryZoom dy) -> do
         state <- H.get
         when state.shiftPressed $
             H.put $ state { zoom = min 3.0 $ max 0.3 $ state.zoom + (dy * 0.1) }
-    FromPatchArea (PatchArea.Connect (source /\ target)) -> do
+    FromPatchArea _ (PatchArea.Connect (source /\ target)) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
@@ -435,28 +438,33 @@ handleAction = case _ of
                             dstNode
                             curPatch
                     H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
-    FromPatchArea (PatchArea.Disconnect linkR) -> do
+    FromPatchArea _ (PatchArea.Disconnect linkR) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust (Patch.findRawLink linkR curPatch) \rawLink -> do
                 nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
                 H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
-    FromPatchArea (PatchArea.UpdateStatusBar tag) ->
+    FromPatchArea _ (PatchArea.UpdateStatusBar tag) ->
         H.modify_ _ { mbStatusBarContent = Just tag }
-    FromPatchArea PatchArea.ClearStatusBar ->
+    FromPatchArea _ PatchArea.ClearStatusBar ->
         H.modify_ _ { mbStatusBarContent = Nothing }
-    FromPatchArea (PatchArea.RemoveNode nodeR) -> do
+    FromPatchArea _ (PatchArea.RemoveNode nodeR) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
-    FromPatchArea (PatchArea.RequestValueEditor nodeR valueEditor) -> do
+    FromPatchArea _ (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
-    FromPatchArea (PatchArea.InformBoundsUpdatedInLayer nodesBounds) -> do
-        H.tell _patchArea HTML $ PatchArea.ApplyOtherLayerBoundsUpdate nodesBounds
-    FromPatchArea PatchArea.CloseValueEditor ->
+    FromPatchArea (Just patchR) (PatchArea.InformBoundsUpdate nodesBounds) -> do
+        H.modify_ \s -> s { nodesBounds = s.nodesBounds # Map.insert patchR nodesBounds }
+        mbCurrentPatchId <- CState.currentPatchId <$> H.get
+        whenJust mbCurrentPatchId \curPatchId -> do
+            when (curPatchId == patchR) $ H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
+    FromPatchArea Nothing (PatchArea.InformBoundsUpdate _) -> do
+        pure unit
+    FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
-    FromPatchArea (PatchArea.LockUpdate lockUpdate) ->
+    FromPatchArea _ (PatchArea.LockUpdate lockUpdate) ->
         H.modify_ $ _ { lastCurPatchLock = lockUpdate }
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
@@ -480,6 +488,7 @@ handleAction = case _ of
         let shiftPressed = Debug.spy "shiftPressed" $ KE.shiftKey kevt
         let controlPressed = Debug.spy "controlPressed" $ KE.ctrlKey kevt
         H.modify_ $ _ { shiftPressed = shiftPressed }
+        state <- H.get
         when (keyName == "escape") $ do
             H.tell _patchArea SVG PatchArea.CancelConnecting
             H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
@@ -496,6 +505,9 @@ handleAction = case _ of
                         CState.SolidOverlay prev -> prev
                         other -> CState.SolidOverlay other
             }
+            whenJust (state.mbCurrentPatch <#> _.id >>= flip Map.lookup state.nodesBounds) \nodesBounds -> do
+                H.tell _patchArea SVG $ PatchArea.ApplyBoundsUpdate nodesBounds
+                H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
         when ((keyName == "h") && controlPressed) $ do
             H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
