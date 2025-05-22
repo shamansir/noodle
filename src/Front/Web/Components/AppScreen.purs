@@ -260,7 +260,7 @@ render ploc _ state =
             (ptk :: _ tk) = Proxy
             mbCurPatchId = CState.currentPatch state <#> Patch.id
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
-            curPatchNodesBounds = CState.currentPatchId state >>= flip Map.lookup state.nodesBounds # fromMaybe Map.empty
+            curPatchNodesBounds = mbCurPatchId >>= flip Map.lookup state.nodesBounds # fromMaybe Map.empty
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             curPatchState = CState.currentPatchState' state
             patchAreaX = Library.width + 20.0
@@ -283,7 +283,7 @@ render ploc _ state =
                 , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
                 , nodes : Debug.spy "nodes" curPatchNodes
-                , nodesBounds : curPatchNodesBounds
+                , nodesBounds : Debug.spy "nodesBounds" curPatchNodesBounds
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
                 } :: PatchArea.Input ps sr cr m

@@ -123,7 +123,7 @@ type State loc ps sr cr m =
     , bgOpacity :: Number
     {- OUT -} , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
-    {- OUT -} , nodesBounds :: NodesBounds
+    , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
     {- OUT -} , lockOn :: LockingTask
     {- OUT -} , focusedNodes :: Set Id.NodeR
@@ -212,7 +212,7 @@ component ptk ploc trg =
 
 
 initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links, mbCurrentEditor } =
+initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor } =
     { lastLocation : Web.firstLocation
     , mbState
     , offset
@@ -221,7 +221,7 @@ initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, links, mbCurrent
     , bgOpacity
     , nodes
     , links
-    , nodesBounds : Map.empty
+    , nodesBounds
     , lockOn : NoLock
     , focusedNodes : Set.empty
     , mbCurrentEditor
@@ -414,9 +414,9 @@ handleAction
     -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output loc cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { mbState, offset, size, nodes, links, zoom, mbCurrentEditor } ->
+    Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor } ->
         H.modify_ _
-            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, links = links, mbCurrentEditor = mbCurrentEditor }
+            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, nodesBounds = nodesBounds, links = links, mbCurrentEditor = mbCurrentEditor }
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of

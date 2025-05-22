@@ -98,12 +98,14 @@ registerPatch patchState newPatch s =
         patchesCount = s.network # Network.patchesCount
         nextPatchIndex = PatchIndex $ patchesCount + 1
         nextNW = s.network # Network.addPatch newPatch
+        patchR = Patch.id newPatch
     in
         s
-            { mbCurrentPatch = Just { index : nextPatchIndex, id : Patch.id newPatch } -- FIXME: make patch current in a separate function
+            { mbCurrentPatch = Just { index : nextPatchIndex, id : patchR } -- FIXME: make patch current in a separate function
             , mbCurrentPatchState = Just patchState
-            , patchIdToIndex = s.patchIdToIndex # Map.insert (Patch.id newPatch) nextPatchIndex
+            , patchIdToIndex = s.patchIdToIndex # Map.insert patchR nextPatchIndex
             , network = nextNW
+            , nodesBounds = s.nodesBounds # Map.insert patchR Map.empty
             }
 
 
