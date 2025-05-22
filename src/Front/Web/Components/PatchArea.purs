@@ -121,12 +121,12 @@ type State loc ps sr cr m =
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
     , bgOpacity :: Number
-    , lastLocation :: loc
+    {- OUT -} , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
-    , nodesBounds :: NodesBounds
+    {- OUT -} , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
-    , lockOn :: LockingTask
-    , focusedNodes :: Set Id.NodeR
+    {- OUT -} , lockOn :: LockingTask
+    {- OUT -} , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
         -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
@@ -141,6 +141,7 @@ type Input ps sr cr m =
     , zoom :: Number
     , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m)
+    , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
@@ -159,7 +160,7 @@ data Action ps sr cr m
     | FromValueEditor Id.NodeR Id.InletR (ValueEditor.Output cr)
 
 
-data Output cr
+data Output loc cr
     = Connect (LinkStart /\ LinkEnd)
     | Disconnect Id.LinkR
     | RemoveNode Id.NodeR
@@ -168,7 +169,10 @@ data Output cr
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
-    | InformBoundsUpdate NodesBounds
+    -- | LocationUpdate loc
+    | NewNodeBounds Id.NodeR loc Bounds -- TODO move to `AppScreen`
+    | MoveNode Id.NodeR { left :: Number, top :: Number }
+    -- | FocusUpdate (Set Id.NodeR)
     | LockUpdate LockingTask
 
 
@@ -177,7 +181,6 @@ data Query sr cr m a
     | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
-    | ApplyBoundsUpdate NodesBounds a
 
 
 component
@@ -194,7 +197,7 @@ component
     => Proxy tk
     -> Proxy loc
     -> TargetLayer
-    -> H.Component (Query sr cr m) (Input ps sr cr m) (Output cr) m
+    -> H.Component (Query sr cr m) (Input ps sr cr m) (Output loc cr) m
 component ptk ploc trg =
     H.mkComponent
         { initialState : initialState ploc
@@ -408,7 +411,7 @@ handleAction
      . MonadEffect m
     => WebLocator loc
     => Action ps sr cr m
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output loc cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive { mbState, offset, size, nodes, links, zoom, mbCurrentEditor } ->
@@ -418,8 +421,7 @@ handleAction = case _ of
         state <- H.get
         case state.lockOn of
             DraggingNode nodeR -> do
-                H.modify_ $ updatePosition nodeR { left : x, top : y }
-                _informOtherLayersAboutNewBounds
+                H.raise $ MoveNode nodeR { left : x, top : y }
             Connecting linkStart _ -> do
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
                 informLockUpdate
@@ -512,20 +514,18 @@ handleQuery
      . MonadEffect m
     => WebLocator loc
     => Query sr cr m a
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m (Maybe a)
+    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output loc cr) m (Maybe a)
 handleQuery = case _ of
     ApplyNewNode rawNode a -> do
         state <- H.get
         let
             nodeRect = { width : 300.0, height : 70.0 }
             nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
-        H.modify_
-            $ _ { lastLocation = nextLoc }
-            >>> storeBounds (RawNode.id rawNode)
-                { left : nodePos.left, top : nodePos.top
-                , width : nodeRect.width, height : nodeRect.height
-                }
-        _informOtherLayersAboutNewBounds
+        H.modify_ _ { lastLocation = nextLoc }
+        H.raise $ NewNodeBounds (RawNode.id rawNode) nextLoc
+            { left : nodePos.left, top : nodePos.top
+            , width : nodeRect.width, height : nodeRect.height
+            }
         pure $ Just a
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
@@ -537,13 +537,6 @@ handleQuery = case _ of
         H.modify_ _ { lockOn = NoLock }
         H.raise $ LockUpdate NoLock
         pure $ Just a
-    ApplyBoundsUpdate nodesBounds a -> do
-        H.modify_ _ { nodesBounds = nodesBounds }
-        pure $ Just a
-
-
-_informOtherLayersAboutNewBounds :: forall loc ps sr cr m. H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
-_informOtherLayersAboutNewBounds = void $ H.get >>= (_.nodesBounds >>> InformBoundsUpdate >>> H.raise)
 
 
 findFocusedNodes :: { x :: Number, y :: Number } -> NodesBounds -> Set Id.NodeR
@@ -573,18 +566,14 @@ findBounds :: forall loc ps sr cr m. Id.NodeR -> State loc ps sr cr m -> Maybe (
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
 
 
-storeBounds :: forall loc ps sr cr m. Id.NodeR -> Bounds -> State loc ps sr cr m -> State loc ps sr cr m
-storeBounds nodeR bounds s = s
-    { nodesBounds
-        = s.nodesBounds
-            # Map.insert nodeR
-                (bounds /\ (ZIndex $ Map.size s.nodesBounds))
-    }
+
+storeBounds :: Id.NodeR -> Bounds -> NodesBounds -> NodesBounds
+storeBounds nodeR bounds nodesBounds =
+    nodesBounds
+        # Map.insert nodeR
+            (bounds /\ (ZIndex $ Map.size nodesBounds))
 
 
-updatePosition :: forall loc ps sr cr m. Id.NodeR -> { left :: Number, top :: Number } -> State loc ps sr cr m -> State loc ps sr cr m
-updatePosition nodeR { left, top } s = s
-    { nodesBounds
-        = s.nodesBounds
-            # MapX.update' (lmap $ _ { left = left, top = top }) nodeR
-    }
+updatePosition :: Id.NodeR -> { left :: Number, top :: Number } -> NodesBounds -> NodesBounds
+updatePosition nodeR { left, top } =
+    MapX.update' (lmap $ _ { left = left, top = top }) nodeR

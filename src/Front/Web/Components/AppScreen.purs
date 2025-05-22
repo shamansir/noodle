@@ -17,6 +17,7 @@ import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Map (empty, toUnfoldable, size, insert, lookup) as Map
+import Data.Map.Extra (update') as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
@@ -91,10 +92,10 @@ import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraComman
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 
 
-type Slots sr cr m =
+type Slots loc sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output TargetLayer
-    , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output cr) TargetLayer
+    , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output loc cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     , helpText :: forall q o. H.Slot q o Unit
@@ -111,7 +112,7 @@ _helpText = Proxy :: _ "helpText"
 _sidePanel = Proxy :: _ "sidePanel"
 
 
-data Action sr cr m
+data Action loc sr cr m
     = Initialize
     | GlobalKeyDown KeyboardEvent
     | GlobalKeyUp KeyboardEvent
@@ -122,7 +123,7 @@ data Action sr cr m
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output cr)
+    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output loc cr)
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | HandleResize
@@ -155,7 +156,7 @@ component ploc pps toolkit =
         { initialState : initialState toolkit
         , render : render ploc pps
         , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction
+            { handleAction = handleAction ploc
             , initialize = Just Initialize
             }
         }
@@ -188,7 +189,7 @@ render
     => Proxy loc
     -> Proxy ps
     -> State tk ps fs sr cr m
-    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
+    -> H.ComponentHTML (Action loc sr cr m) (Slots loc sr cr m) m
 render ploc _ state =
     HH.div
         [ HHP.style
@@ -259,6 +260,7 @@ render ploc _ state =
             (ptk :: _ tk) = Proxy
             mbCurPatchId = CState.currentPatch state <#> Patch.id
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
+            curPatchNodesBounds = CState.currentPatchId state >>= flip Map.lookup state.nodesBounds # fromMaybe Map.empty
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             curPatchState = CState.currentPatchState' state
             patchAreaX = Library.width + 20.0
@@ -281,6 +283,7 @@ render ploc _ state =
                 , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
                 , nodes : Debug.spy "nodes" curPatchNodes
+                , nodesBounds : curPatchNodesBounds
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
                 } :: PatchArea.Input ps sr cr m
@@ -305,16 +308,17 @@ render ploc _ state =
 
 
 handleAction
-    :: forall output tk ps fs sr cr m
+    :: forall output loc tk ps fs sr cr m
      . Wiring m
     => Toolkit.InitPatchState tk ps m
     => Toolkit.FromToPatchState tk ps sr
     => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
-    => Action sr cr m
-    -> H.HalogenM (State tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
-handleAction = case _ of
+    => Proxy loc
+    -> Action loc sr cr m
+    -> H.HalogenM (State tk ps fs sr cr m) (Action loc sr cr m) (Slots loc sr cr m) output m Unit
+handleAction ploc = case _ of
     Initialize -> do
         window <- H.liftEffect $ Web.window
 
@@ -346,7 +350,7 @@ handleAction = case _ of
 
         H.modify_ $ CState.log "Initialize"
 
-        handleAction HandleResize
+        handleAction ploc HandleResize
     HandleResize -> do
         window    <- H.liftEffect $ Web.window
         newWidth  <- H.liftEffect $ Window.innerWidth window
@@ -358,7 +362,7 @@ handleAction = case _ of
         state <- H.get
         newPatch <- H.lift $ CState.spawnPatch state
         H.modify_ $ CState.registerPatch newPatch.state newPatch.patch
-        handleAction $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch.patch
+        handleAction ploc $ FromPatchesBar $ PatchesBar.SelectPatch $ Patch.id newPatch.patch
     SelectPatch patchR -> do
         state <- H.get
         H.modify_ _
@@ -366,14 +370,11 @@ handleAction = case _ of
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
-        whenJust (state.nodesBounds # Map.lookup patchR) \nodesBounds -> do
-            H.tell _patchArea SVG $ PatchArea.ApplyBoundsUpdate nodesBounds
-            H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
     SpawnNodeOf familyR -> do
         state <- H.get
         let toolkit = Network.toolkit state.network
         (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
-        whenJust mbRawNode (handleAction <<< RegisterNode)
+        whenJust mbRawNode (handleAction ploc <<< RegisterNode)
     RegisterNode rawNode -> do
         let
             familyR = RawNode.family rawNode
@@ -416,11 +417,13 @@ handleAction = case _ of
                 Hydra.executeHydra program
                 Console.log program
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
-        handleAction $ SelectPatch patchR
+        handleAction ploc $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
-        handleAction $ CreatePatch
+        handleAction ploc $ CreatePatch
     FromLibrary (Library.SelectFamily familyR) ->
-        handleAction $ SpawnNodeOf familyR
+        handleAction ploc $ SpawnNodeOf familyR
+    FromPatchArea Nothing _ -> do
+        pure unit
     FromPatchArea _ (PatchArea.TryZoom dy) -> do
         state <- H.get
         when state.shiftPressed $
@@ -455,13 +458,16 @@ handleAction = case _ of
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
     FromPatchArea _ (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
-    FromPatchArea (Just patchR) (PatchArea.InformBoundsUpdate nodesBounds) -> do
-        H.modify_ \s -> s { nodesBounds = s.nodesBounds # Map.insert patchR nodesBounds }
-        mbCurrentPatchId <- CState.currentPatchId <$> H.get
-        whenJust mbCurrentPatchId \curPatchId -> do
-            when (curPatchId == patchR) $ H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
-    FromPatchArea Nothing (PatchArea.InformBoundsUpdate _) -> do
-        pure unit
+    FromPatchArea (Just patchR) (PatchArea.NewNodeBounds nodeR loc bounds) -> do
+        H.modify_ \s -> s
+            { nodesBounds =
+                s.nodesBounds # Map.update' (PatchArea.storeBounds nodeR bounds) patchR
+            }
+    FromPatchArea (Just patchR) (PatchArea.MoveNode nodeR pos) -> do
+        H.modify_ \s -> s
+            { nodesBounds =
+                s.nodesBounds # Map.update' (PatchArea.updatePosition nodeR pos) patchR
+            }
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
     FromPatchArea _ (PatchArea.LockUpdate lockUpdate) ->
@@ -471,9 +477,9 @@ handleAction = case _ of
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->
         case cmdResult of
             FI.FromFamily familyR rawNode ->
-                handleAction $ RegisterNode rawNode
+                handleAction ploc $ RegisterNode rawNode
             FI.CustomNode signature rawNode ->
-                handleAction $ RegisterNode rawNode
+                handleAction ploc $ RegisterNode rawNode
             FI.CannotSpawn familyR ->
                 pure unit
                 -- FIXME: log error: CC.log $ "family not found: " <> Id.family familyR
@@ -505,9 +511,6 @@ handleAction = case _ of
                         CState.SolidOverlay prev -> prev
                         other -> CState.SolidOverlay other
             }
-            whenJust (state.mbCurrentPatch <#> _.id >>= flip Map.lookup state.nodesBounds) \nodesBounds -> do
-                H.tell _patchArea SVG $ PatchArea.ApplyBoundsUpdate nodesBounds
-                H.tell _patchArea HTML $ PatchArea.ApplyBoundsUpdate nodesBounds
         when ((keyName == "h") && controlPressed) $ do
             H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
