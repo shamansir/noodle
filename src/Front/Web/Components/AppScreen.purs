@@ -68,10 +68,9 @@ import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
-    ( init, log
-    , UiMode(..)
-    , spawnPatch, registerPatch, indexOfPatch, currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, PatchStats
-    , extractHelpContext
+    ( init, log, UiMode(..), spawnPatch, registerPatch, indexOfPatch
+    , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
+    , PatchStats, registerNewNode, updateNodePosition, extractHelpContext, updatePatchLock
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -92,10 +91,10 @@ import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraComman
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 
 
-type Slots loc sr cr m =
+type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output TargetLayer
-    , patchArea :: H.Slot (PatchArea.Query sr cr m) (PatchArea.Output loc cr) TargetLayer
+    , patchArea :: H.Slot (PatchArea.Query sr cr) (PatchArea.Output cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     , helpText :: forall q o. H.Slot q o Unit
@@ -112,7 +111,7 @@ _helpText = Proxy :: _ "helpText"
 _sidePanel = Proxy :: _ "sidePanel"
 
 
-data Action loc sr cr m
+data Action sr cr m
     = Initialize
     | GlobalKeyDown KeyboardEvent
     | GlobalKeyUp KeyboardEvent
@@ -123,7 +122,7 @@ data Action loc sr cr m
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output loc cr)
+    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output cr)
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | HandleResize
@@ -153,7 +152,7 @@ component
     -> H.Component query input output m
 component ploc pps toolkit =
     H.mkComponent
-        { initialState : initialState toolkit
+        { initialState : initialState ploc toolkit
         , render : render ploc pps
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction ploc
@@ -162,8 +161,8 @@ component ploc pps toolkit =
         }
 
 
-initialState :: forall input tk ps fs sr cr m. Toolkit tk fs sr cr m -> input -> State tk ps fs sr cr m
-initialState toolkit _ = CState.init toolkit
+initialState :: forall input loc tk ps fs sr cr m. Proxy loc -> Toolkit tk fs sr cr m -> input -> State loc tk ps fs sr cr m
+initialState _ toolkit _ = CState.init toolkit
 
 
 canvasRef :: H.RefLabel
@@ -188,8 +187,8 @@ render
     => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
-    -> State tk ps fs sr cr m
-    -> H.ComponentHTML (Action loc sr cr m) (Slots loc sr cr m) m
+    -> State loc tk ps fs sr cr m
+    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
 render ploc _ state =
     HH.div
         [ HHP.style
@@ -222,7 +221,7 @@ render ploc _ state =
                                 [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
                             , HS.g
                                 [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
-                                [ HH.slot _patchArea SVG (PatchArea.component ptk ploc SVG) patchAreaInput $ FromPatchArea mbCurPatchId ]
+                                [ HH.slot _patchArea SVG (PatchArea.component ptk SVG) patchAreaInput $ FromPatchArea mbCurPatchId ]
                             , HS.g
                                 [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
                                 [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
@@ -243,7 +242,7 @@ render ploc _ state =
                         [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
                     , HH.div
                         [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
-                        [ HH.slot _patchArea HTML (PatchArea.component ptk ploc HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
+                        [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
                     ]
@@ -260,7 +259,7 @@ render ploc _ state =
             (ptk :: _ tk) = Proxy
             mbCurPatchId = CState.currentPatch state <#> Patch.id
             curPatchNodes = CState.currentPatch state <#> Patch.allNodes # fromMaybe []
-            curPatchNodesBounds = mbCurPatchId >>= flip Map.lookup state.nodesBounds # fromMaybe Map.empty
+            curPatchNodesBounds = CState.currentPatchInfo state <#> _.nodesBounds # fromMaybe Map.empty
             curPatchLinks = CState.currentPatch state <#> Patch.links # fromMaybe []
             curPatchState = CState.currentPatchState' state
             patchAreaX = Library.width + 20.0
@@ -303,21 +302,22 @@ render ploc _ state =
             curPatchStats =
                 { nodesCount : Array.length curPatchNodes
                 , linksCount : Array.length curPatchLinks
-                , lockOn : state.lastCurPatchLock
+                , lockOn : CState.currentPatchInfo state <#> _.lockOn # fromMaybe PatchArea.NoLock
                 } :: CState.PatchStats
 
 
 handleAction
     :: forall output loc tk ps fs sr cr m
      . Wiring m
+    => WebLocator loc
     => Toolkit.InitPatchState tk ps m
     => Toolkit.FromToPatchState tk ps sr
     => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
     => Proxy loc
-    -> Action loc sr cr m
-    -> H.HalogenM (State tk ps fs sr cr m) (Action loc sr cr m) (Slots loc sr cr m) output m Unit
+    -> Action sr cr m
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
 handleAction ploc = case _ of
     Initialize -> do
         window <- H.liftEffect $ Web.window
@@ -400,11 +400,9 @@ handleAction ploc = case _ of
                 pure emitter
 
             H.modify_
-                $ CState.withCurrentPatch $ Patch.registerRawNode rawNode
+                $ CState.registerNewNode (Patch.id curPatch) rawNode
 
             Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
-
-            H.tell _patchArea SVG $ PatchArea.ApplyNewNode rawNode
 
             H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
@@ -458,20 +456,12 @@ handleAction ploc = case _ of
             H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
     FromPatchArea _ (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
-    FromPatchArea (Just patchR) (PatchArea.NewNodeBounds nodeR loc bounds) -> do
-        H.modify_ \s -> s
-            { nodesBounds =
-                s.nodesBounds # Map.update' (PatchArea.storeBounds nodeR bounds) patchR
-            }
     FromPatchArea (Just patchR) (PatchArea.MoveNode nodeR pos) -> do
-        H.modify_ \s -> s
-            { nodesBounds =
-                s.nodesBounds # Map.update' (PatchArea.updatePosition nodeR pos) patchR
-            }
+        H.modify_ $ CState.updateNodePosition patchR nodeR pos
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
-    FromPatchArea _ (PatchArea.LockUpdate lockUpdate) ->
-        H.modify_ $ _ { lastCurPatchLock = lockUpdate }
+    FromPatchArea (Just patchR) (PatchArea.LockUpdate lockUpdate) ->
+        H.modify_ $ CState.updatePatchLock patchR lockUpdate
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->

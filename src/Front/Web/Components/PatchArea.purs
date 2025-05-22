@@ -116,12 +116,11 @@ data LockingTask
 type NodesBounds = Map Id.NodeR (Bounds /\ NodeZIndex)
 
 
-type State loc ps sr cr m =
+type State ps sr cr m =
     { offset :: { left :: Number, top :: Number }
     , size :: { width :: Number, height :: Number }
     , zoom :: Number
     , bgOpacity :: Number
-    {- OUT -} , lastLocation :: loc
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
     , nodesBounds :: NodesBounds
     , links :: Array Raw.Link
@@ -160,7 +159,7 @@ data Action ps sr cr m
     | FromValueEditor Id.NodeR Id.InletR (ValueEditor.Output cr)
 
 
-data Output loc cr
+data Output cr
     = Connect (LinkStart /\ LinkEnd)
     | Disconnect Id.LinkR
     | RemoveNode Id.NodeR
@@ -169,24 +168,20 @@ data Output loc cr
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
-    -- | LocationUpdate loc
-    | NewNodeBounds Id.NodeR loc Bounds -- TODO move to `AppScreen`
     | MoveNode Id.NodeR { left :: Number, top :: Number }
     -- | FocusUpdate (Set Id.NodeR)
     | LockUpdate LockingTask
 
 
-data Query sr cr m a
-    = ApplyNewNode (Raw.Node sr cr m) a
-    | ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
+data Query sr cr a
+    = ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
 
 
 component
-    :: forall tk loc ps sr cr m
+    :: forall tk ps sr cr m
      . MonadEffect m
-    => WebLocator loc
     => MarkToolkit tk
     => HasFallback cr
     => HasChRepr tk cr
@@ -195,12 +190,11 @@ component
     => T.At At.ChannelLabel cr
     => WebEditor tk cr m
     => Proxy tk
-    -> Proxy loc
     -> TargetLayer
-    -> H.Component (Query sr cr m) (Input ps sr cr m) (Output loc cr) m
-component ptk ploc trg =
+    -> H.Component (Query sr cr) (Input ps sr cr m) (Output cr) m
+component ptk trg =
     H.mkComponent
-        { initialState : initialState ploc
+        { initialState : initialState
         , render : render trg ptk
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
@@ -211,10 +205,9 @@ component ptk ploc trg =
         }
 
 
-initialState :: forall loc ps sr cr m. WebLocator loc => Proxy loc -> Input ps sr cr m -> State loc ps sr cr m
-initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor } =
-    { lastLocation : Web.firstLocation
-    , mbState
+initialState :: forall ps sr cr m. Input ps sr cr m -> State ps sr cr m
+initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor } =
+    { mbState
     , offset
     , size
     , zoom
@@ -229,7 +222,7 @@ initialState _ { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, lin
 
 
 render
-    :: forall loc tk ps sr cr m
+    :: forall tk ps sr cr m
      . MonadEffect m
     => MarkToolkit tk
     => HasChRepr tk cr
@@ -240,7 +233,7 @@ render
     => WebEditor tk cr m
     => TargetLayer
     -> Proxy tk
-    -> State loc ps sr cr m
+    -> State ps sr cr m
     -> H.ComponentHTML (Action ps sr cr m) (Slots sr cr) m
 render SVG ptk state =
     HS.g
@@ -355,8 +348,8 @@ type NodeCell_ sr cr m =
 
 
 _makeNodesWithCells
-    :: forall loc ps sr cr m
-     . State loc ps sr cr m
+    :: forall ps sr cr m
+     . State ps sr cr m
     -> Array (NodeCell_ sr cr m)
 _makeNodesWithCells state =
     Debug.spy "nodes with cells" ((Debug.spy "nodes in PA" state.nodes) <#> findCell)
@@ -375,8 +368,8 @@ _makeNodesWithCells state =
 
 
 _makeNodesToCellsMap
-    :: forall loc ps sr cr m
-     . State loc ps sr cr m
+    :: forall ps sr cr m
+     . State ps sr cr m
     -> Map Id.NodeR (NodeCell_ sr cr m)
 _makeNodesToCellsMap state =
     Map.fromFoldable $ cellToTuple <$> _makeNodesWithCells state
@@ -409,9 +402,8 @@ _outletPosition nodesToCellsMap (nodeR /\ outletR) =
 handleAction
     :: forall loc ps sr cr m
      . MonadEffect m
-    => WebLocator loc
     => Action ps sr cr m
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output loc cr) m Unit
+    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor } ->
@@ -510,23 +502,24 @@ handleAction = case _ of
 
 
 handleQuery
-    :: forall loc ps sr cr m a
+    :: forall ps sr cr m a
      . MonadEffect m
-    => WebLocator loc
-    => Query sr cr m a
-    -> H.HalogenM (State loc ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output loc cr) m (Maybe a)
+    => Query sr cr a
+    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m (Maybe a)
 handleQuery = case _ of
-    ApplyNewNode rawNode a -> do
+    {-
+    ApplyNewNode rawNode pos a -> do
         state <- H.get
         let
             nodeRect = { width : 300.0, height : 70.0 }
             nextLoc /\ nodePos = Web.locateNext state.lastLocation nodeRect
         H.modify_ _ { lastLocation = nextLoc }
-        H.raise $ NewNodeBounds (RawNode.id rawNode) nextLoc
+        H.raise $ NewNodeBounds (RawNode.id rawNode)
             { left : nodePos.left, top : nodePos.top
             , width : nodeRect.width, height : nodeRect.height
             }
         pure $ Just a
+        -}
     ApplyUpdate nodeR update a -> do
         handleAction $ PassUpdate nodeR update
         pure $ Just a
@@ -548,21 +541,21 @@ findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
             if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set
 
 
-draggingNode :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe Id.NodeR
+draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe Id.NodeR
 draggingNode = _.lockOn >>> case _ of
     DraggingNode nodeR -> Just nodeR
     Connecting _ _ -> Nothing
     NoLock -> Nothing
 
 
-creatingLink :: forall loc ps sr cr m. State loc ps sr cr m -> Maybe LinkStart
+creatingLink :: forall ps sr cr m. State ps sr cr m -> Maybe LinkStart
 creatingLink = _.lockOn >>> case _ of
     DraggingNode _ -> Nothing
     Connecting linkStart _ -> Just linkStart
     NoLock -> Nothing
 
 
-findBounds :: forall loc ps sr cr m. Id.NodeR -> State loc ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
+findBounds :: forall loc ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
 
 

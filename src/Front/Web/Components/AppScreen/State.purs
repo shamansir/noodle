@@ -7,8 +7,11 @@ import Effect.Class (class MonadEffect)
 import Type.Proxy (Proxy(..))
 
 import Data.Maybe (Maybe(..))
+import Data.Set (Set)
+import Data.Set (empty) as Set
 import Data.Map (Map)
 import Data.Map (empty, insert, lookup) as Map
+import Data.Map.Extra (update') as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
@@ -19,15 +22,20 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class InitPatchState, initPatch) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, make, getState) as Patch
+import Noodle.Patch (id, make, getState, registerRawNode) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
+import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (id) as RawNode
 
 import HydraTk.Lang.Program (Program) as Hydra
 
+import Web.Class.WebRenderer (class WebLocator)
+import Web.Class.WebRenderer (firstLocation, locateNext) as Web
+
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
-import Web.Components.PatchArea (LockingTask(..), NodesBounds) as PatchArea
+import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 
 
@@ -38,22 +46,19 @@ data UiMode
     | OnlyCanvas UiMode -- UI is hidden, keeps previous mode to get back to it
 
 
-type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
+type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe { width :: Number, height :: Number }
     , zoom :: Number
     , uiMode :: UiMode
     , helpText :: Boolean
     , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
-    , patchIdToIndex :: Map Id.PatchR PatchIndex
     , mbCurrentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
-    , mbCurrentPatchState :: Maybe ps -- FIXME: it's data duplication, but we store it here, because getting it from Network is effectful and we need it on `render` for the user's Patch component
+    , patches :: Map Id.PatchR (PatchInfo loc ps)
     , mbStatusBarContent :: Maybe T.Tag
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra toolkit itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , commandInputActive :: Boolean
-    , nodesBounds :: Map Id.PatchR PatchArea.NodesBounds -- FIXME: data duplication as well, choose where we want to store them for sure, maybe since we pass them through HTML/SVG anyway, store everything in `AppScreen` is better
-    , lastCurPatchLock :: PatchArea.LockingTask -- FIXME: also data duplication for `LockingTask`, but we need to know what `PatchArea` performs now to show the corresponding help
     , log :: Array Console.LogLine
     }
 
@@ -61,94 +66,14 @@ type State (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
 newtype PatchIndex = PatchIndex Int
 
 
-init :: forall tk ps fs sr cr m. Toolkit tk fs sr cr m -> State tk ps fs sr cr m
-init toolkit =
-    { size : Nothing
-    , zoom : 1.0
-    , uiMode : TransparentOverlay 0.1
-    , shiftPressed : false
-    , helpText : true
-    , network : Network.init toolkit
-    , patchIdToIndex : Map.empty
-    , mbCurrentPatch : Nothing
-    , mbCurrentPatchState : Nothing
-    , mbStatusBarContent : Nothing
-    , mbHydraProgram : Nothing
-    , mbCurrentEditor : Nothing
-    , commandInputActive : false
-    , lastCurPatchLock : PatchArea.NoLock
-    , nodesBounds : Map.empty
-    , log : []
+type PatchInfo loc ps =
+    { index :: PatchIndex
+    , lastLocation :: loc
+    , nodesBounds :: PatchArea.NodesBounds
+    , lockOn :: PatchArea.LockingTask
+    , focusedNodes :: Set Id.NodeR
+    , mbState :: Maybe ps
     }
-
-
-spawnPatch :: forall tk ps fs sr cr mp m. MonadEffect m => Toolkit.InitPatchState tk ps m => State tk ps fs sr cr mp -> m { state :: ps, patch :: Patch ps fs sr cr mp }
-spawnPatch s = do
-    let
-        patchesCount = s.network # Network.patchesCount
-        nextPatchIndex = patchesCount + 1
-    patchState <- Toolkit.initPatch (Proxy :: _ tk)
-    Patch.make ("Patch " <> show nextPatchIndex) patchState
-        <#> \newPatch -> { patch : newPatch, state : patchState }
-
-
-registerPatch :: forall tk ps fs sr cr m. ps -> Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-registerPatch patchState newPatch s =
-    let
-        patchesCount = s.network # Network.patchesCount
-        nextPatchIndex = PatchIndex $ patchesCount + 1
-        nextNW = s.network # Network.addPatch newPatch
-        patchR = Patch.id newPatch
-    in
-        s
-            { mbCurrentPatch = Just { index : nextPatchIndex, id : patchR } -- FIXME: make patch current in a separate function
-            , mbCurrentPatchState = Just patchState
-            , patchIdToIndex = s.patchIdToIndex # Map.insert patchR nextPatchIndex
-            , network = nextNW
-            , nodesBounds = s.nodesBounds # Map.insert patchR Map.empty
-            }
-
-
-lastPatchIndex :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> PatchIndex
-lastPatchIndex s = PatchIndex $ Network.patchesCount s.network
-
-
-indexOfPatch :: forall tk ps fs sr cr m. Id.PatchR -> State tk ps fs sr cr m -> Maybe PatchIndex
-indexOfPatch patchR = _.patchIdToIndex >>> Map.lookup patchR
-
-
-patch :: forall tk ps fs sr cr m. Id.PatchR -> State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
-patch patchR = _.network >>> Network.patch patchR
-
-
-currentPatch :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
-currentPatch s = s.mbCurrentPatch <#> _.id >>= flip patch s
-
-
-currentPatchId :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe Id.PatchR
-currentPatchId s = s.mbCurrentPatch <#> _.id
-
-
-currentPatchState :: forall tk ps fs sr cr mp m. MonadEffect m => State tk ps fs sr cr mp -> m (Maybe ps)
-currentPatchState = traverse Patch.getState <<< currentPatch
-
-
-currentPatchState' :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> Maybe ps
-currentPatchState' = _.mbCurrentPatchState
-
-
-withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
-
-
-replacePatch :: forall tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-replacePatch patchR = withPatch patchR <<< const
-
-
-withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State tk ps fs sr cr m -> State tk ps fs sr cr m
-withCurrentPatch f s = case s.mbCurrentPatch <#> _.id of
-    Just curPatchR -> withPatch curPatchR f s
-    Nothing -> s
 
 
 type PatchStats =
@@ -158,7 +83,165 @@ type PatchStats =
     }
 
 
-extractHelpContext :: forall tk ps fs sr cr m. State tk ps fs sr cr m -> PatchStats -> HelpText.Context
+init :: forall loc tk ps fs sr cr m. Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
+init toolkit =
+    { size : Nothing
+    , zoom : 1.0
+    , uiMode : TransparentOverlay 0.1
+    , shiftPressed : false
+    , helpText : true
+    , network : Network.init toolkit
+    , mbCurrentPatch : Nothing
+    , patches : Map.empty
+    , mbStatusBarContent : Nothing
+    , mbHydraProgram : Nothing
+    , mbCurrentEditor : Nothing
+    , commandInputActive : false
+    , log : []
+    }
+
+
+spawnPatch :: forall tk ps fs sr cr mp m. MonadEffect m => Toolkit.InitPatchState tk ps m => State _ tk ps fs sr cr mp -> m { state :: ps, patch :: Patch ps fs sr cr mp }
+spawnPatch s = do
+    let
+        patchesCount = s.network # Network.patchesCount
+        nextPatchIndex = patchesCount + 1
+    patchState <- Toolkit.initPatch (Proxy :: _ tk)
+    Patch.make ("Patch " <> show nextPatchIndex) patchState
+        <#> \newPatch -> { patch : newPatch, state : patchState }
+
+
+registerPatch :: forall loc tk ps fs sr cr m. WebLocator loc => ps -> Patch ps fs sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+registerPatch patchState newPatch s =
+    let
+        patchesCount = s.network # Network.patchesCount
+        nextPatchIndex = PatchIndex $ patchesCount + 1
+        nextNW = s.network # Network.addPatch newPatch
+        patchR = Patch.id newPatch
+        newPatchInfo = initPatchInfo (Proxy :: _ loc) nextPatchIndex patchState
+    in
+        s
+            { patches = s.patches # Map.insert patchR newPatchInfo
+            , network = nextNW
+            , mbCurrentPatch = Just { index : nextPatchIndex, id : patchR } -- FIXME: make patch current in a separate function
+            }
+
+
+lastPatchIndex :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchIndex
+lastPatchIndex s = PatchIndex $ Network.patchesCount s.network
+
+
+indexOfPatch :: forall tk ps fs sr cr m. Id.PatchR -> State _ tk ps fs sr cr m -> Maybe PatchIndex
+indexOfPatch patchR = patchInfo patchR >>> map _.index
+
+
+patch :: forall tk ps fs sr cr m. Id.PatchR -> State _ tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+patch patchR = _.network >>> Network.patch patchR
+
+
+patchInfo :: forall loc tk ps fs sr cr m. Id.PatchR -> State loc tk ps fs sr cr m -> Maybe (PatchInfo loc ps)
+patchInfo patchR = _.patches >>> Map.lookup patchR
+
+
+withPatchInfo :: forall loc tk ps fs sr cr m. Id.PatchR -> (PatchInfo loc ps -> PatchInfo loc ps) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+withPatchInfo patchR f s = s { patches = Map.update' f patchR s.patches }
+
+
+currentPatchInfo :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> Maybe (PatchInfo loc ps)
+currentPatchInfo s = currentPatchId s >>= flip Map.lookup s.patches
+
+
+currentPatch :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
+currentPatch s = s.mbCurrentPatch <#> _.id >>= flip patch s
+
+
+currentPatchId :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> Maybe Id.PatchR
+currentPatchId s = s.mbCurrentPatch <#> _.id
+
+
+currentPatchState :: forall tk ps fs sr cr mp m. MonadEffect m => State _ tk ps fs sr cr mp -> m (Maybe ps)
+currentPatchState = traverse Patch.getState <<< currentPatch
+
+
+currentPatchState' :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> Maybe ps
+currentPatchState' = currentPatchInfo >=> _.mbState
+
+
+withPatch :: forall tk ps fs sr cr m. Id.PatchR -> (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+withPatch patchR f s = s { network = Network.withPatch patchR f s.network }
+
+
+replacePatch :: forall tk ps fs sr cr m. Id.PatchR -> Patch ps fs sr cr m -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+replacePatch patchR = withPatch patchR <<< const
+
+
+withCurrentPatch :: forall tk ps fs sr cr m. (Patch ps fs sr cr m -> Patch ps fs sr cr m) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+withCurrentPatch f s = case s.mbCurrentPatch <#> _.id of
+    Just curPatchR -> withPatch curPatchR f s
+    Nothing -> s
+
+
+initPatchInfo :: forall loc ps. WebLocator loc => Proxy loc -> PatchIndex -> ps -> PatchInfo loc ps
+initPatchInfo _ pIndex pState =
+    { index : pIndex
+    , lastLocation : Web.firstLocation
+    , nodesBounds : Map.empty
+    , lockOn : PatchArea.NoLock
+    , focusedNodes : Set.empty
+    , mbState : Just pState
+    }
+
+
+storeLocation :: forall loc ps. loc -> PatchInfo loc ps -> PatchInfo loc ps
+storeLocation loc = _ { lastLocation = loc }
+
+
+nextLocation :: forall loc ps. WebLocator loc => { width :: Number, height :: Number } -> PatchInfo loc ps -> loc /\ { left :: Number, top :: Number }
+nextLocation size = _.lastLocation >>> flip Web.locateNext size
+
+
+registerNewNode :: forall loc tk ps fs sr cr m. WebLocator loc => Id.PatchR -> Raw.Node sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+registerNewNode patchR rawNode =
+    let
+        nodeR = RawNode.id rawNode
+        nodeRect = { width : 300.0, height : 70.0 }
+    in withPatch patchR (Patch.registerRawNode rawNode)
+        >>> withPatchInfo patchR \info ->
+            let
+                nextLoc /\ nodePos = Web.locateNext info.lastLocation nodeRect
+            in info
+                { lastLocation = nextLoc
+                , nodesBounds =
+                    PatchArea.storeBounds
+                        nodeR
+                        { left : nodePos.left, top : nodePos.top
+                        , width : nodeRect.width, height : nodeRect.height
+                        }
+                    info.nodesBounds
+                }
+
+
+updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> { left :: Number, top :: Number } -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.updatePosition nodeR pos }
+
+
+updatePatchLock :: forall tk ps fs sr cr m. Id.PatchR -> PatchArea.LockingTask -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+updatePatchLock patchR lock = withPatchInfo patchR $ _ { lockOn = lock }
+
+
+defaultStats :: PatchStats
+defaultStats =
+    { nodesCount : 0
+    , linksCount : 0
+    , lockOn : PatchArea.NoLock
+    }
+
+
+-- patchStats :: forall tk ps fs sr cr m. Id.PatchR -> State _ tk ps fs sr cr m -> Maybe PatchStats
+-- patchStats = patchStats
+
+
+extractHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
 extractHelpContext state pStats =
     if state.commandInputActive then HelpText.CommandInputOpen
     else case state.mbCurrentEditor of
@@ -182,9 +265,9 @@ extractHelpContext state pStats =
                                 }
 
 
-log :: forall tk ps fs sr cr m. String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+log :: forall tk ps fs sr cr m. String -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 log logLine s = s { log = Array.snoc s.log $ Console.LogLine logLine }
 
 
-logSome :: forall tk ps fs sr cr m. Array String -> State tk ps fs sr cr m -> State tk ps fs sr cr m
+logSome :: forall tk ps fs sr cr m. Array String -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 logSome logLines s = s { log = s.log <> (Console.LogLine <$> logLines) }
