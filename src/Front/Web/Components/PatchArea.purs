@@ -109,7 +109,7 @@ type LinkEnd =
 
 data LockingTask
     = NoLock
-    | DraggingNode Id.NodeR
+    | DraggingNode Id.NodeR { dx :: Number, dy :: Number }
     | Connecting LinkStart { x :: Number, y :: Number }
 
 
@@ -294,7 +294,7 @@ render SVG ptk state =
                 $ FromNodeBox nodeR
         handleLinkEvents = case state.lockOn of
             NoLock -> true
-            DraggingNode _ -> false
+            DraggingNode _ _ -> false
             Connecting _ _ -> false
         linkSlot rawLink =
             let
@@ -335,6 +335,7 @@ render HTML ptk state =
 
 type NodeCell_ sr cr m =
     { inFocus :: Boolean
+    , isDragging :: Boolean
     , position ::
         { left :: Number
         , top :: Number
@@ -358,14 +359,33 @@ _makeNodesWithCells state =
         findCell rawNode =
             let
                 nodeR = RawNode.id rawNode
-                mbBounds = findBounds nodeR state
+                mbBounds = findBounds nodeR state <#> lmap checkDragging
                 size = fromMaybe bottom $ Bounds.getSize <$> Tuple.fst <$> mbBounds -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
+                checkDragging = _checkDragging state.lockOn nodeR
+                isDragging = case state.lockOn of
+                    DraggingNode dragNodeR _ -> nodeR == dragNodeR
+                    _ -> false
                 (position /\ zIndex) =
                     fromMaybe (defaultPosition /\ top)
                          $ lmap Bounds.getPosition
                         <$> mbBounds
             in
-                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes }
+                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes, isDragging }
+
+
+_checkDragging
+    :: LockingTask
+    -> Id.NodeR
+    -> { top :: Number, left :: Number, width :: Number, height :: Number }
+    -> { top :: Number, left :: Number, width :: Number, height :: Number }
+_checkDragging lockOn nodeR bounds =
+    case lockOn of
+        DraggingNode dragNodeR pos ->
+            if dragNodeR == nodeR then
+                bounds { left = pos.dx, top = pos.dy }
+            else
+                bounds
+        _ -> bounds
 
 
 _makeNodesToCellsMap
@@ -376,6 +396,10 @@ _makeNodesToCellsMap state =
     Map.fromFoldable $ cellToTuple <$> _makeNodesWithCells state
     where
         cellToTuple cell = RawNode.id cell.rawNode /\ cell
+
+
+zeroBounds :: { top :: Number, left :: Number, width :: Number, height :: Number }
+zeroBounds = { top : 0.0, left : 0.0, width : 0.0, height : 0.0 }
 
 
 _inletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.InletR) -> { x :: Number, y :: Number }
@@ -413,8 +437,8 @@ handleAction = case _ of
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of
-            DraggingNode nodeR -> do
-                H.raise $ MoveNode nodeR { left : x, top : y }
+            DraggingNode nodeR _ -> do
+                H.modify_ _ { lockOn = DraggingNode nodeR { dx : x - state.offset.left, dy : y - state.offset.top } }
             Connecting linkStart _ -> do
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
                 H.raise RefreshHelp
@@ -425,9 +449,10 @@ handleAction = case _ of
     PatchAreaClick -> do
         state <- H.get
         whenJust (draggingNode state)
-            \nodeR -> do
+            \(nodeR /\ lastPos) -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
+                H.raise $ MoveNode nodeR { left : lastPos.dx, top : lastPos.dy }
                 H.raise RefreshHelp
         whenJust (creatingLink state)
             \_ -> do
@@ -437,12 +462,14 @@ handleAction = case _ of
         state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
-                H.modify_ _ { lockOn = DraggingNode nodeR }
+                let bounds = findBounds nodeR state <#> Tuple.fst # fromMaybe zeroBounds
+                H.modify_ _ { lockOn = DraggingNode nodeR { dx : bounds.left - state.offset.left, dy : bounds.top - state.offset.top } }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
                 H.raise RefreshHelp
-            Just otherNodeR -> do
+            Just (otherNodeR /\ lastPos) -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
+                H.raise $ MoveNode nodeR { left : state.offset.left + lastPos.dx, top : state.offset.top + lastPos.dy }
                 H.raise RefreshHelp
     FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
         state <- H.get
@@ -544,23 +571,22 @@ findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
             if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set
 
 
-draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe Id.NodeR
+draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe (Id.NodeR /\ { dx :: Number, dy :: Number })
 draggingNode = _.lockOn >>> case _ of
-    DraggingNode nodeR -> Just nodeR
+    DraggingNode nodeR pos -> Just $ nodeR /\ pos
     Connecting _ _ -> Nothing
     NoLock -> Nothing
 
 
 creatingLink :: forall ps sr cr m. State ps sr cr m -> Maybe LinkStart
 creatingLink = _.lockOn >>> case _ of
-    DraggingNode _ -> Nothing
+    DraggingNode _ _ -> Nothing
     Connecting linkStart _ -> Just linkStart
     NoLock -> Nothing
 
 
 findBounds :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
 findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
-
 
 
 storeBounds :: Id.NodeR -> Bounds -> NodesBounds -> NodesBounds

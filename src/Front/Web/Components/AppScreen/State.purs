@@ -235,7 +235,7 @@ nextHelpContext state pStats =
                     HelpText.InterfaceHidden
                 _ ->
                     case pStats.lockOn of
-                        PatchArea.DraggingNode _ ->
+                        PatchArea.DraggingNode _ _ ->
                             HelpText.DraggingNode
                         PatchArea.Connecting _ _ ->
                             HelpText.CreatingLink
