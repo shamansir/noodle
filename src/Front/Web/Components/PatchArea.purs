@@ -438,7 +438,7 @@ handleAction = case _ of
         state <- H.get
         case state.lockOn of
             DraggingNode nodeR _ -> do
-                H.modify_ _ { lockOn = DraggingNode nodeR { dx : x - state.offset.left, dy : y - state.offset.top } }
+                H.modify_ _ { lockOn = DraggingNode nodeR { dx : x, dy : y } } -- { dx : x - state.offset.left, dy : y - state.offset.top } }
             Connecting linkStart _ -> do
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
                 H.raise RefreshHelp
@@ -458,18 +458,21 @@ handleAction = case _ of
             \_ -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.raise RefreshHelp
-    FromNodeBox nodeR NodeBox.HeaderWasClicked -> do
+    FromNodeBox nodeR (NodeBox.HeaderWasClicked mevt)-> do
         state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
-                let bounds = findBounds nodeR state <#> Tuple.fst # fromMaybe zeroBounds
-                H.modify_ _ { lockOn = DraggingNode nodeR { dx : bounds.left - state.offset.left, dy : bounds.top - state.offset.top } }
+                let
+                    -- bounds = findBounds nodeR state <#> Tuple.fst # fromMaybe zeroBounds
+                    mouseX = (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
+                    mouseY = (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
+                H.modify_ _ { lockOn = DraggingNode nodeR { dx : mouseX, dy : mouseY } } -- { dx : bounds.left - state.offset.left, dy : bounds.top - state.offset.top } }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
                 H.raise RefreshHelp
             Just (otherNodeR /\ lastPos) -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox otherNodeR NodeBox.ApplyDragEnd
-                H.raise $ MoveNode nodeR { left : state.offset.left + lastPos.dx, top : state.offset.top + lastPos.dy }
+                H.raise $ MoveNode nodeR { left : lastPos.dx, top : lastPos.dy }
                 H.raise RefreshHelp
     FromNodeBox nodeR (NodeBox.InletWasClicked inletR) -> do
         state <- H.get

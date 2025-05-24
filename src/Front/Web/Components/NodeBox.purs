@@ -98,7 +98,7 @@ data Action sterpr chrepr m
 
 
 data Output chrepr
-    = HeaderWasClicked
+    = HeaderWasClicked MouseEvent
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
     | InletValueWasClicked { x :: Number, y :: Number } Id.InletR ValueEditor.EditorId (ValueInChannel chrepr)
@@ -410,10 +410,10 @@ handleAction ptk = case _ of
             }
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise HeaderWasClicked
+        H.raise $ HeaderWasClicked mevt
     DragButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise HeaderWasClicked
+        H.raise $ HeaderWasClicked mevt
     RemoveButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked
