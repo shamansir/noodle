@@ -400,7 +400,8 @@ handleAction
     -> Action sterpr chrepr m
     -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () (Output chrepr) m Unit
 handleAction ptk = case _ of
-    Initialize -> pure unit
+    Initialize ->
+        pure unit
     Receive input ->
         H.modify_ _
             { node = input.node

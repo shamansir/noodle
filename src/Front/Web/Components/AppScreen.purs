@@ -24,7 +24,7 @@ import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber) as Int
 import Data.String (toLower) as String
 import Data.Array (length) as Array
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse_, for)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -53,7 +53,7 @@ import Noodle.Toolkit (families, class HoldsFamilies, class InitPatchState, clas
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, family, state, setState, subscribeChanges) as RawNode
+import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, family, state, setState, subscribeChanges, curChanges) as RawNode
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
@@ -120,6 +120,7 @@ data Action sr cr m
     | SpawnNodeOf Id.FamilyR
     | RegisterNode (Raw.Node sr cr m)
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
+    | LoadChanges Id.PatchR
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output cr)
@@ -430,6 +431,13 @@ handleAction ploc = case _ of
                 let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
                 Hydra.executeHydra program
                 Console.log program
+    LoadChanges patchR -> do
+        mbCurrentPatch <- CState.currentPatch <$> H.get
+        whenJust mbCurrentPatch \curPatch -> do
+            void $ for (Patch.allNodes curPatch) $ \rawNode -> do
+                curChanges <- RawNode.curChanges rawNode
+                let nodeR = RawNode.id rawNode
+                H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR curChanges
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction ploc $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
@@ -517,6 +525,12 @@ handleAction ploc = case _ of
                         CState.SolidOverlay prev -> prev
                         other -> CState.SolidOverlay other
             }
+            mbCurPatchId <- CState.currentPatchId <$> H.get
+            whenJust mbCurPatchId \curPatchId -> do
+                nextMode <- _.uiMode <$> H.get
+                case nextMode of
+                    CState.OnlyCanvas _ -> pure unit
+                    _ -> handleAction ploc $ LoadChanges curPatchId
         when ((keyName == "h") && controlPressed) $ do
             H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
