@@ -28,6 +28,12 @@ import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Networ
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (id) as RawNode
 
+import Noodle.Text.NdfFile (NdfFile)
+import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
+import Noodle.Text.NdfFile.Command (Command, op) as Ndf
+import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
+import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
+
 import HydraTk.Lang.Program (Program) as Hydra
 
 import Web.Class.WebRenderer (class WebLocator)
@@ -37,6 +43,9 @@ import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
 import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
+
+
+
 
 
 data UiMode
@@ -61,6 +70,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , commandInputActive :: Boolean
     , log :: Array Console.LogLine
+    , history :: NdfFile
     }
 
 
@@ -98,6 +108,7 @@ init toolkit =
     , mbCurrentEditor : Nothing
     , commandInputActive : false
     , log : []
+    , history : Ndf.init "noodle" 2.0
     }
 
 
@@ -253,3 +264,31 @@ log logLine s = s { log = Array.snoc s.log $ Console.LogLine logLine }
 
 logSome :: forall tk ps fs sr cr m. Array String -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 logSome logLines s = s { log = s.log <> (Console.LogLine <$> logLines) }
+
+
+-- formatHistory :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> Array T.Tag
+-- formatHistory = _.history >>> Ndf.optimize >>> Ndf.toTaggedNdfCode >>> pure
+
+formatHistory :: NdfFile -> Array T.Tag
+formatHistory = Ndf.optimize >>> Ndf.toTaggedNdfCode >>> pure
+
+
+trackCommand :: forall loc tk ps fs sr cr m. Ndf.Command -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+trackCommand = trackCommandOp <<< Ndf.op
+
+
+trackCommandOp :: forall loc tk ps fs sr cr m. Ndf.CommandOp -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+trackCommandOp cmdop s =
+    s { history = Ndf.optimize $ flip Ndf.snocOp cmdop $ s.history }
+
+
+clearHistory :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+clearHistory = _ { history = Ndf.init "noodle" 2.0 }
+
+
+appendHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+appendHistory ndfFile s = s { history = Ndf.append s.history ndfFile }
+
+
+prependHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }

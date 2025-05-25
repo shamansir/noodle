@@ -21,7 +21,7 @@ data Status
     | Connected Int
 
 
-sidePanel :: forall tk p fs sr cr. SidePanel "ws-status" (State _ tk p fs sr cr Effect) Boolean
+sidePanel :: forall tk p fs sr cr. SidePanel "ws-status" (State _ tk p fs sr cr Effect) Boolean -- FIXME: use `Status` here
 sidePanel =
     { title : "server"
     , char : const 'W'
