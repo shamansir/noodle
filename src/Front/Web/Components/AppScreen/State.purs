@@ -25,7 +25,7 @@ import Noodle.Patch (Patch)
 import Noodle.Patch (id, make, getState, registerRawNode) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
-import Noodle.Raw.Node (Node) as Raw
+import Noodle.Raw.Node (Node, NodeChanges) as Raw
 import Noodle.Raw.Node (id) as RawNode
 
 import Noodle.Text.NdfFile (NdfFile)
@@ -38,6 +38,7 @@ import HydraTk.Lang.Program (Program) as Hydra
 
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
+import Front.Shared.DocumentationFocus (DocumentationFocus)
 
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
@@ -65,6 +66,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbStatusBarContent :: Maybe T.Tag
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra toolkit itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
+    , mbCurrentDocumentation :: Maybe (DocumentationFocus sr cr)
     , commandInputActive :: Boolean
     , log :: Array Console.LogLine
     , history :: NdfFile
@@ -103,6 +105,7 @@ init toolkit =
     , mbStatusBarContent : Nothing
     , mbHydraProgram : Nothing
     , mbCurrentEditor : Nothing
+    , mbCurrentDocumentation : Nothing
     , commandInputActive : false
     , log : []
     , history : Ndf.init "noodle" 2.0
@@ -289,3 +292,11 @@ appendHistory ndfFile s = s { history = Ndf.append s.history ndfFile }
 
 prependHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }
+
+
+switchDocumentation :: forall tk ps fs sr cr m. Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+switchDocumentation nodeR mbUpdate s = s { mbCurrentDocumentation = Just { node : nodeR, curUpdate : mbUpdate } }
+
+
+clearDocumentation :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+clearDocumentation = _ { mbCurrentDocumentation = Nothing }

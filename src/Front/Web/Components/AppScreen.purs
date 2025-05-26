@@ -61,7 +61,7 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
-import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
+import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
 import Noodle.Ui.Tagging.At (class At) as T
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, class ValueEncode, encodeValue) as Ndf
 import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
@@ -73,7 +73,7 @@ import Web.Components.AppScreen.State
     ( init, log, UiMode(..), spawnPatch, registerPatch, indexOfPatch
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
     , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
-    , trackCommand, trackCommandOp
+    , trackCommand, trackCommandOp, switchDocumentation
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -86,6 +86,7 @@ import Web.Components.SidePanel (panel) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel) as SP.ConsoleLog
 import Web.Components.SidePanel.CommandLog (sidePanel) as SP.Commands
 import Web.Components.SidePanel.Tree (sidePanel) as SP.Tree
+import Web.Components.SidePanel.Documentation (sidePanel) as SP.Documentation
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -99,7 +100,7 @@ import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 type Slots sr cr m =
     ( patchesBar :: forall q. H.Slot q PatchesBar.Output Unit
     , library :: forall q. H.Slot q Library.Output TargetLayer
-    , patchArea :: H.Slot (PatchArea.Query sr cr) (PatchArea.Output cr) TargetLayer
+    , patchArea :: H.Slot (PatchArea.Query sr cr) (PatchArea.Output sr cr) TargetLayer
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     , helpText :: forall q o. H.Slot q o Unit
@@ -128,7 +129,7 @@ data Action sr cr m
     | LoadChanges Id.PatchR
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
-    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output cr)
+    | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output sr cr)
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | HandleResize
@@ -143,6 +144,7 @@ component
     => MarkToolkit tk
     => T.At At.ChannelLabel cr
     => T.At At.StatusLine cr
+    => T.At At.Documentation cr
     => Toolkit.HoldsFamilies sr cr m fs
     => Toolkit.InitPatchState tk ps m
     => Toolkit.FromToPatchState tk ps sr
@@ -210,6 +212,7 @@ render
     => Ndf.ParseableRepr cr
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => T.At At.Documentation cr
     => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
@@ -273,6 +276,7 @@ render ploc _ state =
                     , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
                     , HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.sidePanel) state.history
                     , HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.sidePanel) state.network
+                    , HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.sidePanel) state
                     ]
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
@@ -511,6 +515,8 @@ handleAction ploc = case _ of
         H.modify_ $ CState.trackCommandOp $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue value
     FromPatchArea _ PatchArea.RefreshHelp ->
         pure unit -- Help is refreshed on every `handleAction` cycle above
+    FromPatchArea _ (PatchArea.RequestDocumentation focus) ->
+        H.modify_ $ CState.switchDocumentation focus.node focus.curUpdate
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->

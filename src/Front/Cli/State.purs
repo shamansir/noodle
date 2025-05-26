@@ -40,6 +40,7 @@ import Blessed.Internal.NodeKey as NodeKey
 -- import Cli.WsServer as WSS
 import Front.Shared.Panels (SidePanelsOnOff, initPanelsOnOff)
 import Front.Shared.Panels (Which, toggle, isOn) as Panels
+import Front.Shared.DocumentationFocus (DocumentationFocus)
 
 import Cli.Bounds (Bounds)
 import Cli.Keys as K
@@ -116,12 +117,6 @@ type LastKeys =
     , infoBox :: K.InfoBoxKey
     , removeButton :: K.RemoveButtonKey
     , bodyOverlay :: K.BodyOverlayKey
-    }
-
-
-type DocumentationFocus sr cr =
-    { node :: Id.NodeR
-    , curUpdate :: Maybe (Raw.NodeChanges sr cr)
     }
 
 

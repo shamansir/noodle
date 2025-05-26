@@ -97,7 +97,7 @@ data Action sterpr chrepr m
     | ClearFocus
 
 
-data Output chrepr
+data Output strepr chrepr
     = HeaderWasClicked MouseEvent
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
@@ -106,6 +106,7 @@ data Output chrepr
     | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
     | ClearStatusBar
+    | RequestDocumentation (Maybe (RawNode.NodeChanges strepr chrepr))
 
 
 data Query strepr chrepr a
@@ -124,7 +125,7 @@ component
     => T.At At.ChannelLabel chrepr
     => WebEditor tk chrepr m
     => Proxy tk
-    -> H.Component (Query strepr chrepr) (Input strepr chrepr m) (Output chrepr) m
+    -> H.Component (Query strepr chrepr) (Input strepr chrepr m) (Output strepr chrepr) m
 component ptk =
     H.mkComponent
         { initialState
@@ -389,7 +390,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
 
 
 handleAction
-    :: forall tk sterpr chrepr m
+    :: forall tk strepr chrepr m
      . MonadEffect m
     => MarkToolkit tk
     => HasChRepr tk chrepr
@@ -397,8 +398,8 @@ handleAction
     => T.At At.StatusLine chrepr
     => WebEditor tk chrepr m
     => Proxy tk
-    -> Action sterpr chrepr m
-    -> H.HalogenM (State sterpr chrepr m) (Action sterpr chrepr m) () (Output chrepr) m Unit
+    -> Action strepr chrepr m
+    -> H.HalogenM (State strepr chrepr m) (Action strepr chrepr m) () (Output strepr chrepr) m Unit
 handleAction ptk = case _ of
     Initialize ->
         pure unit
@@ -448,6 +449,7 @@ handleAction ptk = case _ of
                 case state.latestUpdate of
                     Just latestUpdate -> H.raise $ UpdateStatusBar $ T.nodeStatusLine ptk (RawNode.id state.node) latestUpdate
                     Nothing -> H.raise $ UpdateStatusBar $ T.familyStatusLine ptk $ RawNode.family state.node
+                H.raise $ RequestDocumentation state.latestUpdate
     ClearFocus -> do
         H.modify_ _ { mouseFocus = Nothing }
         H.raise $ ClearStatusBar

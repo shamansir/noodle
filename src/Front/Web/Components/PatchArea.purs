@@ -67,6 +67,7 @@ import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
 import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor, spawnWebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
+import Front.Shared.DocumentationFocus (DocumentationFocus)
 
 
 newtype NodeZIndex = ZIndex Int
@@ -81,7 +82,7 @@ type Locator = ConstantShift -- TODO: move to some root App config?
 
 
 type Slots sr cr =
-    ( nodeBox :: H.Slot (NodeBox.Query sr cr) (NodeBox.Output cr) Id.NodeR
+    ( nodeBox :: H.Slot (NodeBox.Query sr cr) (NodeBox.Output sr cr) Id.NodeR
     , link :: forall q. H.Slot q LinkCmp.Output Id.LinkR
     , valueEditor :: H.Slot ValueEditor.Query (ValueEditor.Output cr) ValueEditor.EditorId
     )
@@ -154,12 +155,12 @@ data Action ps sr cr m
     | PatchAreaMouseMove { x :: Number, y :: Number }
     | WheelChange { dx :: Number, dy :: Number }
     | PatchAreaClick
-    | FromNodeBox Id.NodeR (NodeBox.Output cr)
+    | FromNodeBox Id.NodeR (NodeBox.Output sr cr)
     | FromLink Id.LinkR LinkCmp.Output
     | FromValueEditor Id.NodeR Id.InletR (ValueEditor.Output cr)
 
 
-data Output cr
+data Output sr cr
     = Connect (LinkStart /\ LinkEnd)
     | Disconnect Id.LinkR
     | RemoveNode Id.NodeR
@@ -172,6 +173,7 @@ data Output cr
     | MoveNode Id.NodeR { left :: Number, top :: Number }
     -- | FocusUpdate (Set Id.NodeR)
     | RefreshHelp
+    | RequestDocumentation (DocumentationFocus sr cr)
 
 
 data Query sr cr a
@@ -193,7 +195,7 @@ component
     => WebEditor tk cr m
     => Proxy tk
     -> TargetLayer
-    -> H.Component (Query sr cr) (Input ps sr cr m) (Output cr) m
+    -> H.Component (Query sr cr) (Input ps sr cr m) (Output sr cr) m
 component ptk trg =
     H.mkComponent
         { initialState : initialState
@@ -429,7 +431,7 @@ handleAction
     :: forall ps sr cr m
      . MonadEffect m
     => Action ps sr cr m
-    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m Unit
+    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output sr cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
     Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor } ->
@@ -517,6 +519,8 @@ handleAction = case _ of
         H.raise $ ClearStatusBar
     FromNodeBox nodeR (NodeBox.RemoveButtonWasClicked) -> do
         H.raise $ RemoveNode nodeR
+    FromNodeBox nodeR (NodeBox.RequestDocumentation mbUpdate) -> do
+        H.raise $ RequestDocumentation { node : nodeR, curUpdate : mbUpdate }
     PassUpdate nodeR update ->
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
     FromLink linkR (LinkCmp.WasClicked) ->
@@ -532,12 +536,11 @@ handleAction = case _ of
         H.raise RefreshHelp
 
 
-
 handleQuery
     :: forall ps sr cr m a
      . MonadEffect m
     => Query sr cr a
-    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output cr) m (Maybe a)
+    -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output sr cr) m (Maybe a)
 handleQuery = case _ of
     {-
     ApplyNewNode rawNode pos a -> do

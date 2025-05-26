@@ -14,13 +14,14 @@ import Data.Array ((:))
 
 import Control.Monad.State (modify_) as State
 
-import Cli.State (State, DocumentationFocus)
+import Cli.State (State)
 import Cli.State (togglePanel, isPanelOn, switchDocumentation, clearDocumentation) as CState
 import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Components.SidePanel (refresh) as SP
 import Cli.Keys as Key
 import Front.Shared.Panels (Which(..)) as P
+import Front.Shared.DocumentationFocus (DocumentationFocus)
 
 import Noodle.Ui.Tagging as Tagging
 import Noodle.Ui.Tagging.At (class At, at) as Tagged
