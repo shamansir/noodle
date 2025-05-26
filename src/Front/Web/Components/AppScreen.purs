@@ -85,6 +85,7 @@ import Web.Components.SidePanel (SidePanel)
 import Web.Components.SidePanel (panel) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel) as SP.ConsoleLog
 import Web.Components.SidePanel.CommandLog (sidePanel) as SP.Commands
+import Web.Components.SidePanel.Tree (sidePanel) as SP.Tree
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -271,6 +272,7 @@ render ploc _ state =
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
                     , HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.sidePanel) state.history
+                    , HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.sidePanel) state.network
                     ]
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
