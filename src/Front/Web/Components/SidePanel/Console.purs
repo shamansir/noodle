@@ -2,6 +2,7 @@ module Web.Components.SidePanel.Console where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
 import Data.Newtype (class Newtype, wrap, unwrap)
@@ -15,6 +16,9 @@ newtype LogLine = LogLine String
 
 
 derive instance Newtype LogLine _
+
+
+panelId = Proxy :: _ "console"
 
 
 sidePanel :: SidePanel "console" (Array LogLine) Boolean

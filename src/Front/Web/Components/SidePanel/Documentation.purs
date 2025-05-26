@@ -33,6 +33,9 @@ import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 
+panelId = Proxy :: _ "documentation"
+
+
 sidePanel
     :: forall tk p fs sr cr m
      . MarkToolkit tk

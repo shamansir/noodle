@@ -18,12 +18,12 @@ foreign import setHTML :: HTMLElement -> String -> Effect Unit
 
 type State =
   { html :: String
-  , elRef :: String
+  , elRef :: H.RefLabel
   }
 
 type Input =
   { html :: String
-  , elRef :: String
+  , elRef :: H.RefLabel
   }
 
 data Action
@@ -55,18 +55,25 @@ component =
   handleAction = case _ of
     Initialize -> do
       state <- H.get
-      H.getHTMLElementRef (H.RefLabel state.elRef) >>= case _ of
+      H.getHTMLElementRef state.elRef >>= case _ of
         Nothing -> pure unit
         Just el -> do
           liftEffect $ setHTML el state.html
       pure unit
 
-    Receive input -> H.modify_ _ { html = input.html
-                                , elRef = input.elRef
-                                }
+    Receive input -> do
+      H.modify_ _ { html = input.html
+                    , elRef = input.elRef
+                    }
+      state <- H.get
+      H.getHTMLElementRef state.elRef >>= case _ of
+        Nothing -> pure unit
+        Just el -> do
+          liftEffect $ setHTML el state.html
+      pure unit
 
   render :: State -> H.ComponentHTML Action () m
   render state =
     HH.div
-      [ HP.ref (H.RefLabel state.elRef) ]
+      [ HP.ref state.elRef ]
       []

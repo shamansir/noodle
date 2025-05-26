@@ -5,6 +5,10 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
+import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (class IsSymbol, reflectSymbol)
+
+import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Text.Format as T
@@ -12,7 +16,8 @@ import Data.Text.Output.Html as Html
 
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Properties (style) as HHP
+import Halogen.HTML.Properties (style, ref) as HHP
+import Web.Components.RawHtml as RawHTML
 
 import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Ui.Tagging as T
@@ -25,6 +30,13 @@ type SidePanel (id :: Symbol) s v =
     , next :: (s -> Effect (v /\ Array T.Tag))
     , onToggle :: (s -> s)
     }
+
+
+type Slots =
+    ( rawHtml :: H.Slot (Const Void) Void Unit )
+
+
+_rawHtml = Proxy :: _ "rawHtml"
 
 
 type State s v =
@@ -40,8 +52,8 @@ data Action s
 
 
 panel
-    :: forall id input v query output m. MonadEffect m => SidePanel id input v -> H.Component query input output m
-panel config =
+    :: forall id input v query output m. IsSymbol id => MonadEffect m => Proxy id -> SidePanel id input v -> H.Component query input output m
+panel pid config =
     H.mkComponent
         { initialState
         , render
@@ -60,11 +72,15 @@ panel config =
         }
 
     maxWidth = 500.0
+    panelContentRef = H.RefLabel $ "panel-content" <> reflectSymbol pid
 
     render { tags } =
         HH.div
             [ HHP.style $ "display: block; text-align: right; position: absolute; top: 0; right: 0; max-width: " <> show maxWidth <> "px;" ]
-            [ HH.text $ Html.multiLine $ T.stack tags ]
+            [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
+            ]
+        where
+            htmlText = Html.multiLine $ T.stack tags
 
     handleAction = case _ of
         Initialize -> do
