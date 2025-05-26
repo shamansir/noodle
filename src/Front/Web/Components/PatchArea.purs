@@ -168,6 +168,7 @@ data Output cr
     | TryZoom Number
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
+    | TrackValueSend Id.NodeR Id.InletR cr
     | MoveNode Id.NodeR { left :: Number, top :: Number }
     -- | FocusUpdate (Set Id.NodeR)
     | RefreshHelp
@@ -524,6 +525,7 @@ handleAction = case _ of
         state <- H.get
         whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
             $ RawNode.sendIn inletR (Debug.spy "send value" value)
+        H.raise $ TrackValueSend nodeR inletR value
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.modify_ _ { mbCurrentEditor = Nothing }
         H.raise CloseValueEditor

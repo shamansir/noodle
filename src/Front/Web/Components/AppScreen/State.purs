@@ -45,9 +45,6 @@ import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, upda
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 
 
-
-
-
 data UiMode
     = CanvasFullyVisible
     | TransparentOverlay Number -- semi-transparent overlay over canvas

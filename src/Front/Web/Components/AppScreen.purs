@@ -21,7 +21,7 @@ import Data.Map.Extra (update') as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
-import Data.Int (round, toNumber) as Int
+import Data.Int (round, toNumber, floor) as Int
 import Data.String (toLower) as String
 import Data.Array (length) as Array
 import Data.Traversable (traverse_, for)
@@ -63,14 +63,17 @@ import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr)
+import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, class ValueEncode, encodeValue) as Ndf
+import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
+import Noodle.Text.NdfFile.Command.Quick as QOp
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
     ( init, log, UiMode(..), spawnPatch, registerPatch, indexOfPatch
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
     , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
+    , trackCommand, trackCommandOp
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -81,6 +84,7 @@ import Web.Components.HelpText as HelpText
 import Web.Components.SidePanel (SidePanel)
 import Web.Components.SidePanel (panel) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel) as SP.ConsoleLog
+import Web.Components.SidePanel.CommandLog (sidePanel) as SP.Commands
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -118,7 +122,7 @@ data Action sr cr m
     | SelectPatch Id.PatchR
     | CreatePatch
     | SpawnNodeOf Id.FamilyR
-    | RegisterNode (Raw.Node sr cr m)
+    | RegisterNode (Raw.Node sr cr m) -- TODO: add position
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
     | LoadChanges Id.PatchR
     | FromPatchesBar PatchesBar.Output
@@ -144,7 +148,8 @@ component
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => ValueTagged cr
-    => ParseableRepr cr
+    => Ndf.ValueEncode cr
+    => Ndf.ParseableRepr cr
     => Hydra.ToHydraCommand sr
     => WebEditor tk cr m
     => Proxy loc
@@ -201,7 +206,7 @@ render
     => ValueTagged cr
     => HasChRepr tk cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => ParseableRepr cr
+    => Ndf.ParseableRepr cr
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => WebEditor tk cr m
@@ -265,6 +270,7 @@ render ploc _ state =
                         [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.sidePanel) state.log
+                    , HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.sidePanel) state.history
                     ]
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
@@ -332,6 +338,7 @@ handleAction
     => Hydra.ToHydraCommand sr
     => HasFallback cr
     => ValueTagged cr
+    => Ndf.ValueEncode cr
     => Proxy loc
     -> Action sr cr m
     -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
@@ -417,7 +424,8 @@ handleAction ploc = case _ of
                 pure emitter
 
             H.modify_
-                $ CState.registerNewNode (Patch.id curPatch) rawNode
+                  $ CState.registerNewNode (Patch.id curPatch) rawNode
+                >>> CState.trackCommandOp (QOp.makeNode nodeR { left: 0, top : 0 })
 
             Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
 
@@ -455,20 +463,24 @@ handleAction ploc = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
                 \srcNode dstNode -> do
-                    nextPatch /\ _ <-
+                    nextPatch /\ rawLink <-
                         H.lift $ Patch.connectRaw
                             source.fromOutlet
                             target.toInlet
                             srcNode
                             dstNode
                             curPatch
-                    H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
+                    H.modify_
+                          $ CState.replacePatch (Patch.id curPatch) nextPatch
+                        >>> CState.trackCommandOp (QOp.connect rawLink)
     FromPatchArea _ (PatchArea.Disconnect linkR) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust (Patch.findRawLink linkR curPatch) \rawLink -> do
                 nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
-                H.modify_ $ CState.replacePatch (Patch.id curPatch) nextPatch
+                H.modify_
+                      $ CState.replacePatch (Patch.id curPatch) nextPatch
+                    >>> CState.trackCommandOp (QOp.disconnect rawLink)
     FromPatchArea _ (PatchArea.UpdateStatusBar tag) ->
         H.modify_ _ { mbStatusBarContent = Just tag }
     FromPatchArea _ PatchArea.ClearStatusBar ->
@@ -477,13 +489,24 @@ handleAction ploc = case _ of
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
-            H.modify_ $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+            H.modify_
+                   $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+                >>> CState.trackCommandOp (QOp.removeNode nodeR)
     FromPatchArea _ (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
     FromPatchArea (Just patchR) (PatchArea.MoveNode nodeR pos) -> do
-        H.modify_ $ CState.updateNodePosition patchR nodeR pos
+        H.modify_
+              $ CState.updateNodePosition patchR nodeR pos
+            >>> CState.trackCommandOp
+                    (QOp.moveNode nodeR
+                        { left : Int.floor pos.left
+                        , top  : Int.floor pos.top
+                        }
+                    )
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
+    FromPatchArea (Just patchR) (PatchArea.TrackValueSend nodeR inletR value) -> do
+        H.modify_ $ CState.trackCommandOp $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue value
     FromPatchArea _ PatchArea.RefreshHelp ->
         pure unit -- Help is refreshed on every `handleAction` cycle above
     FromStatusBar StatusBar.ResetZoom ->
@@ -508,7 +531,6 @@ handleAction ploc = case _ of
         let shiftPressed = Debug.spy "shiftPressed" $ KE.shiftKey kevt
         let controlPressed = Debug.spy "controlPressed" $ KE.ctrlKey kevt
         H.modify_ $ _ { shiftPressed = shiftPressed }
-        state <- H.get
         when (keyName == "escape") $ do
             H.tell _patchArea SVG PatchArea.CancelConnecting
             H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser

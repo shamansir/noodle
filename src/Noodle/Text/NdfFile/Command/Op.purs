@@ -112,6 +112,7 @@ toTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
 -- TODO: - remove disconnect after the same immediate connect
 -- TODO: - remove disconnect after the same connect before and without sending values
 -- TODO: - remove removing nodes w/o connecting them to anything
+-- TODO: - merge node move with creating it at some position just before
 optimize :: Array CommandOp -> Array CommandOp
 optimize =
     _.optimizedCmds <<< foldl foldF { mbPrevCmd : Nothing, optimizedCmds : [] }
