@@ -70,3 +70,7 @@ toggle w s = case w of
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
     Tree -> s { tree = not s.tree }
+
+
+allPanels :: Array Which
+allPanels = [ Commands, Documentation, HydraCode, Tree, Console ]

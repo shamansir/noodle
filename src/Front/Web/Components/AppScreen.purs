@@ -275,7 +275,7 @@ render ploc _ state =
                         [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     ]
-                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> openPanels)
+                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> state.openPanels)
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
@@ -304,7 +304,7 @@ render ploc _ state =
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
-            panelsWidth = 200.0
+            panelsWidth = 350.0
 
             libraryInput =
                 { families : Toolkit.families toolkit
@@ -334,17 +334,17 @@ render ploc _ state =
                 , active : state.commandInputActive
                 } :: CommandInput.Input
 
-            openPanels = [ Panels.Console, Panels.Commands, Panels.Tree, Panels.Documentation ]
-            panelsCount = Array.length openPanels
+            panelsCount = Array.length state.openPanels
             wrapWithPos panelIdx content =
                 HH.div
-                    [ HHP.position HHP.Abs
-                        { x : width - panelsWidth
-                        , y : (Int.toNumber panelIdx / Int.toNumber panelsCount) * height
-                        }
+                    [ HHP.style $
+                        HHP.position_ HHP.Abs
+                            { x : width - panelsWidth
+                            , y : (Int.toNumber panelIdx / Int.toNumber panelsCount) * height
+                            }
+                        <> " min-width: " <> show panelsWidth <> "px;"
                     ]
                     $ pure content
-
 
 
 panelSlot

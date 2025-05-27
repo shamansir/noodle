@@ -37,6 +37,7 @@ import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 import HydraTk.Lang.Program (Program) as Hydra
 
 import Front.Shared.Bounds (Position, Size)
+import Front.Shared.Panels (Which(..)) as Panels
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
@@ -71,6 +72,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , commandInputActive :: Boolean
     , log :: Array Console.LogLine
     , history :: NdfFile
+    , openPanels :: Array Panels.Which
     }
 
 
@@ -110,6 +112,7 @@ init toolkit =
     , commandInputActive : false
     , log : []
     , history : Ndf.init "noodle" 2.0
+    , openPanels : [ Panels.Commands, Panels.Documentation, Panels.Tree ]
     }
 
 

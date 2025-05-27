@@ -71,12 +71,11 @@ panel pid config =
         , tags : []
         }
 
-    maxWidth = 500.0
     panelContentRef = H.RefLabel $ "panel-content" <> reflectSymbol pid
 
     render { tags } =
         HH.div
-            [ HHP.style $ "display: block; text-align: right; position: absolute; top: 0; right: 0; max-width: " <> show maxWidth <> "px;" ]
+            [ ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
         where
