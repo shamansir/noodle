@@ -10,6 +10,8 @@ import Effect.Exception (Error)
 
 import Control.Monad.Error.Class (class MonadThrow)
 
+import Front.Shared.Bounds (IntPositionXY)
+
 import Blessed as B
 import Blessed ((>~))
 
@@ -64,7 +66,7 @@ component =
 -- TODO: move to the corresponding output on hover
 -- TODO: fix the indicator when output is selected for the link creation (and hide when the output is reset)
 
-move :: forall state m. MonadThrow Error m => { x :: Int, y :: Int } -> BlessedOp state m
+move :: forall state m. MonadThrow Error m => IntPositionXY -> BlessedOp state m
 move { x, y } = do
     Key.outletIndicator >~ Element.setLeft $ Offset.px x
     Key.outletIndicator >~ Element.setTop  $ Offset.px y

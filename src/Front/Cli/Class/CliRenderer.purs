@@ -15,6 +15,8 @@ import Control.Monad.State (class MonadState)
 
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp')
 
+import Front.Shared.Bounds (IntSize, IntPosition)
+
 import Noodle.Id (Family, FamilyR, NodeR, InletR) as Id
 import Noodle.Node (Node)
 import Noodle.Raw.Node (Node) as Raw
@@ -29,19 +31,19 @@ import Cli.Components.ValueEditor (ValueEditor)
 class CliLocator :: Type -> Constraint
 class CliLocator x where
     firstLocation :: x
-    locateNext :: x -> { width :: Int, height :: Int } -> x /\ { left :: Int, top :: Int }
-    -- defaultSize :: Proxy x -> { width :: Int, height :: Int }
+    locateNext :: x -> IntSize -> x /\ IntPosition
+    -- defaultSize :: Proxy x -> IntSize
 
 
 data ConstantShift
     = First
-    | NextAfter { left :: Int, top :: Int }
+    | NextAfter IntPosition
 
 
 instance CliLocator ConstantShift where
     firstLocation :: ConstantShift
     firstLocation = First
-    locateNext :: ConstantShift -> { width :: Int, height :: Int } -> ConstantShift /\ { left :: Int, top :: Int }
+    locateNext :: ConstantShift -> IntSize -> ConstantShift /\ IntPosition
     locateNext (NextAfter { left, top }) _ =
         let
             nextPos =
@@ -50,17 +52,17 @@ instance CliLocator ConstantShift where
                 }
         in NextAfter nextPos /\ nextPos
     locateNext First _ = NextAfter { left : 16, top : 0 } /\ { left : 16, top : 0 }
-    -- defaultSize :: Proxy PixelShift -> { width :: Int, height :: Int }
+    -- defaultSize :: Proxy PixelShift -> IntSize
     -- defaultSize _ = { width : 5, height : 2 }
 
 
 class CliRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
-    cliSize :: forall (f :: Symbol) fstate is os. RegisteredFamily (F f fstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f fstate is os repr m -> Maybe { width :: Int, height :: Int }
+    cliSize :: forall (f :: Symbol) fstate is os. RegisteredFamily (F f fstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f fstate is os repr m -> Maybe IntSize
     renderCli :: forall (f :: Symbol) fstate is os. MonadEffect m => IsSymbol f => RegisteredFamily (F f fstate is os repr m) fs => Proxy tk -> Proxy fs -> Id.Family f -> NodeBoxKey -> Node f fstate is os repr m -> Maybe (BlessedOp fstate m)
 
 
 class CliRawRenderer (tk :: ToolkitKey) (fs :: Families) repr m | tk -> fs where
-    cliSizeRaw :: forall fstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node fstate repr m -> Maybe { width :: Int, height :: Int }
+    cliSizeRaw :: forall fstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node fstate repr m -> Maybe IntSize
     renderCliRaw :: forall fstate. Proxy tk -> Proxy fs -> Id.FamilyR -> NodeBoxKey -> Raw.Node fstate repr m -> Maybe (BlessedOp fstate m)
 
 

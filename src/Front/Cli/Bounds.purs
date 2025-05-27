@@ -14,6 +14,8 @@ import Data.Map (Map)
 import Data.Map (lookup) as Map
 import Data.Maybe (Maybe(..))
 
+import Front.Shared.Bounds (IntBounds, IntPositionXY)
+
 import Blessed ((~<))
 import Blessed.Internal.BlessedOp (BlessedOp', BlessedOpGet)
 
@@ -25,15 +27,7 @@ import Blessed.Internal.BlessedSubj as K
 import Noodle.Id as Id
 
 
-type Bounds =
-    { top :: Int
-    , left :: Int
-    , width :: Int
-    , height :: Int
-    }
-
-
-type NodeBounds = Bounds
+type NodeBounds = IntBounds
 
 
 collect
@@ -44,7 +38,7 @@ collect
     => MonadThrow Error m
     => Id.NodeR
     -> NodeKey subj key
-    -> BlessedOp' state m Bounds
+    -> BlessedOp' state m NodeBounds
 collect _ node = do
     left   <- Element.aleft ~< node
     top    <- Element.atop ~< node
@@ -53,7 +47,7 @@ collect _ node = do
     pure { top, left, width, height }
 
 
-outletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+outletPos :: NodeBounds -> Int -> IntPositionXY
 outletPos n outletIdx =
     -- { x : n.left + 1 + (outletIdx * 4)
     -- , y : n.top + 5
@@ -64,7 +58,7 @@ outletPos n outletIdx =
 
 
 
-inletPos :: NodeBounds -> Int -> { x :: Int, y :: Int }
+inletPos :: NodeBounds -> Int -> IntPositionXY
 inletPos n inletIdx =
     -- { x : n.left + 1 + (inletIdx * 4)
     -- , y : n.top + 1

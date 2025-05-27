@@ -53,6 +53,8 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.UI.Boxes.Box.Option as Box
 
+import Front.Shared.Bounds (IntSize)
+
 import Cli.Bounds as Bounds
 import Cli.Class.CliFriendly (class CliFriendly)
 import Cli.Class.CliRenderer (cliSize, cliSizeRaw, renderCli, renderCliRaw, class CliLocator)
@@ -123,7 +125,7 @@ _component
     -> Id.FamilyR
     -> Raw.Node strepr chrepr m
     -> CState.LastKeys
-    -> Maybe { width :: Int, height :: Int }
+    -> Maybe IntSize
     -> Maybe (BlessedOp strepr m)
     -> BlessedOpM (State loc tk pstate fs strepr chrepr m) m _
 _component

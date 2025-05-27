@@ -42,7 +42,7 @@ import Front.Shared.Panels (SidePanelsOnOff, initPanelsOnOff)
 import Front.Shared.Panels (Which, toggle, isOn) as Panels
 import Front.Shared.DocumentationFocus (DocumentationFocus)
 
-import Cli.Bounds (Bounds)
+import Cli.Bounds (NodeBounds)
 import Cli.Keys as K
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, bodyOverlay, patchBox) as Key
 import Cli.Components.Link (LinkCmpState)
@@ -94,7 +94,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , inletEditorCreated :: Map Shape.ValueTag Unit
     , inletEditorOpenedFrom :: Maybe (Raw.Node sr cr m /\ Id.InletR) -- TODO: find a way not to store the node instance here
     , lastLocation :: loc
-    , nodesBounds :: Map Id.NodeR Bounds
+    , nodesBounds :: Map Id.NodeR NodeBounds
     , mouseOverFocus :: Maybe Focus
     , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
     }
@@ -183,14 +183,6 @@ nextKeys lk =
     , infoBox      : NodeKey.next lk.infoBox
     , removeButton : NodeKey.next lk.removeButton
     , bodyOverlay  : NodeKey.next lk.bodyOverlay
-    }
-
-
-type NodeBounds =
-    { top :: Int
-    , left :: Int
-    , width :: Int
-    , height :: Int
     }
 
 

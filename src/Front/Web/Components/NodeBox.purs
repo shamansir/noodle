@@ -51,6 +51,7 @@ import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
+import Front.Shared.Bounds (Position, PositionXY, Size)
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Paths as Paths
@@ -60,8 +61,8 @@ import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
 
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
-    , position :: { left :: Number, top :: Number }
-    , size :: { width :: Number, height :: Number }
+    , position :: Position
+    , size :: Size
     , inFocus :: Boolean
     }
 
@@ -74,8 +75,8 @@ data InsideFocus chrepr
 
 type State strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
-    , position :: { left :: Number, top :: Number }
-    , size :: { width :: Number, height :: Number }
+    , position :: Position
+    , size :: Size
     , inFocus :: Boolean
     , beingDragged :: Boolean
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
@@ -91,7 +92,7 @@ data Action sterpr chrepr m
     | DragButtonClick MouseEvent
     | RemoveButtonClick MouseEvent
     | InletClick MouseEvent Id.InletR
-    | InletValueClick MouseEvent { x :: Number, y :: Number } Id.InletR (ValueInChannel chrepr)
+    | InletValueClick MouseEvent PositionXY Id.InletR (ValueInChannel chrepr)
     | OutletClick MouseEvent Id.OutletR
     | ChangeFocus (InsideFocus chrepr)
     | ClearFocus
@@ -101,8 +102,8 @@ data Output strepr chrepr
     = HeaderWasClicked MouseEvent
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
-    | InletValueWasClicked { x :: Number, y :: Number } Id.InletR ValueEditor.EditorId (ValueInChannel chrepr)
-    | OutletWasClicked Id.OutletR { x :: Number, y :: Number }
+    | InletValueWasClicked PositionXY Id.InletR ValueEditor.EditorId (ValueInChannel chrepr)
+    | OutletWasClicked Id.OutletR PositionXY
     | RemoveButtonWasClicked
     | UpdateStatusBar T.Tag
     | ClearStatusBar

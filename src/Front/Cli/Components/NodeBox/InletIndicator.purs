@@ -13,6 +13,8 @@ import Control.Monad.Error.Class (class MonadThrow)
 
 import Data.Text.Output.Blessed (singleLine) as T
 
+import Front.Shared.Bounds (IntPositionXY)
+
 import Blessed as B
 import Blessed ((>~))
 
@@ -70,7 +72,7 @@ component =
 
 -- TODO: move to the corresponding input on hover
 
-move :: forall state m. MonadThrow Error m => { x :: Int, y :: Int } -> BlessedOp state m
+move :: forall state m. MonadThrow Error m => IntPositionXY -> BlessedOp state m
 move { x, y } = do
     Key.inletIndicator >~ Element.setLeft $ Offset.px x
     Key.inletIndicator >~ Element.setTop  $ Offset.px y

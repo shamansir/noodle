@@ -9,6 +9,7 @@ import Data.Maybe (fromMaybe) as M
 
 import Blessed.Internal.BlessedOp (BlessedOp)
 
+import Front.Shared.Bounds (IntPositionXY)
 import Noodle.Repr.HasFallback (class HasFallback, fallback)
 
 
@@ -25,7 +26,7 @@ type ValueEditor v state m
 type ValueEditorComp v state m =
     { create :: BlessedOp state m
     , inject :: v -> BlessedOp state m
-    , transpose :: { x :: Int, y :: Int } -> BlessedOp state m
+    , transpose :: IntPositionXY -> BlessedOp state m
     }
 
 

@@ -39,6 +39,8 @@ import Cli.Style as Style
 import Cli.Keys (mainScreen, patchBox, textValueEditor, TextValueEditorKey, ValueEditorKey) as Key
 import Cli.Components.ValueEditor (ValueEditor)
 
+import Front.Shared.Bounds (IntPositionXY)
+
 
 tveKey :: Key.TextValueEditorKey
 tveKey = Key.textValueEditor
@@ -86,7 +88,7 @@ create editorKey initialValue sendValue = do
     editorKey >~ Element.hide
 
 
-transpose :: forall key state m. IsSymbol key => MonadThrow Error m => Key.ValueEditorKey key -> { x :: Int, y :: Int } -> BlessedOp state m
+transpose :: forall key state m. IsSymbol key => MonadThrow Error m => Key.ValueEditorKey key -> IntPositionXY -> BlessedOp state m
 transpose editorKey { x, y } = do
     editorKey >~ Element.setTop  $ Offset.px $ y -- inodeBounds.top - 1
     editorKey >~ Element.setLeft $ Offset.px $ x -- inodeBounds.left

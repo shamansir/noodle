@@ -54,7 +54,7 @@ type ValueEditorComp v m =
 {-
     { create :: BlessedOp state m
     , inject :: v -> BlessedOp state m
-    , transpose :: { x :: Int, y :: Int } -> BlessedOp state m
+    , transpose :: IntPositionXY -> BlessedOp state m
     }
 
 

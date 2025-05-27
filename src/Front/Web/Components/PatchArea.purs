@@ -59,8 +59,8 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
-import Web.Bounds (Bounds)
-import Web.Bounds (getPosition, getSize) as Bounds
+import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
+import Front.Shared.Bounds (getPosition, getSize) as Bounds
 import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
@@ -93,7 +93,7 @@ _link = Proxy :: _ "link"
 _valueEditor = Proxy :: _ "valueEditor"
 
 
-defaultPosition = { left : 0.0, top : 0.0 }
+defaultPosition = { left : 0.0, top : 0.0 } :: Position
 
 
 type LinkStart =
@@ -110,16 +110,16 @@ type LinkEnd =
 
 data LockingTask
     = NoLock
-    | DraggingNode Id.NodeR { dx :: Number, dy :: Number }
-    | Connecting LinkStart { x :: Number, y :: Number }
+    | DraggingNode Id.NodeR Delta
+    | Connecting LinkStart PositionXY
 
 
 type NodesBounds = Map Id.NodeR (Bounds /\ NodeZIndex)
 
 
 type State ps sr cr m =
-    { offset :: { left :: Number, top :: Number }
-    , size :: { width :: Number, height :: Number }
+    { offset :: Position
+    , size :: Size
     , zoom :: Number
     , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
@@ -136,8 +136,8 @@ type State ps sr cr m =
 
 
 type Input ps sr cr m =
-    { offset :: { left :: Number, top :: Number }
-    , size :: { width :: Number, height :: Number }
+    { offset :: Position
+    , size :: Size
     , zoom :: Number
     , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m)
@@ -152,8 +152,8 @@ data Action ps sr cr m
     = Initialize
     | Receive (Input ps sr cr m)
     | PassUpdate Id.NodeR (RawNode.NodeChanges sr cr)
-    | PatchAreaMouseMove { x :: Number, y :: Number }
-    | WheelChange { dx :: Number, dy :: Number }
+    | PatchAreaMouseMove PositionXY
+    | WheelChange Delta
     | PatchAreaClick
     | FromNodeBox Id.NodeR (NodeBox.Output sr cr)
     | FromLink Id.LinkR LinkCmp.Output
@@ -170,7 +170,7 @@ data Output sr cr
     | RequestValueEditor Id.NodeR (ValueEditor.Def cr)
     | CloseValueEditor
     | TrackValueSend Id.NodeR Id.InletR cr
-    | MoveNode Id.NodeR { left :: Number, top :: Number }
+    | MoveNode Id.NodeR Position
     -- | FocusUpdate (Set Id.NodeR)
     | RefreshHelp
     | RequestDocumentation (DocumentationFocus sr cr)
@@ -339,15 +339,9 @@ render HTML ptk state =
 type NodeCell_ sr cr m =
     { inFocus :: Boolean
     , isDragging :: Boolean
-    , position ::
-        { left :: Number
-        , top :: Number
-        }
+    , position :: Position
     , rawNode :: Raw.Node sr cr m
-    , size ::
-        { width :: Number
-        , height :: Number
-        }
+    , size :: Size
     , zIndex :: NodeZIndex
     }
 
@@ -379,8 +373,8 @@ _makeNodesWithCells state =
 _checkDragging
     :: LockingTask
     -> Id.NodeR
-    -> { top :: Number, left :: Number, width :: Number, height :: Number }
-    -> { top :: Number, left :: Number, width :: Number, height :: Number }
+    -> Bounds
+    -> Bounds
 _checkDragging lockOn nodeR bounds =
     case lockOn of
         DraggingNode dragNodeR pos ->
@@ -401,11 +395,7 @@ _makeNodesToCellsMap state =
         cellToTuple cell = RawNode.id cell.rawNode /\ cell
 
 
-zeroBounds :: { top :: Number, left :: Number, width :: Number, height :: Number }
-zeroBounds = { top : 0.0, left : 0.0, width : 0.0, height : 0.0 }
-
-
-_inletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.InletR) -> { x :: Number, y :: Number }
+_inletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.InletR) -> PositionXY
 _inletPosition nodesToCellsMap (nodeR /\ inletR) =
     Map.lookup nodeR nodesToCellsMap
     <#> (\{ position, rawNode } ->
@@ -416,7 +406,7 @@ _inletPosition nodesToCellsMap (nodeR /\ inletR) =
     # fromMaybe { x : 0.0, y : 0.0 }
 
 
-_outletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.OutletR) -> { x :: Number, y :: Number }
+_outletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.OutletR) -> PositionXY
 _outletPosition nodesToCellsMap (nodeR /\ outletR) =
     Map.lookup nodeR nodesToCellsMap
     <#> (\{ position, rawNode } ->
@@ -570,7 +560,7 @@ handleQuery = case _ of
         -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
 
-findFocusedNodes :: { x :: Number, y :: Number } -> NodesBounds -> Set Id.NodeR
+findFocusedNodes :: PositionXY -> NodesBounds -> Set Id.NodeR
 findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
     where
         convertMap :: NodesBounds -> Array (Id.NodeR /\ (Bounds /\ NodeZIndex))
@@ -579,7 +569,7 @@ findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
             if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set
 
 
-draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe (Id.NodeR /\ { dx :: Number, dy :: Number })
+draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe (Id.NodeR /\ Delta)
 draggingNode = _.lockOn >>> case _ of
     DraggingNode nodeR pos -> Just $ nodeR /\ pos
     Connecting _ _ -> Nothing
@@ -604,6 +594,6 @@ storeBounds nodeR bounds nodesBounds =
             (bounds /\ (ZIndex $ Map.size nodesBounds))
 
 
-updatePosition :: Id.NodeR -> { left :: Number, top :: Number } -> NodesBounds -> NodesBounds
+updatePosition :: Id.NodeR -> Position -> NodesBounds -> NodesBounds
 updatePosition nodeR { left, top } =
     MapX.update' (lmap $ _ { left = left, top = top }) nodeR

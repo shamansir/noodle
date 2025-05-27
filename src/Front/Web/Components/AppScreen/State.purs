@@ -36,6 +36,7 @@ import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 
 import HydraTk.Lang.Program (Program) as Hydra
 
+import Front.Shared.Bounds (Position, Size)
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
@@ -54,7 +55,7 @@ data UiMode
 
 
 type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
-    { size :: Maybe { width :: Number, height :: Number }
+    { size :: Maybe Size
     , zoom :: Number
     , uiMode :: UiMode
     , helpText :: Boolean
@@ -205,7 +206,7 @@ storeLocation :: forall loc ps. loc -> PatchInfo loc ps -> PatchInfo loc ps
 storeLocation loc = _ { lastLocation = loc }
 
 
-nextLocation :: forall loc ps. WebLocator loc => { width :: Number, height :: Number } -> PatchInfo loc ps -> loc /\ { left :: Number, top :: Number }
+nextLocation :: forall loc ps. WebLocator loc => Size -> PatchInfo loc ps -> loc /\ Position
 nextLocation size = _.lastLocation >>> flip Web.locateNext size
 
 
@@ -230,7 +231,7 @@ registerNewNode patchR rawNode =
                 }
 
 
-updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> { left :: Number, top :: Number } -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> Position -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.updatePosition nodeR pos }
 
 

@@ -46,7 +46,8 @@ import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 
-import Cli.Bounds (Bounds, NodeBounds)
+import Front.Shared.Bounds (IntBounds)
+import Cli.Bounds (NodeBounds)
 import Cli.Bounds (collect, outletPos, inletPos) as Bounds
 import Cli.Keys (PatchBoxKey, NodeBoxKey, LineA, LineB, LineC) as K
 import Cli.Keys (lineA, lineB, lineC) as Key
@@ -76,9 +77,9 @@ derive instance Newtype (LinkCmpState s) _
 
 
 type LinkCalc =
-    { a :: Bounds
-    , b :: Bounds
-    , c :: Bounds
+    { a :: IntBounds
+    , b :: IntBounds
+    , c :: IntBounds
     }
 
 
