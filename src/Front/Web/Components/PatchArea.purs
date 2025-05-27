@@ -320,7 +320,6 @@ render HTML ptk state =
         Just (nodeR /\ { inlet, editor, pos, currentValue }) ->
             let
                 theInletPos = inletPos (nodeR /\ inlet) # \{x, y} -> { x, y : y - 25.0 }
-                _ = Debug.spy "inlet" inlet
                 inletPath = { node : nodeR, inlet }
                 -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
                 mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
@@ -351,7 +350,7 @@ _makeNodesWithCells
      . State ps sr cr m
     -> Array (NodeCell_ sr cr m)
 _makeNodesWithCells state =
-    Debug.spy "nodes with cells" ((Debug.spy "nodes in PA" state.nodes) <#> findCell)
+    state.nodes <#> findCell
     where
         findCell rawNode =
             let
@@ -476,7 +475,6 @@ handleAction = case _ of
         H.raise RefreshHelp
         -- TODO ApplyDragEnd if node was dragged
     FromNodeBox nodeR (NodeBox.InletValueWasClicked pos inletR editorId vic) -> do
-        let _ = Debug.spy "patch: inlet value click" unit
         let editorDef =
                 { inlet : inletR
                 , editor : editorId
@@ -518,7 +516,7 @@ handleAction = case _ of
     FromValueEditor nodeR inletR (ValueEditor.SendValue value) -> do
         state <- H.get
         whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
-            $ RawNode.sendIn inletR (Debug.spy "send value" value)
+            $ RawNode.sendIn inletR value -- (Debug.spy "send value" value)
         H.raise $ TrackValueSend nodeR inletR value
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.modify_ _ { mbCurrentEditor = Nothing }

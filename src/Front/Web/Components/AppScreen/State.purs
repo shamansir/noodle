@@ -8,7 +8,7 @@ import Type.Proxy (Proxy(..))
 
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
-import Data.Set (empty) as Set
+import Data.Set (empty, fromFoldable) as Set
 import Data.Map (Map)
 import Data.Map (empty, insert, lookup) as Map
 import Data.Map.Extra (update') as Map
@@ -72,7 +72,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , commandInputActive :: Boolean
     , log :: Array Console.LogLine
     , history :: NdfFile
-    , openPanels :: Array Panels.Which
+    , openPanels :: Set Panels.Which
     }
 
 
@@ -112,7 +112,7 @@ init toolkit =
     , commandInputActive : false
     , log : []
     , history : Ndf.init "noodle" 2.0
-    , openPanels : [ Panels.Commands, Panels.Documentation, Panels.Tree ]
+    , openPanels : Set.fromFoldable [ Panels.Commands, Panels.Documentation, Panels.Tree ]
     }
 
 

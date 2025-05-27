@@ -24,6 +24,7 @@ import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber, floor) as Int
 import Data.String (toLower) as String
 import Data.Array (length) as Array
+import Data.Set (size, insert, delete, toUnfoldable) as Set
 import Data.Traversable (traverse_, for)
 import Data.FunctorWithIndex (mapWithIndex)
 
@@ -82,6 +83,7 @@ import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Components.CommandInput as CommandInput
 import Web.Components.HelpText as HelpText
+import Web.Components.PanelTogglesBar as PanelTogglesBar
 import Web.Components.SidePanel (SidePanel)
 import Web.Components.SidePanel (panel) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel, panelId) as SP.ConsoleLog
@@ -105,6 +107,7 @@ type Slots sr cr m =
     , statusBar :: H.Slot StatusBar.Query StatusBar.Output TargetLayer
     , commandInput :: forall q. H.Slot q (CommandInput.Output sr cr m) Unit
     , helpText :: forall q o. H.Slot q o Unit
+    , panelToggles :: forall q. H.Slot q PanelTogglesBar.Output Unit
     , sidePanel :: forall q o. H.Slot q o (TargetLayer /\ Panels.Which)
     )
 
@@ -115,6 +118,7 @@ _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
 _commandInput = Proxy :: _ "commandInput"
 _helpText = Proxy :: _ "helpText"
+_panelToggles = Proxy :: _ "panelToggles"
 _sidePanel = Proxy :: _ "sidePanel"
 
 
@@ -133,6 +137,7 @@ data Action sr cr m
     | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output sr cr)
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
+    | FromPanelToggles PanelTogglesBar.Output
     | HandleResize
 
 
@@ -244,8 +249,11 @@ render ploc _ state =
                                     CState.SolidOverlay _ -> Just solidBackground
                                 ]
                             , HS.g
-                                [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                                [ HSA.transform [ HSA.Translate patchesBarX patchesBarY ] ]
                                 [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
+                            , HS.g
+                                [ HSA.transform [ HSA.Translate panelTogglesX panelTogglesY ] ]
+                                [ HH.slot _panelToggles unit PanelTogglesBar.component panelToggleInput FromPanelToggles ]
                             , HS.g
                                 [ HSA.transform [ HSA.Translate libraryX libraryY ] ]
                                 [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
@@ -253,7 +261,7 @@ render ploc _ state =
                                 [ HSA.transform [ HSA.Translate patchAreaX patchAreaY ] ]
                                 [ HH.slot _patchArea SVG (PatchArea.component ptk SVG) patchAreaInput $ FromPatchArea mbCurPatchId ]
                             , HS.g
-                                [ HSA.transform [ HSA.Translate 0.0 statusBarY ] ]
+                                [ HSA.transform [ HSA.Translate statusBarX statusBarY ] ]
                                 [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
                             ]
                     )
@@ -275,7 +283,7 @@ render ploc _ state =
                         [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     ]
-                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> state.openPanels)
+                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> Set.toUnfoldable state.openPanels)
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
@@ -295,12 +303,16 @@ render ploc _ state =
             curPatchNodesBounds = mbCurrentPatchInfo <#> _.nodesBounds # fromMaybe Map.empty
             curPatchState = CState.currentPatchState' state
 
+            patchesBarX = 0.0
+            patchesBarY = 0.0
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
             libraryX = 5.0
             libraryY = PatchesBar.height + 15.0
             statusBarX = 0.0
             statusBarY = height - StatusBar.height - 10.0
+            panelTogglesX = width - PanelTogglesBar.width
+            panelTogglesY = 0.0
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
@@ -315,8 +327,8 @@ render ploc _ state =
                 , zoom : state.zoom
                 , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
-                , nodes : Debug.spy "nodes" curPatchNodes
-                , nodesBounds : Debug.spy "nodesBounds" curPatchNodesBounds
+                , nodes : curPatchNodes
+                , nodesBounds : curPatchNodesBounds
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
                 } :: PatchArea.Input ps sr cr m
@@ -333,8 +345,11 @@ render ploc _ state =
                 { pos : { x : width / 2.0, y : height / 2.0 }
                 , active : state.commandInputActive
                 } :: CommandInput.Input
+            panelToggleInput =
+                { openPanels : state.openPanels
+                } :: PanelTogglesBar.Input
 
-            panelsCount = Array.length state.openPanels
+            panelsCount = Set.size state.openPanels
             wrapWithPos panelIdx content =
                 HH.div
                     [ HHP.style $
@@ -563,11 +578,15 @@ handleAction ploc = case _ of
                 -- FIXME: log error: CC.log $ "parse error " <> command
     FromCommandInput CommandInput.CloseCommandInput ->
         H.modify_ _ { commandInputActive = false }
+    FromPanelToggles (PanelTogglesBar.OpenPanel which) ->
+        H.modify_ \s -> s { openPanels = Set.insert which s.openPanels }
+    FromPanelToggles (PanelTogglesBar.ClosePanel which) ->
+        H.modify_ \s -> s { openPanels = Set.delete which s.openPanels }
     GlobalKeyDown kevt -> do
-        let keyName = Debug.spy "keyname" $ String.toLower $ KE.key kevt
-        let keyCode = Debug.spy "keycode" $ String.toLower $ KE.code kevt
-        let shiftPressed = Debug.spy "shiftPressed" $ KE.shiftKey kevt
-        let controlPressed = Debug.spy "controlPressed" $ KE.ctrlKey kevt
+        let keyName = String.toLower $ KE.key kevt
+        let keyCode = String.toLower $ KE.code kevt
+        let shiftPressed = KE.shiftKey kevt
+        let controlPressed = KE.ctrlKey kevt
         H.modify_ $ _ { shiftPressed = shiftPressed }
         when (keyName == "escape") $ do
             H.tell _patchArea SVG PatchArea.CancelConnecting

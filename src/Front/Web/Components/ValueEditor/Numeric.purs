@@ -63,11 +63,11 @@ editor fromRepr toRepr =
                 <> HHP.position_ HHP.Abs { x : state.pos.x + 7.0, y : state.pos.y - 20.0 }
             -- , HP.step $ I.Step step
             , HHP.value $ maybe "-" show $ fromRepr state.currentValue
-            , HE.onValueInput (Number.fromString >>> map toRepr >>> Debug.spy "repr" >>> maybe Skip SendValue)
+            , HE.onValueInput (Number.fromString >>> map toRepr >>> {- Debug.spy "repr" >>> -} maybe Skip SendValue)
             -- , HE.onValueChange (Debug.spy "onValueChange" >>> const Skip)
             , HE.onKeyUp (\kevt ->
                     if (String.toLower (KE.key kevt) == "escape") || (String.toLower (KE.key kevt) == "enter")
-                        then Debug.spy "close editor" CloseEditor
+                        then CloseEditor -- Debug.spy "close editor" CloseEditor
                         else Skip
                 )
             ]

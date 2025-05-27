@@ -421,11 +421,9 @@ handleAction ptk = case _ of
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked
     InletClick mevt inletR -> do
-        let _ = Debug.spy "inlet click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
     InletValueClick mevt pos inletR vic -> do
-        let _ = Debug.spy "inlet value click" unit
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletValueWasClicked pos inletR (ValueEditor.EditorId "number") vic
     OutletClick mevt outletR -> do
@@ -461,7 +459,6 @@ handleAction ptk = case _ of
 handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
-        let _ = Debug.spy "apply update" unit
         H.modify_ _ { latestUpdate = Just changes }
         pure $ Just a
     ApplyDragStart a -> do

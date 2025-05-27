@@ -102,7 +102,7 @@ component =
 
     render context =
         HH.div
-            [ HHP.style $ "display: block; text-align: right; position: absolute; top: 0; right: 0; max-width: " <> show maxWidth <> "px;" ]
+            [ HHP.style $ "display: block; text-align: right; position: absolute; top: 50px; right: 200px; max-width: " <> show maxWidth <> "px;" ]
             $ Array.intersperse HH.br_ $ (HH.span [] <$> pure <$> HH.text <$> helpText context)
 
     handleAction = case _ of
