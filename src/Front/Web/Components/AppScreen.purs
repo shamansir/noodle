@@ -4,7 +4,7 @@ import Prelude
 
 import Debug as Debug
 
-import Effect.Class (liftEffect)
+import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
 import Type.Proxy (Proxy(..))
@@ -25,6 +25,7 @@ import Data.Int (round, toNumber, floor) as Int
 import Data.String (toLower) as String
 import Data.Array (length) as Array
 import Data.Traversable (traverse_, for)
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -262,7 +263,7 @@ render ploc _ state =
             CState.OnlyCanvas _ ->
                 HH.div [] []
             _ ->
-                HH.div_
+                HH.div_ $
                     [ HH.div
                         [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
                         [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
@@ -273,11 +274,8 @@ render ploc _ state =
                         [ HHP.position HHP.Abs { x : patchAreaX, y : patchAreaY } ]
                         [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
-                    , HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel) state.log
-                    , HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.panelId SP.Commands.sidePanel) state.history
-                    , HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.panelId SP.Tree.sidePanel) state.network
-                    , HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.panelId SP.Documentation.sidePanel) state
                     ]
+                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> openPanels)
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
@@ -296,6 +294,7 @@ render ploc _ state =
             curPatchLinks = mbCurrentPatch <#> Patch.links # fromMaybe []
             curPatchNodesBounds = mbCurrentPatchInfo <#> _.nodesBounds # fromMaybe Map.empty
             curPatchState = CState.currentPatchState' state
+
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
             libraryX = 5.0
@@ -305,6 +304,7 @@ render ploc _ state =
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
+            panelsWidth = 200.0
 
             libraryInput =
                 { families : Toolkit.families toolkit
@@ -333,6 +333,36 @@ render ploc _ state =
                 { pos : { x : width / 2.0, y : height / 2.0 }
                 , active : state.commandInputActive
                 } :: CommandInput.Input
+
+            openPanels = [ Panels.Console, Panels.Commands, Panels.Tree, Panels.Documentation ]
+            panelsCount = Array.length openPanels
+            wrapWithPos panelIdx content =
+                HH.div
+                    [ HHP.position HHP.Abs
+                        { x : width - panelsWidth
+                        , y : (Int.toNumber panelIdx / Int.toNumber panelsCount) * height
+                        }
+                    ]
+                    $ pure content
+
+
+
+panelSlot
+    :: forall loc tk ps fs sr cr m
+     . MarkToolkit tk
+    => HasChRepr tk cr
+    => T.At At.Documentation cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => MonadEffect m
+    => State loc tk ps fs sr cr m
+    -> Panels.Which
+    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
+panelSlot state Panels.Console       = HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel) state.log
+panelSlot state Panels.Commands      = HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.panelId SP.Commands.sidePanel) state.history
+panelSlot state Panels.Tree          = HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.panelId SP.Tree.sidePanel) state.network
+panelSlot state Panels.Documentation = HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.panelId SP.Documentation.sidePanel) state
+panelSlot state Panels.WsServer      = HH.div [] []
+panelSlot state Panels.HydraCode     = HH.div [] []
 
 
 handleAction

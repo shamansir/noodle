@@ -18,6 +18,8 @@ import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 import Web.UIEvent.KeyboardEvent as KE
 import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
+import Front.Shared.Bounds (PositionXY)
+
 import Noodle.Id (FamilyR) as Id
 import Noodle.Toolkit (Toolkit, class HoldsFamilies)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
@@ -36,16 +38,14 @@ import Halogen.HTML.Properties.Extra (Position(..), position_) as HHP
 
 
 type Input =
-    { pos ::
-        { x :: Number, y :: Number }
+    { pos :: PositionXY
     , active :: Boolean
     }
 
 
 type State =
     { active :: Boolean
-    , pos ::
-        { x :: Number, y :: Number }
+    , pos :: PositionXY
     , currentValue :: String
     }
 

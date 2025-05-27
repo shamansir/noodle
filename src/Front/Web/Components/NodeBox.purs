@@ -157,7 +157,7 @@ connectorRadius = 5.0 :: Number
 
 
 -- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
-inletRelPos :: Int -> { x :: Number, y :: Number }
+inletRelPos :: Int -> PositionXY
 inletRelPos idx =
     { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
     , y : channelBarHeight / 2.0
@@ -165,7 +165,7 @@ inletRelPos idx =
 
 
 -- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
-outletRelPos :: Int -> { x :: Number, y :: Number }
+outletRelPos :: Int -> PositionXY
 outletRelPos idx =
     { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
     , y : channelBarHeight + bodyHeight + (channelBarHeight / 2.0)

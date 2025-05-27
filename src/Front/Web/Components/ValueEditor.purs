@@ -13,6 +13,8 @@ import Noodle.Repr.ValueInChannel (ValueInChannel)
 
 import Halogen (Component, RefLabel) as H
 
+import Front.Shared.Bounds (PositionXY)
+
 newtype EditorId = EditorId String
 
 derive instance Eq EditorId
@@ -21,17 +23,14 @@ derive instance Ord EditorId
 
 type Def repr =
     { inlet :: Id.InletR
-    , pos :: { x :: Number, y :: Number }
+    , pos :: PositionXY
     , editor :: EditorId
     , currentValue :: ValueInChannel repr
     }
 
 
 type Input v =
-    { pos ::
-        { x :: Number
-        , y :: Number
-        }
+    { pos :: PositionXY
     , currentValue :: v
     }
 

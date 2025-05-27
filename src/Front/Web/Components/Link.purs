@@ -19,10 +19,12 @@ import Noodle.Raw.Link (Connector) as RawLink
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+import Front.Shared.Bounds (PositionXY)
+
 
 type Position =
-    { from :: { x :: Number, y :: Number }
-    , to   :: { x :: Number, y :: Number }
+    { from :: PositionXY
+    , to   :: PositionXY
     }
 
 
