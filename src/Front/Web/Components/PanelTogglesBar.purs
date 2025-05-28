@@ -2,12 +2,17 @@ module Web.Components.PanelTogglesBar where
 
 import Prelude
 
-import Data.Maybe (Maybe(..), maybe)
+import Type.Proxy (Proxy(..))
+
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Array (snoc, elem, length) as Array
+import Data.Map (Map)
+import Data.Map (lookup) as Map
 import Data.Set (Set)
 import Data.Set (member, size) as Set
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (length) as String
+import Data.String.CodeUnits as CU
 import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
@@ -21,19 +26,28 @@ import Halogen.Svg.Elements as HS
 
 import Front.Shared.Panels (Which(..), allPanels) as Panels
 
+import Web.Components.SidePanel (button) as SidePanel
+import Web.Components.PatchesBar as PatchesBar
+import Web.Components.Library as Library
+import Web.Components.PatchArea as PatchArea
+import Web.Components.StatusBar as StatusBar
+import Web.Components.CommandInput as CommandInput
+import Web.Components.HelpText as HelpText
+
 import Noodle.Id (PatchR, PatchName) as Id
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
-
 type Input =
     { openPanels :: Set Panels.Which
+    , symbols :: Map Panels.Which Char
     }
 
 
 type State =
     { openPanels :: Set Panels.Which
+    , symbols :: Map Panels.Which Char
     }
 
 
@@ -62,8 +76,7 @@ component =
 
 
 initialState :: Input -> State
-initialState { openPanels } = { openPanels }
-
+initialState { openPanels, symbols } = { openPanels, symbols }
 
 
 buttonWidth = 30.0 :: Number
@@ -105,14 +118,20 @@ render state =
                     , HSA.stroke $ Just $ P.hColorOf $ _.i100 Palette.blue
                     , HSA.strokeWidth 2.0
                     ]
+                , HS.g
+                    [ HSA.transform [ HSA.Translate 10.0 textY ] ]
+                    [ ]
                 , HS.text
                     [ HSA.x 10.0, HSA.y textY
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 14.0
                     , HSA.fill $ Just $ P.hColorOf $ {- if Set.member which state.openPanels then _.i100 Palette.green else -} _.i100 Palette.blue
                     , HSA.dominant_baseline HSA.BaselineMiddle
                     ]
-                    [ HH.text "+" ]
+                    [ HH.text $ panelSymbol which ]
                 ]
+
+        panelSymbol =
+            CU.singleton <<< fromMaybe '?' <<< flip Map.lookup state.symbols
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () Output m Unit
@@ -125,4 +144,5 @@ handleAction = case _ of
     Receive input ->
         H.modify_ _
             { openPanels = input.openPanels
+            , symbols = input.symbols
             }

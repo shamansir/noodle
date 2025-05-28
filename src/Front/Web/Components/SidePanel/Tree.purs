@@ -16,15 +16,13 @@ import Web.Components.AppScreen.State as CState
 panelId = Proxy :: _ "tree"
 
 
-sidePanel :: forall tk p fs sr cr m. SidePanel "tree" (Network tk p fs sr cr m) Boolean
+sidePanel :: forall tk p fs sr cr m. SidePanel "tree" (Network tk p fs sr cr m) Unit
 sidePanel =
     { title : "tree"
     , char : const 'T'
-    , isOn : identity
+    , value : const unit
     , next : (\network ->
             toPathTree (const unit) network
-            <#> \pathTree ->
-                true /\ pure (formatPathTree pathTree)
+            <#> \pathTree -> pure (formatPathTree pathTree)
         )
-    , onToggle : identity
     }

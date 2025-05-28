@@ -12,13 +12,8 @@ import Cli.State (togglePanel, isPanelOn) as CState
 import Cli.Components.SidePanel (SidePanel)
 -- import Cli.Components.SidePanel as SidePanel
 import Cli.Keys as Key
+
 import Front.Shared.Panels (Which(..)) as P
-
-
-data Status
-    = Off
-    | Waiting
-    | Connected Int
 
 
 sidePanel :: forall tk p fs sr cr. SidePanel "ws-status" (State _ tk p fs sr cr Effect) Boolean -- FIXME: use `Status` here

@@ -16,7 +16,7 @@ import Signal ((~>))
 import Signal (runSignal) as Signal
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Map (empty, toUnfoldable, size, insert, lookup) as Map
+import Data.Map (empty, toUnfoldable, fromFoldable, size, insert, lookup) as Map
 import Data.Map.Extra (update') as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (unwrap) as NT
@@ -85,7 +85,7 @@ import Web.Components.CommandInput as CommandInput
 import Web.Components.HelpText as HelpText
 import Web.Components.PanelTogglesBar as PanelTogglesBar
 import Web.Components.SidePanel (SidePanel)
-import Web.Components.SidePanel (panel) as SidePanel
+import Web.Components.SidePanel (panel, charOf) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel, panelId) as SP.ConsoleLog
 import Web.Components.SidePanel.CommandLog (sidePanel, panelId) as SP.Commands
 import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
@@ -93,8 +93,7 @@ import Web.Components.SidePanel.Documentation (sidePanel, panelId) as SP.Documen
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
-import Front.Shared.Panels (Which(..)) as Panels
-
+import Front.Shared.Panels (Which(..), allPanels) as Panels
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
@@ -347,8 +346,10 @@ render ploc _ state =
                 } :: CommandInput.Input
             panelToggleInput =
                 { openPanels : state.openPanels
+                , symbols : collectedSymbols
                 } :: PanelTogglesBar.Input
 
+            collectedSymbols = Map.fromFoldable $ (/\) <*> panelSymbol state <$> Panels.allPanels
             panelsCount = Set.size state.openPanels
             wrapWithPos panelIdx content =
                 HH.div
@@ -360,6 +361,24 @@ render ploc _ state =
                         <> " min-width: " <> show panelsWidth <> "px;"
                     ]
                     $ pure content
+
+
+panelSymbol
+    :: forall loc tk ps fs sr cr m
+     . MarkToolkit tk -- FIXME: get rid of typeclass constraints here, we don't need them to calculate symbol
+    => HasChRepr tk cr
+    => T.At At.Documentation cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => MonadEffect m
+    => State loc tk ps fs sr cr m
+    -> Panels.Which
+    -> Char
+panelSymbol state Panels.Console       = SidePanel.charOf SP.ConsoleLog.sidePanel state.log
+panelSymbol state Panels.Commands      = SidePanel.charOf SP.Commands.sidePanel state.history
+panelSymbol state Panels.Tree          = SidePanel.charOf SP.Tree.sidePanel state.network
+panelSymbol state Panels.Documentation = SidePanel.charOf SP.Documentation.sidePanel state
+panelSymbol state Panels.WsServer      = '?'
+panelSymbol state Panels.HydraCode     = '?'
 
 
 panelSlot

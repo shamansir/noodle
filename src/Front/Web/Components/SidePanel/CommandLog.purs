@@ -16,11 +16,10 @@ import Web.Components.AppScreen.State as CState
 panelId = Proxy :: _ "command-log"
 
 
-sidePanel :: SidePanel "command-log" NdfFile Boolean
+sidePanel :: SidePanel "command-log" NdfFile Unit
 sidePanel =
     { title : "history"
     , char : const '⏺'
-    , isOn : identity
-    , next : \ndfFile -> pure $ true /\ CState.formatHistory ndfFile
-    , onToggle : identity
+    , next : \ndfFile -> pure $ CState.formatHistory ndfFile
+    , value : const unit
     }

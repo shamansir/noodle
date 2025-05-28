@@ -21,11 +21,10 @@ derive instance Newtype LogLine _
 panelId = Proxy :: _ "console"
 
 
-sidePanel :: SidePanel "console" (Array LogLine) Boolean
+sidePanel :: SidePanel "console" (Array LogLine) Unit
 sidePanel =
     { title : "console"
     , char : const 'L'
-    , isOn : identity
-    , next : \logLines -> pure $ true /\ (T.s <$> unwrap <$> logLines)  -- const $ pure $ true /\ [ T.s "Command", T.s "Log" ]
-    , onToggle : identity
+    , next : \logLines -> pure $ T.s <$> unwrap <$> logLines
+    , value : const unit
     }

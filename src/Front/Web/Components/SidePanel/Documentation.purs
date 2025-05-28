@@ -42,17 +42,15 @@ sidePanel
     => HasChRepr tk cr
     => Tagged.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => SidePanel "documentation" (State _ tk p fs sr cr m) Boolean
+    => SidePanel "documentation" (State _ tk p fs sr cr m) Unit
 sidePanel =
     { title : "documentation"
     , char : const '☰'
-    , isOn : identity
-    , next : \s -> pure $
-        true
-        /\ maybe []
+    , next : \s ->
+        pure $ maybe []
             (loadDocumentation (Proxy :: _ tk) s.history)
             s.mbCurrentDocumentation
-    , onToggle : identity
+    , value : const unit
     }
 
 
