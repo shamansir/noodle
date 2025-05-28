@@ -316,7 +316,7 @@ render ploc _ state =
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
             sidePanelWidth = 350.0
-            sidePanelHeight = Debug.spy "sidePanelHeight" $ Debug.spy "totalHeight"  (height - sidePanelsY) / Debug.spy "panelsCount" (Int.toNumber panelsCount)
+            sidePanelHeight = (height - sidePanelsY) / Int.toNumber panelsCount
             sidePanelsX = width - sidePanelWidth
             sidePanelsY = PatchesBar.height + 15.0
 

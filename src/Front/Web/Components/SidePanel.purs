@@ -18,6 +18,7 @@ import Data.String.CodeUnits as CU
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties (style, ref) as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
@@ -79,6 +80,7 @@ data Action s
 slopeFactor = 5.0 :: Number
 fontSize = 12.0 :: Number
 headerHeight = 20.0 :: Number
+contentPadding = 20.0 :: Number
 
 panel
     :: forall id s v query output m
@@ -110,7 +112,7 @@ panel targetLayer pid config =
 
     render HTML { tags } =
         HH.div
-            [ ]
+            [ HHP.position HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
         where
