@@ -52,6 +52,11 @@ Will rewrite previous node definitions if they intersect.
 `sh ./run-cli.sh -t starter -f ./ndf/starter.v0.1.ndf`
 `sh ./run-cli.sh -t hydra -f ./ndf/hydra.v0.3.ndf`
 
+Run with `spago-legacy`:
+
+`sh ./run-cli-leg.sh -t starter -f ./ndf/starter.v0.1.ndf`
+`sh ./run-cli-leg.sh -t hydra -f ./ndf/hydra.v0.3.ndf`
+
 ## Generate Toolkit Code
 
 Generate code for _starter_ toolkit with `purescript-codegen` using the given definition file

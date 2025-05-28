@@ -117,6 +117,12 @@ package:
       - HidingImport
       - MissingTypeDeclaration
       - WildcardInferredType
+  bundle:
+    minify: false
+    module: Web.Main
+    outfile: "web/app.js"
+    platform: browser
+    type: "app"
   run:
     main: Cli.Main
     execArgs:

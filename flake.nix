@@ -55,6 +55,7 @@
               export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
               ln -s ${nodeDependencies}/lib/node_modules ./node_modules
               export PATH="${nodeDependencies}/bin:$PATH"
+              rm -rf ./test/Files/Output
               spago build --output output.nix
             '';
 
@@ -92,6 +93,7 @@
                 # spago run --demo
                 ln -s ${nodeDependencies}/lib/node_modules ./node_modules
                 export PATH="${nodeDependencies}/bin:$PATH"
+                rm -rf ./test/Files/Output
                 spago build --output output.nix
                 node ./.spago/run/run.js -t starter
               '';
