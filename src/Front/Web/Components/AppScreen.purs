@@ -130,7 +130,7 @@ data Action sr cr m
     | SpawnNodeOf Id.FamilyR
     | RegisterNode (Raw.Node sr cr m) -- TODO: add position
     | PassUpdate Id.PatchR Id.NodeR (RawNode.NodeChanges sr cr)
-    | LoadChanges Id.PatchR
+    | LoadCurrentPatchChanges
     | FromPatchesBar PatchesBar.Output
     | FromLibrary Library.Output
     | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output sr cr)
@@ -316,6 +316,8 @@ render ploc _ state =
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
             panelsWidth = 350.0
+            panelsX = width - panelsWidth
+            panelsY = PatchesBar.height + 15.0
 
             libraryInput =
                 { families : Toolkit.families toolkit
@@ -355,48 +357,12 @@ render ploc _ state =
                 HH.div
                     [ HHP.style $
                         HHP.position_ HHP.Abs
-                            { x : width - panelsWidth
-                            , y : (Int.toNumber panelIdx / Int.toNumber panelsCount) * height
+                            { x : panelsX
+                            , y : panelsY + ((Int.toNumber panelIdx / Int.toNumber panelsCount) * (height - panelsY))
                             }
                         <> " min-width: " <> show panelsWidth <> "px;"
                     ]
                     $ pure content
-
-
-panelSymbol
-    :: forall loc tk ps fs sr cr m
-     . MarkToolkit tk -- FIXME: get rid of typeclass constraints here, we don't need them to calculate symbol
-    => HasChRepr tk cr
-    => T.At At.Documentation cr
-    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => MonadEffect m
-    => State loc tk ps fs sr cr m
-    -> Panels.Which
-    -> Char
-panelSymbol state Panels.Console       = SidePanel.charOf SP.ConsoleLog.sidePanel state.log
-panelSymbol state Panels.Commands      = SidePanel.charOf SP.Commands.sidePanel state.history
-panelSymbol state Panels.Tree          = SidePanel.charOf SP.Tree.sidePanel state.network
-panelSymbol state Panels.Documentation = SidePanel.charOf SP.Documentation.sidePanel state
-panelSymbol state Panels.WsServer      = '?'
-panelSymbol state Panels.HydraCode     = '?'
-
-
-panelSlot
-    :: forall loc tk ps fs sr cr m
-     . MarkToolkit tk
-    => HasChRepr tk cr
-    => T.At At.Documentation cr
-    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
-    => MonadEffect m
-    => State loc tk ps fs sr cr m
-    -> Panels.Which
-    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
-panelSlot state Panels.Console       = HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel) state.log
-panelSlot state Panels.Commands      = HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.panelId SP.Commands.sidePanel) state.history
-panelSlot state Panels.Tree          = HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.panelId SP.Tree.sidePanel) state.network
-panelSlot state Panels.Documentation = HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.panelId SP.Documentation.sidePanel) state
-panelSlot state Panels.WsServer      = HH.div [] []
-panelSlot state Panels.HydraCode     = HH.div [] []
 
 
 handleAction
@@ -464,6 +430,7 @@ handleAction ploc = case _ of
                 CState.indexOfPatch patchR state
                     <#> (\pIndex -> { id : patchR, index : pIndex })
             }
+        handleAction ploc LoadCurrentPatchChanges
     SpawnNodeOf familyR -> do
         state <- H.get
         let toolkit = Network.toolkit state.network
@@ -509,7 +476,7 @@ handleAction ploc = case _ of
                 let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
                 Hydra.executeHydra program
                 Console.log program
-    LoadChanges patchR -> do
+    LoadCurrentPatchChanges -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             void $ for (Patch.allNodes curPatch) $ \rawNode -> do
@@ -623,13 +590,47 @@ handleAction ploc = case _ of
                         CState.SolidOverlay prev -> prev
                         other -> CState.SolidOverlay other
             }
-            mbCurPatchId <- CState.currentPatchId <$> H.get
-            whenJust mbCurPatchId \curPatchId -> do
-                nextMode <- _.uiMode <$> H.get
-                case nextMode of
-                    CState.OnlyCanvas _ -> pure unit
-                    _ -> handleAction ploc $ LoadChanges curPatchId
+            nextMode <- _.uiMode <$> H.get
+            case nextMode of
+                CState.OnlyCanvas _ -> pure unit
+                _ -> handleAction ploc LoadCurrentPatchChanges
         when ((keyName == "h") && controlPressed) $ do
             H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+
+
+panelSymbol
+    :: forall loc tk ps fs sr cr m
+     . MarkToolkit tk -- FIXME: get rid of typeclass constraints here, we don't need them to calculate symbol, and it's only for `Documentation` panel
+    => HasChRepr tk cr
+    => T.At At.Documentation cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => MonadEffect m
+    => State loc tk ps fs sr cr m
+    -> Panels.Which
+    -> Char
+panelSymbol state Panels.Console       = SidePanel.charOf SP.ConsoleLog.sidePanel state.log
+panelSymbol state Panels.Commands      = SidePanel.charOf SP.Commands.sidePanel state.history
+panelSymbol state Panels.Tree          = SidePanel.charOf SP.Tree.sidePanel state.network
+panelSymbol state Panels.Documentation = SidePanel.charOf SP.Documentation.sidePanel state
+panelSymbol state Panels.WsServer      = '?'
+panelSymbol state Panels.HydraCode     = '?'
+
+
+panelSlot
+    :: forall loc tk ps fs sr cr m
+     . MarkToolkit tk
+    => HasChRepr tk cr
+    => T.At At.Documentation cr
+    => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
+    => MonadEffect m
+    => State loc tk ps fs sr cr m
+    -> Panels.Which
+    -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
+panelSlot state Panels.Console       = HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel) state.log
+panelSlot state Panels.Commands      = HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.panelId SP.Commands.sidePanel) state.history
+panelSlot state Panels.Tree          = HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.panelId SP.Tree.sidePanel) state.network
+panelSlot state Panels.Documentation = HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.panelId SP.Documentation.sidePanel) state
+panelSlot state Panels.WsServer      = HH.div [] []
+panelSlot state Panels.HydraCode     = HH.div [] []

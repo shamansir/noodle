@@ -46,10 +46,10 @@ sidePanel
 sidePanel =
     { title : "documentation"
     , char : const '☰'
-    , next : \s ->
+    , next : (\s ->
         pure $ maybe []
             (loadDocumentation (Proxy :: _ tk) s.history)
-            s.mbCurrentDocumentation
+            s.mbCurrentDocumentation)
     , value : const unit
     }
 
