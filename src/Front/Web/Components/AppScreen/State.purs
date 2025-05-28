@@ -213,22 +213,26 @@ nextLocation :: forall loc ps. WebLocator loc => Size -> PatchInfo loc ps -> loc
 nextLocation size = _.lastLocation >>> flip Web.locateNext size
 
 
+newNodeRect :: Size
+newNodeRect =
+    { width : 300.0, height : 70.0 }
+
+
 registerNewNode :: forall loc tk ps fs sr cr m. WebLocator loc => Id.PatchR -> Raw.Node sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 registerNewNode patchR rawNode =
     let
         nodeR = RawNode.id rawNode
-        nodeRect = { width : 300.0, height : 70.0 }
     in withPatch patchR (Patch.registerRawNode rawNode)
         >>> withPatchInfo patchR \info ->
             let
-                nextLoc /\ nodePos = Web.locateNext info.lastLocation nodeRect
+                nextLoc /\ nodePos = Web.locateNext info.lastLocation newNodeRect
             in info
                 { lastLocation = nextLoc
                 , nodesBounds =
                     PatchArea.storeBounds
                         nodeR
                         { left : nodePos.left, top : nodePos.top
-                        , width : nodeRect.width, height : nodeRect.height
+                        , width : newNodeRect.width, height : newNodeRect.height
                         }
                     info.nodesBounds
                 }

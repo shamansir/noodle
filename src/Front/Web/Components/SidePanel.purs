@@ -54,9 +54,14 @@ type Slots =
 _rawHtml = Proxy :: _ "rawHtml"
 
 
+type Input s =
+    RenderParams /\ s
+
+
 type State s =
     { state :: s
     , tags :: Array T.Tag
+    , size :: Size
     }
 
 
@@ -76,15 +81,14 @@ fontSize = 12.0 :: Number
 headerHeight = 20.0 :: Number
 
 panel
-    :: forall id input v query output m
+    :: forall id s v query output m
      . IsSymbol id
     => MonadEffect m
-    => RenderParams
-    -> TargetLayer
+    => TargetLayer
     -> Proxy id
-    -> SidePanel id input v
-    -> H.Component query input output m
-panel renderParams targetLayer pid config =
+    -> SidePanel id s v
+    -> H.Component query (Input s) output m
+panel targetLayer pid config =
     H.mkComponent
         { initialState
         , render : render targetLayer
@@ -95,10 +99,11 @@ panel renderParams targetLayer pid config =
             }
         }
     where
-    initialState :: input -> State input
-    initialState s =
+    initialState :: Input s -> State s
+    initialState ({ size } /\ s) =
         { state : s
         , tags : []
+        , size
         }
 
     panelContentRef = H.RefLabel $ "panel-content" <> reflectSymbol pid
@@ -111,14 +116,14 @@ panel renderParams targetLayer pid config =
         where
             htmlText = Html.multiLine $ T.stack tags
 
-    render SVG { tags } =
+    render SVG { tags, size } =
         HS.g
             [ ]
             [ backdrop
             ]
         where
-            width  = renderParams.size.width
-            height = renderParams.size.height
+            width  = size.width
+            height = size.height
             backdrop =
                 HS.g
                     [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
@@ -151,10 +156,10 @@ panel renderParams targetLayer pid config =
         Initialize -> do
             srec <- H.get
             tags <- H.liftEffect $ config.next srec.state
-            H.put { tags, state : srec.state }
-        Receive s -> do
+            H.put { tags, state : srec.state, size : srec.size }
+        Receive ({ size } /\ s) -> do
             tags <- H.liftEffect $ config.next s
-            H.put { tags, state : s }
+            H.put { tags, state : s, size }
 
 
 charOf :: forall id s v. SidePanel id s v -> s -> Char

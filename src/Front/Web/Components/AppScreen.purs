@@ -316,7 +316,7 @@ render ploc _ state =
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
             sidePanelWidth = 350.0
-            sidePanelHeight = (height - sidePanelsY) / Int.toNumber panelsCount
+            sidePanelHeight = Debug.spy "sidePanelHeight" $ Debug.spy "totalHeight"  (height - sidePanelsY) / Debug.spy "panelsCount" (Int.toNumber panelsCount)
             sidePanelsX = width - sidePanelWidth
             sidePanelsY = PatchesBar.height + 15.0
 
@@ -645,9 +645,9 @@ panelSlot
     -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
 panelSlot params target state =
     case _ of
-        Panels.Console       -> HH.slot_ _sidePanel (target /\ Panels.Console)       (SidePanel.panel params target SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel)       state.log
-        Panels.Commands      -> HH.slot_ _sidePanel (target /\ Panels.Commands)      (SidePanel.panel params target SP.Commands.panelId SP.Commands.sidePanel)           state.history
-        Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel params target SP.Tree.panelId SP.Tree.sidePanel)                   state.network
-        Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel params target SP.Documentation.panelId SP.Documentation.sidePanel) state
+        Panels.Console       -> HH.slot_ _sidePanel (target /\ Panels.Console)       (SidePanel.panel target SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel)       $ params /\ state.log
+        Panels.Commands      -> HH.slot_ _sidePanel (target /\ Panels.Commands)      (SidePanel.panel target SP.Commands.panelId SP.Commands.sidePanel)           $ params /\ state.history
+        Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel target SP.Tree.panelId SP.Tree.sidePanel)                   $ params /\ state.network
+        Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
         Panels.WsServer      -> HH.div [] []
         Panels.HydraCode     -> HH.div [] []
