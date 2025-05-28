@@ -22,12 +22,21 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 
+import Web.Paths as Paths
+import Web.Layer (TargetLayer(..))
 import Web.Components.RawHtml as RawHTML
+
+import Front.Shared.Bounds (Size)
 
 import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+
+
+type RenderParams =
+    { size :: Size
+    }
 
 
 type SidePanel (id :: Symbol) s v =
@@ -62,12 +71,23 @@ data Action s
     | Receive s
 
 
+slopeFactor = 5.0 :: Number
+fontSize = 12.0 :: Number
+headerHeight = 20.0 :: Number
+
 panel
-    :: forall id input v query output m. IsSymbol id => MonadEffect m => Proxy id -> SidePanel id input v -> H.Component query input output m
-panel pid config =
+    :: forall id input v query output m
+     . IsSymbol id
+    => MonadEffect m
+    => RenderParams
+    -> TargetLayer
+    -> Proxy id
+    -> SidePanel id input v
+    -> H.Component query input output m
+panel renderParams targetLayer pid config =
     H.mkComponent
         { initialState
-        , render
+        , render : render targetLayer
         , eval : H.mkEval H.defaultEval
             { handleAction = handleAction
             , initialize = Just Initialize
@@ -83,13 +103,49 @@ panel pid config =
 
     panelContentRef = H.RefLabel $ "panel-content" <> reflectSymbol pid
 
-    render { tags } =
+    render HTML { tags } =
         HH.div
             [ ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
         where
             htmlText = Html.multiLine $ T.stack tags
+
+    render SVG { tags } =
+        HS.g
+            [ ]
+            [ backdrop
+            ]
+        where
+            width  = renderParams.size.width
+            height = renderParams.size.height
+            backdrop =
+                HS.g
+                    [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                    [ HS.path
+                        [ HSA.d $ Paths.panelTop { slope : slopeFactor, width, height : headerHeight }
+                        , HSA.fill   $ Just $ P.hColorOf $ _.i900 Palette.magenta
+                        , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.magenta
+                        , HSA.strokeWidth 1.0
+                        ]
+                    , HS.text
+                        [ HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
+                        , HSA.x 6.0
+                        , HSA.y 7.0
+                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
+                        , HSA.dominant_baseline HSA.Hanging
+                        ]
+                        [ HH.text $ ": " <> config.title ]
+                    , HS.g
+                        [ HSA.transform [ HSA.Translate 0.0 headerHeight ] ]
+                        [ HS.path
+                            [ HSA.d $ Paths.panelBody { slope : slopeFactor, width, height : height - headerHeight }
+                            , HSA.fill   $ Just $ P.hColorOf $ _.i900 Palette.blue
+                            , HSA.stroke $ Just $ P.hColorOf $ _.i200 Palette.blue
+                            , HSA.strokeWidth 1.0
+                            ]
+                        ]
+                    ]
 
     handleAction = case _ of
         Initialize -> do

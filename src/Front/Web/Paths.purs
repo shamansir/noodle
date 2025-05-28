@@ -134,3 +134,11 @@ removeButton p =
     , HSA.m HSA.Abs 0.0 p.size
     , HSA.l HSA.Abs p.size 0.0
     ]
+
+
+panelTop :: RectParams -> Array HSA.PathCommand
+panelTop = libraryTop -- reflect bottom part ?
+
+
+panelBody :: RectParams -> Array HSA.PathCommand
+panelBody = libraryBody -- reflect top part ?

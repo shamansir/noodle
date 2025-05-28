@@ -85,7 +85,7 @@ import Web.Components.CommandInput as CommandInput
 import Web.Components.HelpText as HelpText
 import Web.Components.PanelTogglesBar as PanelTogglesBar
 import Web.Components.SidePanel (SidePanel)
-import Web.Components.SidePanel (panel, charOf) as SidePanel
+import Web.Components.SidePanel (panel, charOf, RenderParams) as SidePanel
 import Web.Components.SidePanel.Console (sidePanel, panelId) as SP.ConsoleLog
 import Web.Components.SidePanel.CommandLog (sidePanel, panelId) as SP.Commands
 import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
@@ -262,7 +262,7 @@ render ploc _ state =
                             , HS.g
                                 [ HSA.transform [ HSA.Translate statusBarX statusBarY ] ]
                                 [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
-                            ]
+                            ] <> (mapWithIndex wrapSvgWithPos $ panelSlot sidePanelParams SVG state <$> Set.toUnfoldable state.openPanels)
                     )
                 ]
             ]
@@ -282,7 +282,7 @@ render ploc _ state =
                         [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     ]
-                    <> (mapWithIndex wrapWithPos $ panelSlot state <$> Set.toUnfoldable state.openPanels)
+                    <> (mapWithIndex wrapHtmlWithPos $ panelSlot sidePanelParams HTML state <$> Set.toUnfoldable state.openPanels)
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
@@ -315,9 +315,10 @@ render ploc _ state =
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
-            panelsWidth = 350.0
-            panelsX = width - panelsWidth
-            panelsY = PatchesBar.height + 15.0
+            sidePanelWidth = 350.0
+            sidePanelHeight = (height - sidePanelsY) / Int.toNumber panelsCount
+            sidePanelsX = width - sidePanelWidth
+            sidePanelsY = PatchesBar.height + 15.0
 
             libraryInput =
                 { families : Toolkit.families toolkit
@@ -351,16 +352,26 @@ render ploc _ state =
                 , symbols : collectedSymbols
                 } :: PanelTogglesBar.Input
 
+            sidePanelParams =
+                { size : { width : sidePanelWidth, height : sidePanelHeight }
+                } :: SidePanel.RenderParams
+
             collectedSymbols = Map.fromFoldable $ (/\) <*> panelSymbol state <$> Panels.allPanels
             panelsCount = Set.size state.openPanels
-            wrapWithPos panelIdx content =
+            sidePanelY panelIdx = ((Int.toNumber panelIdx / Int.toNumber panelsCount) * (height - sidePanelsY))
+            wrapSvgWithPos panelIdx content =
+                HS.g
+                    [ HSA.transform [ HSA.Translate sidePanelsX $ sidePanelsY + sidePanelY panelIdx ]
+                    ]
+                    $ pure content
+            wrapHtmlWithPos panelIdx content =
                 HH.div
                     [ HHP.style $
                         HHP.position_ HHP.Abs
-                            { x : panelsX
-                            , y : panelsY + ((Int.toNumber panelIdx / Int.toNumber panelsCount) * (height - panelsY))
+                            { x : sidePanelsX
+                            , y : sidePanelsY + sidePanelY panelIdx
                             }
-                        <> " min-width: " <> show panelsWidth <> "px;"
+                        <> " min-width: " <> show sidePanelWidth <> "px;"
                     ]
                     $ pure content
 
@@ -610,12 +621,14 @@ panelSymbol
     => State loc tk ps fs sr cr m
     -> Panels.Which
     -> Char
-panelSymbol state Panels.Console       = SidePanel.charOf SP.ConsoleLog.sidePanel state.log
-panelSymbol state Panels.Commands      = SidePanel.charOf SP.Commands.sidePanel state.history
-panelSymbol state Panels.Tree          = SidePanel.charOf SP.Tree.sidePanel state.network
-panelSymbol state Panels.Documentation = SidePanel.charOf SP.Documentation.sidePanel state
-panelSymbol state Panels.WsServer      = '?'
-panelSymbol state Panels.HydraCode     = '?'
+panelSymbol state =
+    case _ of
+        Panels.Console       -> SidePanel.charOf SP.ConsoleLog.sidePanel state.log
+        Panels.Commands      -> SidePanel.charOf SP.Commands.sidePanel state.history
+        Panels.Tree          -> SidePanel.charOf SP.Tree.sidePanel state.network
+        Panels.Documentation -> SidePanel.charOf SP.Documentation.sidePanel state
+        Panels.WsServer      -> '?'
+        Panels.HydraCode     -> '?'
 
 
 panelSlot
@@ -625,12 +638,16 @@ panelSlot
     => T.At At.Documentation cr
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => MonadEffect m
-    => State loc tk ps fs sr cr m
+    => SidePanel.RenderParams
+    -> TargetLayer
+    -> State loc tk ps fs sr cr m
     -> Panels.Which
     -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
-panelSlot state Panels.Console       = HH.slot_ _sidePanel (HTML /\ Panels.Console) (SidePanel.panel SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel) state.log
-panelSlot state Panels.Commands      = HH.slot_ _sidePanel (HTML /\ Panels.Commands) (SidePanel.panel SP.Commands.panelId SP.Commands.sidePanel) state.history
-panelSlot state Panels.Tree          = HH.slot_ _sidePanel (HTML /\ Panels.Tree) (SidePanel.panel SP.Tree.panelId SP.Tree.sidePanel) state.network
-panelSlot state Panels.Documentation = HH.slot_ _sidePanel (HTML /\ Panels.Documentation) (SidePanel.panel SP.Documentation.panelId SP.Documentation.sidePanel) state
-panelSlot state Panels.WsServer      = HH.div [] []
-panelSlot state Panels.HydraCode     = HH.div [] []
+panelSlot params target state =
+    case _ of
+        Panels.Console       -> HH.slot_ _sidePanel (target /\ Panels.Console)       (SidePanel.panel params target SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel)       state.log
+        Panels.Commands      -> HH.slot_ _sidePanel (target /\ Panels.Commands)      (SidePanel.panel params target SP.Commands.panelId SP.Commands.sidePanel)           state.history
+        Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel params target SP.Tree.panelId SP.Tree.sidePanel)                   state.network
+        Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel params target SP.Documentation.panelId SP.Documentation.sidePanel) state
+        Panels.WsServer      -> HH.div [] []
+        Panels.HydraCode     -> HH.div [] []
