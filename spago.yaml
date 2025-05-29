@@ -51,7 +51,6 @@ package:
     - newtype
     - node-buffer
     - node-fs
-    - node-fs-aff
     - node-http
     - node-path
     - node-streams
@@ -65,7 +64,6 @@ package:
     - prelude
     - profunctor
     - profunctor-lenses
-    - ps-cst
     - psci-support
     - wire
     - random
@@ -158,7 +156,7 @@ workspace:
         - "maybe"
         - "newtype"
         - "node-buffer"
-        - "node-fs-aff"
+        - "node-fs"
         - "node-path"
         - "ordered-collections"
         - "prelude"
@@ -253,7 +251,6 @@ workspace:
         - newtype
         - node-buffer
         - node-child-process
-        - node-fs-aff
         - node-path
         - node-process
         - node-streams
@@ -274,5 +271,5 @@ workspace:
       git: https://github.com/natefaubion/purescript-tidy-codegen.git
       ref: v4.0.0
   packageSet:
-    registry: 29.1.0
+    registry: 64.10.0
     # url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.8-20230605/packages.json
