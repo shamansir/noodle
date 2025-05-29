@@ -99,4 +99,7 @@ $ color :: /-|
             , b : floor $ b * 255.0
             , a: 255
             } |-/
+$ letter :: /-|
+    code <- Noodle.receive _in_code
+    Noodle.send _out_letter $ fromMaybe '-' $ Char.fromCharCode $ Int.floor code |-/
 i ndf/starter-example.ndf

@@ -24,9 +24,11 @@ src/Noodle/Text/SketchParser.pgpurs
 *.gen.purs
 test/Files/Output
 test.to.revive/Files/Output
+/result
 /output.backup
 /output.txt
-/result
+/output.vscode
+/output.legacy
 /output.nix
 blessed.log.txt
 commands.log.txt
