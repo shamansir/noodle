@@ -4,13 +4,13 @@
 
 let
   sources = {
-    "@nyariv/sandboxjs-0.8.23" = {
+    "@nyariv/sandboxjs-0.8.25" = {
       name = "_at_nyariv_slash_sandboxjs";
       packageName = "@nyariv/sandboxjs";
-      version = "0.8.23";
+      version = "0.8.25";
       src = fetchurl {
-        url = "https://registry.npmjs.org/@nyariv/sandboxjs/-/sandboxjs-0.8.23.tgz";
-        sha512 = "OaD3i0czFTZzQFQdwgFVEqNyZVK19N6Jzmx/LjmDc+kiV751FQ2h3xscYkAeY4jfau2vZTZau+xR8fpkKrv/Ng==";
+        url = "https://registry.npmjs.org/@nyariv/sandboxjs/-/sandboxjs-0.8.25.tgz";
+        sha512 = "Y8CAHIgVjKvG2QtVOu2hHERdpi73e7XdoX0C7MHq/sRiVvfbYFKZ9WER1GCC3aqnOK9Cxf8SDv9vWIUfhrPkhQ==";
       };
     };
     "@rollup/plugin-node-resolve-15.3.1" = {
@@ -31,13 +31,13 @@ let
         sha512 = "USm05zrsFxYLPdWWq+K3STlWiT/3ELn3RcV5hJMghpeAIhxfsUIg6mt12CBJBInWMV4VneoV7SfGv8xIwo2qNQ==";
       };
     };
-    "@types/estree-1.0.6" = {
+    "@types/estree-1.0.7" = {
       name = "_at_types_slash_estree";
       packageName = "@types/estree";
-      version = "1.0.6";
+      version = "1.0.7";
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/estree/-/estree-1.0.6.tgz";
-        sha512 = "AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==";
+        url = "https://registry.npmjs.org/@types/estree/-/estree-1.0.7.tgz";
+        sha512 = "w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==";
       };
     };
     "@types/resolve-1.20.2" = {
@@ -922,6 +922,15 @@ let
         sha512 = "+MeVjFf4L44XUkhM1eYbD8fyEsxcV81pqMSR5gblfcLCHfZvbrqy4/qYHE+/R5HoBUT11WV5O08Cr1n3YXkWVQ==";
       };
     };
+    "reblessed-0.2.1" = {
+      name = "reblessed";
+      packageName = "reblessed";
+      version = "0.2.1";
+      src = fetchurl {
+        url = "https://registry.npmjs.org/reblessed/-/reblessed-0.2.1.tgz";
+        sha512 = "L2/u0PpF18T8YKc5EiwnY8/+YNBR2DOtbb45H8AvgtxYzU64Xr7D1lI+rjZ8hNHHAK40n99lGmU3wvxat8L89Q==";
+      };
+    };
     "redeyed-2.1.1" = {
       name = "redeyed";
       packageName = "redeyed";
@@ -958,13 +967,13 @@ let
         sha512 = "DA8+YS+sMIVpbsuKgy+Z67L9Lxb1p05mNxRpDPNksPDEFir4vmBlUtuN9jkTGn9YMMdlBuK7XQgFiz6ws+yhSg==";
       };
     };
-    "rollup-4.37.0" = {
+    "rollup-4.41.1" = {
       name = "rollup";
       packageName = "rollup";
-      version = "4.37.0";
+      version = "4.41.1";
       src = fetchurl {
-        url = "https://registry.npmjs.org/rollup/-/rollup-4.37.0.tgz";
-        sha512 = "iAtQy/L4QFU+rTJ1YUjXqJOJzuwEghqWzCEYD2FEghT7Gsy1VdABntrO4CLopA5IkflTyqNiLNwPcOJ3S7UKLg==";
+        url = "https://registry.npmjs.org/rollup/-/rollup-4.41.1.tgz";
+        sha512 = "cPmwD3FnFv8rKMBc1MxWCwVQFxwf1JEmSX3iQXrRVVG15zerAIXRjMFVWnd5Q5QvgKF7Aj+5ykXFhUl+QGnyOw==";
       };
     };
     "safe-regex-test-1.1.0" = {
@@ -1093,6 +1102,15 @@ let
         sha512 = "eZ3rIWi5yLnKiUcsW8P79fKyooaLmyLWAGqBhFspqMxRNUiB4GmHHk5AzQ4LxvFbJILaXqQZLwbbATLOhCFwkw==";
       };
     };
+    "terminal-size-4.0.0" = {
+      name = "terminal-size";
+      packageName = "terminal-size";
+      version = "4.0.0";
+      src = fetchurl {
+        url = "https://registry.npmjs.org/terminal-size/-/terminal-size-4.0.0.tgz";
+        sha512 = "rcdty1xZ2/BkWa4ANjWRp4JGpda2quksXIHgn5TMjNBPZfwzJIgR68DKfSYiTL+CZWowDX/sbOo5ME/FRURvYQ==";
+      };
+    };
     "utf-8-validate-6.0.5" = {
       name = "utf-8-validate";
       packageName = "utf-8-validate";
@@ -1138,13 +1156,13 @@ let
         sha512 = "1tMA907+V4QmxV7dbRvb4/8MaRALK6q9Abid3ndMYnbyo8piisCmeONVqVSXqQA3KaP4SLt5b7ud6E2sqP8TFw==";
       };
     };
-    "ws-8.18.1" = {
+    "ws-8.18.2" = {
       name = "ws";
       packageName = "ws";
-      version = "8.18.1";
+      version = "8.18.2";
       src = fetchurl {
-        url = "https://registry.npmjs.org/ws/-/ws-8.18.1.tgz";
-        sha512 = "RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w==";
+        url = "https://registry.npmjs.org/ws/-/ws-8.18.2.tgz";
+        sha512 = "DMricUmwGZUVr++AEAe2uiVM7UoO9MAVZMDu05UQOaUII0lp+zOzLLU4Xqh/JvTqklB1T4uELaaPBKyjE1r4fQ==";
       };
     };
     "x256-0.0.2" = {
@@ -1187,13 +1205,13 @@ let
   args = {
     name = "noodle";
     packageName = "noodle";
-    version = "1.0.0";
+    version = "1.1.0";
     src = ./.;
     dependencies = [
-      sources."@nyariv/sandboxjs-0.8.23"
+      sources."@nyariv/sandboxjs-0.8.25"
       sources."@rollup/plugin-node-resolve-15.3.1"
       sources."@rollup/pluginutils-5.1.4"
-      sources."@types/estree-1.0.6"
+      sources."@types/estree-1.0.7"
       sources."@types/resolve-1.20.2"
       sources."abbrev-1.1.1"
       sources."ansi-escapes-6.2.1"
@@ -1299,11 +1317,12 @@ let
       sources."raf-3.4.1"
       sources."raf-loop-1.1.3"
       sources."readable-stream-1.0.34"
+      sources."reblessed-0.2.1"
       sources."redeyed-2.1.1"
       sources."regl-1.7.0"
       sources."resolve-1.22.10"
       sources."right-now-1.0.0"
-      sources."rollup-4.37.0"
+      sources."rollup-4.41.1"
       sources."safe-regex-test-1.1.0"
       sources."sax-1.4.1"
       sources."set-function-length-1.2.2"
@@ -1325,6 +1344,7 @@ let
       })
       sources."supports-preserve-symlinks-flag-1.0.0"
       sources."term-canvas-0.0.5"
+      sources."terminal-size-4.0.0"
       sources."utf-8-validate-6.0.5"
       sources."util-0.12.5"
       (sources."wav-1.0.2" // {
@@ -1334,7 +1354,7 @@ let
       })
       sources."which-typed-array-1.1.19"
       sources."wordwrap-0.0.3"
-      sources."ws-8.18.1"
+      sources."ws-8.18.2"
       sources."x256-0.0.2"
       sources."xhr2-0.2.1"
       sources."xml2js-0.4.23"

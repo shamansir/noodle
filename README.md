@@ -8,7 +8,7 @@ https://noodle.labs.jb.gg
 
 ## Temprorary Warnings
 
-* It is developed with PureScript `0.15.9` and spago `0.21.0`, but now I have updated to `spago.yaml`, but still include `spago.dhall` "just in case";
+* It is developed with PureScript `0.15.15` and spago `0.21.0`, but now I have updated to `spago.yaml`, but still include `spago.dhall` "just in case";
 * I also drafted a `flake.nix` for `nix` packaging and running:
   * It is not yet isolated with `node_packages`, and current CLI interface a.k.a. TUI requires `chjj/blessed` library from `npm`;
   * It works on my M1 Pro machine :D;
@@ -30,8 +30,7 @@ https://noodle.labs.jb.gg
 ### Other way
 
 * Latest `spago` should work (`0.93.42` for the moment)
-  * However it is developed with `spago` `v0.21.0`
-* `purs` compiler `v0.15.9`, it is not yet updated/checked on the latest version;
+* `purs` compiler `v0.15.15`
 * `npm install` is needed;
 
 ## Running Terminal User Interface

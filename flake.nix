@@ -33,7 +33,7 @@
 
           default = pkgs.stdenv.mkDerivation {
             pname = "noodle";
-            version = "1.0.0";
+            version = "1.1.0";
             src = ./.;
 
             buildInputs = with pkgs; [
@@ -43,7 +43,7 @@
               git
               dhall
               purs-backend-es
-              purs-bin.purs-0_15_9
+              purs
               #spago-bin.spago-0_21_0
               spago-unstable
             ];
@@ -85,17 +85,19 @@
                   # git
                   # dhall
                   purs-backend-es
-                  purs-bin.purs-0_15_9
+                  purs
                   #spago-bin.spago-0_21_0
                   spago-unstable
                 ];
               text = ''
                 # spago run --demo
+                rm -r ./node_modules
                 ln -s ${nodeDependencies}/lib/node_modules ./node_modules
                 export PATH="${nodeDependencies}/bin:$PATH"
                 rm -rf ./test/Files/Output
                 spago build --output output.nix
-                node ./.spago/run/run.js -t starter
+                node ./.spago/run/run.js -t starter -f ./ndf/starter.v0.1.ndf
+                # node ./.spago/run/run.js -t hydra # -f ./ndf/hydra.v0.3.ndf
               '';
             };
           in {
@@ -123,7 +125,7 @@
             '';
             buildInputs = with pkgs; [
               nodejs_23
-              purs-bin.purs-0_15_9
+              purs
               spago-unstable
               purs-tidy-bin.purs-tidy-0_10_0
               purs-backend-es
