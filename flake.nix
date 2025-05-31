@@ -91,7 +91,7 @@
                 ];
               text = ''
                 # spago run --demo
-                rm -r ./node_modules
+                rm -rf ./node_modules
                 ln -s ${nodeDependencies}/lib/node_modules ./node_modules
                 export PATH="${nodeDependencies}/bin:$PATH"
                 rm -rf ./test/Files/Output
@@ -119,7 +119,7 @@
             name = "noodle";
             inputsFrom = builtins.attrValues self.packages.${system};
             shellHook = ''
-              rm -r ./node_modules
+              rm -rf ./node_modules
               ln -s ${nodeDependencies}/lib/node_modules ./node_modules
               export PATH="${nodeDependencies}/bin:$PATH"
             '';
