@@ -62,7 +62,7 @@
             installPhase = ''
               mkdir -p $out
               cp -r output.nix $out/
-              cp -r ndf $out/
+              cp ./nix.run.js $out/
             '';
           };
         });
@@ -96,8 +96,9 @@
                 export PATH="${nodeDependencies}/bin:$PATH"
                 rm -rf ./test/Files/Output
                 spago build --output output.nix
-                node ./.spago/run/run.js -t starter -f ./ndf/starter.v0.1.ndf
+                # node ./.spago/run/run.js -t starter -f ./ndf/starter.v0.1.ndf
                 # node ./.spago/run/run.js -t hydra # -f ./ndf/hydra.v0.3.ndf
+                node ./nix.run.js -t starter -f ./ndf/starter.v0.1.ndf
               '';
             };
           in {
