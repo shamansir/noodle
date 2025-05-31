@@ -12,7 +12,9 @@ import Type.Proxy (Proxy(..))
 import Data.Newtype (class Newtype)
 import Record (insert)
 import Type.Row (class Lacks, class Cons, class Union) as Row
-import Node.HTTP (Request, Server)
+import Node.Net.Types (Server)
+import Node.HTTP.Types (HttpServer, ClientRequest)
+-- import Node.HTTP (HttpServer)
 
 
 foreign import data WebSocketServer :: Type
@@ -22,7 +24,6 @@ foreign import data WebSocketConnection :: Type
 newtype WebSocketMessage = WebSocketMessage String
 derive newtype instance showWSM :: Show WebSocketMessage
 derive instance newtypeWSM :: Newtype WebSocketMessage _
-
 
 
 -- TODO: more options from:
@@ -70,8 +71,8 @@ createWebSocketServerWithServer
   :: forall options options' trash
    . Row.Union options options' WebSocketServerOptions
   => Row.Lacks "server" options
-  => Row.Cons "server" Server options trash
-  => Server
+  => Row.Cons "server" HttpServer options trash
+  => HttpServer
   -> { | options }
   -> Effect WebSocketServer
 createWebSocketServerWithServer server options =
@@ -83,13 +84,13 @@ createWebSocketServerWithServer server options =
 foreign import onConnection_
   :: EffectFn2
      WebSocketServer
-     (EffectFn2 WebSocketConnection Request Unit)
+     (EffectFn2 WebSocketConnection ClientRequest Unit)
      Unit
 
 -- | Attaches a connection event handler to a WebSocketServer
 onConnection
   :: WebSocketServer
-  -> (WebSocketConnection -> Request -> Effect Unit)
+  -> (WebSocketConnection -> ClientRequest -> Effect Unit)
   -> Effect Unit
 onConnection server callback =
   runEffectFn2 onConnection_ server (mkEffectFn2 callback)

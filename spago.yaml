@@ -52,6 +52,7 @@ package:
     - node-buffer
     - node-fs
     - node-http
+    - node-net
     - node-path
     - node-streams
     - nonempty
@@ -65,7 +66,6 @@ package:
     - profunctor
     - profunctor-lenses
     - psci-support
-    - wire
     - random
     - read
     - record
@@ -97,6 +97,7 @@ package:
     - web-html
     - web-socket
     - web-uievents
+    - wire
     - yoga-json
     - yoga-tree
   name: noodle
@@ -171,7 +172,7 @@ workspace:
         - "unfoldable"
         - "unsafe-coerce"
       git: https://github.com/shamansir/purescript-blessed.git
-      ref: c01e13fdb2773074ab56785186ff617095a5444b
+      ref: 72f59e47beab695f4ad1c570b087e8132520d76c
     halogen-svg-elems:
       dependencies:
         - halogen

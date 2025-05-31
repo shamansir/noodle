@@ -17,7 +17,7 @@ import Effect.Console (log) as Console
 
 import Control.Monad.State (modify_, get) as State
 
-import Node.HTTP (Request)
+import Node.HTTP.Types (ClientRequest)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (exists, mkdir', readTextFile, writeTextFile) as Sync
 import Node.FS.Perms (permsReadWrite)
@@ -188,7 +188,7 @@ runBlessedInterface pState toolkit andThen = do
             mainScreen >~ Screen.render
         handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleMessage _ _ = pure unit
-        handleConnection :: WSS.WebSocketConnection -> Request -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
+        handleConnection :: WSS.WebSocketConnection -> ClientRequest -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleConnection wss _ = do
             -- FIXME: State.modify_ $ State.registerWsClient wss
             state <- State.get
