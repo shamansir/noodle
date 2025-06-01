@@ -30,6 +30,15 @@ type ServerState =
     }
 
 
+{-
+type ServerDef =
+    { handleStart :: Unit -> Effect Unit
+    , handleConnection :: WSS.WebSocketConnection -> ClientRequest -> Effect Unit
+    , handleError :: Error -> Effect Unit
+    , handleMessage :: WSS.WebSocketConnection -> WSS.WebSocketMessage -> Effect Unit
+    }
+-}
+
 init :: ServerState
 init =
     { connections : Map.empty

@@ -14,7 +14,7 @@ import Effect.Console as Console
 
 import Effect.Exception (Error)
 import Node.HTTP.Types (ClientRequest)
-import Web.Socket.Server as WSS
+import WebSocket.Types as WSS
 
 -- import Toolkit.Hydra.Lang (Program) as Lang
 -- import Toolkit.Hydra.Lang.ToCode (toCode, javaScript) as Lang
@@ -22,7 +22,7 @@ import Web.Socket.Server as WSS
 
 type State = WSS.WebSocketServer /\ Array WSS.WebSocketConnection
 
-
+{- REM
 start ::
   { handleStart :: Unit -> Effect Unit
   , handleConnection :: WSS.WebSocketConnection -> ClientRequest -> Effect Unit
@@ -38,6 +38,7 @@ start def = do
     def.handleConnection ws req
   WSS.onServerError wss def.handleError
   pure wss
+-}
 
 
 {-

@@ -30,14 +30,14 @@ import Blessed (run, runAnd) as Blessed
 import Blessed.UI.Base.Screen.Method as Screen
 import Blessed.Demo (demo) as BDemo
 
-import Web.Socket.Server (WebSocketConnection, WebSocketMessage(..), sendMessage) as WSS
+import WebSocket.Types (WebSocketConnection, WebSocketMessage(..)) as WSS
 
 import Parsing (runParser) as P
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
-import Cli.WsServer (start) as WSS
+-- REM import Cli.WsServer (start) as WSS
 import Cli.State (State)
 import Cli.State (init, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
@@ -169,6 +169,7 @@ runBlessedInterface pState toolkit andThen = do
         hCon <- Blessed.impair2 handleConnection
         hErr <- Blessed.impair1 handleError
         hStart <- Blessed.impair1 handleStart
+        {- REM
         wss <- liftEffect $ WSS.start
             { handleMessage : hMsg
             , handleConnection : hCon
@@ -176,6 +177,7 @@ runBlessedInterface pState toolkit andThen = do
             , handleStart : hStart
             }
         State.modify_ $ CState.informWsInitialized wss
+        -}
         mainScreen >~ Screen.render
         -- productsCallback <- Blessed.impair1 storeProducts
         --liftEffect $ runAff_ productsCallback CAI.requestProducts
@@ -194,7 +196,7 @@ runBlessedInterface pState toolkit andThen = do
             state <- State.get
             -- FIXME: WsButton.updateStatus $ WsButton.Connected $ fromMaybe 0 $ State.connectionsCount state
             mainScreen >~ Screen.render
-            liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
+            -- REM liftEffect $ WSS.sendMessage wss $ WSS.WebSocketMessage "ACK"
         handleError :: Error -> BlessedOp (State Locator tk ps fs strepr chrepr Effect) Effect
         handleError _ = pure unit
         {- FIXME

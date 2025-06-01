@@ -15,7 +15,7 @@ import Data.Text.Format as T
 
 import Type.Proxy (Proxy(..))
 
-import Web.Socket.Server as WSS
+import WebSocket.Types (WebSocketConnection, WebSocketServer) as WSS
 
 import Noodle.Id as Id
 import Noodle.Network (Network)
