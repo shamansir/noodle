@@ -8,7 +8,7 @@ import Effect.Uncurried (EffectFn1, EffectFn2, EffectFn3, mkEffectFn1, mkEffectF
 import Effect.Exception (Error)
 -- import Data.Proxy (Proxy)
 import Type.Proxy (Proxy(..))
-
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Record (insert)
 import Type.Row (class Lacks, class Cons, class Union) as Row
@@ -30,7 +30,18 @@ derive instance newtypeWSM :: Newtype WebSocketMessage _
 -- https://github.com/websockets/ws/blob/master/doc/ws.md
 type WebSocketServerOptions =
   ( host :: String
-  , backlog :: Int
+  , backlog :: Maybe Int
+  , autoPong :: Boolean
+  , allowSynchronousEvents :: Boolean
+  , clientTracking :: Boolean
+  , maxPayload :: Maybe Int
+  , noServer :: Boolean
+  , path :: Maybe String
+  )
+
+
+type MinimumWebSocketServerOptions =
+  ( host :: String
   )
 
 

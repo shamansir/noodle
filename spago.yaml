@@ -133,7 +133,20 @@ package:
       # - "--cli-demo"
 workspace:
   buildOpts:
-    output: "output.nix"
+    censorLibraryWarnings:
+      - UnusedImport
+      - UnusedExplicitImport
+      - UnusedDctorImport
+      - ImplicitQualifiedImport
+      - DuplicateImport
+      - DuplicateSelectiveImport
+      - UnusedName
+      - ShadowedName
+      - MissingKindDeclaration
+      - ImplicitImport
+      - HidingImport
+      - MissingTypeDeclaration
+      - WildcardInferredType
   extraPackages:
     # blessed:
     #   path: ../purescript-blessed
