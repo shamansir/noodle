@@ -23,12 +23,12 @@ options =
     :: Record WSS.MinimumWebSocketServerOptions
 
 
-type State =
+type ServerState =
     { connections :: Map UniqueHash WSS.WebSocketConnection
     }
 
 
-init :: State
+init :: ServerState
 init =
     { connections : Map.empty
     }

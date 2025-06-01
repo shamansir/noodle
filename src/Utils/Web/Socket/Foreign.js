@@ -15,9 +15,17 @@ export function onServerError_ (wss, handleError) {
   wss.on('error', handleError);
 }
 
+export function createWebSocket_(host, port, protocols) {
+  return new WebSocket("ws://" + host + ":" + port, protocols);
+}
+
 /* WebSocket methods */
 export function onMessage_ (ws, handleMessage) {
   ws.on('message', handleMessage);
+}
+
+export function onOpen_(ws, handleOpen) {
+  ws.on('open', handleOpen);
 }
 
 export function onClose_ (ws, handleClose) {
