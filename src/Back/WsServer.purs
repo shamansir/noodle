@@ -13,12 +13,14 @@ import Effect.Ref (new, modify, modify_) as Ref
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash (generate) as UH
 
-import Web.Socket.Server (WebSocketServer)
-import Web.Socket.Server as WSS
+import WebSocket.Types (WebSocketServer)
+import WebSocket.Types (MinimumWebSocketServerOptions, WebSocketConnection, WebSocketMessage(..), Host(..), Port(..)) as WSS
+import WebSocket.Server.Server as WSS
+import WebSocket.Server.Connection as WSS
 
 
 options =
-    { host : "localhost" -- TODO : take host (and port) from parameters
+    { host : WSS.Host "localhost" -- TODO : take host (and port) from program parameters
     }
     :: Record WSS.MinimumWebSocketServerOptions
 

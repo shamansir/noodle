@@ -1,28 +1,39 @@
-module Web.Socket.Connection where
+module WebSocket.Client.Socket where
 
 import Prelude
 
+import Effect.Exception (Error)
 import Effect (Effect)
 import Effect.Uncurried (mkEffectFn1, mkEffectFn2, runEffectFn2, runEffectFn3)
-import Effect.Exception (Error)
 
-import Web.Socket.Types
-  ( WebSocketMessage, CloseCode(..), CloseReason(..)
-  , WebSocketConnection
+
+import WebSocket.Types
+  ( Host, Port, Protocol, WebSocket
+  , WebSocketMessage, CloseCode(..), CloseReason(..)
   )
-import Web.Socket.Foreign
-  ( onMessage_
+import WebSocket.Client.Foreign
+  ( createWebSocket_
   , onOpen_
   , onClose_
+  , onMessage_
   , onError_
   , sendMessage_
   , close_
   )
 
+-- | Creates a WebSocket as the client.
+createWebSocket
+  :: Host
+  -> Port
+  -> Array Protocol
+  -> Effect WebSocket
+createWebSocket host port protocols =
+  runEffectFn3 createWebSocket_ host port protocols
+
 
 -- | Attaches a message event handler to a WebSocketConnection
 onMessage
-  :: WebSocketConnection
+  :: WebSocket
   -> (WebSocketMessage -> Effect Unit)
   -> Effect Unit
 onMessage ws callback =
@@ -30,7 +41,7 @@ onMessage ws callback =
 
 -- | Attaches a open event handler to a WebSocketConnection
 onOpen
-  :: WebSocketConnection
+  :: WebSocket
   -> (Unit -> Effect Unit)
   -> Effect Unit
 onOpen ws callback =
@@ -38,7 +49,7 @@ onOpen ws callback =
 
 -- | Attaches a close event handler to a WebSocketConnection
 onClose
-  :: WebSocketConnection
+  :: WebSocket
   -> (CloseCode -> CloseReason -> Effect Unit)
   -> Effect Unit
 onClose ws callback =
@@ -46,7 +57,7 @@ onClose ws callback =
 
 -- | Attaches an error event handler to a WebSocketConnection
 onError
-  :: WebSocketConnection
+  :: WebSocket
   -> (Error -> Effect Unit)
   -> Effect Unit
 onError ws callback =
@@ -54,7 +65,7 @@ onError ws callback =
 
 -- | Send a message over a WebSocketConnection
 sendMessage
-  :: WebSocketConnection
+  :: WebSocket
   -> WebSocketMessage
   -> Effect Unit
 sendMessage ws message =
@@ -62,7 +73,7 @@ sendMessage ws message =
 
 -- | Initiate a closing handshake
 close
-  :: WebSocketConnection
+  :: WebSocket
   -> Effect Unit
 close ws =
   -- 1000 is the CloseCode for normal closure
@@ -70,7 +81,7 @@ close ws =
 
 -- | Initiate a closing handshake with given code and reason
 close'
-  :: WebSocketConnection
+  :: WebSocket
   -> CloseCode
   -> CloseReason
   -> Effect Unit

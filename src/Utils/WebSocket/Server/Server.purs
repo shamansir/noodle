@@ -1,4 +1,4 @@
-module Web.Socket.Server where
+module WebSocket.Server.Server where
 -- upgraded from : https://github.com/FruitieX/purescript-ws
 
 import Prelude
@@ -13,11 +13,11 @@ import Type.Row (class Lacks, class Cons, class Union) as Row
 import Node.HTTP.Types (HttpServer, ClientRequest)
 -- import Node.HTTP (HttpServer)
 
-import Web.Socket.Types
+import WebSocket.Types
   ( WebSocketServer, Port(..), WebSocketServerOptions
   , WebSocketConnection
   )
-import Web.Socket.Foreign
+import WebSocket.Server.Foreign
   ( createWebSocketServer_
   , onConnection_
   , onServerError_

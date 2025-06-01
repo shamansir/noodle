@@ -1,12 +1,13 @@
-module Web.Socket.Types where
+module WebSocket.Types where
 
 import Prelude
 
 import Data.Maybe (Maybe)
 
 
+foreign import data WebSocket :: Type
 foreign import data WebSocketServer :: Type
-foreign import data WebSocketConnection :: Type
+foreign import data WebSocketConnection :: Type -- FIXME: The same as `WebSocket`?
 
 
 newtype WebSocketMessage = WebSocketMessage String
