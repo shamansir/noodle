@@ -14,6 +14,11 @@ newtype WebSocketMessage = WebSocketMessage String
 derive newtype instance showWSM :: Show WebSocketMessage
 
 
+class IsWsMessage a where
+  toMessage :: a -> WebSocketMessage
+  fromMessage :: WebSocketMessage -> a
+
+
 -- TODO: more options from:
 -- https://github.com/websockets/ws/blob/master/doc/ws.md
 type WebSocketServerOptions =

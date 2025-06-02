@@ -20,14 +20,6 @@ import WebSocket.Server.Foreign
   )
 
 
--- | Attaches a message event handler to a WebSocketConnection
-onMessage
-  :: WebSocketConnection
-  -> (WebSocketMessage -> Effect Unit)
-  -> Effect Unit
-onMessage ws callback =
-  runEffectFn2 onMessage_ ws (mkEffectFn1 callback)
-
 -- | Attaches a open event handler to a WebSocketConnection
 onOpen
   :: WebSocketConnection
@@ -43,6 +35,14 @@ onClose
   -> Effect Unit
 onClose ws callback =
   runEffectFn2 onClose_ ws (mkEffectFn2 callback)
+
+-- | Attaches a message event handler to a WebSocketConnection
+onMessage
+  :: WebSocketConnection
+  -> (WebSocketMessage -> Effect Unit)
+  -> Effect Unit
+onMessage ws callback =
+  runEffectFn2 onMessage_ ws (mkEffectFn1 callback)
 
 -- | Attaches an error event handler to a WebSocketConnection
 onError
@@ -76,3 +76,25 @@ close'
   -> Effect Unit
 close' ws code reason =
   runEffectFn3 close_ ws code reason
+
+
+type Def =
+  ( onOpen :: Unit -> Effect Unit
+  , onClose :: CloseCode -> CloseReason -> Effect Unit
+  , onMessage :: WebSocketMessage -> Effect Unit
+  , onError :: Error -> Effect Unit
+  )
+
+handle :: Record Def -> WebSocketConnection -> Effect Unit
+handle def ws = do
+  onOpen    ws def.onOpen
+  onClose   ws def.onClose
+  onMessage ws def.onMessage
+  onError   ws def.onError
+
+doNothing =
+  { onOpen : const $ pure unit
+  , onClose : const $ const $ pure unit
+  , onMessage : const $ pure unit
+  , onError : const $ pure unit
+  } :: Record Def

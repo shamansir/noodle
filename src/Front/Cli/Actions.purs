@@ -16,7 +16,7 @@ import Data.Newtype (unwrap) as NT
 
 import Blessed ((>~))
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Base.Node.Method (detach) as BNode

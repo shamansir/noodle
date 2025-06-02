@@ -8,6 +8,7 @@ import Data.Array (snoc, delete) as Array
 
 import Effect (Effect)
 import Effect.Console (log) as Console
+import Effect.Ref (Ref)
 import Effect.Ref (new, modify, modify_) as Ref
 
 import Data.UniqueHash (UniqueHash)
@@ -15,8 +16,8 @@ import Data.UniqueHash (generate) as UH
 
 import WebSocket.Types (WebSocketServer)
 import WebSocket.Types (MinimumWebSocketServerOptions, WebSocketConnection, WebSocketMessage(..), Host(..), Port(..)) as WSS
-import WebSocket.Server.Server as WSS
-import WebSocket.Server.Connection as WSS
+import WebSocket.Server.Server as WSServer
+import WebSocket.Server.Connection as WSConn
 
 
 options =
@@ -45,27 +46,39 @@ init =
     }
 
 
-main :: Effect Unit
-main = do
+start :: Effect Unit
+start = do
     state <- Ref.new init
-    wsServer <- WSS.createWebSocketServerWithPort (WSS.Port 3555) options $
+    wsServer <- WSServer.createWebSocketServerWithPort (WSS.Port 3555) options $
         \_ -> Console.log $ "Noodle WS Server started at port " <> show 3555 <> ". Ctrl+C to stop server."
-    WSS.onConnection wsServer $
-        \conn req -> do
-            connHash <- UH.generate
-            Console.log $ "New connection: " <> show connHash
-            state # Ref.modify_ \s -> s { connections = s.connections # Map.insert connHash conn }
-            WSS.onMessage conn $
-                \(WSS.WebSocketMessage wsMsg) -> do
-                    Console.log $ "Received message: " <> wsMsg
-            WSS.onClose conn $
-                \code reason -> do
-                    state # Ref.modify_ \s -> s { connections = s.connections # Map.delete connHash }
-                    Console.log $ "Connection closed." -- "connection closed: " <> show code <> ". " <> show reason
-            WSS.onError conn $
-                \err ->
-                    Console.log "Error"
-            WSS.sendMessage conn $ WSS.WebSocketMessage "test"
-            WSS.close conn
-    WSS.onServerError wsServer $
-        \err -> Console.log "Server error"
+    wsServer # WSServer.handle (serverDef state)
+
+
+serverDef :: Ref ServerState -> Record WSServer.Def
+serverDef state =
+    { onConnection : \conn req -> do
+        connHash <- UH.generate
+        Console.log $ "New connection: " <> show connHash
+        state # Ref.modify_ \s -> s { connections = s.connections # Map.insert connHash conn }
+        conn # WSConn.handle (connectionDef connHash state)
+    , onError : \err ->
+        Console.log "Server error"
+    }
+
+
+connectionDef :: UniqueHash -> Ref ServerState -> Record WSConn.Def
+connectionDef connHash state =
+    { onOpen : \_ ->
+        Console.log "Open connection"
+    , onClose : \code reason -> do
+        state # Ref.modify_ \s -> s { connections = s.connections # Map.delete connHash }
+        Console.log $ "Connection closed." -- "connection closed: " <> show code <> ". " <> show reason
+    , onMessage : \(WSS.WebSocketMessage wsMsg) ->
+        Console.log $ "Received message: " <> wsMsg
+    , onError : \err ->
+        Console.log "Error"
+    }
+
+
+main :: Effect Unit
+main = start

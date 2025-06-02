@@ -41,7 +41,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Internal.Core as Core
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', BlessedOpM)
-import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runOver, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (lift, lift', runOn, runOnUnit, runM, runM', runOver, runOver', runEffect, getStateRef) as Blessed
 import Blessed.Internal.BlessedSubj (Line)
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.UI.Base.Screen.Method (render) as Screen

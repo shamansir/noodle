@@ -74,3 +74,19 @@ onServerError
   -> Effect Unit
 onServerError server callback =
   runEffectFn2 onServerError_ server (mkEffectFn1 callback)
+
+
+type Def =
+  ( onConnection :: WebSocketConnection -> ClientRequest -> Effect Unit
+  , onError :: Error -> Effect Unit
+  )
+
+handle :: Record Def -> WebSocketServer -> Effect Unit
+handle def wss = do
+  onConnection  wss def.onConnection
+  onServerError wss def.onError
+
+doNothing =
+  { onConnection : const $ const $ pure unit
+  , onError : const $ pure unit
+  } :: Record Def
