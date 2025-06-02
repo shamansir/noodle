@@ -2,6 +2,7 @@ module Data.UniqueHash
     ( UniqueHash
     , generate
     , toString
+    , unsafeUniqueHash
     ) where
 
 import Prelude
@@ -27,3 +28,7 @@ generate = UniqueHash <$> generate_
 
 toString :: UniqueHash -> String
 toString (UniqueHash s) = s
+
+
+unsafeUniqueHash :: String -> UniqueHash
+unsafeUniqueHash = UniqueHash

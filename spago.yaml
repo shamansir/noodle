@@ -102,20 +102,20 @@ package:
     - yoga-tree
   name: noodle
   build:
-    censorProjectWarnings:
-      - UnusedImport
-      - UnusedExplicitImport
-      - UnusedDctorImport
-      - ImplicitQualifiedImport
-      - DuplicateImport
-      - DuplicateSelectiveImport
-      - UnusedName
-      - ShadowedName
-      - MissingKindDeclaration
-      - ImplicitImport
-      - HidingImport
-      - MissingTypeDeclaration
-      - WildcardInferredType
+    censorProjectWarnings: all
+      # - UnusedImport
+      # - UnusedExplicitImport
+      # - UnusedDctorImport
+      # - ImplicitQualifiedImport
+      # - DuplicateImport
+      # - DuplicateSelectiveImport
+      # - UnusedName
+      # - ShadowedName
+      # - MissingKindDeclaration
+      # - ImplicitImport
+      # - HidingImport
+      # - MissingTypeDeclaration
+      # - WildcardInferredType
   bundle:
     minify: false
     module: Web.Main
@@ -133,20 +133,20 @@ package:
       # - "--cli-demo"
 workspace:
   buildOpts:
-    censorLibraryWarnings:
-      - UnusedImport
-      - UnusedExplicitImport
-      - UnusedDctorImport
-      - ImplicitQualifiedImport
-      - DuplicateImport
-      - DuplicateSelectiveImport
-      - UnusedName
-      - ShadowedName
-      - MissingKindDeclaration
-      - ImplicitImport
-      - HidingImport
-      - MissingTypeDeclaration
-      - WildcardInferredType
+    censorLibraryWarnings: all
+      # - UnusedImport
+      # - UnusedExplicitImport
+      # - UnusedDctorImport
+      # - ImplicitQualifiedImport
+      # - DuplicateImport
+      # - DuplicateSelectiveImport
+      # - UnusedName
+      # - ShadowedName
+      # - MissingKindDeclaration
+      # - ImplicitImport
+      # - HidingImport
+      # - MissingTypeDeclaration
+      # - WildcardInferredType
   extraPackages:
     # blessed:
     #   path: ../purescript-blessed

@@ -16,6 +16,7 @@ import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (length, snoc) as Array
+import Data.UniqueHash (UniqueHash)
 
 import Noodle.Id (PatchR, NodeR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -33,6 +34,7 @@ import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentati
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
+import Noodle.Text.WsMessage (Message) as WS
 
 import HydraTk.Lang.Program (Program) as Hydra
 
@@ -46,6 +48,11 @@ import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
 import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
+import Web.Components.SidePanel.WsServerStatus as WSPanel
+import Web.Components.SidePanel.WsServerStatus (Status(..)) as WS
+
+import WebSocket.Types (WebSocket) as WS
+import WebSocket.Client.Socket (handle) as WSSocket
 
 
 data UiMode
@@ -73,6 +80,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , log :: Array Console.LogLine
     , history :: NdfFile
     , openPanels :: Set Panels.Which
+    , wsConnection :: WSocketConnection
     }
 
 
@@ -91,6 +99,13 @@ type PatchStats =
     { nodesCount :: Int
     , linksCount :: Int
     , lockOn :: PatchArea.LockingTask
+    }
+
+
+type WSocketConnection =
+    { status :: WS.Status
+    , mbSocket :: Maybe WS.WebSocket
+    , log :: Array WS.Message
     }
 
 
@@ -113,6 +128,11 @@ init toolkit =
     , log : []
     , history : Ndf.init "noodle" 2.0
     , openPanels : Set.fromFoldable [ Panels.Commands, Panels.Documentation, Panels.Tree ]
+    , wsConnection :
+        { status : WS.Off
+        , mbSocket : Nothing
+        , log : []
+        }
     }
 
 

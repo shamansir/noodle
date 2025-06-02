@@ -3,6 +3,7 @@ module WebSocket.Types where
 import Prelude
 
 import Data.Maybe (Maybe)
+import Data.Newtype (class Newtype)
 
 
 foreign import data WebSocket :: Type
@@ -12,6 +13,7 @@ foreign import data WebSocketConnection :: Type -- FIXME: The same as `WebSocket
 
 newtype WebSocketMessage = WebSocketMessage String
 derive newtype instance showWSM :: Show WebSocketMessage
+derive instance Newtype WebSocketMessage _
 
 
 class IsWsMessage a where
