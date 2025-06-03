@@ -5,6 +5,7 @@ import Prelude
 import Data.UniqueHash (UniqueHash)
 import Data.Text.Format as T
 import Data.Array (foldl) as Array
+import Data.Maybe (Maybe(..))
 
 import Web.Components.SidePanel (SidePanel)
 
@@ -16,7 +17,7 @@ import Noodle.Text.WsMessage (Message(..), toString) as WS
 data Status
     = Off -- Disconnected
     | Waiting
-    | Connected UniqueHash { total :: Int }
+    | Connected (Maybe UniqueHash) { total :: Int }
     | Error
 
 
@@ -60,12 +61,12 @@ extractStatus = Array.foldl foldF Off
     where
         foldF prevStat = case _ of
             WS.CurrentConnection hash ->
-                Connected hash { total : 1 }
+                Connected (Just hash) { total : 1 }
             WS.ConnectionsCount nextCount ->
                 case prevStat of
                     Off -> Off
                     Waiting -> Waiting
-                    Connected hash _ -> Connected hash { total : nextCount }
+                    Connected mbHash _ -> Connected mbHash { total : nextCount }
                     Error -> Error
             WS.NewConnection _ -> prevStat
             WS.NdfCommand _ -> prevStat

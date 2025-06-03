@@ -34,7 +34,7 @@ import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentati
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
-import Noodle.Text.WsMessage (Message) as WS
+import Noodle.Text.WsMessage (Message, fromMessage) as WS
 
 import HydraTk.Lang.Program (Program) as Hydra
 
@@ -51,7 +51,7 @@ import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WsServerStatus as WSPanel
 import Web.Components.SidePanel.WsServerStatus (Status(..)) as WS
 
-import WebSocket.Types (WebSocket) as WS
+import WebSocket.Types (WebSocket, WebSocketMessage) as WS
 import WebSocket.Client.Socket (handle, Def) as WSocket
 
 
@@ -330,5 +330,54 @@ clearDocumentation :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State
 clearDocumentation = _ { mbCurrentDocumentation = Nothing }
 
 
--- socketHandler :: Record WSocket.Def
--- socketHandler = ?wh
+markWSWaiting :: forall tk ps fs sr cr m. WS.WebSocket -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+markWSWaiting socket s = s
+    { wsConnection =
+        { log : s.wsConnection.log
+        , mbSocket : Just socket
+        , status : WS.Waiting
+        }
+    }
+
+
+markWSConnected :: forall tk ps fs sr cr m. WS.WebSocket -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+markWSConnected socket s = s
+    { wsConnection =
+        { log : s.wsConnection.log
+        , mbSocket : Just socket
+        , status : WS.Connected Nothing { total : 1 }
+        }
+    }
+
+
+markWSError :: forall tk ps fs sr cr m. WS.WebSocket -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+markWSError socket s = s
+    { wsConnection =
+        { log : s.wsConnection.log
+        , mbSocket : Just socket
+        , status : WS.Error
+        }
+    }
+
+
+markWSDisconnect :: forall tk ps fs sr cr m. WS.WebSocket -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+markWSDisconnect socket s = s
+    { wsConnection =
+        { log : s.wsConnection.log
+        , mbSocket : Nothing
+        , status : WS.Error
+        }
+    }
+
+
+storeWSMessage :: forall tk ps fs sr cr m. WS.Message -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+storeWSMessage msg s = s
+    { wsConnection =
+        s.wsConnection
+            { log = s.wsConnection.log <> pure msg }
+    }
+
+
+storeWSNativeMessage :: forall tk ps fs sr cr m. WS.WebSocketMessage -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+storeWSNativeMessage =
+    storeWSMessage <<< WS.fromMessage

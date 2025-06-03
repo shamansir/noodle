@@ -76,6 +76,7 @@ import Web.Components.AppScreen.State
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
     , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
     , trackCommand, trackCommandOp, switchDocumentation
+    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -99,6 +100,7 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 
+import WebSocket.Types (WebSocket)
 import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
 
 
@@ -140,7 +142,7 @@ data Action sr cr m
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | FromPanelToggles PanelTogglesBar.Output
-    | FromWebSocket WSocket.Event
+    | FromWebSocket WebSocket WSocket.Event
     | HandleResize
 
 
@@ -427,7 +429,7 @@ handleAction ploc = case _ of
 
         ws <- H.liftEffect $ HSS.create
         wSocket <- H.liftEffect $ WSocket.createWebSocket WSLoc.host WSLoc.port []
-        _ <- H.subscribe $ FromWebSocket <$> ws.emitter
+        _ <- H.subscribe $ FromWebSocket wSocket <$> ws.emitter
         liftEffect $ WSocket.handleEv (HSS.notify ws.listener) wSocket
 
         handleAction ploc HandleResize
@@ -503,6 +505,9 @@ handleAction ploc = case _ of
                 curChanges <- RawNode.curChanges rawNode
                 let nodeR = RawNode.id rawNode
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR curChanges
+
+    {- FromPatchArea -}
+
     FromPatchesBar (PatchesBar.SelectPatch patchR) -> do
         handleAction ploc $ SelectPatch patchR
     FromPatchesBar PatchesBar.CreatePatch -> do
@@ -568,8 +573,14 @@ handleAction ploc = case _ of
         pure unit -- Help is refreshed on every `handleAction` cycle above
     FromPatchArea _ (PatchArea.RequestDocumentation focus) ->
         H.modify_ $ CState.switchDocumentation focus.node focus.curUpdate
+
+    {- FromStatusBar -}
+
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
+
+    {- FromCommandInput -}
+
     FromCommandInput (CommandInput.ExecuteCommand cmdResult) ->
         case cmdResult of
             FI.FromFamily familyR rawNode ->
@@ -584,12 +595,27 @@ handleAction ploc = case _ of
                 -- FIXME: log error: CC.log $ "parse error " <> command
     FromCommandInput CommandInput.CloseCommandInput ->
         H.modify_ _ { commandInputActive = false }
+
+    {- FromPanelToggles -}
+
     FromPanelToggles (PanelTogglesBar.OpenPanel which) ->
         H.modify_ \s -> s { openPanels = Set.insert which s.openPanels }
     FromPanelToggles (PanelTogglesBar.ClosePanel which) ->
         H.modify_ \s -> s { openPanels = Set.delete which s.openPanels }
-    FromWebSocket _ ->
-        pure unit -- FIXME: TODO
+
+    {- FromWebSocket -}
+
+    FromWebSocket wSocket WSocket.Open ->
+        H.modify_ $ CState.markWSConnected wSocket
+    FromWebSocket wSocket (WSocket.Close closeCode closeReason) ->
+        H.modify_ $ CState.markWSDisconnect wSocket
+    FromWebSocket wSocket (WSocket.Message wsMessage) ->
+        H.modify_ $ CState.storeWSNativeMessage wsMessage
+    FromWebSocket wSocket (WSocket.Error error) ->
+        H.modify_ $ CState.markWSError wSocket
+
+    {- GlobalKeyDown -}
+
     GlobalKeyDown kevt -> do
         let keyName = String.toLower $ KE.key kevt
         let keyCode = String.toLower $ KE.code kevt
