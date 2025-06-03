@@ -1,4 +1,4 @@
-module Cli.WsServer where
+module Cli.WSServer where
 
 import Prelude
 

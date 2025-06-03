@@ -7,19 +7,19 @@ export function createWebSocket_(host, port, protocols) {
 }
 
 export function onMessage_ (ws, handleMessage) {
-  ws.on('message', handleMessage);
+  ws.addEventListener('message', (evt) => handleMessage(evt.data));
 }
 
 export function onOpen_(ws, handleOpen) {
-  ws.on('open', handleOpen);
+  ws.addEventListener('open', (evt) => handleOpen(evt.data));
 }
 
 export function onClose_ (ws, handleClose) {
-  ws.on('close', handleClose);
+  ws.addEventListener('close', (evt) => handleClose(evt.data));
 }
 
 export function onError_ (ws, handleError) {
-  ws.on('error', handleError);
+  ws.addEventListener('error', (evt) => handleError(evt.data));
 }
 
 export function sendMessage_ (ws, message) {

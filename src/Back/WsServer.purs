@@ -1,4 +1,4 @@
-module Back.WsServer where
+module Back.WSServer where
 
 import Prelude
 

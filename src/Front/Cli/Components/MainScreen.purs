@@ -51,7 +51,7 @@ import Cli.Components.AddPatchButton as AddPatchButton
 import Cli.Components.SidePanel.Documentation (sidePanel) as Doc
 import Cli.Components.SidePanel.CommandLog (sidePanel) as CL
 import Cli.Components.SidePanel.Console (sidePanel) as Console
-import Cli.Components.SidePanel.WsServerStatus (sidePanel) as WS
+import Cli.Components.SidePanel.WebSocketStatus (sidePanel) as WS
 import Cli.Components.SidePanel.Tree (sidePanel) as Tree
 -- import Cli.Components.SidePanel.HydraCode (sidePanel) as HC
 -- import Cli.Components.PaletteList as PaletteList
@@ -106,13 +106,13 @@ component initialState =
         , SP.button 7 (isOnByDefault P.Tree)          Tree.sidePanel
         , SP.button 5 (isOnByDefault P.Console)       Console.sidePanel
         -- , SP.button 2 HC.sidePanel
-        , SP.button 3 (isOnByDefault P.WsServer)      WS.sidePanel
+        , SP.button 3 (isOnByDefault P.WSStatus)      WS.sidePanel
         -- -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
         , SP.panel (isOnByDefault P.Documentation /\ []) Doc.sidePanel
         , SP.panel (isOnByDefault P.Commands      /\ initialCommands) CL.sidePanel
         , SP.panel (isOnByDefault P.Console       /\ []) Console.sidePanel
-        , SP.panel (isOnByDefault P.WsServer      /\ []) WS.sidePanel
+        , SP.panel (isOnByDefault P.WSStatus      /\ []) WS.sidePanel
         , SP.panel (isOnByDefault P.Tree          /\ []) Tree.sidePanel
         , CommandInput.component
         -- , SP.panel HC.sidePanel

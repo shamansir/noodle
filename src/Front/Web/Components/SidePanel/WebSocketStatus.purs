@@ -1,6 +1,8 @@
-module Web.Components.SidePanel.WsServerStatus where
+module Web.Components.SidePanel.WebSocketStatus where
 
 import Prelude
+
+import Type.Proxy (Proxy(..))
 
 import Data.UniqueHash (UniqueHash)
 import Data.Text.Format as T
@@ -28,9 +30,12 @@ type State =
     }
 
 
+panelId = Proxy :: _ "web-socket"
+
+
 sidePanel :: SidePanel "tree" State Status
 sidePanel =
-    { title : "ws-server"
+    { title : "web-socket"
     , char : statusChar
     , value : _.log >>> extractStatus
     , next : _.log >>> map toTag >>> pure

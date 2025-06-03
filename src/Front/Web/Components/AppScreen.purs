@@ -76,7 +76,7 @@ import Web.Components.AppScreen.State
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
     , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
     , trackCommand, trackCommandOp, switchDocumentation
-    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect
+    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect, loadWSState
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -91,6 +91,7 @@ import Web.Components.SidePanel.Console (sidePanel, panelId) as SP.ConsoleLog
 import Web.Components.SidePanel.CommandLog (sidePanel, panelId) as SP.Commands
 import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
 import Web.Components.SidePanel.Documentation (sidePanel, panelId) as SP.Documentation
+import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSStatus
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -430,6 +431,7 @@ handleAction ploc = case _ of
         ws <- H.liftEffect $ HSS.create
         wSocket <- H.liftEffect $ WSocket.createWebSocket WSLoc.host WSLoc.port []
         _ <- H.subscribe $ FromWebSocket wSocket <$> ws.emitter
+        H.modify_ $ CState.markWSWaiting wSocket
         liftEffect $ WSocket.handleEv (HSS.notify ws.listener) wSocket
 
         handleAction ploc HandleResize
@@ -664,7 +666,7 @@ panelSymbol state =
         Panels.Commands      -> SidePanel.charOf SP.Commands.sidePanel state.history
         Panels.Tree          -> SidePanel.charOf SP.Tree.sidePanel state.network
         Panels.Documentation -> SidePanel.charOf SP.Documentation.sidePanel state
-        Panels.WsServer      -> '?'
+        Panels.WSStatus      -> SidePanel.charOf SP.WSStatus.sidePanel $ CState.loadWSState state
         Panels.HydraCode     -> '?'
 
 
@@ -686,5 +688,5 @@ panelSlot params target state =
         Panels.Commands      -> HH.slot_ _sidePanel (target /\ Panels.Commands)      (SidePanel.panel target SP.Commands.panelId SP.Commands.sidePanel)           $ params /\ state.history
         Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel target SP.Tree.panelId SP.Tree.sidePanel)                   $ params /\ state.network
         Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
-        Panels.WsServer      -> HH.div [] []
+        Panels.WSStatus      -> HH.slot_ _sidePanel (target /\ Panels.WSStatus)      (SidePanel.panel target SP.WSStatus.panelId SP.WSStatus.sidePanel)           $ params /\ CState.loadWSState state
         Panels.HydraCode     -> HH.div [] []

@@ -1,4 +1,4 @@
-module Cli.Components.SidePanel.WsServerStatus where
+module Cli.Components.SidePanel.WebSocketStatus where
 
 
 import Prelude
@@ -23,6 +23,6 @@ sidePanel =
     , isOn : identity
     , panelKey : Key.wsStatusBox
     , buttonKey : Key.wsStatusButton
-    , next : \s -> pure $ CState.isPanelOn P.WsServer s /\ []
-    , onToggle : CState.togglePanel P.WsServer
+    , next : \s -> pure $ CState.isPanelOn P.WSStatus s /\ []
+    , onToggle : CState.togglePanel P.WSStatus
     }

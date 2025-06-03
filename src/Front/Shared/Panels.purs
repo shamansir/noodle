@@ -15,7 +15,7 @@ import Noodle.Text.NdfFile (init, snocOp, toTaggedNdfCode, optimize, append) as 
 
 data Which
     = Commands
-    | WsServer
+    | WSStatus
     | Documentation
     | HydraCode
     | Console
@@ -51,7 +51,7 @@ initPanelsOnOff =
 isOn :: Which -> SidePanelsOnOff -> Boolean
 isOn = case _ of
     Commands -> _.commands
-    WsServer -> _.wsServer
+    WSStatus -> _.wsServer
     Documentation -> _.documentation
     Console -> _.console
     HydraCode -> _.hydraCode
@@ -65,7 +65,7 @@ isOff = not <<< isOn
 toggle :: Which -> SidePanelsOnOff -> SidePanelsOnOff
 toggle w s = case w of
     Commands -> s { commands = not s.commands }
-    WsServer -> s { wsServer = not s.wsServer }
+    WSStatus -> s { wsServer = not s.wsServer }
     Documentation -> s { documentation = not s.documentation }
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
@@ -73,4 +73,4 @@ toggle w s = case w of
 
 
 allPanels :: Array Which
-allPanels = [ Commands, Documentation, HydraCode, Tree, Console ]
+allPanels = [ Commands, Documentation, HydraCode, Tree, Console, WSStatus ]

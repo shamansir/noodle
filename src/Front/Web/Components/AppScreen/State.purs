@@ -43,13 +43,14 @@ import Front.Shared.Panels (Which(..)) as Panels
 import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
+import Front.Shared.WsLocation (host, port) as WSLoc
 
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.HelpText (Context(..)) as HelpText
 import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
-import Web.Components.SidePanel.WsServerStatus as WSPanel
-import Web.Components.SidePanel.WsServerStatus (Status(..)) as WS
+import Web.Components.SidePanel.WebSocketStatus as WSPanel
+import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
 
 import WebSocket.Types (WebSocket, WebSocketMessage) as WS
 import WebSocket.Client.Socket (handle, Def) as WSocket
@@ -381,3 +382,11 @@ storeWSMessage msg s = s
 storeWSNativeMessage :: forall tk ps fs sr cr m. WS.WebSocketMessage -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 storeWSNativeMessage =
     storeWSMessage <<< WS.fromMessage
+
+
+loadWSState :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> WSPanel.State
+loadWSState state =
+    { log : state.wsConnection.log
+    , host : WSLoc.host
+    , port : WSLoc.port
+    }

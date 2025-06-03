@@ -37,7 +37,7 @@ import Parsing (runParser) as P
 import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
--- REM import Cli.WsServer (start) as WSS
+-- REM import Cli.WSServer (start) as WSS
 import Cli.State (State)
 import Cli.State (init, informWsInitialized) as CState
 import Cli.Components.MainScreen as MainScreen
@@ -45,7 +45,7 @@ import Cli.Components.PaletteTest as PaletteTest
 import Cli.Class.CliRenderer (ConstantShift)
 import Cli.Class.CliFriendly (class CliFriendly)
 -- import Cli.State (initial, registerWsClient, connectionsCount, informWsListening, informWsInitialized, withCurrentPatch) as State
--- import Cli.WsServer as WSS
+-- import Cli.WSServer as WSS
 import Cli.Keys (mainScreen, wsStatusButton)
 -- import Cli.Ndf.Apply (apply) as NdfFile
 import Front.Cli.ApplyNdf (NdfFilePath(..), applyNdfFileFrom)

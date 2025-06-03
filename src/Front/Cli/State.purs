@@ -37,7 +37,7 @@ import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
 
 import Blessed.Internal.NodeKey as NodeKey
 
--- import Cli.WsServer as WSS
+-- import Cli.WSServer as WSS
 import Front.Shared.Panels (SidePanelsOnOff, initPanelsOnOff)
 import Front.Shared.Panels (Which, toggle, isOn) as Panels
 import Front.Shared.DocumentationFocus (DocumentationFocus)

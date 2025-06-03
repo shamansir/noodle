@@ -75,7 +75,7 @@ import Cli.State (Focus(..)) as Focus
 import Cli.State (LastKeys, nextKeys, storeNodeUpdate, lastNodeUpdate) as CState
 import Cli.State (State)
 import Cli.Style as Style
-import Cli.WsServer as WSS
+import Cli.WSServer as WSS
 
 
 import Noodle.Fn.Signature (class PossiblyToSignature)

@@ -1,4 +1,4 @@
-module Front.Shared.WsServerStatus where
+module Front.Shared.WebSocketStatus where
 
 import Prelude
 
