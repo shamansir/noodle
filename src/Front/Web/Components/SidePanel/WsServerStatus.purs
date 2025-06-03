@@ -14,9 +14,10 @@ import Noodle.Text.WsMessage (Message(..), toString) as WS
 
 
 data Status
-    = Off
+    = Off -- Disconnected
     | Waiting
     | Connected UniqueHash { total :: Int }
+    | Error
 
 
 type State =
@@ -37,7 +38,8 @@ sidePanel =
 
 statusChar :: Status -> Char
 statusChar = case _ of
-    Off -> '0'
+    Off -> '-'
+    Error -> 'x'
     Connected _ { total } -> case total of
         0 -> '0'
         1 -> '1'
@@ -64,6 +66,7 @@ extractStatus = Array.foldl foldF Off
                     Off -> Off
                     Waiting -> Waiting
                     Connected hash _ -> Connected hash { total : nextCount }
+                    Error -> Error
             WS.NewConnection _ -> prevStat
             WS.NdfCommand _ -> prevStat
             WS.HydraScene _ -> prevStat

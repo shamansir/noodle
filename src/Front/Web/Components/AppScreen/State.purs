@@ -52,7 +52,7 @@ import Web.Components.SidePanel.WsServerStatus as WSPanel
 import Web.Components.SidePanel.WsServerStatus (Status(..)) as WS
 
 import WebSocket.Types (WebSocket) as WS
-import WebSocket.Client.Socket (handle) as WSSocket
+import WebSocket.Client.Socket (handle, Def) as WSocket
 
 
 data UiMode
@@ -328,3 +328,7 @@ switchDocumentation nodeR mbUpdate s = s { mbCurrentDocumentation = Just { node 
 
 clearDocumentation :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 clearDocumentation = _ { mbCurrentDocumentation = Nothing }
+
+
+-- socketHandler :: Record WSocket.Def
+-- socketHandler = ?wh

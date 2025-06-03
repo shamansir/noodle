@@ -94,9 +94,12 @@ import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
 import Front.Shared.Panels (Which(..), allPanels) as Panels
+import Front.Shared.WsLocation (host, port) as WSLoc
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
+
+import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
 
 
 type Slots sr cr m =
@@ -137,6 +140,7 @@ data Action sr cr m
     | FromStatusBar StatusBar.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | FromPanelToggles PanelTogglesBar.Output
+    | FromWebSocket WSocket.Event
     | HandleResize
 
 
@@ -421,6 +425,11 @@ handleAction ploc = case _ of
 
         H.modify_ $ CState.log "Initialize"
 
+        ws <- H.liftEffect $ HSS.create
+        wSocket <- H.liftEffect $ WSocket.createWebSocket WSLoc.host WSLoc.port []
+        _ <- H.subscribe $ FromWebSocket <$> ws.emitter
+        liftEffect $ WSocket.handleEv (HSS.notify ws.listener) wSocket
+
         handleAction ploc HandleResize
     HandleResize -> do
         window    <- H.liftEffect $ Web.window
@@ -579,6 +588,8 @@ handleAction ploc = case _ of
         H.modify_ \s -> s { openPanels = Set.insert which s.openPanels }
     FromPanelToggles (PanelTogglesBar.ClosePanel which) ->
         H.modify_ \s -> s { openPanels = Set.delete which s.openPanels }
+    FromWebSocket _ ->
+        pure unit -- FIXME: TODO
     GlobalKeyDown kevt -> do
         let keyName = String.toLower $ KE.key kevt
         let keyCode = String.toLower $ KE.code kevt

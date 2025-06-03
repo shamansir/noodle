@@ -21,6 +21,14 @@ import WebSocket.Client.Foreign
   , close_
   )
 
+
+data Event
+  = Open
+  | Message WebSocketMessage
+  | Close CloseCode CloseReason
+  | Error Error
+
+
 -- | Creates a WebSocket as the client.
 createWebSocket
   :: Host
@@ -101,6 +109,14 @@ handle def ws = do
   onClose   ws def.onClose
   onMessage ws def.onMessage
   onError   ws def.onError
+
+handleEv :: (Event -> Effect Unit) -> WebSocket -> Effect Unit
+handleEv fEv = handle
+  { onOpen : \_ -> fEv Open
+  , onClose : \code reason -> fEv $ Close code reason
+  , onMessage : fEv <<< Message
+  , onError : fEv <<< Error
+  }
 
 doNothing =
   { onOpen : const $ pure unit

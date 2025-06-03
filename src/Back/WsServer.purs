@@ -19,6 +19,8 @@ import WebSocket.Types (MinimumWebSocketServerOptions, WebSocketConnection, WebS
 import WebSocket.Server.Server as WSServer
 import WebSocket.Server.Connection as WSConn
 
+import Front.Shared.WsLocation (port) as WSLoc
+
 import Noodle.Text.WsMessage (Message(..)) as WS
 
 
@@ -51,8 +53,10 @@ init =
 start :: Effect Unit
 start = do
     stateRef <- Ref.new init
-    wsServer <- WSServer.createWebSocketServerWithPort (WSS.Port 3555) options $
-        \_ -> Console.log $ "Noodle WS Server started at port " <> show 3555 <> ". Ctrl+C to stop server."
+    wsServer <- WSServer.createWebSocketServerWithPort WSLoc.port options $
+        \_ -> Console.log $ "Noodle WS Server started at port "
+                    <> show (case WSLoc.port of WSS.Port n -> show n)
+                    <> ". Ctrl+C to stop server."
     wsServer # WSServer.handle (serverDef stateRef)
 
 
