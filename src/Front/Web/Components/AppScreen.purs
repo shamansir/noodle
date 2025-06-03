@@ -92,6 +92,7 @@ import Web.Components.SidePanel.CommandLog (sidePanel, panelId) as SP.Commands
 import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
 import Web.Components.SidePanel.Documentation (sidePanel, panelId) as SP.Documentation
 import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSStatus
+import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
@@ -323,9 +324,10 @@ render ploc _ state =
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
             sidePanelWidth = 350.0
-            sidePanelHeight = (height - sidePanelsY) / Int.toNumber panelsCount
+            sidePanelHeight = sidePanelsHeight / Int.toNumber panelsCount
             sidePanelsX = width - sidePanelWidth
             sidePanelsY = PatchesBar.height + 15.0
+            sidePanelsHeight = height - sidePanelsY - StatusBar.height - 20.0
 
             libraryInput =
                 { families : Toolkit.families toolkit
@@ -365,7 +367,7 @@ render ploc _ state =
 
             collectedSymbols = Map.fromFoldable $ (/\) <*> panelSymbol state <$> Panels.allPanels
             panelsCount = Set.size state.openPanels
-            sidePanelY panelIdx = ((Int.toNumber panelIdx / Int.toNumber panelsCount) * (height - sidePanelsY))
+            sidePanelY panelIdx = (Int.toNumber panelIdx / Int.toNumber panelsCount) * sidePanelsHeight
             wrapSvgWithPos panelIdx content =
                 HS.g
                     [ HSA.transform [ HSA.Translate sidePanelsX $ sidePanelsY + sidePanelY panelIdx ]
@@ -667,7 +669,7 @@ panelSymbol state =
         Panels.Tree          -> SidePanel.charOf SP.Tree.sidePanel state.network
         Panels.Documentation -> SidePanel.charOf SP.Documentation.sidePanel state
         Panels.WSStatus      -> SidePanel.charOf SP.WSStatus.sidePanel $ CState.loadWSState state
-        Panels.HydraCode     -> '?'
+        Panels.HydraCode     -> SidePanel.charOf SP.HydraCode.sidePanel state.mbHydraProgram
 
 
 panelSlot
@@ -689,4 +691,4 @@ panelSlot params target state =
         Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel target SP.Tree.panelId SP.Tree.sidePanel)                   $ params /\ state.network
         Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
         Panels.WSStatus      -> HH.slot_ _sidePanel (target /\ Panels.WSStatus)      (SidePanel.panel target SP.WSStatus.panelId SP.WSStatus.sidePanel)           $ params /\ CState.loadWSState state
-        Panels.HydraCode     -> HH.div [] []
+        Panels.HydraCode     -> HH.slot_ _sidePanel (target /\ Panels.HydraCode)     (SidePanel.panel target SP.HydraCode.panelId SP.HydraCode.sidePanel)              $ params /\ state.mbHydraProgram
