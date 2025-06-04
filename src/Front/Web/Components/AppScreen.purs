@@ -351,6 +351,7 @@ render ploc _ state =
                 { content : fromMaybe T.nil state.mbStatusBarContent
                 , width : statusBarWidth
                 , currentZoom : state.zoom
+                , wsStatus : state.wsConnection.status
                 } :: StatusBar.Input
             commandInputInput =
                 { pos : { x : width / 2.0, y : height / 2.0 }
@@ -691,4 +692,4 @@ panelSlot params target state =
         Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel target SP.Tree.panelId SP.Tree.sidePanel)                   $ params /\ state.network
         Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
         Panels.WSStatus      -> HH.slot_ _sidePanel (target /\ Panels.WSStatus)      (SidePanel.panel target SP.WSStatus.panelId SP.WSStatus.sidePanel)           $ params /\ CState.loadWSState state
-        Panels.HydraCode     -> HH.slot_ _sidePanel (target /\ Panels.HydraCode)     (SidePanel.panel target SP.HydraCode.panelId SP.HydraCode.sidePanel)              $ params /\ state.mbHydraProgram
+        Panels.HydraCode     -> HH.slot_ _sidePanel (target /\ Panels.HydraCode)     (SidePanel.panel target SP.HydraCode.panelId SP.HydraCode.sidePanel)         $ params /\ state.mbHydraProgram
