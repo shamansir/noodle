@@ -3,16 +3,18 @@ module Back.WSServer where
 import Prelude
 
 import Data.Map (Map)
-import Data.Map (empty, insert, delete, size) as Map
-import Data.Array (snoc, delete) as Array
+import Data.Map (empty, insert, delete, size, toUnfoldable) as Map
+import Data.Array (snoc, delete, filter) as Array
+import Data.Tuple (fst, snd) as Tuple
+import Data.UniqueHash (UniqueHash)
+import Data.UniqueHash (generate) as UH
+import Data.Traversable (for_)
 
 import Effect (Effect)
 import Effect.Console (log) as Console
 import Effect.Ref (Ref)
 import Effect.Ref (new, modify, modify_, read) as Ref
 
-import Data.UniqueHash (UniqueHash)
-import Data.UniqueHash (generate) as UH
 
 import WebSocket.Types (WebSocketServer, toMessage)
 import WebSocket.Types (MinimumWebSocketServerOptions, WebSocketConnection, WebSocketMessage(..), Host(..), Port(..)) as WSS
@@ -67,27 +69,34 @@ serverDef stateRef =
         Console.log $ "New connection: " <> show connHash
         WSConn.sendMessage conn $ toMessage $ WS.Waiting
         curState <- stateRef # Ref.modify \s -> s { connections = s.connections # Map.insert connHash conn }
-        WSConn.sendMessage conn $ toMessage $ WS.NewConnection connHash
-        WSConn.sendMessage conn $ toMessage $ WS.ConnectionsCount $ Map.size curState.connections
+        WSConn.sendMessage conn $ toMessage $ WS.CurrentConnection connHash
+        let connectionsCount = Map.size curState.connections
+        for_ (connectionsExcept connHash curState) $ \otherConn -> do
+            WSConn.sendMessage otherConn $ toMessage $ WS.NewConnection connHash
+            WSConn.sendMessage otherConn $ toMessage $ WS.ConnectionsCount connectionsCount
+        WSConn.sendMessage conn $ toMessage $ WS.ConnectionsCount connectionsCount
         conn # WSConn.handle (connectionDef conn connHash stateRef)
     , onError : \err ->
         Console.log "Server error"
     }
+    where
+        connectionsExcept :: UniqueHash -> ServerState -> Array WSS.WebSocketConnection
+        connectionsExcept exceptHash = _.connections >>> Map.toUnfoldable >>> Array.filter (Tuple.fst >>> (_ == exceptHash)) >>> map Tuple.snd
 
 
 connectionDef :: WSS.WebSocketConnection -> UniqueHash -> Ref ServerState -> Record WSConn.Def
 connectionDef conn connHash stateRef =
     { onOpen : \_ ->
-        Console.log "Open connection"
+        Console.log $ "Open connection (" <> show connHash <> ")"
     , onClose : \code reason -> do
         curState <- stateRef # Ref.modify \s -> s { connections = s.connections # Map.delete connHash }
         WSConn.sendMessage conn $ toMessage $ WS.ConnectionsCount $ Map.size curState.connections
         WSConn.sendMessage conn $ toMessage $ WS.Disconnected
-        Console.log $ "Connection closed." -- "connection closed: " <> show code <> ". " <> show reason
+        Console.log $ "Connection closed. (" <> show connHash <> "). " -- <> show code <> ". " <> show reason
     , onMessage : \(WSS.WebSocketMessage wsMsg) ->
-        Console.log $ "Received message: " <> wsMsg
+        Console.log $ "Received message: " <> wsMsg <> ". (" <> show connHash <> ")"
     , onError : \err ->
-        Console.log "Error"
+        Console.log $"Error" <> ". (" <> show connHash <> ")"
     }
 
 

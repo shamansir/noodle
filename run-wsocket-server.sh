@@ -1,0 +1,1 @@
+spago run -m Back.WSServer

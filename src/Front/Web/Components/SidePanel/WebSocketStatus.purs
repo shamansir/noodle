@@ -2,6 +2,8 @@ module Web.Components.SidePanel.WebSocketStatus where
 
 import Prelude
 
+import Debug as Debug
+
 import Type.Proxy (Proxy(..))
 
 import Data.UniqueHash (UniqueHash)
@@ -70,7 +72,7 @@ extractStatus = Array.foldl foldF Off
             WS.ConnectionsCount nextCount ->
                 case prevStat of
                     Off -> Off
-                    Waiting -> Waiting
+                    Waiting -> Connected Nothing { total : nextCount }
                     Connected mbHash _ -> Connected mbHash { total : nextCount }
                     Error -> Error
             WS.NewConnection _ -> prevStat
