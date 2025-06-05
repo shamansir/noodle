@@ -69,6 +69,7 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, class ValueEn
 import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 import Noodle.Text.NdfFile.Command.Quick as QOp
+import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State
@@ -76,7 +77,7 @@ import Web.Components.AppScreen.State
     , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
     , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
     , trackCommand, trackCommandOp, switchDocumentation
-    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect, loadWSState
+    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect, loadWSState, sendWSMessage
     ) as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
@@ -104,6 +105,7 @@ import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
 
 import WebSocket.Types (WebSocket)
 import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
+import Noodle.Text.WsMessage (ndfOp) as WSMsg
 
 
 type Slots sr cr m =
@@ -487,9 +489,13 @@ handleAction ploc = case _ of
                     ~> HSS.notify listener
                 pure emitter
 
+            let moveCommandOp = QOp.makeNode nodeR { left: 0, top : 0 }
+
             H.modify_
                   $ CState.registerNewNode (Patch.id curPatch) rawNode
-                >>> CState.trackCommandOp (QOp.makeNode nodeR { left: 0, top : 0 })
+                >>> CState.trackCommandOp moveCommandOp
+
+            sendNdfOpToWebSocket moveCommandOp
 
             Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
 
@@ -537,17 +543,21 @@ handleAction ploc = case _ of
                             srcNode
                             dstNode
                             curPatch
+                    let connectCommandOp = QOp.connect rawLink
                     H.modify_
                           $ CState.replacePatch (Patch.id curPatch) nextPatch
-                        >>> CState.trackCommandOp (QOp.connect rawLink)
+                        >>> CState.trackCommandOp connectCommandOp
+                    sendNdfOpToWebSocket connectCommandOp
     FromPatchArea _ (PatchArea.Disconnect linkR) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust (Patch.findRawLink linkR curPatch) \rawLink -> do
                 nextPatch /\ _ <- H.lift $ Patch.disconnectRaw rawLink curPatch
+                let disconnectCommandOp = QOp.disconnect rawLink
                 H.modify_
                       $ CState.replacePatch (Patch.id curPatch) nextPatch
-                    >>> CState.trackCommandOp (QOp.disconnect rawLink)
+                    >>> CState.trackCommandOp disconnectCommandOp
+                sendNdfOpToWebSocket disconnectCommandOp
     FromPatchArea _ (PatchArea.UpdateStatusBar tag) ->
         H.modify_ _ { mbStatusBarContent = Just tag }
     FromPatchArea _ PatchArea.ClearStatusBar ->
@@ -556,24 +566,29 @@ handleAction ploc = case _ of
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
+            let removeNodeCommandOp = QOp.removeNode nodeR
             H.modify_
                    $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
-                >>> CState.trackCommandOp (QOp.removeNode nodeR)
+                >>> CState.trackCommandOp removeNodeCommandOp
+            sendNdfOpToWebSocket removeNodeCommandOp
     FromPatchArea _ (PatchArea.RequestValueEditor nodeR valueEditor) -> do
         H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ valueEditor }
     FromPatchArea (Just patchR) (PatchArea.MoveNode nodeR pos) -> do
-        H.modify_
-              $ CState.updateNodePosition patchR nodeR pos
-            >>> CState.trackCommandOp
-                    (QOp.moveNode nodeR
+        let moveNodeCommandOp =
+                QOp.moveNode nodeR
                         { left : Int.floor pos.left
                         , top  : Int.floor pos.top
                         }
-                    )
+        H.modify_
+              $ CState.updateNodePosition patchR nodeR pos
+            >>> CState.trackCommandOp moveNodeCommandOp
+        sendNdfOpToWebSocket moveNodeCommandOp
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
     FromPatchArea (Just patchR) (PatchArea.TrackValueSend nodeR inletR value) -> do
-        H.modify_ $ CState.trackCommandOp $ QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue value
+        let sendInCommandOp = QOp.sendIn nodeR inletR $ fromMaybe (Ndf.EncodedValue "?") $ Ndf.encodeValue value
+        H.modify_ $ CState.trackCommandOp sendInCommandOp
+        sendNdfOpToWebSocket sendInCommandOp
     FromPatchArea _ PatchArea.RefreshHelp ->
         pure unit -- Help is refreshed on every `handleAction` cycle above
     FromPatchArea _ (PatchArea.RequestDocumentation focus) ->
@@ -651,6 +666,10 @@ handleAction ploc = case _ of
             H.modify_ \s -> s { helpText = not s.helpText }
     GlobalKeyUp kevt ->
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+
+
+sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit
+sendNdfOpToWebSocket ndfOp = H.get >>= H.lift <<< CState.sendWSMessage (WSMsg.ndfOp ndfOp)
 
 
 panelSymbol

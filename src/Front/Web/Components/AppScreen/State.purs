@@ -2,7 +2,7 @@ module Web.Components.AppScreen.State where
 
 import Prelude
 
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Type.Proxy (Proxy(..))
 
@@ -34,7 +34,7 @@ import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentati
 import Noodle.Text.NdfFile.Command (Command, op) as Ndf
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile.Types (NodeInstanceId) as Ndf
-import Noodle.Text.WsMessage (Message, fromMessage) as WS
+import Noodle.Text.WsMessage (Message, fromMessage, toMessage) as WS
 
 import HydraTk.Lang.Program (Program) as Hydra
 
@@ -53,7 +53,7 @@ import Web.Components.SidePanel.WebSocketStatus as WSPanel
 import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
 
 import WebSocket.Types (WebSocket, WebSocketMessage) as WS
-import WebSocket.Client.Socket (handle, Def) as WSocket
+import WebSocket.Client.Socket (handle, Def, sendMessage) as WSocket
 
 
 data UiMode
@@ -382,6 +382,19 @@ storeWSMessage msg s = s
 storeWSNativeMessage :: forall tk ps fs sr cr m. WS.WebSocketMessage -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 storeWSNativeMessage =
     storeWSMessage <<< WS.fromMessage
+
+
+sendWSMessage :: forall tk ps fs sr cr m. MonadEffect m => WS.Message -> State _ tk ps fs sr cr m -> m Unit
+sendWSMessage = sendWSNativeMessage <<< WS.toMessage
+
+
+sendWSNativeMessage :: forall tk ps fs sr cr m. MonadEffect m => WS.WebSocketMessage -> State _ tk ps fs sr cr m -> m Unit
+sendWSNativeMessage msg state =
+    case state.wsConnection.mbSocket of
+        Just socket ->
+            liftEffect $ WSocket.sendMessage socket msg
+        Nothing ->
+            pure unit
 
 
 loadWSState :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> WSPanel.State

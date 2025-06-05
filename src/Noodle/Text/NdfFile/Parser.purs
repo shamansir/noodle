@@ -10,9 +10,10 @@ import Data.String.CodeUnits as CU
 import Data.String.Extra2 (lines) as String
 import Data.Array (drop, filter) as Array
 import Data.Maybe (Maybe(..))
+import Data.Either (Either)
 import Data.Foldable (sum) as F
 
-import Parsing (Parser, Position(..)) as P
+import Parsing (Parser, Position(..), runParser, ParseError) as P
 import Parsing.String (char, string, anyTill, eof) as P
 import Parsing.String.Basic (alphaNum, space, number, intDecimal) as P
 import Parsing.Combinators (many1, many1Till, try, option) as P
@@ -270,3 +271,15 @@ _command1OpHelper marker pSubj requireSpace constructF = do
         else P.many  P.space *> pure unit
     valueStr <- Tuple.fst <$> P.anyTill eoi
     pure $ constructF (C.nodeInstanceId instanceId) subj (C.encodedValue valueStr)
+
+
+parseCommand :: String -> Either P.ParseError Command
+parseCommand = flip P.runParser command
+
+
+parseCommandOp :: String -> Either P.ParseError CommandOp
+parseCommandOp = flip P.runParser commandOp
+
+
+parseNdfFile :: String -> Either P.ParseError NdfFile
+parseNdfFile = flip P.runParser parser

@@ -102,11 +102,19 @@ instance ToTaggedCode NDF opts CommandOp where
 
 
 toNdf :: Array CommandOp -> String
-toNdf cmds = String.joinWith "\n" $ toCode ndf unit <$> (optimize cmds)
+toNdf cmds = String.joinWith "\n" $ opToNdf <$> (optimize cmds)
 
 
 toTaggedNdf :: Array CommandOp -> T.Tag
-toTaggedNdf cmds = T.joinWith T.nl $ toTaggedCode ndf unit <$> (optimize cmds)
+toTaggedNdf cmds = T.joinWith T.nl $ opToTaggedNdf <$> (optimize cmds)
+
+
+opToNdf :: CommandOp -> String
+opToNdf = toCode ndf unit
+
+
+opToTaggedNdf :: CommandOp -> T.Tag
+opToTaggedNdf = toTaggedCode ndf unit
 
 
 -- TODO: - remove disconnect after the same immediate connect
