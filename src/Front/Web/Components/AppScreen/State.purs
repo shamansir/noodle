@@ -375,7 +375,7 @@ storeWSMessage :: forall tk ps fs sr cr m. WS.Message -> State _ tk ps fs sr cr 
 storeWSMessage msg s = s
     { wsConnection =
         s.wsConnection
-            { log = s.wsConnection.log <> pure msg }
+            { log = Array.snoc s.wsConnection.log msg }
     }
 
 

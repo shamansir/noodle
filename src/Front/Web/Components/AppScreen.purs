@@ -630,7 +630,7 @@ handleAction ploc = case _ of
     FromWebSocket wSocket (WSocket.Close closeCode closeReason) ->
         H.modify_ $ CState.markWSDisconnect wSocket
     FromWebSocket wSocket (WSocket.Message wsMessage) ->
-        H.modify_ $ CState.storeWSNativeMessage wsMessage
+        H.modify_ $ CState.storeWSNativeMessage $ Debug.spy "store" wsMessage
     FromWebSocket wSocket (WSocket.Error error) ->
         H.modify_ $ CState.markWSError wSocket
 

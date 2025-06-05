@@ -7,7 +7,13 @@ export function createWebSocket_(host, port, protocols) {
 }
 
 export function onMessage_ (ws, handleMessage) {
-  ws.addEventListener('message', (evt) => handleMessage(evt.data));
+  ws.addEventListener('message', (evt) => {
+      if (evt.data instanceof Blob) {
+        evt.data.text().then(handleMessage);
+      } else {
+        handleMessage(evt.data);
+      }
+  });
 }
 
 export function onOpen_(ws, handleOpen) {

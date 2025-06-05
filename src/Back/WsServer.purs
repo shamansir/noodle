@@ -71,17 +71,14 @@ serverDef stateRef =
         curState <- stateRef # Ref.modify \s -> s { connections = s.connections # Map.insert connHash conn }
         WSConn.sendMessage conn $ toMessage $ WS.CurrentConnection connHash
         let connectionsCount = Map.size curState.connections
-        for_ (connectionsExcept connHash curState) $ \otherConn -> do
-            WSConn.sendMessage otherConn $ toMessage $ WS.NewConnection connHash
-            WSConn.sendMessage otherConn $ toMessage $ WS.ConnectionsCount connectionsCount
+        broadcastFrom connHash stateRef $ toMessage $ WS.NewConnection connHash
+        broadcastFrom connHash stateRef $ toMessage $ WS.ConnectionsCount connectionsCount
         WSConn.sendMessage conn $ toMessage $ WS.ConnectionsCount connectionsCount
         conn # WSConn.handle (connectionDef conn connHash stateRef)
     , onError : \err ->
         Console.log "Server error"
     }
-    where
-        connectionsExcept :: UniqueHash -> ServerState -> Array WSS.WebSocketConnection
-        connectionsExcept exceptHash = _.connections >>> Map.toUnfoldable >>> Array.filter (Tuple.fst >>> (_ == exceptHash)) >>> map Tuple.snd
+
 
 
 connectionDef :: WSS.WebSocketConnection -> UniqueHash -> Ref ServerState -> Record WSConn.Def
@@ -93,11 +90,23 @@ connectionDef conn connHash stateRef =
         WSConn.sendMessage conn $ toMessage $ WS.ConnectionsCount $ Map.size curState.connections
         WSConn.sendMessage conn $ toMessage $ WS.Disconnected
         Console.log $ "Connection closed. (" <> show connHash <> "). " -- <> show code <> ". " <> show reason
-    , onMessage : \(WSS.WebSocketMessage wsMsg) ->
+    , onMessage : \(WSS.WebSocketMessage wsMsg) -> do
         Console.log $ "Received message: " <> wsMsg <> ". (" <> show connHash <> ")"
+        broadcastFrom connHash stateRef $ WSS.WebSocketMessage wsMsg
     , onError : \err ->
         Console.log $"Error" <> ". (" <> show connHash <> ")"
     }
+
+
+broadcastFrom :: UniqueHash -> Ref ServerState -> WSS.WebSocketMessage -> Effect Unit
+broadcastFrom fromHash stateRef (WSS.WebSocketMessage message) =
+    Ref.read stateRef
+        >>= \state -> do
+            Console.log $ "Broadcasting message: " <> message <> ". (from " <> show fromHash <> ")"
+            for_ (connectionsExcept fromHash state) $ flip WSConn.sendMessage $ WSS.WebSocketMessage message
+    where
+        connectionsExcept :: UniqueHash -> ServerState -> Array WSS.WebSocketConnection
+        connectionsExcept exceptHash = _.connections >>> Map.toUnfoldable >>> Array.filter (Tuple.fst >>> (_ /= exceptHash)) >>> map Tuple.snd
 
 
 main :: Effect Unit
