@@ -69,16 +69,10 @@ import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, class ValueEn
 import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
 import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 import Noodle.Text.NdfFile.Command.Quick as QOp
-import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
+import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
 
 import Web.Components.AppScreen.State (State)
-import Web.Components.AppScreen.State
-    ( init, log, UiMode(..), spawnPatch, registerPatch, indexOfPatch
-    , currentPatch, withCurrentPatch, replacePatch, currentPatchState', currentPatchId, currentPatchInfo
-    , PatchStats, registerNewNode, updateNodePosition, nextHelpContext
-    , trackCommand, trackCommandOp, switchDocumentation
-    , markWSWaiting, markWSConnected, storeWSMessage, storeWSNativeMessage, markWSError, markWSDisconnect, loadWSState, sendWSMessage
-    ) as CState
+import Web.Components.AppScreen.State as CState
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
@@ -630,7 +624,7 @@ handleAction ploc = case _ of
     FromWebSocket wSocket (WSocket.Close closeCode closeReason) ->
         H.modify_ $ CState.markWSDisconnect wSocket
     FromWebSocket wSocket (WSocket.Message wsMessage) ->
-        H.modify_ $ CState.storeWSNativeMessage $ Debug.spy "store" wsMessage
+        H.modify_ $ CState.storeWSNativeMessage wsMessage
     FromWebSocket wSocket (WSocket.Error error) ->
         H.modify_ $ CState.markWSError wSocket
 
@@ -670,6 +664,54 @@ handleAction ploc = case _ of
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit
 sendNdfOpToWebSocket ndfOp = H.get >>= H.lift <<< CState.sendWSMessage (WSMsg.ndfOp ndfOp)
+
+
+applyCommand :: forall loc tk ps fs sr cr m output
+     . Wiring m
+    => WebLocator loc
+    => Toolkit.InitPatchState tk ps m
+    => Toolkit.FromToPatchState tk ps sr
+    => Hydra.ToHydraCommand sr
+    => HasFallback cr
+    => ValueTagged cr
+    => Ndf.ValueEncode cr
+    => Proxy loc
+    -> Ndf.CommandOp
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
+applyCommand ploc = case _ of -- FIXME: implement
+    Ndf.DefineFamily familyDef -> pure unit
+    Ndf.AssignProcess processFn -> pure unit
+    Ndf.MakeNode familyR coordX coordY instanceId -> do
+        -- FIXME: almost the same as: `handleAction ploc $ SpawnNodeOf familyR`, we just need Id.NodeR from new node
+        state <- H.get
+        let toolkit = Network.toolkit state.network
+        (mbRawNode :: Maybe (Raw.Node sr cr m)) <- H.lift $ Toolkit.spawnAnyRaw familyR toolkit
+        whenJust mbRawNode $ \rawNode -> do
+            handleAction ploc $ RegisterNode rawNode
+            H.modify_ $ CState.rememberNdfInstance (RawNode.id rawNode) instanceId
+    Ndf.Move instanceId coordX coordY -> pure unit
+    Ndf.Connect fromInstanceId outletId toInstanceId inletId -> pure unit
+    Ndf.Disconnect fromInstanceId outletId toInstanceId inletId -> pure unit
+    Ndf.Send instanceId inletId encodedVal -> pure unit
+    Ndf.SendO instanceId outletId encodedVal -> pure unit
+    Ndf.Order _ -> pure unit
+    Ndf.Import _ -> pure unit
+    Ndf.Comment _ -> pure unit
+    Ndf.RemoveNode instanceId -> do
+        -- FIXME: almost the same as: `handleAction ploc $ FromPatchArea Nothing PatchArea.RemoveNode`, we just need Id.NodeR for the existing node
+        state <- H.get
+        let
+            mbNodeR = CState.findIdForNdfInstance instanceId state
+            mbCurrentPatch = CState.currentPatch state
+        whenJust2 mbCurrentPatch mbNodeR \curPatch nodeR -> do
+            nextCurrentPatch <- H.lift $ Patch.disconnectAllFromTo nodeR curPatch
+            let removeNodeCommandOp = QOp.removeNode nodeR
+            H.modify_
+                   $ CState.replacePatch (Patch.id curPatch) (nextCurrentPatch # Patch.removeNode nodeR)
+                >>> CState.trackCommandOp removeNodeCommandOp
+                >>> CState.forgetNdfInstance instanceId
+            sendNdfOpToWebSocket removeNodeCommandOp
+    Ndf.Documentation _ _ -> pure unit
 
 
 panelSymbol

@@ -10,8 +10,8 @@ import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set (empty, fromFoldable) as Set
 import Data.Map (Map)
-import Data.Map (empty, insert, lookup) as Map
-import Data.Map.Extra (update') as Map
+import Data.Map (empty, insert, lookup, delete) as Map
+import Data.Map.Extra (update', lookupKey) as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
@@ -80,6 +80,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , commandInputActive :: Boolean
     , log :: Array Console.LogLine
     , history :: NdfFile
+    , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
     , openPanels :: Set Panels.Which
     , wsConnection :: WSocketConnection
     }
@@ -128,6 +129,7 @@ init toolkit =
     , commandInputActive : false
     , log : []
     , history : Ndf.init "noodle" 2.0
+    , ndfInstances : Map.empty
     , openPanels : Set.fromFoldable [ Panels.Commands, Panels.Documentation, Panels.Tree ]
     , wsConnection :
         { status : WS.Off
@@ -321,6 +323,22 @@ appendHistory ndfFile s = s { history = Ndf.append s.history ndfFile }
 
 prependHistory :: forall loc tk ps fs sr cr m. NdfFile -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 prependHistory ndfFile s = s { history = Ndf.append ndfFile s.history }
+
+
+rememberNdfInstance :: forall loc tk ps fs sr cr m. Id.NodeR -> Ndf.NodeInstanceId -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+rememberNdfInstance nodeR instanceId s = s { ndfInstances = s.ndfInstances # Map.insert instanceId nodeR }
+
+
+forgetNdfInstance :: forall loc tk ps fs sr cr m. Ndf.NodeInstanceId -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+forgetNdfInstance instanceId s = s { ndfInstances = s.ndfInstances # Map.delete instanceId}
+
+
+findNdfInstance :: forall loc tk ps fs sr cr m. Id.NodeR -> State loc tk ps fs sr cr m -> Maybe Ndf.NodeInstanceId
+findNdfInstance nodeR = _.ndfInstances >>> Map.lookupKey nodeR
+
+
+findIdForNdfInstance :: forall loc tk ps fs sr cr m. Ndf.NodeInstanceId -> State loc tk ps fs sr cr m -> Maybe Id.NodeR
+findIdForNdfInstance instanceId = _.ndfInstances >>> Map.lookup instanceId
 
 
 switchDocumentation :: forall tk ps fs sr cr m. Id.NodeR -> Maybe (Raw.NodeChanges sr cr) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m

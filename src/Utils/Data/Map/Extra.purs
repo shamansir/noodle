@@ -3,6 +3,7 @@ module Data.Map.Extra
     , update'
     , lookupBy
     , lookupBy'
+    , lookupKey
     , stringifyKeys
     , mapKeys
     , mapKeysMaybe
@@ -23,7 +24,9 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 -- import Data.Monoid (mempty)
 import Data.List as List
+import Data.Array as Array
 import Data.Tuple (Tuple(..), uncurry)
+import Data.Tuple (fst, snd) as Tuple
 
 
 infixr 6 type Map as /->
@@ -39,6 +42,11 @@ lookupBy f = Map.filterKeys f >>> Map.values >>> List.head
 
 lookupBy' :: forall a k v. Ord k => Eq a => (k -> a) -> a -> Map k v -> Maybe v
 lookupBy' f sample = lookupBy (f >>> (==) sample)
+
+
+lookupKey :: forall k v. Eq v => v -> Map k v -> Maybe k
+lookupKey v = Map.toUnfoldable >>> Array.find (Tuple.snd >>> (_ == v)) >>> map Tuple.fst
+-- FIXME: may be there's a faster way without conversion to Array, i.e. filterWithKey ...
 
 
 stringifyKeys :: forall k v. (k -> String) -> Map k v -> Map String v
