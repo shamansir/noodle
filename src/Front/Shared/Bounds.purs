@@ -3,6 +3,8 @@ module Front.Shared.Bounds where
 import Prelude
 
 
+import Data.Int (toNumber) as Int
+
 type Bounds_ n =
     { left   :: n
     , top    :: n
@@ -59,3 +61,7 @@ getSize { width, height } = { width, height }
 
 zeroBounds :: Bounds
 zeroBounds = { top : 0.0, left : 0.0, width : 0.0, height : 0.0 }
+
+
+toNumberPosition :: IntPosition -> Position
+toNumberPosition { left, top } = { left : Int.toNumber left, top : Int.toNumber top }

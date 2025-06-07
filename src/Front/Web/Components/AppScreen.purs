@@ -66,7 +66,7 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine, Documentation) as At
 import Noodle.Ui.Tagging.At (class At) as T
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, class ValueEncode, encodeValue) as Ndf
-import Noodle.Text.NdfFile.Types (EncodedValue(..)) as Ndf
+import Noodle.Text.NdfFile.Types (EncodedValue(..), Coord(..)) as Ndf
 import Noodle.Text.NdfFile.Command.FromInput (CommandResult(..)) as FI
 import Noodle.Text.NdfFile.Command.Quick as QOp
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
@@ -91,6 +91,7 @@ import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 
+import Front.Shared.Bounds (toNumberPosition) as Bounds
 import Front.Shared.Panels (Which(..), allPanels) as Panels
 import Front.Shared.WsLocation (host, port) as WSLoc
 
@@ -666,6 +667,10 @@ sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEf
 sendNdfOpToWebSocket ndfOp = H.get >>= H.lift <<< CState.sendWSMessage (WSMsg.ndfOp ndfOp)
 
 
+-- FIXME: many commands handing here is very similar to handling `FromPatchArea` or some other actions in `handleAction`
+--        the difference is that they operate `Ndf.InstanceId` and `Ndf.EncodedValue` and others, and they assume current patch as where all the actions are performed
+--        we found the generalize them in `Front.Cli.Actions`, so may be here is also can be done.
+--        find some way to better generalize them
 applyCommand :: forall loc tk ps fs sr cr m output
      . Wiring m
     => WebLocator loc
@@ -689,7 +694,18 @@ applyCommand ploc = case _ of -- FIXME: implement
         whenJust mbRawNode $ \rawNode -> do
             handleAction ploc $ RegisterNode rawNode
             H.modify_ $ CState.rememberNdfInstance (RawNode.id rawNode) instanceId
-    Ndf.Move instanceId coordX coordY -> pure unit
+    Ndf.Move instanceId (Ndf.Coord coordX) (Ndf.Coord coordY) -> do
+        state <- H.get
+        let
+            mbNodeR = CState.findIdForNdfInstance instanceId state
+            mbCurrentPatch = CState.currentPatch state
+            pos = { left : coordX, top : coordY }
+        whenJust2 mbCurrentPatch mbNodeR \curPatch nodeR -> do
+            let moveNodeCommandOp = QOp.moveNode nodeR pos
+            H.modify_
+                $ CState.updateNodePosition (Patch.id curPatch) nodeR (Bounds.toNumberPosition pos)
+                >>> CState.trackCommandOp moveNodeCommandOp
+            sendNdfOpToWebSocket moveNodeCommandOp
     Ndf.Connect fromInstanceId outletId toInstanceId inletId -> pure unit
     Ndf.Disconnect fromInstanceId outletId toInstanceId inletId -> pure unit
     Ndf.Send instanceId inletId encodedVal -> pure unit
