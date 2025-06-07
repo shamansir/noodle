@@ -135,7 +135,7 @@ render SVG state =
         zoomTextWidth = 35.0
         slopeFactor = 5.0
         cellsX = state.width - cellsWidth
-        cellsY = 0.0
+        cellsY = height / 2.0 -- center the text
         cellsWidth = (state.width * 0.3)
         cellsCount = Array.length Cells.allCells
         cellWidth = cellsWidth / Int.toNumber cellsCount
@@ -148,7 +148,7 @@ render SVG state =
 
 render HTML state =
     HH.div
-        [] $
+        [ HHP.style "position: relative;" ] $
         [ HH.div
             [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
             [ WF.renderFormatting HTML state.content ]

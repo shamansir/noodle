@@ -10,6 +10,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
@@ -65,10 +66,26 @@ component targetLayer =
     zoomTextWidth = 35.0
 
     render SVG state =
-        HS.g [] []
+        HS.g [] [ HS.text [] [ HH.text $ fullText state ] ]
 
     render HTML state =
         HH.span [] []
+        -- HH.span [ {- HHP.style "postion: absolute;" -} ] [ HH.text "HTML:TEST" ]
+
+    fullText state = serverNameText state.host state.port <> " :: " <> statusText state.status
+
+    serverNameText (WS.Host host) (WS.Port port) =
+        host <> ":" <> show port
+
+    statusText =
+        case _ of
+            WS.Off -> "No connection"
+            WS.Waiting -> "Waiting"
+            WS.Connected mbHash { total } ->
+                "Connected: " <> case mbHash of
+                    Just uHash -> show uHash
+                    Nothing -> "-"
+            WS.Error -> "Error"
 
     handleAction = case _ of
         Initialize ->
