@@ -25,7 +25,6 @@ import HydraTk.Patch (PState, init) as Hydra.Patch
 import Web.Class.WebRenderer (ConstantShift)
 import Web.Components.AppScreen (component) as AppScreen
 
-
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody

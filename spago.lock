@@ -267,7 +267,7 @@
     },
     "package_set": {
       "address": {
-        "registry": "64.10.0"
+        "registry": "65.0.0"
       },
       "compiler": ">=0.15.15 <0.16.0",
       "content": {
@@ -363,7 +363,7 @@
         "distributive": "6.0.0",
         "dodo-printer": "2.2.3",
         "dom-filereader": "7.0.0",
-        "dom-indexed": "12.0.0",
+        "dom-indexed": "13.0.0",
         "dom-simple": "0.4.0",
         "dotenv": "4.0.3",
         "droplet": "0.6.0",
@@ -810,41 +810,7 @@
     "extra_packages": {
       "blessed": {
         "git": "https://github.com/shamansir/purescript-blessed.git",
-        "ref": "72f59e47beab695f4ad1c570b087e8132520d76c",
-        "dependencies": [
-          "aff",
-          "argonaut-codecs",
-          "argonaut-core",
-          "arrays",
-          "bifunctors",
-          "codec",
-          "codec-argonaut",
-          "console",
-          "effect",
-          "either",
-          "enums",
-          "exceptions",
-          "foldable-traversable",
-          "free",
-          "identity",
-          "maybe",
-          "newtype",
-          "node-buffer",
-          "node-fs",
-          "node-path",
-          "ordered-collections",
-          "prelude",
-          "profunctor",
-          "refs",
-          "spec",
-          "strings",
-          "tailrec",
-          "transformers",
-          "tuples",
-          "typelevel-prelude",
-          "unfoldable",
-          "unsafe-coerce"
-        ]
+        "ref": "72f59e47beab695f4ad1c570b087e8132520d76c"
       },
       "halogen-svg-elems": {
         "git": "https://github.com/shamansir/purescript-halogen-svg-elems.git",
@@ -862,7 +828,6 @@
           "console",
           "datetime",
           "effect",
-          "either",
           "enums",
           "foldable-traversable",
           "foreign",
@@ -1351,8 +1316,8 @@
     },
     "dom-indexed": {
       "type": "registry",
-      "version": "12.0.0",
-      "integrity": "sha256-bltgxNRfJrJc73YirgM+8u4AqdJAsuaKr7epwzIayF0=",
+      "version": "13.0.0",
+      "integrity": "sha256-fum5mqCcGwUWpKRePCkoLgRNLYeHtkSwkx/7j6u85ds=",
       "dependencies": [
         "media-types",
         "prelude",
@@ -2731,7 +2696,6 @@
         "console",
         "datetime",
         "effect",
-        "either",
         "enums",
         "foldable-traversable",
         "foreign",

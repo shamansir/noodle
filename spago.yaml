@@ -1,4 +1,5 @@
 package:
+  name: noodle
   dependencies:
     - aff
     - affjax
@@ -19,6 +20,7 @@ package:
     - css
     - datetime
     - debug
+    - console
     - default-values
     - dom-indexed
     - effect
@@ -100,24 +102,9 @@ package:
     - wire
     - yoga-json
     - yoga-tree
-  name: noodle
   build:
     censorProjectWarnings: all
-      # - UnusedImport
-      # - UnusedExplicitImport
-      # - UnusedDctorImport
-      # - ImplicitQualifiedImport
-      # - DuplicateImport
-      # - DuplicateSelectiveImport
-      # - UnusedName
-      # - ShadowedName
-      # - MissingKindDeclaration
-      # - ImplicitImport
-      # - HidingImport
-      # - MissingTypeDeclaration
-      # - WildcardInferredType
   bundle:
-    minify: false
     module: Web.Main
     outfile: "web/app.js"
     platform: browser
@@ -129,68 +116,24 @@ package:
       - "starter"
       - "-f"
       - "./ndf/starter.v0.1.ndf"
-      # - "--palette-test"
-      # - "--cli-demo"
 workspace:
-  buildOpts:
-    censorLibraryWarnings: all
-      # - UnusedImport
-      # - UnusedExplicitImport
-      # - UnusedDctorImport
-      # - ImplicitQualifiedImport
-      # - DuplicateImport
-      # - DuplicateSelectiveImport
-      # - UnusedName
-      # - ShadowedName
-      # - MissingKindDeclaration
-      # - ImplicitImport
-      # - HidingImport
-      # - MissingTypeDeclaration
-      # - WildcardInferredType
-  extraPackages:
-    # blessed:
-    #   path: ../purescript-blessed
+  packageSet:
+    registry: 65.0.0
+  extraPackages: # {}
+    # wire:
+    #  git: "https://github.com/robertdp/purescript-wire.git"
+    #  ref: "v0.4.2"
+    #halogen-svg-elems:
+    #  git: "https://github.com/shamansir/purescript-halogen-svg-elems.git"
+    #  ref: "2bc876ede676dba9544f03ab3caa618f35621e2c"
     blessed:
-      dependencies:
-        - "aff"
-        - "argonaut-codecs"
-        - "argonaut-core"
-        - "arrays"
-        - "bifunctors"
-        - "codec"
-        - "codec-argonaut"
-        - "console"
-        - "effect"
-        - "either"
-        - "enums"
-        - "exceptions"
-        - "foldable-traversable"
-        - "free"
-        - "identity"
-        - "maybe"
-        - "newtype"
-        - "node-buffer"
-        - "node-fs"
-        - "node-path"
-        - "ordered-collections"
-        - "prelude"
-        - "profunctor"
-        - "refs"
-        - "spec"
-        - "strings"
-        - "tailrec"
-        - "transformers"
-        - "tuples"
-        - "typelevel-prelude"
-        - "unfoldable"
-        - "unsafe-coerce"
       git: https://github.com/shamansir/purescript-blessed.git
       ref: 72f59e47beab695f4ad1c570b087e8132520d76c
     halogen-svg-elems:
-      dependencies:
-        - halogen
       git: https://github.com/shamansir/purescript-halogen-svg-elems.git
       ref: 2bc876ede676dba9544f03ab3caa618f35621e2c
+      dependencies:
+        - halogen
     wire:
       dependencies:
         - aff
@@ -201,27 +144,26 @@ workspace:
       ref: v0.4.2
     text-formatting:
       dependencies:
-        - "arrays"
-        - "colors"
-        - "console"
-        - "datetime"
-        - "effect"
-        - "either"
-        - "enums"
-        - "foldable-traversable"
-        - "foreign"
-        - "formatters"
-        - "lists"
-        - "maybe"
-        - "newtype"
-        - "ordered-collections"
-        - "prelude"
-        - "strings"
-        - "transformers"
-        - "tuples"
-        - "unfoldable"
-        - "variant"
-        - "yoga-json"
+        - arrays
+        - colors
+        - console
+        - datetime
+        - effect
+        - enums
+        - foldable-traversable
+        - foreign
+        - formatters
+        - lists
+        - maybe
+        - newtype
+        - ordered-collections
+        - prelude
+        - strings
+        - transformers
+        - tuples
+        - unfoldable
+        - variant
+        - yoga-json
       git: https://github.com/shamansir/purescript-text-formatting.git
       ref: 08e288de74362736b26e4f32febed260db33317c
     tidy:
@@ -284,6 +226,5 @@ workspace:
         - unicode
       git: https://github.com/natefaubion/purescript-tidy-codegen.git
       ref: v4.0.0
-  packageSet:
-    registry: 64.10.0
-    # url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.8-20230605/packages.json
+  buildOpts:
+    censorLibraryWarnings: all

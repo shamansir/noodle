@@ -1,137 +1,67 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    purescript-overlay = {
-      url = "github:thomashoneyman/purescript-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    ps-overlay.url = "github:thomashoneyman/purescript-overlay";
+    mkSpagoDerivation = { 
+      url = "github:jeslie0/mkSpagoDerivation";
+      inputs = {
+        registry.url = "github:purescript/registry/fe3f499706755bb8a501bf989ed0f592295bb4e3";
+        registry-index.url = "github:purescript/registry-index/a349ca528812c89915ccc98cfbd97c9731aa5d0b";
+      };
     };
   };
 
-  outputs = { self, nixpkgs, ... }@inputs:
-    let
-      supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
-
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-
-      nixpkgsFor = forAllSystems (system: import nixpkgs {
-        inherit system;
-        config = { };
-        overlays = builtins.attrValues self.overlays;
-      });
-
-    in {
-      overlays = {
-        purescript = inputs.purescript-overlay.overlays.default;
-      };
-
-      packages = forAllSystems (system:
-        let
-          pkgs = nixpkgsFor.${system};
-          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
-        in {
-          # FIXME: on Mac ARM works only with `nix build --option system x86_64-darwin`
-
-          default = pkgs.stdenv.mkDerivation {
-            pname = "noodle";
-            version = "1.1.0";
-            src = ./.;
-
-            buildInputs = with pkgs; [
-              cacert
-              nodejs_20
-              purs-tidy-bin.purs-tidy-0_10_0
-              git
-              dhall
-              purs-backend-es
-              purs
-              #spago-bin.spago-0_21_0
-              spago-unstable
-            ];
-
-            buildPhase = ''
-              # Create a temporary cache directory for spago
-              export XDG_CACHE_HOME=$(mktemp -d)
-              export HOME=$(mktemp -d)
-              export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-              ln -s ${nodeDependencies}/lib/node_modules ./node_modules
-              export PATH="${nodeDependencies}/bin:$PATH"
-              rm -rf ./test/Files/Output
-              spago build --output output.nix
-            '';
-
-            installPhase = ''
-              mkdir -p $out
-              cp -r output.nix $out/
-              cp ./nix.run.js $out/
-            '';
-          };
-        });
-
-      apps = forAllSystems (system:
-        let
-          pkgs = nixpkgsFor.${system};
-          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
-
-        in {
-
-          default = let
-            runCli = pkgs.writeShellApplication {
-              name = "run-cli";
-              runtimeInputs =
-                with pkgs; [
-                  # cacert
-                  nodejs_20
-                  purs-tidy-bin.purs-tidy-0_10_0
-                  # git
-                  # dhall
-                  purs-backend-es
-                  purs
-                  #spago-bin.spago-0_21_0
-                  spago-unstable
-                ];
-              text = ''
-                # spago run --demo
-                rm -rf ./node_modules
-                ln -s ${nodeDependencies}/lib/node_modules ./node_modules
-                export PATH="${nodeDependencies}/bin:$PATH"
-                rm -rf ./test/Files/Output
-                spago build --output output.nix
-                # node ./.spago/run/run.js -t starter -f ./ndf/starter.v0.1.ndf
-                # node ./.spago/run/run.js -t hydra # -f ./ndf/hydra.v0.3.ndf
-                node ./nix.run.js -t starter -f ./ndf/starter.v0.1.ndf
-              '';
+  outputs = { self, nixpkgs, flake-utils, ps-overlay, mkSpagoDerivation }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ mkSpagoDerivation.overlays.default
+                       ps-overlay.overlays.default
+                     ];
+        };
+    
+      
+        nixTestPackage =
+            pkgs.mkSpagoDerivation {
+              spagoYaml = ./spago.yaml;
+              spagoLock = ./spago.lock;
+              src = ./.;
+              version = "0.1.0";
+              nativeBuildInputs = [ pkgs.esbuild pkgs.purs-backend-es pkgs.purs-unstable pkgs.spago-unstable ];
+              buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app --no-build --minify --to=main.min.js";
+              installPhase = "mkdir $out; cp -r main.min.js $out";
+              buildNodeModulesArgs = {
+                npmRoot = ./.;
+                nodejs = pkgs.nodejs;
+              };
             };
-          in {
+
+        runCompiledScriptWithNode = pkgs.runCommand "run-compiled-with-node" {} ''
+            mkdir -p $out
+            cat > $out/run-compiled-with-node.sh <<EOF
+            #!/bin/sh
+            exec ${pkgs.nodejs}/bin/node ${nixTestPackage}/main.min.js "\$@"
+            EOF
+            chmod +x $out/run-compiled-with-node.sh 
+          '';
+
+
+        nixTestApp = { 
             type = "app";
-            program = "${runCli}/bin/run-cli";
-          };
+            program = "${runCompiledScriptWithNode}/run-compiled-with-node.sh";
+        };
 
-        });
+      in     
+        {
+          packages.default = nixTestPackage;
+          
+          apps.output1 = nixTestApp;
 
-      devShells = forAllSystems (system:
-        # pkgs now has access to the standard PureScript toolchain
-        # FIXME: on Mac ARM works only with `nix develop --option system x86_64-darwin`
+          apps.default = nixTestApp;
+        }
 
-        let
-          pkgs = nixpkgsFor.${system};
-          nodeDependencies = (pkgs.callPackage ./default.nix {}).nodeDependencies;
-        in {
-          default = pkgs.mkShell {
-            name = "noodle";
-            inputsFrom = builtins.attrValues self.packages.${system};
-            shellHook = ''
-              rm -rf ./node_modules
-              ln -s ${nodeDependencies}/lib/node_modules ./node_modules
-              export PATH="${nodeDependencies}/bin:$PATH"
-            '';
-            buildInputs = with pkgs; [
-              nodejs_23
-              purs
-              spago-unstable
-              purs-tidy-bin.purs-tidy-0_10_0
-              purs-backend-es
-            ];
-          };
-        });
-  };
+    );
 }
