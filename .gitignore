@@ -36,3 +36,5 @@ node-modules.*
 /tests.mute
 src/Demo/_Gen
 spago.before.dhall
+main.min.js
+/output-es

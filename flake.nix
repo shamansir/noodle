@@ -30,9 +30,11 @@
               src = ./.;
               version = "0.1.0";
               nativeBuildInputs = [ pkgs.esbuild pkgs.purs-backend-es pkgs.purs-unstable pkgs.spago-unstable ];
+              #buildPhase = "spago bundle-app --output ./output-es -m Cli.Main"
               buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
               #buildPhase = ''
               #  find ./node_modules/reblessed/dist -name "*.d.ts.map" -exec rm {} \;
+              # nvim ./node_modules/reblessed/dist/lib/unicode.js 
               # spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
               # ''
               installPhase = "mkdir $out; cp -r main.min.js $out";
