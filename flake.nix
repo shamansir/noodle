@@ -22,16 +22,19 @@
                        ps-overlay.overlays.default
                      ];
         };
-    
       
-        nixTestPackage =
+        noodleCliPackage =
             pkgs.mkSpagoDerivation {
               spagoYaml = ./spago.yaml;
               spagoLock = ./spago.lock;
               src = ./.;
               version = "0.1.0";
               nativeBuildInputs = [ pkgs.esbuild pkgs.purs-backend-es pkgs.purs-unstable pkgs.spago-unstable ];
-              buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app --no-build --minify --to=main.min.js";
+              buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
+              #buildPhase = ''
+              #  find ./node_modules/reblessed/dist -name "*.d.ts.map" -exec rm {} \;
+              # spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
+              # ''
               installPhase = "mkdir $out; cp -r main.min.js $out";
               buildNodeModulesArgs = {
                 npmRoot = ./.;
@@ -43,24 +46,24 @@
             mkdir -p $out
             cat > $out/run-compiled-with-node.sh <<EOF
             #!/bin/sh
-            exec ${pkgs.nodejs}/bin/node ${nixTestPackage}/main.min.js "\$@"
+            exec ${pkgs.nodejs}/bin/node ${noodleCliPackage}/main.min.js "\$@"
             EOF
             chmod +x $out/run-compiled-with-node.sh 
           '';
 
 
-        nixTestApp = { 
+        noodleApp = { 
             type = "app";
             program = "${runCompiledScriptWithNode}/run-compiled-with-node.sh";
         };
 
       in     
         {
-          packages.default = nixTestPackage;
+          packages.default = noodleCliPackage;
           
-          apps.output1 = nixTestApp;
+          apps.output1 = noodleApp;
 
-          apps.default = nixTestApp;
+          apps.default = noodleApp;
         }
 
     );
