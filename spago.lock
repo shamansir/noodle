@@ -810,7 +810,7 @@
     "extra_packages": {
       "blessed": {
         "git": "https://github.com/shamansir/purescript-blessed.git",
-        "ref": "72f59e47beab695f4ad1c570b087e8132520d76c"
+        "ref": "d121c38ca3b24b4c857fecd400c663295eebecf3"
       },
       "halogen-svg-elems": {
         "git": "https://github.com/shamansir/purescript-halogen-svg-elems.git",
@@ -1097,7 +1097,7 @@
     "blessed": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-blessed.git",
-      "rev": "72f59e47beab695f4ad1c570b087e8132520d76c",
+      "rev": "d121c38ca3b24b4c857fecd400c663295eebecf3",
       "dependencies": [
         "aff",
         "argonaut-codecs",
