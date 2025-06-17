@@ -128,7 +128,7 @@ workspace:
     #  ref: "2bc876ede676dba9544f03ab3caa618f35621e2c"
     blessed:
       git: https://github.com/shamansir/purescript-blessed.git
-      ref: e77f4f28b832ca51a273e200e7ffac1397d33454
+      ref: 216425718bd9846b566e18419876735dde606cfa
     halogen-svg-elems:
       git: https://github.com/shamansir/purescript-halogen-svg-elems.git
       ref: 2bc876ede676dba9544f03ab3caa618f35621e2c
