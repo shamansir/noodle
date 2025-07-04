@@ -67,6 +67,7 @@
             "ordered-set",
             "parsing",
             "partial",
+            "play",
             "prelude",
             "profunctor",
             "profunctor-lenses",
@@ -155,6 +156,7 @@
             "functions",
             "functors",
             "gen",
+            "graphs",
             "halogen",
             "halogen-css",
             "halogen-hooks",
@@ -205,6 +207,7 @@
             "parsing",
             "partial",
             "pipes",
+            "play",
             "posix-types",
             "prelude",
             "profunctor",
@@ -256,7 +259,8 @@
             "web-xhr",
             "wire",
             "yoga-json",
-            "yoga-tree"
+            "yoga-tree",
+            "yoga-tree-utils"
           ]
         },
         "test": {
@@ -819,6 +823,10 @@
           "halogen"
         ]
       },
+      "play": {
+        "git": "https://github.com/shamansir/purescript-play.git",
+        "ref": "a1f6bd87458bfaca462482c2a477fb22bf34eb62"
+      },
       "text-formatting": {
         "git": "https://github.com/shamansir/purescript-text-formatting.git",
         "ref": "08e288de74362736b26e4f32febed260db33317c",
@@ -918,6 +926,10 @@
           "refs",
           "unsafe-reference"
         ]
+      },
+      "yoga-tree-utils": {
+        "git": "https://github.com/shamansir/purescript-yoga-tree-utils.git",
+        "ref": "e4f72ec0ee62ae63912b346560047947a68f0053"
       }
     }
   },
@@ -1596,6 +1608,15 @@
         "tailrec",
         "tuples",
         "unfoldable"
+      ]
+    },
+    "graphs": {
+      "type": "registry",
+      "version": "8.1.0",
+      "integrity": "sha256-mLOuNSMB/kHUBEIV+pePLc1Exo5z/WmT3BHmGIGlxQw=",
+      "dependencies": [
+        "catenable-lists",
+        "ordered-collections"
       ]
     },
     "halogen": {
@@ -2359,6 +2380,19 @@
         "tuples"
       ]
     },
+    "play": {
+      "type": "git",
+      "url": "https://github.com/shamansir/purescript-play.git",
+      "rev": "a1f6bd87458bfaca462482c2a477fb22bf34eb62",
+      "dependencies": [
+        "console",
+        "debug",
+        "effect",
+        "prelude",
+        "yoga-tree",
+        "yoga-tree-utils"
+      ]
+    },
     "posix-types": {
       "type": "registry",
       "version": "6.0.0",
@@ -3097,6 +3131,24 @@
         "maybe",
         "prelude",
         "tailrec"
+      ]
+    },
+    "yoga-tree-utils": {
+      "type": "git",
+      "url": "https://github.com/shamansir/purescript-yoga-tree-utils.git",
+      "rev": "e4f72ec0ee62ae63912b346560047947a68f0053",
+      "dependencies": [
+        "arrays",
+        "foldable-traversable",
+        "free",
+        "graphs",
+        "maybe",
+        "prelude",
+        "strings",
+        "tuples",
+        "unicode",
+        "yoga-json",
+        "yoga-tree"
       ]
     }
   }
