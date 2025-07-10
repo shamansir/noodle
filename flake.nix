@@ -3,7 +3,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     ps-overlay.url = "github:thomashoneyman/purescript-overlay";
-    mkSpagoDerivation = { 
+    mkSpagoDerivation = {
       url = "github:jeslie0/mkSpagoDerivation";
       inputs = {
         registry.url = "github:purescript/registry/fe3f499706755bb8a501bf989ed0f592295bb4e3";
@@ -22,9 +22,10 @@
                        ps-overlay.overlays.default
                      ];
         };
-      
+
         noodleCliPackage =
             pkgs.mkSpagoDerivation {
+              name = "noodle";
               spagoYaml = ./spago.yaml;
               spagoLock = ./spago.lock;
               src = ./.;
@@ -34,7 +35,7 @@
               buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
               #buildPhase = ''
               #  find ./node_modules/reblessed/dist -name "*.d.ts.map" -exec rm {} \;
-              # nvim ./node_modules/reblessed/dist/lib/unicode.js 
+              # nvim ./node_modules/reblessed/dist/lib/unicode.js
               # spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
               # ''
               installPhase = "mkdir $out; cp -r main.min.js $out";
@@ -50,19 +51,19 @@
             #!/bin/sh
             exec ${pkgs.nodejs}/bin/node ${noodleCliPackage}/main.min.js "\$@"
             EOF
-            chmod +x $out/run-compiled-with-node.sh 
+            chmod +x $out/run-compiled-with-node.sh
           '';
 
 
-        noodleApp = { 
+        noodleApp = {
             type = "app";
             program = "${runCompiledScriptWithNode}/run-compiled-with-node.sh";
         };
 
-      in     
+      in
         {
           packages.default = noodleCliPackage;
-          
+
           apps.output1 = noodleApp;
 
           apps.default = noodleApp;
