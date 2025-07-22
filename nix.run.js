@@ -1,3 +1,3 @@
-import { main } from './output.nix/Cli.Main/index.js'
+import { main } from './output/Cli.Main/index.js'
 
 main()
