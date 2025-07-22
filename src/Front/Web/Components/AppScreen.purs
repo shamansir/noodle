@@ -90,6 +90,7 @@ import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSSta
 import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
+import Web.Layouts as Layouts
 
 import Front.Shared.Bounds (toNumberPosition) as Bounds
 import Front.Shared.Panels (Which(..), allPanels) as Panels
@@ -293,11 +294,18 @@ render ploc _ state =
             else HH.div [] []
         ]
         where
+            defaultSize = { width : 1000.0, height : 1000.0 }
+            uiLayout = Layouts.noodleUI
+              { size : fromMaybe defaultSize state.size
+              , sidePanelButtons : 5
+              , statusBarSections : 3
+              }
+            nodeLayout nodeParams = Layouts.horzNodeUI nodeParams
             toolkit = Network.toolkit state.network
             solidBackground = P.hColorOf Palette.black
             backgroundWithAlpha bgOpacity = fromMaybe solidBackground $ HCColorX.setAlpha bgOpacity solidBackground
-            width  = fromMaybe 1000.0 $ _.width  <$> state.size
-            height = fromMaybe 1000.0 $ _.height <$> state.size
+            width  = fromMaybe defaultSize.width  $ _.width  <$> state.size
+            height = fromMaybe defaultSize.height $ _.height <$> state.size
             (ptk :: _ tk) = Proxy
             mbCurrentPatch     = CState.currentPatch state
             mbCurrentPatchInfo = CState.currentPatchInfo state

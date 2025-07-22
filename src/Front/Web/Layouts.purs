@@ -31,12 +31,12 @@ data UiPart
 type UiParams =
     { size :: { width :: Number, height :: Number }
     , sidePanelButtons :: Int
-    , statusBarSecions :: Int
+    , statusBarSections :: Int
     }
 
 
-noodleUI :: Play UiPart
-noodleUI =
+noodleUI :: UiParams -> Play UiPart
+noodleUI params =
     let
         topBarHeight = 20.0
         statusBarHeight = 30.0
@@ -48,13 +48,13 @@ noodleUI =
           Play.i (SidePanelButton n)
             ~* Play.width  sidePanelButtonSize
             ~* Play.height sidePanelButtonSize
-        spButtons = sidePanelButton <$> Array.range 0 5
+        spButtons = sidePanelButton <$> Array.range 0 params.sidePanelButtons
 
         statusBarSection n =
           Play.i (StatusBarSecion n)
             ~* (Play.width $ Int.toNumber n * 15.0)
             ~* Play.heightGrow
-        sbSections = statusBarSection <$> Array.range 0 3
+        sbSections = statusBarSection <$> Array.range 0 params.statusBarSections
 
         sidePanel n =
           Play.i (SidePanel n)
@@ -63,8 +63,8 @@ noodleUI =
         sidePanels = sidePanel <$> Array.range 0 3
 
     in Play.i Background
-        ~* Play.width 1000.0
-        ~* Play.height 1000.0
+        ~* Play.width params.size.width
+        ~* Play.height params.size.height
         ~* Play.topToBottom
         ~* Play.with
             [ Play.i Top
@@ -130,17 +130,25 @@ data NodePart
     | Body
 
 
-horzNodeUI :: Play NodePart
-horzNodeUI =
+type NodeParams =
+  { outletsCount :: Int
+  , inletsCount :: Int
+  , bodyWidth :: Number
+  , bodyHeight :: Number
+  }
+
+
+horzNodeUI :: NodeParams -> Play NodePart
+horzNodeUI params =
     let
         titleWidth = 30.0
         channelsHeight = 20.0
-        bodyWidth = 700.0 -- try 300.0 to see how it fits
-        bodyHeight = 120.0
+        -- bodyWidth = 700.0 -- try 300.0 to see how it fits
+        -- bodyHeight = 120.0
         channelWidth = 70.0
         connectorWidth = 15.0
-        inletsCount = 5
-        outletsCount = 7
+        -- inletsCount = 5
+        --outletsCount = 7
 
         inlet n =
             Play.i (Inlet n)
@@ -154,7 +162,7 @@ horzNodeUI =
                     ~* Play.widthGrow
                     ~* Play.heightGrow
                 ]
-        inlets = inlet <$> Array.range 0 inletsCount
+        inlets = inlet <$> Array.range 0 params.inletsCount
 
         outlet n =
             Play.i (Outlet n)
@@ -168,7 +176,7 @@ horzNodeUI =
                     ~* Play.widthGrow
                     ~* Play.heightGrow
                 ]
-        outlets = outlet <$> Array.range 0 outletsCount
+        outlets = outlet <$> Array.range 0 params.outletsCount
 
     in Play.i NodeBackground
         ~* Play.widthFit
@@ -185,7 +193,7 @@ horzNodeUI =
                     ~* Play.height channelsHeight
                 , Play.i Title
                     ~* Play.widthGrow
-                    ~* Play.height bodyHeight
+                    ~* Play.height params.bodyHeight
                 , Play.i TitlePadding
                     ~* Play.widthGrow
                     ~* Play.height channelsHeight
@@ -201,11 +209,11 @@ horzNodeUI =
                         ~* Play.with inlets
                     , Play.i BodyBackground
                         ~* Play.widthFitGrow
-                        ~* Play.height bodyHeight
+                        ~* Play.height params.bodyHeight
                         ~* Play.with
                             [ Play.i Body
-                                ~* Play.width  bodyWidth
-                                ~* Play.height bodyHeight
+                                ~* Play.width  params.bodyWidth
+                                ~* Play.height params.bodyHeight
                             ]
                     , Play.i Outlets
                         ~* Play.widthFit
@@ -215,18 +223,14 @@ horzNodeUI =
                 ]
 
 
-vertNodeUI :: Play NodePart
-vertNodeUI =
+vertNodeUI :: NodeParams -> Play NodePart
+vertNodeUI params =
     let
         titleHeight = 30.0
-        bodyWidth = 300.0
-        bodyHeight = 400.0 -- try values less that 100.0 to see how it fits
         channelNameMinWidth = 100.0
         paddingWidth = channelNameMinWidth + connectorWidth -- TODO: auto-fit
         channelHeight = 20.0
         connectorWidth = 15.0
-        inletsCount = 5
-        outletsCount = 7
 
         inlet n =
             Play.i (Inlet n)
@@ -240,7 +244,7 @@ vertNodeUI =
                     ~* Play.width connectorWidth
                     ~* Play.heightGrow
                 ]
-        inlets = inlet <$> Array.range 0 5
+        inlets = inlet <$> Array.range 0 params.inletsCount
 
         outlet n =
             Play.i (Outlet n)
@@ -254,10 +258,10 @@ vertNodeUI =
                     ~* (Play.width  channelNameMinWidth)
                     ~* (Play.height channelHeight)
                 ]
-        outlets = outlet <$> Array.range 0 7
+        outlets = outlet <$> Array.range 0 params.outletsCount
 
-        exampleWidth  = bodyWidth + (2.0 * paddingWidth) + 50.0
-        exampleHeight = max (bodyHeight + 50.0) (max (Int.toNumber inletsCount * channelHeight) (Int.toNumber outletsCount * channelHeight) + titleHeight)
+        -- exampleWidth  = bodyWidth + (2.0 * paddingWidth) + 50.0
+        -- exampleHeight = max (bodyHeight + 50.0) (max (Int.toNumber inletsCount * channelHeight) (Int.toNumber outletsCount * channelHeight) + titleHeight)
 
     in Play.i NodeBackground
         ~* Play.widthFit
@@ -273,7 +277,7 @@ vertNodeUI =
                         ~* Play.width paddingWidth
                         ~* Play.heightGrow
                     , Play.i Title
-                        ~* Play.width  bodyWidth
+                        ~* Play.width  params.bodyWidth
                         ~* Play.height titleHeight
                     , Play.i TitlePadding
                         ~* Play.width paddingWidth
@@ -291,12 +295,12 @@ vertNodeUI =
                         ~* Play.topToBottom
                         ~* Play.with inlets
                     , Play.i BodyBackground
-                        ~* Play.width bodyWidth
+                        ~* Play.width params.bodyWidth
                         ~* Play.heightFitGrow
                         ~* Play.with
                             [ Play.i Body
-                                ~* Play.width  bodyWidth
-                                ~* Play.height bodyHeight
+                                ~* Play.width  params.bodyWidth
+                                ~* Play.height params.bodyHeight
                             ]
                     , Play.i Outlets
                         ~* Play.widthFit
