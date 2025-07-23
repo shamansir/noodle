@@ -295,11 +295,13 @@ render ploc _ state =
         ]
         where
             defaultSize = { width : 1000.0, height : 1000.0 }
-            uiLayout = Layouts.noodleUI
+            layoutParams =
               { size : fromMaybe defaultSize state.size
               , sidePanelButtons : 5
               , statusBarSections : 3
               }
+            uiHTMLLayout = Layouts.noodleUI HTML state.uiMode layoutParams
+            uiSVGLayout = Layouts.noodleUI SVG state.uiMode layoutParams
             nodeLayout nodeParams = Layouts.horzNodeUI nodeParams
             toolkit = Network.toolkit state.network
             solidBackground = P.hColorOf Palette.black

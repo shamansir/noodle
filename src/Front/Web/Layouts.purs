@@ -5,6 +5,9 @@ import Prelude
 import Data.Array (range) as Array
 import Data.Int (toNumber) as Int
 
+import Web.Components.AppScreen.State (UiMode(..)) as CState
+import Web.Layer (TargetLayer(..))
+
 
 import Play (Play, (~*))
 
@@ -26,6 +29,7 @@ data UiPart
     | Top
     | Middle
     | StatusBar
+    | Canvas
 
 
 type UiParams =
@@ -35,8 +39,24 @@ type UiParams =
     }
 
 
-noodleUI :: UiParams -> Play UiPart
-noodleUI params =
+noodleUI :: TargetLayer -> CState.UiMode -> UiParams -> Play UiPart
+noodleUI targetLayer =
+    case _ of
+        CState.OnlyCanvas _ -> _onlyCanvas
+        CState.CanvasFullyVisible -> _fullLayout
+        CState.TransparentOverlay _ -> _fullLayout
+        CState.SolidOverlay _ -> _fullLayout
+
+
+_onlyCanvas :: UiParams -> Play UiPart
+_onlyCanvas { size } =
+    Play.i Canvas
+        ~* Play.width  size.width
+        ~* Play.height size.height
+
+
+_fullLayout :: UiParams -> Play UiPart
+_fullLayout params =
     let
         topBarHeight = 20.0
         statusBarHeight = 30.0
@@ -61,7 +81,6 @@ noodleUI params =
             ~* Play.widthGrow
             ~* Play.heightGrow
         sidePanels = sidePanel <$> Array.range 0 3
-
     in Play.i Background
         ~* Play.width params.size.width
         ~* Play.height params.size.height
