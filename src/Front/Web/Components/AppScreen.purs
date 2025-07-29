@@ -90,7 +90,10 @@ import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSSta
 import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
-import Web.Layouts as Layouts
+import Web.Layouts (noodleUI, UiParams) as Layouts
+import Web.Layouts (UiPart(..)) as Ui
+
+import Play as Play
 
 import Front.Shared.Bounds (toNumberPosition) as Bounds
 import Front.Shared.Panels (Which(..), allPanels) as Panels
@@ -199,7 +202,6 @@ component ploc pps toolkit =
             pure unit
 
 
-
 initialState :: forall input loc tk ps fs sr cr m. Proxy loc -> Toolkit tk fs sr cr m -> input -> State loc tk ps fs sr cr m
 initialState _ toolkit _ = CState.init toolkit
 
@@ -245,6 +247,47 @@ render ploc _ state =
                         CState.OnlyCanvas _ ->
                             []
                         _ ->
+                            uiLayoutItems <#> \{ rect, v } ->
+
+                                case v of
+                                    Ui.Background ->
+                                        HS.rect
+                                            [ HSA.width rect.size.width, HSA.height rect.size.height
+                                            , HSA.fill $ case state.uiMode of
+                                                CState.OnlyCanvas _ -> Nothing -- Just <| P.hColorOf P.transparent
+                                                CState.CanvasFullyVisible -> Nothing
+                                                CState.TransparentOverlay opacity -> Just $ backgroundWithAlpha opacity
+                                                CState.SolidOverlay _ -> Just solidBackground
+                                            ]
+
+                                    Ui.PatchesBar ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ HH.slot _patchesBar unit PatchesBar.component patchesBarInput FromPatchesBar ]
+
+                                    Ui.SidePanelsButtons ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ HH.slot _panelToggles unit PanelTogglesBar.component panelToggleInput FromPanelToggles ]
+
+                                    Ui.Library ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ HH.slot _library SVG (Library.component ptk SVG) libraryInput FromLibrary ]
+
+                                    Ui.Nodes ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ HH.slot _patchArea SVG (PatchArea.component ptk SVG) patchAreaInput $ FromPatchArea mbCurPatchId ]
+
+                                    Ui.StatusBar ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate statusBarX statusBarY ] ]
+                                            [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+
+                                    _ -> HH.text "" -- HS.g [] []
+
+                            {-
                             [ HS.rect
                                 [ HSA.width width, HSA.height height
                                 , HSA.fill $ case state.uiMode of
@@ -269,6 +312,7 @@ render ploc _ state =
                                 [ HSA.transform [ HSA.Translate statusBarX statusBarY ] ]
                                 [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
                             ] <> (mapWithIndex wrapSvgWithPos $ panelSlot sidePanelParams SVG state <$> Set.toUnfoldable state.openPanels)
+                            -}
                     )
                 ]
             ]
@@ -277,6 +321,31 @@ render ploc _ state =
                 HH.div [] []
             _ ->
                 HH.div_ $
+                    ( uiLayoutItems <#> \{ rect, v } ->
+
+                        case v of
+
+                            Ui.Library ->
+                                HH.div
+                                    [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
+                                    [ HH.slot _library HTML (Library.component ptk HTML) libraryInput FromLibrary ]
+
+                            Ui.Nodes ->
+                                HH.div
+                                    [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
+                                    [ HH.slot _patchArea HTML (PatchArea.component ptk HTML) patchAreaInput $ FromPatchArea mbCurPatchId ]
+
+                            Ui.StatusBar ->
+                                HH.div
+                                    [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
+                                    [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
+
+                            _ -> HH.div [] []
+                    )
+
+                    <> [ HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput ]
+
+                    {-
                     [ HH.div
                         [ HHP.position HHP.Abs { x : statusBarX, y : statusBarY } ]
                         [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
@@ -289,6 +358,7 @@ render ploc _ state =
                     , HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput
                     ]
                     <> (mapWithIndex wrapHtmlWithPos $ panelSlot sidePanelParams HTML state <$> Set.toUnfoldable state.openPanels)
+                    -}
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
@@ -299,10 +369,16 @@ render ploc _ state =
               { size : fromMaybe defaultSize state.size
               , sidePanelButtons : 5
               , statusBarSections : 3
+              , sidePanelsCount : Set.size state.openPanels
               }
-            uiHTMLLayout = Layouts.noodleUI HTML state.uiMode layoutParams
-            uiSVGLayout = Layouts.noodleUI SVG state.uiMode layoutParams
-            nodeLayout nodeParams = Layouts.horzNodeUI nodeParams
+            uiLayout = Play.layout $ Layouts.noodleUI layoutParams
+            uiLayoutItems = Play.flattenLayout uiLayout
+
+            -- nodeLayout nodeParams = Layouts.horzNodeUI nodeParams
+
+            -- layout = Play.layout $ Layout.noodleUI
+            -- layoutItems = Play.flattenLayout layout
+
             toolkit = Network.toolkit state.network
             solidBackground = P.hColorOf Palette.black
             backgroundWithAlpha bgOpacity = fromMaybe solidBackground $ HCColorX.setAlpha bgOpacity solidBackground

@@ -29,16 +29,18 @@ data UiPart
     | Top
     | Middle
     | StatusBar
-    | Canvas
+    -- | Canvas
 
 
 type UiParams =
     { size :: { width :: Number, height :: Number }
     , sidePanelButtons :: Int
     , statusBarSections :: Int
+    , sidePanelsCount :: Int
     }
 
 
+{-
 noodleUI :: TargetLayer -> CState.UiMode -> UiParams -> Play UiPart
 noodleUI targetLayer =
     case _ of
@@ -52,7 +54,11 @@ _onlyCanvas :: UiParams -> Play UiPart
 _onlyCanvas { size } =
     Play.i Canvas
         ~* Play.width  size.width
-        ~* Play.height size.height
+        ~* Play.height size.height -}
+
+
+noodleUI :: UiParams -> Play UiPart
+noodleUI = _fullLayout
 
 
 _fullLayout :: UiParams -> Play UiPart
@@ -80,7 +86,7 @@ _fullLayout params =
           Play.i (SidePanel n)
             ~* Play.widthGrow
             ~* Play.heightGrow
-        sidePanels = sidePanel <$> Array.range 0 3
+        sidePanels = sidePanel <$> Array.range 0 params.sidePanelsCount
     in Play.i Background
         ~* Play.width params.size.width
         ~* Play.height params.size.height
