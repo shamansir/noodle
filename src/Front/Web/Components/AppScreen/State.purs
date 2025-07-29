@@ -115,7 +115,7 @@ init :: forall loc tk ps fs sr cr m. Toolkit tk fs sr cr m -> State loc tk ps fs
 init toolkit =
     { size : Nothing
     , zoom : 1.0
-    , uiMode : TransparentOverlay 0.1
+    , uiMode : TransparentOverlay 0.85
     , shiftPressed : false
     , helpText : true
     , helpContext : HelpText.Unknown

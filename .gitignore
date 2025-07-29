@@ -38,3 +38,5 @@ src/Demo/_Gen
 spago.before.dhall
 main.min.js
 /output-es
+xprev
+spago.prev.lock

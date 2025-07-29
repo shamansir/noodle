@@ -15,7 +15,7 @@ const runHydra_ = function() {
     hydraInstance = new Hydra({ canvas : targetCanvas, detectAudio: false });
 
     console.log(hydraInstance);
-    osc(4, 0.1, 1.2).out();
+    hydraScene_();
 };
 
 
@@ -39,6 +39,19 @@ const executeHydra_ = function(programString) {
         }
     }
 }
+
+const hydraScene_ = function() {
+    // osc(4, 0.1, 1.2).out();
+    var n = 50;
+    var func = () => osc(30,0.1,1).modulate(noise(4,0.1));
+    var pix = () => shape(4,0.3).scale(1,1,3).repeat(n,n);
+    pix().mult(func().color(1,0,0).pixelate(n,n)).out(o1);
+    pix().mult(func().color(0,1,0).pixelate(n,n)).scrollX(1/n/3).out(o2);
+    pix().mult(func().color(0,0,1).pixelate(n,n)).scrollX(2/n/3).out(o3);
+
+    solid().add(src(o1),1).add(src(o2),1).add(src(o3),1).out(o0);
+}
+
 
 export const runHydra = runHydra_;
 export const resize = resize_;
