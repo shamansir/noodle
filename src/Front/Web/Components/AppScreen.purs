@@ -282,8 +282,13 @@ render ploc _ state =
 
                                     Ui.StatusBar ->
                                         HS.g
-                                            [ HSA.transform [ HSA.Translate statusBarX statusBarY ] ]
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
                                             [ HH.slot _statusBar SVG (StatusBar.component SVG) statusBarInput FromStatusBar ]
+
+                                    Ui.SidePanel n which ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ panelSlot sidePanelParams SVG state which ]
 
                                     _ -> HH.text "" -- HS.g [] []
 
@@ -339,6 +344,11 @@ render ploc _ state =
                                 HH.div
                                     [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
                                     [ HH.slot_ _statusBar HTML (StatusBar.component HTML) statusBarInput ]
+
+                            Ui.SidePanel n which ->
+                                HH.div
+                                    [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
+                                    [ panelSlot sidePanelParams HTML state which ]
 
                             _ -> HH.div [] []
                     )

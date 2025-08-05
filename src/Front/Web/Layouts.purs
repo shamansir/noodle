@@ -70,14 +70,15 @@ _fullLayout params =
     let
         topBarHeight = 45.0
         statusBarHeight = 30.0
-        sidePanelButtonSize = 20.0
+        sidePanelButtonWidth = 32.0
+        sidePanelButtonHeight = 20.0
         libraryWidth = 150.0
-        sidePanelWidth = 150.0
+        sidePanelWidth = 350.0
 
         sidePanelButton n which =
           Play.i (SidePanelButton n which)
-            ~* Play.width  sidePanelButtonSize
-            ~* Play.height sidePanelButtonSize
+            ~* Play.width  sidePanelButtonWidth
+            ~* Play.height sidePanelButtonHeight
         spButtons = mapWithIndex sidePanelButton Panels.allPanels -- params.sidePanelButtons
 
         statusBarSection n =
