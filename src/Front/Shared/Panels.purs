@@ -7,6 +7,8 @@ import Data.Bifunctor (lmap)
 import Data.Text.Format (Tag)
 import Data.Text.Format as T
 import Data.Array (singleton) as Array
+import Data.Set (member) as Set
+import Data.Set (Set)
 
 import Noodle.Text.NdfFile.Command.Op (CommandOp) as Ndf
 import Noodle.Text.NdfFile (NdfFile)
@@ -21,13 +23,11 @@ data Which
     | Console
     | Tree
 
-
 derive instance Eq Which
 derive instance Ord Which
 
 
--- FIXME: by logic, those are just parts of the `State`, may be make them a direct members and store only toggles here
-type SidePanelsOnOff =
+type SidePanelsOnOff = -- TODO: Change to Map Which OnOff
     { commands :: Boolean
     , wsServer :: Boolean
     , hydraCode :: Boolean
@@ -70,6 +70,28 @@ toggle w s = case w of
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
     Tree -> s { tree = not s.tree }
+
+
+toArray :: SidePanelsOnOff -> Array { which :: Which, on :: Boolean }
+toArray sps =
+    [ { which : Commands,      on : sps.commands }
+    , { which : Documentation, on : sps.documentation }
+    , { which : HydraCode,     on : sps.hydraCode }
+    , { which : Tree,          on : sps.tree }
+    , { which : Console,       on : sps.console }
+    , { which : WSStatus,      on : sps.wsServer }
+    ]
+
+
+fromSet :: Set Which -> SidePanelsOnOff
+fromSet set =
+    { commands :      set # Set.member Commands
+    , documentation : set # Set.member Documentation
+    , hydraCode :     set # Set.member HydraCode
+    , tree :          set # Set.member Tree
+    , console :       set # Set.member Console
+    , wsServer :      set # Set.member WSStatus
+    }
 
 
 allPanels :: Array Which

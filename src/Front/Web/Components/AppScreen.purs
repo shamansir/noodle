@@ -367,9 +367,8 @@ render ploc _ state =
             defaultSize = { width : 1000.0, height : 1000.0 }
             layoutParams =
               { size : fromMaybe defaultSize state.size
-              , sidePanelButtons : 5
+              , sidePanels : state.openPanels
               , statusBarSections : 3
-              , sidePanelsCount : Set.size state.openPanels
               }
             uiLayout = Play.layout $ Layouts.noodleUI layoutParams
             uiLayoutItems = Play.flattenLayout uiLayout

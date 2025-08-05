@@ -4,9 +4,14 @@ import Prelude
 
 import Data.Array (range) as Array
 import Data.Int (toNumber) as Int
+import Data.Set (Set)
+import Data.Set (toUnfoldable) as Set
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Web.Components.AppScreen.State (UiMode(..)) as CState
 import Web.Layer (TargetLayer(..))
+
+import Front.Shared.Panels as Panels
 
 
 import Play (Play, (~*))
@@ -15,9 +20,9 @@ import Play as Play
 
 
 data UiPart
-    = SidePanelButton Int
+    = SidePanelButton Int Panels.Which
+    | SidePanel Int Panels.Which
     | StatusBarSecion Int
-    | SidePanel Int
     | Background
     | Library
     | Nodes
@@ -34,9 +39,8 @@ data UiPart
 
 type UiParams =
     { size :: { width :: Number, height :: Number }
-    , sidePanelButtons :: Int
+    , sidePanels :: Set Panels.Which
     , statusBarSections :: Int
-    , sidePanelsCount :: Int
     }
 
 
@@ -64,17 +68,17 @@ noodleUI = _fullLayout
 _fullLayout :: UiParams -> Play UiPart
 _fullLayout params =
     let
-        topBarHeight = 20.0
+        topBarHeight = 45.0
         statusBarHeight = 30.0
         sidePanelButtonSize = 20.0
         libraryWidth = 150.0
         sidePanelWidth = 150.0
 
-        sidePanelButton n =
-          Play.i (SidePanelButton n)
+        sidePanelButton n which =
+          Play.i (SidePanelButton n which)
             ~* Play.width  sidePanelButtonSize
             ~* Play.height sidePanelButtonSize
-        spButtons = sidePanelButton <$> Array.range 0 params.sidePanelButtons
+        spButtons = mapWithIndex sidePanelButton Panels.allPanels -- params.sidePanelButtons
 
         statusBarSection n =
           Play.i (StatusBarSecion n)
@@ -82,11 +86,11 @@ _fullLayout params =
             ~* Play.heightGrow
         sbSections = statusBarSection <$> Array.range 0 params.statusBarSections
 
-        sidePanel n =
-          Play.i (SidePanel n)
+        sidePanel n which =
+          Play.i (SidePanel n which)
             ~* Play.widthGrow
             ~* Play.heightGrow
-        sidePanels = sidePanel <$> Array.range 0 params.sidePanelsCount
+        sidePanels = mapWithIndex sidePanel $ Set.toUnfoldable params.sidePanels
     in Play.i Background
         ~* Play.width params.size.width
         ~* Play.height params.size.height
