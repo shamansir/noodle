@@ -191,12 +191,21 @@ fontSize = 9.0 :: Number
 
 cellSlot
     :: forall m
-     . Number
-    -> TargetLayer
+     . TargetLayer
     -> State
     -> Cells.Which
     -> H.ComponentHTML Action Slots m
-cellSlot width target state =
+cellSlot target state =
     case _ of
         Cells.Zoom     -> HH.slot _cell (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               $ FromCell Cells.Zoom
         Cells.WSStatus -> HH.slot _cell (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } $ FromCell Cells.WSStatus
+
+
+cellWidth :: Cells.Which -> Number
+cellWidth =
+    case _ of
+      Cells.WSStatus -> 150.0
+      Cells.Zoom -> 20.0
+
+
+contentMinWidth = 400.0 :: Number

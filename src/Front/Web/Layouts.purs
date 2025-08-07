@@ -12,7 +12,7 @@ import Web.Components.AppScreen.State (UiMode(..)) as CState
 import Web.Layer (TargetLayer(..))
 
 import Front.Shared.Panels as Panels
-
+import Front.Shared.StatusBarCells as SPC
 
 import Play (Play, (~*))
 
@@ -22,7 +22,7 @@ import Play as Play
 data UiPart
     = SidePanelButton Int Panels.Which
     | SidePanel Int Panels.Which
-    | StatusBarSecion Int
+    | StatusBarSection Int SPC.Which
     | Background
     | Library
     | Nodes
@@ -81,11 +81,11 @@ _fullLayout params =
             ~* Play.height sidePanelButtonHeight
         spButtons = mapWithIndex sidePanelButton Panels.allPanels -- params.sidePanelButtons
 
-        statusBarSection n =
-          Play.i (StatusBarSecion n)
+        statusBarSection n which =
+          Play.i (StatusBarSection n which)
             ~* (Play.width $ Int.toNumber n * 15.0)
             ~* Play.heightGrow
-        sbSections = statusBarSection <$> Array.range 0 params.statusBarSections
+        sbSections = mapWithIndex statusBarSection SPC.allCells
 
         sidePanel n which =
           Play.i (SidePanel n which)
@@ -161,11 +161,11 @@ data NodePart
 
 
 type NodeParams =
-  { outletsCount :: Int
-  , inletsCount :: Int
-  , bodyWidth :: Number
-  , bodyHeight :: Number
-  }
+    { outletsCount :: Int
+    , inletsCount :: Int
+    , bodyWidth :: Number
+    , bodyHeight :: Number
+    }
 
 
 horzNodeUI :: NodeParams -> Play NodePart

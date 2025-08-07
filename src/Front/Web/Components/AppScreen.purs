@@ -98,6 +98,7 @@ import Play as Play
 import Front.Shared.Bounds (toNumberPosition) as Bounds
 import Front.Shared.Panels (Which(..), allPanels) as Panels
 import Front.Shared.WsLocation (host, port) as WSLoc
+import Front.Shared.StatusBarCells as SPCells
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
 import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
@@ -116,6 +117,7 @@ type Slots sr cr m =
     , helpText :: forall q o. H.Slot q o Unit
     , panelToggles :: forall q. H.Slot q PanelTogglesBar.Output Unit
     , sidePanel :: forall q o. H.Slot q o (TargetLayer /\ Panels.Which)
+    , statusBarCell :: forall q. H.Slot q SPCells.Output (TargetLayer /\ SPCells.Which)
     )
 
 
@@ -123,6 +125,7 @@ _library = Proxy :: _ "library"
 _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
+_statusBarCell = Proxy :: _ "statusBarCell"
 _commandInput = Proxy :: _ "commandInput"
 _helpText = Proxy :: _ "helpText"
 _panelToggles = Proxy :: _ "panelToggles"
@@ -289,6 +292,11 @@ render ploc _ state =
                                         HS.g
                                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
                                             [ panelSlot sidePanelParams SVG state which ]
+
+                                    Ui.StatusBarSection n which ->
+                                        HS.g
+                                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                            [ StatusBar.cellSlot ?wh ?wh ?wh ?wh ]
 
                                     _ -> HH.text "" -- HS.g [] []
 
