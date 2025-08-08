@@ -56,34 +56,35 @@ _cell = Proxy :: _ "cell"
 type Input =
     { content :: T.Tag
     , width :: Number
-    , currentZoom :: Number
-    , wsStatus :: WS.Status
     }
 
 
 type State =
     { content :: T.Tag
     , width :: Number
-    , currentZoom :: Number
-    , wsStatus :: WS.Status
     }
 
 
 data Action
     = Receive Input
-    | RequestToResetZoom
-    | FromCell Cells.Which Cells.Output
 
 
 data Output
-    = ResetZoom
+    = Output
 
 
 data Query a
     = UpdateContent T.Tag a
 
 
-height = 25.0
+type CellState r =
+    { currentZoom :: Number
+    , wsStatus :: WS.Status
+    | r
+    }
+
+
+height = 25.0 :: Number
 
 
 component :: forall m. TargetLayer -> H.Component Query Input Output m
@@ -100,8 +101,8 @@ component layer =
 
 
 initialState :: Input -> State
-initialState { content, width, currentZoom, wsStatus }
-    = { content, width, currentZoom, wsStatus }
+initialState { content, width  }
+    = { content, width }
 
 
 render :: forall m. TargetLayer -> State -> H.ComponentHTML Action Slots m
@@ -180,9 +181,7 @@ render HTML state =
 
 handleAction :: forall m. Action -> H.HalogenM State Action Slots Output m Unit
 handleAction = case _ of
-    Receive { content, width, currentZoom, wsStatus } -> H.put { content, width, currentZoom, wsStatus }
-    RequestToResetZoom -> H.raise ResetZoom
-    FromCell _ Cells.ResetZoom -> H.raise ResetZoom
+    Receive { content, width } -> H.put { content, width }
 
 
 handleQuery :: forall action output m a. Query a -> H.HalogenM State action Slots output m (Maybe a)
@@ -196,13 +195,13 @@ fontSize = 9.0 :: Number
 
 
 cellSlot
-    :: forall m slot action slots _1
+    :: forall m slot action slots _1 r
      . Row.Cons slot CellSlot _1 slots
     => IsSymbol slot
     => Proxy slot
     -> TargetLayer
     -> (Cells.Output -> action)
-    -> State
+    -> CellState r
     -> Cells.Which
     -> H.ComponentHTML action slots m
 cellSlot pslot target toAction state =
@@ -214,8 +213,8 @@ cellSlot pslot target toAction state =
 cellWidth :: Cells.Which -> Number
 cellWidth =
     case _ of
-      Cells.WSStatus -> 150.0
-      Cells.Zoom -> 20.0
+      Cells.WSStatus -> 250.0
+      Cells.Zoom -> 50.0
 
 
 contentMinWidth = 400.0 :: Number

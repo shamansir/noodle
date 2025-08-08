@@ -146,10 +146,10 @@ data Action sr cr m
     | FromLibrary Library.Output
     | FromPatchArea (Maybe Id.PatchR) (PatchArea.Output sr cr)
     | FromStatusBar StatusBar.Output
+    | FromStatusBarCell SPCells.Which SPCells.Output
     | FromCommandInput (CommandInput.Output sr cr m)
     | FromPanelToggles PanelTogglesBar.Output
     | FromWebSocket WebSocket WSocket.Event
-    | FromStatusBarCell SPCells.Which SPCells.Output
     | HandleResize
 
 
@@ -297,7 +297,7 @@ render ploc _ state =
                                     Ui.StatusBarSection n which ->
                                         HS.g
                                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                                            [ StatusBar.cellSlot _statusBarCell SVG (FromStatusBarCell which) statusBarInput which ]
+                                            [ StatusBar.cellSlot _statusBarCell SVG (FromStatusBarCell which) statusBarCellInput which ]
 
                                     _ -> HH.text "" -- HS.g [] []
 
@@ -362,7 +362,7 @@ render ploc _ state =
                             Ui.StatusBarSection n which ->
                                 HS.g
                                     [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                                    [ StatusBar.cellSlot _statusBarCell HTML (FromStatusBarCell which) statusBarInput which ]
+                                    [ StatusBar.cellSlot _statusBarCell HTML (FromStatusBarCell which) statusBarCellInput which ]
 
                             _ -> HH.div [] []
                     )
@@ -456,9 +456,11 @@ render ploc _ state =
             statusBarInput =
                 { content : fromMaybe T.nil state.mbStatusBarContent
                 , width : statusBarWidth
-                , currentZoom : state.zoom
-                , wsStatus : state.wsConnection.status
                 } :: StatusBar.Input
+            statusBarCellInput =
+                { currentZoom : state.zoom
+                , wsStatus : state.wsConnection.status
+                } :: StatusBar.CellState ()
             commandInputInput =
                 { pos : { x : width / 2.0, y : height / 2.0 }
                 , active : state.commandInputActive
@@ -700,12 +702,11 @@ handleAction ploc = case _ of
 
     {- FromStatusBar -}
 
-    FromStatusBar StatusBar.ResetZoom ->
-        H.modify_ $ _ { zoom = 1.0 }
+    FromStatusBar _ ->
+        pure unit
 
-    FromStatusBarCell _ _ ->
-        pure unit -- FIXME
-        -- H.modify_ $ _ { zoom = 1.0 }
+    FromStatusBarCell _ SPCells.ResetZoom ->
+        H.modify_ $ _ { zoom = 1.0 }
 
     {- FromCommandInput -}
 

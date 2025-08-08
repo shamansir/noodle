@@ -9,10 +9,11 @@ import Data.Set (toUnfoldable) as Set
 import Data.FunctorWithIndex (mapWithIndex)
 
 import Web.Components.AppScreen.State (UiMode(..)) as CState
+import Web.Components.StatusBar as SB
 import Web.Layer (TargetLayer(..))
 
 import Front.Shared.Panels as Panels
-import Front.Shared.StatusBarCells as SPC
+import Front.Shared.StatusBarCells as SBC
 
 import Play (Play, (~*))
 
@@ -22,7 +23,7 @@ import Play as Play
 data UiPart
     = SidePanelButton Int Panels.Which
     | SidePanel Int Panels.Which
-    | StatusBarSection Int SPC.Which
+    | StatusBarSection Int SBC.Which
     | Background
     | Library
     | Nodes
@@ -83,9 +84,9 @@ _fullLayout params =
 
         statusBarSection n which =
           Play.i (StatusBarSection n which)
-            ~* (Play.width $ Int.toNumber n * 15.0)
+            ~* (Play.width $ SB.cellWidth which)
             ~* Play.heightGrow
-        sbSections = mapWithIndex statusBarSection SPC.allCells
+        sbSections = mapWithIndex statusBarSection SBC.allCells
 
         sidePanel n which =
           Play.i (SidePanel n which)
