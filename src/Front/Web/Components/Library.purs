@@ -83,6 +83,7 @@ bottomBarHeight = 20.0 :: Number
 bodyHeight = height - bottomBarHeight - headerHeight
 bodyRelBottomY = bodyHeight :: Number
 bottomBarY = height - bottomBarHeight :: Number
+paddingLeft = 5.0 :: Number
 
 
 render :: forall tk m. MarkToolkit tk => Proxy tk -> TargetLayer -> State -> H.ComponentHTML Action () m
@@ -101,7 +102,7 @@ render _ SVG state =
 
         backdrop =
             HS.g
-                [ HSA.transform [ HSA.Translate 0.0 0.0 ] ]
+                [ HSA.transform [ HSA.Translate paddingLeft 0.0 ] ]
                 [ HS.path
                     [ HSA.d $ Paths.libraryTop { slope : slopeFactor, width, height : headerHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i900 $ Palette.magenta
@@ -158,7 +159,7 @@ render ptk HTML state =
     HH.div
         [ HHP.style $ do
             CSS.position CSS.relative
-            CSS.left $ CSS.px 5.0
+            CSS.left $ CSS.px $ paddingLeft + 5.0
             CSS.top $ CSS.px $ headerHeight + slopeFactor * 2.0
             CSS.maxWidth $ CSS.px width
             CSS.maxHeight $ CSS.px $ bodyHeight - slopeFactor * 4.0

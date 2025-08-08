@@ -118,6 +118,7 @@ _fullLayout params =
                     [ Play.i Library
                         ~* Play.width libraryWidth
                         ~* Play.heightGrow
+                        -- ~* Play.padding { top : 0.0, left : 10.0, right : 5.0, bottom : 5.0 }
                     , Play.i Nodes
                         ~* Play.widthGrow
                         ~* Play.heightGrow

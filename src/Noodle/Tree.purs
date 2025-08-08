@@ -15,6 +15,7 @@ import Data.Foldable (foldl)
 import Data.Newtype as NT
 import Data.UniqueHash (toString) as UH
 import Data.Functor.Extra ((<##>))
+import Data.String as String
 
 import Data.Text.Format as T
 
@@ -34,6 +35,7 @@ import Noodle.Ui.Tagging as T
 
 import Yoga.Tree (Tree)
 import Yoga.Tree as Tree
+import Yoga.Tree.Extended.Convert as TreeEx
 
 
 newtype NetworkTree pstate families strepr chrepr mp a = NetworkTree (Tree (TreeNode pstate families strepr chrepr mp a))
@@ -120,7 +122,13 @@ extractPaths = NT.unwrap >>> map toPathNode >>> NT.wrap
 
 
 formatPathTree :: forall chrepr a. NetworkPathTree chrepr a -> T.Tag
-formatPathTree = NT.unwrap >>> map stringifyNode >>> Tree.showTree >>> T.s
+formatPathTree =
+    NT.unwrap
+        >>> map stringifyNode
+        >>> TreeEx.toLines (TreeEx.modeToF TreeEx.Lines)
+        -- >>> String.replace (String.Pattern "\n") (String.Replacement "<br />")
+        >>> map T.s
+        >>> T.joinWith T.nl
     where
         stringifyNode = case _ of
             Root a -> ""
