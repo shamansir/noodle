@@ -117,7 +117,7 @@ type Slots sr cr m =
     , helpText :: forall q o. H.Slot q o Unit
     , panelToggles :: forall q. H.Slot q PanelTogglesBar.Output Unit
     , sidePanel :: forall q o. H.Slot q o (TargetLayer /\ Panels.Which)
-    , statusBarCell :: forall q. H.Slot q SPCells.Output (TargetLayer /\ SPCells.Which)
+    , statusBarCell :: StatusBar.CellSlot
     )
 
 
@@ -149,6 +149,7 @@ data Action sr cr m
     | FromCommandInput (CommandInput.Output sr cr m)
     | FromPanelToggles PanelTogglesBar.Output
     | FromWebSocket WebSocket WSocket.Event
+    | FromStatusBarCell SPCells.Which SPCells.Output
     | HandleResize
 
 
@@ -296,7 +297,7 @@ render ploc _ state =
                                     Ui.StatusBarSection n which ->
                                         HS.g
                                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                                            [ StatusBar.cellSlot ?wh ?wh ?wh ?wh ]
+                                            [ StatusBar.cellSlot _statusBarCell SVG (FromStatusBarCell which) statusBarInput which ]
 
                                     _ -> HH.text "" -- HS.g [] []
 
@@ -357,6 +358,11 @@ render ploc _ state =
                                 HH.div
                                     [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
                                     [ panelSlot sidePanelParams HTML state which ]
+
+                            Ui.StatusBarSection n which ->
+                                HS.g
+                                    [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                    [ StatusBar.cellSlot _statusBarCell HTML (FromStatusBarCell which) statusBarInput which ]
 
                             _ -> HH.div [] []
                     )
@@ -696,6 +702,10 @@ handleAction ploc = case _ of
 
     FromStatusBar StatusBar.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
+
+    FromStatusBarCell _ _ ->
+        pure unit -- FIXME
+        -- H.modify_ $ _ { zoom = 1.0 }
 
     {- FromCommandInput -}
 

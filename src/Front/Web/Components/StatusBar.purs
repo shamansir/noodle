@@ -2,8 +2,11 @@ module Web.Components.StatusBar where
 
 import Prelude
 
+import Prim.Row (class Cons) as Row
 import Type.Proxy (Proxy(..))
 
+import Data.Const (Const)
+import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.String (take) as String
 import Data.Tuple.Nested ((/\), type (/\))
@@ -42,6 +45,9 @@ import Web.Components.SidePanel.WebSocketStatus as WS
 type Slots =
     ( cell :: forall q. H.Slot q Cells.Output (TargetLayer /\ Cells.Which)
     )
+
+
+type CellSlot = H.Slot (Const Void) Cells.Output (TargetLayer /\ Cells.Which)
 
 
 _cell = Proxy :: _ "cell"
@@ -108,7 +114,7 @@ render SVG state =
             , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
             ]
         ]
-        <> (mapWithIndex wrapSvgWithPos $ cellSlot cellWidth SVG state <$> Cells.allCells)
+        -- <> (mapWithIndex wrapSvgWithPos $ cellSlot cellWidth SVG state <$> Cells.allCells)
         {-
         , if state.currentZoom /= 1.0 then
             HS.g
@@ -153,7 +159,7 @@ render HTML state =
             [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
             [ WF.renderFormatting HTML state.content ]
         ]
-        <> (mapWithIndex wrapHtmlWithPos $ cellSlot cellWidth HTML state <$> Cells.allCells)
+        -- <> (mapWithIndex wrapHtmlWithPos $ cellSlot cellWidth HTML state <$> Cells.allCells)
     where
         cellsX = state.width - cellsWidth
         cellsY = height / 2.0 -- center the text
@@ -190,15 +196,19 @@ fontSize = 9.0 :: Number
 
 
 cellSlot
-    :: forall m
-     . TargetLayer
+    :: forall m slot action slots _1
+     . Row.Cons slot CellSlot _1 slots
+    => IsSymbol slot
+    => Proxy slot
+    -> TargetLayer
+    -> (Cells.Output -> action)
     -> State
     -> Cells.Which
-    -> H.ComponentHTML Action Slots m
-cellSlot target state =
+    -> H.ComponentHTML action slots m
+cellSlot pslot target toAction state =
     case _ of
-        Cells.Zoom     -> HH.slot _cell (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               $ FromCell Cells.Zoom
-        Cells.WSStatus -> HH.slot _cell (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } $ FromCell Cells.WSStatus
+        Cells.Zoom     -> HH.slot pslot (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               toAction
+        Cells.WSStatus -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } toAction
 
 
 cellWidth :: Cells.Which -> Number
