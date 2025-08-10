@@ -18,6 +18,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Functor.Extra ((<$$>))
 import Data.Int (toNumber) as Int
 import Data.Foldable (foldl)
@@ -1399,12 +1400,13 @@ valueIsNone = case _ of
 
 
 _valuesArrayToJsCode :: Array Value -> String
-_valuesArrayToJsCode = foldl foldVal ""
+_valuesArrayToJsCode = foldl foldVal "" <<< mapWithIndex ((/\))
     where
         foldVal str = case _ of
-            None -> str <> "/* , null */"
-            Undefined -> str <> "/* , undefined */"
-            value -> str <> ", " <> valueToJavaScript value
+            (_ /\ None) -> str <> "/* , null */"
+            (_ /\ Undefined) -> str <> "/* , undefined */"
+            (0 /\ value) -> str <> valueToJavaScript value
+            (_ /\ value) -> str <> ", " <> valueToJavaScript value
 
 
 valuesToJavaScript :: Values -> String

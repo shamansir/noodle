@@ -2,6 +2,8 @@ module Data.Functor.Extra where
 
 import Prelude
 
+import Data.FunctorWithIndex (mapWithIndex)
+
 
 infixl 5 mapmap as <$$>
 infixl 5 mapmapmap as <$$$>
@@ -9,6 +11,9 @@ infixl 5 mapmapmap as <$$$>
 
 infixl 1 mapmapFlipped as <##>
 infixl 1 mapmapmapFlipped as <###>
+
+
+infixl 5 mapWithIndex as <$#>
 
 
 mapmap :: forall f g a b. Functor f => Functor g => (a -> b) -> f (g a) -> f (g b)
