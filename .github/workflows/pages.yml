@@ -24,20 +24,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '23.4.0'
+          # node-version: '20' # match ABI
           cache: 'npm'
+
+
 
       # Install PureScript toolchain (purs + spago)
       - uses: purescript-contrib/setup-purescript@main
         with:
             spago: "unstable"
 
+      - run: npm rebuild -g better-sqlite3
+
       # (optional) cache Spago artifacts for speed
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/spago
-            .spago
-          key: spago-${{ runner.os }}-${{ hashFiles('spago.yaml', 'packages.dhall', 'spago.dhall') }}
+    #   - uses: actions/cache@v4
+    #     with:
+    #       path: |
+    #         ~/.cache/spago
+    #         .spago
+    #       key: spago-${{ runner.os }}-${{ hashFiles('spago.yaml', 'packages.dhall', 'spago.dhall') }}
+
 
       - name: Install npm deps
         run: |
