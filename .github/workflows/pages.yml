@@ -23,8 +23,8 @@ jobs:
       # Node only if you need npm deps; safe to keep
       - uses: actions/setup-node@v4
         with:
-          node-version: '23.4.0'
-          # node-version: '20' # match ABI
+          # node-version: '23.4.0'
+          node-version: '20' # match ABI
           cache: 'npm'
 
 
@@ -34,7 +34,7 @@ jobs:
         with:
             spago: "unstable"
 
-      - run: npm rebuild -g better-sqlite3
+    #   - run: npm rebuild -g better-sqlite3
 
       # (optional) cache Spago artifacts for speed
     #   - uses: actions/cache@v4
