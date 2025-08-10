@@ -20,6 +20,7 @@ import Data.String.Extra (pascalCase) as String
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Functor.Extra ((<$$>))
 import Data.Int (toNumber) as Int
+import Data.Foldable (foldl)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen
@@ -27,7 +28,7 @@ import Tidy.Codegen
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.HasFallback (fallback) as HF
 import Noodle.Fn.Signature (Signature(..), class ToSignature)
-import Noodle.Fn.Signature (Argument, Output, empty, sig', toPureScript, toJavaScript, arg) as Sig
+import Noodle.Fn.Signature (Argument, Output, empty, sig', toPureScript, toJavaScript, arg, filter, argValue) as Sig
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class ValueCodegen, mkExpression)
 import Noodle.Ui.Palette.Mark (class Mark, mark)
 import Noodle.Ui.Palette.Item (colorOf) as C
@@ -760,7 +761,10 @@ methodToPureScript' opts = signatureHydraMethod >>> toPureScript' opts -- FIXME:
 
 
 functionToJavaScript :: forall a. HydraApiFunction a => a -> String
-functionToJavaScript = signatureHydraFn >>> Sig.toJavaScript -- FIXME: implement automatic `ToCode` instance
+functionToJavaScript = signatureHydraFn >>> Sig.filter argFilter outFilter >>> Sig.toJavaScript -- FIXME: implement automatic `ToCode` instance
+    where
+        argFilter = Sig.argValue >>> valueIsNone >>> not
+        outFilter = const true
 
 
 methodToJavaScript :: forall over arg a. ToCode JS Unit arg => HydraApiMethod over arg a => a -> String
@@ -1284,8 +1288,8 @@ instance Partial => ValueCodegen UpdateFn where
 
 valueToJavaScript :: Value -> String
 valueToJavaScript = case _ of
-    None -> "/* null */" -- FIXME: Hydra breaks when `null` is passed as an argument to Hydra function
-    Undefined -> "/* undefined */" -- FIXME: Hydra breaks when `undefined` is passed as an argument to Hydra function
+    None -> "false /* null */" -- FIXME: Hydra breaks when `null` is passed as an argument to Hydra function
+    Undefined -> "false /* undefined */" -- FIXME: Hydra breaks when `undefined` is passed as an argument to Hydra function
     Number n -> show n
     Time -> "time"
     MouseX -> "mouse.x"
@@ -1340,12 +1344,25 @@ sourceNToPureScript :: SourceN -> String
 sourceNToPureScript = sourceNToJavaScript
 
 
+hasEmptyTexture :: Texture -> Boolean -- TODO: universal fold over textures
+hasEmptyTexture = case _ of
+    Empty -> true
+    Start _ -> false
+    Filter tx _ -> hasEmptyTexture tx
+    Geometry tx _ -> hasEmptyTexture tx
+    BlendOf { what, with } _ ->       hasEmptyTexture what || hasEmptyTexture with
+    ModulateWith { what, with } _ ->  hasEmptyTexture what || hasEmptyTexture with
+    CallGlslFn { over, mbWith } _ ->  hasEmptyTexture over || case mbWith of
+        Just tx -> hasEmptyTexture tx
+        Nothing -> false
+
+
 textureToJavaScript :: Texture -> String
 textureToJavaScript = case _ of
     Empty -> "(function() {})"
     Start src ->
         case src of
-            From src -> functionToJavaScript src
+            From from -> functionToJavaScript from
             Load outputN -> "src( " <> outputNToJavaScript outputN <> " )"
             External sourceN -> "src( " <> sourceNToJavaScript sourceN <> " )"
     Filter texture colorOp ->
@@ -1374,9 +1391,25 @@ textureToPureScript = case _ of
     CallGlslFn _ _ -> "/* glsl */"
 
 
+valueIsNone :: Value -> Boolean
+valueIsNone = case _ of
+    None -> true
+    Undefined -> true
+    _ -> false
+
+
+_valuesArrayToJsCode :: Array Value -> String
+_valuesArrayToJsCode = foldl foldVal ""
+    where
+        foldVal str = case _ of
+            None -> str <> "/* , null */"
+            Undefined -> str <> "/* , undefined */"
+            value -> str <> ", " <> valueToJavaScript value
+
+
 valuesToJavaScript :: Values -> String
 valuesToJavaScript (Values values) =
-    "[ " <> (String.joinWith ", " $ valueToJavaScript <$> values) <> " ]"
+    "[ " <> _valuesArrayToJsCode values <> " ]"
 
 
 renderTargetToJavaScript :: RenderTarget -> String

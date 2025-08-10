@@ -81,10 +81,10 @@ else instance ToCode JS opts Command where
             H.Bpm bpm -> "bpm = " <> show bpm
             H.SetUpdateFn _ -> "update = " <> "() => () /* UPDATE-FN */"
         Chain outputN texture ->
-            case texture of
-                H.Empty -> ""
-                _ -> H.textureToJavaScript texture <> "\n\t."
+            if not $ H.hasEmptyTexture texture then
+                H.textureToJavaScript texture <> "\n\t."
                     <> Sig.toJavaScript (Sig.sig1 "out" $ "output" /\ outputN)
+            else "/* EMPTY TEXTURE */"
         {-
         End output texture ->
             -- case Debug.spy "tex" texture of

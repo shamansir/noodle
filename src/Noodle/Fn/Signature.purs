@@ -6,7 +6,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Tuple (fst, snd, uncurry) as Tuple
 import Data.Maybe (Maybe(..), maybe)
 import Data.Array ((:))
-import Data.Array (length, sortWith) as Array
+import Data.Array (length, sortWith, filter) as Array
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.String (joinWith) as String
 import Data.String.Extra (pascalCase) as String
@@ -286,6 +286,10 @@ reorder farg fout = _reorder (argName >>> farg) (outName >>> fout)
 
 _reorder :: forall a b arg out. Ord a => Ord b => (Argument arg -> a) -> (Output out -> b) -> Signature arg out -> Signature arg out
 _reorder farg fout (Sig (name /\ args /\ outs)) = Sig (name /\ Array.sortWith farg args /\ Array.sortWith fout outs)
+
+
+filter :: forall arg out. (Argument arg -> Boolean) -> (Output out -> Boolean) -> Signature arg out -> Signature arg out
+filter argFilter outFilter (Sig (name /\ args /\ outs)) = Sig (name /\ Array.filter argFilter args /\ Array.filter outFilter outs)
 
 
 instance ToSignature Void arg out (Signature arg out) where

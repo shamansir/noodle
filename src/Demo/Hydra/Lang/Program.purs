@@ -71,7 +71,7 @@ instance Show a => Show Program where
 instance ToCode PS opts Program where
     toCode _ opts (Program cmds) = "PROGRAM" -- IMPLEMENT toCode pureScript opts cmd
 else instance ToCode JS opts Program where
-    toCode _ opts prg@(Program cmds) =
+    toCode _ opts (Program cmds) =
         let glslUsage = [] -- IMPLEMENT collectGlslUsage prg
         in
         "/* GENERATED CODE */\n\n" <>
@@ -81,7 +81,7 @@ else instance ToCode JS opts Program where
         )
         <> String.joinWith "\n\n" (toCode javaScript opts <$> cmds)
 else instance ToCode JS_DISPLAY opts Program where
-    toCode _ opts prg@(Program cmds) =
+    toCode _ opts (Program cmds) =
         let glslUsage = [] -- IMPLEMENT collectGlslUsage prg
         in
         ( if Array.length glslUsage > 0
