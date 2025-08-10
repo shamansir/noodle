@@ -1,0 +1,64 @@
+name: Deploy Noodle to Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node only if you need npm deps; safe to keep
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'npm'
+
+      # Install PureScript toolchain (purs + spago)
+      - uses: purescript-contrib/setup-purescript@main
+        with:
+            spago: "unstable"
+
+      # (optional) cache Spago artifacts for speed
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/spago
+            .spago
+          key: spago-${{ runner.os }}-${{ hashFiles('spago.yaml', 'packages.dhall', 'spago.dhall') }}
+
+      - name: Install npm deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else echo "No npm deps"; fi
+
+      - name: Build & bundle
+        run: |
+          spago build
+          spago bundle
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
