@@ -34,15 +34,17 @@ jobs:
         with:
             spago: "unstable"
 
-    #   - run: npm rebuild -g better-sqlite3
+      # - run: npm rebuild -g better-sqlite3
+
+      # - run: npm install -g esbuild
 
       # (optional) cache Spago artifacts for speed
-    #   - uses: actions/cache@v4
-    #     with:
-    #       path: |
-    #         ~/.cache/spago
-    #         .spago
-    #       key: spago-${{ runner.os }}-${{ hashFiles('spago.yaml', 'packages.dhall', 'spago.dhall') }}
+      # - uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ~/.cache/spago
+      #       .spago
+      #     key: spago-${{ runner.os }}-${{ hashFiles('spago.yaml', 'packages.dhall', 'spago.dhall') }}
 
 
       - name: Install npm deps
@@ -51,8 +53,11 @@ jobs:
 
       - name: Build & bundle
         run: |
-          spago build
-          spago bundle
+          npm run build
+          npm run bundle
+        # run: |
+        #   spago build
+        #   spago bundle
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
