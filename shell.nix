@@ -1,0 +1,17 @@
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+    inherit (pkgs) stdenv;
+in
+stdenv.mkDerivation {
+    name = "node";
+    packages = with pkgs; [
+        nodejs-24
+        nodePackages.firebase-tools
+        nodePackages.node-gyp
+    ];
+    shellHook = ''
+        export PATH="$PWD/node_modules/.bin/:$PATH"
+        export NPM_PACKAGES="$HOME/.npm-packages"
+    '';
+}
