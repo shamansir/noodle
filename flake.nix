@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs_24_11.url = "github:nixos/nixpkgs/24.11";
     flake-utils.url = "github:numtide/flake-utils";
     ps-overlay.url = "github:thomashoneyman/purescript-overlay";
     mkSpagoDerivation = {
@@ -12,7 +13,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ps-overlay, mkSpagoDerivation }:
+  outputs = { self, nixpkgs, nixpkgs_24_11, flake-utils, ps-overlay, mkSpagoDerivation }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -22,51 +23,40 @@
                        ps-overlay.overlays.default
                      ];
         };
-
-        noodleCliPackage =
+        myPackage =
             pkgs.mkSpagoDerivation {
               name = "noodle";
               spagoYaml = ./spago.yaml;
               spagoLock = ./spago.lock;
               src = ./.;
               version = "0.1.0";
-              nativeBuildInputs = [ pkgs.esbuild pkgs.purs-backend-es pkgs.purs-unstable pkgs.spago-unstable ];
-              #buildPhase = "spago bundle-app --output ./output-es -m Cli.Main"
-              buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
-              #buildPhase = ''
-              #  find ./node_modules/reblessed/dist -name "*.d.ts.map" -exec rm {} \;
-              # nvim ./node_modules/reblessed/dist/lib/unicode.js
-              # spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
-              # ''
-              installPhase = "mkdir $out; cp -r main.min.js $out";
+              nativeBuildInputs = [
+                pkgs.esbuild
+                pkgs.purs-backend-es
+                pkgs.purs-unstable
+                pkgs.spago-unstable
+                pkgs.dhall
+                # nixpkgs_24_11.libtinfo
+                # nixpkgs_24_11.nodePackages.parcel
+              ];
+              buildPhase = "spago build";
+              installPhase = "mkdir $out; cp -r ./web $out";
               buildNodeModulesArgs = {
                 npmRoot = ./.;
                 nodejs = pkgs.nodejs;
               };
             };
 
-        runCompiledScriptWithNode = pkgs.runCommand "run-compiled-with-node" {} ''
-            mkdir -p $out
-            cat > $out/run-compiled-with-node.sh <<EOF
-            #!/bin/sh
-            exec ${pkgs.nodejs}/bin/node ${noodleCliPackage}/main.min.js "\$@"
-            EOF
-            chmod +x $out/run-compiled-with-node.sh
-          '';
-
-
-        noodleApp = {
+        myApp = {
             type = "app";
-            program = "${runCompiledScriptWithNode}/run-compiled-with-node.sh";
+            program = "sh ./serve.sh";
         };
 
       in
         {
-          packages.default = noodleCliPackage;
+          packages.default = myPackage;
 
-          apps.output1 = noodleApp;
-
-          apps.default = noodleApp;
+          apps.default = myApp;
         }
 
     );
