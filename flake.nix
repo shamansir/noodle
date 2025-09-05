@@ -23,7 +23,7 @@
                        ps-overlay.overlays.default
                      ];
         };
-        myPackage =
+        noodlePackage =
             pkgs.mkSpagoDerivation {
               name = "noodle";
               spagoYaml = ./spago.yaml;
@@ -40,23 +40,36 @@
                 # nixpkgs_24_11.nodePackages.parcel
               ];
               buildPhase = "spago build";
+              #buildPhase = "spago build --output ./output-es && purs-backend-es bundle-app -m Cli.Main --no-build --minify --to=main.min.js --platform=node";
               installPhase = "mkdir $out; cp -r ./web $out";
+              #installPhase = "mkdir $out; cp -r main.min.js $out";
               buildNodeModulesArgs = {
                 npmRoot = ./.;
                 nodejs = pkgs.nodejs;
               };
             };
 
-        myApp = {
+        runCompiledScriptWithNode = pkgs.runCommand "run-compiled-with-node" {} ''
+           mkdir -p $out
+           cat > $out/run-compiled-with-node.sh <<EOF
+           #!/bin/sh
+           exec ${pkgs.nodejs}/bin/node ${noodlePackage}/main.min.js "\$@"
+           EOF
+           chmod +x $out/run-compiled-with-node.sh
+        '';
+
+        noodleApp = {
             type = "app";
-            program = "sh ./serve.sh";
+            #program = "${runCompiledScriptWithNode}/run-compiled-with-node.sh";
+            program = "sh ./run-cli.sh";
+            #program = "sh ./run-web-serve.sh";
         };
 
       in
         {
-          packages.default = myPackage;
+          packages.default = noodlePackage;
 
-          apps.default = myApp;
+          apps.default = noodleApp;
         }
 
     );
