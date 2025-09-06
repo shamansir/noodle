@@ -44,9 +44,9 @@ import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
 import Front.Shared.WsLocation (host, port) as WSLoc
+import Front.Shared.HelpText (Context(..)) as HelpText
 
 import Web.Components.ValueEditor (Def) as ValueEditor
-import Web.Components.HelpText (Context(..)) as HelpText
 import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WebSocketStatus as WSPanel

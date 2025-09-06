@@ -22,18 +22,21 @@ data Which
     | HydraCode
     | Console
     | Tree
+    | NextControls
+
 
 derive instance Eq Which
 derive instance Ord Which
 
 
-type SidePanelsOnOff = -- TODO: Change to Map Which OnOff
+type SidePanelsOnOff = -- FIXME: Change to `Set Which``
     { commands :: Boolean
     , wsServer :: Boolean
     , hydraCode :: Boolean
     , documentation :: Boolean
     , console :: Boolean
     , tree :: Boolean
+    , nextControls :: Boolean
     }
 
 
@@ -45,6 +48,7 @@ initPanelsOnOff =
     , documentation : false
     , console : false
     , tree : false
+    , nextControls : false
     }
 
 
@@ -56,6 +60,7 @@ isOn = case _ of
     Console -> _.console
     HydraCode -> _.hydraCode
     Tree -> _.tree
+    NextControls -> _.nextControls
 
 
 isOff :: Which -> SidePanelsOnOff -> Boolean
@@ -70,6 +75,7 @@ toggle w s = case w of
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
     Tree -> s { tree = not s.tree }
+    NextControls -> s { nextControls = not s.nextControls }
 
 
 toArray :: SidePanelsOnOff -> Array { which :: Which, on :: Boolean }
@@ -80,6 +86,7 @@ toArray sps =
     , { which : Tree,          on : sps.tree }
     , { which : Console,       on : sps.console }
     , { which : WSStatus,      on : sps.wsServer }
+    , { which : NextControls,  on : sps.nextControls }
     ]
 
 
@@ -91,8 +98,9 @@ fromSet set =
     , tree :          set # Set.member Tree
     , console :       set # Set.member Console
     , wsServer :      set # Set.member WSStatus
+    , nextControls :  set # Set.member NextControls
     }
 
 
 allPanels :: Array Which
-allPanels = [ Commands, Documentation, HydraCode, Tree, Console, WSStatus ]
+allPanels = [ Commands, Documentation, HydraCode, Tree, Console, WSStatus, NextControls ]

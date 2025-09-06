@@ -78,7 +78,7 @@ import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Components.CommandInput as CommandInput
-import Web.Components.HelpText as HelpText
+-- import Web.Components.HelpText as HelpText
 import Web.Components.PanelTogglesBar as PanelTogglesBar
 import Web.Components.SidePanel (SidePanel)
 import Web.Components.SidePanel (panel, charOf, RenderParams) as SidePanel
@@ -88,6 +88,7 @@ import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
 import Web.Components.SidePanel.Documentation (sidePanel, panelId) as SP.Documentation
 import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSStatus
 import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
+import Web.Components.SidePanel.NextControls (sidePanel, panelId) as SP.NextControls
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 import Web.Layouts (noodleUI, UiParams) as Layouts
@@ -383,9 +384,11 @@ render ploc _ state =
                     ]
                     <> (mapWithIndex wrapHtmlWithPos $ panelSlot sidePanelParams HTML state <$> Set.toUnfoldable state.openPanels)
                     -}
+        {-
         , if state.helpText
             then HH.slot_ _helpText unit HelpText.component state.helpContext
             else HH.div [] []
+        -}
         ]
         where
             defaultSize = { width : 1000.0, height : 1000.0 }
@@ -862,7 +865,7 @@ panelSymbol state =
         Panels.Documentation -> SidePanel.charOf SP.Documentation.sidePanel state
         Panels.WSStatus      -> SidePanel.charOf SP.WSStatus.sidePanel $ CState.loadWSState state
         Panels.HydraCode     -> SidePanel.charOf SP.HydraCode.sidePanel state.mbHydraProgram
-
+        Panels.NextControls  -> SidePanel.charOf SP.NextControls.sidePanel state.helpContext
 
 panelSlot
     :: forall loc tk ps fs sr cr m
@@ -884,3 +887,4 @@ panelSlot params target state =
         Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
         Panels.WSStatus      -> HH.slot_ _sidePanel (target /\ Panels.WSStatus)      (SidePanel.panel target SP.WSStatus.panelId SP.WSStatus.sidePanel)           $ params /\ CState.loadWSState state
         Panels.HydraCode     -> HH.slot_ _sidePanel (target /\ Panels.HydraCode)     (SidePanel.panel target SP.HydraCode.panelId SP.HydraCode.sidePanel)         $ params /\ state.mbHydraProgram
+        Panels.NextControls  -> HH.slot_ _sidePanel (target /\ Panels.NextControls)  (SidePanel.panel target SP.NextControls.panelId SP.NextControls.sidePanel)   $ params /\ state.helpContext
