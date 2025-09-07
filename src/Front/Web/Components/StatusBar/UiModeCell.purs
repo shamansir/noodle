@@ -25,7 +25,8 @@ import Web.Layer (TargetLayer(..))
 
 import Front.Shared.StatusBarCells as Cells
 import Web.Components.AppScreen.UiMode (UiModeKey(..))
-import Web.Components.AppScreen.UiMode (modeString) as UiMode
+import Web.Components.AppScreen.UiMode (modeString, nextKey) as UiMode
+
 
 type Input =
     { currentMode :: UiModeKey
@@ -93,4 +94,4 @@ component targetLayer =
             H.put { currentMode, fontSize }
         RequestNextUiMode -> do
             { currentMode } <- H.get
-            H.raise $ Cells.ChangeMode currentMode
+            H.raise $ Cells.ChangeMode $ UiMode.nextKey currentMode
