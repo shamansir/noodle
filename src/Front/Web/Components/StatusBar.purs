@@ -39,8 +39,10 @@ import Front.Shared.WsLocation as WS
 
 import Web.Components.StatusBar.ZoomCell as Cell.Zoom
 import Web.Components.StatusBar.WSStatusCell as Cell.WSStatus
+import Web.Components.StatusBar.UiModeCell as Cell.UiMode
 import Web.Components.SidePanel.WebSocketStatus as WS
-
+import Web.Components.AppScreen.UiMode (UiMode)
+import Web.Components.AppScreen.UiMode as UiMode
 
 type Slots =
     ( cell :: forall q. H.Slot q Cells.Output (TargetLayer /\ Cells.Which)
@@ -80,6 +82,7 @@ data Query a
 type CellState r =
     { currentZoom :: Number
     , wsStatus :: WS.Status
+    , uiMode :: UiMode
     | r
     }
 
@@ -208,13 +211,15 @@ cellSlot pslot target toAction state =
     case _ of
         Cells.Zoom     -> HH.slot pslot (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               toAction
         Cells.WSStatus -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } toAction
+        Cells.UiMode   -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.UiMode.component target)   { currentMode : UiMode.getModeKey state.uiMode, fontSize }                    toAction
 
 
 cellWidth :: Cells.Which -> Number
 cellWidth =
     case _ of
-      Cells.WSStatus -> 250.0
+      Cells.WSStatus -> 270.0
       Cells.Zoom -> 50.0
+      Cells.UiMode -> 50.0
 
 
 contentMinWidth = 400.0 :: Number

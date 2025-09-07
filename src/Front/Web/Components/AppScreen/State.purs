@@ -51,16 +51,11 @@ import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, upda
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WebSocketStatus as WSPanel
 import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
-
+import Web.Components.AppScreen.UiMode (UiMode(..))
 import WebSocket.Types (WebSocket, WebSocketMessage) as WS
 import WebSocket.Client.Socket (handle, Def, sendMessage) as WSocket
 
 
-data UiMode
-    = CanvasFullyVisible
-    | TransparentOverlay Number -- semi-transparent overlay over canvas
-    | SolidOverlay UiMode -- solid color over the canvas (canvas not visible), keeps previous mode to get back to it
-    | OnlyCanvas UiMode -- UI is hidden, keeps previous mode to get back to it
 
 
 type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =

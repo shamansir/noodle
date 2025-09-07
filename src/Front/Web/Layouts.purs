@@ -8,8 +8,8 @@ import Data.Set (Set)
 import Data.Set (toUnfoldable) as Set
 import Data.FunctorWithIndex (mapWithIndex)
 
-import Web.Components.AppScreen.State (UiMode(..)) as CState
 import Web.Components.StatusBar as SB
+-- import Web.Components.AppScreen.UiMode (UiMode(..)) as CState
 import Web.Layer (TargetLayer(..))
 
 import Front.Shared.Panels as Panels
@@ -18,6 +18,7 @@ import Front.Shared.StatusBarCells as SBC
 import Play (Play, (~*))
 
 import Play as Play
+
 
 
 data UiPart

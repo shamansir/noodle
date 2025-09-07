@@ -73,6 +73,8 @@ import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as Ndf
 
 import Web.Components.AppScreen.State (State)
 import Web.Components.AppScreen.State as CState
+import Web.Components.AppScreen.UiMode (UiMode(..)) as CState
+import Web.Components.AppScreen.UiMode as UiMode
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
 import Web.Components.PatchArea as PatchArea
@@ -463,6 +465,7 @@ render ploc _ state =
             statusBarCellInput =
                 { currentZoom : state.zoom
                 , wsStatus : state.wsConnection.status
+                , uiMode : state.uiMode
                 } :: StatusBar.CellState ()
             commandInputInput =
                 { pos : { x : width / 2.0, y : height / 2.0 }
@@ -710,6 +713,9 @@ handleAction ploc = case _ of
 
     FromStatusBarCell _ SPCells.ResetZoom ->
         H.modify_ $ _ { zoom = 1.0 }
+
+    FromStatusBarCell _ (SPCells.ChangeMode nextModeKey) ->
+        H.modify_ \s -> s { uiMode = UiMode.nextMode s.uiMode nextModeKey }
 
     {- FromCommandInput -}
 
