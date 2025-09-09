@@ -68,6 +68,7 @@ import Web.Components.ValueEditor as ValueEditor
 import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor, spawnWebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 
 newtype NodeZIndex = ZIndex Int
@@ -292,7 +293,8 @@ render SVG ptk state =
                 { node : rawNode
                 , position
                 , size
-                , inFocus
+                , inMouseFocus : inFocus
+                , keyboardFocus : KL.None -- FIXME: implement
                 }
                 $ FromNodeBox nodeR
         handleLinkEvents = case state.lockOn of

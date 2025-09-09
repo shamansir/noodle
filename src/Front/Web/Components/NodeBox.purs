@@ -57,30 +57,32 @@ import Web.Layer (TargetLayer(..))
 import Web.Paths as Paths
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
-
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: Position
     , size :: Size
-    , inFocus :: Boolean
+    , inMouseFocus :: Boolean
+    , keyboardFocus :: KL.NodeFocus
     }
 
 
-data InsideFocus chrepr
-    = IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
+data MouseFocus chrepr -- TODO: merge with KeyboardFocus
+    = NoMouseFocus
+    | IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
     | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
     | IsOverBody
+    | BeingDragged
 
 
 type State strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: Position
     , size :: Size
-    , inFocus :: Boolean
-    , beingDragged :: Boolean
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
-    , mouseFocus :: Maybe (InsideFocus chrepr)
+    , mouseFocus :: MouseFocus chrepr
+    , keyboardFocus :: KL.NodeFocus
     }
 
 
@@ -94,8 +96,8 @@ data Action sterpr chrepr m
     | InletClick MouseEvent Id.InletR
     | InletValueClick MouseEvent PositionXY Id.InletR (ValueInChannel chrepr)
     | OutletClick MouseEvent Id.OutletR
-    | ChangeFocus (InsideFocus chrepr)
-    | ClearFocus
+    | ChangeMouseFocus (MouseFocus chrepr)
+    | ClearMouseFocus
 
 
 data Output strepr chrepr
@@ -140,11 +142,13 @@ component ptk =
 
 
 initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
-initialState { node, position, size, inFocus } =
-    { node, position, size, inFocus
+initialState { node, position, size, keyboardFocus, inMouseFocus } =
+    { node
+    , position
+    , size
     , latestUpdate : Nothing
-    , beingDragged : false
-    , mouseFocus : Nothing
+    , mouseFocus : if inMouseFocus then IsOverBody else NoMouseFocus
+    , keyboardFocus
     }
 
 
@@ -173,12 +177,12 @@ outletRelPos idx =
 
 
 render :: forall sterpr chrepr m. T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
-render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
+render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
         , HE.onMouseMove MouseMove
         -- , HE.onMouseOver $ const $ ChangeFocus IsOverNode
-        -- , HE.onMouseOut $ const ClearFocus
+        -- , HE.onMouseOut $ const ClearMouseFocus
         ]
         (
             HS.g
@@ -192,8 +196,8 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
                     ]
                 , HS.path
                     [ HSA.transform [ HSA.Translate titleBarWidth channelBarHeight ]
-                    , HE.onMouseOver $ const $ ChangeFocus IsOverBody
-                    , HE.onMouseOut $ const ClearFocus
+                    , HE.onMouseOver $ const $ ChangeMouseFocus IsOverBody
+                    , HE.onMouseOut $ const ClearMouseFocus
                     -- , HSA.class_ $ ClassName "noodle-capture-events"
                     , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : nodeWidth {- bodyWidth -}, height : bodyHeight }
                     , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
@@ -264,6 +268,7 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
         nodeWidth = titleWidth + bodyWidth
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
+
         fitTitle title =
             if String.length title <= titleMaxChars then title
             else "…" <> String.drop (String.length title - titleMaxChars) title
@@ -273,23 +278,31 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
             if isOverInlet inletDef.name then
                 Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
             else Nothing
+
         strokeForInlet inletDef = Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
         fillForOulet outletDef = if isOverOutlet outletDef.name then Just $ P.hColorOf $ _.i200 Palette.blue else Nothing
         strokeForOutlet outletDef = Just $ P.hColorOf $ _.i200 $ Palette.blue
+
+        beingDragged = case mouseFocus of
+                           BeingDragged -> true
+                           _ -> false
+        inFocus = case mouseFocus of
+                           BeingDragged -> false
+                           NoMouseFocus -> false
+                           _ -> true
         isOverInlet inletR = case mouseFocus of
-            Just (IsOverInlet inletDef _) -> (_.name $ NT.unwrap inletDef) == inletR
-            Just _ -> false
+            IsOverInlet inletDef _ -> (_.name $ NT.unwrap inletDef) == inletR
             _ -> false
         isOverOutlet outletR = case mouseFocus of
-            Just (IsOverOutlet outletDef _) -> (_.name $ NT.unwrap outletDef) == outletR
-            Just _ -> false
+            IsOverOutlet outletDef _ -> (_.name $ NT.unwrap outletDef) == outletR
             _ -> false
+
         renderInlet idx inletDef =
             HS.g
                 [ HSA.transform [ HSA.Translate inletPos.x inletPos.y ]
                 , HE.onClick $ flip InletClick inletDef.name
-                , HE.onMouseOver $ const $ ChangeFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
-                , HE.onMouseOut  $ const $ ClearFocus
+                , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
+                , HE.onMouseOut  $ const $ ClearMouseFocus
                 , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ]
                 [ HS.circle
@@ -329,8 +342,8 @@ render { node, position, latestUpdate, beingDragged, mouseFocus, inFocus } =
             HS.g
                 [ HSA.transform [ HSA.Translate outletPos.x outletPos.y ]
                 , HE.onClick $ flip OutletClick outletDef.name
-                , HE.onMouseOver $ const $ ChangeFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
-                , HE.onMouseOut  $ const $ ClearFocus
+                , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
+                , HE.onMouseOut  $ const $ ClearMouseFocus
                 , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
@@ -405,11 +418,12 @@ handleAction ptk = case _ of
     Initialize ->
         pure unit
     Receive input ->
-        H.modify_ _
+        H.modify_ \s -> s
             { node = input.node
             , position = input.position
             , size = input.size
-            , inFocus = input.inFocus
+            , keyboardFocus = input.keyboardFocus
+            , mouseFocus = if input.inMouseFocus then IsOverBody else s.mouseFocus
             }
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
@@ -432,9 +446,11 @@ handleAction ptk = case _ of
             posX = Int.toNumber $ Mouse.clientX mevt
             posY = Int.toNumber $ Mouse.clientY mevt
         H.raise $ OutletWasClicked outletR { x : posX, y : posY }
-    ChangeFocus focus -> do
-        H.modify_ _ { mouseFocus = Just focus }
+    ChangeMouseFocus focus -> do
+        H.modify_ _ { mouseFocus = focus }
         case focus of
+            NoMouseFocus -> pure unit
+            BeingDragged -> pure unit
             IsOverInlet inletDef vic -> do
                 state <- H.get
                 let inlet = NT.unwrap inletDef
@@ -449,8 +465,8 @@ handleAction ptk = case _ of
                     Just latestUpdate -> H.raise $ UpdateStatusBar $ T.nodeStatusLine ptk (RawNode.id state.node) latestUpdate
                     Nothing -> H.raise $ UpdateStatusBar $ T.familyStatusLine ptk $ RawNode.family state.node
                 H.raise $ RequestDocumentation state.latestUpdate
-    ClearFocus -> do
-        H.modify_ _ { mouseFocus = Nothing }
+    ClearMouseFocus -> do
+        H.modify_ _ { mouseFocus = NoMouseFocus }
         H.raise $ ClearStatusBar
     MouseMove evt -> do
         H.raise $ ReportMouseMove evt
@@ -462,8 +478,8 @@ handleQuery = case _ of
         H.modify_ _ { latestUpdate = Just changes }
         pure $ Just a
     ApplyDragStart a -> do
-        H.modify_ _ { beingDragged = true }
+        H.modify_ _ { mouseFocus = BeingDragged }
         pure $ Just a
     ApplyDragEnd a -> do
-        H.modify_ _ { beingDragged = false }
+        H.modify_ _ { mouseFocus = NoMouseFocus }
         pure $ Just a

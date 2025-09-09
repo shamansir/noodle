@@ -27,6 +27,16 @@ data Focus
     -- | NodeOutlet Int Int
 
 
+data NodeFocus
+    = None
+    | Selected
+    | Open Int
+    | InletsOpen
+    | InletSelected Int
+    | OutletSelected Int
+    | OUtletsOpen
+
+
 type State =
     { notListening :: Boolean
     , shiftPressed :: Boolean
