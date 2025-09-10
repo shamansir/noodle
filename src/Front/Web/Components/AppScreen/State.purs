@@ -71,7 +71,6 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , mbHydraProgram :: Maybe Hydra.Program -- FIXME : should be created by Hydra toolkit itself
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , mbCurrentDocumentation :: Maybe (DocumentationFocus sr cr)
-    , commandInputActive :: Boolean
     , log :: Array Console.LogLine
     , history :: NdfFile
     , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
@@ -119,7 +118,6 @@ init toolkit =
     , mbHydraProgram : Nothing
     , mbCurrentEditor : Nothing
     , mbCurrentDocumentation : Nothing
-    , commandInputActive : false
     , log : []
     , history : Ndf.init "noodle" 2.0
     , ndfInstances : Map.empty
@@ -261,7 +259,7 @@ updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nod
 
 nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
 nextHelpContext state pStats =
-    if state.commandInputActive then HelpText.CommandInputOpen
+    if KL.isCommandInputOpen state.keyboard then HelpText.CommandInputOpen
     else case state.mbCurrentEditor of
         Just _ ->
             HelpText.EnteringValue

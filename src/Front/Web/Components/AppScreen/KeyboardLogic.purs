@@ -170,6 +170,16 @@ canZoom :: State -> Boolean
 canZoom = _.shiftPressed
 
 
+isCommandInputOpen :: State -> Boolean
+isCommandInputOpen = _.focus >>> case _ of
+    CommandInput -> true
+    _ -> false
+
+
+commandInputClosed :: State -> State
+commandInputClosed = _ { focus = Free } -- TODO: return to previous focus, also it feels strange modifying it here
+
+
 navigateIfNeeded :: Either Dir Int -> Input -> State -> State
 navigateIfNeeded (Right num) input state =
     case state.focus of

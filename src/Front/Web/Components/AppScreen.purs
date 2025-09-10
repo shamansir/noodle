@@ -471,7 +471,7 @@ render ploc _ state =
                 } :: StatusBar.CellState ()
             commandInputInput =
                 { pos : { x : width / 2.0, y : height / 2.0 }
-                , active : state.commandInputActive
+                , active : KL.isCommandInputOpen state.keyboard
                 } :: CommandInput.Input
             panelToggleInput =
                 { openPanels : state.openPanels
@@ -734,7 +734,7 @@ handleAction ploc = case _ of
                 pure unit
                 -- FIXME: log error: CC.log $ "parse error " <> command
     FromCommandInput CommandInput.CloseCommandInput ->
-        H.modify_ _ { commandInputActive = false }
+        H.modify_ \s -> s { keyboard = KL.commandInputClosed s.keyboard }
 
     {- FromPanelToggles -}
 
