@@ -15,13 +15,14 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (Map)
 import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values) as Map
 import Data.Map.Extra (update') as MapX
-import Data.Tuple (fst, snd) as Tuple
+import Data.Tuple (fst, snd, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (sortWith, find) as Array
 import Data.Set (Set)
 import Data.Set (empty, insert, member, fromFoldable) as Set
 import Data.Int (toNumber) as Int
 import Data.Bifunctor (lmap)
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Foldable (foldl, foldr)
 import Data.Newtype (unwrap) as NT
 import Data.Text.Format (Tag) as T
@@ -130,6 +131,7 @@ type State ps sr cr m =
     , focusedNodes :: Set Id.NodeR
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
+    , keyboardFocus :: KL.Focus
         -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
         --        but here we have access to all the nodes and rendering happens inside `PatchArea`,
         --        so we store it twice for now, solve it later somehow
@@ -146,6 +148,7 @@ type Input ps sr cr m =
     , links :: Array Raw.Link
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
+    , keyboardFocus :: KL.Focus
     }
 
 
@@ -211,7 +214,7 @@ component ptk trg =
 
 
 initialState :: forall ps sr cr m. Input ps sr cr m -> State ps sr cr m
-initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor } =
+initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor, keyboardFocus } =
     { mbState
     , offset
     , size
@@ -223,6 +226,7 @@ initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links
     , lockOn : NoLock
     , focusedNodes : Set.empty
     , mbCurrentEditor
+    , keyboardFocus
     }
 
 
@@ -286,7 +290,7 @@ render SVG ptk state =
         linksSlots = state.links <#> linkSlot
         inletPos = _inletPosition nodesToCellsMap
         outletPos = _outletPosition nodesToCellsMap
-        nodeBoxSlot { rawNode, position, inFocus, size } =
+        nodeBoxSlot { rawNode, position, inFocus, isDragging, size, keyboardFocus } =
             let
                 nodeR = RawNode.id rawNode
             in HH.slot _nodeBox nodeR (NodeBox.component ptk)
@@ -294,7 +298,8 @@ render SVG ptk state =
                 , position
                 , size
                 , inMouseFocus : inFocus
-                , keyboardFocus : KL.None -- FIXME: implement
+                , isDragging
+                , keyboardFocus
                 }
                 $ FromNodeBox nodeR
         handleLinkEvents = case state.lockOn of
@@ -329,7 +334,10 @@ render HTML ptk state =
                 case mbWebEditorComp of
                     Just valueEditor ->
                         HH.slot _valueEditor editor valueEditor -- TODO: do not spawn a new editor for every new inlet, but replace `send` function inside it?
-                            { pos : theInletPos, currentValue : ViC.toFallback currentValue } $ FromValueEditor nodeR inlet
+                            { pos : theInletPos
+                            , currentValue : ViC.toFallback currentValue
+                            }
+                            $ FromValueEditor nodeR inlet
                     Nothing -> HH.div [] []
         Nothing -> HH.div [] []
     where
@@ -344,6 +352,7 @@ type NodeCell_ sr cr m =
     , rawNode :: Raw.Node sr cr m
     , size :: Size
     , zIndex :: NodeZIndex
+    , keyboardFocus :: KL.NodeFocus
     }
 
 
@@ -352,9 +361,9 @@ _makeNodesWithCells
      . State ps sr cr m
     -> Array (NodeCell_ sr cr m)
 _makeNodesWithCells state =
-    state.nodes <#> findCell
+    Tuple.uncurry findCell <$> mapWithIndex (/\) state.nodes
     where
-        findCell rawNode =
+        findCell nodeIndex rawNode =
             let
                 nodeR = RawNode.id rawNode
                 mbBounds = findBounds nodeR state <#> lmap checkDragging
@@ -368,7 +377,14 @@ _makeNodesWithCells state =
                          $ lmap Bounds.getPosition
                         <$> mbBounds
             in
-                { rawNode, position, zIndex, size, inFocus : Set.member nodeR state.focusedNodes, isDragging }
+                { rawNode
+                , position
+                , zIndex
+                , size
+                , inFocus : Set.member nodeR state.focusedNodes
+                , keyboardFocus : KL.loadNodeFocus nodeIndex state.keyboardFocus
+                , isDragging
+                }
 
 
 _checkDragging
@@ -425,9 +441,18 @@ handleAction
     -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output sr cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor } ->
+    Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor, keyboardFocus } ->
         H.modify_ _
-            { mbState = mbState, offset = offset, size = size, zoom = zoom, nodes = nodes, nodesBounds = nodesBounds, links = links, mbCurrentEditor = mbCurrentEditor }
+            { mbState = mbState
+            , offset = offset
+            , size = size
+            , zoom = zoom
+            , nodes = nodes
+            , nodesBounds = nodesBounds
+            , links = links
+            , mbCurrentEditor = mbCurrentEditor
+            , keyboardFocus = keyboardFocus
+            }
     PatchAreaMouseMove { x, y } -> do
         state <- H.get
         case state.lockOn of

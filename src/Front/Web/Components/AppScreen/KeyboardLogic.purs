@@ -10,7 +10,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
-import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 
 data Focus
@@ -34,29 +33,30 @@ data NodeFocus
     | InletsOpen
     | InletSelected Int
     | OutletSelected Int
-    | OUtletsOpen
+    | OutletsOpen
+
+
+type Input =
+    { uiMode :: UiMode
+    , nodesCount :: Int
+    , familiesCount :: Int
+    }
 
 
 type State =
     { notListening :: Boolean
     , shiftPressed :: Boolean
     , focus :: Focus
-    , nodesCount :: Int
-    , familiesCount :: Int
-    , uiMode :: UiMode
     -- , nodeStats :: Maybe { inlets :: Int, outlets :: Int}
     -- , selectedNodes :: Array Int
     }
 
 
-init :: UiMode -> State
-init uiMode =
+init :: State
+init =
     { notListening : false
     , shiftPressed : false
     , focus : Free
-    , nodesCount : 0
-    , familiesCount : 0
-    , uiMode : uiMode
     }
 
 
@@ -84,11 +84,19 @@ data Action
     -- | ZoomOut
     -- |StartConnectingNodes
     | CancelConnectingNodes
+    | ChangeUiMode UiMode
     -- |
     -- |
 
-trackKeyDown :: State -> KE.KeyboardEvent -> State /\ Array Action
-trackKeyDown state kevt =
+loadNodeFocus :: Int -> Focus -> NodeFocus
+loadNodeFocus nodeIdx = case _ of
+    NodesArea -> Open nodeIdx
+    Node n -> if n == nodeIdx then Selected else None
+    _ -> None -- TODO:
+
+
+trackKeyDown :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
+trackKeyDown input state kevt =
     let
         keyName = String.toLower $ KE.key kevt
         keyCode = String.toLower $ KE.code kevt
@@ -126,19 +134,19 @@ trackKeyDown state kevt =
             nextState /\ []
 
         else if (keyCode == "space") then
-            ( nextState
-                { uiMode =
-                    if not shiftPressed then
-                         case state.uiMode of
-                            UiMode.OnlyCanvas prev -> prev
-                            other -> UiMode.OnlyCanvas other
-                    else
+            nextState
+            /\
+            [ ChangeUiMode
+            $ if not shiftPressed then
+                case input.uiMode of
+                      UiMode.OnlyCanvas prev -> prev
+                      other -> UiMode.OnlyCanvas other
+              else
 
-                        case state.uiMode of
-                            UiMode.SolidOverlay prev -> prev
-                            other -> UiMode.SolidOverlay other
-                }
-            ) /\ []
+                  case input.uiMode of
+                      UiMode.SolidOverlay prev -> prev
+                      other -> UiMode.SolidOverlay other
+            ]
 
         else if (keyCode == "n") then
             ( nextState
@@ -149,18 +157,26 @@ trackKeyDown state kevt =
 
             case Either.choose (keyToDir kevt) (keyToNum kevt) of
 
-                Just eitherNav -> navigateIfNeeded eitherNav nextState /\ []
+                Just eitherNav -> navigateIfNeeded eitherNav input nextState /\ []
 
                 Nothing -> nextState /\ []
 
 
-navigateIfNeeded :: Either Dir Int -> State -> State
-navigateIfNeeded (Right num) state =
+trackKeyUp :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
+trackKeyUp input state kevt = state { shiftPressed = KE.shiftKey kevt } /\ []
+
+
+canZoom :: State -> Boolean
+canZoom = _.shiftPressed
+
+
+navigateIfNeeded :: Either Dir Int -> Input -> State -> State
+navigateIfNeeded (Right num) input state =
     case state.focus of
-        NodesArea -> state { focus = Node $ min num (state.nodesCount - 1) }
-        Node _    -> state { focus = Node $ min num (state.nodesCount - 1) }
+        NodesArea -> state { focus = Node $ min num (input.nodesCount - 1) }
+        Node _    -> state { focus = Node $ min num (input.nodesCount - 1) }
         _ -> state
-navigateIfNeeded (Left dir)  state = state
+navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
 
 keyToDir :: KE.KeyboardEvent -> Maybe Dir
@@ -186,9 +202,6 @@ keyToNum = KE.key >>> case _ of
     "digit9" -> Just 9
     _ -> Nothing
 
-
-trackKeyUp :: State -> KE.KeyboardEvent -> State /\ Array Action
-trackKeyUp state kevt = state { shiftPressed = KE.shiftKey kevt } /\ []
 
 
 {-

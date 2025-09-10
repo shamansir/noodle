@@ -95,6 +95,7 @@ import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 import Web.Layouts (noodleUI, UiParams) as Layouts
 import Web.Layouts (UiPart(..)) as Ui
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 import Play as Play
 
@@ -453,6 +454,7 @@ render ploc _ state =
                 , nodesBounds : curPatchNodesBounds
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
+                , keyboardFocus : state.keyboard.focus
                 } :: PatchArea.Input ps sr cr m
             patchesBarInput =
                 { patches : map Patch.name <$> (Map.toUnfoldable $ Network.patches state.network)
@@ -641,7 +643,7 @@ handleAction ploc = case _ of
         pure unit
     FromPatchArea _ (PatchArea.TryZoom dy) -> do
         state <- H.get
-        when state.shiftPressed $
+        when (KL.canZoom state.keyboard) $
             H.put $ state { zoom = min 3.0 $ max 0.3 $ state.zoom + (dy * 0.1) }
     FromPatchArea _ (PatchArea.Connect (source /\ target)) -> do
         mbCurrentPatch <- CState.currentPatch <$> H.get
@@ -755,6 +757,10 @@ handleAction ploc = case _ of
     {- GlobalKeyDown -}
 
     GlobalKeyDown kevt -> do
+        state <- H.get
+        let kbActions = KL.trackKeyDown (CState.loadKbInput state) state.keyboard kevt
+        pure unit
+        {-
         let keyName = String.toLower $ KE.key kevt
         let keyCode = String.toLower $ KE.code kevt
         let shiftPressed = KE.shiftKey kevt
@@ -782,8 +788,12 @@ handleAction ploc = case _ of
                 _ -> handleAction ploc LoadCurrentPatchChanges
         when ((keyName == "h") && controlPressed) $ do
             H.modify_ \s -> s { helpText = not s.helpText }
-    GlobalKeyUp kevt ->
-        H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+        -}
+    GlobalKeyUp kevt -> do
+        state <- H.get
+        let kbActions = KL.trackKeyUp (CState.loadKbInput state) state.keyboard kevt
+        pure unit
+        -- H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit
@@ -806,7 +816,7 @@ applyCommand :: forall loc tk ps fs sr cr m output
     => Proxy loc
     -> Ndf.CommandOp
     -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
-applyCommand ploc = case _ of -- FIXME: implement
+applyCommand ploc = case _ of -- FIXME: implement to the end
     Ndf.DefineFamily familyDef -> pure unit
     Ndf.AssignProcess processFn -> pure unit
     Ndf.MakeNode familyR coordX coordY instanceId -> do

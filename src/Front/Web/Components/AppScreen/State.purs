@@ -6,7 +6,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Type.Proxy (Proxy(..))
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
 import Data.Set (empty, fromFoldable) as Set
 import Data.Map (Map)
@@ -23,7 +23,7 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class InitPatchState, initPatch) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, make, getState, registerRawNode) as Patch
+import Noodle.Patch (id, make, getState, registerRawNode, nodesCount) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
@@ -54,6 +54,7 @@ import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
 import Web.Components.AppScreen.UiMode (UiMode(..))
 import WebSocket.Types (WebSocket, WebSocketMessage) as WS
 import WebSocket.Client.Socket (handle, Def, sendMessage) as WSocket
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 
 
@@ -62,9 +63,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     { size :: Maybe Size
     , zoom :: Number
     , uiMode :: UiMode
-    , helpText :: Boolean
     , helpContext :: HelpText.Context
-    , shiftPressed :: Boolean
     , network :: Network tk ps fs sr cr m
     , mbCurrentPatch :: Maybe { index :: PatchIndex, id :: Id.PatchR }
     , patches :: Map Id.PatchR (PatchInfo loc ps)
@@ -78,6 +77,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , ndfInstances :: Map Ndf.NodeInstanceId Id.NodeR
     , openPanels :: Set Panels.Which
     , wsConnection :: WSocketConnection
+    , keyboard :: KL.State
     }
 
 
@@ -111,8 +111,6 @@ init toolkit =
     { size : Nothing
     , zoom : 1.0
     , uiMode : TransparentOverlay 0.85
-    , shiftPressed : false
-    , helpText : true
     , helpContext : HelpText.Unknown
     , network : Network.init toolkit
     , mbCurrentPatch : Nothing
@@ -131,6 +129,7 @@ init toolkit =
         , mbSocket : Nothing
         , log : []
         }
+    , keyboard : KL.init
     }
 
 
@@ -416,3 +415,15 @@ loadWSState state =
     , host : WSLoc.host
     , port : WSLoc.port
     }
+
+
+loadKbInput :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> KL.Input
+loadKbInput state =
+    let
+        mbNodesCount = currentPatch state <#> Patch.nodesCount
+        familiesCount = 0 -- FIXME: implement
+    in
+        { nodesCount : fromMaybe 0 mbNodesCount
+        , familiesCount
+        , uiMode : state.uiMode
+        }

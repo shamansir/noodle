@@ -64,6 +64,7 @@ type Input strepr chrepr m =
     , position :: Position
     , size :: Size
     , inMouseFocus :: Boolean
+    , isDragging :: Boolean
     , keyboardFocus :: KL.NodeFocus
     }
 
@@ -142,12 +143,12 @@ component ptk =
 
 
 initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
-initialState { node, position, size, keyboardFocus, inMouseFocus } =
+initialState { node, position, size, keyboardFocus, inMouseFocus, isDragging } =
     { node
     , position
     , size
     , latestUpdate : Nothing
-    , mouseFocus : if inMouseFocus then IsOverBody else NoMouseFocus
+    , mouseFocus : if inMouseFocus then IsOverBody else if isDragging then BeingDragged else NoMouseFocus
     , keyboardFocus
     }
 
@@ -423,7 +424,7 @@ handleAction ptk = case _ of
             , position = input.position
             , size = input.size
             , keyboardFocus = input.keyboardFocus
-            , mouseFocus = if input.inMouseFocus then IsOverBody else s.mouseFocus
+            , mouseFocus = if input.inMouseFocus then IsOverBody else if input.isDragging then BeingDragged else s.mouseFocus
             }
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
