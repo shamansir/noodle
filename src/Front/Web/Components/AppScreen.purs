@@ -758,8 +758,9 @@ handleAction ploc = case _ of
 
     GlobalKeyDown kevt -> do
         state <- H.get
-        let kbActions = KL.trackKeyDown (CState.loadKbInput state) state.keyboard kevt
-        pure unit
+        let nextKb /\ kbActions = KL.trackKeyDown (CState.loadKbInput state) state.keyboard kevt
+        traverse_ (performKbAction ploc) kbActions
+        H.modify_ _ { keyboard = nextKb }
         {-
         let keyName = String.toLower $ KE.key kevt
         let keyCode = String.toLower $ KE.code kevt
@@ -791,9 +792,36 @@ handleAction ploc = case _ of
         -}
     GlobalKeyUp kevt -> do
         state <- H.get
-        let kbActions = KL.trackKeyUp (CState.loadKbInput state) state.keyboard kevt
-        pure unit
+        let nextKb /\ kbActions = KL.trackKeyUp (CState.loadKbInput state) state.keyboard kevt
+        traverse_ (performKbAction ploc) kbActions
+        H.modify_ _ { keyboard = nextKb }
         -- H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
+
+
+
+performKbAction
+    :: forall output loc tk ps fs sr cr m
+     . Wiring m
+    => WebLocator loc
+    => Toolkit.InitPatchState tk ps m
+    => Toolkit.FromToPatchState tk ps sr
+    => Hydra.ToHydraCommand sr
+    => HasFallback cr
+    => ValueTagged cr
+    => Ndf.ValueEncode cr
+    => Proxy loc
+    -> KL.Action
+    -> H.HalogenM (State loc tk ps fs sr cr m) (Action sr cr m) (Slots sr cr m) output m Unit
+performKbAction ploc = case _ of
+    KL.ChangeUiMode nextUiMode -> do
+        H.modify_ _ { uiMode = nextUiMode }
+        case nextUiMode of
+            CState.OnlyCanvas _ -> pure unit
+            _ -> handleAction ploc LoadCurrentPatchChanges
+    KL.CloseValueEditor ->
+        H.tell _patchArea SVG PatchArea.CancelConnecting
+    KL.CancelConnectingNodes ->
+        H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit
