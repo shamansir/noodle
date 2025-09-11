@@ -99,6 +99,7 @@ data Action sterpr chrepr m
     | OutletClick MouseEvent Id.OutletR
     | ChangeMouseFocus (MouseFocus chrepr)
     | ClearMouseFocus
+    | Skip
 
 
 data Output strepr chrepr
@@ -215,36 +216,36 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     ]
                     [ HH.text $ fitTitle $ Id.family $ Id.familyOf $ RawNode.id node ]
                 ]
-            : ( if inFocus then
+              : ( if inMouseFocus || inKeyboardFocus then
                     HS.g
-                        [ HE.onClick DragButtonClick
+                        [ HE.onClick $ if inMouseFocus then DragButtonClick else const Skip
                         , HSA.transform [ HSA.Translate 0.0 0.0 ]
                         ]
                         [ HS.circle
                             [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
-                            , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                            , HSA.fill $ Just controlButtonBackColor
                             ]
                         , HS.text
-                            [ HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                            [ HSA.fill $ Just controlButtonContentColor
                             , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 22.0
                             , HSA.dominant_baseline HSA.Central
                             , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
                             ]
-                            [ HH.text "✣" ]
+                            [ HH.text controlButtonContent ]
                         ]
                 else HSX.none)
-            : ( if inFocus then HS.g
+            : ( if inMouseFocus then HS.g
                     [ HE.onClick RemoveButtonClick
                     , HSA.transform [ HSA.Translate nodeWidth (titleY / 2.0)]
                     ]
                     [ HS.circle
                         [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
-                        , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+                        , HSA.fill $ Just controlButtonBackColor
                         ]
                     , HS.path
                         [ HSA.d $ Paths.removeButton { size : 10.0 } --  $ Paths.removeButton { size : 10.0 }
-                        , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
-                        , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                        , HSA.fill   $ Just controlButtonContentColor
+                        , HSA.stroke $ Just controlButtonContentColor
                         ]
                     ]
                 else HSX.none)
@@ -287,16 +288,46 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         beingDragged = case mouseFocus of
                            BeingDragged -> true
                            _ -> false
-        inFocus = case mouseFocus of
+        inMouseFocus = case mouseFocus of
                            BeingDragged -> false
                            NoMouseFocus -> false
                            _ -> true
+        inKeyboardFocus = case keyboardFocus of
+                          KL.None -> false
+                          _ -> true
         isOverInlet inletR = case mouseFocus of
             IsOverInlet inletDef _ -> (_.name $ NT.unwrap inletDef) == inletR
             _ -> false
         isOverOutlet outletR = case mouseFocus of
             IsOverOutlet outletDef _ -> (_.name $ NT.unwrap outletDef) == outletR
             _ -> false
+
+        controlButtonBackColor    = P.hColorOf $ if beingDragged then _.i900 Palette.magenta else
+                                    case keyboardFocus of
+                                        KL.None ->             _.i900 Palette.yellow
+                                        KL.Selected ->         _.i900 Palette.blue
+                                        KL.Open _ ->           _.i900 Palette.base_
+                                        KL.InletsOpen ->       _.i900 Palette.blue
+                                        KL.InletSelected _ ->  _.i900 Palette.blue
+                                        KL.OutletsOpen ->      _.i900 Palette.blue
+                                        KL.OutletSelected _ -> _.i900 Palette.blue
+        controlButtonContentColor = P.hColorOf $ if beingDragged then _.i100 Palette.magenta else
+                                    case keyboardFocus of
+                                        KL.None ->             _.i100 Palette.yellow
+                                        KL.Open _ ->           _.i300 Palette.blue
+                                        KL.Selected ->         _.i100 Palette.blue
+                                        KL.InletsOpen ->       _.i300 Palette.cyan
+                                        KL.InletSelected _ ->  _.i100 Palette.cyan
+                                        KL.OutletsOpen ->      _.i300 Palette.cyan
+                                        KL.OutletSelected _ -> _.i100 Palette.cyan
+        controlButtonContent =  case keyboardFocus of
+                                        KL.None ->               "✣"
+                                        KL.Open n ->             show n
+                                        KL.Selected ->           "◉"
+                                        KL.InletsOpen ->         "i"
+                                        KL.InletSelected in_ ->  "i" <> show in_
+                                        KL.OutletsOpen ->        "o"
+                                        KL.OutletSelected on_ -> "o" <> show on_
 
         renderInlet idx inletDef =
             HS.g
@@ -417,6 +448,8 @@ handleAction
     -> H.HalogenM (State strepr chrepr m) (Action strepr chrepr m) () (Output strepr chrepr) m Unit
 handleAction ptk = case _ of
     Initialize ->
+        pure unit
+    Skip ->
         pure unit
     Receive input ->
         H.modify_ \s -> s
