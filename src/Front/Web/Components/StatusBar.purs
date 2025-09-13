@@ -211,7 +211,7 @@ cellSlot pslot target toAction state =
     case _ of
         Cells.Zoom     -> HH.slot pslot (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               toAction
         Cells.WSStatus -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } toAction
-        Cells.UiMode   -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.UiMode.component target)   { currentMode : UiMode.getModeKey state.uiMode, fontSize }                    toAction
+        Cells.UiMode   -> HH.slot pslot (target /\ Cells.UiMode)   (Cell.UiMode.component target)   { currentMode : UiMode.getModeKey state.uiMode, fontSize }                    toAction
 
 
 cellWidth :: Cells.Which -> Number
