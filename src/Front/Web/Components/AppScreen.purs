@@ -210,7 +210,7 @@ component ploc pps toolkit =
             pure unit
 
 
-initialState :: forall input loc tk ps fs sr cr m. Proxy loc -> Toolkit tk fs sr cr m -> input -> State loc tk ps fs sr cr m
+initialState :: forall input loc tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m fs => Proxy loc -> Toolkit tk fs sr cr m -> input -> State loc tk ps fs sr cr m
 initialState _ toolkit _ = CState.init toolkit
 
 
@@ -442,7 +442,7 @@ render ploc _ state =
             sidePanelsHeight = height - sidePanelsY - StatusBar.height - 20.0
 
             libraryInput =
-                { families : Toolkit.families toolkit
+                { families : state.families
                 } :: Library.Input
             patchAreaInput =
                 { offset : { left : patchAreaX, top : patchAreaY }

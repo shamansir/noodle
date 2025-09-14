@@ -18,9 +18,9 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (length, snoc, index) as Array
 import Data.UniqueHash (UniqueHash)
 
-import Noodle.Id (PatchR, NodeR) as Id
+import Noodle.Id (PatchR, NodeR, FamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
-import Noodle.Toolkit (class InitPatchState, initPatch) as Toolkit
+import Noodle.Toolkit (class InitPatchState, initPatch, class HoldsFamilies, families) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
 import Noodle.Patch (id, make, getState, registerRawNode, nodesCount, allNodes) as Patch
@@ -77,6 +77,7 @@ type State loc (tk :: ToolkitKey) ps (fs :: Families) sr cr m =
     , openPanels :: Set Panels.Which
     , wsConnection :: WSocketConnection
     , keyboard :: KL.State
+    , families :: Array Id.FamilyR
     }
 
 
@@ -105,7 +106,7 @@ type WSocketConnection =
     }
 
 
-init :: forall loc tk ps fs sr cr m. Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
+init :: forall loc tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m fs => Toolkit tk fs sr cr m -> State loc tk ps fs sr cr m
 init toolkit =
     { size : Nothing
     , zoom : 1.0
@@ -128,6 +129,7 @@ init toolkit =
         , log : []
         }
     , keyboard : KL.init
+    , families : Toolkit.families toolkit
     }
 
 
@@ -425,10 +427,12 @@ loadKbInput state =
             selNodeIdx <- KL.selectedNode state.keyboard
             selNode <- Patch.allNodes currentPatch # flip Array.index selNodeIdx -- FIXME: relies only on the fact that `PatchArea` uses `Patch.allNodes` to enumerate them
             pure { inletsCount : RawNode.inletsCount selNode, outletsCount : RawNode.outletsCount selNode }
-        familiesCount = 0 -- FIXME: implement
+        familiesCount = Array.length state.families -- FIXME: implement
+        patchesCount = Network.patchesCount state.network-- FIXME: implement
     in
         { nodesCount : fromMaybe 0 mbNodesCount
         , familiesCount
+        , patchesCount
         , uiMode : state.uiMode
         , mbCurrentNode
         }

@@ -17,10 +17,12 @@ import Web.UIEvent.KeyboardEvent as KE
 data Focus
     = Free
     | Library
+    | LibraryItem Int
     | CommandInput
     | ValueEditor
-    -- | LibraryItem Int
     -- | SidePanel Int
+    | PatchesBar
+    | Patch Int
     | NodesArea
     -- | SidePanels
     | Node Int
@@ -44,6 +46,7 @@ type Input =
     { uiMode :: UiMode
     , nodesCount :: Int
     , familiesCount :: Int
+    , patchesCount :: Int
     , mbCurrentNode :: Maybe { inletsCount :: Int, outletsCount :: Int }
     }
 
@@ -186,6 +189,16 @@ trackKeyDown input state kevt =
                     ) /\ [ ]
                 _ -> nextState /\ []
 
+        else if (keyName == "l") then
+            ( nextState
+                { focus = Library }
+            ) /\ [ ]
+
+        else if (keyName == "p") then
+            ( nextState
+                { focus = PatchesBar }
+            ) /\ [ ]
+
         else
 
             case Debug.spyWith "choose" show $ Either.choose (keyToDir kevt) (keyToNum kevt) of
@@ -226,8 +239,12 @@ selectedNode = _.focus >>> case _ of
 navigateIfNeeded :: Either Dir Int -> Input -> State -> State
 navigateIfNeeded (Right num) input state =
     case state.focus of
-        NodesArea -> state { focus = Node $ min num (input.nodesCount - 1) }
-        Node _    -> state { focus = Node $ min num (input.nodesCount - 1) }
+        Library       -> state { focus = LibraryItem $ min num (input.familiesCount - 1) }
+        LibraryItem _ -> state { focus = LibraryItem $ min num (input.familiesCount - 1) }
+        PatchesBar    -> state { focus = Patch $ min num (input.patchesCount - 1) }
+        Patch _       -> state { focus = Patch $ min num (input.patchesCount - 1) }
+        NodesArea     -> state { focus = Node $ min num (input.nodesCount - 1) }
+        Node _        -> state { focus = Node $ min num (input.nodesCount - 1) }
         NodeInlets  nodeIdx -> state { focus = NodeInlet nodeIdx  $ min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode }
         NodeOutlets nodeIdx -> state { focus = NodeOutlet nodeIdx $ min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode }
         _ -> state
