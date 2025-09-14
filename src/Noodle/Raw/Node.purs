@@ -40,7 +40,7 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape, ValueTag, failed, InletDefR, OutletDefR) as Raw
-import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet) as RawShape
+import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet, inletsCount, outletsCount) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
@@ -205,6 +205,14 @@ run (Node _ _ _ protocol fn) = RawFn.run' protocol fn
 
 shape :: forall state chrepr m. Node state chrepr m -> Raw.Shape
 shape (Node _ shape _ _ _) = shape
+
+
+inletsCount :: forall state chrepr m. Node state chrepr m -> Int
+inletsCount = shape >>> RawShape.inletsCount
+
+
+outletsCount :: forall state chrepr m. Node state chrepr m -> Int
+outletsCount = shape >>> RawShape.outletsCount
 
 
 inlets :: forall m state chrepr mp. MonadEffect m => Node state chrepr mp -> m (InletsValues chrepr)

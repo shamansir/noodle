@@ -15,7 +15,7 @@ import Data.Map.Extra (update', lookupKey) as Map
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (length, snoc) as Array
+import Data.Array (length, snoc, index) as Array
 import Data.UniqueHash (UniqueHash)
 
 import Noodle.Id (PatchR, NodeR) as Id
@@ -23,11 +23,11 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class InitPatchState, initPatch) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, make, getState, registerRawNode, nodesCount) as Patch
+import Noodle.Patch (id, make, getState, registerRawNode, nodesCount, allNodes) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
-import Noodle.Raw.Node (id) as RawNode
+import Noodle.Raw.Node (id, inletsCount, outletsCount) as RawNode
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
@@ -418,10 +418,17 @@ loadWSState state =
 loadKbInput :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> KL.Input
 loadKbInput state =
     let
-        mbNodesCount = currentPatch state <#> Patch.nodesCount
+        mbCurrentPatch = currentPatch state
+        mbNodesCount = mbCurrentPatch <#> Patch.nodesCount
+        mbCurrentNode = do
+            currentPatch <- mbCurrentPatch
+            selNodeIdx <- KL.selectedNode state.keyboard
+            selNode <- Patch.allNodes currentPatch # flip Array.index selNodeIdx -- FIXME: relies only on the fact that `PatchArea` uses `Patch.allNodes` to enumerate them
+            pure { inletsCount : RawNode.inletsCount selNode, outletsCount : RawNode.outletsCount selNode }
         familiesCount = 0 -- FIXME: implement
     in
         { nodesCount : fromMaybe 0 mbNodesCount
         , familiesCount
         , uiMode : state.uiMode
+        , mbCurrentNode
         }

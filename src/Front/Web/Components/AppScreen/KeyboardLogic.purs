@@ -2,7 +2,9 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Debug as Debug
+
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Either as Either
 import Data.String as String
@@ -22,8 +24,10 @@ data Focus
     | NodesArea
     -- | SidePanels
     | Node Int
-    -- | NodeInlet Int Int
-    -- | NodeOutlet Int Int
+    | NodeInlets Int
+    | NodeOutlets Int
+    | NodeInlet Int Int
+    | NodeOutlet Int Int
 
 
 data NodeFocus
@@ -31,15 +35,16 @@ data NodeFocus
     | Selected
     | Open Int
     | InletsOpen
+    | OutletsOpen
     | InletSelected Int
     | OutletSelected Int
-    | OutletsOpen
 
 
 type Input =
     { uiMode :: UiMode
     , nodesCount :: Int
     , familiesCount :: Int
+    , mbCurrentNode :: Maybe { inletsCount :: Int, outletsCount :: Int }
     }
 
 
@@ -67,6 +72,14 @@ data Dir
     | DRight
 
 
+instance Show Dir where
+    show = case _ of
+        DLeft -> "←"
+        DUp -> "↑"
+        DDown -> "↓"
+        DRight -> "→"
+
+
 data Action
     -- = OpenCommandInput
     -- | CloseCommandInput
@@ -92,14 +105,18 @@ loadNodeFocus :: Int -> Focus -> NodeFocus
 loadNodeFocus nodeIdx = case _ of
     NodesArea -> Open nodeIdx
     Node n -> if n == nodeIdx then Selected else None
+    NodeInlets n  -> if n == nodeIdx then InletsOpen else None
+    NodeOutlets n -> if n == nodeIdx then OutletsOpen else None
+    NodeInlet n i -> if n == nodeIdx then InletSelected i else None
+    NodeOutlet n o -> if n == nodeIdx then OutletSelected o else None
     _ -> None -- TODO:
 
 
 trackKeyDown :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
 trackKeyDown input state kevt =
     let
-        keyName = String.toLower $ KE.key kevt
-        keyCode = String.toLower $ KE.code kevt
+        keyName = Debug.spy "name" $ String.toLower $ KE.key kevt
+        keyCode = Debug.spy "code" $ String.toLower $ KE.code kevt
         shiftPressed = KE.shiftKey kevt
         controlPressed = KE.ctrlKey kevt
         nextState = state { shiftPressed = shiftPressed }
@@ -148,14 +165,30 @@ trackKeyDown input state kevt =
                       other -> UiMode.SolidOverlay other
             ]
 
-        else if (keyCode == "n") then
+        else if (keyName == "n") then
             ( nextState
                 { focus = NodesArea }
             ) /\ [ ]
 
+        else if (keyName == "i") then
+            case nextState.focus of
+                Node n ->
+                    ( nextState
+                        { focus = NodeInlets n }
+                    ) /\ [ ]
+                _ -> nextState /\ []
+
+        else if (keyName == "o") then
+            case nextState.focus of
+                Node n ->
+                    ( nextState
+                        { focus = NodeOutlets n }
+                    ) /\ [ ]
+                _ -> nextState /\ []
+
         else
 
-            case Either.choose (keyToDir kevt) (keyToNum kevt) of
+            case Debug.spyWith "choose" show $ Either.choose (keyToDir kevt) (keyToNum kevt) of
 
                 Just eitherNav -> navigateIfNeeded eitherNav input nextState /\ []
 
@@ -180,17 +213,29 @@ commandInputClosed :: State -> State
 commandInputClosed = _ { focus = Free } -- TODO: return to previous focus, also it feels strange modifying it here
 
 
+selectedNode :: State -> Maybe Int
+selectedNode = _.focus >>> case _ of
+    Node n -> Just n
+    NodeInlets n -> Just n
+    NodeOutlets n -> Just n
+    NodeInlet n _  -> Just n
+    NodeOutlet n _ -> Just n
+    _ -> Nothing
+
+
 navigateIfNeeded :: Either Dir Int -> Input -> State -> State
 navigateIfNeeded (Right num) input state =
     case state.focus of
         NodesArea -> state { focus = Node $ min num (input.nodesCount - 1) }
         Node _    -> state { focus = Node $ min num (input.nodesCount - 1) }
+        NodeInlets  nodeIdx -> state { focus = NodeInlet nodeIdx  $ min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode }
+        NodeOutlets nodeIdx -> state { focus = NodeOutlet nodeIdx $ min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode }
         _ -> state
 navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
 
 keyToDir :: KE.KeyboardEvent -> Maybe Dir
-keyToDir = KE.key >>> case _ of
+keyToDir = KE.code >>> String.toLower >>> Debug.spy "dir" >>> case _ of
     "arrowleft" -> Just DLeft
     "arrowright" -> Just DRight
     "arrowup" -> Just DUp
@@ -199,7 +244,7 @@ keyToDir = KE.key >>> case _ of
 
 
 keyToNum :: KE.KeyboardEvent -> Maybe Int
-keyToNum = KE.key >>> case _ of
+keyToNum = KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
     "digit0" -> Just 0
     "digit1" -> Just 1
     "digit2" -> Just 2

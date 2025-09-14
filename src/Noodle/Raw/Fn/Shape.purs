@@ -109,14 +109,6 @@ derive newtype instance Show Shape
 derive newtype instance Eq Shape
 
 
-inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
-inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
-
-
-outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: ValueTag }
-outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
-
-
 make ::
     { inlets  :: Array { name :: InletR,  order :: Int, temp :: Temperament, tag :: ValueTag }
     , outlets :: Array { name :: OutletR, order :: Int, tag :: ValueTag }
@@ -131,6 +123,22 @@ make { inlets, outlets } =
 
 empty :: Shape
 empty = make { inlets : [], outlets : [] }
+
+
+inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
+inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
+
+
+outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: ValueTag }
+outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
+
+
+inletsCount :: Shape -> Int
+inletsCount = inlets >>> Array.length
+
+
+outletsCount :: Shape -> Int
+outletsCount = outlets >>> Array.length
 
 
 hasHotInlets :: Shape -> Boolean
