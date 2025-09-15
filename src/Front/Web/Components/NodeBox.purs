@@ -293,7 +293,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                            NoMouseFocus -> false
                            _ -> true
         inKeyboardFocus = case keyboardFocus of
-                          KL.None -> false
+                          KL.NoFocusedNode -> false
                           _ -> true
         isOverInlet inletR = case mouseFocus of
             IsOverInlet inletDef _ -> (_.name $ NT.unwrap inletDef) == inletR
@@ -304,26 +304,26 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
 
         controlButtonBackColor    = P.hColorOf $ if beingDragged then _.i900 Palette.magenta else
                                     case keyboardFocus of
-                                        KL.None ->             _.i900 Palette.yellow
-                                        KL.Selected ->         _.i900 Palette.blue
-                                        KL.Open _ ->           _.i900 Palette.base_
+                                        KL.NoFocusedNode ->    _.i900 Palette.yellow
+                                        KL.NodeSelected ->     _.i900 Palette.blue
+                                        KL.NodeOpen _ ->       _.i900 Palette.base_
                                         KL.InletsOpen ->       _.i900 Palette.blue
                                         KL.InletSelected _ ->  _.i900 Palette.blue
                                         KL.OutletsOpen ->      _.i900 Palette.blue
                                         KL.OutletSelected _ -> _.i900 Palette.blue
         controlButtonContentColor = P.hColorOf $ if beingDragged then _.i100 Palette.magenta else
                                     case keyboardFocus of
-                                        KL.None ->             _.i100 Palette.yellow
-                                        KL.Open _ ->           _.i300 Palette.blue
-                                        KL.Selected ->         _.i100 Palette.blue
+                                        KL.NoFocusedNode ->    _.i100 Palette.yellow
+                                        KL.NodeOpen _ ->       _.i300 Palette.blue
+                                        KL.NodeSelected ->     _.i100 Palette.blue
                                         KL.InletsOpen ->       _.i300 Palette.cyan
                                         KL.InletSelected _ ->  _.i100 Palette.cyan
                                         KL.OutletsOpen ->      _.i300 Palette.cyan
                                         KL.OutletSelected _ -> _.i100 Palette.cyan
         controlButtonContent =  case keyboardFocus of
-                                        KL.None ->               "✣"
-                                        KL.Open n ->             show n
-                                        KL.Selected ->           "◉"
+                                        KL.NoFocusedNode ->      "✣"
+                                        KL.NodeOpen n ->         show n
+                                        KL.NodeSelected ->       "◉"
                                         KL.InletsOpen ->         "i"
                                         KL.InletSelected in_ ->  "i" <> show in_
                                         KL.OutletsOpen ->        "o"

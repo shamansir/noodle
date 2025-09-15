@@ -16,15 +16,15 @@ import Web.UIEvent.KeyboardEvent as KE
 
 data Focus
     = Free
-    | Library
-    | LibraryItem Int
     | CommandInput
     | ValueEditor
+    | Library
+    | LibraryFamily Int
+    -- | SidePanels
     -- | SidePanel Int
     | PatchesBar
     | Patch Int
     | NodesArea
-    -- | SidePanels
     | Node Int
     | NodeInlets Int
     | NodeOutlets Int
@@ -33,13 +33,19 @@ data Focus
 
 
 data NodeFocus
-    = None
-    | Selected
-    | Open Int
+    = NoFocusedNode
+    | NodeSelected
+    | NodeOpen Int
     | InletsOpen
     | OutletsOpen
     | InletSelected Int
     | OutletSelected Int
+
+
+data LibraryFocus
+    = NoFocusedFamily
+    | LibraryOpen
+    | FamilySelected Int
 
 
 type Input =
@@ -106,13 +112,21 @@ data Action
 
 loadNodeFocus :: Int -> Focus -> NodeFocus
 loadNodeFocus nodeIdx = case _ of
-    NodesArea -> Open nodeIdx
-    Node n -> if n == nodeIdx then Selected else None
-    NodeInlets n  -> if n == nodeIdx then InletsOpen else None
-    NodeOutlets n -> if n == nodeIdx then OutletsOpen else None
-    NodeInlet n i -> if n == nodeIdx then InletSelected i else None
-    NodeOutlet n o -> if n == nodeIdx then OutletSelected o else None
-    _ -> None -- TODO:
+    NodesArea -> NodeOpen nodeIdx
+    Node n -> if n == nodeIdx then NodeSelected else NoFocusedNode
+    NodeInlets n  -> if n == nodeIdx then InletsOpen else NoFocusedNode
+    NodeOutlets n -> if n == nodeIdx then OutletsOpen else NoFocusedNode
+    NodeInlet n i -> if n == nodeIdx then InletSelected i else NoFocusedNode
+    NodeOutlet n o -> if n == nodeIdx then OutletSelected o else NoFocusedNode
+    _ -> NoFocusedNode
+
+
+loadLibraryFocus :: Focus -> LibraryFocus
+loadLibraryFocus = case _ of
+    Library -> LibraryOpen
+    LibraryFamily f -> FamilySelected f
+    _ -> NoFocusedFamily
+
 
 
 trackKeyDown :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
@@ -150,7 +164,7 @@ trackKeyDown input state kevt =
                     nextState /\ []
             )
 
-        else if nextState.notListening then
+        else if nextState.notListening then -- TODO: same as focus == CommandInput || focus == ValueEditor
             nextState /\ []
 
         else if (keyCode == "space") then
@@ -168,42 +182,52 @@ trackKeyDown input state kevt =
                       other -> UiMode.SolidOverlay other
             ]
 
-        else if (keyName == "n") then
-            ( nextState
-                { focus = NodesArea }
-            ) /\ [ ]
+        -- since the index can be a letter, as well as commands, we should re-check
+        else if not waitingForIndex nextState.focus then
+            (
 
-        else if (keyName == "i") then
-            case nextState.focus of
-                Node n ->
-                    ( nextState
-                        { focus = NodeInlets n }
-                    ) /\ [ ]
-                _ -> nextState /\ []
+            if (keyName == "n") then
+                ( nextState
+                    { focus = NodesArea }
+                ) /\ [ ]
 
-        else if (keyName == "o") then
-            case nextState.focus of
-                Node n ->
-                    ( nextState
-                        { focus = NodeOutlets n }
-                    ) /\ [ ]
-                _ -> nextState /\ []
+            else if (keyName == "i") then
+                case nextState.focus of
+                    Node n ->
+                        ( nextState
+                            { focus = NodeInlets n }
+                        ) /\ [ ]
+                    _ -> nextState /\ []
 
-        else if (keyName == "l") then
-            ( nextState
-                { focus = Library }
-            ) /\ [ ]
+            else if (keyName == "o") then
+                case nextState.focus of
+                    Node n ->
+                        ( nextState
+                            { focus = NodeOutlets n }
+                        ) /\ [ ]
+                    _ -> nextState /\ []
 
-        else if (keyName == "p") then
-            ( nextState
-                { focus = PatchesBar }
-            ) /\ [ ]
+            else if (keyName == "l") then
+                ( nextState
+                    { focus = Library }
+                ) /\ [ ]
+
+            else if (keyName == "p") then
+                ( nextState
+                    { focus = PatchesBar }
+                ) /\ [ ]
+
+            else
+                nextState /\ []
+
+            )
 
         else
 
             case Debug.spyWith "choose" show $ Either.choose (keyToDir kevt) (keyToNum kevt) of
 
-                Just eitherNav -> navigateIfNeeded eitherNav input nextState /\ []
+                Just eitherNav ->
+                    navigateIfNeeded eitherNav input nextState /\ []
 
                 Nothing -> nextState /\ []
 
@@ -226,6 +250,24 @@ commandInputClosed :: State -> State
 commandInputClosed = _ { focus = Free } -- TODO: return to previous focus, also it feels strange modifying it here
 
 
+waitingForIndex:: Focus -> Boolean
+waitingForIndex = case _ of
+    Free -> false -- waits for command to choose focus
+    NodesArea -> true -- for node index
+    PatchesBar -> true -- for patch index
+    Library -> true -- for family index
+    Node _ -> false -- waits for inlet/outlet command
+    NodeInlets _ -> true -- for inlet index
+    NodeOutlets _ -> true -- for outlet index
+    NodeInlet _ _ -> false -- waits for connect or edit command
+    NodeOutlet _ _ -> false -- waits for connect or edit command
+    LibraryFamily _ -> false -- waits for spawn command
+    Patch _ -> false -- waits for select command
+    CommandInput -> false -- waits for text to be entered
+    ValueEditor -> false -- waits for text to be entered
+
+
+
 selectedNode :: State -> Maybe Int
 selectedNode = _.focus >>> case _ of
     Node n -> Just n
@@ -239,12 +281,12 @@ selectedNode = _.focus >>> case _ of
 navigateIfNeeded :: Either Dir Int -> Input -> State -> State
 navigateIfNeeded (Right num) input state =
     case state.focus of
-        Library       -> state { focus = LibraryItem $ min num (input.familiesCount - 1) }
-        LibraryItem _ -> state { focus = LibraryItem $ min num (input.familiesCount - 1) }
-        PatchesBar    -> state { focus = Patch $ min num (input.patchesCount - 1) }
-        Patch _       -> state { focus = Patch $ min num (input.patchesCount - 1) }
-        NodesArea     -> state { focus = Node $ min num (input.nodesCount - 1) }
-        Node _        -> state { focus = Node $ min num (input.nodesCount - 1) }
+        Library         -> state { focus = LibraryFamily $ min num (input.familiesCount - 1) }
+        LibraryFamily _ -> state { focus = LibraryFamily $ min num (input.familiesCount - 1) }
+        PatchesBar      -> state { focus = Patch $ min num (input.patchesCount - 1) }
+        Patch _         -> state { focus = Patch $ min num (input.patchesCount - 1) }
+        NodesArea       -> state { focus = Node $ min num (input.nodesCount - 1) }
+        Node _          -> state { focus = Node $ min num (input.nodesCount - 1) }
         NodeInlets  nodeIdx -> state { focus = NodeInlet nodeIdx  $ min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode }
         NodeOutlets nodeIdx -> state { focus = NodeOutlet nodeIdx $ min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode }
         _ -> state

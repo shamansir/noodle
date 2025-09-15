@@ -443,6 +443,7 @@ render ploc _ state =
 
             libraryInput =
                 { families : state.families
+                , focus : KL.loadLibraryFocus state.keyboard.focus
                 } :: Library.Input
             patchAreaInput =
                 { offset : { left : patchAreaX, top : patchAreaY }

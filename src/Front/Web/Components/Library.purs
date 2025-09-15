@@ -37,14 +37,17 @@ import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 type Input =
     { families :: Array Id.FamilyR
+    , focus :: KL.LibraryFocus
     }
 
 
 type State =
     { families :: Array Id.FamilyR
+    , focus :: KL.LibraryFocus
     }
 
 
@@ -71,7 +74,7 @@ component ptk layer =
 
 
 initialState :: Input -> State
-initialState { families } = { families }
+initialState { families, focus } = { families, focus }
 
 
 slopeFactor = 5.0 :: Number
@@ -175,6 +178,21 @@ render ptk HTML state =
 
     where
         familyButton idx familyR =
+            let
+                familyNameRendered = WF.renderFormatting HTML $ T.libraryItem ptk familyR
+                selectedIndexMarker =
+                    HH.span
+                        [ HHP.style $ do
+                            CSS.color $ P.colorOf $ _.i600 Palette.red
+                        ]
+                        [ HH.text $ show idx ]
+                suggestedIndexMarker =
+                    HH.span
+                        [ HHP.style $ do
+                            CSS.color $ P.colorOf $ _.i600 Palette.blue
+                        ]
+                        [ HH.text $ show idx ]
+            in
             HH.span
                 [ HHP.style $ do
                     CSS.display CSS.block
@@ -183,7 +201,28 @@ render ptk HTML state =
                     CSS.backgroundColor $ P.colorOf $ _.i900 Palette.blue
                 , HE.onClick $ const $ RaiseSelectFamily familyR
                 ]
-                [ WF.renderFormatting HTML $ T.libraryItem ptk familyR
+                [ case state.focus of
+                      KL.FamilySelected n ->
+                          if n == idx then
+                              HH.span_
+                                  [ selectedIndexMarker
+                                  , familyNameRendered
+                                  ]
+                          else
+                              familyNameRendered
+                              {-
+                              HH.span_
+                                  [ suggestedIndexMarker
+                                  , familyNameRendered
+                                  ]
+                              -}
+                      KL.LibraryOpen ->
+                          HH.span_
+                              [ suggestedIndexMarker
+                              , familyNameRendered
+                              ]
+                      KL.NoFocusedFamily ->
+                          familyNameRendered
                 -- HH.text $ Id.family familyR
                 ]
 
@@ -196,4 +235,5 @@ handleAction = case _ of
     Receive input ->
         H.modify_ _
             { families = input.families
+            , focus = input.focus
             }
