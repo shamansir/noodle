@@ -8,9 +8,13 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Either as Either
 import Data.String as String
+import Data.Enum (fromEnum, toEnum)
+import Data.String.CodePoints as CP
 import Data.Tuple.Nested ((/\), type (/\))
+
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
+
 import Web.UIEvent.KeyboardEvent as KE
 
 
@@ -109,6 +113,7 @@ data Action
     | ChangeUiMode UiMode
     -- |
     -- |
+
 
 loadNodeFocus :: Int -> Focus -> NodeFocus
 loadNodeFocus nodeIdx = case _ of
@@ -303,7 +308,9 @@ keyToDir = KE.code >>> String.toLower >>> Debug.spy "dir" >>> case _ of
 
 
 keyToNum :: KE.KeyboardEvent -> Maybe Int
-keyToNum = KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
+keyToNum =
+    -- KE.which >>> ?wh
+  KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
     "digit0" -> Just 0
     "digit1" -> Just 1
     "digit2" -> Just 2
@@ -314,6 +321,32 @@ keyToNum = KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
     "digit7" -> Just 7
     "digit8" -> Just 8
     "digit9" -> Just 9
+    "keya"   -> Just 10
+    "keyb"   -> Just 11
+    "keyc"   -> Just 12
+    "keyd"   -> Just 13
+    "keye"   -> Just 14
+    "keyf"   -> Just 15
+    "keyg"   -> Just 16
+    "keyh"   -> Just 17
+    "keyi"   -> Just 18
+    "keyj"   -> Just 19
+    "keyk"   -> Just 20
+    "keyl"   -> Just 21
+    "keym"   -> Just 22
+    "keyn"   -> Just 23
+    "keyo"   -> Just 24
+    "keyp"   -> Just 25
+    "keyq"   -> Just 26
+    "keyr"   -> Just 27
+    "keys"   -> Just 28
+    "keyt"   -> Just 29
+    "keyu"   -> Just 30
+    "keyv"   -> Just 31
+    "keyw"   -> Just 32
+    "keyx"   -> Just 33
+    "keyy"   -> Just 34
+    "keyz"   -> Just 35
     _ -> Nothing
 
 
@@ -351,3 +384,30 @@ keyToNum = KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
         H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
 
 -}
+
+
+digit0Pos = 48 :: Int
+digit9Pos = 57 :: Int
+upperAPos = 65 :: Int
+upperZPos = 90 :: Int
+lowerAPos = 97 :: Int
+lowerZPos = 122 :: Int
+
+
+indexToChar :: Int -> String
+indexToChar idx =
+    if idx < 10 then
+        show idx
+    else if idx < (10 + 26) then
+        toEnum (idx - 10 + lowerAPos) <#> CP.singleton # fromMaybe "."
+    -- else if idx < (10 + 26 * 2) then
+    --    toEnum (idx - 10 + lowerAPos) <#> CP.singleton # fromMaybe "."
+    else "."
+
+
+whichToIndex :: Int -> Int -- FIXME: `kevt.which` is deprecated so there is no use for this function
+whichToIndex which =
+    if which >= digit0Pos && which <= digit9Pos then which - digit0Pos
+    else if which >= upperAPos && which <= upperZPos then 10 + which - upperAPos
+    else if which >= lowerAPos && which <= lowerZPos then 10 + which - lowerAPos
+    else -1

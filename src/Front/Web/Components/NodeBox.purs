@@ -322,12 +322,12 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                         KL.OutletSelected _ -> _.i100 Palette.cyan
         controlButtonContent =  case keyboardFocus of
                                         KL.NoFocusedNode ->      "✣"
-                                        KL.NodeOpen n ->         show n
+                                        KL.NodeOpen n ->         KL.indexToChar n
                                         KL.NodeSelected ->       "◉"
                                         KL.InletsOpen ->         "i"
-                                        KL.InletSelected in_ ->  "i" <> show in_
+                                        KL.InletSelected in_ ->  "i" <> KL.indexToChar in_
                                         KL.OutletsOpen ->        "o"
-                                        KL.OutletSelected on_ -> "o" <> show on_
+                                        KL.OutletSelected on_ -> "o" <> KL.indexToChar on_
 
         renderInlet idx inletDef =
             HS.g

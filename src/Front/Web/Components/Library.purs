@@ -164,6 +164,7 @@ render ptk HTML state =
             CSS.position CSS.relative
             CSS.left $ CSS.px $ paddingLeft + 5.0
             CSS.top $ CSS.px $ headerHeight + slopeFactor * 2.0
+            CSS.width $ CSS.px width
             CSS.maxWidth $ CSS.px width
             CSS.maxHeight $ CSS.px $ bodyHeight - slopeFactor * 4.0
             CSS.overflowY CSS.scroll
@@ -180,22 +181,33 @@ render ptk HTML state =
         familyButton idx familyR =
             let
                 familyNameRendered = WF.renderFormatting HTML $ T.libraryItem ptk familyR
+                indexMarker color =
+                    HH.span
+                        [ HHP.style $ do
+                            CSS.color $ P.colorOf color
+                            -- CSS.borderColor $ P.colorOf $ _.i700 Palette.base_
+                            -- CSS.backgroundColor $ P.colorOf $ _.i100 Palette.base_
+                            -- CSS.position CSS.absolute
+                            CSS.position CSS.absolute
+                            CSS.top $ CSS.px (-2.0) -- (-2.0)
+                            -- CSS.left $ CSS.px 0.0 -- (3.0)
+                            CSS.fontSize $ CSS.em 0.8
+                            CSS.margin (CSS.px 0.0) (CSS.px 0.0) (CSS.px 0.0) (CSS.px 4.0)
+                            -- CSS.border CSS.solid (CSS.px 1.0) $ P.colorOf $ _.i700 Palette.base_
+                            -- CSS.padding (CSS.px 2.0) (CSS.px 2.0) (CSS.px 2.0) (CSS.px 2.0)
+                            -- CSS.borderRadius (CSS.px 4.0) (CSS.px 4.0) (CSS.px 4.0) (CSS.px 4.0)
+                        ]
+                        -- [ HH.text $ show idx ]
+                        [ HH.text $ KL.indexToChar idx ]
                 selectedIndexMarker =
-                    HH.span
-                        [ HHP.style $ do
-                            CSS.color $ P.colorOf $ _.i600 Palette.red
-                        ]
-                        [ HH.text $ show idx ]
+                    indexMarker $ _.i300 Palette.green
                 suggestedIndexMarker =
-                    HH.span
-                        [ HHP.style $ do
-                            CSS.color $ P.colorOf $ _.i600 Palette.blue
-                        ]
-                        [ HH.text $ show idx ]
+                    indexMarker $ _.i300 Palette.blue
             in
             HH.span
                 [ HHP.style $ do
                     CSS.display CSS.block
+                    CSS.position CSS.relative
                     -- CSS.overflow CSS.hidden
                     -- CSS.color $ P.colorOf $ T.ma -- _.i100 Palette.blue
                     CSS.backgroundColor $ P.colorOf $ _.i900 Palette.blue
@@ -205,8 +217,8 @@ render ptk HTML state =
                       KL.FamilySelected n ->
                           if n == idx then
                               HH.span_
-                                  [ selectedIndexMarker
-                                  , familyNameRendered
+                                  [ familyNameRendered
+                                  , selectedIndexMarker
                                   ]
                           else
                               familyNameRendered
@@ -218,8 +230,8 @@ render ptk HTML state =
                               -}
                       KL.LibraryOpen ->
                           HH.span_
-                              [ suggestedIndexMarker
-                              , familyNameRendered
+                              [ familyNameRendered
+                              , suggestedIndexMarker
                               ]
                       KL.NoFocusedFamily ->
                           familyNameRendered
