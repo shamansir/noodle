@@ -316,10 +316,10 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                         KL.NoFocusedNode ->    _.i100 Palette.yellow
                                         KL.NodeOpen _ ->       _.i300 Palette.blue
                                         KL.NodeSelected ->     _.i100 Palette.blue
-                                        KL.InletsOpen ->       _.i300 Palette.cyan
-                                        KL.InletSelected _ ->  _.i100 Palette.cyan
-                                        KL.OutletsOpen ->      _.i300 Palette.cyan
-                                        KL.OutletSelected _ -> _.i100 Palette.cyan
+                                        KL.InletsOpen ->       _.i300 Palette.green
+                                        KL.InletSelected _ ->  _.i100 Palette.green
+                                        KL.OutletsOpen ->      _.i300 Palette.purple
+                                        KL.OutletSelected _ -> _.i100 Palette.purple
         controlButtonContent =  case keyboardFocus of
                                         KL.NoFocusedNode ->      "✣"
                                         KL.NodeOpen n ->         KL.indexToChar n

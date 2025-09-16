@@ -23,7 +23,7 @@ import Data.Newtype (unwrap) as NT
 import Data.Text.Format (nil) as T
 import Data.Int (round, toNumber, floor) as Int
 import Data.String (toLower) as String
-import Data.Array (length) as Array
+import Data.Array (length, index) as Array
 import Data.Set (size, insert, delete, toUnfoldable) as Set
 import Data.Traversable (traverse_, for)
 import Data.FunctorWithIndex (mapWithIndex)
@@ -823,6 +823,11 @@ performKbAction ploc = case _ of
         H.tell _patchArea SVG PatchArea.CancelConnecting
     KL.CancelConnectingNodes ->
         H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
+    KL.SpawnNode familyIdx -> do
+        families <- _.families <$> H.get
+        case Array.index families familyIdx of
+            Just familyR -> handleAction ploc $ SpawnNodeOf familyR
+            Nothing -> pure unit
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

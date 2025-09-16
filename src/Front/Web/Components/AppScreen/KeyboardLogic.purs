@@ -111,6 +111,7 @@ data Action
     -- |StartConnectingNodes
     | CancelConnectingNodes
     | ChangeUiMode UiMode
+    | SpawnNode Int
     -- |
     -- |
 
@@ -186,6 +187,18 @@ trackKeyDown input state kevt =
                       UiMode.SolidOverlay prev -> prev
                       other -> UiMode.SolidOverlay other
             ]
+
+        else if (keyCode == "backspace") then
+
+             nextState
+                { focus = tryLevelUp nextState.focus }
+             /\ []
+
+        else if keyCode == "enter" then
+
+            case nextState.focus of
+                LibraryFamily idx -> nextState /\ [ SpawnNode idx ]
+                _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check
         else if not waitingForIndex nextState.focus then
@@ -349,6 +362,23 @@ keyToNum =
     "keyz"   -> Just 35
     _ -> Nothing
 
+
+
+tryLevelUp :: Focus -> Focus
+tryLevelUp = case _ of
+    Free -> Free
+    CommandInput -> CommandInput
+    ValueEditor -> ValueEditor
+    Library -> Free
+    LibraryFamily _ -> Library
+    PatchesBar -> Free
+    Patch _ -> PatchesBar
+    NodesArea -> Free
+    Node _ -> NodesArea
+    NodeInlets n -> Node n
+    NodeOutlets n -> Node n
+    NodeInlet n _ -> NodeInlets n
+    NodeOutlet n _ -> NodeOutlets n
 
 
 {-
