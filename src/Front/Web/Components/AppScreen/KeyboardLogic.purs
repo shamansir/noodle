@@ -93,6 +93,10 @@ instance Show Dir where
         DRight -> "→"
 
 
+newtype FamilyIndex = FamilyIndex Int
+newtype NodeIndex = NodeIndex Int
+
+
 data Action
     -- = OpenCommandInput
     -- | CloseCommandInput
@@ -111,7 +115,8 @@ data Action
     -- |StartConnectingNodes
     | CancelConnectingNodes
     | ChangeUiMode UiMode
-    | SpawnNode Int
+    | SpawnNode FamilyIndex
+    | MoveNode NodeIndex Dir
     -- |
     -- |
 
@@ -197,7 +202,7 @@ trackKeyDown input state kevt =
         else if keyCode == "enter" then
 
             case nextState.focus of
-                LibraryFamily idx -> nextState /\ [ SpawnNode idx ]
+                LibraryFamily idx -> nextState /\ [ SpawnNode $ FamilyIndex idx ]
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check
@@ -236,7 +241,13 @@ trackKeyDown input state kevt =
                 ) /\ [ ]
 
             else
-                nextState /\ []
+
+                case keyToDir kevt /\ nextState.focus of
+
+                    Just dir /\ Node n ->
+                       nextState /\ [ MoveNode (NodeIndex n) dir ]
+
+                    _ -> nextState /\ []
 
             )
 

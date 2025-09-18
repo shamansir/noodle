@@ -184,6 +184,7 @@ data Query sr cr a
     = ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
+    | RequestNodeMove KL.NodeIndex KL.Dir a
     | QueryLock (LockingTask -> a)
 
 
@@ -582,6 +583,9 @@ handleQuery = case _ of
     QueryLock reply -> do
         { lockOn } <- H.get
         pure $ Just $ reply lockOn
+    RequestNodeMove (KL.NodeIndex nidx) dir a ->
+        -- FIXME: implement
+        pure $ Just a
         -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
 

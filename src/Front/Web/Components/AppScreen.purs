@@ -823,11 +823,13 @@ performKbAction ploc = case _ of
         H.tell _patchArea SVG PatchArea.CancelConnecting
     KL.CancelConnectingNodes ->
         H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
-    KL.SpawnNode familyIdx -> do
+    KL.SpawnNode (KL.FamilyIndex familyIdx) -> do
         families <- _.families <$> H.get
         case Array.index families familyIdx of
             Just familyR -> handleAction ploc $ SpawnNodeOf familyR
             Nothing -> pure unit
+    KL.MoveNode nodeIndex dir ->
+        H.tell _patchArea SVG $ PatchArea.RequestNodeMove nodeIndex dir
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit
