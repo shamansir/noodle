@@ -828,9 +828,22 @@ performKbAction ploc = case _ of
         case Array.index families familyIdx of
             Just familyR -> handleAction ploc $ SpawnNodeOf familyR
             Nothing -> pure unit
-    KL.MoveNode nodeIndex dir -> do
-        H.tell _patchArea HTML $ PatchArea.RequestNodeMove nodeIndex dir
-        H.tell _patchArea SVG  $ PatchArea.RequestNodeMove nodeIndex dir
+    KL.MoveNode (KL.NodeIndex nidx) dir -> do -- TODO: optimize
+        mbCurrentPatch <- H.get <#> CState.currentPatch
+        let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
+        H.modify_ $ CState.withCurrentPatchInfo $ \pinfo ->
+            case Array.index curPatchNodes nidx of
+                Just rawNode ->
+                    pinfo
+                        { nodesBounds
+                              = PatchArea.modifyPosition
+                                    (RawNode.id rawNode)
+                                    (CState.applyDirToNodePosition dir)
+                                    pinfo.nodesBounds
+                        }
+                Nothing -> pinfo
+        pure unit
+        -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

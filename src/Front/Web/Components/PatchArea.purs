@@ -184,7 +184,7 @@ data Query sr cr a
     = ApplyUpdate Id.NodeR (RawNode.NodeChanges sr cr) a
     | CancelConnecting a
     | ValueEditorClosedByUser a
-    | RequestNodeMove KL.NodeIndex KL.Dir a
+    -- | RequestNodeMove KL.NodeIndex KL.Dir a
     | QueryLock (LockingTask -> a)
 
 
@@ -583,27 +583,6 @@ handleQuery = case _ of
     QueryLock reply -> do
         { lockOn } <- H.get
         pure $ Just $ reply lockOn
-    RequestNodeMove (KL.NodeIndex nidx) dir a -> do
-        { nodes, nodesBounds } <- H.get
-        let mbNode = Array.index nodes nidx
-        let _ = Debug.spy "nodeIndex" nidx
-        let _ = Debug.spyWith "mbNode" show <$> RawNode.id <$> mbNode
-
-        whenJust mbNode \node -> do
-           H.modify_ _ { nodesBounds = nodesBounds # modifyPosition (RawNode.id node) (applyDir dir) }
-        pure $ Just a
-        -- H.get >>= _.lockOn >>> f >>> Just >>> pure
-
-
-dirDelta = 25.0 :: Number
-
-
-applyDir :: KL.Dir -> Position -> Position
-applyDir = case _ of
-    KL.DUp ->    \r -> r { top = r.top - dirDelta }
-    KL.DDown ->  \r -> r { top = r.top + dirDelta }
-    KL.DLeft ->  \r -> r { left = r.left + dirDelta }
-    KL.DRight -> \r -> r { left = r.left - dirDelta }
 
 
 findFocusedNodes :: PositionXY -> NodesBounds -> Set Id.NodeR

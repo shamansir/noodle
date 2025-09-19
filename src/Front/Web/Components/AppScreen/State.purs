@@ -47,7 +47,7 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import Front.Shared.HelpText (Context(..)) as HelpText
 
 import Web.Components.ValueEditor (Def) as ValueEditor
-import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition) as PatchArea
+import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition, modifyPosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WebSocketStatus as WSPanel
 import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
@@ -183,6 +183,10 @@ currentPatchInfo :: forall loc tk ps fs sr cr m. State loc tk ps fs sr cr m -> M
 currentPatchInfo s = currentPatchId s >>= flip Map.lookup s.patches
 
 
+withCurrentPatchInfo :: forall loc tk ps fs sr cr m. (PatchInfo loc ps -> PatchInfo loc ps) -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
+withCurrentPatchInfo f s = currentPatchId s <#> (\patchR -> s { patches = Map.update' f patchR s.patches }) # fromMaybe s
+
+
 currentPatch :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> Maybe (Patch ps fs sr cr m)
 currentPatch s = s.mbCurrentPatch <#> _.id >>= flip patch s
 
@@ -235,6 +239,17 @@ newNodeRect =
     { width : 300.0, height : 70.0 }
 
 
+dirDelta = 25.0 :: Number
+
+
+applyDirToNodePosition :: KL.Dir -> Position -> Position
+applyDirToNodePosition = case _ of
+    KL.DUp ->    \r -> r { top = r.top - dirDelta }
+    KL.DDown ->  \r -> r { top = r.top + dirDelta }
+    KL.DLeft ->  \r -> r { left = r.left - dirDelta }
+    KL.DRight -> \r -> r { left = r.left + dirDelta }
+
+
 registerNewNode :: forall loc tk ps fs sr cr m. WebLocator loc => Id.PatchR -> Raw.Node sr cr m -> State loc tk ps fs sr cr m -> State loc tk ps fs sr cr m
 registerNewNode patchR rawNode =
     let
@@ -253,6 +268,10 @@ registerNewNode patchR rawNode =
                         }
                     info.nodesBounds
                 }
+
+
+modifyNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> (Position -> Position) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+modifyNodePosition patchR nodeR changeF = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.modifyPosition nodeR changeF }
 
 
 updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> Position -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
