@@ -344,6 +344,26 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     , HSA.r connectorRadius
                     , HSA.cy $ connectorRadius / 2.0 + 2.0 -- channelBarHeight / 2.0
                     ]
+                , case keyboardFocus of
+                    KL.InletsOpen ->
+                        HS.text
+                            [ HSA.x $ -3.0
+                            , HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
+                            , HSA.transform [ HSA.Translate 0.0 0.5 ]
+                            , HSA.dominant_baseline HSA.Hanging
+                            , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
+                            ]
+                            [ HH.text $ show idx ]
+                    KL.InletSelected in_ ->
+                        HS.text
+                            [ HSA.x $ -3.0
+                            , HSA.fill $ Just $ P.hColorOf $ if idx == in_ then _.i50 Palette.red else _.i600 Palette.blue
+                            , HSA.transform [ HSA.Translate 0.0 0.5 ]
+                            , HSA.dominant_baseline HSA.Hanging
+                            , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
+                            ]
+                            [ HH.text $ if idx == in_ then "◉" else show idx ]
+                    _ -> HH.text ""
                 , HS.text
                     [ HSA.x channelNameShift
                     , HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
@@ -393,6 +413,26 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                     ]
                     [ HH.text $ String.toUpper $ Id.outletRName outletDef.name ]
+                , case keyboardFocus of
+                    KL.OutletsOpen ->
+                        HS.text
+                            [ HSA.x $ -3.0
+                            , HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
+                            , HSA.transform [ HSA.Translate 0.0 1.0 ]
+                            , HSA.dominant_baseline HSA.Hanging
+                            , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
+                            ]
+                            [ HH.text $ show idx ]
+                    KL.OutletSelected on_ ->
+                        HS.text
+                            [ HSA.x $ -3.0
+                            , HSA.fill $ Just $ P.hColorOf $ if idx == on_ then _.i50 Palette.red else _.i600 Palette.blue
+                            , HSA.transform [ HSA.Translate 0.0 1.0 ]
+                            , HSA.dominant_baseline HSA.Hanging
+                            , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
+                            ]
+                            [ HH.text $ if idx == on_ then "◉" else show idx ]
+                    _ -> HH.text ""
                 , HS.g
                     [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) channelBarHeight ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
