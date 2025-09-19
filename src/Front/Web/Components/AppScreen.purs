@@ -828,8 +828,9 @@ performKbAction ploc = case _ of
         case Array.index families familyIdx of
             Just familyR -> handleAction ploc $ SpawnNodeOf familyR
             Nothing -> pure unit
-    KL.MoveNode nodeIndex dir ->
-        H.tell _patchArea SVG $ PatchArea.RequestNodeMove nodeIndex dir
+    KL.MoveNode nodeIndex dir -> do
+        H.tell _patchArea HTML $ PatchArea.RequestNodeMove nodeIndex dir
+        H.tell _patchArea SVG  $ PatchArea.RequestNodeMove nodeIndex dir
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

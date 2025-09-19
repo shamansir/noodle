@@ -17,7 +17,7 @@ import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values
 import Data.Map.Extra (update') as MapX
 import Data.Tuple (fst, snd, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (sortWith, find) as Array
+import Data.Array (sortWith, find, index) as Array
 import Data.Set (Set)
 import Data.Set (empty, insert, member, fromFoldable) as Set
 import Data.Int (toNumber) as Int
@@ -61,7 +61,7 @@ import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
 
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
-import Front.Shared.Bounds (getPosition, getSize) as Bounds
+import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
 import Web.Layer (TargetLayer(..))
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
@@ -583,10 +583,27 @@ handleQuery = case _ of
     QueryLock reply -> do
         { lockOn } <- H.get
         pure $ Just $ reply lockOn
-    RequestNodeMove (KL.NodeIndex nidx) dir a ->
-        -- FIXME: implement
+    RequestNodeMove (KL.NodeIndex nidx) dir a -> do
+        { nodes, nodesBounds } <- H.get
+        let mbNode = Array.index nodes nidx
+        let _ = Debug.spy "nodeIndex" nidx
+        let _ = Debug.spyWith "mbNode" show <$> RawNode.id <$> mbNode
+
+        whenJust mbNode \node -> do
+           H.modify_ _ { nodesBounds = nodesBounds # modifyPosition (RawNode.id node) (applyDir dir) }
         pure $ Just a
         -- H.get >>= _.lockOn >>> f >>> Just >>> pure
+
+
+dirDelta = 25.0 :: Number
+
+
+applyDir :: KL.Dir -> Position -> Position
+applyDir = case _ of
+    KL.DUp ->    \r -> r { top = r.top - dirDelta }
+    KL.DDown ->  \r -> r { top = r.top + dirDelta }
+    KL.DLeft ->  \r -> r { left = r.left + dirDelta }
+    KL.DRight -> \r -> r { left = r.left - dirDelta }
 
 
 findFocusedNodes :: PositionXY -> NodesBounds -> Set Id.NodeR
@@ -621,6 +638,11 @@ storeBounds nodeR bounds nodesBounds =
     nodesBounds
         # Map.insert nodeR
             (bounds /\ (ZIndex $ Map.size nodesBounds))
+
+
+modifyPosition :: Id.NodeR -> (Position -> Position) -> NodesBounds -> NodesBounds
+modifyPosition nodeR changeF =
+    MapX.update' (lmap $ Bounds.modifyPosition changeF) nodeR
 
 
 updatePosition :: Id.NodeR -> Position -> NodesBounds -> NodesBounds

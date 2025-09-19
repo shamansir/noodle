@@ -242,7 +242,7 @@ trackKeyDown input state kevt =
 
             else
 
-                case keyToDir kevt /\ nextState.focus of
+                case Debug.spyWith "zusammen" show (keyToDir kevt /\ nextState.focus) of
 
                     Just dir /\ Node n ->
                        nextState /\ [ MoveNode (NodeIndex n) dir ]
@@ -259,6 +259,26 @@ trackKeyDown input state kevt =
                     navigateIfNeeded eitherNav input nextState /\ []
 
                 Nothing -> nextState /\ []
+
+instance Show Focus where
+    show = focusToString
+
+
+focusToString :: Focus -> String
+focusToString = case _ of
+    Free -> "[ ]"
+    CommandInput -> "CMD"
+    ValueEditor -> "EDIT"
+    PatchesBar -> "PTCH"
+    Patch pr -> "PTCH" <> show pr
+    Library -> "LIB"
+    LibraryFamily f -> "LIB-" <> indexToChar f
+    NodesArea -> "NOD"
+    Node n -> "NOD-" <> indexToChar n
+    NodeInlets n -> "NOD-" <> indexToChar n <> "-I-"
+    NodeOutlets n -> "NOD-" <> indexToChar n <> "-O-"
+    NodeInlet n i -> "NOD-" <> indexToChar n <> "-I-" <> indexToChar i
+    NodeOutlet n o -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o
 
 
 trackKeyUp :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
@@ -323,12 +343,13 @@ navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
 
 keyToDir :: KE.KeyboardEvent -> Maybe Dir
-keyToDir = KE.code >>> String.toLower >>> Debug.spy "dir" >>> case _ of
+keyToDir = KE.code >>> String.toLower >>> case _ of
     "arrowleft" -> Just DLeft
     "arrowright" -> Just DRight
     "arrowup" -> Just DUp
     "arrowdown" -> Just DDown
     _ -> Nothing
+    >>> Debug.spy "dir"
 
 
 keyToNum :: KE.KeyboardEvent -> Maybe Int

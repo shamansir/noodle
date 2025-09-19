@@ -65,3 +65,9 @@ zeroBounds = { top : 0.0, left : 0.0, width : 0.0, height : 0.0 }
 
 toNumberPosition :: IntPosition -> Position
 toNumberPosition { left, top } = { left : Int.toNumber left, top : Int.toNumber top }
+
+
+modifyPosition :: forall n. (Position_ n -> Position_ n) -> Bounds_ n -> Bounds_ n
+modifyPosition changeF r =
+    let nextPos = changeF { left : r.left, top : r.top }
+    in r { left = nextPos.left, top = nextPos.top }
