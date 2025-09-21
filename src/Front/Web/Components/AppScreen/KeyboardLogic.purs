@@ -2,19 +2,17 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
-import Debug as Debug
-
-import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Either (Either(..))
 import Data.Either as Either
-import Data.String as String
 import Data.Enum (fromEnum, toEnum)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String as String
 import Data.String.CodePoints as CP
 import Data.Tuple.Nested ((/\), type (/\))
-
+import Debug as Debug
+import Play (w)
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
-
 import Web.UIEvent.KeyboardEvent as KE
 
 
@@ -32,8 +30,9 @@ data Focus
     | Node Int
     | NodeInlets Int
     | NodeOutlets Int
-    | NodeInlet Int Int
-    | NodeOutlet Int Int
+    | NodeInlet (Int /\ Int)
+    | NodeOutlet (Int /\ Int)
+    | Connecting (Int /\ Int) ConnectTo
 
 
 data NodeFocus
@@ -50,6 +49,12 @@ data LibraryFocus
     = NoFocusedFamily
     | LibraryOpen
     | FamilySelected Int
+
+
+data ConnectTo
+    = NoTarget
+    | ToNode Int
+    | ToInlet (Int /\ Int)
 
 
 type Input =
@@ -95,6 +100,8 @@ instance Show Dir where
 
 newtype FamilyIndex = FamilyIndex Int
 newtype NodeIndex = NodeIndex Int
+newtype InletIndex = InletIndex Int -- TODO: duplicates `Id.InletIndex``
+newtype OutletIndex = OutletIndex Int -- TODO: duplicates `Id.OutletIndex``
 
 
 data Action
@@ -117,18 +124,29 @@ data Action
     | ChangeUiMode UiMode
     | SpawnNode FamilyIndex
     | MoveNode NodeIndex Dir
+    | StartConnecting NodeIndex OutletIndex
+    | FinishConnecting NodeIndex OutletIndex NodeIndex InletIndex
     -- |
     -- |
 
 
 loadNodeFocus :: Int -> Focus -> NodeFocus
 loadNodeFocus nodeIdx = case _ of
-    NodesArea -> NodeOpen nodeIdx
-    Node n -> if n == nodeIdx then NodeSelected else NoFocusedNode
-    NodeInlets n  -> if n == nodeIdx then InletsOpen else NoFocusedNode
-    NodeOutlets n -> if n == nodeIdx then OutletsOpen else NoFocusedNode
-    NodeInlet n i -> if n == nodeIdx then InletSelected i else NoFocusedNode
-    NodeOutlet n o -> if n == nodeIdx then OutletSelected o else NoFocusedNode
+    NodesArea           -> NodeOpen nodeIdx
+    Node n              -> if n == nodeIdx then NodeSelected else NoFocusedNode
+    NodeInlets n        -> if n == nodeIdx then InletsOpen else NoFocusedNode
+    NodeOutlets n       -> if n == nodeIdx then OutletsOpen else NoFocusedNode
+    NodeInlet  (n /\ i) -> if n == nodeIdx then InletSelected i else NoFocusedNode
+    NodeOutlet (n /\ o) -> if n == nodeIdx then OutletSelected o else NoFocusedNode
+    Connecting (n /\ o)
+            NoTarget    -> if n == nodeIdx then OutletSelected o else NoFocusedNode
+    Connecting (n /\ o)
+            (ToNode n') -> if n == nodeIdx then OutletSelected o else
+                           if (n' == nodeIdx) then NodeSelected else NoFocusedNode
+    Connecting (n /\ o)
+            (ToInlet (n' /\ i))
+                        -> if n == nodeIdx then OutletSelected o else
+                           if (n' == nodeIdx) then InletSelected i else NoFocusedNode
     _ -> NoFocusedNode
 
 
@@ -202,7 +220,18 @@ trackKeyDown input state kevt =
         else if keyCode == "enter" then
 
             case nextState.focus of
-                LibraryFamily idx -> nextState /\ [ SpawnNode $ FamilyIndex idx ]
+                LibraryFamily idx ->
+                    nextState
+                    /\ [ SpawnNode $ FamilyIndex idx ]
+                NodeOutlet (nidx /\ oidx) ->
+                    nextState
+                        { focus = Connecting (nidx /\ oidx) NoTarget }
+                    /\ [ StartConnecting (NodeIndex nidx) (OutletIndex oidx) ]
+                Connecting (nidx /\ oidx)
+                    (ToInlet (nidx' /\ iidx)) ->
+                    nextState
+                        { focus = Free }
+                    /\ [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check
@@ -264,21 +293,6 @@ instance Show Focus where
     show = focusToString
 
 
-focusToString :: Focus -> String
-focusToString = case _ of
-    Free -> "[ ]"
-    CommandInput -> "CMD"
-    ValueEditor -> "EDIT"
-    PatchesBar -> "PTCH"
-    Patch pr -> "PTCH" <> show pr
-    Library -> "LIB"
-    LibraryFamily f -> "LIB-" <> indexToChar f
-    NodesArea -> "NOD"
-    Node n -> "NOD-" <> indexToChar n
-    NodeInlets n -> "NOD-" <> indexToChar n <> "-I-"
-    NodeOutlets n -> "NOD-" <> indexToChar n <> "-O-"
-    NodeInlet n i -> "NOD-" <> indexToChar n <> "-I-" <> indexToChar i
-    NodeOutlet n o -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o
 
 
 trackKeyUp :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
@@ -308,13 +322,15 @@ waitingForIndex = case _ of
     Node _ -> false -- waits for inlet/outlet command
     NodeInlets _ -> true -- for inlet index
     NodeOutlets _ -> true -- for outlet index
-    NodeInlet _ _ -> false -- waits for connect or edit command
-    NodeOutlet _ _ -> false -- waits for connect or edit command
+    NodeInlet _ -> false -- waits for connect or edit command
+    NodeOutlet _ -> false -- waits for connect or edit command
     LibraryFamily _ -> false -- waits for spawn command
     Patch _ -> false -- waits for select command
     CommandInput -> false -- waits for text to be entered
     ValueEditor -> false -- waits for text to be entered
-
+    Connecting _ NoTarget  -> true -- waits for next node index
+    Connecting _ (ToNode _) -> true -- waits fot inlet index
+    Connecting _ (ToInlet _) -> false -- the connection is done
 
 
 selectedNode :: State -> Maybe Int
@@ -322,8 +338,8 @@ selectedNode = _.focus >>> case _ of
     Node n -> Just n
     NodeInlets n -> Just n
     NodeOutlets n -> Just n
-    NodeInlet n _  -> Just n
-    NodeOutlet n _ -> Just n
+    NodeInlet  (n /\ _) -> Just n
+    NodeOutlet (n /\ _) -> Just n
     _ -> Nothing
 
 
@@ -336,8 +352,8 @@ navigateIfNeeded (Right num) input state =
         Patch _         -> state { focus = Patch $ min num (input.patchesCount - 1) }
         NodesArea       -> state { focus = Node $ min num (input.nodesCount - 1) }
         Node _          -> state { focus = Node $ min num (input.nodesCount - 1) }
-        NodeInlets  nodeIdx -> state { focus = NodeInlet nodeIdx  $ min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode }
-        NodeOutlets nodeIdx -> state { focus = NodeOutlet nodeIdx $ min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode }
+        NodeInlets  nodeIdx -> state { focus = NodeInlet  $ nodeIdx /\ (min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode) }
+        NodeOutlets nodeIdx -> state { focus = NodeOutlet $ nodeIdx /\ (min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode) }
         _ -> state
 navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
@@ -409,9 +425,11 @@ tryLevelUp = case _ of
     Node _ -> NodesArea
     NodeInlets n -> Node n
     NodeOutlets n -> Node n
-    NodeInlet n _ -> NodeInlets n
-    NodeOutlet n _ -> NodeOutlets n
-
+    NodeInlet (n /\ _) -> NodeInlets n
+    NodeOutlet (n /\ _) -> NodeOutlets n
+    Connecting (n /\ o) NoTarget -> NodeOutlet (n /\ o)
+    Connecting (n /\ o) (ToNode _) -> Connecting (n /\ o) NoTarget
+    Connecting (n /\ o) (ToInlet (n' /\ _)) -> Connecting (n /\ o) (ToNode n')
 
 {-
     GlobalKeyDown kevt -> do
@@ -473,3 +491,50 @@ whichToIndex which =
     else if which >= upperAPos && which <= upperZPos then 10 + which - upperAPos
     else if which >= lowerAPos && which <= lowerZPos then 10 + which - lowerAPos
     else -1
+
+
+focusToString :: Focus -> String
+focusToString = case _ of
+    Free -> "[ ]"
+    CommandInput -> "CMD"
+    ValueEditor -> "EDIT"
+    PatchesBar -> "PTCH"
+    Patch pr -> "PTCH" <> show pr
+    Library -> "LIB"
+    LibraryFamily f -> "LIB-" <> indexToChar f
+    NodesArea -> "NOD"
+    Node n -> "NOD-" <> indexToChar n
+    NodeInlets n -> "NOD-" <> indexToChar n <> "-I-"
+    NodeOutlets n -> "NOD-" <> indexToChar n <> "-O-"
+    NodeInlet (n /\ i) -> "NOD-" <> indexToChar n <> "-I-" <> indexToChar i
+    NodeOutlet (n /\ o) -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o
+    Connecting (n /\ o)
+        NoTarget              -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON"
+    Connecting (n /\ o)
+        (ToNode n')        -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n'
+    Connecting (n /\ o)
+        (ToInlet (n' /\ i))   -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n' <> "-I-" <> indexToChar i
+
+
+toSequence :: Focus -> Array String
+toSequence = case _ of
+    Free -> []
+    CommandInput ->              [ "CMD" ]
+    ValueEditor ->               [ "VAL" ]
+    Library ->                   [ "l" ]
+    LibraryFamily fidx ->        [ "l", show fidx ]
+    PatchesBar ->                [ "p" ]
+    Patch pidx ->                [ "p", show pidx ]
+    NodesArea ->                 [ "n" ]
+    Node nidx ->                 [ "n", show nidx ]
+    NodeInlets nidx ->           [ "n", show nidx, "i" ] -- ⊥
+    NodeOutlets nidx ->          [ "n", show nidx, "o" ] -- ⊤
+    NodeInlet (nidx /\ iidx)  -> [ "n", show nidx, "i", show iidx ]
+    NodeOutlet (nidx /\ oidx) -> [ "n", show nidx, "o", show oidx ]
+    Connecting (nidx /\ oidx)
+        NoTarget              -> [ "n", show nidx, "o", show oidx, "c" ]
+    Connecting (nidx /\ oidx)
+        (ToNode nidx')        -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx' ]
+    Connecting (nidx /\ oidx)
+        (ToInlet (nidx' /\ iidx))
+                              -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx', "i", show iidx ]

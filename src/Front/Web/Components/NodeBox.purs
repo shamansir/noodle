@@ -59,6 +59,7 @@ import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
 import Web.Components.AppScreen.KeyboardLogic as KL
 
+
 type Input strepr chrepr m =
     { node :: Raw.Node strepr chrepr m
     , position :: Position
@@ -324,10 +325,10 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                         KL.NoFocusedNode ->      "✣"
                                         KL.NodeOpen n ->         KL.indexToChar n
                                         KL.NodeSelected ->       "◉"
-                                        KL.InletsOpen ->         "i"
-                                        KL.InletSelected in_ ->  "i" <> KL.indexToChar in_
-                                        KL.OutletsOpen ->        "o"
-                                        KL.OutletSelected on_ -> "o" <> KL.indexToChar on_
+                                        KL.InletsOpen ->         "⊥"
+                                        KL.InletSelected in_ ->  "⊥" <> KL.indexToChar in_
+                                        KL.OutletsOpen ->        "⊤"
+                                        KL.OutletSelected on_ -> "⊤" <> KL.indexToChar on_
 
         renderInlet idx inletDef =
             HS.g

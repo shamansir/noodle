@@ -55,7 +55,8 @@ import Noodle.Toolkit (families, class HoldsFamilies, class InitPatchState, clas
 import Noodle.Network (toolkit, patches) as Network
 import Noodle.Patch as Patch
 import Noodle.Raw.Node (Node) as Raw
-import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, family, state, setState, subscribeChanges, curChanges) as RawNode
+import Noodle.Raw.Node (run, _runOnInletUpdates, NodeChanges, id, family, state, setState, subscribeChanges, curChanges, shape) as RawNode
+import Noodle.Raw.Fn.Shape (inletAtIndex, outletAtIndex) as RawShape
 import Noodle.Repr.Tagged (class ValueTagged)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
@@ -646,7 +647,7 @@ handleAction ploc = case _ of
         state <- H.get
         when (KL.canZoom state.keyboard) $
             H.put $ state { zoom = min 3.0 $ max 0.3 $ state.zoom + (dy * 0.1) }
-    FromPatchArea _ (PatchArea.Connect (source /\ target)) -> do
+    FromPatchArea _ (PatchArea.Connect (source /\ target)) -> do -- TODO: reuse in NDF command handling
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
@@ -799,7 +800,6 @@ handleAction ploc = case _ of
         -- H.modify_ $ _ { shiftPressed = KE.shiftKey kevt }
 
 
-
 performKbAction
     :: forall output loc tk ps fs sr cr m
      . Wiring m
@@ -843,7 +843,30 @@ performKbAction ploc = case _ of
                         }
                 Nothing -> pinfo
         pure unit
-        -- H.get >>= _.lockOn >>> f >>> Just >>> pure
+    KL.StartConnecting nodeIndex outletIndex ->
+        pure unit
+    KL.FinishConnecting (KL.NodeIndex fromNodeIndex) (KL.OutletIndex outletIndex) (KL.NodeIndex toNodeIndex) (KL.InletIndex inletIndex) -> do
+        mbCurrentPatch <- H.get <#> CState.currentPatch
+        let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
+        whenJust mbCurrentPatch \curPatch -> do
+            whenJust2 (Array.index curPatchNodes fromNodeIndex) (Array.index curPatchNodes toNodeIndex)
+                \srcNode dstNode -> do
+                    let mbOutletR = RawNode.shape srcNode # RawShape.outletAtIndex outletIndex <#> _.name
+                    let mbInletR  = RawNode.shape dstNode # RawShape.inletAtIndex inletIndex   <#> _.name
+                    whenJust2 mbOutletR mbInletR \outletR inletR -> do
+                        nextPatch /\ rawLink <-
+                            H.lift $ Patch.connectRaw
+                                outletR
+                                inletR
+                                srcNode
+                                dstNode
+                                curPatch
+                        let connectCommandOp = QOp.connect rawLink
+                        H.modify_
+                              $ CState.replacePatch (Patch.id curPatch) nextPatch
+                            >>> CState.trackCommandOp connectCommandOp
+                        sendNdfOpToWebSocket connectCommandOp
+            -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

@@ -141,6 +141,14 @@ outletsCount :: Shape -> Int
 outletsCount = outlets >>> Array.length
 
 
+inletAtIndex :: Int -> Shape -> Maybe { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
+inletAtIndex idx = inlets >>> Array.filter (_.order >>> (_ == idx)) >>> Array.head
+
+
+outletAtIndex :: Int -> Shape -> Maybe { name :: OutletR, order :: Int, tag :: ValueTag }
+outletAtIndex idx = outlets >>> Array.filter (_.order >>> (_ == idx)) >>> Array.head
+
+
 hasHotInlets :: Shape -> Boolean
 hasHotInlets = unwrap >>> _.inlets >>> unwrap >>> Array.any _isHotInlet
 
