@@ -131,7 +131,7 @@ data Action
 
 
 loadNodeFocus :: Int -> Focus -> NodeFocus
-loadNodeFocus nodeIdx = case _ of
+loadNodeFocus nodeIdx = Debug.spyWith ("nodeFocus" <> show nodeIdx) show >>> case _ of
     NodesArea           -> NodeOpen nodeIdx
     Node n              -> if n == nodeIdx then NodeSelected else NoFocusedNode
     NodeInlets n        -> if n == nodeIdx then InletsOpen else NoFocusedNode
@@ -139,10 +139,10 @@ loadNodeFocus nodeIdx = case _ of
     NodeInlet  (n /\ i) -> if n == nodeIdx then InletSelected i else NoFocusedNode
     NodeOutlet (n /\ o) -> if n == nodeIdx then OutletSelected o else NoFocusedNode
     Connecting (n /\ o)
-            NoTarget    -> if n == nodeIdx then OutletSelected o else NoFocusedNode
+            NoTarget    -> if n == nodeIdx then OutletSelected o else NodeOpen nodeIdx
     Connecting (n /\ o)
             (ToNode n') -> if n == nodeIdx then OutletSelected o else
-                           if (n' == nodeIdx) then NodeSelected else NoFocusedNode
+                           if (n' == nodeIdx) then InletsOpen else NoFocusedNode
     Connecting (n /\ o)
             (ToInlet (n' /\ i))
                         -> if n == nodeIdx then OutletSelected o else
@@ -155,7 +155,6 @@ loadLibraryFocus = case _ of
     Library -> LibraryOpen
     LibraryFamily f -> FamilySelected f
     _ -> NoFocusedFamily
-
 
 
 trackKeyDown :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
@@ -223,15 +222,12 @@ trackKeyDown input state kevt =
                 LibraryFamily idx ->
                     nextState
                     /\ [ SpawnNode $ FamilyIndex idx ]
-                NodeOutlet (nidx /\ oidx) ->
-                    nextState
-                        { focus = Connecting (nidx /\ oidx) NoTarget }
-                    /\ [ StartConnecting (NodeIndex nidx) (OutletIndex oidx) ]
                 Connecting (nidx /\ oidx)
                     (ToInlet (nidx' /\ iidx)) ->
                     nextState
                         { focus = Free }
-                    /\ [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
+                    -- /\ [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
+                    /\ []
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check
@@ -269,6 +265,14 @@ trackKeyDown input state kevt =
                     { focus = PatchesBar }
                 ) /\ [ ]
 
+            else if (keyName == "c") then
+                case Debug.spyWith "curFocus" show nextState.focus of
+                    NodeOutlet (nidx /\ oidx) ->
+                        nextState
+                            { focus = Connecting (nidx /\ oidx) NoTarget }
+                        /\ [ StartConnecting (NodeIndex nidx) (OutletIndex oidx) ]
+                    _ -> nextState /\ []
+
             else
 
                 case Debug.spyWith "zusammen" show (keyToDir kevt /\ nextState.focus) of
@@ -285,7 +289,11 @@ trackKeyDown input state kevt =
             case Debug.spyWith "choose" show $ Either.choose (keyToDir kevt) (keyToNum kevt) of
 
                 Just eitherNav ->
-                    navigateIfNeeded eitherNav input nextState /\ []
+                    let nextState' = nextState { focus = navigateIfNeeded eitherNav input nextState.focus }
+                    in nextState' /\ case (nextState.focus /\ nextState'.focus) of
+                           Connecting _ (ToNode _) /\ Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
+                                [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
+                           _ -> []
 
                 Nothing -> nextState /\ []
 
@@ -340,21 +348,35 @@ selectedNode = _.focus >>> case _ of
     NodeOutlets n -> Just n
     NodeInlet  (n /\ _) -> Just n
     NodeOutlet (n /\ _) -> Just n
+    Connecting (n /\ _) NoTarget -> Just n
+    Connecting (_ /\ _) (ToNode n') -> Just n'
+    Connecting (_ /\ _) (ToInlet (n' /\ _)) -> Just n'
     _ -> Nothing
 
 
-navigateIfNeeded :: Either Dir Int -> Input -> State -> State
-navigateIfNeeded (Right num) input state =
-    case state.focus of
-        Library         -> state { focus = LibraryFamily $ min num (input.familiesCount - 1) }
-        LibraryFamily _ -> state { focus = LibraryFamily $ min num (input.familiesCount - 1) }
-        PatchesBar      -> state { focus = Patch $ min num (input.patchesCount - 1) }
-        Patch _         -> state { focus = Patch $ min num (input.patchesCount - 1) }
-        NodesArea       -> state { focus = Node $ min num (input.nodesCount - 1) }
-        Node _          -> state { focus = Node $ min num (input.nodesCount - 1) }
-        NodeInlets  nodeIdx -> state { focus = NodeInlet  $ nodeIdx /\ (min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode) }
-        NodeOutlets nodeIdx -> state { focus = NodeOutlet $ nodeIdx /\ (min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode) }
-        _ -> state
+navigateIfNeeded :: Either Dir Int -> Input -> Focus -> Focus
+navigateIfNeeded (Right num) input curFocus =
+    case curFocus of
+        Library         -> LibraryFamily $ min num (input.familiesCount - 1)
+        LibraryFamily _ -> LibraryFamily $ min num (input.familiesCount - 1)
+        PatchesBar      -> Patch $ min num (input.patchesCount - 1)
+        Patch _         -> Patch $ min num (input.patchesCount - 1)
+        NodesArea       -> Node $ min num (input.nodesCount - 1)
+        Node _          -> Node $ min num (input.nodesCount - 1)
+        NodeInlet _     -> curFocus
+        NodeOutlet _    -> curFocus
+        NodeInlets  nodeIdx -> NodeInlet  $ nodeIdx /\ (min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode)
+        NodeOutlets nodeIdx -> NodeOutlet $ nodeIdx /\ (min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode)
+        Connecting (n /\ o)
+                   NoTarget -> Connecting (n /\ o) $ ToNode $ min num (input.nodesCount - 1)
+        Connecting (n /\ o)
+                (ToNode n') -> Connecting (n /\ o) $ ToInlet (n /\ (min num $ fromMaybe 0 $ _.inletsCount <$> input.mbCurrentNode))
+        Connecting (n /\ o)
+                (ToInlet _) -> curFocus
+        Free -> curFocus
+        CommandInput -> curFocus
+        ValueEditor -> curFocus
+
 navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
 

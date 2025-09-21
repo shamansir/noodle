@@ -854,6 +854,10 @@ performKbAction ploc = case _ of
                     let mbOutletR = RawNode.shape srcNode # RawShape.outletAtIndex outletIndex <#> _.name
                     let mbInletR  = RawNode.shape dstNode # RawShape.inletAtIndex inletIndex   <#> _.name
                     whenJust2 mbOutletR mbInletR \outletR inletR -> do
+                        let _ = Debug.spyWith "inletR" show inletR
+                        let _ = Debug.spyWith "outletR" show outletR
+                        let _ = Debug.spyWith "srcNodeR" show $ RawNode.id srcNode
+                        let _ = Debug.spyWith "dstNodeR" show $ RawNode.id dstNode
                         nextPatch /\ rawLink <-
                             H.lift $ Patch.connectRaw
                                 outletR
