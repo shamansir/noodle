@@ -15,7 +15,7 @@ import Data.FunctorWithIndex (mapWithIndex)
 import Data.Int (toNumber) as Int
 import Data.Map (lookup) as Map
 import Data.Map.Extra (mapKeys) as MapX
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Newtype (unwrap, wrap) as NT
 import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
@@ -119,6 +119,7 @@ data Query strepr chrepr a
     = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
     | ApplyDragStart a
     | ApplyDragEnd a
+    | CallInletValueEditor Id.InletR a
 
 
 component
@@ -547,7 +548,7 @@ handleAction ptk = case _ of
         H.raise $ ReportMouseMove evt
 
 
-handleQuery :: forall action output sterpr chrepr m a. Query sterpr chrepr a -> H.HalogenM (State sterpr chrepr m) action () output m (Maybe a)
+handleQuery :: forall action strepr chrepr m a. Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
         H.modify_ _ { latestUpdate = Just changes }
@@ -557,4 +558,11 @@ handleQuery = case _ of
         pure $ Just a
     ApplyDragEnd a -> do
         H.modify_ _ { mouseFocus = NoMouseFocus }
+        pure $ Just a
+    CallInletValueEditor inletR a -> do -- TODO: make it a query for Editor info instead (instead of emulating click, make `AppScreen` spawn value editor using given info) (EditorInfo -> a)
+        { latestUpdate, node } <- H.get
+        let inletIdx = RawNode.shape node # RawShape.indexOfInlet inletR # fromMaybe 0
+        let valueOfInlet = latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR # (ViC._reportMissingKey $ Id.inletRName inletR) -- TODO: reuse/simplify
+        let inletPos = { x : (Int.toNumber inletIdx * channelStep), y : 0.0 }
+        H.raise $ InletValueWasClicked inletPos inletR (ValueEditor.EditorId "number") valueOfInlet
         pure $ Just a

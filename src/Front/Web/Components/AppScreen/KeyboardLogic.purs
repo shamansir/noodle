@@ -109,7 +109,8 @@ data Action
     -- | CloseCommandInput
     -- | StopListeningKeyboard
     -- | OpenValueEditor
-    = CloseValueEditor
+    = OpenValueEditor NodeIndex InletIndex
+    | CloseValueEditor
     -- | MoveNode Int Dir
     -- | FocusOn Focus
     -- | ClearFocus
@@ -228,6 +229,9 @@ trackKeyDown input state kevt =
                         { focus = Free }
                     -- /\ [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
                     /\ []
+                NodeInlet (n /\ i) ->
+                    nextState
+                    /\ [ OpenValueEditor (NodeIndex n) (InletIndex i) ]
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check

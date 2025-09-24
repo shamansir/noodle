@@ -846,6 +846,16 @@ performKbAction ploc = case _ of
         pure unit
     KL.StartConnecting nodeIndex outletIndex ->
         pure unit
+    KL.OpenValueEditor (KL.NodeIndex nodeIndex) (KL.InletIndex inletIndex) -> do
+        -- TODO: implement
+        mbCurrentPatch <- H.get <#> CState.currentPatch
+        let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
+        whenJust (Array.index curPatchNodes nodeIndex) \node -> do
+            let nodeR = RawNode.id node
+            let mbInletR = RawNode.shape node # RawShape.inletAtIndex inletIndex <#> _.name
+            whenJust mbInletR \inletR -> do
+                H.tell _patchArea SVG $ PatchArea.CallInletValueEditor nodeR inletR
+                H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
     KL.FinishConnecting (KL.NodeIndex fromNodeIndex) (KL.OutletIndex outletIndex) (KL.NodeIndex toNodeIndex) (KL.InletIndex inletIndex) -> do
         mbCurrentPatch <- H.get <#> CState.currentPatch
         let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []

@@ -186,6 +186,7 @@ data Query sr cr a
     | ValueEditorClosedByUser a
     -- | RequestNodeMove KL.NodeIndex KL.Dir a
     | QueryLock (LockingTask -> a)
+    | CallInletValueEditor Id.NodeR Id.InletR a
 
 
 component
@@ -583,6 +584,9 @@ handleQuery = case _ of
     QueryLock reply -> do
         { lockOn } <- H.get
         pure $ Just $ reply lockOn
+    CallInletValueEditor nodeR inletR a -> do
+        H.tell _nodeBox nodeR $ NodeBox.CallInletValueEditor inletR
+        pure $ Just a
 
 
 findFocusedNodes :: PositionXY -> NodesBounds -> Set Id.NodeR
