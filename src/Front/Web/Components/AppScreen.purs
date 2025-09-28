@@ -849,8 +849,9 @@ performKbAction ploc = case _ of
             let nodeR = RawNode.id node
             let mbInletR = RawNode.shape node # RawShape.inletAtIndex inletIndex <#> _.name
             whenJust mbInletR \inletR -> do
-                -- H.tell _patchArea SVG  $ PatchArea.CallInletValueEditor nodeR inletR
-                H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
+                let _ = Debug.spy "calling editor"
+                H.tell _patchArea SVG  $ PatchArea.CallInletValueEditor nodeR inletR
+                -- H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
     KL.CloseValueEditor ->
         H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
     KL.FinishConnecting (KL.NodeIndex fromNodeIndex) (KL.OutletIndex outletIndex) (KL.NodeIndex toNodeIndex) (KL.InletIndex inletIndex) -> do

@@ -232,7 +232,10 @@ trackKeyDown input state kevt =
                     /\ []
                 NodeInlet (n /\ i) ->
                     nextState
-                    /\ [ if not input.valueEditorOpened then OpenValueEditor (NodeIndex n) (InletIndex i) else CloseValueEditor ]
+                    /\ [ if Debug.spy "editor closed" $ not input.valueEditorOpened
+                          then OpenValueEditor (NodeIndex n) (InletIndex i)
+                          else CloseValueEditor
+                       ]
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check

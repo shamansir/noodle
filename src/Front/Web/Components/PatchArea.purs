@@ -132,11 +132,10 @@ type State ps sr cr m =
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
     , keyboardFocus :: KL.Focus
-        -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
-        --        but here we have access to all the nodes and rendering happens inside `PatchArea`,
-        --        so we store it twice for now, solve it later somehow
     }
-
+    -- FIXME: since there could be only one value editor in the `App`, we have it `AppScreeen` state,
+    --        but here we have access to all the nodes and rendering happens inside `PatchArea`,
+    --        so we store it twice for now, solve it later somehow
 
 type Input ps sr cr m =
     { offset :: Position
@@ -510,7 +509,6 @@ handleAction = case _ of
                 , pos
                 , currentValue : vic
                 }
-        H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ editorDef }
         H.raise $ RequestValueEditor nodeR editorDef
     FromNodeBox nodeR (NodeBox.OutletWasClicked outletR pos) -> do
         state <- H.get
@@ -548,7 +546,6 @@ handleAction = case _ of
             $ RawNode.sendIn inletR value -- (Debug.spy "send value" value)
         H.raise $ TrackValueSend nodeR inletR value
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
-        H.modify_ _ { mbCurrentEditor = Nothing }
         H.raise CloseValueEditor
         H.raise RefreshHelp
 
@@ -576,7 +573,8 @@ handleQuery = case _ of
         handleAction $ PassUpdate nodeR update
         pure $ Just a
     ValueEditorClosedByUser a -> do
-        H.modify_ _ { mbCurrentEditor = Nothing }
+        H.raise CloseValueEditor
+        H.raise RefreshHelp
         pure $ Just a
     CancelConnecting a -> do
         H.modify_ _ { lockOn = NoLock }
@@ -593,7 +591,6 @@ handleQuery = case _ of
                     , pos : inletInfo.pos
                     , currentValue : inletInfo.value
                     }
-            H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ editorDef }
             H.raise $ RequestValueEditor nodeR editorDef
         pure $ Just a
 
