@@ -63,6 +63,7 @@ type Input =
     , familiesCount :: Int
     , patchesCount :: Int
     , mbCurrentNode :: Maybe { inletsCount :: Int, outletsCount :: Int }
+    , valueEditorOpened :: Boolean
     }
 
 
@@ -231,7 +232,7 @@ trackKeyDown input state kevt =
                     /\ []
                 NodeInlet (n /\ i) ->
                     nextState
-                    /\ [ OpenValueEditor (NodeIndex n) (InletIndex i) ]
+                    /\ [ if not input.valueEditorOpened then OpenValueEditor (NodeIndex n) (InletIndex i) else CloseValueEditor ]
                 _ -> nextState /\ []
 
         -- since the index can be a letter, as well as commands, we should re-check

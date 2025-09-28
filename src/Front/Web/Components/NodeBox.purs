@@ -119,7 +119,14 @@ data Query strepr chrepr a
     = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
     | ApplyDragStart a
     | ApplyDragEnd a
-    | CallInletValueEditor Id.InletR a
+    | QueryInletData Id.InletR
+          (
+              { pos :: PositionXY
+              , value :: ValueInChannel chrepr
+              , index :: Int
+              , editorId :: ValueEditor.EditorId
+              }
+          -> a)
 
 
 component
@@ -559,10 +566,15 @@ handleQuery = case _ of
     ApplyDragEnd a -> do
         H.modify_ _ { mouseFocus = NoMouseFocus }
         pure $ Just a
-    CallInletValueEditor inletR a -> do -- TODO: make it a query for Editor info instead (instead of emulating click, make `AppScreen` spawn value editor using given info) (EditorInfo -> a)
+    QueryInletData inletR reply -> do -- TODO: make it a query for Editor info instead (instead of emulating click, make `AppScreen` spawn value editor using given info) (EditorInfo -> a)
         { latestUpdate, node } <- H.get
         let inletIdx = RawNode.shape node # RawShape.indexOfInlet inletR # fromMaybe 0
         let valueOfInlet = latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR # (ViC._reportMissingKey $ Id.inletRName inletR) -- TODO: reuse/simplify
         let inletPos = { x : (Int.toNumber inletIdx * channelStep), y : 0.0 }
-        H.raise $ InletValueWasClicked inletPos inletR (ValueEditor.EditorId "number") valueOfInlet
-        pure $ Just a
+        -- H.raise $ InletValueWasClicked inletPos inletR (ValueEditor.EditorId "number") valueOfInlet
+        pure $ Just $ reply
+            { pos : inletPos
+            , value : valueOfInlet
+            , editorId : ValueEditor.EditorId "number"
+            , index : inletIdx
+            }

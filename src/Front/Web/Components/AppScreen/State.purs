@@ -6,7 +6,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Type.Proxy (Proxy(..))
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Set (Set)
 import Data.Set (empty, fromFoldable) as Set
 import Data.Map (Map)
@@ -454,6 +454,7 @@ loadKbInput state =
         , patchesCount
         , uiMode : state.uiMode
         , mbCurrentNode
+        , valueEditorOpened : isJust state.mbCurrentEditor
         }
 
 

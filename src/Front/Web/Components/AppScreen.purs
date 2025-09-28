@@ -15,7 +15,7 @@ import Control.Monad.Extra (whenJust, whenJust2, whenJust_)
 import Signal ((~>))
 import Signal (runSignal) as Signal
 
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe, isJust)
 import Data.Map (empty, toUnfoldable, fromFoldable, size, insert, lookup) as Map
 import Data.Map.Extra (update') as Map
 import Data.Tuple.Nested ((/\), type (/\))
@@ -820,10 +820,6 @@ performKbAction ploc = case _ of
         case nextUiMode of
             CState.OnlyCanvas _ -> pure unit
             _ -> handleAction ploc LoadCurrentPatchChanges
-    KL.CloseValueEditor ->
-        H.tell _patchArea SVG PatchArea.CancelConnecting
-    KL.CancelConnectingNodes ->
-        H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
     KL.SpawnNode (KL.FamilyIndex familyIdx) -> do
         families <- _.families <$> H.get
         case Array.index families familyIdx of
@@ -847,15 +843,16 @@ performKbAction ploc = case _ of
     KL.StartConnecting nodeIndex outletIndex ->
         pure unit
     KL.OpenValueEditor (KL.NodeIndex nodeIndex) (KL.InletIndex inletIndex) -> do
-        -- TODO: implement
         mbCurrentPatch <- H.get <#> CState.currentPatch
         let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
         whenJust (Array.index curPatchNodes nodeIndex) \node -> do
             let nodeR = RawNode.id node
             let mbInletR = RawNode.shape node # RawShape.inletAtIndex inletIndex <#> _.name
             whenJust mbInletR \inletR -> do
-                H.tell _patchArea SVG $ PatchArea.CallInletValueEditor nodeR inletR
+                -- H.tell _patchArea SVG  $ PatchArea.CallInletValueEditor nodeR inletR
                 H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
+    KL.CloseValueEditor ->
+        H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
     KL.FinishConnecting (KL.NodeIndex fromNodeIndex) (KL.OutletIndex outletIndex) (KL.NodeIndex toNodeIndex) (KL.InletIndex inletIndex) -> do
         mbCurrentPatch <- H.get <#> CState.currentPatch
         let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
@@ -889,6 +886,8 @@ performKbAction ploc = case _ of
                               >>> CState.trackCommandOp connectCommandOp
                         sendNdfOpToWebSocket connectCommandOp
             -- H.get >>= _.lockOn >>> f >>> Just >>> pure
+    KL.CancelConnectingNodes ->
+        H.tell _patchArea SVG PatchArea.CancelConnecting
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

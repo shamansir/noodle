@@ -584,8 +584,17 @@ handleQuery = case _ of
     QueryLock reply -> do
         { lockOn } <- H.get
         pure $ Just $ reply lockOn
-    CallInletValueEditor nodeR inletR a -> do
-        H.tell _nodeBox nodeR $ NodeBox.CallInletValueEditor inletR
+    CallInletValueEditor nodeR inletR a -> do -- TODO: merge with `InletValueWasClicked`
+        mbInletInfo <- H.request _nodeBox nodeR $ NodeBox.QueryInletData inletR
+        whenJust mbInletInfo \inletInfo -> do
+            let editorDef =
+                    { inlet : inletR
+                    , editor : inletInfo.editorId
+                    , pos : inletInfo.pos
+                    , currentValue : inletInfo.value
+                    }
+            H.modify_ _ { mbCurrentEditor = Just $ nodeR /\ editorDef }
+            H.raise $ RequestValueEditor nodeR editorDef
         pure $ Just a
 
 

@@ -41,7 +41,7 @@ data Output v
 
 
 type ValueEditor v m
-    =  ValueEditorComp v m
+    = ValueEditorComp v m
 
 
 data Query a
