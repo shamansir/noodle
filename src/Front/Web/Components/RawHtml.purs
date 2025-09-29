@@ -55,6 +55,7 @@ component =
   handleAction = case _ of
     Initialize -> do
       state <- H.get
+      -- TODO: replace with `whenJust`
       H.getHTMLElementRef state.elRef >>= case _ of
         Nothing -> pure unit
         Just el -> do
@@ -63,9 +64,10 @@ component =
 
     Receive input -> do
       H.modify_ _ { html = input.html
-                    , elRef = input.elRef
-                    }
+                  , elRef = input.elRef
+                  }
       state <- H.get
+      -- TODO: replace with `whenJust`
       H.getHTMLElementRef state.elRef >>= case _ of
         Nothing -> pure unit
         Just el -> do

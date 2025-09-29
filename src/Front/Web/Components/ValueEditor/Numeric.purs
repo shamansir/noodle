@@ -2,9 +2,6 @@ module Web.Components.ValueEditor.Numeric where
 
 import Prelude
 
-import Debug as Debug
-
-
 import Data.Maybe (Maybe(..), maybe)
 import Data.Number as Number
 import Data.String as String
@@ -14,18 +11,15 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Events as HE
 
+import Halogen.Svg.Attributes.Color as HC
+import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
+
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
-import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 import Web.UIEvent.KeyboardEvent as KE
-import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 import Noodle.Repr.HasFallback (fallback, class HasFallback)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
-
-import Halogen.Svg.Attributes.Color as HC
-import Halogen.Svg.Attributes.Color.Extra as HCColorX
-import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
 
 import Web.Components.ValueEditor as VE
 
