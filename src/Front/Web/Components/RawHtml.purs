@@ -7,6 +7,7 @@ import Prelude
 
 import Data.Const                   (Const)
 import Data.Maybe                   (Maybe(..))
+import Control.Monad.Extra          (whenJust)
 import Effect                       (Effect)
 import Effect.Class                 (class MonadEffect, liftEffect)
 import Halogen                      as H
@@ -54,25 +55,19 @@ component =
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
     Initialize -> do
-      state <- H.get
-      -- TODO: replace with `whenJust`
-      H.getHTMLElementRef state.elRef >>= case _ of
-        Nothing -> pure unit
-        Just el -> do
-          liftEffect $ setHTML el state.html
-      pure unit
+      injectHTML
 
     Receive input -> do
       H.modify_ _ { html = input.html
                   , elRef = input.elRef
                   }
+      injectHTML
+
+  injectHTML :: H.HalogenM State Action () Void m Unit
+  injectHTML = do
       state <- H.get
-      -- TODO: replace with `whenJust`
-      H.getHTMLElementRef state.elRef >>= case _ of
-        Nothing -> pure unit
-        Just el -> do
-          liftEffect $ setHTML el state.html
-      pure unit
+      mbTargetElement <- H.getHTMLElementRef state.elRef
+      whenJust mbTargetElement $ liftEffect <<< flip setHTML state.html
 
   render :: State -> H.ComponentHTML Action () m
   render state =

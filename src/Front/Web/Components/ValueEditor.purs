@@ -5,6 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect, class MonadEffect)
 
+import Control.Monad.Extra (whenJust)
+
 import Data.Maybe (Maybe(..))
 import Data.Maybe (maybe) as M
 import Data.String as String
@@ -123,12 +125,9 @@ editor inputType (EditorId editorId) mw =
             ]
 
     handleAction = case _ of
-        AInitialize ->
-            H.getHTMLElementRef refLabel >>= case _ of
-                Nothing -> pure unit
-                Just el -> do
-                    liftEffect $ focus el
-                    pure unit
+        AInitialize -> do
+            mbEditorElement <- H.getHTMLElementRef refLabel
+            whenJust mbEditorElement $ liftEffect <<< focus
 
         ASkip ->
             pure unit
