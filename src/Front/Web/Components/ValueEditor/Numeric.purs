@@ -23,7 +23,6 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 
 import Web.Components.ValueEditor as VE
 
-
 data Action repr
     = Skip
     | SendValue repr
@@ -31,54 +30,22 @@ data Action repr
     | Receive (VE.Input repr)
 
 
+type NumericMW repr = VE.MW_ Number repr
+
+
+
+editorId = VE.EditorId "numeric" :: VE.EditorId
+
+
+makeMW :: forall repr. (repr -> Maybe Number) -> (Number -> repr) -> NumericMW repr
+makeMW fromRepr toRepr =
+    { fromRepr
+    , toRepr
+    , decode : Number.fromString
+    , encode : show
+    }
+
+
 editor :: forall repr m. HasFallback repr => Monad m => (repr -> Maybe Number) -> (Number -> repr) -> VE.ValueEditor repr m
 editor fromRepr toRepr =
-    H.mkComponent
-        { initialState
-        , render
-        , eval : H.mkEval H.defaultEval
-            { handleAction = handleAction
-            , receive = Just <<< Receive
-            }
-        }
-    where
-    initialState { pos, currentValue } = { pos, currentValue }
-
-    render state =
-        HH.input
-            [ HHP.type_ I.InputNumber
-            , HHP.width 40, HHP.height 9
-            -- , HHP.min 0.0
-            -- , HHP.max 20.0
-            , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
-                <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
-                <> "border-radius: 5px; "
-                <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
-                <> HHP.position_ HHP.Abs { x : state.pos.x + 7.0, y : state.pos.y - 20.0 }
-            -- , HP.step $ I.Step step
-            , HHP.value $ maybe "-" show $ fromRepr state.currentValue
-            , HE.onValueInput (Number.fromString >>> map toRepr >>> {- Debug.spy "repr" >>> -} maybe Skip SendValue)
-            -- , HE.onValueChange (Debug.spy "onValueChange" >>> const Skip)
-            , HE.onKeyUp (\kevt ->
-                    if (String.toLower (KE.key kevt) == "escape") || (String.toLower (KE.key kevt) == "enter")
-                        then CloseEditor -- Debug.spy "close editor" CloseEditor
-                        else Skip
-                )
-            ]
-
-    handleAction = case _ of
-        Skip ->
-            pure unit
-
-        SendValue val -> do
-            H.raise $ VE.SendValue val
-
-        CloseEditor ->
-            H.raise $ VE.CloseEditor
-
-        Receive { pos, currentValue } ->
-            H.modify_ _ { pos = pos, currentValue = currentValue }
-
-    inputBorderColor = _.i600 $ Palette.yellow
-    inputTextColor = _.i100 $ Palette.cyan
-    inputBackgroundColor = _.i900 $ Palette.yellow
+    VE.editor I.InputNumber editorId $ makeMW fromRepr toRepr

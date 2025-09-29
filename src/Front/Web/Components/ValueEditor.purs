@@ -3,6 +3,7 @@ module Web.Components.ValueEditor where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect, class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Maybe (maybe) as M
@@ -60,7 +61,8 @@ type ValueEditor v m
 
 
 data Action repr
-    = ASkip
+    = AInitialize
+    | ASkip
     | ASendValue repr
     | ACloseEditor
     | AReceive (Input repr)
@@ -82,23 +84,26 @@ type MW_ a repr = -- TODO: use `Repr` typeclasses
     }
 
 
-editor :: forall a repr m. HasFallback repr => Monad m => HHP.InputType -> MW_ a repr -> ValueEditor repr m
-editor inputType mw =
+editor :: forall a repr m. HasFallback repr => MonadEffect m => HHP.InputType -> EditorId -> MW_ a repr -> ValueEditor repr m
+editor inputType (EditorId editorId) mw =
     H.mkComponent
         { initialState
         , render
         , eval : H.mkEval H.defaultEval
             { handleAction = handleAction
+            , initialize = Just AInitialize
             , receive = Just <<< AReceive
             }
         }
     where
     initialState { pos, currentValue } = { pos, currentValue }
+    refLabel = H.RefLabel $ "value-editor-" <> editorId
 
     render state =
         HH.input
-        [ HHP.type_ inputType
+            [ HHP.type_ inputType
             , HHP.width 40, HHP.height 9
+            , HHP.ref refLabel
             -- , HHP.min 0.0
             -- , HHP.max 20.0
             , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
@@ -118,6 +123,13 @@ editor inputType mw =
             ]
 
     handleAction = case _ of
+        AInitialize ->
+            H.getHTMLElementRef refLabel >>= case _ of
+                Nothing -> pure unit
+                Just el -> do
+                    liftEffect $ focus el
+                    pure unit
+
         ASkip ->
             pure unit
 
@@ -143,7 +155,6 @@ editor inputType mw =
         Just el -> do
           liftEffect $ setHTML el state.html
 
-      [ HP.ref state.elRef ]
     -}
 
 {-
