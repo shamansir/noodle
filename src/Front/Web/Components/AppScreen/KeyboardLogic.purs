@@ -221,6 +221,8 @@ trackKeyDown input state kevt =
         else if keyCode == "enter" then
 
             case nextState.focus of
+                ValueEditor ->
+                    nextState /\ if input.valueEditorOpened then [ CloseValueEditor ] else []
                 LibraryFamily idx ->
                     nextState
                     /\ [ SpawnNode $ FamilyIndex idx ]

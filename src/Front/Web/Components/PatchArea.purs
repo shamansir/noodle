@@ -545,9 +545,11 @@ handleAction = case _ of
         whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
             $ RawNode.sendIn inletR value -- (Debug.spy "send value" value)
         H.raise $ TrackValueSend nodeR inletR value
+    {-
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.raise CloseValueEditor
         H.raise RefreshHelp
+    -}
 
 
 handleQuery

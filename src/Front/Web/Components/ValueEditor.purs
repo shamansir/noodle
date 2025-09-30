@@ -55,7 +55,7 @@ type Input v =
 
 data Output v
     = SendValue v
-    | CloseEditor
+--     | CloseEditor
 
 
 type ValueEditor v m
@@ -66,7 +66,7 @@ data Action repr
     = AInitialize
     | ASkip
     | ASendValue repr
-    | ACloseEditor
+    -- | ACloseEditor
     | AReceive (Input repr)
 
 
@@ -117,11 +117,13 @@ editor inputType (EditorId editorId) mw =
             , HHP.value $ M.maybe "-" mw.encode $ mw.fromRepr state.currentValue
             , HE.onValueInput (mw.decode >>> map mw.toRepr >>> {- Debug.spy "repr" >>> -} M.maybe ASkip ASendValue)
             -- , HE.onValueChange (Debug.spy "onValueChange" >>> const Skip)
+            {-
             , HE.onKeyUp (\kevt ->
                     if (String.toLower (KE.key kevt) == "escape") || (String.toLower (KE.key kevt) == "enter")
                         then ACloseEditor -- Debug.spy "close editor" CloseEditor
                         else ASkip
                 )
+            -}
             ]
 
     handleAction = case _ of
@@ -135,8 +137,8 @@ editor inputType (EditorId editorId) mw =
         ASendValue val -> do
             H.raise $ SendValue val
 
-        ACloseEditor ->
-            H.raise $ CloseEditor
+        {- ACloseEditor ->
+            H.raise $ CloseEditor -}
 
         AReceive { pos, currentValue } ->
             H.modify_ _ { pos = pos, currentValue = currentValue }
