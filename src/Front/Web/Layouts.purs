@@ -2,7 +2,7 @@ module Web.Layouts where
 
 import Prelude
 
-import Data.Array (range) as Array
+import Data.Array (length, range) as Array
 import Data.Int (toNumber) as Int
 import Data.Set (Set)
 import Data.Set (toUnfoldable) as Set
@@ -14,6 +14,7 @@ import Web.Layer (TargetLayer(..))
 
 import Front.Shared.Panels as Panels
 import Front.Shared.StatusBarCells as SBC
+import Noodle.Raw.Fn.Shape (InletDefRec, OutletDefRec)
 
 import Play (Play, (~*))
 
@@ -148,11 +149,12 @@ _fullLayout params =
 data NodePart
     = Title
     | TitleArea -- Title + Paddings
+    | StatusIcon
     | TitlePadding
-    | Inlet Int
+    | Inlet Int InletDefRec
     | InletName
     | InletConnector
-    | Outlet Int
+    | Outlet Int OutletDefRec
     | OutletName
     | OutletConnector
     | NodeBackground
@@ -164,8 +166,8 @@ data NodePart
 
 
 type NodeParams =
-    { outletsCount :: Int
-    , inletsCount :: Int
+    { inlets :: Array InletDefRec
+    , outlets :: Array OutletDefRec
     , bodyWidth :: Number
     , bodyHeight :: Number
     }
@@ -174,7 +176,7 @@ type NodeParams =
 horzNodeUI :: NodeParams -> Play NodePart
 horzNodeUI params =
     let
-        titleWidth = 30.0
+        titleWidth = 20.0
         channelsHeight = 20.0
         -- bodyWidth = 700.0 -- try 300.0 to see how it fits
         -- bodyHeight = 120.0
@@ -183,8 +185,8 @@ horzNodeUI params =
         -- inletsCount = 5
         --outletsCount = 7
 
-        inlet n =
-            Play.i (Inlet n)
+        inlet n def =
+            Play.i (Inlet n def)
             ~* Play.width channelWidth
             ~* Play.heightGrow
             ~* Play.with
@@ -195,10 +197,10 @@ horzNodeUI params =
                     ~* Play.widthGrow
                     ~* Play.heightGrow
                 ]
-        inlets = inlet <$> Array.range 0 params.inletsCount
+        inlets = mapWithIndex inlet params.inlets
 
-        outlet n =
-            Play.i (Outlet n)
+        outlet n def =
+            Play.i (Outlet n def)
             ~* Play.width channelWidth
             ~* Play.heightGrow
             ~* Play.with
@@ -209,7 +211,7 @@ horzNodeUI params =
                     ~* Play.widthGrow
                     ~* Play.heightGrow
                 ]
-        outlets = outlet <$> Array.range 0 params.outletsCount
+        outlets = mapWithIndex outlet params.outlets
 
     in Play.i NodeBackground
         ~* Play.widthFit
@@ -221,7 +223,7 @@ horzNodeUI params =
                 ~* Play.heightFit
                 ~* Play.topToBottom
             ~* Play.with
-                [ Play.i TitlePadding
+                [ Play.i StatusIcon -- TitlePadding
                     ~* Play.widthGrow
                     ~* Play.height channelsHeight
                 , Play.i Title
@@ -265,8 +267,8 @@ vertNodeUI params =
         channelHeight = 20.0
         connectorWidth = 15.0
 
-        inlet n =
-            Play.i (Inlet n)
+        inlet n def =
+            Play.i (Inlet n def)
             ~* Play.widthFit
             ~* Play.heightFit
             ~* Play.with
@@ -277,10 +279,10 @@ vertNodeUI params =
                     ~* Play.width connectorWidth
                     ~* Play.heightGrow
                 ]
-        inlets = inlet <$> Array.range 0 params.inletsCount
+        inlets = mapWithIndex inlet params.inlets
 
-        outlet n =
-            Play.i (Outlet n)
+        outlet n def =
+            Play.i (Outlet n def)
             ~* Play.widthFit
             ~* Play.heightFit
             ~* Play.with
@@ -291,7 +293,7 @@ vertNodeUI params =
                     ~* (Play.width  channelNameMinWidth)
                     ~* (Play.height channelHeight)
                 ]
-        outlets = outlet <$> Array.range 0 params.outletsCount
+        outlets = mapWithIndex outlet params.outlets
 
         -- exampleWidth  = bodyWidth + (2.0 * paddingWidth) + 50.0
         -- exampleHeight = max (bodyHeight + 50.0) (max (Int.toNumber inletsCount * channelHeight) (Int.toNumber outletsCount * channelHeight) + titleHeight)

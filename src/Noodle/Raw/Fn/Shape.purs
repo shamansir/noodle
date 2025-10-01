@@ -62,12 +62,13 @@ unsafeOutletR :: String -> OutletR
 unsafeOutletR = wrap
 
 
+type InletDefRec = { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
+type OutletDefRec = { name :: OutletR, order :: Int, tag :: ValueTag }
+
 -- | `InletDefR` stores rawified inlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype InletDefR = InletDefR { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
-
-
+newtype InletDefR = InletDefR InletDefRec
 -- | `OutletDefR` stores rawified outlet definition, moving all it's type-level data to value-level. Or, it can be created right away for the cases where it safe to be unsafe.
-newtype OutletDefR = OutletDefR { name :: OutletR, order :: Int, tag :: ValueTag }
+newtype OutletDefR = OutletDefR OutletDefRec
 
 
 instance Show InletDefR where
@@ -110,8 +111,8 @@ derive newtype instance Eq Shape
 
 
 make ::
-    { inlets  :: Array { name :: InletR,  order :: Int, temp :: Temperament, tag :: ValueTag }
-    , outlets :: Array { name :: OutletR, order :: Int, tag :: ValueTag }
+    { inlets  :: Array InletDefRec
+    , outlets :: Array OutletDefRec
     }
     -> Shape
 make { inlets, outlets } =
@@ -125,11 +126,11 @@ empty :: Shape
 empty = make { inlets : [], outlets : [] }
 
 
-inlets :: Shape -> Array { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
+inlets :: Shape -> Array InletDefRec
 inlets = unwrap >>> _.inlets >>> unwrap >>> map unwrap
 
 
-outlets :: Shape -> Array { name :: OutletR, order :: Int, tag :: ValueTag }
+outlets :: Shape -> Array OutletDefRec
 outlets = unwrap >>> _.outlets >>> unwrap >>> map unwrap
 
 
@@ -141,11 +142,11 @@ outletsCount :: Shape -> Int
 outletsCount = outlets >>> Array.length
 
 
-inletAtIndex :: Int -> Shape -> Maybe { name :: InletR, order :: Int, temp :: Temperament, tag :: ValueTag }
+inletAtIndex :: Int -> Shape -> Maybe InletDefRec
 inletAtIndex idx = inlets >>> Array.filter (_.order >>> (_ == idx)) >>> Array.head
 
 
-outletAtIndex :: Int -> Shape -> Maybe { name :: OutletR, order :: Int, tag :: ValueTag }
+outletAtIndex :: Int -> Shape -> Maybe OutletDefRec
 outletAtIndex idx = outlets >>> Array.filter (_.order >>> (_ == idx)) >>> Array.head
 
 

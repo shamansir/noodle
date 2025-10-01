@@ -311,8 +311,6 @@ instance Show Focus where
     show = focusToString
 
 
-
-
 trackKeyUp :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
 trackKeyUp input state kevt = state { shiftPressed = KE.shiftKey kevt } /\ []
 
