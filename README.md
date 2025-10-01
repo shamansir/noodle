@@ -1,5 +1,9 @@
 # README
 
+## Current deployment
+
+https://shamansir.github.io/noodle/app.html
+
 ## A bit outdated web state
 
 (running over the previous version)
@@ -13,7 +17,7 @@ https://noodle.labs.jb.gg
   * It is not yet isolated with `node_packages`, and current CLI interface a.k.a. TUI requires `chjj/blessed` library from `npm`;
   * It works on my M1 Pro machine :D;
   * With `purescript-overlay` it allows to select compiler and `spago`, and `spago build` and all the commands below should work there in theory;
-  * `nix develop` works, where you can do `spago build` and `spago run`;
+  * `nix develop` works with `npm install`, where you can do `spago build` and `spago run`;
   * `nix build` works;
   * `nix run` works;
 
