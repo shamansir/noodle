@@ -2,6 +2,10 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Debug as Debug
+
+import Effect.Class (class MonadEffect)
+
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
@@ -15,9 +19,7 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug as Debug
-import Effect.Class (class MonadEffect)
-import Front.Shared.Bounds (Position, PositionXY, Size)
+
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -25,36 +27,43 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
+import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.MouseEvent (toEvent) as ME
+import Web.Event.Event (preventDefault, stopPropagation) as WE
+
 import Noodle.Fn.Generic.Tracker (inlets)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
+
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
-import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
+
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-import Play as Play
-import StarterTk.Body.Cli.P5.Shape (body)
-import Type.Proxy (Proxy)
+
+import Front.Shared.Bounds (Position, PositionXY, Size)
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.AppScreen.KeyboardLogic as KL
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
-import Web.Event.Event (preventDefault, stopPropagation) as WE
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Layouts as Layouts
 import Web.Paths as Paths
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-import Web.UIEvent.MouseEvent (toEvent) as ME
+
+import Play as Play
+-- import StarterTk.Body.Cli.P5.Shape (body)
+import Type.Proxy (Proxy)
+
 
 
 type Input strepr chrepr m =
@@ -199,7 +208,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                 case v of
                     Layouts.BodyBackground -> -- Body
                         HS.path
-                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
+                            [ HSA.transform [ HSA.Translate (rect.pos.x + bodyLeftPadding) rect.pos.y ]
                             , HE.onMouseOver $ const $ ChangeMouseFocus IsOverBody
                             , HE.onMouseOut $ const ClearMouseFocus
                             -- , HSA.class_ $ ClassName "noodle-capture-events"
@@ -212,7 +221,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                             , HE.onClick HeaderClick
                             ]
                             [ HS.path
-                                [ HSA.d $ Paths.nodeTitle { slope : slopeFactor, width : rect.size.width, height : rect.size.height - (slopeFactor * 2.0) }
+                                [ HSA.d $ Paths.nodeTitle { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
                                 , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
                                 , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
                                 , HSA.strokeWidth 1.5
@@ -222,7 +231,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                 , HSA.font_size $ HSA.FontSizeLength $ HSA.Px titleFontSize
                                 , HSA.dominant_baseline HSA.Hanging
                                 , HSA.transform
-                                    [ HSA.Translate 0.0 (-slopeFactor - 2.0)
+                                    [ HSA.Translate 3.0 $ rect.size.height - slopeFactor - 2.0
                                     , HSA.Rotate 270.0 0.0 0.0
                                     ]
                                 ]
@@ -342,6 +351,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         )
     where
         slopeFactor = 5.0
+        bodyLeftPadding = 2.0
         titleMaxChars = 8 -- bodyHeight / 9.0 (fontCharWidth)
         inletsDefs = RawShape.inlets $ RawNode.shape node
         outletsDefs = RawShape.outlets $ RawNode.shape node
@@ -359,7 +369,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         channelNameShift = connectorRadius + 4.0
 
         nodeUiLayout = Play.layout $ Layouts.horzNodeUI
-                            { bodyWidth : 300.0
+                            { bodyWidth : 250.0
                             , bodyHeight
                             , inlets  : inletsDefs
                             , outlets : outletsDefs
@@ -426,7 +436,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
 
         renderInlet idx inletDef rect =
             HS.g
-                [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
+                [ HSA.transform [ HSA.Translate (rect.pos.x + connectorRadius) (rect.pos.y + connectorRadius) ]
                 , HE.onClick $ flip InletClick inletDef.name
                 , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
                 , HE.onMouseOut  $ const $ ClearMouseFocus
@@ -468,12 +478,12 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (-channelBarHeight) ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (-1.0 * channelFontSize) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     , HSA.class_ $ H.ClassName "noodle-capture-events"
-                    , HE.onClick $ \mevt -> InletValueClick mevt inletPos inletDef.name $ valueOfInlet inletDef.name
+                    , HE.onClick $ \mevt -> InletValueClick mevt rect.pos inletDef.name $ valueOfInlet inletDef.name
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
                 , HS.rect
@@ -487,7 +497,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
             where inletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderOutlet idx outletDef rect =
             HS.g
-                [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
+                [ HSA.transform [ HSA.Translate (rect.pos.x + connectorRadius) (rect.pos.y + connectorRadius)  ]
                 , HE.onClick $ flip OutletClick outletDef.name
                 , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
                 , HE.onMouseOut  $ const $ ClearMouseFocus
@@ -529,7 +539,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                             [ HH.text $ if idx == on_ then "◉" else show idx ]
                     _ -> HH.text ""
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) channelBarHeight ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (rect.size.height + 5.0) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
@@ -538,7 +548,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                 , HS.rect
                     [ HSA.fill $ Just $ P.hColorOf P.transparent
                     , HSA.width channelStep
-                    , HSA.height channelBarHeight
+                    , HSA.height rect.size.height
                     , HSA.x $ -connectorRadius - 2.0
                     , HSA.y 0.0
                     ]

@@ -176,7 +176,7 @@ type NodeParams =
 horzNodeUI :: NodeParams -> Play NodePart
 horzNodeUI params =
     let
-        titleWidth = 20.0
+        titleWidth = 16.0
         channelsHeight = 20.0
         -- bodyWidth = 700.0 -- try 300.0 to see how it fits
         -- bodyHeight = 120.0
@@ -237,6 +237,7 @@ horzNodeUI params =
                 ~* Play.widthFit
                 ~* Play.heightFit
                 ~* Play.topToBottom
+                ~* Play.padding{ top : 0.0, left : 5.0, right : 0.0, bottom : 0.0 }
                 ~* Play.with
                     [ Play.i Inlets
                         ~* Play.widthFit
