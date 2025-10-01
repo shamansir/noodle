@@ -149,7 +149,7 @@ _fullLayout params =
 data NodePart
     = Title
     | TitleArea -- Title + Paddings
-    | StatusIcon
+    | ControlButton
     | TitlePadding
     | Inlet Int InletDefRec
     | InletName
@@ -223,7 +223,7 @@ horzNodeUI params =
                 ~* Play.heightFit
                 ~* Play.topToBottom
             ~* Play.with
-                [ Play.i StatusIcon -- TitlePadding
+                [ Play.i ControlButton -- TitlePadding
                     ~* Play.widthGrow
                     ~* Play.height channelsHeight
                 , Play.i Title

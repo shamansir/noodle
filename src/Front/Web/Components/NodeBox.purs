@@ -2,10 +2,6 @@ module Web.Components.NodeBox where
 
 import Prelude
 
-import Debug as Debug
-
-import Effect.Class (class MonadEffect)
-
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
@@ -19,7 +15,9 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-
+import Debug as Debug
+import Effect.Class (class MonadEffect)
+import Front.Shared.Bounds (Position, PositionXY, Size)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -27,42 +25,36 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-import Web.UIEvent.MouseEvent (toEvent) as ME
-import Web.Event.Event (preventDefault, stopPropagation) as WE
-
 import Noodle.Fn.Generic.Tracker (inlets)
+import Noodle.Fn.Shape (I)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
-import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
-
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
-
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-
-import Front.Shared.Bounds (Position, PositionXY, Size)
+import Play as Play
+import Type.Proxy (Proxy)
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.AppScreen.KeyboardLogic as KL
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
+import Web.Event.Event (preventDefault, stopPropagation) as WE
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Layouts as Layouts
 import Web.Paths as Paths
-
-import Play as Play
--- import StarterTk.Body.Cli.P5.Shape (body)
-import Type.Proxy (Proxy)
+import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.MouseEvent (toEvent) as ME
 
 
 
@@ -81,6 +73,7 @@ data MouseFocus chrepr -- TODO: merge with KeyboardFocus
     | IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
     | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
     | IsOverBody
+    | IsOverControlButton
     | BeingDragged
 
 
@@ -164,7 +157,7 @@ initialState { node, position, size, keyboardFocus, inMouseFocus, isDragging } =
     , position
     , size
     , latestUpdate : Nothing
-    , mouseFocus : if inMouseFocus then IsOverBody else if isDragging then BeingDragged else NoMouseFocus
+    , mouseFocus : {- if inMouseFocus then IsOverBody else -} if isDragging then BeingDragged else NoMouseFocus
     , keyboardFocus
     }
 
@@ -209,12 +202,15 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     Layouts.BodyBackground -> -- Body
                         HS.path
                             [ HSA.transform [ HSA.Translate (rect.pos.x + bodyLeftPadding) rect.pos.y ]
-                            , HE.onMouseOver $ const $ ChangeMouseFocus IsOverBody
-                            , HE.onMouseOut $ const ClearMouseFocus
-                            -- , HSA.class_ $ ClassName "noodle-capture-events"
                             , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : rect.size.width {- bodyWidth -}, height : rect.size.height }
                             , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                             ]
+                    Layouts.Body -> -- Body
+                        hoverCatchingRect
+                                { x : rect.pos.x + bodyLeftPadding, y : rect.pos.y }
+                                rect.size
+                                Nothing
+                                IsOverBody
                     Layouts.Title ->
                         HS.g
                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
@@ -237,12 +233,13 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                 ]
                                 [ HH.text $ fitTitle $ Id.family $ Id.familyOf $ RawNode.id node ]
                             ]
-                    Layouts.StatusIcon ->
-                        ( if inMouseFocus || inKeyboardFocus then
-                            HS.g
-                                [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
-                                , HE.onClick $ if inMouseFocus then DragButtonClick else const Skip
-                                ]
+                    Layouts.ControlButton ->
+                        let
+                            controlButtonActive = inMouseFocus || inKeyboardFocus
+                        in HS.g
+                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
+                            ]
+                            $ ( if controlButtonActive then
                                 [ HS.circle
                                     [ HSA.r 10.0, HSA.cx 5.0, HSA.cy 5.0
                                     , HSA.fill $ Just controlButtonBackColor
@@ -254,8 +251,16 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                     , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
                                     ]
                                     [ HH.text controlButtonContent ]
+
                                 ]
-                        else HSX.none )
+                            else [] )
+                            <>
+                            [ hoverCatchingRect
+                                { x : 0.0, y : 0.0 }
+                                rect.size
+                                (if controlButtonActive then Just DragButtonClick else Nothing)
+                                IsOverControlButton
+                            ]
                     Layouts.Inlet n def ->
                         renderInlet n def rect
                     Layouts.Outlet n def ->
@@ -379,15 +384,17 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         fitTitle title =
             if String.length title <= titleMaxChars then title
             else "…" <> String.drop (String.length title - titleMaxChars) title
+
         valueOfInlet  inletR =  latestUpdate <#> _.inlets  <#> MapX.mapKeys Tuple.snd >>= Map.lookup inletR  # (ViC._reportMissingKey $ Id.inletRName  inletR)
         valueOfOutlet outletR = latestUpdate <#> _.outlets <#> MapX.mapKeys Tuple.snd >>= Map.lookup outletR # (ViC._reportMissingKey $ Id.outletRName outletR)
+
         fillForInlet inletDef =
             if isOverInlet inletDef.name then
                 Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
             else Nothing
-
         strokeForInlet inletDef = Just $ P.hColorOf $ _.i200 $ if inletDef.temp == Hot then Palette.red else Palette.blue
-        fillForOulet outletDef = if isOverOutlet outletDef.name then Just $ P.hColorOf $ _.i200 Palette.blue else Nothing
+
+        fillForOutlet outletDef = if isOverOutlet outletDef.name then Just $ P.hColorOf $ _.i200 Palette.blue else Nothing
         strokeForOutlet outletDef = Just $ P.hColorOf $ _.i200 $ Palette.blue
 
         beingDragged = case mouseFocus of
@@ -396,11 +403,15 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         inMouseFocus = case mouseFocus of
                            BeingDragged -> false
                            NoMouseFocus -> false
-                           _ -> true
+
+                           IsOverControlButton -> true
+                           IsOverBody -> true
+                           IsOverInlet _ _ -> true
+                           IsOverOutlet _ _ -> true
         inKeyboardFocus = case keyboardFocus of
                           KL.NoFocusedNode -> false
                           _ -> true
-        isOverInlet inletR = case mouseFocus of
+        isOverInlet inletR = case Debug.spy "mouseFocusI" mouseFocus of
             IsOverInlet inletDef _ -> (_.name $ NT.unwrap inletDef) == inletR
             _ -> false
         isOverOutlet outletR = case mouseFocus of
@@ -437,10 +448,6 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         renderInlet idx inletDef rect =
             HS.g
                 [ HSA.transform [ HSA.Translate (rect.pos.x + connectorRadius) (rect.pos.y + connectorRadius) ]
-                , HE.onClick $ flip InletClick inletDef.name
-                , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name
-                , HE.onMouseOut  $ const $ ClearMouseFocus
-                , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ]
                 [ HS.circle
                     [ HSA.fill $ fillForInlet inletDef
@@ -478,7 +485,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     ]
                     [ HH.text $ String.toUpper $ Id.inletRName inletDef.name ]
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (-1.0 * channelFontSize) ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (-1.0 * channelFontSize - 4.0) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
@@ -486,25 +493,19 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     , HE.onClick $ \mevt -> InletValueClick mevt rect.pos inletDef.name $ valueOfInlet inletDef.name
                     ]
                     [ WF.renderFormatting SVG $ T.inlet idx inletDef.name $ valueOfInlet inletDef.name ]
-                , HS.rect
-                    [ HSA.fill $ Just $ P.hColorOf P.transparent
-                    , HSA.width channelStep
-                    , HSA.height channelBarHeight
-                    , HSA.x $ -connectorRadius - 2.0
-                    , HSA.y $ -3.0
-                    ]
+                , hoverCatchingRect
+                    { x : -connectorRadius, y : -connectorRadius }
+                    rect.size
+                    (Just $ flip InletClick inletDef.name)
+                    (IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name)
                 ]
             where inletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderOutlet idx outletDef rect =
             HS.g
                 [ HSA.transform [ HSA.Translate (rect.pos.x + connectorRadius) (rect.pos.y + connectorRadius)  ]
-                , HE.onClick $ flip OutletClick outletDef.name
-                , HE.onMouseOver $ const $ ChangeMouseFocus $ IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name
-                , HE.onMouseOut  $ const $ ClearMouseFocus
-                , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ] -- TODO reverse order so that outlets align to the right side, or even better to bottom right corner
                 [ HS.circle
-                    [ HSA.fill $ fillForOulet outletDef
+                    [ HSA.fill $ fillForOutlet outletDef
                     , HSA.stroke $ strokeForOutlet outletDef
                     , HSA.strokeWidth 1.0
                     , HSA.r connectorRadius
@@ -539,19 +540,17 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                             [ HH.text $ if idx == on_ then "◉" else show idx ]
                     _ -> HH.text ""
                 , HS.g
-                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0 - 2.0) (rect.size.height + 5.0) ]
+                    [ HSA.transform [ HSA.Translate (connectorRadius * 2.0) (channelFontSize + 6.0) ]
                     , HSA.fill $ Just $ P.hColorOf Palette.paper
                     , HSA.dominant_baseline HSA.Hanging
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px valueFontSize
                     ]
                     [ WF.renderFormatting SVG $ T.outlet idx outletDef.name $ valueOfOutlet outletDef.name ]
-                , HS.rect
-                    [ HSA.fill $ Just $ P.hColorOf P.transparent
-                    , HSA.width channelStep
-                    , HSA.height rect.size.height
-                    , HSA.x $ -connectorRadius - 2.0
-                    , HSA.y 0.0
-                    ]
+                , hoverCatchingRect
+                    { x : -connectorRadius, y : -connectorRadius }
+                    rect.size
+                    (Just $ flip OutletClick outletDef.name)
+                    (IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name)
                 ]
             where outletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderInlets =
@@ -580,6 +579,18 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                         -- $ mapWithIndex renderOutlet outletsDefs ]
                         [] ]
                 )
+        hoverCatchingRect pos size mbClick mFocus =
+            HS.rect
+                [ HSA.fill $ Just $ P.hColorOf P.transparent
+                , HSA.width size.width
+                , HSA.height size.height
+                , HSA.x pos.x
+                , HSA.y pos.y
+                , HE.onMouseOver $ const $ ChangeMouseFocus mFocus
+                , HE.onMouseOut $ const ClearMouseFocus
+                , HE.onClick $ fromMaybe (const Skip) mbClick
+                , HSA.class_ $ H.ClassName "noodle-capture-events"
+                ]
 
 
 handleAction
@@ -604,7 +615,7 @@ handleAction ptk = case _ of
             , position = input.position
             , size = input.size
             , keyboardFocus = input.keyboardFocus
-            , mouseFocus = if input.inMouseFocus then IsOverBody else if input.isDragging then BeingDragged else s.mouseFocus
+            , mouseFocus = {- if input.inMouseFocus then IsOverBody else -} if input.isDragging then BeingDragged else s.mouseFocus
             }
     HeaderClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
@@ -632,6 +643,7 @@ handleAction ptk = case _ of
         case focus of
             NoMouseFocus -> pure unit
             BeingDragged -> pure unit
+            IsOverControlButton -> pure unit
             IsOverInlet inletDef vic -> do
                 state <- H.get
                 let inlet = NT.unwrap inletDef
