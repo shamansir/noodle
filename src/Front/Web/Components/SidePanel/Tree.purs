@@ -3,7 +3,11 @@ module Web.Components.SidePanel.Tree where
 import Prelude
 
 import Type.Proxy (Proxy(..))
+
+import Color as Color
+
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Text.Format as T
 
 import Web.Components.SidePanel (SidePanel)
 
@@ -23,6 +27,6 @@ sidePanel =
     , value : const unit
     , next : (\network ->
             toPathTree (const unit) network
-            <#> \pathTree -> pure (formatPathTree pathTree)
+            <#> \pathTree -> pure $ T.fgc (Color.graytone 0.8) $ formatPathTree pathTree
         )
     }

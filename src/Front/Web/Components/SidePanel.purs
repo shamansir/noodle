@@ -18,7 +18,7 @@ import Data.String.CodeUnits as CU
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties (style, ref) as HHP
-import Halogen.HTML.Properties.Extra (Position(..), position) as HHP
+import Halogen.HTML.Properties.Extra (Position(..), position_, fontSize_) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
@@ -78,9 +78,10 @@ data Action s
 
 
 slopeFactor = 5.0 :: Number
-fontSize = 12.0 :: Number
+headerFontSize = 12.0 :: Number
 headerHeight = 20.0 :: Number
 contentPadding = 20.0 :: Number
+contentFontSize = 10.0 :: Number
 
 panel
     :: forall id s v query output m
@@ -112,7 +113,8 @@ panel targetLayer pid config =
 
     render HTML { tags } =
         HH.div
-            [ HHP.position HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } ]
+            [ HHP.style $ HHP.position_ HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } <> ";" <> HHP.fontSize_ contentFontSize
+            ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
         where
@@ -139,7 +141,7 @@ panel targetLayer pid config =
                         [ HSA.fill $ Just $ P.hColorOf $ _.i50 Palette.blue
                         , HSA.x 6.0
                         , HSA.y 7.0
-                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
+                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px headerFontSize
                         , HSA.dominant_baseline HSA.Hanging
                         ]
                         [ HH.text $ ": " <> config.title ]

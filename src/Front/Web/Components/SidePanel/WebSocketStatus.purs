@@ -6,6 +6,8 @@ import Debug as Debug
 
 import Type.Proxy (Proxy(..))
 
+import Color as Color
+
 import Data.UniqueHash (UniqueHash)
 import Data.Text.Format as T
 import Data.Array (foldl) as Array
@@ -84,4 +86,4 @@ extractStatus = Array.foldl foldF Off
 
 
 toTag :: WS.Message -> T.Tag
-toTag = WS.toString >>> T.s
+toTag = WS.toString >>> T.s >>> T.fgc (Color.graytone 0.8)

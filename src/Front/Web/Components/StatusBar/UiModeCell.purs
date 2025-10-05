@@ -14,6 +14,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
+import Halogen.Svg.Attributes.Transform (Transform(..)) as HSA
 import Halogen.Svg.Elements as HS
 
 import Noodle.Ui.Palette.Item as P
@@ -62,8 +63,6 @@ component targetLayer =
     initialState { currentMode, fontSize } =
         { currentMode, fontSize }
 
-    zoomTextWidth = 35.0
-
     render SVG state =
             HS.g
                 []
@@ -71,6 +70,7 @@ component targetLayer =
                     [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px state.fontSize
                     , HSA.dominant_baseline HSA.Central
+                    , HSA.transform [ HSA.Translate 0.0 $ (state.fontSize / 2.0) + 7.0 ]
                     ]
                     $ pure $ HH.text $ UiMode.modeString state.currentMode
                 {-

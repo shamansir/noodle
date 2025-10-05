@@ -64,7 +64,7 @@ component targetLayer =
     render SVG state =
         if state.currentZoom /= 1.0 then
             HS.g
-                []
+                [ HSA.transform [ HSA.Translate (-4.0) 5.0 ] ]
                 [ HS.text
                     [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
                     , HSA.font_size $ HSA.FontSizeLength $ HSA.Px state.fontSize

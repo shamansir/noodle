@@ -9,6 +9,12 @@ import Data.String (joinWith) as String
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
+import Halogen.Svg.Attributes.Transform (Transform(..)) as HSA
+
+import Noodle.Ui.Palette.Item as P
+import Noodle.Ui.Palette.Set.Flexoki as Palette
 
 import Web.Layer (TargetLayer(..))
 
@@ -44,7 +50,15 @@ component targetLayer =
         focus
 
     render SVG state =
-        HS.g [] [ HS.text [] [ HH.text $ fullText state ] ]
+        HS.g []
+            [ HS.text
+                [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
+                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 10.0
+                        , HSA.dominant_baseline HSA.Central
+                        , HSA.transform [ HSA.Translate 0.0 11.0 ]
+                        ]
+                [ HH.text $ fullText state ]
+            ]
 
     render HTML state =
         HH.span [] []

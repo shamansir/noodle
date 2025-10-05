@@ -63,10 +63,17 @@ component targetLayer =
     initialState { host, port, status } =
         { host, port, status }
 
-    zoomTextWidth = 35.0
-
     render SVG state =
-        HS.g [] [ HS.text [] [ HH.text $ fullText state ] ]
+        HS.g
+            []
+            [ HS.text
+                [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
+                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 9.0
+                , HSA.dominant_baseline HSA.Central
+                , HSA.transform [ HSA.Translate 0.0 11.0 ]
+                ]
+                [ HH.text $ fullText state ]
+            ]
 
     render HTML state =
         HH.span [] []
