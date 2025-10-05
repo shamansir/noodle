@@ -470,6 +470,7 @@ render ploc _ state =
                 { currentZoom : state.zoom
                 , wsStatus : state.wsConnection.status
                 , uiMode : state.uiMode
+                , keyboardFocus : state.keyboard.focus
                 } :: StatusBar.CellState ()
             commandInputInput =
                 { pos : { x : width / 2.0, y : height / 2.0 }

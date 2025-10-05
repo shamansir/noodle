@@ -499,7 +499,6 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     (Just $ flip InletClick inletDef.name)
                     (IsOverInlet (NT.wrap inletDef) $ valueOfInlet inletDef.name)
                 ]
-            where inletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
         renderOutlet idx outletDef rect =
             HS.g
                 [ HSA.transform [ HSA.Translate (rect.pos.x + connectorRadius) (rect.pos.y + connectorRadius)  ]
@@ -552,33 +551,6 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     (Just $ flip OutletClick outletDef.name)
                     (IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name)
                 ]
-            where outletPos = { x : (Int.toNumber idx * channelStep), y : 0.0 }
-        renderInlets =
-            HS.g
-                [ HSA.transform [ HSA.Translate titleWidth 0.0 ] ]
-                (
-                    HS.path
-                        [ HSA.d $ Paths.channelBarTop { slope : slopeFactor, width : channelBarWidth, height : channelBarHeight }
-                        , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
-                        ]
-                    : [ HS.g
-                        [ HSA.transform [ HSA.Translate 3.0 3.0 ] ]
-                        -- $ mapWithIndex renderInlet inletsDefs ]
-                        [] ]
-                )
-        renderOutlets =
-            HS.g
-                [ HSA.transform [ HSA.Translate titleWidth $ channelBarHeight + bodyHeight ] ]
-                (
-                    HS.path
-                        [ HSA.d $ Paths.channelBarBottom { slope : slopeFactor, width : channelBarWidth, height : channelBarHeight }
-                        , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
-                        ]
-                    : [ HS.g
-                        [ HSA.transform [ HSA.Translate 3.0 0.0 ] ]
-                        -- $ mapWithIndex renderOutlet outletsDefs ]
-                        [] ]
-                )
         hoverCatchingRect pos size mbClick mFocus =
             HS.rect
                 [ HSA.fill $ Just $ P.hColorOf P.transparent

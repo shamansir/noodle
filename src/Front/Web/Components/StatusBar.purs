@@ -22,7 +22,6 @@ import Halogen.HTML.Properties.Extra (Position(..), position_, fontSize_) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
-
 import Noodle.Id (LinkR) as Id
 import Noodle.Raw.Link (Connector) as RawLink
 import Noodle.Ui.Palette.Item as P
@@ -40,9 +39,11 @@ import Front.Shared.WsLocation as WS
 import Web.Components.StatusBar.ZoomCell as Cell.Zoom
 import Web.Components.StatusBar.WSStatusCell as Cell.WSStatus
 import Web.Components.StatusBar.UiModeCell as Cell.UiMode
+import Web.Components.StatusBar.KeyboardComboCell as Cell.KeyboardCombo
 import Web.Components.SidePanel.WebSocketStatus as WS
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.Components.AppScreen.UiMode as UiMode
+import Web.Components.AppScreen.KeyboardLogic as KL
 
 type Slots =
     ( cell :: forall q. H.Slot q Cells.Output (TargetLayer /\ Cells.Which)
@@ -83,6 +84,7 @@ type CellState r =
     { currentZoom :: Number
     , wsStatus :: WS.Status
     , uiMode :: UiMode
+    , keyboardFocus :: KL.Focus
     | r
     }
 
@@ -209,9 +211,10 @@ cellSlot
     -> H.ComponentHTML action slots m
 cellSlot pslot target toAction state =
     case _ of
-        Cells.Zoom     -> HH.slot pslot (target /\ Cells.Zoom)     (Cell.Zoom.component target)     { currentZoom : state.currentZoom, fontSize }               toAction
-        Cells.WSStatus -> HH.slot pslot (target /\ Cells.WSStatus) (Cell.WSStatus.component target) { host : WS.host, port : WS.port, status : state.wsStatus } toAction
-        Cells.UiMode   -> HH.slot pslot (target /\ Cells.UiMode)   (Cell.UiMode.component target)   { currentMode : UiMode.getModeKey state.uiMode, fontSize }                    toAction
+        Cells.Zoom          -> HH.slot pslot (target /\ Cells.Zoom)          (Cell.Zoom.component target)          { currentZoom : state.currentZoom, fontSize }               toAction
+        Cells.WSStatus      -> HH.slot pslot (target /\ Cells.WSStatus)      (Cell.WSStatus.component target)      { host : WS.host, port : WS.port, status : state.wsStatus } toAction
+        Cells.UiMode        -> HH.slot pslot (target /\ Cells.UiMode)        (Cell.UiMode.component target)        { currentMode : UiMode.getModeKey state.uiMode, fontSize }  toAction
+        Cells.KeyboardCombo -> HH.slot pslot (target /\ Cells.KeyboardCombo) (Cell.KeyboardCombo.component target) state.keyboardFocus                                         toAction
 
 
 cellWidth :: Cells.Which -> Number
@@ -220,6 +223,7 @@ cellWidth =
       Cells.WSStatus -> 270.0
       Cells.Zoom -> 50.0
       Cells.UiMode -> 50.0
+      Cells.KeyboardCombo -> 100.0
 
 
 contentMinWidth = 400.0 :: Number

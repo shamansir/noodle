@@ -8,13 +8,14 @@ data Which
     = Zoom
     | WSStatus
     | UiMode
+    | KeyboardCombo
 
 derive instance Eq Which
 derive instance Ord Which
 
 
 allCells :: Array Which
-allCells = [ WSStatus, Zoom, UiMode ]
+allCells = [ UiMode, KeyboardCombo, WSStatus, Zoom ]
 
 
 data Output
