@@ -53,10 +53,10 @@ component targetLayer =
         HS.g []
             [ HS.text
                 [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
-                        , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 10.0
-                        , HSA.dominant_baseline HSA.Central
-                        , HSA.transform [ HSA.Translate 0.0 11.0 ]
-                        ]
+                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 10.0
+                , HSA.dominant_baseline HSA.Central
+                , HSA.transform [ HSA.Translate 0.0 11.0 ]
+                ]
                 [ HH.text $ fullText state ]
             ]
 

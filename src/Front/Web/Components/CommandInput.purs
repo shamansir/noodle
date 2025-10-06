@@ -94,6 +94,7 @@ component toolkit =
             , HHP.width (fromMaybe 0 $ Int.fromNumber fullWidth), HHP.height 9
             , HHP.style $ "background-color: " <> HC.printColor (Just $ P.hColorOf inputBackgroundColor) <> "; "
                 <> "color: " <> HC.printColor (Just $ P.hColorOf inputTextColor) <> "; "
+                <> "font-size: 17px; "
                 <> "border-radius: 5px; "
                 <> "border: 1px solid " <> HC.printColor (Just $ P.hColorOf inputBorderColor) <> ";"
                 <> HHP.position_ HHP.Abs { x : state.pos.x - (fullWidth / 2.0), y : state.pos.y }
