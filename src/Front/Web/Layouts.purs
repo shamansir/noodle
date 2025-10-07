@@ -72,7 +72,8 @@ _fullLayout :: UiParams -> Play UiPart
 _fullLayout params =
     let
         topBarHeight = 45.0
-        statusBarHeight = 30.0
+        statusBarPadding = 5.0
+        statusBarHeight = 25.0 + statusBarPadding * 2.0
         sidePanelButtonWidth = 32.0
         sidePanelButtonHeight = 20.0
         libraryWidth = 150.0

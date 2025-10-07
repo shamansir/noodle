@@ -111,9 +111,13 @@ panel targetLayer pid config =
 
     panelContentRef = H.RefLabel $ "panel-content" <> reflectSymbol pid
 
-    render HTML { tags } =
+    render HTML { tags, size } =
         HH.div
-            [ HHP.style $ HHP.position_ HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } <> ";" <> HHP.fontSize_ contentFontSize
+            [ HHP.style
+                 $ HHP.position_ HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } <> "; "
+                <> HHP.fontSize_ contentFontSize <> "; "
+                <> "height : " <> show size.height <> "px; "
+                <> "overflow-y: scroll;"
             ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
