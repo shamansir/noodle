@@ -890,6 +890,12 @@ performKbAction ploc = case _ of
             -- H.get >>= _.lockOn >>> f >>> Just >>> pure
     KL.CancelConnectingNodes ->
         H.tell _patchArea SVG PatchArea.CancelConnecting
+    KL.RemoveNode (KL.NodeIndex nodeIndex) -> do
+        mbCurrentPatch <- H.get <#> CState.currentPatch
+        let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
+        whenJust (Array.index curPatchNodes nodeIndex) \node -> do
+            let nodeR = RawNode.id node
+            handleAction ploc $ FromPatchArea (mbCurrentPatch <#> Patch.id) $ PatchArea.RemoveNode nodeR
 
 
 sendNdfOpToWebSocket :: forall loc tk ps fs sr cr m action slots output. MonadEffect m => Ndf.CommandOp -> H.HalogenM (State loc tk ps fs sr cr m) action slots output m Unit

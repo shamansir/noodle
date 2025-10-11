@@ -2,6 +2,11 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
+import Debug as Debug
+
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Array.NonEmpty as NEA
+import Data.Array (head, takeEnd) as Array
 import Data.Either (Either(..))
 import Data.Either as Either
 import Data.Enum (fromEnum, toEnum)
@@ -9,8 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
 import Data.String.CodePoints as CP
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug as Debug
-import Play (w)
+
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
@@ -33,12 +37,14 @@ data Focus
     | NodeInlet (Int /\ Int)
     | NodeOutlet (Int /\ Int)
     | Connecting (Int /\ Int) ConnectTo
+    | SomeNodes (NonEmptyArray Int)
 
 
 data NodeFocus
     = NoFocusedNode
     | NodeSelected
     | NodeOpen Int
+    | NodeSemiOpen Int
     | InletsOpen
     | OutletsOpen
     | InletSelected Int
@@ -126,6 +132,7 @@ data Action
     | ChangeUiMode UiMode
     | SpawnNode FamilyIndex
     | MoveNode NodeIndex Dir
+    | RemoveNode NodeIndex
     | StartConnecting NodeIndex OutletIndex
     | FinishConnecting NodeIndex OutletIndex NodeIndex InletIndex
     -- |
@@ -149,6 +156,7 @@ loadNodeFocus nodeIdx = Debug.spyWith ("nodeFocus" <> show nodeIdx) show >>> cas
             (ToInlet (n' /\ i))
                         -> if n == nodeIdx then OutletSelected o else
                            if (n' == nodeIdx) then InletSelected i else NoFocusedNode
+    SomeNodes nodes     -> if NEA.elem nodeIdx nodes then NodeSemiOpen nodeIdx else NodeOpen nodeIdx
     _ -> NoFocusedNode
 
 
@@ -176,7 +184,7 @@ trackKeyDown input state kevt =
             )
             /\ [ CancelConnectingNodes, CloseValueEditor ]
 
-        else if (keyName == "tab") then
+        else if (keyName == "tab") || (keyName == "x") then
             (case nextState.focus of
                 Free ->
                     ( nextState
@@ -275,12 +283,25 @@ trackKeyDown input state kevt =
                     { focus = PatchesBar }
                 ) /\ [ ]
 
+            else if (keyName == "a") then
+                ( nextState
+                    { focus = case nextState.focus of
+                        Node nidx -> SomeNodes $ NEA.singleton nidx
+                        _ -> nextState.focus
+                    }
+                ) /\ [ ]
+
             else if (keyName == "c") then
                 case Debug.spyWith "curFocus" show nextState.focus of
                     NodeOutlet (nidx /\ oidx) ->
                         nextState
                             { focus = Connecting (nidx /\ oidx) NoTarget }
                         /\ [ StartConnecting (NodeIndex nidx) (OutletIndex oidx) ]
+                    _ -> nextState /\ []
+
+            else if (keyName == "d") || (keyName == "r") then
+                case nextState.focus of
+                    Node nidx -> nextState { focus = Free } /\ [ RemoveNode $ NodeIndex nidx ]
                     _ -> nextState /\ []
 
             else
@@ -347,6 +368,7 @@ waitingForIndex = case _ of
     Connecting _ NoTarget  -> true -- waits for next node index
     Connecting _ (ToNode _) -> true -- waits fot inlet index
     Connecting _ (ToInlet _) -> false -- the connection is done
+    SomeNodes _ -> true -- waits for next nodes indices
 
 
 selectedNode :: State -> Maybe Int
@@ -359,6 +381,7 @@ selectedNode = _.focus >>> case _ of
     Connecting (n /\ _) NoTarget -> Just n
     Connecting (_ /\ _) (ToNode n') -> Just n'
     Connecting (_ /\ _) (ToInlet (n' /\ _)) -> Just n'
+    SomeNodes nodes -> Array.head $ NEA.takeEnd 1 nodes -- FIXME:
     _ -> Nothing
 
 
@@ -384,6 +407,7 @@ navigateIfNeeded (Right num) input curFocus =
         Free -> curFocus
         CommandInput -> curFocus
         ValueEditor -> curFocus
+        SomeNodes nodes -> SomeNodes $ NEA.snoc nodes $ min num (input.nodesCount - 1)
 
 navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
@@ -460,6 +484,9 @@ tryLevelUp = case _ of
     Connecting (n /\ o) NoTarget -> NodeOutlet (n /\ o)
     Connecting (n /\ o) (ToNode _) -> Connecting (n /\ o) NoTarget
     Connecting (n /\ o) (ToInlet (n' /\ _)) -> Connecting (n /\ o) (ToNode n')
+    SomeNodes nodes -> case NEA.fromArray $ NEA.dropEnd 1 nodes of
+        Just previousNodes -> SomeNodes previousNodes
+        Nothing -> Free
 
 {-
     GlobalKeyDown kevt -> do
@@ -544,6 +571,7 @@ focusToString = case _ of
         (ToNode n')        -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n'
     Connecting (n /\ o)
         (ToInlet (n' /\ i))   -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n' <> "-I-" <> indexToChar i
+    SomeNodes nodes -> "NOD-" <> indexToChar (NEA.head nodes) <> "-A-" <> (String.joinWith "-" $ indexToChar <$> NEA.tail nodes)
 
 
 toSequence :: Focus -> Array String
@@ -568,7 +596,8 @@ toSequence = case _ of
     Connecting (nidx /\ oidx)
         (ToInlet (nidx' /\ iidx))
                               -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx', "i", show iidx ]
-
+    SomeNodes nodes ->
+        [ "n", show (NEA.head nodes), "a" ] <> (show <$> NEA.tail nodes)
 
 resetFocus :: State -> State
 resetFocus = _ { focus = Free }

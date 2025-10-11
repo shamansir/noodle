@@ -8,7 +8,7 @@
   "scripts": {
     "build": "spago build",
     "bundle": "spago bundle",
-    "test": "spago text"
+    "test": "spago test"
   },
   "repository": {
     "type": "git",

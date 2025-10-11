@@ -423,6 +423,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                         KL.NoFocusedNode ->    _.i900 Palette.yellow
                                         KL.NodeSelected ->     _.i900 Palette.blue
                                         KL.NodeOpen _ ->       _.i900 Palette.base_
+                                        KL.NodeSemiOpen _ ->   _.i900 Palette.base_
                                         KL.InletsOpen ->       _.i900 Palette.blue
                                         KL.InletSelected _ ->  _.i900 Palette.blue
                                         KL.OutletsOpen ->      _.i900 Palette.blue
@@ -431,7 +432,8 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                     case keyboardFocus of
                                         KL.NoFocusedNode ->    _.i100 Palette.yellow
                                         KL.NodeOpen _ ->       _.i300 Palette.blue
-                                        KL.NodeSelected ->     _.i100 Palette.blue
+                                        KL.NodeSelected ->     _.i100 Palette.orange
+                                        KL.NodeSemiOpen _ ->   _.i300 Palette.orange
                                         KL.InletsOpen ->       _.i300 Palette.green
                                         KL.InletSelected _ ->  _.i100 Palette.green
                                         KL.OutletsOpen ->      _.i300 Palette.purple
@@ -439,6 +441,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         controlButtonContent =  case keyboardFocus of
                                         KL.NoFocusedNode ->      "✣"
                                         KL.NodeOpen n ->         KL.indexToChar n
+                                        KL.NodeSemiOpen n ->     KL.indexToChar n
                                         KL.NodeSelected ->       "◉"
                                         KL.InletsOpen ->         "⊥"
                                         KL.InletSelected in_ ->  "⊥" <> KL.indexToChar in_
