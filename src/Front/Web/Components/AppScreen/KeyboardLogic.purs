@@ -2,8 +2,6 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
-import Debug as Debug
-
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Array (head, takeEnd) as Array
@@ -140,7 +138,7 @@ data Action
 
 
 loadNodeFocus :: Int -> Focus -> NodeFocus
-loadNodeFocus nodeIdx = Debug.spyWith ("nodeFocus" <> show nodeIdx) show >>> case _ of
+loadNodeFocus nodeIdx = case _ of
     NodesArea           -> NodeOpen nodeIdx
     Node n              -> if n == nodeIdx then NodeSelected else NoFocusedNode
     NodeInlets n        -> if n == nodeIdx then InletsOpen else NoFocusedNode
@@ -170,8 +168,8 @@ loadLibraryFocus = case _ of
 trackKeyDown :: Input -> State -> KE.KeyboardEvent -> State /\ Array Action
 trackKeyDown input state kevt =
     let
-        keyName = Debug.spy "name" $ String.toLower $ KE.key kevt
-        keyCode = Debug.spy "code" $ String.toLower $ KE.code kevt
+        keyName = String.toLower $ KE.key kevt
+        keyCode = String.toLower $ KE.code kevt
         shiftPressed = KE.shiftKey kevt
         controlPressed = KE.ctrlKey kevt
         nextState = state { shiftPressed = shiftPressed }
@@ -242,7 +240,7 @@ trackKeyDown input state kevt =
                     /\ []
                 NodeInlet (n /\ i) ->
                     nextState
-                    /\ [ if Debug.spy "editor closed" $ not input.valueEditorOpened
+                    /\ [ if not input.valueEditorOpened
                           then OpenValueEditor (NodeIndex n) (InletIndex i)
                           else CloseValueEditor
                        ]
@@ -292,7 +290,7 @@ trackKeyDown input state kevt =
                 ) /\ [ ]
 
             else if (keyName == "c") then
-                case Debug.spyWith "curFocus" show nextState.focus of
+                case nextState.focus of
                     NodeOutlet (nidx /\ oidx) ->
                         nextState
                             { focus = Connecting (nidx /\ oidx) NoTarget }
@@ -306,7 +304,7 @@ trackKeyDown input state kevt =
 
             else
 
-                case Debug.spyWith "zusammen" show (keyToDir kevt /\ nextState.focus) of
+                case keyToDir kevt /\ nextState.focus of
 
                     Just dir /\ Node n ->
                        nextState /\ [ MoveNode (NodeIndex n) dir ]
@@ -317,7 +315,7 @@ trackKeyDown input state kevt =
 
         else
 
-            case Debug.spyWith "choose" show $ Either.choose (keyToDir kevt) (keyToNum kevt) of
+            case Either.choose (keyToDir kevt) (keyToNum kevt) of
 
                 Just eitherNav ->
                     let nextState' = nextState { focus = navigateIfNeeded eitherNav input nextState.focus }
@@ -419,13 +417,12 @@ keyToDir = KE.code >>> String.toLower >>> case _ of
     "arrowup" -> Just DUp
     "arrowdown" -> Just DDown
     _ -> Nothing
-    >>> Debug.spy "dir"
 
 
 keyToNum :: KE.KeyboardEvent -> Maybe Int
 keyToNum =
     -- KE.which >>> ?wh
-  KE.code >>> String.toLower >>> Debug.spy "num" >>> case _ of
+  KE.code >>> String.toLower >>> case _ of
     "digit0" -> Just 0
     "digit1" -> Just 1
     "digit2" -> Just 2

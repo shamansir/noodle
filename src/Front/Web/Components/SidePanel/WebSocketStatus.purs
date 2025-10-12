@@ -2,8 +2,6 @@ module Web.Components.SidePanel.WebSocketStatus where
 
 import Prelude
 
-import Debug as Debug
-
 import Type.Proxy (Proxy(..))
 
 import Color as Color

@@ -80,7 +80,7 @@ data Action s
 slopeFactor = 5.0 :: Number
 headerFontSize = 12.0 :: Number
 headerHeight = 20.0 :: Number
-contentPadding = 20.0 :: Number
+contentPadding = 10.0 :: Number
 contentFontSize = 10.0 :: Number
 
 panel
@@ -114,14 +114,19 @@ panel targetLayer pid config =
     render HTML { tags, size } =
         HH.div
             [ HHP.style
-                 $ HHP.position_ HHP.Rel { x : contentPadding, y : headerHeight + contentPadding } <> "; "
-                <> HHP.fontSize_ contentFontSize <> "; "
-                <> "height : " <> show size.height <> "px; "
+                 $ HHP.position_ HHP.Rel { x : contentX, y : contentY }
+                <> HHP.fontSize_ contentFontSize <> " "
+                <> "height : " <> show contentHeight <> "px; "
+                <> "width : " <> show contentWidth <> "px; "
                 <> "overflow-y: scroll;"
             ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
         where
+            contentX = contentPadding
+            contentY = headerHeight + contentPadding
+            contentWidth = size.width - contentPadding * 2.0
+            contentHeight = size.height - headerHeight - (contentPadding * 2.0)
             htmlText = Html.multiLine $ T.stack tags
 
     render SVG { tags, size } =

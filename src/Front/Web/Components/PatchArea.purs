@@ -2,8 +2,6 @@ module Web.Components.PatchArea where
 
 import Prelude
 
-import Debug as Debug
-
 import Type.Proxy (Proxy(..))
 
 import Effect.Class (class MonadEffect)

@@ -120,68 +120,23 @@ render SVG state =
             , HSA.stroke $ Just $ P.hColorOf $ _.i800 Palette.yellow
             ]
         ]
-        -- <> (mapWithIndex wrapSvgWithPos $ cellSlot cellWidth SVG state <$> Cells.allCells)
-        {-
-        , if state.currentZoom /= 1.0 then
-            HS.g
-                [ HSA.transform
-                    [ HSA.Translate (state.width - zoomTextWidth - 10.0) 10.0 ] ]
-                [ HS.text
-                    [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
-                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px fontSize
-                    , HSA.dominant_baseline HSA.Central
-                    ]
-                    [ HH.text $ String.take 5 $ show state.currentZoom ]
-                , HS.circle
-                    [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.green
-                    , HSA.r 5.0
-                    , HSA.cx $ zoomTextWidth + 5.0
-                    , HSA.cy 0.0
-                    , HE.onClick $ const RequestToResetZoom
-                    ]
-                ]
-            else HH.text ""
-        ]
-        -}
     where
-        zoomTextWidth = 35.0
         slopeFactor = 5.0
-        cellsX = state.width - cellsWidth
-        cellsY = height / 2.0 -- center the text
-        cellsWidth = (state.width * 0.3)
-        cellsCount = Array.length Cells.allCells
-        cellWidth = cellsWidth / Int.toNumber cellsCount
-        wrapSvgWithPos cellIdx content =
-            HS.g
-                [ HSA.transform [ HSA.Translate (cellsX + Int.toNumber cellIdx * cellWidth {- FIXME -}) cellsY ]
-                ]
-                $ pure content
 
 
 render HTML state =
     HH.div
-        [ HHP.style "position: relative;" ] $
+        [ HHP.style $ "position: relative;" ] $
         [ HH.div
-            [ HHP.style $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " " <> HHP.fontSize_ fontSize ]
+            [ HHP.style
+                 $ HHP.position_ HHP.Rel { x : state.width * 0.3 + 5.0, y : 5.0 } <> " "
+                <> HHP.fontSize_ fontSize
+                <> " width : " <> show state.width <> "px; "
+                <> "overflow-x: hidden; "
+                ]
             [ WF.renderFormatting HTML state.content ]
         ]
-        -- <> (mapWithIndex wrapHtmlWithPos $ cellSlot cellWidth HTML state <$> Cells.allCells)
-    where
-        cellsX = state.width - cellsWidth
-        cellsY = height / 2.0 -- center the text
-        cellsWidth = (state.width * 0.3)
-        cellsCount = Array.length Cells.allCells
-        cellWidth = cellsWidth / Int.toNumber cellsCount
-        wrapHtmlWithPos cellIdx content =
-            HH.div
-                [ HHP.style $
-                    HHP.position_ HHP.Rel
-                        { x : cellsX + Int.toNumber cellIdx * cellWidth
-                        , y : cellsY
-                        }
-                    <> " min-width: " <> show cellWidth <> "px;"
-                ]
-                $ pure content
+
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action Slots Output m Unit
@@ -205,11 +160,19 @@ cellSlot
     => IsSymbol slot
     => Proxy slot
     -> TargetLayer
+    -> { width :: Number, height :: Number }
     -> (Cells.Output -> action)
     -> CellState r
     -> Cells.Which
     -> H.ComponentHTML action slots m
-cellSlot pslot target toAction state =
+cellSlot pslot target size toAction state =
+    {- HS.g
+        []
+        [ HS.rect
+            [ HSA.width size.width
+            , HSA.height $ size.height - 10.0
+            , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.yellow
+            ] -}
     case _ of
         Cells.Zoom          -> HH.slot pslot (target /\ Cells.Zoom)          (Cell.Zoom.component target)          { currentZoom : state.currentZoom, fontSize }               toAction
         Cells.WSStatus      -> HH.slot pslot (target /\ Cells.WSStatus)      (Cell.WSStatus.component target)      { host : WS.host, port : WS.port, status : state.wsStatus } toAction

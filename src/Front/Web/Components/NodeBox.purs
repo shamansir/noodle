@@ -15,7 +15,6 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug as Debug
 import Effect.Class (class MonadEffect)
 import Front.Shared.Bounds (Position, PositionXY, Size)
 import Halogen as H
@@ -171,7 +170,7 @@ channelBarHeight = 15.0 :: Number
 connectorRadius = 5.0 :: Number
 
 
--- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
+-- FIXME: find better way to position channels using shared data (we have `Play` layout now, so use something similar to `QueryInletData.pos`)
 inletRelPos :: Int -> PositionXY
 inletRelPos idx =
     { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
@@ -179,7 +178,7 @@ inletRelPos idx =
     }
 
 
--- FIXME: find better way to position channels using shared algorithm (`BinPack`?)
+-- FIXME: find better way to position channels using shared data (we have `Play` layout now, so use something similar to `QueryOutletData.pos`)
 outletRelPos :: Int -> PositionXY
 outletRelPos idx =
     { x : titleWidth + Int.toNumber idx * channelStep + (connectorRadius / 2.0)
@@ -266,6 +265,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                     Layouts.Outlet n def ->
                         renderOutlet n def rect
                     Layouts.Inlets ->
+                        if inletsCount == 0 then HSX.none else
                         HS.g
                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
                             [ HS.path
@@ -274,6 +274,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                                 ]
                             ]
                     Layouts.Outlets ->
+                        if outletsCount == 0 then HSX.none else
                         HS.g
                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
                             [ HS.path
@@ -411,7 +412,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         inKeyboardFocus = case keyboardFocus of
                           KL.NoFocusedNode -> false
                           _ -> true
-        isOverInlet inletR = case Debug.spy "mouseFocusI" mouseFocus of
+        isOverInlet inletR = case mouseFocus of
             IsOverInlet inletDef _ -> (_.name $ NT.unwrap inletDef) == inletR
             _ -> false
         isOverOutlet outletR = case mouseFocus of

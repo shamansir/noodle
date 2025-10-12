@@ -2,8 +2,6 @@ module Web.Components.AppScreen where
 
 import Prelude
 
-import Debug as Debug
-
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
@@ -130,6 +128,7 @@ _library = Proxy :: _ "library"
 _patchesBar = Proxy :: _ "patchesBar"
 _patchArea = Proxy :: _ "patchArea"
 _statusBar = Proxy :: _ "statusBar"
+_statusBarDoc = Proxy :: _ "statusBarDoc" -- TODO: render to the Doc separately
 _statusBarCell = Proxy :: _ "statusBarCell"
 _commandInput = Proxy :: _ "commandInput"
 _helpText = Proxy :: _ "helpText"
@@ -302,7 +301,7 @@ render ploc _ state =
                                     Ui.StatusBarSection n which ->
                                         HS.g
                                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                                            [ StatusBar.cellSlot _statusBarCell SVG (FromStatusBarCell which) statusBarCellInput which ]
+                                            [ StatusBar.cellSlot _statusBarCell SVG rect.size (FromStatusBarCell which) statusBarCellInput which ]
 
                                     _ -> HH.text "" -- HS.g [] []
 
@@ -367,7 +366,7 @@ render ploc _ state =
                             Ui.StatusBarSection n which ->
                                 HS.g
                                     [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                                    [ StatusBar.cellSlot _statusBarCell HTML (FromStatusBarCell which) statusBarCellInput which ]
+                                    [ StatusBar.cellSlot _statusBarCell HTML rect.size (FromStatusBarCell which) statusBarCellInput which ]
 
                             _ -> HH.div [] []
                     )
@@ -653,7 +652,6 @@ handleAction ploc = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
                 \srcNode dstNode -> do
-                    let _ = Debug.spy "Patch connect" unit
                     nextPatch /\ rawLink <-
                         H.lift $ Patch.connectRaw
                             source.fromOutlet
@@ -850,7 +848,6 @@ performKbAction ploc = case _ of
             let nodeR = RawNode.id node
             let mbInletR = RawNode.shape node # RawShape.inletAtIndex inletIndex <#> _.name
             whenJust mbInletR \inletR -> do
-                let _ = Debug.spy "calling editor"
                 H.tell _patchArea SVG  $ PatchArea.CallInletValueEditor nodeR inletR
                 -- H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
     KL.CloseValueEditor ->
