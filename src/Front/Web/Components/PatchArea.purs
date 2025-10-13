@@ -41,6 +41,8 @@ import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
 import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 
+import Play (Layout) as Play
+
 import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
 import Noodle.Fn.Signature (class PossiblyToSignature)
@@ -61,6 +63,7 @@ import Noodle.Ui.Tagging.At (class At) as T
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
 import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
 import Web.Layer (TargetLayer(..))
+import Web.Layouts (NodePart) as Layout
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
@@ -114,7 +117,14 @@ data LockingTask
     | Connecting LinkStart PositionXY
 
 
-type NodesBounds = Map Id.NodeR (Bounds /\ NodeZIndex)
+type NodeGeometry =
+    { bounds :: Bounds
+    , z :: NodeZIndex
+    , layout :: Play.Layout Layout.NodePart
+    }
+
+
+type NodesGeometry = Map Id.NodeR NodeGeometry
 
 
 type State ps sr cr m =
@@ -123,7 +133,7 @@ type State ps sr cr m =
     , zoom :: Number
     , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m) -- TODO: store nodes in a Map? do we need order except ZIndex?
-    , nodesBounds :: NodesBounds
+    , nodesGeometry :: NodesGeometry
     , links :: Array Raw.Link
     , lockOn :: LockingTask
     , focusedNodes :: Set Id.NodeR
@@ -141,7 +151,7 @@ type Input ps sr cr m =
     , zoom :: Number
     , bgOpacity :: Number
     , nodes :: Array (Raw.Node sr cr m)
-    , nodesBounds :: NodesBounds
+    , nodesGeometry :: NodesGeometry
     , links :: Array Raw.Link
     , mbState :: Maybe ps
     , mbCurrentEditor :: Maybe (Id.NodeR /\ ValueEditor.Def cr)
@@ -213,7 +223,7 @@ component ptk trg =
 
 
 initialState :: forall ps sr cr m. Input ps sr cr m -> State ps sr cr m
-initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links, mbCurrentEditor, keyboardFocus } =
+initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesGeometry, links, mbCurrentEditor, keyboardFocus } =
     { mbState
     , offset
     , size
@@ -221,7 +231,7 @@ initialState { mbState, offset, size, zoom, bgOpacity, nodes, nodesBounds, links
     , bgOpacity
     , nodes
     , links
-    , nodesBounds
+    , nodesGeometry
     , lockOn : NoLock
     , focusedNodes : Set.empty
     , mbCurrentEditor
@@ -289,7 +299,7 @@ render SVG ptk state =
         linksSlots = state.links <#> linkSlot
         inletPos = _inletPosition nodesToCellsMap
         outletPos = _outletPosition nodesToCellsMap
-        nodeBoxSlot { rawNode, position, inFocus, isDragging, size, keyboardFocus } =
+        nodeBoxSlot { rawNode, position, inFocus, isDragging, size, keyboardFocus, layout } =
             let
                 nodeR = RawNode.id rawNode
             in HH.slot _nodeBox nodeR (NodeBox.component ptk)
@@ -299,6 +309,7 @@ render SVG ptk state =
                 , inMouseFocus : inFocus
                 , isDragging
                 , keyboardFocus
+                , layout
                 }
                 $ FromNodeBox nodeR
         handleLinkEvents = case state.lockOn of
@@ -351,6 +362,7 @@ type NodeCell_ sr cr m =
     , rawNode :: Raw.Node sr cr m
     , size :: Size
     , zIndex :: NodeZIndex
+    , layout :: Play.Layout Layout.NodePart
     , keyboardFocus :: KL.NodeFocus
     }
 
@@ -365,16 +377,14 @@ _makeNodesWithCells state =
         findCell nodeIndex rawNode =
             let
                 nodeR = RawNode.id rawNode
-                mbBounds = findBounds nodeR state <#> lmap checkDragging
-                size = fromMaybe bottom $ Bounds.getSize <$> Tuple.fst <$> mbBounds -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
+                mbGeometry = findGeometry nodeR state <#> \geo -> geo { bounds = checkDragging geo.bounds }
+                position = fromMaybe defaultPosition $ Bounds.getPosition <$> _.bounds <$> mbGeometry
+                size =  fromMaybe bottom $ Bounds.getSize <$> _.bounds <$> mbGeometry -- FIXME: only the inner `NodeBox` can know the actual size (pass it with query?)
+                zIndex = fromMaybe top $ _.z <$> mbGeometry
                 checkDragging = _checkDragging state.lockOn nodeR
                 isDragging = case state.lockOn of
                     DraggingNode dragNodeR _ -> nodeR == dragNodeR
                     _ -> false
-                (position /\ zIndex) =
-                    fromMaybe (defaultPosition /\ top)
-                         $ lmap Bounds.getPosition
-                        <$> mbBounds
             in
                 { rawNode
                 , position
@@ -383,6 +393,7 @@ _makeNodesWithCells state =
                 , inFocus : Set.member nodeR state.focusedNodes
                 , keyboardFocus : KL.loadNodeFocus nodeIndex state.keyboardFocus
                 , isDragging
+                , layout : fromMaybe NodeBox.emptyNodeLayout $ _.layout <$> mbGeometry
                 }
 
 
@@ -440,14 +451,14 @@ handleAction
     -> H.HalogenM (State ps sr cr m) (Action ps sr cr m) (Slots sr cr) (Output sr cr) m Unit
 handleAction = case _ of
     Initialize -> pure unit
-    Receive { mbState, offset, size, nodes, nodesBounds, links, zoom, mbCurrentEditor, keyboardFocus } ->
+    Receive { mbState, offset, size, nodes, nodesGeometry, links, zoom, mbCurrentEditor, keyboardFocus } ->
         H.modify_ _
             { mbState = mbState
             , offset = offset
             , size = size
             , zoom = zoom
             , nodes = nodes
-            , nodesBounds = nodesBounds
+            , nodesGeometry = nodesGeometry
             , links = links
             , mbCurrentEditor = mbCurrentEditor
             , keyboardFocus = keyboardFocus
@@ -461,7 +472,7 @@ handleAction = case _ of
                 H.modify_ _ { lockOn = Connecting linkStart { x, y } }
                 H.raise RefreshHelp
             NoLock ->
-                H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesBounds }
+                H.modify_ _ { focusedNodes = findFocusedNodes { x, y } state.nodesGeometry }
     WheelChange { dy } ->
         H.raise $ TryZoom dy
     PatchAreaClick -> do
@@ -595,13 +606,13 @@ handleQuery = case _ of
         pure $ Just a
 
 
-findFocusedNodes :: PositionXY -> NodesBounds -> Set Id.NodeR
+findFocusedNodes :: PositionXY -> NodesGeometry -> Set Id.NodeR
 findFocusedNodes pos = convertMap >>> foldr foldF Set.empty
     where
-        convertMap :: NodesBounds -> Array (Id.NodeR /\ (Bounds /\ NodeZIndex))
+        convertMap :: NodesGeometry -> Array (Id.NodeR /\ NodeGeometry)
         convertMap = Map.toUnfoldable
-        foldF (nodeR /\ ({ width, height, top, left } /\ _)) set =
-            if (pos.x >= left && pos.y >= top && pos.x <= (left + width) && pos.y <= (top + height)) then Set.insert nodeR set else set
+        foldF (nodeR /\ { bounds }) set =
+            if (pos.x >= bounds.left && pos.y >= top && pos.x <= (bounds.left + bounds.width) && pos.y <= (top + bounds.height)) then Set.insert nodeR set else set
 
 
 draggingNode :: forall ps sr cr m. State ps sr cr m -> Maybe (Id.NodeR /\ Delta)
@@ -618,22 +629,25 @@ creatingLink = _.lockOn >>> case _ of
     NoLock -> Nothing
 
 
-findBounds :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe (Bounds /\ NodeZIndex)
-findBounds nodeR = _.nodesBounds >>> Map.lookup nodeR
+findGeometry :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe NodeGeometry
+findGeometry nodeR = _.nodesGeometry >>> Map.lookup nodeR
 
 
-storeBounds :: Id.NodeR -> Bounds -> NodesBounds -> NodesBounds
-storeBounds nodeR bounds nodesBounds =
-    nodesBounds
+storeGeometry :: Id.NodeR -> Bounds -> Play.Layout Layout.NodePart -> NodesGeometry -> NodesGeometry
+storeGeometry nodeR nodeBounds layout allNodesBounds =
+    allNodesBounds
         # Map.insert nodeR
-            (bounds /\ (ZIndex $ Map.size nodesBounds))
+            { bounds : nodeBounds
+            , z : ZIndex $ Map.size allNodesBounds -- put on top
+            , layout
+            }
 
 
-modifyPosition :: Id.NodeR -> (Position -> Position) -> NodesBounds -> NodesBounds
+modifyPosition :: Id.NodeR -> (Position -> Position) -> NodesGeometry -> NodesGeometry
 modifyPosition nodeR changeF =
-    MapX.update' (lmap $ Bounds.modifyPosition changeF) nodeR
+    MapX.update' (\i -> i { bounds = Bounds.modifyPosition changeF i.bounds }) nodeR
 
 
-updatePosition :: Id.NodeR -> Position -> NodesBounds -> NodesBounds
+updatePosition :: Id.NodeR -> Position -> NodesGeometry -> NodesGeometry
 updatePosition nodeR { left, top } =
-    MapX.update' (lmap $ _ { left = left, top = top }) nodeR
+    MapX.update' (\i -> i { bounds = i.bounds { left = left, top = top } }) nodeR

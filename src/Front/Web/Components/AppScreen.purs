@@ -419,7 +419,7 @@ render ploc _ state =
             mbCurPatchId  = mbCurrentPatch <#> Patch.id
             curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []
             curPatchLinks = mbCurrentPatch <#> Patch.links # fromMaybe []
-            curPatchNodesBounds = mbCurrentPatchInfo <#> _.nodesBounds # fromMaybe Map.empty
+            curPatchNodesGeometry = mbCurrentPatchInfo <#> _.nodesGeometry # fromMaybe Map.empty
             curPatchState = CState.currentPatchState' state
 
             patchesBarX = 0.0
@@ -452,7 +452,7 @@ render ploc _ state =
                 , bgOpacity : 0.0 -- FIXME: state.bgOpacity
                 , mbState : curPatchState
                 , nodes : curPatchNodes
-                , nodesBounds : curPatchNodesBounds
+                , nodesGeometry : curPatchNodesGeometry
                 , links : curPatchLinks
                 , mbCurrentEditor : state.mbCurrentEditor
                 , keyboardFocus : state.keyboard.focus
@@ -831,11 +831,11 @@ performKbAction ploc = case _ of
             case Array.index curPatchNodes nidx of
                 Just rawNode ->
                     pinfo
-                        { nodesBounds
+                        { nodesGeometry
                               = PatchArea.modifyPosition
                                     (RawNode.id rawNode)
                                     (CState.applyDirToNodePosition dir)
-                                    pinfo.nodesBounds
+                                    pinfo.nodesGeometry
                         }
                 Nothing -> pinfo
         pure unit

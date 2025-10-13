@@ -27,7 +27,7 @@ import Noodle.Patch (id, make, getState, registerRawNode, nodesCount, allNodes) 
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
-import Noodle.Raw.Node (id, inletsCount, outletsCount) as RawNode
+import Noodle.Raw.Node (id, inletsCount, outletsCount, shape) as RawNode
 
 import Noodle.Text.NdfFile (NdfFile)
 import Noodle.Text.NdfFile (init, optimize, toTaggedNdfCode, snocOp, documentationFor, append) as Ndf
@@ -47,11 +47,12 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import Front.Shared.HelpText (Context(..)) as HelpText
 
 import Web.Components.ValueEditor (Def) as ValueEditor
-import Web.Components.PatchArea (LockingTask(..), NodesBounds, storeBounds, updatePosition, modifyPosition) as PatchArea
+import Web.Components.PatchArea (LockingTask(..), NodesGeometry, storeGeometry, updatePosition, modifyPosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WebSocketStatus as WSPanel
 import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
 import Web.Components.AppScreen.UiMode (UiMode(..))
+import Web.Components.NodeBox (nodeUiLayout) as NodeBox
 import WebSocket.Types (WebSocket, WebSocketMessage) as WS
 import WebSocket.Client.Socket (handle, Def, sendMessage) as WSocket
 import Web.Components.AppScreen.KeyboardLogic as KL
@@ -87,7 +88,7 @@ newtype PatchIndex = PatchIndex Int
 type PatchInfo loc ps =
     { index :: PatchIndex
     , lastLocation :: loc
-    , nodesBounds :: PatchArea.NodesBounds
+    , nodesGeometry :: PatchArea.NodesGeometry
     , mbState :: Maybe ps
     }
 
@@ -221,7 +222,7 @@ initPatchInfo :: forall loc ps. WebLocator loc => Proxy loc -> PatchIndex -> ps 
 initPatchInfo _ pIndex pState =
     { index : pIndex
     , lastLocation : Web.firstLocation
-    , nodesBounds : Map.empty
+    , nodesGeometry : Map.empty
     , mbState : Just pState
     }
 
@@ -260,22 +261,23 @@ registerNewNode patchR rawNode =
                 nextLoc /\ nodePos = Web.locateNext info.lastLocation newNodeRect
             in info
                 { lastLocation = nextLoc
-                , nodesBounds =
-                    PatchArea.storeBounds
+                , nodesGeometry =
+                    PatchArea.storeGeometry
                         nodeR
                         { left : nodePos.left, top : nodePos.top
                         , width : newNodeRect.width, height : newNodeRect.height
                         }
-                    info.nodesBounds
+                        (NodeBox.nodeUiLayout $ RawNode.shape rawNode)
+                    info.nodesGeometry
                 }
 
 
 modifyNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> (Position -> Position) -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
-modifyNodePosition patchR nodeR changeF = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.modifyPosition nodeR changeF }
+modifyNodePosition patchR nodeR changeF = withPatchInfo patchR $ \info -> info { nodesGeometry = info.nodesGeometry # PatchArea.modifyPosition nodeR changeF }
 
 
 updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> Position -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
-updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesBounds = info.nodesBounds # PatchArea.updatePosition nodeR pos }
+updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesGeometry = info.nodesGeometry # PatchArea.updatePosition nodeR pos }
 
 
 nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context

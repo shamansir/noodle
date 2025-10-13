@@ -29,6 +29,7 @@ import Noodle.Fn.Shape (I)
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Id (FamilyR, InletR, OutletR, family, familyOf, inletRName, outletRName) as Id
 import Noodle.Id (Temperament(..))
+import Noodle.Raw.Fn.Shape (Shape) as Raw
 import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
@@ -49,7 +50,7 @@ import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
 import Web.Event.Event (preventDefault, stopPropagation) as WE
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
-import Web.Layouts as Layouts
+import Web.Layouts (NodePart(..), horzNodeUI) as Layouts
 import Web.Paths as Paths
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
@@ -64,6 +65,7 @@ type Input strepr chrepr m =
     , inMouseFocus :: Boolean
     , isDragging :: Boolean
     , keyboardFocus :: KL.NodeFocus
+    , layout :: Play.Layout Layouts.NodePart
     }
 
 
@@ -83,6 +85,7 @@ type State strepr chrepr m =
     , latestUpdate :: Maybe (RawNode.NodeChanges strepr chrepr)
     , mouseFocus :: MouseFocus chrepr
     , keyboardFocus :: KL.NodeFocus
+    , layout :: Play.Layout Layouts.NodePart
     }
 
 
@@ -151,13 +154,14 @@ component ptk =
 
 
 initialState :: forall sterpr chrepr m. Input sterpr chrepr m -> State sterpr chrepr m
-initialState { node, position, size, keyboardFocus, inMouseFocus, isDragging } =
+initialState { node, position, size, keyboardFocus, inMouseFocus, isDragging, layout } =
     { node
     , position
     , size
     , latestUpdate : Nothing
     , mouseFocus : {- if inMouseFocus then IsOverBody else -} if isDragging then BeingDragged else NoMouseFocus
     , keyboardFocus
+    , layout
     }
 
 
@@ -187,7 +191,7 @@ outletRelPos idx =
 
 
 render :: forall sterpr chrepr m. T.At At.StatusLine chrepr => T.At At.ChannelLabel chrepr => State sterpr chrepr m -> H.ComponentHTML (Action sterpr chrepr m) () m
-render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
+render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
     HS.g
         [ HSA.transform [ HSA.Translate position.left position.top ]
         , HE.onMouseMove MouseMove
@@ -359,7 +363,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         slopeFactor = 5.0
         bodyLeftPadding = 2.0
         titleMaxChars = 8 -- bodyHeight / 9.0 (fontCharWidth)
-        inletsDefs = RawShape.inlets $ RawNode.shape node
+        inletsDefs  = RawShape.inlets  $ RawNode.shape node
         outletsDefs = RawShape.outlets $ RawNode.shape node
         inletsCount = Array.length inletsDefs
         outletsCount = Array.length outletsDefs
@@ -374,13 +378,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
         titleY = channelBarHeight + bodyHeight
         channelNameShift = connectorRadius + 4.0
 
-        nodeUiLayout = Play.layout $ Layouts.horzNodeUI
-                            { bodyWidth : 250.0
-                            , bodyHeight
-                            , inlets  : inletsDefs
-                            , outlets : outletsDefs
-                            }
-        nodeUiLayoutItems = Play.flattenLayout nodeUiLayout
+        nodeUiLayoutItems = Play.flattenLayout layout
 
         fitTitle title =
             if String.length title <= titleMaxChars then title
@@ -567,6 +565,29 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus } =
                 , HE.onClick $ fromMaybe (const Skip) mbClick
                 , HSA.class_ $ H.ClassName "noodle-capture-events"
                 ]
+
+
+nodeUiLayout :: Raw.Shape -> Play.Layout Layouts.NodePart
+nodeUiLayout rawShape =
+    let
+        inletsDefs  = RawShape.inlets  rawShape
+        outletsDefs = RawShape.outlets rawShape
+    in Play.layout $ Layouts.horzNodeUI
+        { bodyWidth : 250.0
+        , bodyHeight
+        , inlets  : inletsDefs
+        , outlets : outletsDefs
+        }
+
+
+emptyNodeLayout :: Play.Layout Layouts.NodePart
+emptyNodeLayout =
+    Play.layout $ Layouts.horzNodeUI
+        { bodyWidth : 250.0
+        , bodyHeight
+        , inlets  : []
+        , outlets : []
+        }
 
 
 handleAction
