@@ -825,7 +825,7 @@
       },
       "play": {
         "git": "https://github.com/shamansir/purescript-play.git",
-        "ref": "7a0610f165ccbd4f06a9923a4d49a00520a92da3"
+        "ref": "d1e2c0e2149bc9f18466448fd43190e448f1ca0f"
       },
       "text-formatting": {
         "git": "https://github.com/shamansir/purescript-text-formatting.git",
@@ -2383,11 +2383,14 @@
     "play": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-play.git",
-      "rev": "7a0610f165ccbd4f06a9923a4d49a00520a92da3",
+      "rev": "d1e2c0e2149bc9f18466448fd43190e448f1ca0f",
       "dependencies": [
-        "console",
-        "effect",
+        "arrays",
+        "foldable-traversable",
+        "integers",
+        "maybe",
         "prelude",
+        "tuples",
         "yoga-tree",
         "yoga-tree-utils"
       ]

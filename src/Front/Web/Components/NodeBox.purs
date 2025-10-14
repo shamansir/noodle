@@ -2,6 +2,9 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Effect.Class (class MonadEffect)
+import Type.Proxy (Proxy)
+
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
@@ -15,15 +18,7 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Effect.Class (class MonadEffect)
-import Front.Shared.Bounds (Position, PositionXY, Size)
-import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
-import Halogen.Svg.Elements as HS
-import Halogen.Svg.Elements.Extra as HSX
+
 import Noodle.Fn.Generic.Tracker (inlets)
 import Noodle.Fn.Shape (I)
 import Noodle.Fn.Signature (class PossiblyToSignature)
@@ -42,8 +37,18 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
+
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
+import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.Extra as HSX
+
 import Play as Play
-import Type.Proxy (Proxy)
+
+import Front.Shared.Bounds (Position, PositionXY, Size)
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.AppScreen.KeyboardLogic as KL
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor

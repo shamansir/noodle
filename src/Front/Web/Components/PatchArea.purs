@@ -42,6 +42,9 @@ import DOM.HTML.Indexed.InputType (InputType(..)) as I
 import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 
 import Play (Layout) as Play
+import Play.Extra (findByInLayout) as Play
+
+import Yoga.Tree.Extended (value) as Tree
 
 import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
@@ -63,7 +66,7 @@ import Noodle.Ui.Tagging.At (class At) as T
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
 import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
 import Web.Layer (TargetLayer(..))
-import Web.Layouts (NodePart) as Layout
+import Web.Layouts (NodePart(..)) as Layout
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
@@ -284,7 +287,7 @@ render SVG ptk state =
             , case state.lockOn of
                 Connecting { fromNode, fromOutlet } mousePos ->
                     notYetConnectedLink
-                        { from : outletPos $ fromNode /\ fromOutlet
+                        { from : outletConnectorPos $ fromNode /\ fromOutlet
                         , to : mousePos
                         }
                 _ -> HSX.none
@@ -299,6 +302,9 @@ render SVG ptk state =
         linksSlots = state.links <#> linkSlot
         inletPos = _inletPosition nodesToCellsMap
         outletPos = _outletPosition nodesToCellsMap
+        inletConnectorPos  (node /\ inletR)  = inletPos  (node /\ inletR)  # connectorShift
+        outletConnectorPos (node /\ outletR) = outletPos (node /\ outletR) # connectorShift
+        connectorShift { x, y } = { x : x + NodeBox.connectorRadius, y : y + 6.0 + NodeBox.connectorRadius }
         nodeBoxSlot { rawNode, position, inFocus, isDragging, size, keyboardFocus, layout } =
             let
                 nodeR = RawNode.id rawNode
@@ -324,8 +330,8 @@ render SVG ptk state =
                 { connector
                 , id : linkR
                 , position :
-                    { from : outletPos connector.from
-                    , to : inletPos connector.to
+                    { from : outletConnectorPos connector.from
+                    , to : inletConnectorPos connector.to
                     }
                 , handleEvents : handleLinkEvents
                 }
@@ -336,7 +342,7 @@ render HTML ptk state =
     case state.mbCurrentEditor of
         Just (nodeR /\ { inlet, editor, pos, currentValue }) ->
             let
-                theInletPos = inletPos (nodeR /\ inlet) # \{x, y} -> { x, y : y - 25.0 }
+                theInletPos = inletPos (nodeR /\ inlet) # \{x, y} -> { x, y : y - 10.0 }
                 inletPath = { node : nodeR, inlet }
                 -- mbWebEditorId = webEditorFor (Proxy :: _ tk) inletPath currentValue
                 mbWebEditorComp = spawnWebEditor (Proxy :: _ tk) editor inletPath currentValue
@@ -425,22 +431,26 @@ _makeNodesToCellsMap state =
 _inletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.InletR) -> PositionXY
 _inletPosition nodesToCellsMap (nodeR /\ inletR) =
     Map.lookup nodeR nodesToCellsMap
-    <#> (\{ position, rawNode } ->
+    >>= (\{ position, layout } ->
         let
-            inletIdx = fromMaybe (-1) $ RawShape.indexOfInlet inletR $ RawNode.shape rawNode
-            relPos = NodeBox.inletRelPos inletIdx
-        in { x : position.left + relPos.x, y : position.top + relPos.y })
+            isNeededInlet = case _ of -- TODO: Find connector instead of inlet block?
+                Layout.Inlet _ { name } -> name == inletR
+                _ -> false
+            mbRelPos = Play.findByInLayout isNeededInlet layout <#> Tuple.snd <#> Tree.value <#> _.rect <#> _.pos
+        in mbRelPos <#> \relPos -> { x : position.left + relPos.x, y : position.top + relPos.y })
     # fromMaybe { x : 0.0, y : 0.0 }
 
 
 _outletPosition :: forall sr cr m. Map Id.NodeR (NodeCell_ sr cr m) -> (Id.NodeR /\ Id.OutletR) -> PositionXY
 _outletPosition nodesToCellsMap (nodeR /\ outletR) =
     Map.lookup nodeR nodesToCellsMap
-    <#> (\{ position, rawNode } ->
+    >>= (\{ position, layout } ->
         let
-            outletIdx = fromMaybe (-1) $ RawShape.indexOfOutlet outletR $ RawNode.shape rawNode
-            relPos = NodeBox.outletRelPos outletIdx
-        in { x : position.left + relPos.x, y : position.top + relPos.y })
+            isNeededOutlet = case _ of -- TODO: Find connector instead of outlet block?
+                Layout.Outlet _ { name } -> name == outletR
+                _ -> false
+            mbRelPos = Play.findByInLayout isNeededOutlet layout <#> Tuple.snd <#> Tree.value <#> _.rect <#> _.pos
+        in mbRelPos <#> \relPos -> { x : position.left + relPos.x, y : position.top + relPos.y })
     # fromMaybe { x : 0.0, y : 0.0 }
 
 

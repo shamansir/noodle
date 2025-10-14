@@ -22,6 +22,7 @@ import Halogen.HTML.Properties.Extra (Position(..), position_, fontSize_) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
+
 import Noodle.Id (LinkR) as Id
 import Noodle.Raw.Link (Connector) as RawLink
 import Noodle.Ui.Palette.Item as P
