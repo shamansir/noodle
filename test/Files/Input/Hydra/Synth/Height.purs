@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -30,9 +30,9 @@ _height :: NId.Family "height"
 _height = NId.Family
 
 type Inlets = TNil :: Noodle.Inlets
-type Outlets = (O "h" HT.Value :> TNil) :: Noodle.Outlets
+type Outlets = (O "h" HYDRA.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
-type OutletsRow = (h :: HT.Value)
+type OutletsRow = (h :: HYDRA.Value)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
@@ -44,7 +44,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { h: HT.Height }
+defaultO = { h: HYDRA.Height }
 
 defaultSt :: State
 defaultSt = State unit

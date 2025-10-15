@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -29,10 +29,10 @@ import Data.Tuple.Nested ((/\))
 _sum :: NId.Family "sum"
 _sum = NId.Family
 
-type Inlets = (I "what" Hot HT.Texture :> I "todo" Hot HT.TODO :> TNil) :: Noodle.Inlets
-type Outlets = (O "out" HT.Texture :> TNil) :: Noodle.Outlets
-type InletsRow = (what :: HT.Texture, todo :: HT.TODO)
-type OutletsRow = (out :: HT.Texture)
+type Inlets = (I "what" Hot HYDRA.Texture :> I "todo" Hot HYDRA.TODO :> TNil) :: Noodle.Inlets
+type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
+type InletsRow = (what :: HYDRA.Texture, todo :: HYDRA.TODO)
+type OutletsRow = (out :: HYDRA.Texture)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
@@ -41,10 +41,10 @@ type Family = Noodle.Family "sum" State InletsRow OutletsRow WrapRepr Effect
 type F = Noodle.F "sum" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { what: HT.Empty, todo: HT.TODO }
+defaultI = { what: HYDRA.Empty, todo: HYDRA.TODO }
 
 defaultO :: Record OutletsRow
-defaultO = { out: HT.Empty }
+defaultO = { out: HYDRA.Empty }
 
 defaultSt :: State
 defaultSt = State unit

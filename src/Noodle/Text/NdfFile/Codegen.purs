@@ -79,7 +79,7 @@ generateToolkit tkName options = FileContent <<< printModule <<< generateToolkit
 
 generateToolkitModule :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> Module Void
 generateToolkitModule tkName (FCG.Options opts) definitionsArray
-    = unsafePartial $ module_ (toolkitModuleName tkName)
+    = unsafePartial $ module_ (opts.toolkitModuleName tkName)
         [ ]
         (
             [ declImport "Prelude" [ ] -- import Prelude (($), (#), (>>>), (<<<), pure, unit, const)
@@ -87,15 +87,17 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Effect.Class" [ importClass "MonadEffect" ]
             , declImportAs "Color" [] "Color"
             , declImport "Data.Maybe" [ importTypeAll "Maybe" ]
+            , declImport "Data.Tuple.Nested" [ importOp "/\\" ]
             , declImport "Type.Data.List" [ importTypeOp ":>" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil", importClass "Put" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
-            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR", importValue "group" ] "Id"
+            , declImportAs "Noodle.Id" [ importValue "toolkitR", importValue "family", importType "FamilyR", importValue "unsafeGroupR", importValue "group", importType "NodeR" ] "Id"
             , declImport "Noodle.Fn.Signature" [ importValue "sig", importClass "PossiblyToSignature" ]
             , declImportAs "Noodle.Fn.Signature" [ importValue "in_", importValue "inx_", importValue "out_", importValue "outx_", importValue "toChanneled" ] "Sig"
-            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr", importValue "markGroup" ]
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey", importClass "MarkToolkit", importClass "IsToolkit", importClass "HasChRepr", importClass "InitPatchState", importClass "FromToPatchState", importValue "markGroup" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty", importValue "register" ] "Toolkit"
             , declImport "Noodle.Toolkit.Families" [ importType "Families", importType "F", importClass "RegisteredFamily" ]
+            , declImport "Noodle.Repr.HasFallback" [ importValue "fallback" ]
             , declImport "Noodle.Repr.ValueInChannel" [ importType "ValueInChannel" ]
             , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer", importClass "CliRawRenderer", importClass "CliEditor" ]
             ]

@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -30,9 +30,9 @@ _mouse :: NId.Family "mouse"
 _mouse = NId.Family
 
 type Inlets = TNil :: Noodle.Inlets
-type Outlets = (O "x" HT.Value :> O "y" HT.Value :> TNil) :: Noodle.Outlets
+type Outlets = (O "x" HYDRA.Value :> O "y" HYDRA.Value :> TNil) :: Noodle.Outlets
 type InletsRow = ()
-type OutletsRow = (x :: HT.Value, y :: HT.Value)
+type OutletsRow = (x :: HYDRA.Value, y :: HYDRA.Value)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
 type Process = Noodle.Process State InletsRow OutletsRow WrapRepr Effect
@@ -44,7 +44,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { x: HT.MouseX, y: HT.MouseY }
+defaultO = { x: HYDRA.MouseX, y: HYDRA.MouseY }
 
 defaultSt :: State
 defaultSt = State unit

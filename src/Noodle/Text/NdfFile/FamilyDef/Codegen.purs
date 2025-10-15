@@ -29,6 +29,7 @@ import Noodle.Text.FromCode (Source) as FC
 import Noodle.Text.NdfFile.Types (Source, FamilyDefRec, ChannelDef(..), EncodedType, EncodedValue, StateDef(..), familyOf)
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode)
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..), process) as PC
+import Noodle.Toolkit (Name) as Toolkit
 
 
 class ValueCodegen a where
@@ -116,6 +117,7 @@ type OptionsRec strepr chrepr =
   { temperamentAlgorithm :: Temperament.Algorithm
   , monadAt :: { module_ :: String, type_ :: String }
   , familyModuleName :: Id.GroupR -> Id.FamilyR -> String -- FIXME: just ModulePrefix
+  , toolkitModuleName :: Toolkit.Name -> String -- FIXME: just ModulePrefix, don't mix `FamilyDef` generation with `Toolkit` generation
   , infoComment :: Maybe (Maybe Source -> Id.GroupR -> Id.FamilyR -> String)
   , pstrepr :: Proxy strepr
   , pchrepr :: Proxy chrepr

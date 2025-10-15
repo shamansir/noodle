@@ -30,6 +30,7 @@ genOptions = FCG.Options
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "Hydra" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
+    , toolkitModuleName : \_ -> "OUTPUT.Hydra.Gen.Toolkit"
     , pstrepr : pState
     , pchrepr : pWrap
     , infoComment : Just $ \mbSource fgroup family ->

@@ -49,6 +49,7 @@ import Noodle.Text.NdfFile.FamilyDef (FamilyDef, chtv, i, o, qdefps, st) as FD
 import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as FD
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), withOptions) as FCG
 -- import Noodle.Text.NdfFile.Codegen as MCG
+import Noodle.Text.NdfFile.Codegen (toolkitModuleName) as CG
 import Noodle.Toolkit (Name) as Toolkit
 
 import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
@@ -70,6 +71,7 @@ minimalGenOptions = FCG.Options
   , chreprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalVRepr" }
   , streprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalStRepr" }
   , familyModuleName : \groupR familyR -> "OUTPUT." <> MCG.moduleName' modulePrefix (Id.toolkitR "Test") groupR familyR
+  , toolkitModuleName : CG.toolkitModuleName
   , pstrepr : (Proxy :: _ MinimalStRepr)
   , pchrepr : (Proxy :: _ MinimalVRepr)
   , infoComment : Nothing

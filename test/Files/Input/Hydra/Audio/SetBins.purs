@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -29,9 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setBins :: NId.Family "setBins"
 _setBins = NId.Family
 
-type Inlets = (I "audio" Hot HT.AudioSource :> I "numBins" Hot HT.Value :> TNil) :: Noodle.Inlets
+type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "numBins" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
 type Outlets = TNil :: Noodle.Outlets
-type InletsRow = (audio :: HT.AudioSource, numBins :: HT.Value)
+type InletsRow = (audio :: HYDRA.AudioSource, numBins :: HYDRA.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
@@ -41,7 +41,7 @@ type Family = Noodle.Family "setBins" State InletsRow OutletsRow WrapRepr Effect
 type F = Noodle.F "setBins" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { audio: HT.Silence, numBins: HT.Number 4.0 }
+defaultI = { audio: HYDRA.Silence, numBins: HYDRA.Number 4.0 }
 
 defaultO :: Record OutletsRow
 defaultO = {}
