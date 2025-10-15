@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Audio.SetSmooth where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.SetSmooth where
 
 import Prelude
 

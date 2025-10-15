@@ -715,7 +715,7 @@ newtype HydraApiFunctionId = HydraApiFunctionId String
 derive instance Newtype HydraApiFunctionId _
 
 
-hydraAlias_ = "HT" :: String
+hydraAlias_ = "HyD" :: String
 hydraPrefix_ = hydraAlias_ <> "." :: String
 
 

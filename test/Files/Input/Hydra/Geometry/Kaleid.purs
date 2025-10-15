@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Geometry.Kaleid where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Geometry.Kaleid where
 
 import Prelude
 

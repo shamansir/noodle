@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Synth.SetFunction where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Synth.SetFunction where
 
 import Prelude
 

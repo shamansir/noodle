@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Array.Ease where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Array.Ease where
 
 import Prelude
 

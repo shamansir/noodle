@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Source.Gradient where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Source.Gradient where
 
 import Prelude
 

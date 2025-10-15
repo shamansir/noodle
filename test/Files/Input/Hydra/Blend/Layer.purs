@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Blend.Layer where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Blend.Layer where
 
 import Prelude
 

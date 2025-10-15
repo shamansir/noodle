@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Audio.Fft where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.Fft where
 
 import Prelude
 

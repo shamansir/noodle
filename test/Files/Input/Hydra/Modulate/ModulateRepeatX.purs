@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulateRepeatX where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulateRepeatX where
 
 import Prelude
 

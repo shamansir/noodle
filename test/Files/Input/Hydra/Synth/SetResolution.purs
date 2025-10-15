@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Synth.SetResolution where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Synth.SetResolution where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Feed.Time where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Feed.Time where
 
 import Prelude
 

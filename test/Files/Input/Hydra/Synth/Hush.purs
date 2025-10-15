@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Synth.Hush where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Synth.Hush where
 
 import Prelude
 

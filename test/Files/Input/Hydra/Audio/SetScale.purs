@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Audio.SetScale where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.SetScale where
 
 import Prelude
 

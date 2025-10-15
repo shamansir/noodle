@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Source.Shape where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Source.Shape where
 
 import Prelude
 
