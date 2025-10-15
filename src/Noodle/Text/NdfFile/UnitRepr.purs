@@ -16,6 +16,7 @@ import Noodle.Repr.ValueInChannel (class FromValueInChannel, class ToValueInChan
 import Noodle.Repr.ValueInChannel (accept) as ViC
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), groupPascalCase, familyPascalCase)
+import Noodle.Text.NdfFile.Codegen (toolkitModuleName) as CG
 
 
 data UnitRepr = UnitRepr
@@ -40,6 +41,7 @@ options = Options $
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "MyToolkit" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
+    , toolkitModuleName : CG.toolkitModuleName
     , pstrepr : (Proxy :: _ UnitRepr)
     , pchrepr : (Proxy :: _ UnitRepr)
     , infoComment : Just $ \mbSource fgroup family ->

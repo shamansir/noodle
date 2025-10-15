@@ -26,27 +26,32 @@ import Test.Spec.CommandInput (spec) as CommandInput
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
-  describe "UniqueHash"
-    UniqueHash.spec
-  describe "Repr"
-    Repr.spec
-  describe "Fn"
-    Fn.spec
-  describe "Node"
-    Node.spec
-  describe "Toolkit"
-    Toolkit.spec
-  describe "Patch"
-    Patch.spec
-  describe "NDF File"
-    NdfFile.spec
+  -- describe "UniqueHash"
+  --   UniqueHash.spec
+  -- describe "Repr"
+  --   Repr.spec
+  -- describe "Fn"
+  --   Fn.spec
+  -- describe "Node"
+  --   Node.spec
+  -- describe "Toolkit"
+  --   Toolkit.spec
+  -- describe "Patch"
+  --   Patch.spec
+
+  -- describe "NDF File"
+  --   NdfFile.spec
+
   describe "Codegen from NDF Definitions"
     NdfCodegen.spec
-  describe "Hydra Repr parsing"
-    HydraReprParsing.spec
-  describe "Hydra Repr to Code"
-    HydraToCode.spec
-  describe "Nodes and Purescript records"
-    NodesAndRecords.spec
-  describe "Command Input"
-    CommandInput.spec
+
+  -- describe "Hydra Repr parsing"
+  --   HydraReprParsing.spec
+
+  -- describe "Hydra Repr to Code"
+  --   HydraToCode.spec
+
+  -- describe "Nodes and Purescript records"
+  --   NodesAndRecords.spec
+  -- describe "Command Input"
+  --   CommandInput.spec

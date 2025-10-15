@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 

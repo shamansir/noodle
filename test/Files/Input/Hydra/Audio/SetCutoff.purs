@@ -18,7 +18,7 @@ import Noodle.Toolkit.Family as Family
 import Noodle.Toolkit.Family as Noodle
 import Type.Data.List (type (:>))
 import Type.Data.List.Extra (TNil)
-import HydraTk.Types as HT
+import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HW
 import Data.Tuple.Nested ((/\))
 
@@ -29,9 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setCutoff :: NId.Family "setCutoff"
 _setCutoff = NId.Family
 
-type Inlets = (I "audio" Hot HT.AudioSource :> I "cutoff" Hot HT.Value :> TNil) :: Noodle.Inlets
+type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "cutoff" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
 type Outlets = TNil :: Noodle.Outlets
-type InletsRow = (audio :: HT.AudioSource, cutoff :: HT.Value)
+type InletsRow = (audio :: HYDRA.AudioSource, cutoff :: HYDRA.Value)
 type OutletsRow = ()
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
@@ -41,7 +41,7 @@ type Family = Noodle.Family "setCutoff" State InletsRow OutletsRow WrapRepr Effe
 type F = Noodle.F "setCutoff" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { audio: HT.Silence, cutoff: HT.Number 2.0 }
+defaultI = { audio: HYDRA.Silence, cutoff: HYDRA.Number 2.0 }
 
 defaultO :: Record OutletsRow
 defaultO = {}

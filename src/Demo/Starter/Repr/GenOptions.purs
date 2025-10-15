@@ -13,6 +13,7 @@ import Tidy.Codegen (declImport, declImportAs, importOp, importType, importTypeO
 import Noodle.Id (family) as Id
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.NdfFile.FamilyDef.Codegen (Options(..), familyPascalCase, groupPascalCase)
+import Noodle.Text.NdfFile.Codegen (toolkitModuleName) as CG
 
 import StarterTk.Repr.StRepr (StateRepr)
 import StarterTk.Repr.ChRepr (ValueRepr)
@@ -25,6 +26,7 @@ genOptions = Options $
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "StarterTk" <> "." <> "Gen" <> "." <> "Library" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
+    , toolkitModuleName : CG.toolkitModuleName
     , pstrepr : (Proxy :: _ StateRepr)
     , pchrepr : (Proxy :: _ ValueRepr)
     , infoComment : Just $ \mbSource fgroup family ->
