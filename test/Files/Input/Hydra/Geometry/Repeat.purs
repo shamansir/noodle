@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Geometry.Repeat where
+module INPUT.Test.Files.CodeGenTest.Hydra.Geometry.Repeat where
 
 import Prelude
 

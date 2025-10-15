@@ -100,6 +100,12 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Noodle.Repr.HasFallback" [ importValue "fallback" ]
             , declImport "Noodle.Repr.ValueInChannel" [ importType "ValueInChannel" ]
             , declImport "Cli.Class.CliRenderer" [ importClass "CliRenderer", importClass "CliRawRenderer", importClass "CliEditor" ]
+            , declImport "Web.Class.WebRenderer" [ importClass "WebRenderer", importClass "WebRawRenderer", importClass "WebEditor" ]
+            , declImportAs "Web.Class.WebRenderer" [ importType "InletPath" ] "WR"
+            , declImport "Web.Components.ValueEditor" [ importType "ValueEditor" ]
+            , declImportAs "Web.Components.ValueEditor" [ importType "EditorId" ] "ValueEditor"
+            , declImportAs "Web.Components.ValueEditor.Numeric" [ ] "NumericVE"
+            , declImportAs "Halogen" [ importType "Component", importType "RefLabel" ] "H"
             ]
             <> (defToModuleImport <$> definitions) <>
             [ declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]

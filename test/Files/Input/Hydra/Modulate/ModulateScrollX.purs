@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulateScrollX where
+module INPUT.Test.Files.CodeGenTest.Hydra.Modulate.ModulateScrollX where
 
 import Prelude
 

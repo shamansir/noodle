@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Source.Src where
+module INPUT.Test.Files.CodeGenTest.Hydra.Source.Src where
 
 import Prelude
 

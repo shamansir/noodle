@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Feed.Mouse where
+module INPUT.Test.Files.CodeGenTest.Hydra.Feed.Mouse where
 
 import Prelude
 

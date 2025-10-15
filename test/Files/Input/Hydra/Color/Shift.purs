@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Shift where
+module INPUT.Test.Files.CodeGenTest.Hydra.Color.Shift where
 
 import Prelude
 

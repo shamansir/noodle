@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Geometry.Pixelate where
+module INPUT.Test.Files.CodeGenTest.Hydra.Geometry.Pixelate where
 
 import Prelude
 

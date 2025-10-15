@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Feed.Pi where
+module INPUT.Test.Files.CodeGenTest.Hydra.Feed.Pi where
 
 import Prelude
 

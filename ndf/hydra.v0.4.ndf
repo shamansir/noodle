@@ -1,2 +1,6 @@
 hydra 0.2 0.4
+* | number pi array expression time mouse glslFn |
+* | noise voronoi osc shape gradient src solid prev | rotate scale pixelate repeat repeatX repeatY kaleid scroll scrollX scrollY | posterize shift invert contrast brightness luma thresh color saturate hue colorama sum r b g a |
+* | add sub layer blend mult diff mask | modulateRepeat modulateRepeatX modulateRepeatY modulateKaleid modulateScrollX modulateScrollY modulate modulateScale modulatePixelate modulateRotate modulateHue |
+* | initCam initImage initVideo init initStream initScreen | render update setResolution hush setFunction speed bpm width height time mouse | fast smooth ease offset fit | fft setSmooth setCutoff setBins setScale hide show |
 : feed : number :: <> => out:Value {N 0.0}
