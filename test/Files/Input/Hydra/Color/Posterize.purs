@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Color.Posterize where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Posterize where
 
 import Prelude
 

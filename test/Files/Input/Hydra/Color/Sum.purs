@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Color.Sum where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Sum where
 
 import Prelude
 

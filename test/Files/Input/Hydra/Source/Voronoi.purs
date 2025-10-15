@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Source.Voronoi where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Source.Voronoi where
 
 import Prelude
 

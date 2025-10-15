@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulateScale where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulateScale where
 
 import Prelude
 

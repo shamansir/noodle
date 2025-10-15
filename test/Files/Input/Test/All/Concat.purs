@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Test.All.Concat where
+module FOOBAR.Test.Files.CodeGenTest.Test.All.Concat where
 
 import Prelude
 

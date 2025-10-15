@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Audio.Hide where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.Hide where
 
 import Prelude
 

@@ -1,0 +1,2 @@
+hydra 0.2 0.4
+: feed : number :: <> => out:Value {N 0.0}

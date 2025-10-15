@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Blend.Mask where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Blend.Mask where
 
 import Prelude
 

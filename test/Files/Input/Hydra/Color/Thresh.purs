@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Color.Thresh where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Thresh where
 
 import Prelude
 

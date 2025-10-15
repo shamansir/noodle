@@ -69,7 +69,7 @@ minimalGenOptions = FCG.Options
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , chreprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalVRepr" }
   , streprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalStRepr" }
-  , familyModuleName : MCG.moduleName' modulePrefix $ Id.toolkitR "Test"
+  , familyModuleName : \groupR familyR -> "OUTPUT." <> MCG.moduleName' modulePrefix (Id.toolkitR "Test") groupR familyR
   , pstrepr : (Proxy :: _ MinimalStRepr)
   , pchrepr : (Proxy :: _ MinimalVRepr)
   , infoComment : Nothing
@@ -179,7 +179,7 @@ spec = do
       -}
 
       it "properly generates Hydra Toolkit" $ do
-        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.3.ndf"
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.4.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of
           Left error -> fail $ show error
@@ -212,6 +212,7 @@ __alterInput :: String -> String
 __alterInput =
   String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
   >>> String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
+  >>> String.replace (String.Pattern "FOOBAR.") (String.Replacement "OUTPUT.")
 
 
 _readInputFile :: forall m. MonadEffect m => MCG.FilePath -> m MCG.FileContent
@@ -236,7 +237,7 @@ _writeOutputFile (MCG.FilePath filePath /\ MCG.FileContent fileContent) =
 customHydraGenOptions :: Hydra.GenOptions
 customHydraGenOptions =
   FCG.withOptions Hydra.genOptions $ \opts -> opts
-      { familyModuleName = MCG.moduleName' modulePrefix $ Id.toolkitR "Hydra"
+      { familyModuleName = \groupR familyR -> "OUTPUT." <> MCG.moduleName' modulePrefix (Id.toolkitR "Hydra") groupR familyR
       }
 
 

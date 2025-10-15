@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Out.Out where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Out.Out where
 
 import Prelude
 

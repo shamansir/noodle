@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Color.Invert where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Invert where
 
 import Prelude
 

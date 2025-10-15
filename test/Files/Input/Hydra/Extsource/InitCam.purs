@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Extsource.InitCam where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Extsource.InitCam where
 
 import Prelude
 

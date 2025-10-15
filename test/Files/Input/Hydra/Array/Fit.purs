@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Array.Fit where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Array.Fit where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Geometry.ScrollX where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Geometry.ScrollX where
 
 import Prelude
 

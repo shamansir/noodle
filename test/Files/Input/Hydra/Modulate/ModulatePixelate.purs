@@ -1,4 +1,4 @@
-module Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulatePixelate where
+module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Modulate.ModulatePixelate where
 
 import Prelude
 
