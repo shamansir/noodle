@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Array.Offset where
+module INPUT.Test.Files.CodeGenTest.Hydra.Array.Offset where
 
 import Prelude
 

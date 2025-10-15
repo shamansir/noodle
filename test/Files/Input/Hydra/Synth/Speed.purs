@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Synth.Speed where
+module INPUT.Test.Files.CodeGenTest.Hydra.Synth.Speed where
 
 import Prelude
 

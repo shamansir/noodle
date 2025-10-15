@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Geometry.Rotate where
+module INPUT.Test.Files.CodeGenTest.Hydra.Geometry.Rotate where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Saturate where
+module INPUT.Test.Files.CodeGenTest.Hydra.Color.Saturate where
 
 import Prelude
 

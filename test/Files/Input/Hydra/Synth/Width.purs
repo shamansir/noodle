@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Synth.Width where
+module INPUT.Test.Files.CodeGenTest.Hydra.Synth.Width where
 
 import Prelude
 

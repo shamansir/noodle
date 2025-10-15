@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Color.Contrast where
+module INPUT.Test.Files.CodeGenTest.Hydra.Color.Contrast where
 
 import Prelude
 

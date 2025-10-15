@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.SetBins where
+module INPUT.Test.Files.CodeGenTest.Hydra.Audio.SetBins where
 
 import Prelude
 

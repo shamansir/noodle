@@ -212,9 +212,7 @@ __compareByEq content =
 
 __alterInput :: String -> String
 __alterInput =
-  String.replace (String.Pattern "CodeGenTest.Input") (String.Replacement "CodeGenTest")
-  >>> String.replace (String.Pattern "Input.Hydra") (String.Replacement "Hydra")
-  >>> String.replace (String.Pattern "FOOBAR.") (String.Replacement "OUTPUT.")
+  String.replaceAll (String.Pattern "INPUT.") (String.Replacement "OUTPUT.")
 
 
 _readInputFile :: forall m. MonadEffect m => MCG.FilePath -> m MCG.FileContent

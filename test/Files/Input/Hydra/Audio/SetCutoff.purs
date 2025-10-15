@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Audio.SetCutoff where
+module INPUT.Test.Files.CodeGenTest.Hydra.Audio.SetCutoff where
 
 import Prelude
 

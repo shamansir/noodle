@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Extsource.InitScreen where
+module INPUT.Test.Files.CodeGenTest.Hydra.Extsource.InitScreen where
 
 import Prelude
 

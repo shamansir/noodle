@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Array.Smooth where
+module INPUT.Test.Files.CodeGenTest.Hydra.Array.Smooth where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module FOOBAR.Test.Files.CodeGenTest.Input.Hydra.Source.Noise where
+module INPUT.Test.Files.CodeGenTest.Hydra.Source.Noise where
 
 import Prelude
 
