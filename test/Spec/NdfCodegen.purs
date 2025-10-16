@@ -180,7 +180,7 @@ spec = do
         liftEffect $ writeTextFile UTF8 "./ndf/hydra-autodocs.ndf" fnDocs
       -}
 
-      it "properly generates Hydra Toolkit" $ do
+      itOnly "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.4.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of

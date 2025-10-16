@@ -30,8 +30,9 @@ _thresh :: NId.Family "thresh"
 _thresh = NId.Family
 
 type Inlets =
-  (I "what" Hot HYDRA.Texture :> I "threshold" Hot HYDRA.Value :> I "tolerance" Hot HYDRA.Value :> TNil) ::
-    Noodle.Inlets
+  ( I "what" Hot HYDRA.Texture :> I "threshold" Hot HYDRA.Value :> I "tolerance" Hot HYDRA.Value :>
+      TNil
+  ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (what :: HYDRA.Texture, threshold :: HYDRA.Value, tolerance :: HYDRA.Value)
