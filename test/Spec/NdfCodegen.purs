@@ -70,6 +70,7 @@ minimalGenOptions = FCG.Options
   , monadAt : { module_ : "Effect", type_ : "Effect" }
   , chreprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalVRepr" }
   , streprAt : { module_ : "Example.Toolkit.Minimal.ChRepr", type_ : "MinimalStRepr" }
+  , pstreprType : "MinimalStRepr"
   , familyModuleName : \groupR familyR -> "OUTPUT." <> MCG.moduleName' modulePrefix (Id.toolkitR "Test") groupR familyR
   , toolkitModuleName : CG.toolkitModuleName
   , pstrepr : (Proxy :: _ MinimalStRepr)

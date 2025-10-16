@@ -38,6 +38,7 @@ options :: Options UnitRepr UnitRepr
 options = Options $
     { streprAt : { module_ : "Noodle.Text.NdfFile.UnitRepr", type_ : "UnitRepr" }
     , chreprAt : { module_ : "Noodle.Text.NdfFile.UnitRepr", type_ : "UnitRepr" }
+    , pstreprType : "UnitRepr"
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "MyToolkit" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family

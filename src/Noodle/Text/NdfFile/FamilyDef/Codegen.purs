@@ -123,6 +123,7 @@ type OptionsRec strepr chrepr =
   , pchrepr :: Proxy chrepr
   , chreprAt :: { module_ :: String, type_ :: String }
   , streprAt :: { module_ :: String, type_ :: String }
+  , pstreprType :: String
   , tkImports :: Array (ImportDecl Void)
   , familyImports :: Id.FamilyR -> Array (ImportDecl Void)
   }
