@@ -4,3 +4,5 @@ hydra 0.2 0.4
 * | add sub layer blend mult diff mask | modulateRepeat modulateRepeatX modulateRepeatY modulateKaleid modulateScrollX modulateScrollY modulate modulateScale modulatePixelate modulateRotate modulateHue |
 * | initCam initImage initVideo init initStream initScreen | render update setResolution hush setFunction speed bpm width height time mouse | fast smooth ease offset fit | fft setSmooth setCutoff setBins setScale hide show |
 : feed : number :: <> => out:Value {N 0.0}
+: feed : pi :: <> => out:Value {PI V}
+: feed : array :: <> => out:Value {VA %%%%}

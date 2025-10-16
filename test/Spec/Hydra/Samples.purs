@@ -267,6 +267,10 @@ wrapSamples =
       , jsExpr : "a.fft[1]"
       , pursExpr : ""
       }
+    , { sample : Value $ VArray (T.Values []) T.NoEase
+      , jsExpr : "[]"
+      , pursExpr : ""
+      }
     , { sample : Value $ VArray (T.Values []) $ T.Ease Linear
       , jsExpr : "[].ease('linear')"
       , pursExpr : ""

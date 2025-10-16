@@ -286,7 +286,6 @@ generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray =
         qChFullValue mbDataType = maybe (FCG.fDefaultFor opts.pchrepr mbDataType) (FCG.fValueFor opts.pchrepr mbDataType)
 
 
-
 moduleName :: Toolkit.Name -> GroupR -> FamilyR -> String
 moduleName tkName group family =
   Id.toolkit tkName <> "." <> FCG.groupPascalCase group <> "." <> FCG.familyPascalCase family
