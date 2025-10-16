@@ -29,7 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setSmooth :: NId.Family "setSmooth"
 _setSmooth = NId.Family
 
-type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "smooth" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+type Inlets =
+  (I "audio" Hot HYDRA.AudioSource :> I "smooth" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+
 type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (audio :: HYDRA.AudioSource, smooth :: HYDRA.Value)
 type OutletsRow = ()

@@ -29,7 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setCutoff :: NId.Family "setCutoff"
 _setCutoff = NId.Family
 
-type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "cutoff" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+type Inlets =
+  (I "audio" Hot HYDRA.AudioSource :> I "cutoff" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+
 type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (audio :: HYDRA.AudioSource, cutoff :: HYDRA.Value)
 type OutletsRow = ()

@@ -36,7 +36,9 @@ type Inlets =
   ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
-type InletsRow = (what :: HYDRA.Texture, with :: HYDRA.Texture, scrollX :: HYDRA.Value, speed :: HYDRA.Value)
+type InletsRow =
+  (what :: HYDRA.Texture, with :: HYDRA.Texture, scrollX :: HYDRA.Value, speed :: HYDRA.Value)
+
 type OutletsRow = (out :: HYDRA.Texture)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit

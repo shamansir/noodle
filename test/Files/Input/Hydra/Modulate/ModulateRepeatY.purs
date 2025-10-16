@@ -36,7 +36,9 @@ type Inlets =
   ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
-type InletsRow = (what :: HYDRA.Texture, with :: HYDRA.Texture, reps :: HYDRA.Value, offset :: HYDRA.Value)
+type InletsRow =
+  (what :: HYDRA.Texture, with :: HYDRA.Texture, reps :: HYDRA.Value, offset :: HYDRA.Value)
+
 type OutletsRow = (out :: HYDRA.Texture)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
@@ -46,7 +48,8 @@ type Family = Noodle.Family "modulateRepeatY" State InletsRow OutletsRow WrapRep
 type F = Noodle.F "modulateRepeatY" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { what: HYDRA.Empty, with: HYDRA.Empty, reps: HYDRA.Number 3.0, offset: HYDRA.Number 0.5 }
+defaultI =
+  { what: HYDRA.Empty, with: HYDRA.Empty, reps: HYDRA.Number 3.0, offset: HYDRA.Number 0.5 }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HYDRA.Empty }

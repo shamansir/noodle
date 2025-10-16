@@ -29,7 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setBins :: NId.Family "setBins"
 _setBins = NId.Family
 
-type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "numBins" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+type Inlets =
+  (I "audio" Hot HYDRA.AudioSource :> I "numBins" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+
 type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (audio :: HYDRA.AudioSource, numBins :: HYDRA.Value)
 type OutletsRow = ()
