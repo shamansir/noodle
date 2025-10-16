@@ -30,13 +30,16 @@ _shift :: NId.Family "shift"
 _shift = NId.Family
 
 type Inlets =
-  ( I "what" Hot HYDRA.Texture :> I "r" Hot HYDRA.Value :> I "g" Hot HYDRA.Value :> I "b" Hot HYDRA.Value
+  ( I "what" Hot HYDRA.Texture :> I "r" Hot HYDRA.Value :> I "g" Hot HYDRA.Value
+      :> I "b" Hot HYDRA.Value
       :> I "a" Hot HYDRA.Value
       :> TNil
   ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
-type InletsRow = (what :: HYDRA.Texture, r :: HYDRA.Value, g :: HYDRA.Value, b :: HYDRA.Value, a :: HYDRA.Value)
+type InletsRow =
+  (what :: HYDRA.Texture, r :: HYDRA.Value, g :: HYDRA.Value, b :: HYDRA.Value, a :: HYDRA.Value)
+
 type OutletsRow = (out :: HYDRA.Texture)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
@@ -47,7 +50,12 @@ type F = Noodle.F "shift" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
 defaultI =
-  { what: HYDRA.Empty, r: HYDRA.Number 0.5, g: HYDRA.Number 0.5, b: HYDRA.Number 0.5, a: HYDRA.Number 0.5 }
+  { what: HYDRA.Empty
+  , r: HYDRA.Number 0.5
+  , g: HYDRA.Number 0.5
+  , b: HYDRA.Number 0.5
+  , a: HYDRA.Number 0.5
+  }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HYDRA.Empty }

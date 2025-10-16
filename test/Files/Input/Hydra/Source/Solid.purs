@@ -30,8 +30,9 @@ _solid :: NId.Family "solid"
 _solid = NId.Family
 
 type Inlets =
-  (I "r" Hot HYDRA.Value :> I "g" Hot HYDRA.Value :> I "b" Hot HYDRA.Value :> I "a" Hot HYDRA.Value :> TNil) ::
-    Noodle.Inlets
+  ( I "r" Hot HYDRA.Value :> I "g" Hot HYDRA.Value :> I "b" Hot HYDRA.Value :> I "a" Hot HYDRA.Value
+      :> TNil
+  ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
 type InletsRow = (r :: HYDRA.Value, g :: HYDRA.Value, b :: HYDRA.Value, a :: HYDRA.Value)
