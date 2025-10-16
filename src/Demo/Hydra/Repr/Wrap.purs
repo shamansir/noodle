@@ -560,7 +560,7 @@ instance CR.WriteChannelRepr WrapRepr where
     writeChannelRepr = H._encode
 
 
-wrapAlias_ = "HW" :: String
+wrapAlias_ = "HYDRAW" :: String
 wrapPrefix_ = wrapAlias_ <> "." :: String
 wrapTypeCtor_ :: Partial => String -> CST.Type Void
 wrapTypeCtor_ s = typeCtor (wrapPrefix_ <> s)

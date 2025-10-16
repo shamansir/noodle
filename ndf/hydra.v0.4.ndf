@@ -90,3 +90,6 @@ hydra 0.2 0.4
 : audio : hide :: <audio:Audio {SIL} -> todo:TODO {TODO}> => <>
 : audio : show :: <audio:Audio {SIL} -> todo:TODO {TODO}> => <>
 : out : out :: <what:Texture {EMP T} -> target:RenderTarget {ALL 4}> => <>
+$ render :: /-| {- render -} pure unit |-/
+$ bpm :: /-| {- bpm -} pure unit |-/
+i ndf/hydra-docs.ndf
