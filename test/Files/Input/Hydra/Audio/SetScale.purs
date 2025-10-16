@@ -29,7 +29,9 @@ import Data.Tuple.Nested ((/\))
 _setScale :: NId.Family "setScale"
 _setScale = NId.Family
 
-type Inlets = (I "audio" Hot HYDRA.AudioSource :> I "scale" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+type Inlets =
+  (I "audio" Hot HYDRA.AudioSource :> I "scale" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+
 type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (audio :: HYDRA.AudioSource, scale :: HYDRA.Value)
 type OutletsRow = ()

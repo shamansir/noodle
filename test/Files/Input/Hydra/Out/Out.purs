@@ -29,7 +29,9 @@ import Data.Tuple.Nested ((/\))
 _out :: NId.Family "out"
 _out = NId.Family
 
-type Inlets = (I "what" Hot HYDRA.Texture :> I "target" Hot HYDRA.RenderTarget :> TNil) :: Noodle.Inlets
+type Inlets =
+  (I "what" Hot HYDRA.Texture :> I "target" Hot HYDRA.RenderTarget :> TNil) :: Noodle.Inlets
+
 type Outlets = TNil :: Noodle.Outlets
 type InletsRow = (what :: HYDRA.Texture, target :: HYDRA.RenderTarget)
 type OutletsRow = ()

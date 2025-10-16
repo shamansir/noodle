@@ -30,7 +30,8 @@ _fit :: NId.Family "fit"
 _fit = NId.Family
 
 type Inlets =
-  (I "arr" Hot HYDRA.Values :> I "low" Hot HYDRA.Value :> I "high" Hot HYDRA.Value :> TNil) :: Noodle.Inlets
+  (I "arr" Hot HYDRA.Values :> I "low" Hot HYDRA.Value :> I "high" Hot HYDRA.Value :> TNil) ::
+    Noodle.Inlets
 
 type Outlets = (O "arr" HYDRA.Value :> TNil) :: Noodle.Outlets
 type InletsRow = (arr :: HYDRA.Values, low :: HYDRA.Value, high :: HYDRA.Value)
@@ -46,7 +47,7 @@ defaultI :: Record InletsRow
 defaultI = { arr: HYDRA.Values [], low: HYDRA.Number 0.0, high: HYDRA.Number 1.0 }
 
 defaultO :: Record OutletsRow
-defaultO = { arr: HYDRA.VArray (HYDRA.Values []) (HYDRA.Ease HYDRA.Linear) }
+defaultO = { arr: HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase }
 
 defaultSt :: State
 defaultSt = State unit

@@ -58,8 +58,8 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 renderP :: Process
-renderP = do
-  {- render -} pure unit
+renderP = {- EMPTY PROCESS -}
+    pure unit
 
 instance HasFallback State where
   fallback = defaultSt

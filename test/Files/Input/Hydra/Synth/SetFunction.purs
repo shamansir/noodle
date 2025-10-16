@@ -42,7 +42,8 @@ type Family = Noodle.Family "setFunction" State InletsRow OutletsRow WrapRepr Ef
 type F = Noodle.F "setFunction" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { fn: HYDRA.GlslFn { kind: HYDRA.FnSrc, code: HYDRA.GlslFnCode "", fn: Sig ("" /\ [] /\ []) } }
+defaultI =
+  { fn: HYDRA.GlslFn { kind: HYDRA.FnSrc, code: HYDRA.GlslFnCode "", fn: Sig ("" /\ [] /\ []) } }
 
 defaultO :: Record OutletsRow
 defaultO = {}

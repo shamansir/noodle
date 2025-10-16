@@ -58,8 +58,8 @@ makeNode :: Effect Node
 makeNode = Family.spawn family
 
 bpmP :: Process
-bpmP = do
-  {- bpm -} pure unit
+bpmP = {- EMPTY PROCESS -}
+    pure unit
 
 instance HasFallback State where
   fallback = defaultSt

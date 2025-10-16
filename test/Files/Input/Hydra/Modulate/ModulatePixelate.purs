@@ -36,7 +36,9 @@ type Inlets =
   ) :: Noodle.Inlets
 
 type Outlets = (O "out" HYDRA.Texture :> TNil) :: Noodle.Outlets
-type InletsRow = (what :: HYDRA.Texture, with :: HYDRA.Texture, multiple :: HYDRA.Value, offset :: HYDRA.Value)
+type InletsRow =
+  (what :: HYDRA.Texture, with :: HYDRA.Texture, multiple :: HYDRA.Value, offset :: HYDRA.Value)
+
 type OutletsRow = (out :: HYDRA.Texture)
 type Shape = Noodle.Shape Inlets Outlets
 newtype State = State Unit
@@ -46,7 +48,8 @@ type Family = Noodle.Family "modulatePixelate" State InletsRow OutletsRow WrapRe
 type F = Noodle.F "modulatePixelate" State InletsRow OutletsRow WrapRepr Effect
 
 defaultI :: Record InletsRow
-defaultI = { what: HYDRA.Empty, with: HYDRA.Empty, multiple: HYDRA.Number 10.0, offset: HYDRA.Number 3.0 }
+defaultI =
+  { what: HYDRA.Empty, with: HYDRA.Empty, multiple: HYDRA.Number 10.0, offset: HYDRA.Number 3.0 }
 
 defaultO :: Record OutletsRow
 defaultO = { out: HYDRA.Empty }
