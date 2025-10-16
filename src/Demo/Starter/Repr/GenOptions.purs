@@ -23,6 +23,7 @@ genOptions :: Options StateRepr ValueRepr
 genOptions = Options $
     { streprAt : { module_ : "StarterTk.Repr.StRepr", type_ : "StateRepr" }
     , chreprAt : { module_ : "StarterTk.Repr.ChRepr", type_ : "ValueRepr" }
+    , pstreprType : "PState"
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "StarterTk" <> "." <> "Gen" <> "." <> "Library" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family

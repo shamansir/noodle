@@ -148,6 +148,23 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
         , declInstance Nothing [ ] "CliEditor" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_ ]
             [ instValue "cliEditorFor" (binderWildcard : _5binders) $ exprCtor "Nothing"
             ]
+        , declInstance Nothing [ monadEffectReq ] "WebEditor" [ typeCtor toolkitKey, typeCtor opts.chreprAt.type_, typeVar "m" ]
+            [ instValue "spawnWebEditor" _4binders $ exprCtor "Nothing" {-
+                $ exprWhere
+                    (exprOp (exprCtor "Just")
+                        [ binaryOp "$" $ exprApp (exprIdent "NumericVE.editor") [ exprIdent "toNumber", exprIdent "fromNumber" ]
+                        ]
+                    )
+                [ letBinder (binderVar "toNumber")
+                    $ exprCase [ exprSection ] $ -- FIXME: generate it from options
+                        [ caseBranch [ binderCtor "HYDRAW.Value" [ binderCtor "HYDRA.Number" [ binderVar "n" ] ] ] $ exprApp (exprCtor "Just") [ exprIdent "n" ]
+                        , caseBranch [ binderWildcard ] $ exprCtor "Nothing"
+                        ]
+                , letBinder (binderVar "fromNumber")
+                    $ exprOp (exprCtor "HYDRAW.Value")
+                        [ binaryOp "<<<" $ exprApp (exprCtor "HYDRA.Number") [] ]
+                ] -}
+            ]
         , declInstance Nothing [] "MarkToolkit" [ typeCtor toolkitKey ]
             [ instValue "markGroup" [ binderWildcard ]
                 $ exprOp (exprIdent "Id.group")
@@ -158,6 +175,12 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
             , instValue "markFamily" [ binderVar "ptk" ]
                 $ exprOp (exprIdent "const")
                 [ binaryOp "<<<" $ exprApp (exprIdent "markGroup") [ exprIdent "ptk" ] ]
+            ]
+        , declInstance Nothing [ monadEffectReq ] "InitPatchState" [ typeCtor toolkitKey, typeCtor opts.pstreprType, typeVar "m" ]
+            [ instValue "initPatch" [] $ exprApp (exprIdent "const") [ exprApp (exprIdent "Patch.init") [] ] ]
+        , declInstance Nothing [ ] "FromToPatchState" [ typeCtor toolkitKey, typeCtor opts.pstreprType, typeCtor opts.streprAt.type_ ]
+            [ instValue "loadFromPatch" _4binders $ exprCtor "Nothing"
+            , instValue "putInPatch" _3binders $ exprIdent "identity"
             ]
         , generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray
         ]
@@ -211,7 +234,9 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                                 ]
         groupArray :: Array GroupR
         groupArray = Array.nub $ FamilyDef.group <$> definitionsArray
-        _5binders = [ binderWildcard, binderWildcard, binderWildcard, binderWildcard, binderWildcard ]
+        _3binders = [ binderWildcard, binderWildcard, binderWildcard ]
+        _4binders = binderWildcard : _3binders
+        _5binders = binderWildcard : _4binders
         rgbColorExpr :: Partial => Int -> Int -> Int -> CST.Expr Void
         rgbColorExpr r g b = exprApp (exprIdent "Color.rgb") [ exprInt r, exprInt g, exprInt b ]
         groupOfFamilyBranch :: Partial => FamilyDef -> _

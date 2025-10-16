@@ -27,6 +27,7 @@ genOptions :: GenOptions
 genOptions = FCG.Options
     { streprAt : { module_ : "HydraTk.Repr.State", type_ : "StateRepr" }
     , chreprAt : { module_ : "HydraTk.Repr.Wrap", type_ : "WrapRepr" }
+    , pstreprType : "PState"
     , temperamentAlgorithm : Temperament.defaultAlgorithm
     , monadAt : { module_ : "Effect", type_ : "Effect" }
     , familyModuleName : \fgroup family -> "Hydra" <> "." <> groupPascalCase fgroup <> "." <> familyPascalCase family
