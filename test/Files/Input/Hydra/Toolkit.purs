@@ -111,22 +111,16 @@ import INPUT.Test.Files.CodeGenTest.Hydra.Audio.SetScale as Audio.SetScale
 import INPUT.Test.Files.CodeGenTest.Hydra.Audio.Hide as Audio.Hide
 import INPUT.Test.Files.CodeGenTest.Hydra.Audio.Show as Audio.Show
 import INPUT.Test.Files.CodeGenTest.Hydra.Out.Out as Out.Out
+import HydraTk.Repr.State (StateRepr)
+import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Patch (PState(..))
 import HydraTk.Patch (init) as Patch
-import HydraTk.Repr.Wrap (WrapRepr)
-import HydraTk.Repr.Wrap (WrapRepr(..)) as W
-import HydraTk.Repr.State (StateRepr)
 import HydraTk.Types as HYDRA
-import HydraTk.Repr.Wrap as HW
-
+import HydraTk.Repr.Wrap as HYDRAW
+import Data.Tuple.Nested ((/\))
 
 type HydraFamilies :: Families
-type HydraFamilies
-  =  Feed.Number.F
-  :> Feed.Pi.F
-  :> Feed.Array.F
-  :> Feed.Expression.F
-  :> Feed.Time.F
+type HydraFamilies = Feed.Number.F :> Feed.Pi.F :> Feed.Array.F :> Feed.Expression.F :> Feed.Time.F
   :> Feed.Mouse.F
   :> Feed.GlslFn.F
   :> Source.Noise.F
@@ -214,9 +208,7 @@ type HydraFamilies
 foreign import data HYDRA :: ToolkitKey
 
 toolkit :: Toolkit HYDRA HydraFamilies StateRepr WrapRepr Effect
-toolkit
-  = Toolkit.register Feed.Number.family
-  $ Toolkit.register Feed.Pi.family
+toolkit = Toolkit.register Feed.Number.family $ Toolkit.register Feed.Pi.family
   $ Toolkit.register Feed.Array.family
   $ Toolkit.register Feed.Expression.family
   $ Toolkit.register Feed.Time.family
@@ -413,16 +405,14 @@ instance CliEditor HYDRA WrapRepr where
   cliEditorFor _ _ _ _ _ _ = Nothing
 
 instance MonadEffect m => WebEditor HYDRA WrapRepr m where
-  -- webEditorFor :: Proxy HYDRA -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe ValueEditor.EditorId
-  -- webEditorFor _ _ _ = Nothing
-  spawnWebEditor :: Proxy HYDRA -> {- H.RefLabel -> -} ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr m)
-  spawnWebEditor _ {- _ -} _ _ _ =
+  spawnWebEditor :: Proxy HYDRA -> ValueEditor.EditorId -> WR.InletPath -> ValueInChannel WrapRepr -> Maybe (ValueEditor WrapRepr m)
+  spawnWebEditor _ _ _ _ =
     Just $ NumericVE.editor toNumber fromNumber
     where
-      toNumber = case _ of -- FIXME: use some typeclass
-        W.Value (HYDRA.Number n) -> Just n
+      toNumber = case _ of
+        HYDRAW.Value (HYDRA.Number n) -> Just n
         _ -> Nothing
-      fromNumber = W.Value <<< HYDRA.Number
+      fromNumber = HYDRAW.Value <<< HYDRA.Number
 
 instance MarkToolkit HYDRA where
   markGroup _ = Id.group >>>
@@ -457,359 +447,359 @@ instance FromToPatchState HYDRA PState StateRepr where
 instance PossiblyToSignature HYDRA (ValueInChannel WrapRepr) (ValueInChannel WrapRepr) Id.FamilyR where
   possiblyToSignature _ = Id.family
     >>> case _ of
-        "number" -> Just $ sig "number" [] [ Sig.out_ "out" $ HW.Value (HYDRA.Number 0.0) ]
-        "pi" -> Just $ sig "pi" [] [ Sig.out_ "out" $ HW.Value HYDRA.Pi ]
+        "number" -> Just $ sig "number" [] [ Sig.out_ "out" $ HYDRAW.Value (HYDRA.Number 0.0) ]
+        "pi" -> Just $ sig "pi" [] [ Sig.out_ "out" $ HYDRAW.Value HYDRA.Pi ]
         "array" -> Just $ sig "array" []
-          [ Sig.out_ "out" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
-        "expression" -> Just $ sig "expression" [] [ Sig.out_ "out" $ HW.Value (HYDRA.Dep HYDRA.NoAction) ]
-        "time" -> Just $ sig "time" [] [ Sig.out_ "time" $ HW.Value HYDRA.Time ]
+          [ Sig.out_ "out" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
+        "expression" -> Just $ sig "expression" [] [ Sig.out_ "out" $ HYDRAW.Value (HYDRA.Dep HYDRA.NoAction) ]
+        "time" -> Just $ sig "time" [] [ Sig.out_ "time" $ HYDRAW.Value HYDRA.Time ]
         "mouse" -> Just $ sig "mouse" []
-          [ Sig.out_ "x" $ HW.Value HYDRA.MouseX, Sig.out_ "y" $ HW.Value HYDRA.MouseY ]
-        "glslFn" -> Just $ sig "glslFn" [] [ Sig.out_ "out" $ HW.Value (HYDRA.Dep HYDRA.NoAction) ]
+          [ Sig.out_ "x" $ HYDRAW.Value HYDRA.MouseX, Sig.out_ "y" $ HYDRAW.Value HYDRA.MouseY ]
+        "glslFn" -> Just $ sig "glslFn" [] [ Sig.out_ "out" $ HYDRAW.Value (HYDRA.Dep HYDRA.NoAction) ]
         "noise" -> Just $ sig "noise"
-          [ Sig.in_ "scale" $ HW.Value (HYDRA.Number 10.0), Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.1) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 10.0), Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.1) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "voronoi" -> Just $ sig "voronoi"
-          [ Sig.in_ "scale" $ HW.Value (HYDRA.Number 5.0)
-          , Sig.in_ "speed" $ HW.Value (HYDRA.Number 0.3)
-          , Sig.in_ "blending" $ HW.Value (HYDRA.Number 0.3)
+          [ Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 5.0)
+          , Sig.in_ "speed" $ HYDRAW.Value (HYDRA.Number 0.3)
+          , Sig.in_ "blending" $ HYDRAW.Value (HYDRA.Number 0.3)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "osc" -> Just $ sig "osc"
-          [ Sig.in_ "frequency" $ HW.Value (HYDRA.Number 60.0)
-          , Sig.in_ "sync" $ HW.Value (HYDRA.Number 0.1)
+          [ Sig.in_ "frequency" $ HYDRAW.Value (HYDRA.Number 60.0)
+          , Sig.in_ "sync" $ HYDRAW.Value (HYDRA.Number 0.1)
           , Sig.inx_ "offset"
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "shape" -> Just $ sig "shape"
-          [ Sig.in_ "sides" $ HW.Value (HYDRA.Number 60.0)
-          , Sig.in_ "radius" $ HW.Value (HYDRA.Number 0.3)
-          , Sig.in_ "smoothing" $ HW.Value (HYDRA.Number 0.01)
+          [ Sig.in_ "sides" $ HYDRAW.Value (HYDRA.Number 60.0)
+          , Sig.in_ "radius" $ HYDRAW.Value (HYDRA.Number 0.3)
+          , Sig.in_ "smoothing" $ HYDRAW.Value (HYDRA.Number 0.01)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "gradient" -> Just $ sig "gradient" [ Sig.inx_ "speed" ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
-        "src" -> Just $ sig "src" [ Sig.inx_ "load" ] [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
+        "src" -> Just $ sig "src" [ Sig.inx_ "load" ] [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "solid" -> Just $ sig "solid"
-          [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b", Sig.in_ "a" $ HW.Value (HYDRA.Number 1.0) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
-        "prev" -> Just $ sig "prev" [ Sig.in_ "todo" $ HW.TODO HYDRA.TODO ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.inx_ "r", Sig.inx_ "g", Sig.inx_ "b", Sig.in_ "a" $ HYDRAW.Value (HYDRA.Number 1.0) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
+        "prev" -> Just $ sig "prev" [ Sig.in_ "todo" $ HYDRAW.TODO HYDRA.TODO ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "rotate" -> Just $ sig "rotate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "angle" $ HW.Value (HYDRA.Number 10.0)
-          , Sig.in_ "speed" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "angle" $ HYDRAW.Value (HYDRA.Number 10.0)
+          , Sig.in_ "speed" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "scale" -> Just $ sig "scale"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.5)
-          , Sig.in_ "xMult" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "yMult" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offsetX" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "offsetY" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.5)
+          , Sig.in_ "xMult" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "yMult" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offsetX" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "offsetY" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "pixelate" -> Just $ sig "pixelate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "pixelX" $ HW.Value (HYDRA.Number 20.0)
-          , Sig.in_ "pixelY" $ HW.Value (HYDRA.Number 20.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "pixelX" $ HYDRAW.Value (HYDRA.Number 20.0)
+          , Sig.in_ "pixelY" $ HYDRAW.Value (HYDRA.Number 20.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "repeat" -> Just $ sig "repeat"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "repeatX" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "repeatY" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offsetX" $ HW.Value (HYDRA.Number 0.0)
-          , Sig.in_ "offsetY" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "repeatX" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "repeatY" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offsetX" $ HYDRAW.Value (HYDRA.Number 0.0)
+          , Sig.in_ "offsetY" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "repeatX" -> Just $ sig "repeatX"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "reps" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "reps" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "repeatY" -> Just $ sig "repeatY"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "reps" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "reps" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "kaleid" -> Just $ sig "kaleid"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "nSides" $ HW.Value (HYDRA.Number 3.0) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "nSides" $ HYDRAW.Value (HYDRA.Number 3.0) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "scroll" -> Just $ sig "scroll"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scrollX" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "scrollY" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scrollX" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "scrollY" $ HYDRAW.Value (HYDRA.Number 0.5)
           , Sig.inx_ "speedX"
           , Sig.inx_ "speedY"
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "scrollX" -> Just $ sig "scrollX"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scrollX" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "speed" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scrollX" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "speed" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "scrollY" -> Just $ sig "scrollY"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scrollY" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "speed" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scrollY" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "speed" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "posterize" -> Just $ sig "posterize"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "bins" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "gamma" $ HW.Value (HYDRA.Number 0.6)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "bins" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "gamma" $ HYDRAW.Value (HYDRA.Number 0.6)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "shift" -> Just $ sig "shift"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "r" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "g" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "b" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "a" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "r" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "g" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "b" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "a" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "invert" -> Just $ sig "invert"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "contrast" -> Just $ sig "contrast"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.6) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.6) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "brightness" -> Just $ sig "brightness"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "amount" $ HW.Value (HYDRA.Number 0.4) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 0.4) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "luma" -> Just $ sig "luma"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "threshold" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "tolerance" $ HW.Value (HYDRA.Number 0.1)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "threshold" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "tolerance" $ HYDRAW.Value (HYDRA.Number 0.1)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "thresh" -> Just $ sig "thresh"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "threshold" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "tolerance" $ HW.Value (HYDRA.Number 0.1)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "threshold" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "tolerance" $ HYDRAW.Value (HYDRA.Number 0.1)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "color" -> Just $ sig "color"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "r" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "g" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "b" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "a" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "r" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "g" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "b" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "a" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "saturate" -> Just $ sig "saturate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "amount" $ HW.Value (HYDRA.Number 2.0) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 2.0) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "hue" -> Just $ sig "hue"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "hue" $ HW.Value (HYDRA.Number 0.4) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "hue" $ HYDRAW.Value (HYDRA.Number 0.4) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "colorama" -> Just $ sig "colorama"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "amount" $ HW.Value (HYDRA.Number 0.005) ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 0.005) ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "sum" -> Just $ sig "sum"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "todo" $ HW.TODO HYDRA.TODO ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "todo" $ HYDRAW.TODO HYDRA.TODO ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "r" -> Just $ sig "r"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scale" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "b" -> Just $ sig "b"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scale" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "g" -> Just $ sig "g"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scale" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "a" -> Just $ sig "a"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scale" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "add" -> Just $ sig "add"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "sub" -> Just $ sig "sub"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "layer" -> Just $ sig "layer"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "blend" -> Just $ sig "blend"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "mult" -> Just $ sig "mult"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "diff" -> Just $ sig "diff"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "with" $ HW.Texture HYDRA.Empty ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "mask" -> Just $ sig "mask"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "with" $ HW.Texture HYDRA.Empty ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateRepeat" -> Just $ sig "modulateRepeat"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "repeatX" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "repeatY" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offsetX" $ HW.Value (HYDRA.Number 0.5)
-          , Sig.in_ "offsetY" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "repeatX" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "repeatY" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offsetX" $ HYDRAW.Value (HYDRA.Number 0.5)
+          , Sig.in_ "offsetY" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateRepeatX" -> Just $ sig "modulateRepeatX"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "reps" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "reps" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateRepeatY" -> Just $ sig "modulateRepeatY"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "reps" $ HW.Value (HYDRA.Number 3.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "reps" $ HYDRAW.Value (HYDRA.Number 3.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.5)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateKaleid" -> Just $ sig "modulateKaleid"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "nSides" $ HW.Value (HYDRA.Number 3.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "nSides" $ HYDRAW.Value (HYDRA.Number 3.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateScrollX" -> Just $ sig "modulateScrollX"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scrollX" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scrollX" $ HYDRAW.Value (HYDRA.Number 0.5)
           , Sig.inx_ "speed"
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateScrollY" -> Just $ sig "modulateScrollY"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "scrollY" $ HW.Value (HYDRA.Number 0.5)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "scrollY" $ HYDRAW.Value (HYDRA.Number 0.5)
           , Sig.inx_ "speed"
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulate" -> Just $ sig "modulate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 0.1)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 0.1)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateScale" -> Just $ sig "modulateScale"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "multiple" $ HW.Value (HYDRA.Number 1.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "multiple" $ HYDRAW.Value (HYDRA.Number 1.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulatePixelate" -> Just $ sig "modulatePixelate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "multiple" $ HW.Value (HYDRA.Number 10.0)
-          , Sig.in_ "offset" $ HW.Value (HYDRA.Number 3.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "multiple" $ HYDRAW.Value (HYDRA.Number 10.0)
+          , Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 3.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateRotate" -> Just $ sig "modulateRotate"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "multiple" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "multiple" $ HYDRAW.Value (HYDRA.Number 1.0)
           , Sig.inx_ "offset"
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
         "modulateHue" -> Just $ sig "modulateHue"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "with" $ HW.Texture HYDRA.Empty
-          , Sig.in_ "amount" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "with" $ HYDRAW.Texture HYDRA.Empty
+          , Sig.in_ "amount" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "out" $ HW.Texture HYDRA.Empty ]
-        "initCam" -> Just $ sig "initCam" [ Sig.inx_ "src", Sig.in_ "index" $ HW.Value HYDRA.None ] []
+          [ Sig.out_ "out" $ HYDRAW.Texture HYDRA.Empty ]
+        "initCam" -> Just $ sig "initCam" [ Sig.inx_ "src", Sig.in_ "index" $ HYDRAW.Value HYDRA.None ] []
         "initImage" -> Just $ sig "initImage" [ Sig.inx_ "src", Sig.inx_ "url" ] []
         "initVideo" -> Just $ sig "initVideo" [ Sig.inx_ "src", Sig.inx_ "url" ] []
         "init" -> Just $ sig "init" [ Sig.inx_ "options" ] []
-        "initStream" -> Just $ sig "initStream" [ Sig.inx_ "src", Sig.in_ "todo" $ HW.TODO HYDRA.TODO ]
+        "initStream" -> Just $ sig "initStream" [ Sig.inx_ "src", Sig.in_ "todo" $ HYDRAW.TODO HYDRA.TODO ]
           []
         "initScreen" -> Just $ sig "initScreen" [] []
-        "render" -> Just $ sig "render" [ Sig.in_ "what" $ HW.Unit unit ] []
+        "render" -> Just $ sig "render" [ Sig.in_ "what" $ HYDRAW.Unit unit ] []
         "update" -> Just $ sig "update" [ Sig.inx_ "fn" ] []
         "setResolution" -> Just $ sig "setResolution"
-          [ Sig.in_ "width" $ HW.Value (HYDRA.Number 100.0)
-          , Sig.in_ "height" $ HW.Value (HYDRA.Number 100.0)
+          [ Sig.in_ "width" $ HYDRAW.Value (HYDRA.Number 100.0)
+          , Sig.in_ "height" $ HYDRAW.Value (HYDRA.Number 100.0)
           ]
           []
         "hush" -> Just $ sig "hush" [] []
         "setFunction" -> Just $ sig "setFunction" [ Sig.inx_ "fn" ] []
-        "speed" -> Just $ sig "speed" [ Sig.in_ "v" $ HW.Value (HYDRA.Number 1.0) ] []
-        "bpm" -> Just $ sig "bpm" [ Sig.in_ "v" $ HW.Value (HYDRA.Number 30.0) ] []
-        "width" -> Just $ sig "width" [] [ Sig.out_ "w" $ HW.Value HYDRA.Width ]
-        "height" -> Just $ sig "height" [] [ Sig.out_ "h" $ HW.Value HYDRA.Height ]
+        "speed" -> Just $ sig "speed" [ Sig.in_ "v" $ HYDRAW.Value (HYDRA.Number 1.0) ] []
+        "bpm" -> Just $ sig "bpm" [ Sig.in_ "v" $ HYDRAW.Value (HYDRA.Number 30.0) ] []
+        "width" -> Just $ sig "width" [] [ Sig.out_ "w" $ HYDRAW.Value HYDRA.Width ]
+        "height" -> Just $ sig "height" [] [ Sig.out_ "h" $ HYDRAW.Value HYDRA.Height ]
         "fast" -> Just $ sig "fast"
-          [ Sig.in_ "arr" $ HW.Values (HYDRA.Values []), Sig.in_ "speed" $ HW.Value (HYDRA.Number 1.0) ]
-          [ Sig.out_ "arr" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
+          [ Sig.in_ "arr" $ HYDRAW.Values (HYDRA.Values []), Sig.in_ "speed" $ HYDRAW.Value (HYDRA.Number 1.0) ]
+          [ Sig.out_ "arr" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
         "smooth" -> Just $ sig "smooth"
-          [ Sig.in_ "arr" $ HW.Values (HYDRA.Values []), Sig.in_ "smooth" $ HW.Value (HYDRA.Number 1.0) ]
-          [ Sig.out_ "arr" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
+          [ Sig.in_ "arr" $ HYDRAW.Values (HYDRA.Values []), Sig.in_ "smooth" $ HYDRAW.Value (HYDRA.Number 1.0) ]
+          [ Sig.out_ "arr" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
         "ease" -> Just $ sig "ease"
-          [ Sig.in_ "arr" $ HW.Values (HYDRA.Values []), Sig.in_ "ease" $ HW.Ease HYDRA.NoEase ]
-          [ Sig.out_ "arr" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase ) ]
+          [ Sig.in_ "arr" $ HYDRAW.Values (HYDRA.Values []), Sig.in_ "ease" $ HYDRAW.Ease HYDRA.NoEase ]
+          [ Sig.out_ "arr" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase ) ]
         "offset" -> Just $ sig "offset"
-          [ Sig.in_ "arr" $ HW.Values (HYDRA.Values []), Sig.in_ "offset" $ HW.Value (HYDRA.Number 0.5) ]
-          [ Sig.out_ "arr" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
+          [ Sig.in_ "arr" $ HYDRAW.Values (HYDRA.Values []), Sig.in_ "offset" $ HYDRAW.Value (HYDRA.Number 0.5) ]
+          [ Sig.out_ "arr" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
         "fit" -> Just $ sig "fit"
-          [ Sig.in_ "arr" $ HW.Values (HYDRA.Values [])
-          , Sig.in_ "low" $ HW.Value (HYDRA.Number 0.0)
-          , Sig.in_ "high" $ HW.Value (HYDRA.Number 1.0)
+          [ Sig.in_ "arr" $ HYDRAW.Values (HYDRA.Values [])
+          , Sig.in_ "low" $ HYDRAW.Value (HYDRA.Number 0.0)
+          , Sig.in_ "high" $ HYDRAW.Value (HYDRA.Number 1.0)
           ]
-          [ Sig.out_ "arr" $ HW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
-        "fft" -> Just $ sig "fft" [ Sig.in_ "bin" $ HW.AudioBin (HYDRA.AudioBin 0) ]
-          [ Sig.out_ "fft" $ HW.Value HYDRA.None ]
+          [ Sig.out_ "arr" $ HYDRAW.Value (HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase) ]
+        "fft" -> Just $ sig "fft" [ Sig.in_ "bin" $ HYDRAW.AudioBin (HYDRA.AudioBin 0) ]
+          [ Sig.out_ "fft" $ HYDRAW.Value HYDRA.None ]
         "setSmooth" -> Just $ sig "setSmooth"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "smooth" $ HW.Value (HYDRA.Number 0.4) ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "smooth" $ HYDRAW.Value (HYDRA.Number 0.4) ]
           []
         "setCutoff" -> Just $ sig "setCutoff"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "cutoff" $ HW.Value (HYDRA.Number 2.0) ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "cutoff" $ HYDRAW.Value (HYDRA.Number 2.0) ]
           []
         "setBins" -> Just $ sig "setBins"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "numBins" $ HW.Value (HYDRA.Number 4.0) ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "numBins" $ HYDRAW.Value (HYDRA.Number 4.0) ]
           []
         "setScale" -> Just $ sig "setScale"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "scale" $ HW.Value (HYDRA.Number 10.0) ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "scale" $ HYDRAW.Value (HYDRA.Number 10.0) ]
           []
         "hide" -> Just $ sig "hide"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "todo" $ HW.TODO HYDRA.TODO ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "todo" $ HYDRAW.TODO HYDRA.TODO ]
           []
         "show" -> Just $ sig "show"
-          [ Sig.in_ "audio" $ HW.Audio HYDRA.Silence, Sig.in_ "todo" $ HW.TODO HYDRA.TODO ]
+          [ Sig.in_ "audio" $ HYDRAW.Audio HYDRA.Silence, Sig.in_ "todo" $ HYDRAW.TODO HYDRA.TODO ]
           []
         "out" -> Just $ sig "out"
-          [ Sig.in_ "what" $ HW.Texture HYDRA.Empty, Sig.in_ "target" $ HW.Unit unit ]
+          [ Sig.in_ "what" $ HYDRAW.Texture HYDRA.Empty, Sig.in_ "target" $ HYDRAW.Unit unit ]
           []
         _ -> Nothing
     >>> map Sig.toChanneled
