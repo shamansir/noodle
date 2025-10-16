@@ -1073,9 +1073,9 @@ instance Partial => ValueCodegen TOrV where
 
 instance Partial => ValueCodegen EaseType where
     mkExpression :: EaseType -> CST.Expr Void
-    mkExpression = exprString <<< case _ of
-        Linear -> "linear"
-        InOutCubic -> "easeInOutCubic"
+    mkExpression = hydraCtor_ <<< case _ of
+        Linear -> "Linear"
+        InOutCubic -> "InOutCubic"
 
 
 instance Partial => ValueCodegen EOrV where
@@ -1087,7 +1087,24 @@ instance Partial => ValueCodegen EOrV where
 
 instance Partial => ValueCodegen Ease where
     mkExpression :: Ease -> CST.Expr Void
-    mkExpression = codegenHydraMethod
+    mkExpression = case _ of
+        Ease easeType ->
+            exprApp (hydraCtor_ "Ease") [ mkExpression easeType ]
+        NoEase ->
+            hydraCtor_ "NoEase"
+        Fast val ->
+            exprApp (hydraCtor_ "Fast") [ mkExpression val ]
+        Smooth val ->
+            exprApp (hydraCtor_ "Smooth") [ mkExpression val ]
+        Fit { low, high } ->
+            exprApp (hydraCtor_ "Fit")
+                [ exprRecord
+                    [ "low" /\ mkExpression low
+                    , "high" /\ mkExpression high
+                    ]
+                ]
+        Offset val ->
+            exprApp (hydraCtor_ "Offset") [ mkExpression val ]
 
 
 instance Partial => ValueCodegen DepFn where

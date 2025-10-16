@@ -44,7 +44,7 @@ defaultI :: Record InletsRow
 defaultI = {}
 
 defaultO :: Record OutletsRow
-defaultO = { out: HYDRA.VArray (HYDRA.Values []) (HYDRA.Ease HYDRA.Linear) }
+defaultO = { out: HYDRA.VArray (HYDRA.Values []) HYDRA.NoEase }
 
 defaultSt :: State
 defaultSt = State unit

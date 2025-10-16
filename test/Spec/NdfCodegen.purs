@@ -28,7 +28,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 
 import Parsing (runParser) as P
 
-import Test.Spec (Spec, describe, it)
+import Test.Spec (Spec, describe, it, itOnly)
 import Test.Spec.Assertions (fail)
 
 import Node.Encoding (Encoding(..))
