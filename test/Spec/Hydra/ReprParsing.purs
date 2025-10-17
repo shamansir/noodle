@@ -1,4 +1,4 @@
-module Test.Spec.HydraReprParsing where
+module Test.Spec.Hydra.ReprParsing where
 
 import Prelude
 

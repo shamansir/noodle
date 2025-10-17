@@ -16,12 +16,12 @@ import Test.Spec.Repr (spec) as Repr
 import Test.Spec.Node (spec) as Node
 import Test.Spec.Toolkit (spec) as Toolkit
 import Test.Spec.Patch (spec) as Patch
-import Test.Spec.NdfFile (spec) as NdfFile
-import Test.Spec.NdfCodegen (spec) as NdfCodegen
-import Test.Spec.HydraReprParsing (spec) as HydraReprParsing
-import Test.Spec.HydraToCode (spec) as HydraToCode
 import Test.Spec.NodesAndRecords (spec) as NodesAndRecords
-import Test.Spec.CommandInput (spec) as CommandInput
+import Test.Spec.Ndf.File (spec) as NdfFile
+import Test.Spec.Ndf.Codegen (spec) as NdfCodegen
+import Test.Spec.Ndf.CommandInput (spec) as CommandInput
+import Test.Spec.Hydra.ReprParsing (spec) as HydraReprParsing
+import Test.Spec.Hydra.ToCode (spec) as HydraToCode
 
 
 main :: Effect Unit
