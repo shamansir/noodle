@@ -1,4 +1,4 @@
-module Test.Spec.NdfCodegen where
+module Test.Spec.Ndf.Codegen where
 
 import Prelude
 
@@ -181,7 +181,7 @@ spec = do
         liftEffect $ writeTextFile UTF8 "./ndf/hydra-autodocs.ndf" fnDocs
       -}
 
-      itOnly "properly generates Hydra Toolkit" $ do
+      it "properly generates Hydra Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.4.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of

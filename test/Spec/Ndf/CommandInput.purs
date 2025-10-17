@@ -1,4 +1,4 @@
-module Test.Spec.CommandInput where
+module Test.Spec.Ndf.CommandInput where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Test.Spec.HydraToCode where
+module Test.Spec.Hydra.ToCode where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Test.Spec.NdfFile where
+module Test.Spec.Ndf.File where
 
 import Prelude
 
