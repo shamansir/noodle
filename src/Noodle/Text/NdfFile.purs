@@ -229,3 +229,7 @@ documentationFor familyR = extractCommands >>> map Command.op >>> foldl extractD
 -- TODO: add `ToCode` implementation for `PureScript`? Maybe `ToCode` could generate several files?
 codegen :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> NdfFile -> Map MCG.FilePath MCG.FileContent
 codegen tkName options = loadDefinitions >>> MCG.codegen tkName options
+
+
+codegenRaw :: forall strepr chrepr. FCG.CodegenRepr strepr => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> NdfFile -> MCG.FilePath /\ MCG.FileContent
+codegenRaw tkName options = loadDefinitions >>> MCG.codegenRaw tkName options

@@ -73,6 +73,27 @@ codegen tkName options definitions =
             Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ FCG.generate options mbSource familyDef
 
 
+codegenRaw
+    :: forall strepr chrepr
+    .  Toolkit.Name
+    -> FCG.Options strepr chrepr
+    -> Array (Maybe Source /\ FamilyDef)
+    -> FilePath /\ FileContent
+codegenRaw tkName options definitions =
+    FilePath (rawToolkitFile genRoot tkName) /\ (FileContent $ printModule <<< generateRawToolkitModule tkName options $ Tuple.snd <$> definitions)
+    -- definitions
+    -- # foldr genModule Map.empty
+    -- # Map.insert
+    --     (FilePath $ toolkitFile genRoot tkName)
+    --     (generateToolkit tkName options $ Tuple.snd <$> definitions)
+    where
+        genRoot = GenRootPath ""
+        -- filePathFor = FilePath <<< moduleFile genRoot tkName
+        -- genModule (mbSource /\ FamilyDef familyDef) =
+        --     -- toCode (ToCode.pureScript) genOptions familyDef
+        --     Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ FCG.generate options mbSource familyDef
+
+
 generateToolkit :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> FileContent
 generateToolkit tkName options = FileContent <<< printModule <<< generateToolkitModule tkName options
 
@@ -255,6 +276,11 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
                     Nothing -> rgbColorExpr 255 255 255
 
 
+generateRawToolkitModule :: forall strepr chrepr. Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> Module Void
+generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
+    = unsafePartial $ module_ (opts.toolkitModuleName tkName <> "Raw") [] [] [ declValue "foo" [] $ exprInt 42 ]
+
+
 generatePossiblyToSignatureInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
 generatePossiblyToSignatureInstance tkName (FCG.Options opts) definitionsArray =
     declInstance Nothing [] "PossiblyToSignature"
@@ -348,3 +374,8 @@ toolkitPath genRoot tkName = unwrap genRoot <> "/" <> Id.toolkit tkName
 toolkitFile :: GenRootPath -> Toolkit.Name -> String
 toolkitFile genRoot tkName =
     toolkitPath genRoot tkName <> "/" <> "Toolkit" <> ".purs"
+
+
+rawToolkitFile :: GenRootPath -> Toolkit.Name -> String
+rawToolkitFile genRoot tkName =
+    toolkitPath genRoot tkName <> "/" <> "ToolkitRaw" <> ".purs"
