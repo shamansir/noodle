@@ -42,7 +42,7 @@ import Noodle.Id (toolkitR, family) as Id
 import Noodle.Fn.Shape.Temperament (defaultAlgorithm) as Temperament
 import Noodle.Text.ToCode (toCode)
 import Noodle.Text.Code.Target (pureScript) as ToCode
-import Noodle.Text.NdfFile (loadOrder, hasFailedLines, failedLines, codegen) as NdfFile
+import Noodle.Text.NdfFile (loadOrder, hasFailedLines, failedLines, codegen, codegenRaw) as NdfFile
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, chtv, i, o, qdefps, st) as FD
@@ -200,6 +200,20 @@ spec = do
               --   (String.joinWith "\n" $ show <$> Array.fromFoldable onlyEqualFiles)
               -- )
               traverse_ (uncurry testCodegenPair) $ (Map.toUnfoldable results :: Array (MCG.FilePath /\ { input :: MCG.FileContent, output :: MCG.FileContent }))
+            else
+              fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
+
+      itOnly "properly generates Hydra RAW Toolkit" $ do
+        hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.4.ndf"
+        let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
+        case eParsedNdf of
+          Left error -> fail $ show error
+          Right parsedNdf ->
+            if not $ NdfFile.hasFailedLines parsedNdf then do
+              let (outputFile /\ outputFileContent) = NdfFile.codegenRaw (Id.toolkitR "Hydra") customHydraGenOptions parsedNdf
+              _writeOutputFile $ outputFile /\ outputFileContent
+              inputFileContent <- _readInputFile outputFile
+              testCodegenPair outputFile { input : inputFileContent, output : outputFileContent }
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
