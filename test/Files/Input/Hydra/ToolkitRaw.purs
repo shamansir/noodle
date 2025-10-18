@@ -7,7 +7,7 @@ import Effect (Effect)
 import Data.Maybe (Maybe(..), fromMaybe)
 
 import Type.Proxy (Proxy(..))
-import Type.Data.List.Extra (TNil, class Put)
+import Type.Data.List.Extra (TNil)
 
 import Noodle.Id (toolkitR, unsafeFamilyR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
@@ -15,7 +15,7 @@ import Noodle.Toolkit (empty, registerRaw) as Toolkit
 import Noodle.Raw.Toolkit.Family (qmake) as Family
 import Noodle.Repr.HasFallback (fallback) as Repr
 import Noodle.Text.NdfFile.Types (EncodedType(..), EncodedValue(..)) as Ndf
-import Noodle.Text.NdfFile.FamilyDef.Codegen (class ParseableRepr, toRepr, toDefault) as Ndf
+import Noodle.Text.NdfFile.FamilyDef.Codegen (toRepr, toDefault) as Ndf
 
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Repr.Wrap (WrapRepr)
