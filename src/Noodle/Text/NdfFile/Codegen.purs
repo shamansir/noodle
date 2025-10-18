@@ -23,7 +23,7 @@ import Data.String (toUpper) as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Fn.Signature (Argument, Output, extract, argName, argValue, outName, outValue) as Sig
+import Noodle.Fn.Signature (Argument, Output, extract, argName, argValue, outName, outValue, args, outs) as Sig
 import Noodle.Fn.Signature (Signature, SignatureS, SignatureX, toSignature)
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (toolkit, group, family) as Id
@@ -31,6 +31,7 @@ import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
 import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
 import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
 import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
+import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as Ndf
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Ui.Palette.Item (Item, colorOf) as Palette
 import Noodle.Ui.Palette.AutoColor (group) as AutoColor
@@ -278,7 +279,57 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
 
 generateRawToolkitModule :: forall strepr chrepr. Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> Module Void
 generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
-    = unsafePartial $ module_ (opts.toolkitModuleName tkName <> "Raw") [] [] [ declValue "foo" [] $ exprInt 42 ]
+    = unsafePartial $ module_ (opts.toolkitModuleName tkName <> "Raw")
+        []
+        []
+        [ declForeignData toolkitKey $ typeCtor "ToolkitKey"
+        , declSignature "toolkit"
+            $ typeApp (typeCtor "Toolkit")
+                [ typeCtor toolkitKey
+                , typeCtor "TNil"
+                , typeCtor opts.streprAt.type_
+                , typeCtor opts.chreprAt.type_
+                , typeCtor $ opts.monadAt.type_
+                ]
+        , declValue "toolkit" [] registerFamiliesRaw
+        ]
+        where
+            toolkitKey = String.toUpper $ Id.toolkit tkName
+            channelExpr :: Partial => String /\ ChannelDef -> CST.Expr Void
+            channelExpr (name /\ chdef) =
+                exprRecord
+                    [ "name" /\ exprString name
+                    , "tag" /\ (exprString $ maybe "-" unwrap $ Ndf.encodedTypeOf chdef) -- FIXME: use default tag instead of "-"
+                    , "value" /\ (maybe (exprCtor "Nothing") (exprApp (exprCtor "Just") <<< Array.singleton <<< exprString <<< unwrap) $ Ndf.encodedValueOf chdef)
+                    ]
+            registerFamilyRaw :: Partial => FamilyDef -> CST.Expr Void
+            registerFamilyRaw familyDef =
+                let
+                    familySig = (toSignature (Proxy :: _ Void) familyDef) :: Signature ChannelDef ChannelDef
+                    inletsDefs = Sig.args familySig
+                    outletsDefs = Sig.outs familySig
+                in exprApp (exprIdent "qregister")
+                    [ exprString $ Id.family $ FamilyDef.family familyDef
+                    , exprArray $ channelExpr <$> inletsDefs
+                    , exprArray $ channelExpr <$> outletsDefs
+                    ]
+            registerFamiliesRaw :: Partial => CST.Expr Void
+            registerFamiliesRaw =
+                case Array.uncons definitionsArray of
+                    Just { head, tail } ->
+                        exprOp (registerFamilyRaw head)
+                            $ (binaryOp "$"
+                                <$> registerFamilyRaw
+                                <$> tail)
+                                <> [ binaryOp "$"
+                                    $ exprApp (exprIdent "Toolkit.empty")
+                                        [ exprTyped
+                                            ( exprCtor "Proxy" )
+                                            $ typeApp typeWildcard [ typeCtor toolkitKey ]
+                                        , exprApp (exprIdent "Id.toolkitR")
+                                            [ exprString $ Id.toolkit tkName ]
+                                        ]
+                                    ]
 
 
 generatePossiblyToSignatureInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
