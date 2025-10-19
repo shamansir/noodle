@@ -17,7 +17,6 @@ import Noodle.Raw.Node (InitialInletsValues, InitialOutletsValues)
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (_makeWithFn) as RawNode
 import Noodle.Raw.Fn.Shape (Shape) as Raw
-import Noodle.Raw.Fn.Shape (qmake_) as RawShape
 import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
@@ -94,47 +93,3 @@ toReprableState (Family familyR rawShape state inletsMap outletsMap fn) =
         inletsMap
         outletsMap
         $ RawFn.toReprableState fn
-
-
-qmake
-    :: forall state chrepr m
-     . Id.FamilyR
-    -> state
-    -> ({ name :: String, tag :: String, value :: Maybe String } -> chrepr)
-    ->
-        { inlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        , outlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        }
-    -> Raw.Process state chrepr m
-    -> Family state chrepr m
-qmake familyR state toRepr =
-    qmake_ familyR state toRepr Temp.defaultAlgorithm
-
-
-qmake_
-    :: forall state chrepr m
-     . Id.FamilyR
-    -> state
-    -> ({ name :: String, tag :: String, value :: Maybe String } -> chrepr)
-    -> Temp.Algorithm
-    ->
-        { inlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        , outlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        }
-    -> Raw.Process state chrepr m
-    -> Family state chrepr m
-qmake_ familyR state toRepr tempAlgo { inlets, outlets } process =
-    make
-        familyR
-        state
-        (RawShape.qmake_ tempAlgo
-            { inlets : cutValue <$> inlets
-            , outlets : cutValue <$> outlets }
-        )
-        ( Map.fromFoldable $ iConvert <$> inlets )
-        ( Map.fromFoldable $ oConvert <$> outlets )
-        process
-    where
-        cutValue { name, tag } = { name, tag }
-        iConvert { name, tag, value } = Id.unsafeInletR  name /\ toRepr { name, tag, value }
-        oConvert { name, tag, value } = Id.unsafeOutletR name /\ toRepr { name, tag, value }
