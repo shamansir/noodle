@@ -6,10 +6,10 @@ import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Type.Proxy (Proxy(..))
 import Data.Array as Array
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe)
 
 import Noodle.Fn.Shape.Temperament (Temperament)
-import Noodle.Fn.Shape.Temperament (Temperament(..), Algorithm, byIndex, defaultAlgorithm) as Temp
+import Noodle.Fn.Shape.Temperament (Temperament(..)) as Temp
 
 
 -- | `InletR` stores rawified inlet name as String.
@@ -119,51 +119,6 @@ make { inlets, outlets } =
     Shape
         { inlets  : Inlets  $ InletDefR  <$> inlets
         , outlets : Outlets $ OutletDefR <$> outlets
-        }
-
-
-qmake ::
-    { inlets :: Array { name :: String, tag :: String }
-    , outlets :: Array { name :: String, tag :: String }
-    }
-    -> Shape
-qmake =
-    qmake_ Temp.defaultAlgorithm
-
-
-qmake_ ::
-    Temp.Algorithm ->
-    { inlets :: Array { name :: String, tag :: String }
-    , outlets :: Array { name :: String, tag :: String }
-    }
-    -> Shape
-qmake_ algo =
-    qmake' $ const <<< Temp.byIndex algo
-
-
-qmake' ::
-    (Int -> String -> Temperament) ->
-    { inlets :: Array { name :: String, tag :: String }
-    , outlets :: Array { name :: String, tag :: String }
-    }
-    -> Shape
-qmake' toTemp { inlets, outlets } =
-    make
-        { inlets  : Array.mapWithIndex
-                        (\idx inletRec ->
-                            { name : unsafeInletR inletRec.name
-                            , order : idx
-                            , temp : toTemp idx inletRec.name
-                            , tag : tagAs inletRec.tag
-                            }
-                        ) inlets
-        , outlets : Array.mapWithIndex
-                        (\idx outletRec ->
-                            { name : unsafeOutletR outletRec.name
-                            , order : idx
-                            , tag : tagAs outletRec.tag
-                            }
-                        ) outlets
         }
 
 

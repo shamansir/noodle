@@ -40,7 +40,7 @@ import Noodle.Raw.Fn (Fn) as Raw
 import Noodle.Raw.Fn (make, run', toReprableState) as RawFn
 import Noodle.Raw.Fn.Process (Process) as Raw
 import Noodle.Raw.Fn.Shape (Shape, ValueTag, failed, InletDefR, OutletDefR) as Raw
-import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet, inletsCount, outletsCount, qmake_) as RawShape
+import Noodle.Raw.Fn.Shape (make, inlets, outlets, hasHotInlets, isHotInlet, indexOfInlet, indexOfOutlet, tagOfInlet, tagOfOutlet, inletsCount, outletsCount) as RawShape
 import Noodle.Raw.Fn.Protocol (make, getInlets, getOutlets, getState, sendIn, sendOut, modifyState) as RawProtocol
 import Noodle.Raw.Fn.Tracker (Tracker) as Raw
 import Noodle.Raw.Fn.Protocol (Protocol) as Raw
@@ -447,54 +447,3 @@ toReprableState (Node nodeR shape tracker protocol fn) =
         (RawTracker.toReprableState tracker)
         (RawProtocol.toReprableState protocol)
         $ RawFn.toReprableState fn
-
-
-{- Unsafe Making -}
-
-
-qmake
-    :: forall m state chrepr mp
-     . MonadEffect m
-    => Id.FamilyR
-    -> state
-    -> ({ name :: String, tag :: String, value :: Maybe String } -> chrepr)
-    ->
-        { inlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        , outlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        }
-    -> Raw.Process state chrepr mp
-    -> m (Node state chrepr mp)
-qmake familyR state toRepr =
-    qmake_ familyR state toRepr Temp.defaultAlgorithm
-
-
-qmake_
-    :: forall m state chrepr mp
-     . MonadEffect m
-    => Id.FamilyR
-    -> state
-    -> ({ name :: String, tag :: String, value :: Maybe String } -> chrepr)
-    -> Temp.Algorithm
-    ->
-        { inlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        , outlets :: Array { name :: String, tag :: String, value :: Maybe String }
-        }
-    -> Raw.Process state chrepr mp
-    -> m (Node state chrepr mp)
-qmake_ familyR state toRepr tempAlgo { inlets, outlets } process =
-    make
-        familyR
-        state
-        (RawShape.qmake_ tempAlgo
-            { inlets : cutValue <$> inlets
-            , outlets : cutValue <$> outlets }
-        )
-        ( Map.fromFoldable $ iConvert <$> inlets )
-        ( Map.fromFoldable $ oConvert <$> outlets )
-        process
-    where
-        cutValue { name, tag } = { name, tag }
-        iConvert { name, tag, value } = Id.unsafeInletR  name /\ toRepr { name, tag, value }
-        oConvert { name, tag, value } = Id.unsafeOutletR name /\ toRepr { name, tag, value }
-
-
