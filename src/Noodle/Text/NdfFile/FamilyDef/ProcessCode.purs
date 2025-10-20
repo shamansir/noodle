@@ -28,10 +28,14 @@ import Noodle.Text.ToCode (class ToCode, class ToTaggedCode)
 import Noodle.Ui.Tagging as F
 
 
+data Target = Raw | Typed
+derive instance Eq Target
+
+
 data ProcessCode
     = NoneSpecified
-    | Raw String -- Copy the contents as it is
-    | Auto String -- Split with ';'. Replace every `<inlet-name>` with `Fn.receive`, send the result(-s) to given outlet(-s)
+    | Copy String -- Copy the contents as it is
+    | Encoded Target String -- Split with ';'. Replace every `<inlet-name>` with `Fn.receive`, send the result(-s) to given outlet(-s)
     | JS String -- Call given JS function (not yet implemented)
 
 
@@ -41,40 +45,40 @@ derive instance Eq ProcessCode
 contents :: ProcessCode -> String
 contents = case _ of
     NoneSpecified -> ""
-    Raw rawContents -> rawContents
-    Auto autoContents -> autoContents
+    Copy rawContents -> rawContents
+    Encoded _ encodedContents -> encodedContents
     JS jsContents -> jsContents
 
 
 startMarker :: ProcessCode -> String
 startMarker = case _ of
     NoneSpecified -> ""
-    Raw _  -> "#-|"
-    Auto _ -> "/-|"
+    Copy _  -> "#-|"
+    Encoded _ _ -> "/-|"
     JS _   -> "$-|"
 
 
 endMarker :: ProcessCode -> String
 endMarker = case _ of
     NoneSpecified -> ""
-    Raw _  -> "|-#"
-    Auto _ -> "|-/"
+    Copy _  -> "|-#"
+    Encoded _ _ -> "|-/"
     JS _   -> "|-$"
 
 
 startAltMarker :: ProcessCode -> String
 startAltMarker = case _ of
     NoneSpecified -> ""
-    Raw _  -> "%┤"
-    Auto _ -> "{┤"
+    Copy _  -> "%┤"
+    Encoded _ _ -> "{┤"
     JS _   -> "$┤"
 
 
 endAltMarker :: ProcessCode -> String
 endAltMarker = case _ of
     NoneSpecified -> ""
-    Raw _  -> "├%"
-    Auto _ -> "├}"
+    Copy _  -> "├%"
+    Encoded _ _ -> "├}"
     JS _   -> "├$"
 
 
@@ -90,19 +94,26 @@ markersFor :: ProcessCode -> { start :: String, end :: String }
 markersFor pc = { start : startMarker pc, end : endMarker pc }
 
 
-type AutoData_ = { allInlets :: Array String, sends :: Array { mbOut :: Maybe String, expr :: String } }
+type EncodedData_ =
+    { allInlets :: Array String
+    , sends :: Array
+        { mbOut :: Maybe String
+        , expr :: String
+        , localInlets :: Array String
+        }
+    }
 
 
 newtype Indent = Indent String
 
 
-_processAutoCode :: Indent -> String -> String
-_processAutoCode (Indent indent) src =
+_processEncodedCode :: Target -> Indent -> String -> String
+_processEncodedCode target (Indent indent) src =
     let
         eOutNameRegex = RGX.regex "^([\\w\\d-]+)::" RGX.noFlags
         eInletsRegex = RGX.regex "<([\\w\\d-]+)>" RGX.global
 
-        searchFunc :: RGX.Regex -> RGX.Regex -> String -> AutoData_ -> AutoData_
+        searchFunc :: RGX.Regex -> RGX.Regex -> String -> EncodedData_ -> EncodedData_
         searchFunc inletsRegex outNameRegex test collectedData =
             let
                 trimmed = String.trim test
@@ -120,65 +131,108 @@ _processAutoCode (Indent indent) src =
                         Just doubleColonIdx ->
                             case String.splitAt doubleColonIdx trimmed of
                                 { before, after } ->
-                                    { allInlets : collectedData.allInlets <> (findInlets $ String.drop 2 after)
+                                    let localInlets = findInlets $ String.drop 2 after in
+                                    { allInlets : collectedData.allInlets <> localInlets
                                     , sends :
                                         collectedData.sends
-                                        `snoc` { mbOut : Just before, expr : (replaceInlets $ String.drop 2 after) }
+                                        `snoc`
+                                        { mbOut : Just before
+                                        , expr : (replaceInlets $ String.drop 2 after)
+                                        , localInlets
+                                        }
                                     }
                         Nothing ->
-                                { allInlets : collectedData.allInlets <> findInlets trimmed
-                                , sends :
-                                    collectedData.sends
-                                    `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
-                                }
+                            let localInlets = findInlets trimmed in
+                            { allInlets : collectedData.allInlets <> localInlets
+                            , sends :
+                                collectedData.sends
+                                `snoc` { mbOut : Nothing, expr : replaceInlets trimmed, localInlets }
+                            }
                 else
+                    let localInlets = findInlets trimmed in
                     { allInlets :
                         collectedData.allInlets
-                        <> findInlets trimmed
+                        <> localInlets
                     , sends :
                         collectedData.sends
-                        `snoc` { mbOut : Nothing, expr : replaceInlets trimmed }
+                        `snoc`
+                        { mbOut : Nothing
+                        , expr : replaceInlets trimmed
+                        , localInlets
+                        }
                     }
 
-        collectInfo :: String -> AutoData_ -> AutoData_
+        collectInfo :: String -> EncodedData_ -> EncodedData_
         collectInfo test collectedData =
             case (searchFunc <$> eInletsRegex <*> eOutNameRegex) of
                 Right f -> f test collectedData
                 Left _ -> collectedData
 
-        inletStr inlet = indent <> inlet <> " <- " <> "Fn.receive _in_" <> inlet
-        sendStr { mbOut, expr } =
+        inletTypedStr inlet = indent <> inlet <> " <- " <> "Fn.receive _in_" <> inlet
+        inletRawStr inlet = indent <> "vic_" <> inlet <> " <- " <> "RP.receive \"" <> inlet <> "\""
+        inletValRawStr inlet = indent <> "  " <> inlet <> " <- " <> "vic_" <> inlet
+        sendTypedStr { mbOut, expr } =
             case mbOut of
                 Just out -> indent <> "Fn.send _out_" <> out <> " $ " <> expr
                 Nothing -> indent <> expr
+        sendRawStr { mbOut, expr, localInlets } =
+            case mbOut of
+                Just out -> indent <>
+                    "RP.send \"" <> out <> "\" " <>
+                    if Array.length localInlets <= 1 then
+                        "vic_" <> expr
+                    else
+                        "$ do\n" <> (String.joinWith "\n" $ inletValRawStr <$> localInlets) <> "\n"
+                        <> indent <> "  " <> "pure $ " <>  expr
 
-        toExpression :: AutoData_ -> String
-        toExpression { allInlets, sends } = "do\n" <>
-            if (Array.length allInlets > 0) then
-                (String.joinWith "\n" $ inletStr <$> Array.nub allInlets)
-                <>
-                (if Array.length sends > 0
-                    then "\n" <> String.joinWith "\n" (sendStr <$> sends)
-                    else ""
-                )
-            else
-                if (Array.length sends > 0) then
-                    String.joinWith "\n" $ sendStr <$> sends
-                else
-                    src
+                Nothing -> indent <> expr
+
+        toEncoded :: EncodedData_ -> String
+        toEncoded { allInlets, sends } = "do\n" <>
+            case target of
+                Typed ->
+
+                    if (Array.length allInlets > 0) then
+                        (String.joinWith "\n" $ inletTypedStr <$> Array.nub allInlets)
+                        <>
+                        (if Array.length sends > 0
+                            then "\n" <> (String.joinWith "\n" $ sendTypedStr <$> sends)
+                            else ""
+                        )
+                    else
+                        if (Array.length sends > 0) then
+                            String.joinWith "\n" $ sendTypedStr <$> sends
+                        else
+                            src -- FIXME: ??
+
+                Raw ->
+
+                    if (Array.length allInlets > 0) then
+                        (String.joinWith "\n" $ inletRawStr <$> Array.nub allInlets)
+                        <>
+                        (if Array.length sends > 0
+                            then "\n" <> (String.joinWith "\n" $ sendRawStr <$> sends)
+                            else ""
+                        )
+                    else
+                        if (Array.length sends > 0) then
+                            String.joinWith "\n" $ sendRawStr <$> sends
+                        else
+                            src -- FIXME: ??
+
 
     in
         src
             # String.split (String.Pattern ";")
             # foldl (flip collectInfo) { allInlets : [], sends : [ ] }
-            # toExpression
+            # toEncoded
 
 
 process :: Indent -> ProcessCode -> String
 process (Indent indent) = case _ of
     NoneSpecified -> "{- EMPTY PROCESS -}\n" <> indent <> "pure unit"
-    Raw str -> str
-    Auto str -> _processAutoCode (Indent indent) str
+    Copy str -> str
+    Encoded target str -> _processEncodedCode target (Indent indent) str
     JS code -> "fromJsCode $ jsCode $\n\t\t\"\"\"" <> code <> "\n\t\t\"\"\""
 
 
@@ -213,11 +267,11 @@ instance ToCode PS opts ProcessCode where
 parser :: P.Parser String ProcessCode
 parser =
   P.choice
-    [ Raw <$> P.between
+    [ Copy <$> P.between
           (P.string "#-|")
           (P.string "|-#")
           (P.anythingBut stopChar)
-    , Auto <$> P.between
+    , Encoded Typed <$> P.between
           (P.string "/-|")
           (P.string "|-/")
           (P.anythingBut stopChar)
@@ -225,11 +279,11 @@ parser =
           (P.string "$-|")
           (P.string "|-$")
           (P.anythingBut stopChar)
-    , Raw <$> P.between
+    , Copy <$> P.between
           (P.string "%┤")
           (P.string "├%")
           (P.anythingBut stopAltChar)
-    , Auto <$> P.between
+    , Encoded Typed <$> P.between
           (P.string "{┤")
           (P.string "├}")
           (P.anythingBut stopAltChar)
@@ -244,6 +298,6 @@ parser =
 ndfLinesCount :: ProcessCode -> Int
 ndfLinesCount = case _ of
     NoneSpecified -> 0
-    Raw raw -> String.linesCount raw
-    Auto auto -> String.linesCount auto
+    Copy raw -> String.linesCount raw
+    Encoded _ auto -> String.linesCount auto
     JS js -> String.linesCount js
