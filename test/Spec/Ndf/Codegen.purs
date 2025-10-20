@@ -46,7 +46,7 @@ import Noodle.Text.NdfFile (loadOrder, hasFailedLines, failedLines, codegen, cod
 import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef, chtv, i, o, qdefps, st) as FD
-import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as FD
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..), Target(..)) as FD
 import Noodle.Text.NdfFile.FamilyDef.Codegen (class CodegenRepr, Options(..), withOptions) as FCG
 -- import Noodle.Text.NdfFile.Codegen as MCG
 import Noodle.Text.NdfFile.Codegen (toolkitModuleName) as CG
@@ -88,26 +88,34 @@ minimalGenOptions = FCG.Options
   }
 
 
-spec :: Spec Unit
-spec = do
+processSamples ∷ Array (FD.ProcessCode /\ String)
+processSamples =
 
-    describe "NDF Codegen" $ do
+  {- -------- 00 -------------- -}
 
-      it "auto code definitions:" $ do
-        -- FIXME: split in different tests
-        -- (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
-        -- (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
-        (toCode (ToCode.pureScript) unit $ FD.Auto "outlet::<inlet1> + <inlet2>") `U.shouldEqual` """do
+  [ FD.Encoded FD.Typed "outlet::<inlet1> + <inlet2>"
+
+    /\ """do
   inlet1 <- Fn.receive _in_inlet1
   inlet2 <- Fn.receive _in_inlet2
   Fn.send _out_outlet $ inlet1 + inlet2"""
-        (toCode (ToCode.pureScript) unit $ FD.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }") `U.shouldEqual` """do
+
+  {- -------- 01 -------------- -}
+
+  , FD.Encoded FD.Typed "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> }"
+
+    /\ """do
   r <- Fn.receive _in_r
   g <- Fn.receive _in_g
   b <- Fn.receive _in_b
   a <- Fn.receive _in_a
   Fn.send _out_out $ H.Start $ H.Solid { r, g, b, a }"""
-        (toCode (ToCode.pureScript) unit $ FD.Auto "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>") `U.shouldEqual` """do
+
+  {- -------- 02 -------------- -}
+
+  , FD.Encoded FD.Typed "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>"
+
+    /\ """do
   r <- Fn.receive _in_r
   g <- Fn.receive _in_g
   b <- Fn.receive _in_b
@@ -117,17 +125,10 @@ spec = do
   Fn.send _out_g $ g
   Fn.send _out_b $ b
   Fn.send _out_a $ a"""
-        (toCode (ToCode.pureScript) unit $ FD.Raw """do
-    r <- Noodle.receive _in_r
-    g <- Noodle.receive _in_g
-    b <- Noodle.receive _in_b
-    Noodle.send _out_color $
-        VR.Color
-            { r : floor $ r * 255.0
-            , g : floor $ g * 255.0
-            , b : floor $ b * 255.0
-            , a: 255
-            }""") `U.shouldEqual` """do
+
+  {- -------- 03 -------------- -}
+
+  , FD.Copy """do
     r <- Noodle.receive _in_r
     g <- Noodle.receive _in_g
     b <- Noodle.receive _in_b
@@ -138,13 +139,30 @@ spec = do
             , b : floor $ b * 255.0
             , a: 255
             }"""
-        (toCode (ToCode.pureScript) unit $ FD.JS """
+
+    /\ """do
+    r <- Noodle.receive _in_r
+    g <- Noodle.receive _in_g
+    b <- Noodle.receive _in_b
+    Noodle.send _out_color $
+        VR.Color
+            { r : floor $ r * 255.0
+            , g : floor $ g * 255.0
+            , b : floor $ b * 255.0
+            , a: 255
+            }"""
+
+  {- -------- 04 -------------- -}
+
+  , FD.JS """
   const aValue = _receive("a");
   const bValue = _receive("b");
   _send("sum",
       { tag : "Int",
         value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
-      });""") `U.shouldEqual` ("fromJsCode $ jsCode $\n\t\t\"\"\"" <> """
+      });"""
+
+    /\ ("fromJsCode $ jsCode $\n\t\t\"\"\"" <> """
   const aValue = _receive("a");
   const bValue = _receive("b");
   _send("sum",
@@ -152,27 +170,67 @@ spec = do
         value : (parseInt(aValue.value) + parseInt(bValue.value)).toString()
       });""" <> "\n\t\t\"\"\"")
 
-      it "should compile to the expected code" $ do
-        let
-          testFamilyDef = FD.qdefps
-            { group : "all", family : "concat"
-            , inputs :
-              [ FD.i $ FD.chtv "left" "String" ""
-              , FD.i $ FD.chtv "right" "String" ""
-              ]
-            , outputs :
-              [ FD.o $ FD.chtv "out" "String" ""
-              , FD.o $ FD.chtv "len" "Int" "0"
-              ]
-            , state : FD.st "Unit" "unit"
-            , process : FD.Raw """do
+  {- -------- 02 -------------- -}
+
+  , FD.Encoded FD.Raw "out::H.Start $ H.Solid { <r>, <g>, <b>, <a> };r::<r>;g::<g>;b::<b>;a::<a>"
+
+    /\ """do
+  vic_r <- RP.receive "r"
+  vic_g <- RP.receive "g"
+  vic_b <- RP.receive "b"
+  vic_a <- RP.receive "a"
+  RP.send "out" $ do
+    r <- vic_r
+    g <- vic_g
+    b <- vic_b
+    a <- vic_a
+    pure $ H.Start $ H.Solid { r, g, b, a }
+  RP.send "r" vic_r
+  RP.send "g" vic_g
+  RP.send "b" vic_b
+  RP.send "a" vic_a"""
+
+  ]
+
+testFamilyDef :: FD.FamilyDef
+testFamilyDef = FD.qdefps
+  { group : "all", family : "concat"
+  , inputs :
+    [ FD.i $ FD.chtv "left" "String" ""
+    , FD.i $ FD.chtv "right" "String" ""
+    ]
+  , outputs :
+    [ FD.o $ FD.chtv "out" "String" ""
+    , FD.o $ FD.chtv "len" "Int" "0"
+    ]
+  , state : FD.st "Unit" "unit"
+  , process : FD.Copy """do
   left <- Fn.receive _in_left
   right <- Fn.receive _in_right
   let concatenated = left <> right
   Fn.send _out_out concatenated
   Fn.send _out_len $ String.length concatenated"""
-            }
+  }
 
+
+spec :: Spec Unit
+spec = do
+
+    describe "NDF Codegen" $ do
+
+      itOnly "auto code definitions:" $ do
+        traverse_
+          (\(fd /\ expected) ->
+              toCode (ToCode.pureScript) unit fd
+              `U.shouldEqual`
+              expected
+          )
+          processSamples
+        -- FIXME: split in different tests
+        -- (toCode (ToCode.pureScript) unit $ ND.Auto "") `U.shouldEqual` ""
+        -- (toCode (ToCode.pureScript) unit $ ND.Auto "a") `U.shouldEqual` "a"
+
+      it "should compile to the expected code" $ do
         testSingleFamilyDef (Id.toolkitR "Test") minimalGenOptions testFamilyDef
 
       {-
@@ -203,7 +261,7 @@ spec = do
             else
               fail $ "Failed to parse starting at:\n" <> (String.joinWith "\n" $ show <$> (Array.take 3 $ NdfFile.failedLines parsedNdf))
 
-      itOnly "properly generates Hydra RAW Toolkit" $ do
+      it "properly generates Hydra RAW Toolkit" $ do
         hydraToolkitText <- liftEffect $ readTextFile UTF8 "./ndf/hydra.v0.4.ndf"
         let eParsedNdf = P.runParser hydraToolkitText NdfFile.parser
         case eParsedNdf of

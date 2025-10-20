@@ -25,8 +25,8 @@ import Noodle.Text.NdfFile.Command (Command(..)) as C
 import Noodle.Text.NdfFile.Command.Op (CommandOp(..)) as C
 import Noodle.Text.NdfFile.Types (coord, encodedValue, inletAlias, inletIndex, nodeInstanceId, outletAlias, outletIndex) as C
 import Noodle.Text.NdfFile (from_, init, init_, toNdfCode, optimize) as NdfFile
-import Noodle.Text.NdfFile.FamilyDef as ND
-import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..)) as ND
+import Noodle.Text.NdfFile.FamilyDef as FD
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode (ProcessCode(..), Target(..)) as FD
 import Noodle.Text.NdfFile.Parser (parser) as NdfFile
 import Noodle.Text.NdfFile.Command.Quick as Q
 
@@ -153,96 +153,96 @@ expected_0_2_Ndf_OnlyDefs :: NdfFile
 expected_0_2_Ndf_OnlyDefs =
     NdfFile.from_ { toolkit : "hydra", toolkitVersion : 0.1, ndfVersion : 0.2 }
         $ C.Command Nothing <$>
-        [ C.DefineFamily $ ND.qdef
+        [ C.DefineFamily $ FD.qdef
             { group : "color", family : "colorama"
             , inputs :
-              [ ND.i $ ND.chtv "what" "Texture" "Empty"
-              , ND.i $ ND.chtv "amount" "Value" "Number 0.005"
+              [ FD.i $ FD.chtv "what" "Texture" "Empty"
+              , FD.i $ FD.chtv "amount" "Value" "Number 0.005"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              [ FD.o $ FD.chtv "tex" "Texture" "Empty"
               ]
             }
-        , C.DefineFamily $ ND.qdefp
+        , C.DefineFamily $ FD.qdefp
             { group : "source", family : "prev"
             , inputs :
-              [ ND.i $ ND.chtv "todo" "TODO" "TODO"
+              [ FD.i $ FD.chtv "todo" "TODO" "TODO"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              [ FD.o $ FD.chtv "tex" "Texture" "Empty"
               ]
-            , process : ND.Auto " H.Empty "
+            , process : FD.Encoded FD.Typed " H.Empty "
             }
-        , C.DefineFamily $ ND.qdefp
+        , C.DefineFamily $ FD.qdefp
             { group : "source", family : "solid"
             , inputs :
-              [ ND.i $ ND.cht "r" "Value"
-              , ND.i $ ND.cht "g" "Value"
-              , ND.i $ ND.cht "b" "Value"
-              , ND.i $ ND.chtv "a" "Value" "Number 1.0"
+              [ FD.i $ FD.cht "r" "Value"
+              , FD.i $ FD.cht "g" "Value"
+              , FD.i $ FD.cht "b" "Value"
+              , FD.i $ FD.chtv "a" "Value" "Number 1.0"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "tex" "Texture" "Empty"
+              [ FD.o $ FD.chtv "tex" "Texture" "Empty"
               ]
-            , process : ND.Auto " H.Start $ H.Solid { r, g, b, a } "
+            , process : FD.Encoded FD.Typed " H.Start $ H.Solid { r, g, b, a } "
             }
-        , C.DefineFamily $ ND.qdef
+        , C.DefineFamily $ FD.qdef
             { group : "feed", family : "number"
             , inputs :
-              [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
+              [ FD.i $ FD.chtv "in" "Value" "Number 0.0"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "num" "Value" "Number 0.0"
+              [ FD.o $ FD.chtv "num" "Value" "Number 0.0"
               ]
             }
-        , C.DefineFamily $ ND.qdef { group : "test", family : "family", inputs : [], outputs : [] }
-        , C.DefineFamily $ ND.qdef
+        , C.DefineFamily $ FD.qdef { group : "test", family : "family", inputs : [], outputs : [] }
+        , C.DefineFamily $ FD.qdef
             { group : "synth", family : "pi"
             , inputs : []
             , outputs :
-              [ ND.o $ ND.chtv "out" "Value" "Pi"
+              [ FD.o $ FD.chtv "out" "Value" "Pi"
               ]
             }
-        , C.DefineFamily $ ND.qdef
+        , C.DefineFamily $ FD.qdef
             { group : "synth", family : "mouse"
             , inputs : []
             , outputs :
-              [ ND.o $ ND.chtv "x" "Value" "MouseX"
-              , ND.o $ ND.chtv "y" "Value" "MouseY"
+              [ FD.o $ FD.chtv "x" "Value" "MouseX"
+              , FD.o $ FD.chtv "y" "Value" "MouseY"
               ]
             }
-        , C.DefineFamily $ ND.qdef
+        , C.DefineFamily $ FD.qdef
             { group : "extsource", family : "initVideo"
             , inputs :
-              [ ND.i $ ND.chtv "src" "Source" "defaultSource"
-              , ND.i $ ND.chtv "url" "String" "None"
+              [ FD.i $ FD.chtv "src" "Source" "defaultSource"
+              , FD.i $ FD.chtv "url" "String" "None"
               ]
             , outputs : []
             }
-        , C.AssignProcess $ ND.qassign "mouse" $ ND.Raw " do\n  # foo % test # {-} %% $\n"
-        , C.DefineFamily $ ND.qdefs
+        , C.AssignProcess $ FD.qassign "mouse" $ FD.Copy " do\n  # foo % test # {-} %% $\n"
+        , C.DefineFamily $ FD.qdefs
             { group : "stated", family : "stated"
             , inputs :
-              [ ND.i $ ND.chtv "in" "Value" "Number 0.0"
+              [ FD.i $ FD.chtv "in" "Value" "Number 0.0"
               ]
             , outputs :
-              [ ND.o $ ND.chtv "num" "Value" "Number 1.0"
+              [ FD.o $ FD.chtv "num" "Value" "Number 1.0"
               ]
-            , state : ND.stt "Unit"
+            , state : FD.stt "Unit"
             }
-        , C.DefineFamily $ ND.qdefs
+        , C.DefineFamily $ FD.qdefs
             { group : "stated", family : "stated2"
             , inputs : []
             , outputs : []
-            , state : ND.st "Unit" "unit"
+            , state : FD.st "Unit" "unit"
             }
-        {- }, C.DefineFamily $ ND.qdefs
+        {- }, C.DefineFamily $ FD.qdefs
             { group : "stated", family : "stated3"
             , inputs : []
             , outputs : []
-            , state : ND.stv "unit"
+            , state : FD.stv "unit"
             } -}
-        , C.DefineFamily $ ND.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
+        , C.DefineFamily $ FD.qdef { group : "test2", family : "family2", inputs : [], outputs : [] }
         , C.Documentation (familyR "stated") "A node with some state"
         , C.Documentation (familyR "stated2") "A node with some state, version 2"
         ]

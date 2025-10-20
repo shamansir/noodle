@@ -9,6 +9,7 @@ import Noodle.Id (toolkitR) as Id
 import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (empty) as Toolkit
 import Noodle.Unsafe.QuickMake.RawToolkit (qregister) as Toolkit
+import Noodle.Unsafe.RawProcess as RP
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Patch (PState(..))

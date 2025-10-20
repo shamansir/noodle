@@ -98,7 +98,11 @@ codegenRaw tkName options definitions =
         injectProcessFor familyR processCode =
             String.replace
                 (String.Pattern $ FCG.__raw_process_pattern familyR)
-                (String.Replacement $ PC.process (PC.Indent $ FCG.__raw_process_indent <> "    ") processCode)
+                (String.Replacement $ PC.process (PC.Indent $ FCG.__raw_process_indent <> "    ") $ updateProcessCode processCode)
+        updateProcessCode = case _ of
+            PC.Encoded _ processCode -> PC.Encoded PC.Raw processCode -- FIXME:
+            other -> other
+
 
 
 generateToolkit :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> FileContent
@@ -297,6 +301,8 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey" ]
             , declImportAs "Noodle.Toolkit" [ importValue "empty" ] "Toolkit"
             , declImportAs "Noodle.Unsafe.QuickMake.RawToolkit" [ importValue "qregister" ] "Toolkit"
+            , declImportAs "Noodle.Unsafe.RawProcess" [ ] "RP"
+            , declImportAs "Noodle.Repr.ValueInChannel" [] "VIC"
             , declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
             , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
             ]
