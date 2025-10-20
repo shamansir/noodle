@@ -11,9 +11,11 @@ import Partial.Unsafe (unsafePartial)
 
 import PureScript.CST.Types (ImportDecl, Module)
 import PureScript.CST.Types (Type, Expr, Declaration) as CST
+import Tidy.Codegen.Class (class OverLeadingComments)
 
 import Data.Array ((:))
 import Data.Array (uncons, reverse, singleton, mapWithIndex, index, nub) as Array
+import Data.String (replace, Pattern(..), Replacement(..)) as String
 import Data.Foldable (foldr)
 import Data.Map (Map)
 import Data.Map (empty, insert) as Map
@@ -22,16 +24,18 @@ import Data.Newtype (unwrap, wrap, class Newtype)
 import Data.String (toUpper) as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Foldable (foldl)
 
 import Noodle.Fn.Signature (Argument, Output, extract, argName, argValue, outName, outValue, args, outs) as Sig
 import Noodle.Fn.Signature (Signature, SignatureS, SignatureX, toSignature)
 import Noodle.Id (FamilyR, GroupR)
 import Noodle.Id (toolkit, group, family) as Id
 import Noodle.Text.NdfFile.FamilyDef (FamilyDef(..))
-import Noodle.Text.NdfFile.FamilyDef (group, family) as FamilyDef
+import Noodle.Text.NdfFile.FamilyDef (group, family, processCode) as FamilyDef
 import Noodle.Text.NdfFile.FamilyDef.Codegen as FCG
 import Noodle.Text.NdfFile.Types (Source, ChannelDef, EncodedType, EncodedValue)
 import Noodle.Text.NdfFile.Types (encodedTypeOf, encodedValueOf) as Ndf
+import Noodle.Text.NdfFile.FamilyDef.ProcessCode as PC
 import Noodle.Toolkit (Name) as Toolkit
 import Noodle.Ui.Palette.Item (Item, colorOf) as Palette
 import Noodle.Ui.Palette.AutoColor (group) as AutoColor
@@ -81,18 +85,20 @@ codegenRaw
     -> Array (Maybe Source /\ FamilyDef)
     -> FilePath /\ FileContent
 codegenRaw tkName options definitions =
-    FilePath (rawToolkitFile genRoot tkName) /\ (FileContent $ printModule <<< generateRawToolkitModule tkName options $ Tuple.snd <$> definitions)
-    -- definitions
-    -- # foldr genModule Map.empty
-    -- # Map.insert
-    --     (FilePath $ toolkitFile genRoot tkName)
-    --     (generateToolkit tkName options $ Tuple.snd <$> definitions)
+    FilePath (rawToolkitFile genRoot tkName) /\ (FileContent $ injectFamilyProcessFunctions <<< printModule <<< generateRawToolkitModule tkName options $ Tuple.snd <$> definitions)
     where
         genRoot = GenRootPath ""
-        -- filePathFor = FilePath <<< moduleFile genRoot tkName
-        -- genModule (mbSource /\ FamilyDef familyDef) =
-        --     -- toCode (ToCode.pureScript) genOptions familyDef
-        --     Map.insert (filePathFor $ FamilyDef familyDef) $ FileContent $ FCG.generate options mbSource familyDef
+        injectFamilyProcessFunctions moduleString =
+            foldl
+                (\mstr familyDef ->
+                    injectProcessFor (FamilyDef.family familyDef) (FamilyDef.processCode familyDef) mstr
+                )
+                moduleString
+                $ Tuple.snd <$> definitions
+        injectProcessFor familyR processCode =
+            String.replace
+                (String.Pattern $ FCG.__raw_process_pattern familyR)
+                (String.Replacement $ PC.process (PC.Indent $ FCG.__raw_process_indent <> "    ") processCode)
 
 
 generateToolkit :: forall strepr chrepr. FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> FileContent
@@ -325,15 +331,16 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
                     familySig = (toSignature (Proxy :: _ Void) familyDef) :: Signature ChannelDef ChannelDef
                     inletsDefs = Sig.args familySig
                     outletsDefs = Sig.outs familySig
-                    familyIdStr = Id.family $ FamilyDef.family familyDef
+                    familyR = FamilyDef.family familyDef
+                    familyIdStr = Id.family familyR
                 in exprOp
-                    (leading (blockComment familyIdStr)
+                    (leading (blockComment familyIdStr <> lineBreaks 1)
                         $ exprApp (exprIdent "Toolkit.qregister")
                         [ exprString familyIdStr
                         , exprArray $ channelExpr <$> inletsDefs
                         , exprArray $ channelExpr <$> outletsDefs ]
                     )
-                    [ binaryOp "$" $ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
+                    [ binaryOp "$" $ FCG.__raw_process_expr familyR ]
             registerFamiliesRaw :: Partial => CST.Expr Void
             registerFamiliesRaw =
                 exprOp
