@@ -93,11 +93,12 @@ markersFor pc = { start : startMarker pc, end : endMarker pc }
 type AutoData_ = { allInlets :: Array String, sends :: Array { mbOut :: Maybe String, expr :: String } }
 
 
-_processAutoCode :: String -> String
-_processAutoCode src =
-    let
-        indent = "  "
+newtype Indent = Indent String
 
+
+_processAutoCode :: Indent -> String -> String
+_processAutoCode (Indent indent) src =
+    let
         eOutNameRegex = RGX.regex "^([\\w\\d-]+)::" RGX.noFlags
         eInletsRegex = RGX.regex "<([\\w\\d-]+)>" RGX.global
 
@@ -173,11 +174,11 @@ _processAutoCode src =
             # toExpression
 
 
-process :: ProcessCode -> String
-process = case _ of
-    NoneSpecified -> "{- EMPTY PROCESS -}\n    pure unit"
+process :: Indent -> ProcessCode -> String
+process (Indent indent) = case _ of
+    NoneSpecified -> "{- EMPTY PROCESS -}\n" <> indent <> "pure unit"
     Raw str -> str
-    Auto str -> _processAutoCode str
+    Auto str -> _processAutoCode (Indent indent) str
     JS code -> "fromJsCode $ jsCode $\n\t\t\"\"\"" <> code <> "\n\t\t\"\"\""
 
 
@@ -206,7 +207,7 @@ instance ToTaggedCode NDF opts ProcessCode where
 
 instance ToCode PS opts ProcessCode where
     toCode :: Proxy PS -> opts -> ProcessCode -> String
-    toCode _ _ = process
+    toCode _ _ = process $ Indent "  " -- FIXME
 
 
 parser :: P.Parser String ProcessCode
