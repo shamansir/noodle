@@ -104,7 +104,7 @@ generateToolkitModule tkName (FCG.Options opts) definitionsArray
     = unsafePartial $ module_ (opts.toolkitModuleName tkName)
         [ ]
         (
-            [ declImport "Prelude" [ ] -- import Prelude (($), (#), (>>>), (<<<), pure, unit, const)
+            [ declImport "Prelude" [ ]
             , declImport "Effect" [ importType "Effect" ]
             , declImport "Effect.Class" [ importClass "MonadEffect" ]
             , declImportAs "Color" [] "Color"
@@ -281,19 +281,36 @@ generateRawToolkitModule :: forall strepr chrepr. Toolkit.Name -> FCG.Options st
 generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
     = unsafePartial $ module_ (opts.toolkitModuleName tkName <> "Raw")
         []
-        []
+        (
+            [ declImport "Prelude" [ ]
+            , declImport "Effect.Class" [ importClass "MonadEffect" ]
+            , declImport "Data.Maybe" [ importTypeAll "Maybe" ]
+            , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
+            , declImport "Type.Data.List.Extra" [ importType "TNil" ]
+            , declImportAs "Noodle.Id" [ importValue "toolkitR" ] "Id"
+            , declImport "Noodle.Toolkit" [ importType "Toolkit", importType "ToolkitKey" ]
+            , declImportAs "Noodle.Toolkit" [ importValue "empty" ] "Toolkit"
+            , declImportAs "Noodle.Unsafe.QuickMake.RawToolkit" [ importValue "qregister" ] "Toolkit"
+            , declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
+            , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
+            ]
+            <> opts.tkImports
+        )
         [ declForeignData toolkitKey $ typeCtor "ToolkitKey"
         , declSignature "toolkit"
+            $ typeForall [ typeVar "m" ]
+            $ typeConstrained [ monadEffectReq ]
             $ typeApp (typeCtor "Toolkit")
                 [ typeCtor toolkitKey
                 , typeCtor "TNil"
                 , typeCtor opts.streprAt.type_
                 , typeCtor opts.chreprAt.type_
-                , typeCtor $ opts.monadAt.type_
+                , typeVar "m"
                 ]
         , declValue "toolkit" [] registerFamiliesRaw
         ]
         where
+            monadEffectReq = unsafePartial $ typeApp (typeCtor "MonadEffect") [ typeVar "m" ]
             toolkitKey = String.toUpper $ Id.toolkit tkName
             channelExpr :: Partial => String /\ ChannelDef -> CST.Expr Void
             channelExpr (name /\ chdef) =
@@ -308,28 +325,27 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
                     familySig = (toSignature (Proxy :: _ Void) familyDef) :: Signature ChannelDef ChannelDef
                     inletsDefs = Sig.args familySig
                     outletsDefs = Sig.outs familySig
-                in exprApp (exprIdent "qregister")
-                    [ exprString $ Id.family $ FamilyDef.family familyDef
-                    , exprArray $ channelExpr <$> inletsDefs
-                    , exprArray $ channelExpr <$> outletsDefs
-                    ]
+                    familyIdStr = Id.family $ FamilyDef.family familyDef
+                in exprOp
+                    (leading (blockComment familyIdStr)
+                        $ exprApp (exprIdent "Toolkit.qregister")
+                        [ exprString familyIdStr
+                        , exprArray $ channelExpr <$> inletsDefs
+                        , exprArray $ channelExpr <$> outletsDefs ]
+                    )
+                    [ binaryOp "$" $ exprApp (exprIdent "pure") [ exprIdent "unit" ] ]
             registerFamiliesRaw :: Partial => CST.Expr Void
             registerFamiliesRaw =
-                case Array.uncons definitionsArray of
-                    Just { head, tail } ->
-                        exprOp (registerFamilyRaw head)
-                            $ (binaryOp "$"
-                                <$> registerFamilyRaw
-                                <$> tail)
-                                <> [ binaryOp "$"
-                                    $ exprApp (exprIdent "Toolkit.empty")
-                                        [ exprTyped
-                                            ( exprCtor "Proxy" )
-                                            $ typeApp typeWildcard [ typeCtor toolkitKey ]
-                                        , exprApp (exprIdent "Id.toolkitR")
-                                            [ exprString $ Id.toolkit tkName ]
-                                        ]
-                                    ]
+                exprOp
+                    (exprApp (exprIdent "Toolkit.empty")
+                                [ exprTyped
+                                    ( exprCtor "Proxy" )
+                                    $ typeApp typeWildcard [ typeCtor toolkitKey ]
+                                , exprApp (exprIdent "Id.toolkitR")
+                                    [ exprString $ Id.toolkit tkName ]
+                                ]
+                    )
+                    $ binaryOp "#" <$> registerFamilyRaw <$> definitionsArray
 
 
 generatePossiblyToSignatureInstance :: forall strepr chrepr. Partial => FCG.CodegenRepr chrepr => Toolkit.Name -> FCG.Options strepr chrepr -> Array FamilyDef -> CST.Declaration Void
