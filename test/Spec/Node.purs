@@ -31,6 +31,7 @@ import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR, logUpdates) as Node
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (run, make, state, atInlet, atOutlet) as RawNode
+import Noodle.Unsafe.RawProcess as RP
 
 import Example.Toolkit.Minimal.PatchState (State(..)) as Patch
 import Example.Toolkit.Minimal.ChRepr (MinimalVRepr)
@@ -347,10 +348,36 @@ spec = do
 
             ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
 
+        it "is possible to create raw node, v.2" $ liftEffect $ do
+            (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
+                RawNode.make (Id.familyR "myRawNode-2")
+                    MinimalRepr.NoSt
+                    (RawShape.make { inlets : [], outlets : [] }) -- TODO
+                    (Map.empty
+                        # Map.insert (inletR "a") (MinimalRepr.Int 5)
+                        # Map.insert (inletR "b") (MinimalRepr.Int 7)
+                    )
+                    (Map.empty
+                        # Map.insert (outletR "sum") (MinimalRepr.Int 0)
+                    )
+                    $ do
+                        vicA <- RP.receive "a"
+                        vicB <- RP.receive "b"
+                        RP.send "sum" $ do
+                            a <- vicA
+                            b <- vicB
+                            pure $ (a + b :: Int)
+
+            rawNode # RawNode.run
+
+            vicSum <- RawNode.atOutlet (outletR "sum") rawNode
+
+            ViC.toMaybe vicSum `shouldEqual` (Just $ MinimalRepr.Int 12)
+
 
         it "is possible to process data using JS function" $ liftEffect $ do
             (rawNode :: Raw.Node MinimalStRepr MinimalVRepr Effect) <-
-                RawNode.make (Id.familyR "myRawNode-2")
+                RawNode.make (Id.familyR "myRawNode-3")
                     MinimalRepr.NoSt
                     (RawShape.make { inlets : [], outlets : [] }) -- TODO
                     (Map.empty
