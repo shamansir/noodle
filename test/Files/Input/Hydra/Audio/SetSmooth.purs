@@ -62,7 +62,7 @@ makeNode = Family.spawn family
 
 setSmoothP :: Process
 setSmoothP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

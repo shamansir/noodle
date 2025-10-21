@@ -60,7 +60,7 @@ makeNode = Family.spawn family
 
 initImageP :: Process
 initImageP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

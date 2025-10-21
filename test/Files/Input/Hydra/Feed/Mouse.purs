@@ -60,7 +60,7 @@ makeNode = Family.spawn family
 
 mouseP :: Process
 mouseP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

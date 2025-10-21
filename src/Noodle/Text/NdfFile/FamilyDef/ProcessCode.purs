@@ -14,7 +14,7 @@ import Data.String.Regex (Regex, match, regex, replace, search) as RGX
 import Data.String.Regex.Flags (global, noFlags) as RGX
 import Data.Foldable (foldl)
 import Data.Array (snoc)
-import Data.Array (catMaybes, length, nub) as Array
+import Data.Array (catMaybes, length, nub, index) as Array
 import Data.Array.NonEmpty (toArray) as NEA
 import Data.String.Extra2 (linesCount) as String
 
@@ -168,9 +168,10 @@ _processEncodedCode target (Indent indent) src =
                 Right f -> f test collectedData
                 Left _ -> collectedData
 
+        indentNext = indent <> "    "
         inletTypedStr inlet = indent <> inlet <> " <- " <> "Fn.receive _in_" <> inlet
         inletRawStr inlet = indent <> "vic_" <> inlet <> " <- " <> "RP.receive \"" <> inlet <> "\""
-        inletValRawStr inlet = indent <> "  " <> inlet <> " <- " <> "vic_" <> inlet
+        inletValRawStr inlet = indentNext <> inlet <> " <- " <> "vic_" <> inlet
         sendTypedStr { mbOut, expr } =
             case mbOut of
                 Just out -> indent <> "Fn.send _out_" <> out <> " $ " <> expr
@@ -179,11 +180,11 @@ _processEncodedCode target (Indent indent) src =
             case mbOut of
                 Just out -> indent <>
                     "RP.send \"" <> out <> "\" " <>
-                    if Array.length localInlets <= 1 then
+                    if Array.length localInlets == 1 && expr == (fromMaybe "-" $ Array.index localInlets 0) then
                         "vic_" <> expr
                     else
                         "$ do\n" <> (String.joinWith "\n" $ inletValRawStr <$> localInlets) <> "\n"
-                        <> indent <> "  " <> "pure $ " <>  expr
+                        <> indentNext <> "pure $ " <>  expr
 
                 Nothing -> indent <> expr
 

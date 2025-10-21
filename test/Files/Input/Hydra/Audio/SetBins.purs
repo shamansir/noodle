@@ -62,7 +62,7 @@ makeNode = Family.spawn family
 
 setBinsP :: Process
 setBinsP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

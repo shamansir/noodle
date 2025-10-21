@@ -57,7 +57,7 @@ makeNode = Family.spawn family
 
 initScreenP :: Process
 initScreenP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

@@ -62,7 +62,7 @@ makeNode = Family.spawn family
 
 setCutoffP :: Process
 setCutoffP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

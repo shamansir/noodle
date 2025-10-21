@@ -62,7 +62,7 @@ makeNode = Family.spawn family
 
 setScaleP :: Process
 setScaleP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt
