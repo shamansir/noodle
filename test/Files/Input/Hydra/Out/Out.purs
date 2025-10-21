@@ -62,7 +62,7 @@ makeNode = Family.spawn family
 
 outP :: Process
 outP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

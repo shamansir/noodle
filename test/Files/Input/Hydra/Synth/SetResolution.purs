@@ -61,7 +61,7 @@ makeNode = Family.spawn family
 
 setResolutionP :: Process
 setResolutionP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

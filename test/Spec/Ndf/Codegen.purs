@@ -180,11 +180,11 @@ processSamples =
   vic_b <- RP.receive "b"
   vic_a <- RP.receive "a"
   RP.send "out" $ do
-    r <- vic_r
-    g <- vic_g
-    b <- vic_b
-    a <- vic_a
-    pure $ H.Start $ H.Solid { r, g, b, a }
+      r <- vic_r
+      g <- vic_g
+      b <- vic_b
+      a <- vic_a
+      pure $ H.Start $ H.Solid { r, g, b, a }
   RP.send "r" vic_r
   RP.send "g" vic_g
   RP.send "b" vic_b
@@ -218,7 +218,7 @@ spec = do
 
     describe "NDF Codegen" $ do
 
-      itOnly "auto code definitions:" $ do
+      it "auto code definitions:" $ do
         traverse_
           (\(fd /\ expected) ->
               toCode (ToCode.pureScript) unit fd

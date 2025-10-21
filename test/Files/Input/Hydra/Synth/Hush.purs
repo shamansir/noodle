@@ -57,7 +57,7 @@ makeNode = Family.spawn family
 
 hushP :: Process
 hushP = {- EMPTY PROCESS -}
-    pure unit
+  pure unit
 
 instance HasFallback State where
   fallback = defaultSt

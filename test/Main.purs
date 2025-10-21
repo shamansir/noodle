@@ -40,7 +40,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Patch.spec
   describe "NDF File"
     NdfFile.spec
-  describeOnly "Codegen from NDF Definitions"
+  describe "Codegen from NDF Definitions"
     NdfCodegen.spec
   describe "Hydra Repr parsing"
     HydraReprParsing.spec

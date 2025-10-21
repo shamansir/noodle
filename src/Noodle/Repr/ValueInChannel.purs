@@ -42,8 +42,8 @@ import Noodle.Repr.HasFallback (class HasFallback, fallback, fallbackBy)
 
 
 data ValueInChannel a
-  = Accepted a
-  | Declined -- { declined :: b, current :: a }
+  = Accepted a -- TODO: store tag?
+  | Declined -- { declined :: b, current :: a }  -- TODO: store tag? But he has `Tagged`
   | MissingKey String
   | Empty
 
@@ -66,6 +66,11 @@ class FromValueInChannel a repr where
 instance Apply ValueInChannel where -- TODO: should be ensured to align with `Apply` laws
   apply :: forall a b. ValueInChannel (a -> b) -> ValueInChannel a -> ValueInChannel b
   apply = _apply
+
+
+instance Applicative ValueInChannel where
+  pure :: forall a. a -> ValueInChannel a
+  pure = accept
 
 
 instance Bind ValueInChannel where -- TODO: should be ensured to align with `Bind` laws
