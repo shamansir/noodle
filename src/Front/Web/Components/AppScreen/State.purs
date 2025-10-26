@@ -44,7 +44,8 @@ import Web.Class.WebRenderer (class WebLocator)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
 import Front.Shared.WsLocation (host, port) as WSLoc
-import Front.Shared.HelpText (Context(..)) as HelpText
+import Front.Shared.HelpText (Context(..), empty) as HelpText
+import Front.Shared.HelpText as HT
 
 import Web.Components.ValueEditor (Def) as ValueEditor
 import Web.Components.PatchArea (LockingTask(..), NodesGeometry, storeGeometry, updatePosition, modifyPosition) as PatchArea
@@ -93,13 +94,6 @@ type PatchInfo loc ps =
     }
 
 
-type PatchStats =
-    { nodesCount :: Int
-    , linksCount :: Int
-    , lockOn :: PatchArea.LockingTask
-    }
-
-
 type WSocketConnection =
     { status :: WS.Status
     , mbSocket :: Maybe WS.WebSocket
@@ -112,7 +106,7 @@ init toolkit =
     { size : Nothing
     , zoom : 1.0
     , uiMode : TransparentOverlay 0.85
-    , helpContext : HelpText.Unknown
+    , helpContext : HelpText.empty
     , network : Network.init toolkit
     , mbCurrentPatch : Nothing
     , patches : Map.empty
@@ -280,30 +274,6 @@ updateNodePosition :: forall tk ps fs sr cr m. Id.PatchR -> Id.NodeR -> Position
 updateNodePosition patchR nodeR pos = withPatchInfo patchR $ \info -> info { nodesGeometry = info.nodesGeometry # PatchArea.updatePosition nodeR pos }
 
 
-nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
-nextHelpContext state pStats =
-    if KL.isCommandInputOpen state.keyboard then HelpText.CommandInputOpen
-    else case state.mbCurrentEditor of
-        Just _ ->
-            HelpText.EnteringValue
-        Nothing ->
-            case state.uiMode of
-                OnlyCanvas _ ->
-                    HelpText.InterfaceHidden
-                _ ->
-                    case pStats.lockOn of
-                        PatchArea.DraggingNode _ _ ->
-                            HelpText.DraggingNode
-                        PatchArea.Connecting _ _ ->
-                            HelpText.CreatingLink
-                        PatchArea.NoLock ->
-                            HelpText.Start
-                                { hasLinks : pStats.linksCount > 0
-                                , hasNodes : pStats.nodesCount > 0
-                                , zoomChanged : state.zoom /= 1.0
-                                }
-
-
 log :: forall tk ps fs sr cr m. String -> State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 log logLine s = s { log = Array.snoc s.log $ Console.LogLine logLine }
 
@@ -462,3 +432,79 @@ loadKbInput state =
 
 resetKeyboardFocus :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
 resetKeyboardFocus s = s { keyboard = KL.resetFocus s.keyboard }
+
+
+type PatchStats =
+    { nodesCount :: Int
+    , linksCount :: Int
+    , lockOn :: PatchArea.LockingTask
+    }
+
+
+nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
+nextHelpContext state pStats =
+    HelpText.Context $
+        let
+            hasNodes = pStats.nodesCount > 0
+            hasLinks = pStats.linksCount > 0
+            zoomChanged = state.zoom /= 1.0
+        in
+            ( case state.uiMode of
+                OnlyCanvas _ ->
+                    HT.both $ HT.GeneralInterface HT.ShowInterface
+                _ -> -- FIXME: support other UiModes
+                    HT.both $ HT.GeneralInterface HT.HideInterface
+            )
+            <>
+            ( case state.mbCurrentEditor of
+                Just _ ->
+                    HT.both $ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue
+                Nothing ->
+                    if hasNodes then HT.both $ HT.PatchArea $ HT.OneNode HT.EditInletValue else []
+            )
+            <>
+            ( if KL.isCommandInputOpen state.keyboard then
+                HT.both $ HT.CommandInput HT.EnterCommand
+            else
+                HT.both $ HT.CommandInput HT.LaunchCommandInput
+            )
+            <>
+            (HT.both $ HT.PatchArea HT.ChangeZoom)
+            <>
+            ( if zoomChanged then
+                HT.both $ HT.PatchArea HT.ResetZoom
+            else
+                []
+            )
+            <>
+            ( case pStats.lockOn of
+                PatchArea.DraggingNode _ _ ->
+                    HT.both $ HT.PatchArea $ HT.SomeNodes HT.FinishDraggingNodes
+                PatchArea.Connecting _ _ ->
+                    HT.both $ HT.PatchArea HT.FinishConnectingNodes
+                PatchArea.NoLock ->
+                    [] -- TODO
+            )
+
+
+    {-
+    if KL.isCommandInputOpen state.keyboard then HelpText.CommandInputOpen
+    else case state.mbCurrentEditor of
+        Just _ ->
+            HelpText.EnteringValue
+        Nothing ->
+            case state.uiMode of
+                OnlyCanvas _ ->
+                    HelpText.InterfaceHidden
+                _ ->
+                    case pStats.lockOn of
+                        PatchArea.DraggingNode _ _ ->
+                            HelpText.DraggingNode
+                        PatchArea.Connecting _ _ ->
+                            HelpText.CreatingLink
+                        PatchArea.NoLock ->
+                            HelpText.Start
+                                { hasLinks : pStats.linksCount > 0
+                                , hasNodes : pStats.nodesCount > 0
+                                , zoomChanged : state.zoom /= 1.0
+                                } -}

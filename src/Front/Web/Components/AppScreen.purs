@@ -89,7 +89,7 @@ import Web.Components.SidePanel.Tree (sidePanel, panelId) as SP.Tree
 import Web.Components.SidePanel.Documentation (sidePanel, panelId) as SP.Documentation
 import Web.Components.SidePanel.WebSocketStatus (sidePanel, panelId) as SP.WSStatus
 import Web.Components.SidePanel.HydraCode (sidePanel, panelId) as SP.HydraCode
-import Web.Components.SidePanel.NextControls (sidePanel, panelId) as SP.NextControls
+import Web.Components.SidePanel.NextActions (sidePanel, panelId) as SP.NextControls
 import Web.Class.WebRenderer (class WebLocator, class WebEditor)
 import Web.Layer (TargetLayer(..))
 import Web.Layouts (noodleUI, UiParams) as Layouts

@@ -4,17 +4,14 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Array (snoc, elem, length) as Array
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Array (length) as Array
 import Data.Map (Map)
 import Data.Map (lookup) as Map
 import Data.Set (Set)
 import Data.Set (member, size) as Set
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.String (length) as String
 import Data.String.CodeUnits as CU
 import Data.Int (toNumber) as Int
-import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
 
 import Halogen as H
@@ -24,20 +21,11 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 
-import Front.Shared.Panels (Which(..), allPanels) as Panels
-
-import Web.Components.SidePanel (button) as SidePanel
-import Web.Components.PatchesBar as PatchesBar
-import Web.Components.Library as Library
-import Web.Components.PatchArea as PatchArea
-import Web.Components.StatusBar as StatusBar
-import Web.Components.CommandInput as CommandInput
-import Web.Components.HelpText as HelpText
-
-import Noodle.Id (PatchR, PatchName) as Id
+import Front.Shared.Panels (Which, allPanels) as Panels
 
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
+
 
 type Input =
     { openPanels :: Set Panels.Which

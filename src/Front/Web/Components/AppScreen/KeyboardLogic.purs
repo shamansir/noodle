@@ -17,6 +17,10 @@ import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
 
+import Front.Shared.HelpText (class ProvidesHelp)
+import Front.Shared.HelpText (Context(..), empty) as HelpText
+import Front.Shared.HelpText as HT
+
 
 data Focus
     = Free
