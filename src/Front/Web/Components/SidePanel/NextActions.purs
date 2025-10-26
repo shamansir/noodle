@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array (concat) as Array
 import Data.Tuple (uncurry) as Tuple
+import Data.Set (toUnfoldable) as Set
 
 import Type.Proxy (Proxy(..))
 
@@ -31,5 +32,6 @@ render (Context context) =
     T.s <$>
     ( Array.concat
          $ Tuple.uncurry helpText
-        <$> context
+        <$>
+         Set.toUnfoldable context
     )

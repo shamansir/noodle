@@ -76,6 +76,7 @@ import Web.Components.AppScreen.UiMode (UiMode(..)) as CState
 import Web.Components.AppScreen.UiMode as UiMode
 import Web.Components.PatchesBar as PatchesBar
 import Web.Components.Library as Library
+import Web.Components.PatchArea.Types as PatchArea
 import Web.Components.PatchArea as PatchArea
 import Web.Components.StatusBar as StatusBar
 import Web.Components.CommandInput as CommandInput

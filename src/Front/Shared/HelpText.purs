@@ -1,17 +1,10 @@
 
 module Front.Shared.HelpText where
 
-import Data.Text.Format as T
-
-
 import Prelude
 
-import Data.Array (intersperse) as Array
-import Data.Maybe (Maybe(..))
+import Data.Set (Set)
 import Data.Tuple.Nested ((/\), type (/\))
-
-
-import Web.Components.SidePanel (SidePanel)
 
 
 data Controller
@@ -19,10 +12,15 @@ data Controller
     | Keyboard
 
 
+derive instance Ord Controller
+derive instance Eq Controller
+
+
 data GeneralInterfaceAction
     = ShowInterface
     | HideInterface
     | ToggleSolidBackground
+    | ToggleTransparentBackground
     | StepBackInKeyboardCombo
     | ObserveKeyboardCombo
 
@@ -84,14 +82,32 @@ data PossibleAction
     -- | ValueEditor
 
 
+derive instance Eq GeneralInterfaceAction
+derive instance Ord GeneralInterfaceAction
+derive instance Eq LibraryAction
+derive instance Ord LibraryAction
+derive instance Eq CommandInputAction
+derive instance Ord CommandInputAction
+derive instance Eq NodesAction
+derive instance Ord NodesAction
+derive instance Eq PatchesAction
+derive instance Ord PatchesAction
+derive instance Eq PatchAreaAction
+derive instance Ord PatchAreaAction
+derive instance Eq NodeAction
+derive instance Ord NodeAction
+derive instance Eq PossibleAction
+derive instance Ord PossibleAction
+
+
 class ProvidesHelp a where
-    nextActions :: a -> Array (Controller /\ PossibleAction)
+    nextActions :: a -> Set (Controller /\ PossibleAction)
 
 
-newtype Context = Context (Array (Controller /\ PossibleAction))
+newtype Context = Context (Set (Controller /\ PossibleAction))
 
 
-empty = Context [] :: Context
+empty = Context mempty :: Context
 
 
 both :: PossibleAction -> Array (Controller /\ PossibleAction)
@@ -110,6 +126,11 @@ helpText controller = case _ of
     GeneralInterface ToggleSolidBackground ->
         [ "Press <shift>+<space> to toggle solid background"
         ]
+
+    GeneralInterface ToggleTransparentBackground ->
+        [ "Press <shift>+<space> to toggle transparent background"
+        ]
+
     GeneralInterface ShowInterface ->
         [ "Show the user interface using <space>"
         ]
@@ -169,7 +190,7 @@ helpText controller = case _ of
                 [ "To select a node, hover over it and click on its body"
                 ]
             Keyboard ->
-                [ "Press <n> to start selecting nodes"
+                [ "Press <n> to start selecting nodes using keyboard"
                 ]
     PatchArea (OneNode SelectInletsOrOutlets) ->
         [ "Press <i> to start selecting the particular inlet"
@@ -214,7 +235,8 @@ helpText controller = case _ of
         [ "Press <escape> to move the node back to its previous place"
         ]
     PatchArea (SomeNodes DeselectNodes) ->
-        []
+        [ "To deselect a node, click on it" -- FIXME: really?
+        ]
     PatchArea (SomeNodes DeleteNodes) ->
         [ "To remove some node, hover over it and click the cross button"
         , "Alternatively, press <delete> or <x>"
@@ -223,7 +245,10 @@ helpText controller = case _ of
     {- Patch area -}
 
     PatchArea StartConnectingNodes ->
-        []
+        [ "To connect nodes, either click on the desired outlet"
+        , "or select outlet from keyboard using <n>-[node-index]-<o>-[outlet-index]..."
+        , "and follow further instructions"
+        ]
     PatchArea FinishConnectingNodes ->
         [ "To finish creating link, click on the inlet you want to connect to"
         ]

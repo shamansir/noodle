@@ -70,21 +70,11 @@ import Web.Layouts (NodePart(..)) as Layout
 import Web.Components.NodeBox as NodeBox
 import Web.Components.Link as LinkCmp
 import Web.Components.ValueEditor as ValueEditor
-import Web.Class.WebRenderer (class WebLocator, ConstantShift, class WebEditor, spawnWebEditor)
+import Web.Class.WebRenderer (class WebEditor, spawnWebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
 import Front.Shared.DocumentationFocus (DocumentationFocus)
 import Web.Components.AppScreen.KeyboardLogic as KL
-
-
-newtype NodeZIndex = ZIndex Int
-derive newtype instance Eq NodeZIndex
-derive newtype instance Ord NodeZIndex
-instance Bounded NodeZIndex where
-    top = ZIndex 1000
-    bottom = ZIndex 0
-
-
-type Locator = ConstantShift -- TODO: move to some root App config?
+import Web.Components.PatchArea.Types
 
 
 type Slots sr cr =
@@ -100,34 +90,6 @@ _valueEditor = Proxy :: _ "valueEditor"
 
 
 defaultPosition = { left : 0.0, top : 0.0 } :: Position
-
-
-type LinkStart =
-    { fromNode :: Id.NodeR
-    , fromOutlet :: Id.OutletR
-    }
-
-
-type LinkEnd =
-    { toNode :: Id.NodeR
-    , toInlet :: Id.InletR
-    }
-
-
-data LockingTask
-    = NoLock
-    | DraggingNode Id.NodeR Delta
-    | Connecting LinkStart PositionXY
-
-
-type NodeGeometry =
-    { bounds :: Bounds
-    , z :: NodeZIndex
-    , layout :: Play.Layout Layout.NodePart
-    }
-
-
-type NodesGeometry = Map Id.NodeR NodeGeometry
 
 
 type State ps sr cr m =

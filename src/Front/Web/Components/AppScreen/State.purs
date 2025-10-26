@@ -23,7 +23,7 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (class InitPatchState, initPatch, class HoldsFamilies, families) as Toolkit
 import Noodle.Toolkit.Families (Families)
 import Noodle.Patch (Patch)
-import Noodle.Patch (id, make, getState, registerRawNode, nodesCount, allNodes) as Patch
+import Noodle.Patch (id, make, getState, registerRawNode, nodesCount, linksCount, allNodes) as Patch
 import Noodle.Network (Network)
 import Noodle.Network (init, patchesCount, patch, addPatch, withPatch) as Network
 import Noodle.Raw.Node (Node, NodeChanges) as Raw
@@ -48,7 +48,8 @@ import Front.Shared.HelpText (Context(..), empty) as HelpText
 import Front.Shared.HelpText as HT
 
 import Web.Components.ValueEditor (Def) as ValueEditor
-import Web.Components.PatchArea (LockingTask(..), NodesGeometry, storeGeometry, updatePosition, modifyPosition) as PatchArea
+import Web.Components.PatchArea.Types (LockingTask(..), NodesGeometry) as PatchArea
+import Web.Components.PatchArea (storeGeometry, updatePosition, modifyPosition) as PatchArea
 import Web.Components.SidePanel.Console (LogLine(..)) as Console
 import Web.Components.SidePanel.WebSocketStatus as WSPanel
 import Web.Components.SidePanel.WebSocketStatus (Status(..)) as WS
@@ -412,21 +413,25 @@ loadKbInput :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> KL.Input
 loadKbInput state =
     let
         mbCurrentPatch = currentPatch state
-        mbNodesCount = mbCurrentPatch <#> Patch.nodesCount
+        nodesCount = mbCurrentPatch <#> Patch.nodesCount # fromMaybe 0
+        linksCount = mbCurrentPatch <#> Patch.linksCount # fromMaybe 0
         mbCurrentNode = do
             currentPatch <- mbCurrentPatch
             selNodeIdx <- KL.selectedNode state.keyboard
             selNode <- Patch.allNodes currentPatch # flip Array.index selNodeIdx -- FIXME: relies only on the fact that `PatchArea` uses `Patch.allNodes` to enumerate them
             pure { inletsCount : RawNode.inletsCount selNode, outletsCount : RawNode.outletsCount selNode }
-        familiesCount = Array.length state.families -- FIXME: implement
-        patchesCount = Network.patchesCount state.network-- FIXME: implement
+        familiesCount = Array.length state.families
+        patchesCount = Network.patchesCount state.network
+        zoomChanged = state.zoom /= 1.0
     in
-        { nodesCount : fromMaybe 0 mbNodesCount
+        { nodesCount
         , familiesCount
         , patchesCount
         , uiMode : state.uiMode
         , mbCurrentNode
         , valueEditorOpened : isJust state.mbCurrentEditor
+        , linksCount
+        , zoomChanged
         }
 
 
@@ -443,8 +448,9 @@ type PatchStats =
 
 nextHelpContext :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> PatchStats -> HelpText.Context
 nextHelpContext state pStats =
-    HelpText.Context $
+    HelpText.Context $ Set.fromFoldable $
         let
+            kbInput = loadKbInput state
             hasNodes = pStats.nodesCount > 0
             hasLinks = pStats.linksCount > 0
             zoomChanged = state.zoom /= 1.0
@@ -452,8 +458,16 @@ nextHelpContext state pStats =
             ( case state.uiMode of
                 OnlyCanvas _ ->
                     HT.both $ HT.GeneralInterface HT.ShowInterface
-                _ -> -- FIXME: support other UiModes
-                    HT.both $ HT.GeneralInterface HT.HideInterface
+                CanvasFullyVisible ->
+                    HT.both $ HT.GeneralInterface HT.ShowInterface
+                SolidOverlay _ -> -- FIXME: support other UiModes
+                    (HT.both $ HT.GeneralInterface HT.HideInterface)
+                    <>
+                    (HT.both $ HT.GeneralInterface HT.ToggleTransparentBackground)
+                TransparentOverlay _ -> -- FIXME: support other UiModes
+                    (HT.both $ HT.GeneralInterface HT.HideInterface)
+                    <>
+                    (HT.both $ HT.GeneralInterface HT.ToggleSolidBackground)
             )
             <>
             ( case state.mbCurrentEditor of
@@ -485,6 +499,8 @@ nextHelpContext state pStats =
                 PatchArea.NoLock ->
                     [] -- TODO
             )
+            <>
+            ((/\) HT.Keyboard <$> KL.nextActions kbInput state.keyboard)
 
 
     {-

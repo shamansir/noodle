@@ -2,24 +2,26 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
+import Data.Array (head, takeEnd) as Array
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
-import Data.Array (head, takeEnd) as Array
 import Data.Either (Either(..))
 import Data.Either as Either
 import Data.Enum (fromEnum, toEnum)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String as String
 import Data.String.CodePoints as CP
 import Data.Tuple.Nested ((/\), type (/\))
-
+import Front.Shared.HelpText (Context(..), empty) as HelpText
+import Front.Shared.HelpText (class ProvidesHelp)
+import Front.Shared.HelpText as HT
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
 
-import Front.Shared.HelpText (class ProvidesHelp)
-import Front.Shared.HelpText (Context(..), empty) as HelpText
-import Front.Shared.HelpText as HT
+-- import Web.Components.PatchArea.Types (LockingTask) as PA
 
 
 data Focus
@@ -68,10 +70,13 @@ data ConnectTo
 type Input =
     { uiMode :: UiMode
     , nodesCount :: Int
+    , linksCount :: Int
     , familiesCount :: Int
     , patchesCount :: Int
     , mbCurrentNode :: Maybe { inletsCount :: Int, outletsCount :: Int }
     , valueEditorOpened :: Boolean
+    , zoomChanged :: Boolean
+    -- , patchLock :: PA.LockingTask
     }
 
 
@@ -600,5 +605,68 @@ toSequence = case _ of
     SomeNodes nodes ->
         [ "n", show (NEA.head nodes), "a" ] <> (show <$> NEA.tail nodes)
 
+
 resetFocus :: State -> State
 resetFocus = _ { focus = Free }
+
+
+nextActions :: Input -> State -> Array HT.PossibleAction
+nextActions input { focus } =
+    case focus of
+        Free ->
+            if input.zoomChanged then
+                [ HT.PatchArea HT.ResetZoom
+                , HT.PatchArea HT.ChangeZoom
+                ]
+            else
+                [ HT.CommandInput HT.LaunchCommandInput
+                , HT.Library HT.SpawnByFamily
+                , HT.Patches HT.SelectPatch
+                , HT.Patches HT.CreatePatch
+                , HT.PatchArea $ HT.OneNode HT.AddToSelection
+                , HT.PatchArea HT.DisconnectLink
+                , HT.PatchArea HT.HoverForDocumentation
+                , HT.PatchArea HT.ChangeZoom
+                , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
+                , HT.PatchArea $ HT.SomeNodes HT.DragNodes
+                , HT.PatchArea $ HT.SomeNodes HT.MoveNodes
+                ]
+            -- [ HT.PatchArea HT.ChangeZoom,  ]
+        CommandInput ->
+            [ HT.CommandInput HT.EnterCommand ]
+        ValueEditor ->
+            [ HT.PatchArea $ HT.OneNode HT.EditInletValue ]
+        Library ->
+            [ HT.Library HT.SelectFamilyToSpawn ]
+        LibraryFamily _ ->
+            [ HT.Library HT.ConfirmFamilyToSpawn ]
+        PatchesBar ->
+            [ HT.Patches HT.SelectPatch, HT.Patches HT.CreatePatch ]
+        Patch _ ->
+            [ ]
+        NodesArea ->
+            [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+        Node _ ->
+            [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets
+            , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
+            ]
+        NodeInlets nidx ->
+            [ HT.PatchArea $ HT.OneNode HT.SelectInlet ]
+        NodeOutlets nidx ->
+            [ HT.PatchArea $ HT.OneNode HT.SelectOutlet ]
+        NodeInlet (nidx /\ iidx) ->
+            [ HT.PatchArea $ HT.OneNode HT.EditInletValue
+            ]
+        NodeOutlet (nidx /\ oidx) ->
+            [ HT.PatchArea $ HT.StartConnectingNodes ]
+        Connecting (nidx /\ oidx) NoTarget ->
+            [ HT.PatchArea $ HT.FinishConnectingNodes
+            , HT.PatchArea $ HT.CancelConnectingNodes
+            ]
+        Connecting (nidx /\ oidx) (ToNode nidx') ->
+            [ HT.PatchArea $ HT.CancelConnectingNodes
+            ]
+        Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
+            [ ]
+        SomeNodes nodes ->
+            [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
