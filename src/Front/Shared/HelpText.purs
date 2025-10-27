@@ -32,8 +32,11 @@ data PatchesAction
 
 data PatchAreaAction
     = DisconnectLink
-    | StartConnectingNodes
-    | FinishConnectingNodes
+    | SelectNodeToConnectFrom
+    | SelectOutletToConnectFrom
+    | SelectNodeToConnectTo
+    | SelectInletToConnectTo
+    | ConfirmConnectingNodes
     | CancelConnectingNodes
     | HoverForDocumentation
     | ChangeZoom
@@ -141,7 +144,6 @@ helpText controller = case _ of
         [ "You can track the keyboard combo sequence in the status bar"
         ]
 
-
     {- Library -}
 
     Library SpawnByFamily ->
@@ -187,11 +189,9 @@ helpText controller = case _ of
     PatchArea (OneNode AddToSelection) ->
         case controller of
             Mouse ->
-                [ "To select a node, hover over it and click on its body"
-                ]
+                [ "To select a node, hover over it and click on its body" ]
             Keyboard ->
-                [ "Press <n> to start selecting nodes using keyboard"
-                ]
+                [ "Press <n> to start selecting nodes using keyboard" ]
     PatchArea (OneNode SelectInletsOrOutlets) ->
         [ "Press <i> to start selecting the particular inlet"
         , "Press <o> to start selecting the particular outlet"
@@ -244,13 +244,41 @@ helpText controller = case _ of
 
     {- Patch area -}
 
-    PatchArea StartConnectingNodes ->
-        [ "To connect nodes, either click on the desired outlet"
-        , "or select outlet from keyboard using <n>-[node-index]-<o>-[outlet-index]..."
-        , "and follow further instructions"
-        ]
-    PatchArea FinishConnectingNodes ->
-        [ "To finish creating link, click on the inlet you want to connect to"
+    PatchArea SelectNodeToConnectFrom ->
+        case controller of
+            Mouse ->
+                [ "To start connecting nodes, click on the desired outlet where the link should start"
+                ]
+            Keyboard ->
+                [ "To connect nodes with keyboard, select the node to connect from using <n>-[node-index]-..."
+                , "then select the outlet using ...-<o>-[outlet-index]-..., and follow further instructions"
+                ]
+    PatchArea SelectOutletToConnectFrom ->
+        case controller of
+            Mouse ->
+                [ "To start connecting nodes, click on the desired outlet where the link should start"
+                ]
+            Keyboard ->
+                [ "Select the outlet using ...-<o>-[outlet-index]-..., and follow further instructions"
+                ]
+    PatchArea SelectNodeToConnectTo ->
+        case controller of
+            Mouse ->
+                [ "To finish creating a link, click on the inlet you want to connect to"
+                ]
+            Keyboard ->
+                [ "select the node to connect to using ...-[node-index]-..."
+                ]
+    PatchArea SelectInletToConnectTo ->
+        case controller of
+            Mouse ->
+                [ "To finish creating a link, click on the inlet you want to connect to"
+                ]
+            Keyboard ->
+                [ "select the inlet to connect to using ...-<i>-[inlet-index]"
+                ]
+    PatchArea ConfirmConnectingNodes ->
+        [
         ]
     PatchArea CancelConnectingNodes ->
         [ "To cancel creating link, click somewhere on the empty area or press <escape>"

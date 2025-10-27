@@ -455,16 +455,18 @@ nextHelpContext state pStats =
             hasLinks = pStats.linksCount > 0
             zoomChanged = state.zoom /= 1.0
         in
+            ((/\) HT.Keyboard <$> KL.nextActions kbInput state.keyboard)
+            <>
             ( case state.uiMode of
                 OnlyCanvas _ ->
                     HT.both $ HT.GeneralInterface HT.ShowInterface
                 CanvasFullyVisible ->
                     HT.both $ HT.GeneralInterface HT.ShowInterface
-                SolidOverlay _ -> -- FIXME: support other UiModes
+                SolidOverlay _ ->
                     (HT.both $ HT.GeneralInterface HT.HideInterface)
                     <>
                     (HT.both $ HT.GeneralInterface HT.ToggleTransparentBackground)
-                TransparentOverlay _ -> -- FIXME: support other UiModes
+                TransparentOverlay _ ->
                     (HT.both $ HT.GeneralInterface HT.HideInterface)
                     <>
                     (HT.both $ HT.GeneralInterface HT.ToggleSolidBackground)
@@ -472,15 +474,11 @@ nextHelpContext state pStats =
             <>
             ( case state.mbCurrentEditor of
                 Just _ ->
-                    HT.both $ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue
+                    (HT.both $ HT.PatchArea $ HT.OneNode HT.EditInletValue)
+                    <>
+                    (HT.both $ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue)
                 Nothing ->
                     if hasNodes then HT.both $ HT.PatchArea $ HT.OneNode HT.EditInletValue else []
-            )
-            <>
-            ( if KL.isCommandInputOpen state.keyboard then
-                HT.both $ HT.CommandInput HT.EnterCommand
-            else
-                HT.both $ HT.CommandInput HT.LaunchCommandInput
             )
             <>
             (HT.both $ HT.PatchArea HT.ChangeZoom)
@@ -495,12 +493,11 @@ nextHelpContext state pStats =
                 PatchArea.DraggingNode _ _ ->
                     HT.both $ HT.PatchArea $ HT.SomeNodes HT.FinishDraggingNodes
                 PatchArea.Connecting _ _ ->
-                    HT.both $ HT.PatchArea HT.FinishConnectingNodes
+                    HT.both $ HT.PatchArea HT.SelectNodeToConnectTo
                 PatchArea.NoLock ->
                     [] -- TODO
             )
-            <>
-            ((/\) HT.Keyboard <$> KL.nextActions kbInput state.keyboard)
+
 
 
     {-

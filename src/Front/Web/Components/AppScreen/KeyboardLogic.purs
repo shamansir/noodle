@@ -614,28 +614,29 @@ nextActions :: Input -> State -> Array HT.PossibleAction
 nextActions input { focus } =
     case focus of
         Free ->
-            if input.zoomChanged then
-                [ HT.PatchArea HT.ResetZoom
-                , HT.PatchArea HT.ChangeZoom
-                ]
+            ( if input.zoomChanged then
+                [ HT.PatchArea HT.ResetZoom ]
             else
+                [ ]
+            )
+            <>
                 [ HT.CommandInput HT.LaunchCommandInput
                 , HT.Library HT.SpawnByFamily
-                , HT.Patches HT.SelectPatch
+                , HT.Patches HT.SelectPatch -- TODO: if patches exist
                 , HT.Patches HT.CreatePatch
-                , HT.PatchArea $ HT.OneNode HT.AddToSelection
-                , HT.PatchArea HT.DisconnectLink
+                , HT.PatchArea HT.DisconnectLink -- TODO: if links exist
                 , HT.PatchArea HT.HoverForDocumentation
                 , HT.PatchArea HT.ChangeZoom
+                , HT.PatchArea $ HT.OneNode HT.AddToSelection
                 , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
                 , HT.PatchArea $ HT.SomeNodes HT.DragNodes
                 , HT.PatchArea $ HT.SomeNodes HT.MoveNodes
                 ]
-            -- [ HT.PatchArea HT.ChangeZoom,  ]
+            -- [ HT.PatchArea HT.ChangeZoom ]
         CommandInput ->
             [ HT.CommandInput HT.EnterCommand ]
         ValueEditor ->
-            [ HT.PatchArea $ HT.OneNode HT.EditInletValue ]
+            [ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue ]
         Library ->
             [ HT.Library HT.SelectFamilyToSpawn ]
         LibraryFamily _ ->
@@ -645,28 +646,31 @@ nextActions input { focus } =
         Patch _ ->
             [ ]
         NodesArea ->
-            [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+            if input.nodesCount > 0
+                then [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+                else []
         Node _ ->
-            [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets
+            [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets -- TODO: check inlets/outlets exist
             , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
             ]
         NodeInlets nidx ->
-            [ HT.PatchArea $ HT.OneNode HT.SelectInlet ]
+            [ HT.PatchArea $ HT.OneNode HT.SelectInlet ] -- TODO: check inlets exist
         NodeOutlets nidx ->
-            [ HT.PatchArea $ HT.OneNode HT.SelectOutlet ]
+            [ HT.PatchArea $ HT.OneNode HT.SelectOutlet ] -- TODO: check inlets exist
         NodeInlet (nidx /\ iidx) ->
-            [ HT.PatchArea $ HT.OneNode HT.EditInletValue
-            ]
+            [ HT.PatchArea $ HT.OneNode HT.EditInletValue ]
         NodeOutlet (nidx /\ oidx) ->
-            [ HT.PatchArea $ HT.StartConnectingNodes ]
+            [ HT.PatchArea $ HT.SelectNodeToConnectTo ]
         Connecting (nidx /\ oidx) NoTarget ->
-            [ HT.PatchArea $ HT.FinishConnectingNodes
+            [ HT.PatchArea $ HT.SelectNodeToConnectTo -- TODO: check more than one node exists
             , HT.PatchArea $ HT.CancelConnectingNodes
             ]
         Connecting (nidx /\ oidx) (ToNode nidx') ->
-            [ HT.PatchArea $ HT.CancelConnectingNodes
+            [ HT.PatchArea $ HT.SelectInletToConnectTo
+            , HT.PatchArea $ HT.CancelConnectingNodes
             ]
         Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
-            [ ]
+            [ HT.PatchArea $ HT.ConfirmConnectingNodes
+            ]
         SomeNodes nodes ->
             [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
