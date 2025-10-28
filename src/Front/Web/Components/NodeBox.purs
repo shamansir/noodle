@@ -2,6 +2,8 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Debug as Debug
+
 import Effect.Class (class MonadEffect)
 import Type.Proxy (Proxy)
 
@@ -670,7 +672,7 @@ handleAction ptk = case _ of
 handleQuery :: forall action strepr chrepr m a. Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
-        H.modify_ _ { latestUpdate = Just changes }
+        H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
         H.modify_ _ { mouseFocus = BeingDragged }

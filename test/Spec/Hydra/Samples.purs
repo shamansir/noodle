@@ -539,4 +539,12 @@ code
       , jsExpr : ""
       , pursExpr : ""
       }
+    , { sample : W.Target $ Output Output4
+      , jsExpr : ""
+      , pursExpr : ""
+      }
+    , { sample : W.Target Four
+      , jsExpr : ""
+      , pursExpr : ""
+      }
     ]
