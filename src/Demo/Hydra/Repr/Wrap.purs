@@ -463,6 +463,7 @@ wrapParser :: Parser String WrapRepr
 wrapParser =
     foldMarkers
         [ marker $ "U" /\ Unit /\ (P.string "U" <#> const unit)
+        , marker $ "TRG" /\ Target /\ RP.renderTarget
         , marker $ "TT" /\ TOrV <<< HT.T /\ RP.texture
         , marker $ "VV" /\ TOrV <<< HT.V /\ RP.value
         , marker $ "T" /\ Texture /\ RP.texture
