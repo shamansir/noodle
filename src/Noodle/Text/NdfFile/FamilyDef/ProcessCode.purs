@@ -168,10 +168,8 @@ _processEncodedCode target (Indent indent) src =
                 Right f -> f test collectedData
                 Left _ -> collectedData
 
-        indentNext = indent <> "    "
         inletTypedStr inlet = indent <> inlet <> " <- " <> "Fn.receive _in_" <> inlet
-        inletRawStr inlet = indent <> "vic_" <> inlet <> " <- " <> "RP.receive \"" <> inlet <> "\""
-        inletValRawStr inlet = indentNext <> inlet <> " <- " <> "vic_" <> inlet
+        inletRawStr inlet = indent <> inlet <> " <- " <> "RP.receive \"" <> inlet <> "\""
         sendTypedStr { mbOut, expr } =
             case mbOut of
                 Just out -> indent <> "Fn.send _out_" <> out <> " $ " <> expr
@@ -179,19 +177,15 @@ _processEncodedCode target (Indent indent) src =
         sendRawStr { mbOut, expr, localInlets } =
             case mbOut of
                 Just out -> indent <>
-                    "RP.send \"" <> out <> "\" " <>
-                    if Array.length localInlets == 1 && expr == (fromMaybe "-" $ Array.index localInlets 0) then
-                        "vic_" <> expr
-                    else
-                        "$ do\n" <> (String.joinWith "\n" $ inletValRawStr <$> localInlets) <> "\n"
-                        <> indentNext <> "pure $ " <>  expr
-
+                    "RP.send \"" <> out <> "\" $ " <> expr
                 Nothing -> indent <> expr
 
         toEncoded :: EncodedData_ -> String
-        toEncoded { allInlets, sends } = "do\n" <>
+        toEncoded { allInlets, sends } =
             case target of
                 Typed ->
+
+                    "do\n" <>
 
                     if (Array.length allInlets > 0) then
                         (String.joinWith "\n" $ inletTypedStr <$> Array.nub allInlets)
@@ -207,6 +201,8 @@ _processEncodedCode target (Indent indent) src =
                             src -- FIXME: ??
 
                 Raw ->
+
+                    "\n" <> indent <> "do\n" <>
 
                     if (Array.length allInlets > 0) then
                         (String.joinWith "\n" $ inletRawStr <$> Array.nub allInlets)
@@ -233,7 +229,8 @@ process :: Indent -> ProcessCode -> String
 process (Indent indent) = case _ of
     NoneSpecified -> "{- EMPTY PROCESS -}\n" <> indent <> "pure unit"
     Copy str -> str
-    Encoded target str -> _processEncodedCode target (Indent indent) str
+    Encoded target str ->
+        _processEncodedCode target (Indent indent) str
     JS code -> "fromJsCode $ jsCode $\n\t\t\"\"\"" <> code <> "\n\t\t\"\"\""
 
 

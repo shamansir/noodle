@@ -294,6 +294,8 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
         (
             [ declImport "Prelude" [ ]
             , declImport "Effect.Class" [ importClass "MonadEffect" ]
+            , declImportAs "Effect.Exception" [ ] "Ex"
+            , declImport "Control.Monad.Error.Class" [ importClass "MonadThrow" ]
             , declImport "Data.Maybe" [ importTypeAll "Maybe" ]
             , declImport "Type.Proxy" [ importTypeAll "Proxy" ]
             , declImport "Type.Data.List.Extra" [ importType "TNil" ]
@@ -311,7 +313,7 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
         [ declForeignData toolkitKey $ typeCtor "ToolkitKey"
         , declSignature "toolkit"
             $ typeForall [ typeVar "m" ]
-            $ typeConstrained [ monadEffectReq ]
+            $ typeConstrained [ monadEffectReq, monadThrowReq ]
             $ typeApp (typeCtor "Toolkit")
                 [ typeCtor toolkitKey
                 , typeCtor "TNil"
@@ -323,6 +325,7 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
         ]
         where
             monadEffectReq = unsafePartial $ typeApp (typeCtor "MonadEffect") [ typeVar "m" ]
+            monadThrowReq = unsafePartial $ typeApp (typeCtor "MonadThrow") [ typeCtor "Ex.Error",  typeVar "m" ]
             toolkitKey = String.toUpper $ Id.toolkit tkName
             channelExpr :: Partial => String /\ ChannelDef -> CST.Expr Void
             channelExpr (name /\ chdef) =
