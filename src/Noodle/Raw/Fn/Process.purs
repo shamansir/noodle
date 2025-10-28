@@ -41,7 +41,7 @@ import Data.Either (either, fromRight)
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
 
-import Control.Monad.Error.Class (class MonadThrow, throwError)
+import Control.Monad.Error.Class (class MonadThrow, throwError, class MonadError, catchError)
 import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))

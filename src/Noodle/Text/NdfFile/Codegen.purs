@@ -302,7 +302,7 @@ generateRawToolkitModule tkName (FCG.Options opts) definitionsArray
             , declImportAs "Noodle.Toolkit" [ importValue "empty" ] "Toolkit"
             , declImportAs "Noodle.Unsafe.QuickMake.RawToolkit" [ importValue "qregister" ] "Toolkit"
             , declImportAs "Noodle.Unsafe.RawProcess" [ ] "RP"
-            , declImportAs "Noodle.Repr.ValueInChannel" [] "VIC"
+            , declImportAs "Noodle.Repr.ValueInChannel" [] "ViC"
             , declImport opts.streprAt.module_ [ importType opts.streprAt.type_ ]
             , declImport opts.chreprAt.module_ [ importType opts.chreprAt.type_ ]
             ]

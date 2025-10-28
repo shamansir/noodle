@@ -10,7 +10,7 @@ import Noodle.Toolkit (Toolkit, ToolkitKey)
 import Noodle.Toolkit (empty) as Toolkit
 import Noodle.Unsafe.QuickMake.RawToolkit (qregister) as Toolkit
 import Noodle.Unsafe.RawProcess as RP
-import Noodle.Repr.ValueInChannel as VIC
+import Noodle.Repr.ValueInChannel as ViC
 import HydraTk.Repr.State (StateRepr)
 import HydraTk.Repr.Wrap (WrapRepr)
 import HydraTk.Patch (PState(..))
@@ -68,9 +68,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.1" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_scale <- RP.receive "scale"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_scale <- RP.receiveViC "scale"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 scale <- vic_scale
                 offset <- vic_offset
                 pure $ HYDRA.Start $ HYDRA.From $ HYDRA.Noise { scale, offset }
@@ -83,10 +83,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "blending", tag: "Value", value: Just "N 0.3" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_scale <- RP.receive "scale"
-            vic_speed <- RP.receive "speed"
-            vic_blending <- RP.receive "blending"
-            RP.send "out" $ do
+            vic_scale <- RP.receiveViC "scale"
+            vic_speed <- RP.receiveViC "speed"
+            vic_blending <- RP.receiveViC "blending"
+            RP.sendViC "out" $ do
                 scale <- vic_scale
                 speed <- vic_speed
                 blending <- vic_blending
@@ -100,10 +100,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Nothing }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_frequency <- RP.receive "frequency"
-            vic_sync <- RP.receive "sync"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_frequency <- RP.receiveViC "frequency"
+            vic_sync <- RP.receiveViC "sync"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 frequency <- vic_frequency
                 sync <- vic_sync
                 offset <- vic_offset
@@ -117,10 +117,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "smoothing", tag: "Value", value: Just "N 0.01" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_sides <- RP.receive "sides"
-            vic_radius <- RP.receive "radius"
-            vic_smoothing <- RP.receive "smoothing"
-            RP.send "out" $ do
+            vic_sides <- RP.receiveViC "sides"
+            vic_radius <- RP.receiveViC "radius"
+            vic_smoothing <- RP.receiveViC "smoothing"
+            RP.sendViC "out" $ do
                 sides <- vic_sides
                 radius <- vic_radius
                 smoothing <- vic_smoothing
@@ -130,8 +130,8 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
     ( {- gradient -}
       Toolkit.qregister "gradient" [ { name: "speed", tag: "Value", value: Nothing } ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 speed <- vic_speed
                 pure $ HYDRA.Start $ HYDRA.From $ HYDRA.Gradient { speed }
     )
@@ -139,8 +139,8 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
     ( {- src -}
       Toolkit.qregister "src" [ { name: "load", tag: "OutputN", value: Nothing } ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_load <- RP.receive "load"
-            RP.send "out" $ do
+            vic_load <- RP.receiveViC "load"
+            RP.sendViC "out" $ do
                 load <- vic_load
                 pure $ HYDRA.Start $ HYDRA.Load load
     )
@@ -153,11 +153,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "a", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_r <- RP.receive "r"
-            vic_g <- RP.receive "g"
-            vic_b <- RP.receive "b"
-            vic_a <- RP.receive "a"
-            RP.send "out" $ do
+            vic_r <- RP.receiveViC "r"
+            vic_g <- RP.receiveViC "g"
+            vic_b <- RP.receiveViC "b"
+            vic_a <- RP.receiveViC "a"
+            RP.sendViC "out" $ do
                 r <- vic_r
                 g <- vic_g
                 b <- vic_b
@@ -168,7 +168,7 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
     ( {- prev -}
       Toolkit.qregister "prev" [ { name: "todo", tag: "TODO", value: Just "TODO" } ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            RP.send "out" $ do
+            RP.sendViC "out" $ do
 
                 pure $ HYDRA.Empty
     )
@@ -180,10 +180,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_angle <- RP.receive "angle"
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_angle <- RP.receiveViC "angle"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 angle <- vic_angle
                 speed <- vic_speed
@@ -200,13 +200,13 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offsetY", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            vic_xMult <- RP.receive "xMult"
-            vic_yMult <- RP.receive "yMult"
-            vic_offsetX <- RP.receive "offsetX"
-            vic_offsetY <- RP.receive "offsetY"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            vic_xMult <- RP.receiveViC "xMult"
+            vic_yMult <- RP.receiveViC "yMult"
+            vic_offsetX <- RP.receiveViC "offsetX"
+            vic_offsetY <- RP.receiveViC "offsetY"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 xMult <- vic_xMult
@@ -223,10 +223,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "pixelY", tag: "Value", value: Just "N 20.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_pixelX <- RP.receive "pixelX"
-            vic_pixelY <- RP.receive "pixelY"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_pixelX <- RP.receiveViC "pixelX"
+            vic_pixelY <- RP.receiveViC "pixelY"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 pixelX <- vic_pixelX
                 pixelY <- vic_pixelY
@@ -242,12 +242,12 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offsetY", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_repeatX <- RP.receive "repeatX"
-            vic_repeatY <- RP.receive "repeatY"
-            vic_offsetX <- RP.receive "offsetX"
-            vic_offsetY <- RP.receive "offsetY"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_repeatX <- RP.receiveViC "repeatX"
+            vic_repeatY <- RP.receiveViC "repeatY"
+            vic_offsetX <- RP.receiveViC "offsetX"
+            vic_offsetY <- RP.receiveViC "offsetY"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 repeatX <- vic_repeatX
                 repeatY <- vic_repeatY
@@ -263,10 +263,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_reps <- RP.receive "reps"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_reps <- RP.receiveViC "reps"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 reps <- vic_reps
                 offset <- vic_offset
@@ -280,10 +280,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_reps <- RP.receive "reps"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_reps <- RP.receiveViC "reps"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 reps <- vic_reps
                 offset <- vic_offset
@@ -296,9 +296,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "nSides", tag: "Value", value: Just "N 3.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_nSides <- RP.receive "nSides"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_nSides <- RP.receiveViC "nSides"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 nSides <- vic_nSides
                 pure $ HYDRA.Geometry what $ HYDRA.GKaleid { nSides }
@@ -313,12 +313,12 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speedY", tag: "Value", value: Nothing }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scrollX <- RP.receive "scrollX"
-            vic_scrollY <- RP.receive "scrollY"
-            vic_speedX <- RP.receive "speedX"
-            vic_speedY <- RP.receive "speedY"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scrollX <- RP.receiveViC "scrollX"
+            vic_scrollY <- RP.receiveViC "scrollY"
+            vic_speedX <- RP.receiveViC "speedX"
+            vic_speedY <- RP.receiveViC "speedY"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scrollX <- vic_scrollX
                 scrollY <- vic_scrollY
@@ -334,10 +334,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scrollX <- RP.receive "scrollX"
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scrollX <- RP.receiveViC "scrollX"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scrollX <- vic_scrollX
                 speed <- vic_speed
@@ -351,10 +351,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scrollY <- RP.receive "scrollY"
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scrollY <- RP.receiveViC "scrollY"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scrollY <- vic_scrollY
                 speed <- vic_speed
@@ -368,10 +368,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "gamma", tag: "Value", value: Just "N 0.6" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_bins <- RP.receive "bins"
-            vic_gamma <- RP.receive "gamma"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_bins <- RP.receiveViC "bins"
+            vic_gamma <- RP.receiveViC "gamma"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 bins <- vic_bins
                 gamma <- vic_gamma
@@ -387,12 +387,12 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "a", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_r <- RP.receive "r"
-            vic_g <- RP.receive "g"
-            vic_b <- RP.receive "b"
-            vic_a <- RP.receive "a"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_r <- RP.receiveViC "r"
+            vic_g <- RP.receiveViC "g"
+            vic_b <- RP.receiveViC "b"
+            vic_a <- RP.receiveViC "a"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 r <- vic_r
                 g <- vic_g
@@ -407,9 +407,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 pure $ HYDRA.Filter what $ HYDRA.Invert amount
@@ -421,9 +421,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.6" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 pure $ HYDRA.Filter what $ HYDRA.Contrast amount
@@ -435,9 +435,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 0.4" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 pure $ HYDRA.Filter what $ HYDRA.Brightness amount
@@ -450,10 +450,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "tolerance", tag: "Value", value: Just "N 0.1" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_threshold <- RP.receive "threshold"
-            vic_tolerance <- RP.receive "tolerance"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_threshold <- RP.receiveViC "threshold"
+            vic_tolerance <- RP.receiveViC "tolerance"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 threshold <- vic_threshold
                 tolerance <- vic_tolerance
@@ -467,10 +467,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "tolerance", tag: "Value", value: Just "N 0.1" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_threshold <- RP.receive "threshold"
-            vic_tolerance <- RP.receive "tolerance"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_threshold <- RP.receiveViC "threshold"
+            vic_tolerance <- RP.receiveViC "tolerance"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 threshold <- vic_threshold
                 tolerance <- vic_tolerance
@@ -486,12 +486,12 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "a", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_r <- RP.receive "r"
-            vic_g <- RP.receive "g"
-            vic_b <- RP.receive "b"
-            vic_a <- RP.receive "a"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_r <- RP.receiveViC "r"
+            vic_g <- RP.receiveViC "g"
+            vic_b <- RP.receiveViC "b"
+            vic_a <- RP.receiveViC "a"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 r <- vic_r
                 g <- vic_g
@@ -506,9 +506,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 2.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 pure $ HYDRA.Filter what $ HYDRA.Saturate amount
@@ -520,9 +520,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "hue", tag: "Value", value: Just "N 0.4" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_hue <- RP.receive "hue"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_hue <- RP.receiveViC "hue"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 hue <- vic_hue
                 pure $ HYDRA.Filter what $ HYDRA.Hue hue
@@ -534,9 +534,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 0.005" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 amount <- vic_amount
                 pure $ HYDRA.Filter what $ HYDRA.Colorama amount
@@ -558,10 +558,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scale <- RP.receive "scale"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scale <- RP.receiveViC "scale"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scale <- vic_scale
                 offset <- vic_offset
@@ -575,10 +575,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scale <- RP.receive "scale"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scale <- RP.receiveViC "scale"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scale <- vic_scale
                 offset <- vic_offset
@@ -592,10 +592,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scale <- RP.receive "scale"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scale <- RP.receiveViC "scale"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scale <- vic_scale
                 offset <- vic_offset
@@ -609,10 +609,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_scale <- RP.receive "scale"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_scale <- RP.receiveViC "scale"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 scale <- vic_scale
                 offset <- vic_offset
@@ -626,10 +626,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -643,10 +643,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -660,10 +660,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -677,10 +677,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -694,10 +694,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -710,9 +710,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "with", tag: "Texture", value: Just "EMP T" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 pure $ HYDRA.BlendOf { what, with } $ HYDRA.Diff
@@ -724,9 +724,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "with", tag: "Texture", value: Just "EMP T" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 pure $ HYDRA.BlendOf { what, with } $ HYDRA.Mask
@@ -742,13 +742,13 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offsetY", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_repeatX <- RP.receive "repeatX"
-            vic_repeatY <- RP.receive "repeatY"
-            vic_offsetX <- RP.receive "offsetX"
-            vic_offsetY <- RP.receive "offsetY"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_repeatX <- RP.receiveViC "repeatX"
+            vic_repeatY <- RP.receiveViC "repeatY"
+            vic_offsetX <- RP.receiveViC "offsetX"
+            vic_offsetY <- RP.receiveViC "offsetY"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 repeatX <- vic_repeatX
@@ -766,11 +766,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_reps <- RP.receive "reps"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_reps <- RP.receiveViC "reps"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 reps <- vic_reps
@@ -786,11 +786,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_reps <- RP.receive "reps"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_reps <- RP.receiveViC "reps"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 reps <- vic_reps
@@ -805,10 +805,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "nSides", tag: "Value", value: Just "N 3.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_nSides <- RP.receive "nSides"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_nSides <- RP.receiveViC "nSides"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 nSides <- vic_nSides
@@ -823,11 +823,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Nothing }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_scrollX <- RP.receive "scrollX"
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_scrollX <- RP.receiveViC "scrollX"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 scrollX <- vic_scrollX
@@ -843,11 +843,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Nothing }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_scrollY <- RP.receive "scrollY"
-            vic_speed <- RP.receive "speed"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_scrollY <- RP.receiveViC "scrollY"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 scrollY <- vic_scrollY
@@ -862,10 +862,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 0.1" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -880,11 +880,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_multiple <- RP.receive "multiple"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_multiple <- RP.receiveViC "multiple"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 multiple <- vic_multiple
@@ -900,11 +900,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 3.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_multiple <- RP.receive "multiple"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_multiple <- RP.receiveViC "multiple"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 multiple <- vic_multiple
@@ -920,11 +920,11 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Nothing }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_multiple <- RP.receive "multiple"
-            vic_offset <- RP.receive "offset"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_multiple <- RP.receiveViC "multiple"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 multiple <- vic_multiple
@@ -939,10 +939,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "amount", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "out", tag: "Texture", value: Just "EMP T" } ] $ do
-            vic_what <- RP.receive "what"
-            vic_with <- RP.receive "with"
-            vic_amount <- RP.receive "amount"
-            RP.send "out" $ do
+            vic_what <- RP.receiveViC "what"
+            vic_with <- RP.receiveViC "with"
+            vic_amount <- RP.receiveViC "amount"
+            RP.sendViC "out" $ do
                 what <- vic_what
                 with <- vic_with
                 amount <- vic_amount
@@ -1052,9 +1052,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "speed", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "arr", tag: "Value", value: Just "VA %%%%" } ] $ do
-            vic_arr <- RP.receive "arr"
-            vic_speed <- RP.receive "speed"
-            RP.send "arr" $ do
+            vic_arr <- RP.receiveViC "arr"
+            vic_speed <- RP.receiveViC "speed"
+            RP.sendViC "arr" $ do
                 arr <- vic_arr
                 speed <- vic_speed
                 pure $ HYDRA.VArray arr $ HYDRA.Fast speed
@@ -1066,9 +1066,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "smooth", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "arr", tag: "Value", value: Just "VA %%%%" } ] $ do
-            vic_arr <- RP.receive "arr"
-            vic_smooth <- RP.receive "smooth"
-            RP.send "arr" $ do
+            vic_arr <- RP.receiveViC "arr"
+            vic_smooth <- RP.receiveViC "smooth"
+            RP.sendViC "arr" $ do
                 arr <- vic_arr
                 smooth <- vic_smooth
                 pure $ HYDRA.VArray arr $ HYDRA.Smooth smooth
@@ -1080,9 +1080,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "ease", tag: "Ease", value: Just "LIN E" }
         ]
         [ { name: "arr", tag: "Value", value: Just "VA %%%%" } ] $ do
-            vic_arr <- RP.receive "arr"
-            vic_ease <- RP.receive "ease"
-            RP.send "arr" $ do
+            vic_arr <- RP.receiveViC "arr"
+            vic_ease <- RP.receiveViC "ease"
+            RP.sendViC "arr" $ do
                 arr <- vic_arr
                 ease <- vic_ease
                 pure $ HYDRA.VArray arr ease
@@ -1094,9 +1094,9 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "offset", tag: "Value", value: Just "N 0.5" }
         ]
         [ { name: "arr", tag: "Value", value: Just "VA %%%%" } ] $ do
-            vic_arr <- RP.receive "arr"
-            vic_offset <- RP.receive "offset"
-            RP.send "arr" $ do
+            vic_arr <- RP.receiveViC "arr"
+            vic_offset <- RP.receiveViC "offset"
+            RP.sendViC "arr" $ do
                 arr <- vic_arr
                 offset <- vic_offset
                 pure $ HYDRA.VArray arr $ HYDRA.Offset offset
@@ -1109,10 +1109,10 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         , { name: "high", tag: "Value", value: Just "N 1.0" }
         ]
         [ { name: "arr", tag: "Value", value: Just "VA %%%%" } ] $ do
-            vic_arr <- RP.receive "arr"
-            vic_low <- RP.receive "low"
-            vic_high <- RP.receive "high"
-            RP.send "arr" $ do
+            vic_arr <- RP.receiveViC "arr"
+            vic_low <- RP.receiveViC "low"
+            vic_high <- RP.receiveViC "high"
+            RP.sendViC "arr" $ do
                 arr <- vic_arr
                 low <- vic_low
                 high <- vic_high
@@ -1122,8 +1122,8 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
     ( {- fft -}
       Toolkit.qregister "fft" [ { name: "bin", tag: "AudioBin", value: Just "@0" } ]
         [ { name: "fft", tag: "Value", value: Just "0 V" } ] $ do
-            vic_bin <- RP.receive "bin"
-            RP.send "fft" $ do
+            vic_bin <- RP.receiveViC "bin"
+            RP.sendViC "fft" $ do
                 bin <- vic_bin
                 pure $ HYDRA.Fft bin
     )

@@ -13,19 +13,18 @@ import Data.Map (empty, insert) as Map
 import Signal (runSignal) as Signal
 import Signal ((~>))
 
-
 import Test.Spec (Spec, describe, it, itOnly)
 import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Id (InletR, OutletR) as Id
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.ValueInChannel (accept, toMaybe) as ViC
+import Noodle.Repr.ValueInChannel (accept, toMaybe, _backToValue) as ViC
 import Noodle.Fn.Shape (Shape(..))
 import Noodle.Fn.Shape (_reflect) as Shape
 import Noodle.Id (inletRName, outletRName) as Id
 import Noodle.Raw.Id (inletR, outletR, familyR) as Id
 import Noodle.Raw.Fn.Shape (inlets, outlets, make, tagAs) as RawShape
-import Noodle.Raw.Fn.Process (receive, send, sendIn, fromJsCode, jsCode) as RawFn
+import Noodle.Raw.Fn.Process (receive, send, sendIn, fromJsCode, jsCode, lift) as RawFn
 import Noodle.Id (Temperament(..))
 import Noodle.Node (Node, (<-#), (<-@), (#->), (@->), (<=#), (<=@), (<~>))
 import Noodle.Node (connect, disconnect, _listenUpdatesAndRun, make, run, state, modifyState, atOutletR, logUpdates) as Node
@@ -361,12 +360,9 @@ spec = do
                         # Map.insert (outletR "sum") (MinimalRepr.Int 0)
                     )
                     $ do
-                        vicA <- RP.receive "a"
-                        vicB <- RP.receive "b"
-                        RP.send "sum" $ do
-                            a <- vicA
-                            b <- vicB
-                            pure $ (a + b :: Int)
+                        a <- RP.receive "a"
+                        b <- RP.receive "b"
+                        RP.send "sum" $ (a + b :: Int)
 
             rawNode # RawNode.run
 
