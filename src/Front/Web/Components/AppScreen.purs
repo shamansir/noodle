@@ -619,6 +619,7 @@ handleAction ploc = case _ of
             H.lift $ RawNode.run rawNode
     PassUpdate patchR nodeR update ->
         H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
+            H.liftEffect $ Console.log "got update"
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch

@@ -2,8 +2,9 @@ module HydraTk.ToolkitRaw where
 
 import Prelude
 
+import Effect.Console as Console
 import Color as Color
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception as Ex
 import Control.Monad.Error.Class (class MonadThrow)
 import Data.Maybe (Maybe(..))
@@ -15,6 +16,7 @@ import Noodle.Toolkit (empty) as Toolkit
 import Noodle.Repr.HasFallback (fallback)
 import Noodle.Unsafe.QuickMake.RawToolkit (qregister) as Toolkit
 import Noodle.Unsafe.RawProcess as RP
+import Noodle.Raw.Fn.Process (lift) as RP
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Fn.Signature (sig, class PossiblyToSignature)
 import Noodle.Fn.Signature (in_, inx_, out_, outx_, toChanneled) as Sig
@@ -30,6 +32,9 @@ import HydraTk.Patch (PState)
 import HydraTk.Patch (init) as Patch
 import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HYDRAW
+import HydraTk.Lang.Program (Program(..), formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
+import HydraTk.Patch (resize, executeHydra) as Hydra
+import HydraTk.Lang.Command as Hydra
 import Data.Tuple.Nested ((/\))
 
 foreign import data HYDRA :: ToolkitKey
@@ -1030,7 +1035,13 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
         [ { name: "what", tag: "Texture", value: Just "EMP T" }
         , { name: "target", tag: "RenderTarget", value: Just "TRG ALL 4" }
         ]
-        [] ${- EMPTY PROCESS -}
+        [] $
+            do
+            what <- RP.receive "what"
+            -- target <- RP.receive "target"
+            let program = Hydra.printToJavaScript $ Hydra.Program [ Hydra.Chain HYDRA.Output0 {- target -} what ]
+            liftEffect $ Hydra.executeHydra program
+            liftEffect $ Console.log program
             pure unit
     )
 

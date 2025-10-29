@@ -2,6 +2,8 @@ module HydraTk.Lang.Program where
 
 import Prelude
 
+import Debug as Debug
+
 import Prelude (class Show, show) as Core
 
 import Effect.Class (class MonadEffect)
@@ -274,9 +276,9 @@ collectHydraCommands =
         toCommandTuple rawNode = RawNode.id rawNode /\ extractCommandFromNode rawNode
         extractCommandFromNode :: Raw.Node sr cr m -> m (Maybe Command)
         extractCommandFromNode rawNode =
-            let familyR = Id.familyOf $ RawNode.id rawNode
+            let familyR = Debug.spy "family" $ Id.familyOf $ RawNode.id rawNode
             in
-                if producesCode familyR then
+                if Debug.spy "produces" $ producesCode familyR then
                     RawNode.state rawNode <#> toHydraCommand familyR
                 else
                     pure Nothing
