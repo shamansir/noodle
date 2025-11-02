@@ -4,7 +4,13 @@ module Front.Shared.HelpText where
 import Prelude
 
 import Data.Set (Set)
+import Data.Array as Array
+import Data.String as String
+import Data.String.Extra2 as StringX
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (class Newtype, wrap, unwrap)
+
+import Front.Shared.Keyboard as K
 
 
 data Controller
@@ -117,31 +123,70 @@ both :: PossibleAction -> Array (Controller /\ PossibleAction)
 both act = [ Mouse /\ act, Keyboard /\ act ]
 
 
-helpText :: Controller -> PossibleAction -> Array String
-helpText controller = case _ of
+data SeqItem
+    = SDesc String
+    | SCombo K.Combo
+    | SOpen
+
+
+data HelpLine
+    = Start
+    | Continue String
+    | Code String
+    | Combo K.Combo
+    | Sequence (Array SeqItem)
+
+
+st :: HelpLine
+st = Start
+cont :: String -> HelpLine
+cont = Continue
+key :: K.Combo -> HelpLine
+key = Combo
+seq :: Array SeqItem -> HelpLine
+seq = Sequence
+code :: String -> HelpLine
+code = Code
+
+
+sd :: String -> SeqItem
+sd = SDesc
+skey :: K.Combo -> SeqItem
+skey = SCombo
+so :: SeqItem
+so = SOpen
+
+
+newtype HelpText = HelpText (Array HelpLine)
+
+derive instance Newtype HelpText _
+
+
+helpText :: Controller -> PossibleAction -> HelpText
+helpText controller = wrap <<< case _ of
 
     {- General Interface -}
 
     GeneralInterface HideInterface ->
-        [ "Hide the user interface using <space>, leaving only the canvas visible"
-        , "(and get it back by pressing <space> again)"
+        [ st, cont "Hide the user interface using ", key K.space, cont " leaving only the canvas visible"
+        , cont "(and get it back by pressing ", key K.space, cont " again)"
         ]
     GeneralInterface ToggleSolidBackground ->
-        [ "Press <shift>+<space> to toggle solid background"
+        [ st, cont "Press ", key (K.w_shift $ K.space), cont " to toggle solid background"
         ]
 
     GeneralInterface ToggleTransparentBackground ->
-        [ "Press <shift>+<space> to toggle transparent background"
+        [ st, cont "Press ", key (K.w_shift $ K.space), cont " to toggle transparent background"
         ]
 
     GeneralInterface ShowInterface ->
-        [ "Show the user interface using <space>"
+        [ st, cont "Show the user interface using ", key K.space
         ]
     GeneralInterface StepBackInKeyboardCombo ->
-        [ "Press <backspace> to step back in the keyboard combo sequence"
+        [ st, cont "Press ", key $ K.backspace, cont " to step back in the keyboard combo sequence"
         ]
     GeneralInterface ObserveKeyboardCombo ->
-        [ "You can track the keyboard combo sequence in the status bar"
+        [ st, cont "You can track the keyboard combo sequence in the status bar"
         ]
 
     {- Library -}
@@ -149,39 +194,39 @@ helpText controller = case _ of
     Library SpawnByFamily ->
         case controller of
             Mouse ->
-                [ "Spawn a node by clicking the desired family in the Library on the left"
-                , "You can scroll the list using mouse wheel or trackpad"
+                [ st, cont "Spawn a node by clicking the desired family in the Library on the left"
+                , cont "You can scroll the list using mouse wheel or trackpad"
                 ]
             Keyboard ->
-                [ "Use keyboard key <l> to focus on the Library"
+                [ st, cont "Use keyboard key ", key $ K.key "l", cont " to focus on the Library"
                 ]
     Library SelectFamilyToSpawn ->
-        [ "Press the index-key that is shown close to the family name and press <enter> to confirm"
+        [ st, cont "Press the index-key that is shown close to the family name and press ", key K.enter, cont " to confirm"
         ]
     Library ConfirmFamilyToSpawn ->
-        [ "Press <enter> to spawn the node of the selected family"
+        [ st, cont "Press ", key K.enter, cont " to spawn the node of the selected family"
         ]
 
     {- CommandInput -}
 
     CommandInput LaunchCommandInput ->
-        [ "Call command input by pressing <tab>" ]
+        [ st, cont "Call command input by pressing ", key K.tab ]
     CommandInput EnterCommand ->
-        [ "Try typing the node family and pressing <enter>, for example `osc` will spawn the corresponding node"
-        , "You can also create custom nodes by typing something like `:: <a:Number -> b:Number -> c:Number> => <out>` or `:: <tuple> => <fst -> snd>`, just start with double-semicolon"
-        , "To close the input without applying, press <escape>"
-        , "To apply the command, press <enter> after entering it"
+        [ st, cont "Try typing the node family and pressing ", key K.enter, cont ", for example ", code "osc", cont " will spawn the corresponding node"
+        , st, cont "You can also create custom nodes by typing something like ", code ":: <a:Number -> b:Number -> c:Number> => <out>", cont " or ", code ":: <tuple> => <fst -> snd>", cont ", just start with double-semicolon"
+        , st, cont "To close the input without applying, press ", key K.escape
+        , st, cont "To apply the command, press ", key K.enter, cont " after entering it"
         ]
 
     {- Patches -}
 
     Patches CreatePatch ->
-        -- [ "Create a patch by selecting multiple nodes (hold <shift> and click on nodes), then press <p>"
+        -- [ st, cont "Create a patch by selecting multiple nodes (hold ", key K.shift, cont " and click on nodes), then press ", key $ K.key "p"
         -- ]
-        [ "Create a new patch by clicking (+) button in the patches bar"
+        [ st, cont "Create a new patch by clicking (+) button in the patches bar"
         ]
     Patches SelectPatch ->
-        [ "Select a patch by clicking on its name in the patches bar"
+        [ st, cont "Select a patch by clicking on its name in the patches bar"
         ]
 
     {- One node -}
@@ -189,24 +234,24 @@ helpText controller = case _ of
     PatchArea (OneNode AddToSelection) ->
         case controller of
             Mouse ->
-                [ "To select a node, hover over it and click on its body" ]
+                [ st, cont "To select a node, hover over it and click on its body" ]
             Keyboard ->
-                [ "Press <n> to start selecting nodes using keyboard" ]
+                [ st, cont "Press ", key $ K.key "n", cont " to start selecting nodes using keyboard" ]
     PatchArea (OneNode SelectInletsOrOutlets) ->
-        [ "Press <i> to start selecting the particular inlet"
-        , "Press <o> to start selecting the particular outlet"
+        [ st, cont "Press ", key $ K.key "i", cont " to start selecting the particular inlet"
+        , st, cont "Press ", key $ K.key "o", cont " to start selecting the particular outlet"
         ]
     PatchArea (OneNode SelectInlet) ->
-        [ "Press the corresponding index-key that is shown close in the connector near the inlet name"
+        [ st, cont "Press the corresponding index-key that is shown close in the connector near the inlet name"
         ]
     PatchArea (OneNode SelectOutlet) ->
-        [ "Press the corresponding index-key that is shown close in the connector near the outlet name"
+        [ st, cont "Press the corresponding index-key that is shown close in the connector near the outlet name"
         ]
     PatchArea (OneNode EditInletValue) ->
-        [ "Changing value sends it to the inlet right away"
+        [ st, cont "Changing value sends it to the inlet right away"
         ]
     PatchArea (OneNode FinishEditingInletValue) ->
-        [ "To close the value editor, place <escape> or <enter>"
+        [ st, cont "To close the value editor, place ", key K.escape, cont " or ", key K.enter, cont ""
         ]
 
     {- Some nodes -}
@@ -214,32 +259,32 @@ helpText controller = case _ of
     PatchArea (SomeNodes DragNodes) ->
         case controller of
             Mouse ->
-                [ "To drag a node, hover over it and click the four-arrow button, then drag to the desired position and confirm by clicking again"
+                [ st, cont "To drag a node, hover over it and click the four-arrow button, then drag to the desired position and confirm by clicking again"
                 ]
             Keyboard ->
                 [ ]
     PatchArea (SomeNodes FinishDraggingNodes) ->
-        [ "Drag the node to the desired position and confirm by clicking the four-arrow button again"
+        [ st, cont "Drag the node to the desired position and confirm by clicking the four-arrow button again"
         ]
     PatchArea (SomeNodes MoveNodes) ->
         case controller of
             Mouse ->
                 [ ]
             Keyboard ->
-                [ "Move the node using arrow keys. To move faster, hold <shift> while pressing the arrow keys"
+                [ st, cont "Move the node using arrow keys. To move faster, hold ", key K.shift, cont " while pressing the arrow keys"
                 ]
     PatchArea (SomeNodes ConfirmMovingNodes) ->
-        [ "Press <enter> to confirm the position"
+        [ st, cont "Press ", key K.enter, cont " to confirm the position"
         ]
     PatchArea (SomeNodes CancelMovingNodes) ->
-        [ "Press <escape> to move the node back to its previous place"
+        [ st, cont "Press ", key K.escape, cont " to move the node back to its previous place"
         ]
     PatchArea (SomeNodes DeselectNodes) ->
-        [ "To deselect a node, click on it" -- FIXME: really?
+        [ st, cont "To deselect a node, click on it"
         ]
     PatchArea (SomeNodes DeleteNodes) ->
-        [ "To remove some node, hover over it and click the cross button"
-        , "Alternatively, press <delete> or <x>"
+        [ st, cont "To remove some node, hover over it and click the cross button"
+        , st, cont "Alternatively, press ", key K.delete, cont " or ", key $ K.key "x"
         ]
 
     {- Patch area -}
@@ -247,53 +292,79 @@ helpText controller = case _ of
     PatchArea SelectNodeToConnectFrom ->
         case controller of
             Mouse ->
-                [ "To start connecting nodes, click on the desired outlet where the link should start"
+                [ st, cont "To start connecting nodes, click on the desired outlet where the link should start"
                 ]
             Keyboard ->
-                [ "To connect nodes with keyboard, select the node to connect from using <n>-[node-index]-..."
-                , "then select the outlet using ...-<o>-[outlet-index]-..., and follow further instructions"
+                [ st, cont "To connect nodes with keyboard, select the node to connect from using ", seq [ skey $ K.key "n", sd "node-index", so ]
+                , st, cont "then select the outlet using ", seq [ so, skey $ K.key "o", sd "outlet-index", so ], cont ", and follow further instructions"
                 ]
     PatchArea SelectOutletToConnectFrom ->
         case controller of
             Mouse ->
-                [ "To start connecting nodes, click on the desired outlet where the link should start"
+                [ st, cont "To start connecting nodes, click on the desired outlet where the link should start"
                 ]
             Keyboard ->
-                [ "Select the outlet using ...-<o>-[outlet-index]-..., and follow further instructions"
+                [ st, cont "Select the outlet using ", seq [ so, skey $ K.key "o", sd "outlet-index", so ], cont ", and follow further instructions"
                 ]
     PatchArea SelectNodeToConnectTo ->
         case controller of
             Mouse ->
-                [ "To finish creating a link, click on the inlet you want to connect to"
+                [ st, cont "To finish creating a link, click on the inlet you want to connect to"
                 ]
             Keyboard ->
-                [ "select the node to connect to using ...-[node-index]-..."
+                [ st, cont "select the node to connect to using ", seq [ so, sd "node-index", so ]
                 ]
     PatchArea SelectInletToConnectTo ->
         case controller of
             Mouse ->
-                [ "To finish creating a link, click on the inlet you want to connect to"
+                [ st, cont "To finish creating a link, click on the inlet you want to connect to"
                 ]
             Keyboard ->
-                [ "select the inlet to connect to using ...-<i>-[inlet-index]"
+                [ st, cont "select the inlet to connect to using ", seq [ so, skey $ K.key "i", sd "inlet-index" ]
                 ]
     PatchArea ConfirmConnectingNodes ->
         [
         ]
     PatchArea CancelConnectingNodes ->
-        [ "To cancel creating link, click somewhere on the empty area or press <escape>"
+        [ st, cont "To cancel creating link, click somewhere on the empty area or press ", key K.escape
         ]
     PatchArea ChangeZoom ->
-        [ "Zoom with Shift+MouseWheel or <ctrl>+<+>/<->"
+        [ st, cont "Zoom with Shift+MouseWheel or ", key $ K.w_ctrl K.plus, cont "/", key $ K.w_ctrl K.minus
         ]
     PatchArea ResetZoom ->
-        [ "Reset zoom by clicking (*) in the status bar"
+        [ st, cont "Reset zoom by clicking (*) in the status bar"
         ]
     PatchArea DisconnectLink ->
-        [ "To disconnect a link, just click somewhere on its shape"
+        [ st, cont "To disconnect a link, just click somewhere on its shape"
         ]
     PatchArea HoverForDocumentation ->
-        [ "Hover over inlets, outlets, nodes, to get the information in status bar"
+        [ st, cont "Hover over inlets, outlets, nodes, to get the information in status bar"
         ]
 
 
+render :: HelpText -> String
+render = String.joinWith " " <<< map _renderLine <<< unwrap
+
+
+_renderLine :: HelpLine -> String
+_renderLine = case _ of
+    Start -> "" -- "* "
+    Continue s -> StringX.escapeHtml s
+    Code s -> "<code>" <> StringX.escapeHtml s <> "</code>"
+    Combo c -> renderCombo c
+    Sequence items -> "[" <> String.joinWith "-" (renderSeqItem <$> items) <> "]"
+    where
+    renderCombo :: K.Combo -> String
+    renderCombo = case _ of
+        K.Combo { key, mods, special } ->
+            String.joinWith "+"
+                $ Array.snoc (wrapKey <$> mods)
+                $ if special then wrapSpecialKey key else wrapKey key
+        where
+            wrapKey k = "<kbd>" <> k <> "</kbd>"
+            wrapSpecialKey k = "<kbd class=\"noodle-key-special\">" <> k <> "</kbd>"
+    renderSeqItem :: SeqItem -> String
+    renderSeqItem = case _ of
+        SDesc s -> StringX.escapeHtml s
+        SCombo c -> renderCombo c
+        SOpen -> "..."

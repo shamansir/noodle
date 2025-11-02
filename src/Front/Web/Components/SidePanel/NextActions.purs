@@ -2,7 +2,7 @@ module Web.Components.SidePanel.NextActions where
 
 import Prelude
 
-import Data.Array (concat) as Array
+import Data.Array (concat, intersperse) as Array
 import Data.Tuple (uncurry) as Tuple
 import Data.Set (toUnfoldable) as Set
 
@@ -13,6 +13,7 @@ import Web.Components.SidePanel (SidePanel)
 import Data.Text.Format as T
 
 import Front.Shared.HelpText (Context(..), helpText)
+import Front.Shared.HelpText (render) as HT
 
 
 panelId = Proxy :: _ "next-actions"
@@ -29,9 +30,10 @@ sidePanel =
 
 render :: Context -> Array T.Tag
 render (Context context) =
-    T.s <$>
-    ( Array.concat
-         $ Tuple.uncurry helpText
-        <$>
-         Set.toUnfoldable context
-    )
+    Array.intersperse T.nl
+    $ (\hline -> T.fg "#666" (T.s "*") <> T.space <> T.fg "#ccc" hline)
+    <$> T.s
+    <$> ( HT.render
+            <$> Tuple.uncurry helpText
+            <$> Set.toUnfoldable context
+        )
