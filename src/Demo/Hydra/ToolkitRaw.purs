@@ -50,6 +50,7 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
   #
     ( {- pi -}
       Toolkit.qregister "pi" [] [ { name: "out", tag: "Value", value: Just "V PI V" } ] ${- EMPTY PROCESS -}
+            -- RP.send "out" $ HYDRAW.Value HYDRA.Pi
             pure unit
     )
   #

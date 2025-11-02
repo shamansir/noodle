@@ -2,6 +2,8 @@ module Web.Components.AppScreen where
 
 import Prelude
 
+import Debug as Debug
+
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
@@ -596,14 +598,17 @@ handleAction ploc = case _ of
             -- whenJust (mbNodeState >>= StRepr.from) $ flip Node.setState node
             whenJust mbNodeState
                 \nextState -> rawNode # RawNode.setState nextState
+            curChanges <- RawNode.curChanges rawNode
 
             _ <- H.subscribe =<< do -- TODO: make one emitter for all nodes to be a bus with all the changes in the patch
                 { emitter, listener } <- H.liftEffect HSS.create
                 H.liftEffect
                     $  Signal.runSignal
                     $  RawNode.subscribeChanges rawNode
+                    ~> Debug.spy "Node change"
                     ~> PassUpdate (Patch.id curPatch) nodeR
                     ~> HSS.notify listener
+                -- H.liftEffect $ HSS.notify listener $ PassUpdate (Patch.id curPatch) nodeR $ Debug.spy "Cur change" curChanges
                 pure emitter
 
             let moveCommandOp = QOp.makeNode nodeR { left: 0, top : 0 }
@@ -617,8 +622,11 @@ handleAction ploc = case _ of
             Patch.trackStateChangesFromRaw (Proxy :: _ tk) rawNode curPatch
 
             H.lift $ RawNode.run rawNode
-    PassUpdate patchR nodeR update ->
-        H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
+
+            handleAction ploc $ PassUpdate (Patch.id curPatch) nodeR $ Debug.spy "Cur change" curChanges
+    PassUpdate patchR nodeR update -> do
+        H.liftEffect $ Console.log "pass update"
+        H.get >>= CState.currentPatch >>> Debug.spy ("Current Patch, expected: " <> show patchR)  >>> whenJust_ \curPatch -> do
             H.liftEffect $ Console.log "got update"
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update
@@ -628,6 +636,7 @@ handleAction ploc = case _ of
                 Hydra.executeHydra program
                 Console.log program
     LoadCurrentPatchChanges -> do
+        H.liftEffect $ Console.log "load current patch changes"
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             void $ for (Patch.allNodes curPatch) $ \rawNode -> do
