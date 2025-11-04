@@ -13,7 +13,7 @@ import Web.Components.SidePanel (SidePanel)
 import Data.Text.Format as T
 
 import Front.Shared.HelpText (Context(..), helpText)
-import Front.Shared.HelpText (render) as HT
+import Front.Shared.HelpText (render, renderAll) as HT
 
 
 panelId = Proxy :: _ "next-actions"
@@ -33,7 +33,7 @@ render (Context context) =
     Array.intersperse T.nl
     $ (\hline -> T.fg "#666" (T.s "*") <> T.space <> T.fg "#ccc" hline)
     <$> T.s
-    <$> ( HT.render
-            <$> Tuple.uncurry helpText
+    <$> ( HT.renderAll
+             $ Tuple.uncurry helpText
             <$> Set.toUnfoldable context
         )
