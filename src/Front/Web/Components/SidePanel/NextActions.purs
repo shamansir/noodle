@@ -34,6 +34,6 @@ render (Context context) =
     $ (\hline -> T.fg "#666" (T.s "*") <> T.space <> T.fg "#ccc" hline)
     <$> T.s
     <$> ( HT.renderAll
-             $ Tuple.uncurry helpText
+             $ helpText
             <$> Set.toUnfoldable context
         )

@@ -616,80 +616,82 @@ nextActions :: Input -> State -> Array HT.PossibleAction
 nextActions input { focus } =
     case focus of
         Free ->
-            when input.zoomChanged  [ HT.PatchArea HT.ResetZoom ]
+            when input.zoomChanged  [ HT.PatchArea HT.KB_ResetZoom ]
             <>
-                [ HT.CommandInput HT.LaunchCommandInput
-                , HT.Patches HT.CreatePatch
-                , HT.PatchArea HT.ChangeZoom
+                [ HT.CommandInput HT.KB_LaunchCommandInput
+                , HT.Patches HT.KB_CreatePatch
+                , HT.PatchArea HT.KB_ChangeZoom
                 ]
             <>
                 when hasFamilies
-                    [ HT.Library HT.SpawnByFamily ]
+                    [ HT.Library HT.KB_FocusOnLibrary ]
             <>
                 when hasPatches
-                    [ HT.Patches HT.SelectPatch ]
+                    [ HT.Patches HT.KB_SelectPatch ]
             <>
                 when hasNodes
-                    [ HT.PatchArea HT.HoverForDocumentation
-                    , HT.PatchArea $ HT.OneNode HT.AddToSelection
-                    , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
-                    , HT.PatchArea $ HT.SomeNodes HT.DragNodes
-                    , HT.PatchArea $ HT.SomeNodes HT.MoveNodes
+                    [ HT.PatchArea HT.M_HoverForDocumentation
+                    , HT.PatchArea $ HT.G_OneNode HT.M_AddToSelection
+                    , HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection
+                    , HT.PatchArea $ HT.G_SomeNodes HT.KB_DeleteNodes
+                    , HT.PatchArea $ HT.G_SomeNodes HT.M_DragNodes
+                    , HT.PatchArea $ HT.G_SomeNodes HT.KB_MoveNodes
                     ]
             <>
                 when hasLinks
-                    [ HT.PatchArea HT.DisconnectLink ]
+                    [ HT.PatchArea HT.KB_DisconnectLink ]
             -- [ HT.PatchArea HT.ChangeZoom ]
         CommandInput ->
-            [ HT.CommandInput HT.EnterCommand ]
+            [ HT.CommandInput HT.KB_EnterCommand ]
         ValueEditor ->
-            [ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue ]
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_FinishEditingInletValue ]
         Library ->
             when hasFamilies
-            [ HT.Library HT.SelectFamilyToSpawn ]
+            [ HT.Library HT.KB_SelectFamilyToSpawn ]
         LibraryFamily _ ->
             when hasFamilies
-            [ HT.Library HT.ConfirmFamilyToSpawn ]
+            [ HT.Library HT.KB_ConfirmFamilyToSpawn ]
         PatchesBar ->
-            [ HT.Patches HT.CreatePatch
+            [ HT.Patches HT.KB_CreatePatch
             ] <>
             when hasPatches
-                [ HT.Patches HT.SelectPatch ]
+                [ HT.Patches HT.KB_SelectPatch ]
         Patch _ ->
             [ ]
         NodesArea ->
             when hasNodes
-                [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+                [ HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection ]
         Node _ ->
             when hasNodes
-                [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets
-                , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
+                [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectInletsSide
+                , HT.PatchArea $ HT.G_OneNode HT.KB_SelectOutletsSide
+                , HT.PatchArea $ HT.G_SomeNodes HT.KB_DeleteNodes
                 ]
         NodeInlets nidx ->
             when hasInlets
-            [ HT.PatchArea $ HT.OneNode HT.SelectInlet ] -- TODO: check inlets exist
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectInlet ] -- TODO: check inlets exist
         NodeOutlets nidx ->
             when hasOutlets
-            [ HT.PatchArea $ HT.OneNode HT.SelectOutlet ] -- TODO: check inlets exist
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectOutlet ] -- TODO: check inlets exist
         NodeInlet (nidx /\ iidx) ->
-            [ HT.PatchArea $ HT.OneNode HT.EditInletValue ]
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_EditInletValue ]
         NodeOutlet (nidx /\ oidx) ->
             when hasNodes
-            [ HT.PatchArea $ HT.SelectNodeToConnectTo ]
+            [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo ]
         Connecting (nidx /\ oidx) NoTarget ->
-            [ HT.PatchArea $ HT.SelectNodeToConnectTo -- TODO: check more than one node exists
-            , HT.PatchArea $ HT.CancelConnectingNodes
+            [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo -- TODO: check more than one node exists
+            , HT.PatchArea $ HT.KB_CancelConnectingNodes
             ]
         Connecting (nidx /\ oidx) (ToNode nidx') ->
-            [ HT.PatchArea $ HT.SelectInletToConnectTo
-            , HT.PatchArea $ HT.CancelConnectingNodes
+            [ HT.PatchArea $ HT.KB_SelectInletToConnectTo
+            , HT.PatchArea $ HT.KB_CancelConnectingNodes
             ]
         Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
-            [ HT.PatchArea $ HT.ConfirmConnectingNodes
+            [ HT.PatchArea $ HT.KB_ConfirmConnectingNodes
             ]
         SomeNodes nodes ->
             when hasNodes
-                [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+                [ HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection ]
         where
             hasNodes = input.nodesCount > 0
             hasLinks = input.linksCount > 0

@@ -455,45 +455,47 @@ nextHelpContext state pStats =
             hasLinks = pStats.linksCount > 0
             zoomChanged = state.zoom /= 1.0
         in
-            ((/\) HT.Keyboard <$> KL.nextActions kbInput state.keyboard)
+            (KL.nextActions kbInput state.keyboard)
             <>
             ( case state.uiMode of
                 OnlyCanvas _ ->
-                    HT.both $ HT.GeneralInterface HT.ShowInterface
+                    [ HT.GeneralInterface HT.KB_ShowInterface ]
                 CanvasFullyVisible ->
-                    HT.both $ HT.GeneralInterface HT.ShowInterface
+                    [ HT.GeneralInterface HT.KB_ShowInterface ]
                 SolidOverlay _ ->
-                    (HT.both $ HT.GeneralInterface HT.HideInterface)
-                    <>
-                    (HT.both $ HT.GeneralInterface HT.ToggleTransparentBackground)
+                    [ HT.GeneralInterface HT.KB_HideInterface
+                    , HT.GeneralInterface HT.KB_ToggleTransparentBackground
+                    ]
                 TransparentOverlay _ ->
-                    (HT.both $ HT.GeneralInterface HT.HideInterface)
-                    <>
-                    (HT.both $ HT.GeneralInterface HT.ToggleSolidBackground)
+                    [ HT.GeneralInterface HT.KB_HideInterface
+                    , HT.GeneralInterface HT.KB_ToggleSolidBackground
+                    ]
             )
             <>
             ( case state.mbCurrentEditor of
                 Just _ ->
-                    (HT.both $ HT.PatchArea $ HT.OneNode HT.EditInletValue)
-                    <>
-                    (HT.both $ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue)
+                    [ HT.PatchArea $ HT.G_OneNode HT.KB_EditInletValue
+                    , HT.PatchArea $ HT.G_OneNode HT.KB_FinishEditingInletValue
+                    , HT.PatchArea $ HT.G_OneNode HT.M_FinishEditingInletValue
+                    ]
                 Nothing ->
-                    if hasNodes then HT.both $ HT.PatchArea $ HT.OneNode HT.EditInletValue else []
+                    [ HT.PatchArea $ HT.G_OneNode HT.M_SpawnValueEditor
+                    ]
             )
             <>
-            (HT.both $ HT.PatchArea HT.ChangeZoom)
+            [ HT.PatchArea HT.KB_ChangeZoom ]
             <>
             ( if zoomChanged then
-                HT.both $ HT.PatchArea HT.ResetZoom
+                [ HT.PatchArea HT.KB_ResetZoom, HT.PatchArea HT.M_ResetZoom ]
             else
                 []
             )
             <>
             ( case pStats.lockOn of
                 PatchArea.DraggingNode _ _ ->
-                    HT.both $ HT.PatchArea $ HT.SomeNodes HT.FinishDraggingNodes
+                    [ HT.PatchArea $ HT.G_SomeNodes HT.M_FinishDraggingNodes ]
                 PatchArea.Connecting _ _ ->
-                    HT.both $ HT.PatchArea HT.SelectNodeToConnectTo
+                    [ HT.PatchArea $ HT.M_SelectInletToFinishLink ]
                 PatchArea.NoLock ->
                     [] -- TODO
             )
