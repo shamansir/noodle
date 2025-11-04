@@ -22,7 +22,7 @@ data Which
     | HydraCode
     | Console
     | Tree
-    | NextControls
+    | NextActions
 
 
 derive instance Eq Which
@@ -60,7 +60,7 @@ isOn = case _ of
     Console -> _.console
     HydraCode -> _.hydraCode
     Tree -> _.tree
-    NextControls -> _.nextControls
+    NextActions -> _.nextControls
 
 
 isOff :: Which -> SidePanelsOnOff -> Boolean
@@ -75,7 +75,7 @@ toggle w s = case w of
     Console -> s { console = not s.console }
     HydraCode -> s { hydraCode = not s.hydraCode }
     Tree -> s { tree = not s.tree }
-    NextControls -> s { nextControls = not s.nextControls }
+    NextActions -> s { nextControls = not s.nextControls }
 
 
 toArray :: SidePanelsOnOff -> Array { which :: Which, on :: Boolean }
@@ -86,7 +86,7 @@ toArray sps =
     , { which : Tree,          on : sps.tree }
     , { which : Console,       on : sps.console }
     , { which : WSStatus,      on : sps.wsServer }
-    , { which : NextControls,  on : sps.nextControls }
+    , { which : NextActions,  on : sps.nextControls }
     ]
 
 
@@ -98,9 +98,9 @@ fromSet set =
     , tree :          set # Set.member Tree
     , console :       set # Set.member Console
     , wsServer :      set # Set.member WSStatus
-    , nextControls :  set # Set.member NextControls
+    , nextControls :  set # Set.member NextActions
     }
 
 
 allPanels :: Array Which
-allPanels = [ Commands, Documentation, HydraCode, Tree, Console, WSStatus, NextControls ]
+allPanels = [ Commands, Documentation, HydraCode, Tree, Console, WSStatus, NextActions ]

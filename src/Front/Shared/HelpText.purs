@@ -15,6 +15,7 @@ import Data.Text.Format (u)
 import Data.Tuple (curry, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Front.Shared.Keyboard as K
+import Noodle.Fn.Signature (o)
 
 
 data Controller
@@ -209,7 +210,7 @@ helpText controller = Tuple.uncurry ht <<< case _ of
     GeneralInterface HideInterface ->
         -11 /\
         [ st, cont "Hide the user interface using ", key K.space, cont " leaving only the canvas visible"
-        , cont "(and get it back by pressing ", key K.space, cont " again)"
+        , cont " (and get it back by pressing ", key K.space, cont " again)"
         ]
     GeneralInterface ToggleSolidBackground ->
         -11 /\
@@ -279,7 +280,7 @@ helpText controller = Tuple.uncurry ht <<< case _ of
         ]
     Patches SelectPatch ->
         -8 /\
-        [ st, cont "Select a patch by ", mclick "click", cont " on its name in the patches bar"
+        [ st, cont "Select a patch by ", mclick "clicking", cont " on its name in the patches bar"
         ]
 
     {- One node -}
@@ -294,7 +295,7 @@ helpText controller = Tuple.uncurry ht <<< case _ of
                 [ st, cont "Press ", key $ K.key "n", cont " to start selecting nodes using keyboard" ]
     PatchArea (OneNode SelectInletsOrOutlets) ->
         5 /\
-        [ st, cont "Press ", key $ K.key "i", cont " to start selecting the particular inlet"
+        [ st, cont "Press ", key $ K.key "i", cont " to start selecting the particular inlet."
         , st, cont "Press ", key $ K.key "o", cont " to start selecting the particular outlet"
         ]
     PatchArea (OneNode SelectInlet) ->
@@ -355,10 +356,14 @@ helpText controller = Tuple.uncurry ht <<< case _ of
         [ st, cont "To deselect a node, ", mclick "click", cont " on it"
         ]
     PatchArea (SomeNodes DeleteNodes) ->
-        0 /\ -- FIXME: split into two cases: mouse and keyboard
-        [ st, cont "To remove some node, ", mhover "hover", cont " over it and ", mclick "click", cont " the cross button"
-        , st, cont "Alternatively, press ", key K.delete, cont " or ", key $ K.key "x"
-        ]
+        case controller of
+            Mouse ->
+                0 /\
+                [ st, cont "To remove some node, ", mhover "hover", cont " over it and ", mclick "click", cont " the cross button." ]
+            Keyboard ->
+                0 /\
+                [ st, cont "To remove some node using keyboard, press ", key K.delete, cont " or ", key $ K.key "x"
+                ]
 
     {- Patch area -}
 
@@ -442,6 +447,7 @@ renderAll =
     >>> Array.sortWith (unwrap >>> _.priority)
     >>> Array.reverse
     >>> map render
+    >>> Array.nub
 
 
 _renderLine :: HelpLine -> String
@@ -455,7 +461,7 @@ _renderLine = case _ of
                 if Array.null tail then
                     renderSeqItem head
                 else
-                    "[" <> String.joinWith "-" (NEA.toArray $ renderSeqItem <$> items) <> "]"
+                    "<span class=\"noodle-help-key-combo\">" <> String.joinWith "-" (NEA.toArray $ renderSeqItem <$> items) <> "</span>"
     None -> "---"
         -- FIXME: Handle empty sequence case
     where
@@ -463,27 +469,31 @@ _renderLine = case _ of
     renderCombo = case _ of
         K.Combo { key, mods, special } ->
             String.joinWith "+"
-                $ Array.snoc (wrapKey <$> mods)
+                $ Array.snoc (wrapSpecialKey <$> mods)
                 $ if special then wrapSpecialKey key else wrapKey key
         where
-            wrapKey k = "<kbd>" <> k <> "</kbd>"
-            wrapSpecialKey k = "<kbd class=\"noodle-key-special\">" <> k <> "</kbd>"
+            wrapKey k = "<kbd class=\"noodle-help-key\">" <> k <> "</kbd>"
+            wrapSpecialKey k = "<kbd class=\"noodle-help-key-special\">" <> k <> "</kbd>"
+    mouseWrap :: String -> String -> String -> String
+    mouseWrap cls alt comment =
+        "<span class=\"noodle-help-mouse noodle-help-" <> cls <> "\" alt=\"" <> alt <> "\">" <> StringX.escapeHtml comment <> "</span>"
     renderSeqItem :: SeqItem -> String
     renderSeqItem = case _ of
         SDesc s -> StringX.escapeHtml s
         SKeys c -> renderCombo c
         SOpen -> "..."
         SIndexKey for_ ->
-            (case for_ of
+            "<span class=\"noodle-help-index-key\">" <>
+            ( case for_ of
                 Node -> "node"
                 Inlet -> "inlet"
                 Outlet -> "outlet"
                 Family -> "family"
                 Patch -> "patch"
-            ) <> "-index-key"
+            ) <> " index key" <> "</span>"
         SMouse mb comment -> case mb of
-            MLeft -> "m-left-click:" <> StringX.escapeHtml comment
-            MMiddle -> "m-middle-click: " <> StringX.escapeHtml comment
-            MRight -> "m-right-click: " <> StringX.escapeHtml comment
-            MWheel -> "m-wheel: " <> StringX.escapeHtml comment
-            MHover -> "m-hover: " <> StringX.escapeHtml comment
+            MLeft -> mouseWrap "left-click" "left click" comment
+            MMiddle -> mouseWrap "middle-click" "middle click" comment
+            MRight -> mouseWrap "right-click" "right click" comment
+            MWheel -> mouseWrap "wheel" "mouse wheel" comment
+            MHover -> mouseWrap "hover" "hover" comment

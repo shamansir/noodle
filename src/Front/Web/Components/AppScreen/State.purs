@@ -118,7 +118,7 @@ init toolkit =
     , log : []
     , history : Ndf.init "noodle" 2.0
     , ndfInstances : Map.empty
-    , openPanels : Set.fromFoldable [ Panels.Commands, Panels.Documentation, Panels.Tree ]
+    , openPanels : Set.fromFoldable [ Panels.Commands, Panels.Documentation, Panels.NextActions, Panels.Tree ]
     , wsConnection :
         { status : WS.Off
         , mbSocket : Nothing

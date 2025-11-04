@@ -107,3 +107,21 @@ minus = key "-"
 
 arrows :: Combo
 arrows = special $ key "arrow keys"
+
+
+-- ↵
+-- ⏎
+-- ⇧
+-- ⌫
+-- ⌦
+-- ⇥
+-- ⌘
+-- ⎇
+-- ⌥
+-- ⇪
+-- ⌫
+-- ⎋
+-- ◀ ▶ ▲ ▼
+-- ⇟
+-- ⇞
+-- ␣

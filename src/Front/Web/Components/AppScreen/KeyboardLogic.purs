@@ -2,6 +2,7 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
+import Blessed.UI.Base.Element.Option (input)
 import Data.Array (head, takeEnd) as Array
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
@@ -17,6 +18,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Front.Shared.HelpText (Context(..), empty) as HelpText
 import Front.Shared.HelpText (class ProvidesHelp)
 import Front.Shared.HelpText as HT
+import Noodle.Network (hasPatch)
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
@@ -614,52 +616,65 @@ nextActions :: Input -> State -> Array HT.PossibleAction
 nextActions input { focus } =
     case focus of
         Free ->
-            ( if input.zoomChanged then
-                [ HT.PatchArea HT.ResetZoom ]
-            else
-                [ ]
-            )
+            when input.zoomChanged  [ HT.PatchArea HT.ResetZoom ]
             <>
                 [ HT.CommandInput HT.LaunchCommandInput
-                , HT.Library HT.SpawnByFamily
-                , HT.Patches HT.SelectPatch -- TODO: if patches exist
                 , HT.Patches HT.CreatePatch
-                , HT.PatchArea HT.DisconnectLink -- TODO: if links exist
-                , HT.PatchArea HT.HoverForDocumentation
                 , HT.PatchArea HT.ChangeZoom
-                , HT.PatchArea $ HT.OneNode HT.AddToSelection
-                , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
-                , HT.PatchArea $ HT.SomeNodes HT.DragNodes
-                , HT.PatchArea $ HT.SomeNodes HT.MoveNodes
                 ]
+            <>
+                when hasFamilies
+                    [ HT.Library HT.SpawnByFamily ]
+            <>
+                when hasPatches
+                    [ HT.Patches HT.SelectPatch ]
+            <>
+                when hasNodes
+                    [ HT.PatchArea HT.HoverForDocumentation
+                    , HT.PatchArea $ HT.OneNode HT.AddToSelection
+                    , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
+                    , HT.PatchArea $ HT.SomeNodes HT.DragNodes
+                    , HT.PatchArea $ HT.SomeNodes HT.MoveNodes
+                    ]
+            <>
+                when hasLinks
+                    [ HT.PatchArea HT.DisconnectLink ]
             -- [ HT.PatchArea HT.ChangeZoom ]
         CommandInput ->
             [ HT.CommandInput HT.EnterCommand ]
         ValueEditor ->
             [ HT.PatchArea $ HT.OneNode HT.FinishEditingInletValue ]
         Library ->
+            when hasFamilies
             [ HT.Library HT.SelectFamilyToSpawn ]
         LibraryFamily _ ->
+            when hasFamilies
             [ HT.Library HT.ConfirmFamilyToSpawn ]
         PatchesBar ->
-            [ HT.Patches HT.SelectPatch, HT.Patches HT.CreatePatch ]
+            [ HT.Patches HT.CreatePatch
+            ] <>
+            when hasPatches
+                [ HT.Patches HT.SelectPatch ]
         Patch _ ->
             [ ]
         NodesArea ->
-            if input.nodesCount > 0
-                then [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
-                else []
+            when hasNodes
+                [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
         Node _ ->
-            [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets -- TODO: check inlets/outlets exist
-            , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
-            ]
+            when hasNodes
+                [ HT.PatchArea $ HT.OneNode HT.SelectInletsOrOutlets
+                , HT.PatchArea $ HT.SomeNodes HT.DeleteNodes
+                ]
         NodeInlets nidx ->
+            when hasInlets
             [ HT.PatchArea $ HT.OneNode HT.SelectInlet ] -- TODO: check inlets exist
         NodeOutlets nidx ->
+            when hasOutlets
             [ HT.PatchArea $ HT.OneNode HT.SelectOutlet ] -- TODO: check inlets exist
         NodeInlet (nidx /\ iidx) ->
             [ HT.PatchArea $ HT.OneNode HT.EditInletValue ]
         NodeOutlet (nidx /\ oidx) ->
+            when hasNodes
             [ HT.PatchArea $ HT.SelectNodeToConnectTo ]
         Connecting (nidx /\ oidx) NoTarget ->
             [ HT.PatchArea $ HT.SelectNodeToConnectTo -- TODO: check more than one node exists
@@ -673,4 +688,13 @@ nextActions input { focus } =
             [ HT.PatchArea $ HT.ConfirmConnectingNodes
             ]
         SomeNodes nodes ->
-            [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+            when hasNodes
+                [ HT.PatchArea $ HT.OneNode HT.AddToSelection ]
+        where
+            hasNodes = input.nodesCount > 0
+            hasLinks = input.linksCount > 0
+            hasPatches = input.patchesCount > 0
+            hasFamilies = input.familiesCount > 0
+            hasInlets  = input.mbCurrentNode <#> _.inletsCount  <#> (_ > 0) # fromMaybe false
+            hasOutlets = input.mbCurrentNode <#> _.outletsCount <#> (_ > 0) # fromMaybe false
+            when cond actions = if cond then actions else []
