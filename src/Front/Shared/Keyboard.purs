@@ -34,67 +34,67 @@ mod m = unwrap >>> (\c -> c { mods = Array.snoc c.mods m }) >>> wrap
 
 
 w_shift :: Combo -> Combo
-w_shift = mod "shift"
+w_shift = mod "shift ⇧"
 
 
 w_cmd :: Combo -> Combo
-w_cmd = mod "cmd"
+w_cmd = mod "cmd ⌘"
 
 
 w_ctrl :: Combo -> Combo
-w_ctrl = mod "ctrl"
+w_ctrl = mod "ctrl ^"
 
 
 w_alt :: Combo -> Combo
-w_alt = mod "alt"
+w_alt = mod "alt ⎇"
 
 
 w_opt :: Combo -> Combo
-w_opt = mod "opt"
+w_opt = mod "opt ⌥"
 
 
 backspace :: Combo
-backspace = special $ key "backspace"
+backspace = special $ key "backspace ⌫"
 
 
 escape :: Combo
-escape = special $ key "escape"
+escape = special $ key "escape ⎋"
 
 
 enter :: Combo
-enter = special $ key "enter"
+enter = special $ key "enter ↵"
 
 
 space :: Combo
-space = special $ key "space"
+space = special $ key "space ␣"
 
 
 tab :: Combo
-tab = special $ key "tab"
+tab = special $ key "tab ⇥"
 
 
 shift :: Combo
-shift = special $ key "shift"
+shift = special $ key "shift ⇧"
 
 
 delete :: Combo
-delete = special $ key "delete"
+delete = special $ key "delete ⌦"
 
 
 ctrl :: Combo
-ctrl = special $ key "ctrl"
+ctrl = special $ key "ctrl ^"
 
 
 cmd :: Combo
-cmd = special $ key "cmd"
+cmd = special $ key "cmd ⌘"
 
 
 alt :: Combo
-alt = special $ key "alt"
+alt = special $ key "alt ⎇"
 
 
 opt :: Combo
-opt = special $ key "opt"
+opt = special $ key "opt ⌥"
 
 
 plus :: Combo
@@ -106,7 +106,7 @@ minus = key "-"
 
 
 arrows :: Combo
-arrows = special $ key "arrow keys"
+arrows = special $ key "arrow keys ◀ ▶ ▲ ▼"
 
 
 -- ↵

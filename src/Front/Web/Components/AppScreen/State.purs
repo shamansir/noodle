@@ -454,6 +454,7 @@ nextHelpContext state pStats =
             hasNodes = pStats.nodesCount > 0
             hasLinks = pStats.linksCount > 0
             zoomChanged = state.zoom /= 1.0
+            commandInputOpen = KL.isCommandInputOpen state.keyboard
         in
             (KL.nextActions kbInput state.keyboard)
             <>
@@ -479,8 +480,10 @@ nextHelpContext state pStats =
                     , HT.PatchArea $ HT.G_OneNode HT.M_FinishEditingInletValue
                     ]
                 Nothing ->
-                    [ HT.PatchArea $ HT.G_OneNode HT.M_SpawnValueEditor
-                    ]
+                    if hasNodes && not commandInputOpen then
+                        [ HT.PatchArea $ HT.G_OneNode HT.M_SpawnValueEditor
+                        ]
+                    else []
             )
             <>
             [ HT.PatchArea HT.KB_ChangeZoom ]

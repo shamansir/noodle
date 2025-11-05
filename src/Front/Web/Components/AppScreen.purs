@@ -8,6 +8,7 @@ import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
 import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (class IsSymbol)
 
 import Control.Monad.State (get, put, modify, modify_) as State
 import Control.Monad.Extra (whenJust, whenJust2, whenJust_)
@@ -991,7 +992,7 @@ panelSymbol state =
         Panels.Documentation -> SidePanel.charOf SP.Documentation.sidePanel state
         Panels.WSStatus      -> SidePanel.charOf SP.WSStatus.sidePanel $ CState.loadWSState state
         Panels.HydraCode     -> SidePanel.charOf SP.HydraCode.sidePanel state.mbHydraProgram
-        Panels.NextActions  -> SidePanel.charOf SP.NextActions.sidePanel state.helpContext
+        Panels.NextActions   -> SidePanel.charOf SP.NextActions.sidePanel state.helpContext
 
 panelSlot
     :: forall loc tk ps fs sr cr m
@@ -1007,10 +1008,14 @@ panelSlot
     -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
 panelSlot params target state =
     case _ of
-        Panels.Console       -> HH.slot_ _sidePanel (target /\ Panels.Console)       (SidePanel.panel target SP.ConsoleLog.panelId SP.ConsoleLog.sidePanel)       $ params /\ state.log
-        Panels.Commands      -> HH.slot_ _sidePanel (target /\ Panels.Commands)      (SidePanel.panel target SP.Commands.panelId SP.Commands.sidePanel)           $ params /\ state.history
-        Panels.Tree          -> HH.slot_ _sidePanel (target /\ Panels.Tree)          (SidePanel.panel target SP.Tree.panelId SP.Tree.sidePanel)                   $ params /\ state.network
-        Panels.Documentation -> HH.slot_ _sidePanel (target /\ Panels.Documentation) (SidePanel.panel target SP.Documentation.panelId SP.Documentation.sidePanel) $ params /\ state
-        Panels.WSStatus      -> HH.slot_ _sidePanel (target /\ Panels.WSStatus)      (SidePanel.panel target SP.WSStatus.panelId SP.WSStatus.sidePanel)           $ params /\ CState.loadWSState state
-        Panels.HydraCode     -> HH.slot_ _sidePanel (target /\ Panels.HydraCode)     (SidePanel.panel target SP.HydraCode.panelId SP.HydraCode.sidePanel)         $ params /\ state.mbHydraProgram
-        Panels.NextActions  -> HH.slot_ _sidePanel (target /\ Panels.NextActions)  (SidePanel.panel target SP.NextActions.panelId SP.NextActions.sidePanel)   $ params /\ state.helpContext
+        Panels.Console       -> mkPanelSlot Panels.Console       SP.ConsoleLog.panelId    SP.ConsoleLog.sidePanel    state.log
+        Panels.Commands      -> mkPanelSlot Panels.Commands      SP.Commands.panelId      SP.Commands.sidePanel      state.history
+        Panels.Tree          -> mkPanelSlot Panels.Tree          SP.Tree.panelId          SP.Tree.sidePanel          state.network
+        Panels.Documentation -> mkPanelSlot Panels.Documentation SP.Documentation.panelId SP.Documentation.sidePanel state
+        Panels.WSStatus      -> mkPanelSlot Panels.WSStatus      SP.WSStatus.panelId      SP.WSStatus.sidePanel      $ CState.loadWSState state
+        Panels.HydraCode     -> mkPanelSlot Panels.HydraCode     SP.HydraCode.panelId     SP.HydraCode.sidePanel     state.mbHydraProgram
+        Panels.NextActions   -> mkPanelSlot Panels.NextActions   SP.NextActions.panelId   SP.NextActions.sidePanel   state.helpContext
+    where
+        mkPanelSlot :: forall pid x s. IsSymbol pid => Panels.Which -> Proxy pid -> SidePanel pid x s -> x -> H.ComponentHTML (Action sr cr m) (Slots sr cr m) m
+        mkPanelSlot which panelId spconf x
+            = HH.slot_ _sidePanel (target /\ which) (SidePanel.panel which target panelId spconf) $ params /\ x

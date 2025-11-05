@@ -632,10 +632,10 @@ nextActions input { focus } =
                 when hasNodes
                     [ HT.PatchArea HT.M_HoverForDocumentation
                     , HT.PatchArea $ HT.G_OneNode HT.M_AddToSelection
-                    , HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection
-                    , HT.PatchArea $ HT.G_SomeNodes HT.KB_DeleteNodes
+                    , HT.PatchArea $ HT.G_OneNode HT.KB_StartChoosingNodes
+                    -- , HT.PatchArea $ HT.G_SomeNodes HT.KB_DeleteNodes
+                    , HT.PatchArea $ HT.G_SomeNodes HT.M_DeleteNodes
                     , HT.PatchArea $ HT.G_SomeNodes HT.M_DragNodes
-                    , HT.PatchArea $ HT.G_SomeNodes HT.KB_MoveNodes
                     ]
             <>
                 when hasLinks
@@ -648,9 +648,13 @@ nextActions input { focus } =
         Library ->
             when hasFamilies
             [ HT.Library HT.KB_SelectFamilyToSpawn ]
+            <>
+            comboBackAndCancel
         LibraryFamily _ ->
             when hasFamilies
             [ HT.Library HT.KB_ConfirmFamilyToSpawn ]
+            <>
+            comboBackAndCancel
         PatchesBar ->
             [ HT.Patches HT.KB_CreatePatch
             ] <>
@@ -660,38 +664,62 @@ nextActions input { focus } =
             [ ]
         NodesArea ->
             when hasNodes
-                [ HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection ]
+                [ HT.PatchArea $ HT.G_OneNode HT.KB_ChooseNodeByIndex ]
+            <>
+            comboBackAndCancel
         Node _ ->
             when hasNodes
                 [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectInletsSide
                 , HT.PatchArea $ HT.G_OneNode HT.KB_SelectOutletsSide
                 , HT.PatchArea $ HT.G_SomeNodes HT.KB_DeleteNodes
+                , HT.PatchArea $ HT.G_SomeNodes HT.KB_MoveNodes
                 ]
+            <>
+            comboBackAndCancel
         NodeInlets nidx ->
             when hasInlets
-            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectInlet ] -- TODO: check inlets exist
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectInlet ]
+            <>
+            comboBackAndCancel
         NodeOutlets nidx ->
             when hasOutlets
-            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectOutlet ] -- TODO: check inlets exist
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_SelectOutlet ]
+            <>
+            comboBackAndCancel
         NodeInlet (nidx /\ iidx) ->
             [ HT.PatchArea $ HT.G_OneNode HT.KB_EditInletValue ]
+            <>
+            comboBackAndCancel
         NodeOutlet (nidx /\ oidx) ->
             when hasNodes
             [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo ]
+            <>
+            comboBackAndCancel
         Connecting (nidx /\ oidx) NoTarget ->
-            [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo -- TODO: check more than one node exists
+            when hasMoreThanOneNode
+            [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo
             , HT.PatchArea $ HT.KB_CancelConnectingNodes
             ]
+            <>
+            comboBackAndCancel
         Connecting (nidx /\ oidx) (ToNode nidx') ->
+            when hasMoreThanOneNode
             [ HT.PatchArea $ HT.KB_SelectInletToConnectTo
             , HT.PatchArea $ HT.KB_CancelConnectingNodes
             ]
+            <>
+            comboBackAndCancel
         Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
+            when hasMoreThanOneNode
             [ HT.PatchArea $ HT.KB_ConfirmConnectingNodes
             ]
+                        <>
+            comboBackAndCancel
         SomeNodes nodes ->
             when hasNodes
-                [ HT.PatchArea $ HT.G_OneNode HT.KB_AddToSelection ]
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_ChooseNodeByIndex ]
+            <>
+            comboBackAndCancel
         where
             hasNodes = input.nodesCount > 0
             hasLinks = input.linksCount > 0
@@ -699,4 +727,9 @@ nextActions input { focus } =
             hasFamilies = input.familiesCount > 0
             hasInlets  = input.mbCurrentNode <#> _.inletsCount  <#> (_ > 0) # fromMaybe false
             hasOutlets = input.mbCurrentNode <#> _.outletsCount <#> (_ > 0) # fromMaybe false
+            hasMoreThanOneNode = input.nodesCount > 1
+            comboBackAndCancel =
+                [ HT.GeneralInterface HT.KB_StepBackInKeyboardCombo
+                , HT.GeneralInterface HT.KB_CancelKeyboardCombo
+                ]
             when cond actions = if cond then actions else []

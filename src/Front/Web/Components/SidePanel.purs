@@ -34,6 +34,8 @@ import Noodle.Ui.Tagging as T
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 
+import Front.Shared.Panels (Which(..))
+
 
 type RenderParams =
     { size :: Size
@@ -87,11 +89,12 @@ panel
     :: forall id s v query output m
      . IsSymbol id
     => MonadEffect m
-    => TargetLayer
+    => Which
+    -> TargetLayer
     -> Proxy id
     -> SidePanel id s v
     -> H.Component query (Input s) output m
-panel targetLayer pid config =
+panel which targetLayer pid config =
     H.mkComponent
         { initialState
         , render : render targetLayer
@@ -119,6 +122,7 @@ panel targetLayer pid config =
                 <> "height : " <> show contentHeight <> "px; "
                 <> "width : " <> show contentWidth <> "px; "
                 <> "overflow-y: scroll;"
+                <> "line-height: " <> (show $ _lineHeight which) <> "em;"
             ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]
@@ -177,6 +181,12 @@ panel targetLayer pid config =
 
 charOf :: forall id s v. SidePanel id s v -> s -> Char
 charOf { value, char } = char <<< value
+
+
+_lineHeight :: Which -> Number
+_lineHeight = case _ of
+    NextActions -> 1.6
+    _ -> 1.3
 
 
 -- FIXME: not used

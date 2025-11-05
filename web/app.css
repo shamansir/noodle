@@ -83,3 +83,11 @@ kbd.noodle-help-key-special {
     border-radius: 3px;
     border: 1px solid black;
 }
+
+.noodle-help-code {
+    font-family: monospace;
+    color:rgba(240, 238, 178, 0.8);
+    background-color:rgba(35, 89, 125, 0.8);
+    border-radius: 3px;
+    padding: 1px 3px;
+}

@@ -33,6 +33,7 @@ data GeneralInterfaceAction
     | KB_ToggleSolidBackground
     | KB_ToggleTransparentBackground
     | KB_StepBackInKeyboardCombo
+    | KB_CancelKeyboardCombo
     -- | M_ToggleInterfaceMode
     | G_ObserveKeyboardCombo
 
@@ -81,12 +82,14 @@ data CommandInputAction
 
 data NodeAction
     = M_AddToSelection
-    | KB_AddToSelection
+    | KB_StartChoosingNodes
+    | KB_ChooseNodeByIndex
     | KB_SelectInletsSide
     | KB_SelectOutletsSide
     | KB_SelectInlet
     | KB_SelectOutlet
-    | M_SpawnValueEditor -- ?? Call editro
+    | M_SpawnValueEditor
+    -- | KB_SpawnValueEditor
     | KB_EditInletValue
     | M_FinishEditingInletValue
     | KB_FinishEditingInletValue
@@ -244,6 +247,10 @@ helpText = Tuple.uncurry ht <<< case _ of
         0 /\
         [ st, cont "Press ", key $ K.backspace, cont " to step back in the keyboard combo sequence"
         ]
+    GeneralInterface KB_CancelKeyboardCombo ->
+        0 /\
+        [ st, cont "Press ", key $ K.escape, cont " to cancel keyboard combo sequence"
+        ]
     GeneralInterface G_ObserveKeyboardCombo ->
         -10 /\
         [ st, cont "You can track the keyboard combo sequence in the status bar"
@@ -276,9 +283,9 @@ helpText = Tuple.uncurry ht <<< case _ of
         [ st, cont "Call command input by pressing ", key K.tab ]
     CommandInput KB_EnterCommand ->
          3 /\
-        [ st, cont "Try typing the node family and pressing ", key K.enter, cont ", for example ", code "osc", cont " will spawn the corresponding node"
-        , st, cont "You can also create custom nodes by typing something like ", code ":: <a:Number -> b:Number -> c:Number> => <out>", cont " or ", code ":: <tuple> => <fst -> snd>", cont ", just start with double-semicolon"
-        , st, cont "To close the input without applying, press ", key K.escape
+        [ st, cont "Try typing the node family and pressing ", key K.enter, cont ", for example ", code "osc", cont " will spawn the corresponding node. "
+        , st, cont "You can also create custom nodes by typing something like ", code ":: <a:Number -> b:Number -> c:Number> => <out>", cont " or ", code ":: <tuple> => <fst -> snd>", cont ", just start with double-semicolon. "
+        , st, cont "To close the input without applying, press ", key K.escape, cont ". "
         , st, cont "To apply the command, press ", key K.enter, cont " after entering it"
         ]
 
@@ -300,9 +307,13 @@ helpText = Tuple.uncurry ht <<< case _ of
     PatchArea (G_OneNode M_AddToSelection) ->
         -5 /\
         [ st, cont "To select a node, ", mhover "hover", cont " over it and ", mclick "click", cont " on its body" ]
-    PatchArea (G_OneNode KB_AddToSelection) ->
+    PatchArea (G_OneNode KB_StartChoosingNodes) ->
         2 /\
-        [ st, cont "Press ", key $ K.key "n", cont " to start selecting nodes using keyboard" ]
+        [ st, cont "Press ", key $ K.key "n", cont " to focus on a node or start selecting nodes using keyboard" ]
+    PatchArea (G_OneNode KB_ChooseNodeByIndex) ->
+        5 /\
+        [ st, cont "Press the corresponding ", hindex Node, cont " that is shown close to the node, to focus on it"
+        ]
     PatchArea (G_OneNode KB_SelectInletsSide) ->
         5 /\
         [ st, cont "Press ", key $ K.key "i", cont " to start selecting the particular inlet."
@@ -321,7 +332,7 @@ helpText = Tuple.uncurry ht <<< case _ of
         ]
     PatchArea (G_OneNode M_SpawnValueEditor) ->
         -5 /\
-        [ st, cont "To change the value at the inlet, ", mclick "click", cont " on it and the value editor will open"
+        [ st, cont "To change the value at some inlet, ", mclick "click", cont " on it and the value editor will open"
         ]
     PatchArea (G_OneNode KB_EditInletValue) ->
         3 /\
@@ -475,7 +486,7 @@ _renderLine :: HelpLine -> String
 _renderLine = case _ of
     Start -> "" -- "* "
     Continue s -> StringX.escapeHtml s
-    Code s -> "<code>" <> StringX.escapeHtml s <> "</code>"
+    Code s -> "<code class=\"noodle-help-code\">" <> StringX.escapeHtml s <> "</code>"
     Sequence items ->
         case NEA.uncons items of
             { head, tail } ->
