@@ -83,8 +83,7 @@ type Input =
 
 
 type State =
-    { notListening :: Boolean
-    , shiftPressed :: Boolean
+    { shiftPressed :: Boolean
     , focus :: Focus
     -- , nodeStats :: Maybe { inlets :: Int, outlets :: Int}
     -- , selectedNodes :: Array Int
@@ -93,8 +92,7 @@ type State =
 
 init :: State
 init =
-    { notListening : false
-    , shiftPressed : false
+    { shiftPressed : false
     , focus : Free
     }
 
@@ -127,6 +125,7 @@ data Action
     -- | OpenValueEditor
     = OpenValueEditor NodeIndex InletIndex
     | CloseValueEditor
+    | CloseCommandInput
     -- | MoveNode Int Dir
     -- | FocusOn Focus
     -- | ClearFocus
@@ -184,34 +183,34 @@ trackKeyDown input state kevt =
         shiftPressed = KE.shiftKey kevt
         controlPressed = KE.ctrlKey kevt
         nextState = state { shiftPressed = shiftPressed }
+        someTextInputOpened = case nextState.focus of
+            CommandInput -> true
+            ValueEditor -> true
+            _ -> false
     in
-        if (keyName == "escape") then
+        if (keyName == "escape") || (keyName == "enter" && not shiftPressed && someTextInputOpened) then
+            -- cancel all operations on escape or when enter was pressed without `shift` while editing text
             ( nextState
                { focus = Free
-               , notListening = false
                }
             )
-            /\ [ CancelConnectingNodes, CloseValueEditor ]
+            /\ [ CancelConnectingNodes, CloseValueEditor, CloseCommandInput ]
 
-        else if (keyName == "tab") || (keyName == "x") then
+        else if (keyName == "tab") then
             (case nextState.focus of
                 Free ->
                     ( nextState
-                        { focus = CommandInput
-                        , notListening = true
-                        }
+                        { focus = CommandInput }
                     ) /\ [ ]
                 CommandInput ->
                     ( nextState
-                        { focus = Free
-                        , notListening = false
-                        }
+                        { focus = Free }
                     ) /\ [ ]
                 _ ->
                     nextState /\ []
             )
 
-        else if nextState.notListening then -- TODO: same as focus == CommandInput || focus == ValueEditor
+        else if someTextInputOpened then -- keys should not affect logic when user enters something in text input
             nextState /\ []
 
         else if (keyCode == "space") then
@@ -595,7 +594,7 @@ toSequence = case _ of
     Node nidx ->                 [ "n", show nidx ]
     NodeInlets nidx ->           [ "n", show nidx, "i" ] -- ⊥
     NodeOutlets nidx ->          [ "n", show nidx, "o" ] -- ⊤
-    NodeInlet (nidx /\ iidx)  -> [ "n", show nidx, "i", show iidx ]
+    NodeInlet  (nidx /\ iidx) -> [ "n", show nidx, "i", show iidx ]
     NodeOutlet (nidx /\ oidx) -> [ "n", show nidx, "o", show oidx ]
     Connecting (nidx /\ oidx)
         NoTarget              -> [ "n", show nidx, "o", show oidx, "c" ]

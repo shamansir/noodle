@@ -864,6 +864,8 @@ performKbAction ploc = case _ of
                 -- H.tell _patchArea HTML $ PatchArea.CallInletValueEditor nodeR inletR
     KL.CloseValueEditor ->
         H.tell _patchArea HTML PatchArea.ValueEditorClosedByUser
+    KL.CloseCommandInput ->
+        handleAction ploc $ FromCommandInput CommandInput.CloseCommandInput
     KL.FinishConnecting (KL.NodeIndex fromNodeIndex) (KL.OutletIndex outletIndex) (KL.NodeIndex toNodeIndex) (KL.InletIndex inletIndex) -> do
         mbCurrentPatch <- H.get <#> CState.currentPatch
         let curPatchNodes = mbCurrentPatch <#> Patch.allNodes # fromMaybe []

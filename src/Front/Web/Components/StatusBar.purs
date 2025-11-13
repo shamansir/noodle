@@ -152,7 +152,7 @@ handleQuery = case _ of
         pure $ Just a
 
 
-fontSize = 9.0 :: Number
+fontSize = 9.0 :: Number -- TODO: Font size by Cell.Which
 
 
 cellSlot
