@@ -1,0 +1,285 @@
+<script src="https://unpkg.com/hydra-synth"></script>
+<script>
+      // Initialize Hydra
+  const hydra = new Hydra({ detectAudio: false });
+
+  // Comprehensive Hydra call logger
+function createHydraLogger() {
+  const callLog = [];
+  const originals = new Map();
+
+  // All Hydra source functions (return textures/sources)
+  const srcFunctions = [
+    'noise', 'voronoi', 'osc', 'shape', 'gradient', 'src', 'solid', 'prev'
+  ];
+
+  // Coordinate transformation functions
+  const coordFunctions = [
+    'rotate', 'scale', 'pixelate', 'repeat', 'repeatX', 'repeatY',
+    'kaleid', 'scroll', 'scrollX', 'scrollY'
+  ];
+
+  // Color transformation functions
+  const colorFunctions = [
+    'posterize', 'shift', 'invert', 'contrast', 'brightness', 'luma',
+    'thresh', 'color', 'saturate', 'hue', 'colorama', 'sum', 'r', 'g', 'b', 'a'
+  ];
+
+  // Blend/combine functions (take another source as first arg)
+  const blendFunctions = [
+    'add', 'sub', 'layer', 'blend', 'mult', 'diff', 'mask'
+  ];
+
+  // Modulate functions (take another source as first arg)
+  const modulateFunctions = [
+    'modulate', 'modulateRepeat', 'modulateRepeatX', 'modulateRepeatY',
+    'modulateKaleid', 'modulateScrollX', 'modulateScrollY',
+    'modulateScale', 'modulatePixelate', 'modulateRotate', 'modulateHue'
+  ];
+
+  // Output function
+  const outputFunctions = ['out'];
+
+  // All functions combined
+  const allFunctions = [
+    ...srcFunctions,
+    ...coordFunctions,
+    ...colorFunctions,
+    ...blendFunctions,
+    ...modulateFunctions,
+    ...outputFunctions
+  ];
+
+  // Helper to check if argument is a Hydra source/texture
+  function isHydraSource(arg) {
+    return arg && (
+      typeof arg === 'object' &&
+      (arg._reglType === 'texture2d' ||
+       arg._reglType === 'textureCube' ||
+       arg.type === 'GlslSource' ||
+       typeof arg.out === 'function')
+    );
+  }
+
+  // Helper to serialize arguments
+  function serializeArg(arg) {
+    if (isHydraSource(arg)) {
+      // Return a reference to the source
+      return { type: 'hydra_source', id: arg._hydra_log_id || 'unknown' };
+    } else if (typeof arg === 'function') {
+      return { type: 'function', code: arg.toString() };
+    } else if (Array.isArray(arg)) {
+      return arg.map(serializeArg);
+    } else if (typeof arg === 'object' && arg !== null) {
+      return { type: 'object', value: JSON.stringify(arg) };
+    }
+    return arg;
+  }
+
+  // Wrap source functions (osc, noise, etc.)
+  srcFunctions.forEach(name => {
+    if (window[name]) {
+      originals.set(name, window[name]);
+      window[name] = function(...args) {
+        const result = originals.get(name).apply(this, args);
+
+        // Assign unique ID to this source for tracking
+        const sourceId = `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        result._hydra_log_id = sourceId;
+
+        callLog.push({
+          type: 'src',
+          method: name,
+          args: args.map(serializeArg),
+          sourceId: sourceId,
+          timestamp: Date.now()
+        });
+
+        return result;
+      };
+    }
+  });
+
+  // Helper to wrap prototype methods
+  function wrapPrototypeMethod(methodName, methodType) {
+    // Get a sample source to access the prototype
+    const sampleSource = window.osc ? window.osc(1) : null;
+    if (!sampleSource || !sampleSource[methodName]) return;
+
+    const proto = Object.getPrototypeOf(sampleSource);
+    if (proto[methodName] && !originals.has(methodName)) {
+      originals.set(methodName, proto[methodName]);
+      proto[methodName] = function(...args) {
+        const parentId = this._hydra_log_id || 'unknown';
+
+        // Track which argument is a texture/source
+        const processedArgs = args.map((arg, idx) => {
+          if (isHydraSource(arg)) {
+            return {
+              type: 'hydra_source',
+              id: arg._hydra_log_id || 'unknown',
+              argIndex: idx
+            };
+          }
+          return serializeArg(arg);
+        });
+
+        callLog.push({
+          type: methodType,
+          method: methodName,
+          args: processedArgs,
+          parentId: parentId,
+          timestamp: Date.now()
+        });
+
+        const result = originals.get(methodName).apply(this, args);
+
+        // Preserve the ID through the chain
+        if (result && typeof result === 'object') {
+          result._hydra_log_id = parentId;
+        }
+
+        return result;
+      };
+    }
+  }
+
+  // Wrap all transform functions
+  [...coordFunctions, ...colorFunctions].forEach(name =>
+    wrapPrototypeMethod(name, 'transform')
+  );
+
+  // Wrap blend functions (these take another source)
+  blendFunctions.forEach(name =>
+    wrapPrototypeMethod(name, 'blend')
+  );
+
+  // Wrap modulate functions (these take another source)
+  modulateFunctions.forEach(name =>
+    wrapPrototypeMethod(name, 'modulate')
+  );
+
+  // Wrap output function
+  wrapPrototypeMethod('out', 'output');
+
+  return {
+    getLog: () => callLog,
+
+    clear: () => {
+      callLog.length = 0;
+    },
+
+    toString: () => JSON.stringify(callLog, null, 2),
+
+    // Convert log to readable Hydra code
+    toHydraCode: () => {
+      if (callLog.length === 0) return '';
+
+      const chains = new Map(); // sourceId -> array of operations
+      let outputChain = null;
+
+      callLog.forEach(entry => {
+        if (entry.type === 'src') {
+          chains.set(entry.sourceId, [{
+            method: entry.method,
+            args: entry.args
+          }]);
+        } else if (entry.parentId) {
+          const chain = chains.get(entry.parentId);
+          if (chain) {
+            chain.push({
+              method: entry.method,
+              args: entry.args,
+              type: entry.type
+            });
+
+            if (entry.type === 'output') {
+              outputChain = entry.parentId;
+            }
+          }
+        }
+      });
+
+      // Generate code for the main chain
+      if (outputChain && chains.has(outputChain)) {
+        return generateChainCode(chains.get(outputChain), chains);
+      }
+
+      return '// No complete chain found';
+    },
+
+    // Get structured data for analysis
+    getStructured: () => {
+      const sources = callLog.filter(e => e.type === 'src');
+      const transforms = callLog.filter(e => e.type === 'transform');
+      const blends = callLog.filter(e => e.type === 'blend' || e.type === 'modulate');
+      const outputs = callLog.filter(e => e.type === 'output');
+
+      return { sources, transforms, blends, outputs };
+    }
+  };
+
+  // Helper to generate code from a chain
+  function generateChainCode(chain, allChains) {
+    if (!chain || chain.length === 0) return '';
+
+    const first = chain[0];
+    let code = `${first.method}(${formatArgs(first.args, allChains)})`;
+
+    for (let i = 1; i < chain.length; i++) {
+      const op = chain[i];
+      code += `\n  .${op.method}(${formatArgs(op.args, allChains)})`;
+    }
+
+    return code;
+  }
+
+  // Helper to format arguments
+  function formatArgs(args, allChains) {
+    return args.map(arg => {
+      if (arg && arg.type === 'hydra_source' && allChains.has(arg.id)) {
+        // Generate code for nested source
+        const nestedChain = allChains.get(arg.id);
+        return generateChainCode(nestedChain, allChains);
+      } else if (Array.isArray(arg)) {
+        return `[${arg.join(', ')}]`;
+      } else if (typeof arg === 'object' && arg !== null) {
+        return JSON.stringify(arg);
+      }
+      return arg;
+    }).join(', ');
+  }
+}
+
+// Initialize after Hydra is loaded
+let hydraLogger;
+if (typeof window !== 'undefined') {
+  // Wait for Hydra to be ready
+  if (window.osc) {
+    hydraLogger = createHydraLogger();
+    window.hydraLogger = hydraLogger;
+  } else {
+    console.warn('Hydra not found. Logger will initialize when Hydra is loaded.');
+    window.addEventListener('load', () => {
+      if (window.osc) {
+        hydraLogger = createHydraLogger();
+        window.hydraLogger = hydraLogger;
+      }
+    });
+  }
+}
+
+// Usage examples:
+// hydraLogger.getLog()           // Get raw log
+// hydraLogger.toHydraCode()      // Get Hydra code
+// hydraLogger.getStructured()    // Get organized data
+// hydraLogger.clear()            // Clear log
+
+osc(5, 0.125).colorama(1)
+  .luma(0.125).add(shape(1, 0.5).luma(2).diff(gradient(1)))
+  .diff(osc(-1, -0.25)).blend(o0).color(0, 2.5, 1.75)
+  .out()
+
+console.log(hydraLogger.toHydraCode());
+
+</script>
