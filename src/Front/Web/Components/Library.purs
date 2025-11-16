@@ -174,6 +174,7 @@ render ptk HTML state =
             -- CSS.backgroundColor $ C.transparent
             -- HHP.position HHP.Rel { x : 5.0, y : headerHeight + slopeFactor * 2.0 }
         , HHP.class_ $ H.ClassName "library-scrollbar"
+        , HHP.tabIndex $ -1
         ]
         $ mapWithIndex familyButton state.families
 

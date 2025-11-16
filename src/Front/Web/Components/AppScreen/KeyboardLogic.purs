@@ -183,20 +183,33 @@ trackKeyDown input state kevt =
         shiftPressed = KE.shiftKey kevt
         controlPressed = KE.ctrlKey kevt
         nextState = state { shiftPressed = shiftPressed }
+        valueEditorOpened = input.valueEditorOpened -- FIXME: not in sync with nextState.focus, check:
+            -- case nextState.focus of
+            --     ValueEditor -> true
+            --     _ -> false
         someTextInputOpened = case nextState.focus of
             CommandInput -> true
             ValueEditor -> true
             _ -> false
     in
-        if (keyName == "escape") || (keyName == "enter" && not shiftPressed && someTextInputOpened) then
-            -- cancel all operations on escape or when enter was pressed without `shift` while editing text
+        if (keyName == "escape") then
+            -- cancel all operations on escape
             ( nextState
                { focus = Free
                }
             )
-            /\ [ CancelConnectingNodes, CloseValueEditor, CloseCommandInput ]
+            /\ [ CancelConnectingNodes, CloseValueEditor, CloseCommandInput ] -- TODO: match to current focus, dont't cancel all blindly
 
-        else if (keyName == "tab") then
+        else if (valueEditorOpened && keyName == "enter" && not shiftPressed) then
+            -- cancel operations when enter was pressed without `shift` while editing text
+            ( nextState
+               { focus = Free
+               }
+            )
+            /\ [ CloseValueEditor ]
+             -- FIXME: command input is closed by UI separately, should be moved here in logic
+
+        else if (keyName == "tab") then -- FIXME: the browser owns focus by Tab
             (case nextState.focus of
                 Free ->
                     ( nextState
@@ -241,6 +254,7 @@ trackKeyDown input state kevt =
                     nextState /\ if input.valueEditorOpened then [ CloseValueEditor ] else []
                 LibraryFamily idx ->
                     nextState
+                        { focus = Free }
                     /\ [ SpawnNode $ FamilyIndex idx ]
                 Connecting (nidx /\ oidx)
                     (ToInlet (nidx' /\ iidx)) ->
@@ -549,7 +563,7 @@ indexToChar idx =
     else "."
 
 
-whichToIndex :: Int -> Int -- FIXME: `kevt.which` is deprecated so there is no use for this function
+whichToIndex :: Int -> Int
 whichToIndex which =
     if which >= digit0Pos && which <= digit9Pos then which - digit0Pos
     else if which >= upperAPos && which <= upperZPos then 10 + which - upperAPos

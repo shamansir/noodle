@@ -17,7 +17,7 @@ import Data.String.CodeUnits as CU
 
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Properties (style, ref) as HHP
+import Halogen.HTML.Properties (style, ref, tabIndex) as HHP
 import Halogen.HTML.Properties.Extra (Position(..), position_, fontSize_) as HHP
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
@@ -123,6 +123,7 @@ panel which targetLayer pid config =
                 <> "width : " <> show contentWidth <> "px; "
                 <> "overflow-y: scroll;"
                 <> "line-height: " <> (show $ _lineHeight which) <> "em;"
+            , HHP.tabIndex $ -1
             ]
             [ HH.slot _rawHtml unit RawHTML.component { html: htmlText, elRef: panelContentRef } absurd
             ]

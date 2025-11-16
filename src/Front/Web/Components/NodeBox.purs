@@ -256,7 +256,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                     ]
                                 , HS.text
                                     [ HSA.fill $ Just controlButtonContentColor
-                                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 22.0
+                                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px controlButtonFontSize
                                     , HSA.dominant_baseline HSA.Central
                                     , HSA.transform [ HSA.Translate (-1.5) 3.0 ]
                                     ]
@@ -444,15 +444,15 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                         KL.InletSelected _ ->  _.i100 Palette.green
                                         KL.OutletsOpen ->      _.i300 Palette.purple
                                         KL.OutletSelected _ -> _.i100 Palette.purple
-        controlButtonContent =  case keyboardFocus of
-                                        KL.NoFocusedNode ->      "✣"
-                                        KL.NodeOpen n ->         KL.indexToChar n
-                                        KL.NodeSemiOpen n ->     KL.indexToChar n
-                                        KL.NodeSelected ->       "◉"
-                                        KL.InletsOpen ->         "⊥"
-                                        KL.InletSelected in_ ->  "⊥" <> KL.indexToChar in_
-                                        KL.OutletsOpen ->        "⊤"
-                                        KL.OutletSelected on_ -> "⊤" <> KL.indexToChar on_
+        controlButtonFontSize /\ controlButtonContent =  case keyboardFocus of
+                                        KL.NoFocusedNode ->      20.0 /\ "✣"
+                                        KL.NodeOpen n ->         22.0 /\ KL.indexToChar n
+                                        KL.NodeSemiOpen n ->     22.0 /\ KL.indexToChar n
+                                        KL.NodeSelected ->       22.0 /\ "◉"
+                                        KL.InletsOpen ->         20.0 /\ "⊥"
+                                        KL.InletSelected in_ ->  14.0 /\ ("⊥" <> KL.indexToChar in_)
+                                        KL.OutletsOpen ->        20.0 /\ "⊤"
+                                        KL.OutletSelected on_ -> 14.0 /\ ("⊤" <> KL.indexToChar on_)
 
         renderInlet idx inletDef rect =
             HS.g
