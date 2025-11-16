@@ -12,10 +12,11 @@ import Data.Set (empty, fromFoldable) as Set
 import Data.Map (Map)
 import Data.Map (empty, insert, lookup, delete) as Map
 import Data.Map.Extra (update', lookupKey) as Map
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Traversable (traverse)
 import Data.Text.Format (Tag) as T
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (length, snoc, index) as Array
+import Data.Array (length, snoc, index, findIndex) as Array
 import Data.UniqueHash (UniqueHash)
 
 import Noodle.Id (PatchR, NodeR, FamilyR) as Id
@@ -433,6 +434,14 @@ loadKbInput state =
         , linksCount
         , zoomChanged
         }
+
+
+findNodeIndexInCurrentPatch :: forall tk ps fs sr cr m. Id.NodeR -> State _ tk ps fs sr cr m -> Maybe Int
+findNodeIndexInCurrentPatch nodeR state =
+    currentPatch state >>= \patch ->
+        Patch.allNodes patch
+            <#> RawNode.id
+            # Array.findIndex (_ == nodeR)
 
 
 resetKeyboardFocus :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m

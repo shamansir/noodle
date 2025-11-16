@@ -407,6 +407,10 @@ selectedNode = _.focus >>> case _ of
     _ -> Nothing
 
 
+toggleNodeSelect :: Int -> State -> State
+toggleNodeSelect = const identity -- TODO: implement
+
+
 navigateIfNeeded :: Either Dir Int -> Input -> Focus -> Focus
 navigateIfNeeded (Right num) input curFocus =
     case curFocus of

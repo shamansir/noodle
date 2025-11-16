@@ -147,6 +147,7 @@ data Output sr cr
     | CloseValueEditor
     | TrackValueSend Id.NodeR Id.InletR cr
     | MoveNode Id.NodeR Position
+    | ToggleNodeSelect Id.NodeR
     -- | FocusUpdate (Set Id.NodeR)
     | RefreshHelp
     | RequestDocumentation (DocumentationFocus sr cr)
@@ -503,6 +504,8 @@ handleAction = case _ of
                 }
             }
         H.raise RefreshHelp
+    FromNodeBox nodeR (NodeBox.BodyWasClicked mevt) -> do
+        H.raise $ ToggleNodeSelect nodeR
     FromNodeBox nodeR (NodeBox.ReportMouseMove mevt) -> do
         state <- H.get
         handleAction $ PatchAreaMouseMove $
