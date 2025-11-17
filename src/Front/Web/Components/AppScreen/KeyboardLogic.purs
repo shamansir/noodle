@@ -408,7 +408,7 @@ selectedNode = _.focus >>> case _ of
 
 
 toggleNodeSelect :: Int -> State -> State
-toggleNodeSelect = const identity -- TODO: implement
+toggleNodeSelect n = _ { focus = Node n } -- TODO: implement
 
 
 navigateIfNeeded :: Either Dir Int -> Input -> Focus -> Focus

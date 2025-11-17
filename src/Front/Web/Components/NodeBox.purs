@@ -102,7 +102,7 @@ data Action sterpr chrepr m
     | MouseMove MouseEvent
     | HeaderClick MouseEvent
     | BodyClick MouseEvent
-    | DragButtonClick MouseEvent
+    | ControlButtonClick MouseEvent
     | RemoveButtonClick MouseEvent
     | InletClick MouseEvent Id.InletR
     | InletValueClick MouseEvent PositionXY Id.InletR (ValueInChannel chrepr)
@@ -114,6 +114,7 @@ data Action sterpr chrepr m
 
 data Output strepr chrepr
     = HeaderWasClicked MouseEvent
+    | ControlButtonWasClicked MouseEvent
     | BodyWasClicked MouseEvent
     | ReportMouseMove MouseEvent
     | InletWasClicked Id.InletR
@@ -230,12 +231,12 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                             ]
                             [ HS.path
                                 [ HSA.d $ Paths.nodeTitle { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
-                                , HSA.fill   $ Just $ P.hColorOf $ if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
-                                , HSA.stroke $ Just $ P.hColorOf $ if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+                                , HSA.fill   $ Just $ P.hColorOf headerFillColor
+                                , HSA.stroke $ Just $ P.hColorOf headerStrokeColor
                                 , HSA.strokeWidth 1.5
                                 ]
                             , HS.text
-                                [ HSA.fill $ Just $ P.hColorOf $ _.i100 Palette.yellow
+                                [ HSA.fill $ Just $ P.hColorOf headerTextColor
                                 , HSA.font_size $ HSA.FontSizeLength $ HSA.Px titleFontSize
                                 , HSA.dominant_baseline HSA.Hanging
                                 , HSA.transform
@@ -270,7 +271,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                             [ hoverCatchingRect
                                 { x : 0.0, y : 0.0 }
                                 rect.size
-                                (if controlButtonActive then Just DragButtonClick else Nothing)
+                                (if controlButtonActive then Just ControlButtonClick else Nothing)
                                 IsOverControlButton
                             ]
                     Layouts.Inlet n def ->
@@ -426,35 +427,49 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
             IsOverOutlet outletDef _ -> (_.name $ NT.unwrap outletDef) == outletR
             _ -> false
 
+        -- headerFillColor = if not beingDragged then _.i900 Palette.yellow else _.i900 Palette.magenta
+        headerFillColor = if not beingDragged then (if inKeyboardFocus then _.i900 Palette.blue else _.i900 Palette.yellow) else _.i900 Palette.magenta
+        -- headerStrokeColor = if not beingDragged then _.i100 Palette.yellow else _.i100 Palette.magenta
+        headerStrokeColor = if not beingDragged then (if inKeyboardFocus then _.i100 Palette.blue else _.i100 Palette.yellow) else _.i100 Palette.magenta
+        -- headerTextColor = _.i100 Palette.yellow
+        headerTextColor = (if inKeyboardFocus then _.i100 Palette.blue else _.i100 Palette.yellow)
+
         controlButtonBackColor    = P.hColorOf $ if beingDragged then _.i900 Palette.magenta else
-                                    case keyboardFocus of
-                                        KL.NoFocusedNode ->    _.i900 Palette.yellow
-                                        KL.NodeSelected ->     _.i900 Palette.blue
-                                        KL.NodeOpen _ ->       _.i900 Palette.base_
-                                        KL.NodeSemiOpen _ ->   _.i900 Palette.base_
-                                        KL.InletsOpen ->       _.i900 Palette.blue
-                                        KL.InletSelected _ ->  _.i900 Palette.blue
-                                        KL.OutletsOpen ->      _.i900 Palette.blue
-                                        KL.OutletSelected _ -> _.i900 Palette.blue
+                                    case mouseFocus of
+                                        IsOverControlButton -> _.i900 Palette.yellow
+                                        _ -> case keyboardFocus of
+                                            KL.NoFocusedNode ->    _.i800 Palette.base_
+                                            KL.NodeSelected ->     _.i900 Palette.blue
+                                            KL.NodeOpen _ ->       _.i900 Palette.base_
+                                            KL.NodeSemiOpen _ ->   _.i900 Palette.base_
+                                            KL.InletsOpen ->       _.i900 Palette.blue
+                                            KL.InletSelected _ ->  _.i900 Palette.blue
+                                            KL.OutletsOpen ->      _.i900 Palette.blue
+                                            KL.OutletSelected _ -> _.i900 Palette.blue
         controlButtonContentColor = P.hColorOf $ if beingDragged then _.i100 Palette.magenta else
-                                    case keyboardFocus of
-                                        KL.NoFocusedNode ->    _.i100 Palette.yellow
-                                        KL.NodeOpen _ ->       _.i300 Palette.blue
-                                        KL.NodeSelected ->     _.i100 Palette.orange
-                                        KL.NodeSemiOpen _ ->   _.i300 Palette.orange
-                                        KL.InletsOpen ->       _.i300 Palette.green
-                                        KL.InletSelected _ ->  _.i100 Palette.green
-                                        KL.OutletsOpen ->      _.i300 Palette.purple
-                                        KL.OutletSelected _ -> _.i100 Palette.purple
-        controlButtonFontSize /\ controlButtonContent =  case keyboardFocus of
-                                        KL.NoFocusedNode ->      20.0 /\ "✣"
-                                        KL.NodeOpen n ->         22.0 /\ KL.indexToChar n
-                                        KL.NodeSemiOpen n ->     22.0 /\ KL.indexToChar n
-                                        KL.NodeSelected ->       22.0 /\ "◉"
-                                        KL.InletsOpen ->         20.0 /\ "⊥"
-                                        KL.InletSelected in_ ->  14.0 /\ ("⊥" <> KL.indexToChar in_)
-                                        KL.OutletsOpen ->        20.0 /\ "⊤"
-                                        KL.OutletSelected on_ -> 14.0 /\ ("⊤" <> KL.indexToChar on_)
+                                    case mouseFocus of
+                                        IsOverControlButton -> _.i500 Palette.yellow
+                                        _ -> case keyboardFocus of
+                                            KL.NoFocusedNode ->    _.i500 Palette.base_
+                                            KL.NodeOpen _ ->       _.i300 Palette.blue
+                                            KL.NodeSelected ->     _.i100 Palette.blue -- Palette.orange
+                                            KL.NodeSemiOpen _ ->   _.i300 Palette.orange
+                                            KL.InletsOpen ->       _.i300 Palette.green
+                                            KL.InletSelected _ ->  _.i100 Palette.green
+                                            KL.OutletsOpen ->      _.i300 Palette.purple
+                                            KL.OutletSelected _ -> _.i100 Palette.purple
+        controlButtonFontSize /\ controlButtonContent =
+                                    case mouseFocus of
+                                        IsOverControlButton -> 20.0 /\ "✣"
+                                        _ -> case keyboardFocus of
+                                            KL.NoFocusedNode ->      22.0 /\ "●" -- "✣"
+                                            KL.NodeOpen n ->         22.0 /\ KL.indexToChar n
+                                            KL.NodeSemiOpen n ->     22.0 /\ KL.indexToChar n
+                                            KL.NodeSelected ->       22.0 /\ "◉"
+                                            KL.InletsOpen ->         20.0 /\ "⊥"
+                                            KL.InletSelected in_ ->  14.0 /\ ("⊥" <> KL.indexToChar in_)
+                                            KL.OutletsOpen ->        20.0 /\ "⊤"
+                                            KL.OutletSelected on_ -> 14.0 /\ ("⊤" <> KL.indexToChar on_)
 
         renderInlet idx inletDef rect =
             HS.g
@@ -629,9 +644,9 @@ handleAction ptk = case _ of
     BodyClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ BodyWasClicked mevt
-    DragButtonClick mevt -> do
+    ControlButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
-        H.raise $ HeaderWasClicked mevt
+        H.raise $ ControlButtonWasClicked mevt
     RemoveButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked

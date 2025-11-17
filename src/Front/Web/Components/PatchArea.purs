@@ -460,7 +460,9 @@ handleAction = case _ of
             \_ -> do
                 H.modify_ _ { lockOn = NoLock }
                 H.raise RefreshHelp
-    FromNodeBox nodeR (NodeBox.HeaderWasClicked mevt)-> do
+    FromNodeBox nodeR (NodeBox.HeaderWasClicked mevt) -> do
+        H.raise $ ToggleNodeSelect nodeR
+    FromNodeBox nodeR (NodeBox.ControlButtonWasClicked mevt) -> do
         state <- H.get
         case (draggingNode state) of -- FIXME: should cancel creating link before starting to drag
             Nothing -> do
