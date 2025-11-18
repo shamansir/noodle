@@ -3,7 +3,7 @@
 // https://cdn.jsdelivr.net/npm/virtual-webgl
 // https://unpkg.com/hydra-synth
 
-const INSTANCES_COLS = 3;
+const INSTANCES_COLS = 2;
 const INSTANCES_ROWS = 3;
 const TOTAL_WIDTH = 200;
 const TOTAL_HEIGHT = 200;
@@ -18,7 +18,7 @@ let instances = [];
 const hg = new Hydra({ makeGlobal : false, detectAudio: false, width : TOTAL_WIDTH, height : TOTAL_HEIGHT }).synth;
 
 let index;
-let x, y; let col, row;
+let x, y; let col, row, revCol, revRow;
 let value;
 
 console.log('------');
@@ -40,19 +40,24 @@ for (index = 0; index < INSTANCES_COUNT; index++) {
         row = Math.floor(index / INSTANCES_COLS);
         xPos = col / INSTANCES_COLS;
         yPos = row / INSTANCES_ROWS;
-        maskScrollX = (col + 0.5) / INSTANCES_COLS - 0.5;
-        maskScrollY = (row + 0.5) / INSTANCES_ROWS - 0.5;
+        revCol = INSTANCES_COLS - 1 - col;
+        revRow = INSTANCES_ROWS - 1 - row;
+        maskScrollX = ((INSTANCES_COLS - 1 - col) + 0.5) / INSTANCES_COLS - 0.5;
+        maskScrollY = ((INSTANCES_ROWS - 1 - row) + 0.5) / INSTANCES_ROWS - 0.5;
         console.log('index', index, 'value', value, 'x', x, 'y', y, 'xPos', xPos, 'yPos', yPos);
+        console.log('row', row, 'col', col, 'revRow', revRow, 'revCol', revCol);
         mask = hg.shape(4, 1, 0.0001)
                    .scale(1, scaleXFactor, scaleYFactor)
                    .scrollX(maskScrollX)
                    .scrollY(maskScrollY);
         // instance = hg.osc(60, 0.1, value);
-        // instance = hg.shape(2 + index)
-        instance = hg.solid(0, 0, value);
-                   // .scale(1, scaleXFactor, scaleYFactor)
-                   // .scrollX(xPos)
-                   // .scrollY(yPos);
+        instance = hg.shape(3 + index, 0.3, 0.09)
+        // instance = hg.solid(0, 0, value);
+                   .scale(1, scaleXFactor, scaleYFactor)
+                   .scrollX(maskScrollX)
+                   .scrollY(maskScrollY);
+                   // .scrollX(1.0 - maskScrollX)
+                   // .scrollY(1.0 - maskScrollY);
         start.layer(instance.mask(mask));
 }
 
