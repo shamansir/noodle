@@ -368,8 +368,8 @@ render ploc _ state =
                                     [ panelSlot sidePanelParams HTML state which ]
 
                             Ui.StatusBarSection n which ->
-                                HS.g
-                                    [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                                HH.div
+                                    [ HHP.position HHP.Abs { x : rect.pos.x, y : rect.pos.y } ]
                                     [ StatusBar.cellSlot _statusBarCell HTML rect.size (FromStatusBarCell which) statusBarCellInput which ]
 
                             _ -> HH.div [] []

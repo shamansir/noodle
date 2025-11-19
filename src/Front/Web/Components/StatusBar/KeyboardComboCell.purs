@@ -8,6 +8,7 @@ import Data.String (joinWith) as String
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HHP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
@@ -57,14 +58,20 @@ component targetLayer =
                 , HSA.dominant_baseline HSA.Central
                 , HSA.transform [ HSA.Translate 0.0 11.0 ]
                 ]
-                [ HH.text $ fullText state ]
+                [ {- HH.text $ fullText state -} ]
             ]
 
     render HTML state =
-        HH.span [] []
+        fullHtmlCombo state
         -- HH.span [ {- HHP.style "postion: absolute;" -} ] [ HH.text "HTML:TEST" ]
 
-    fullText = KL.toSequence >>> String.joinWith "-"
+    fullPlainText = KL.toSequence >>> map wrapHtmlPlain >>> String.joinWith "-"
+
+    fullHtmlCombo = KL.toSequence >>> map htlmKey >>> HH.span []
+
+    htlmKey key = HH.kbd [ HHP.class_ $ H.ClassName "noodle-help-key" ] [ HH.text key ]
+
+    wrapHtmlPlain key = "<kbd class=\"noodle-help-key\">" <> key <> "</kbd>"
 
     handleAction = case _ of
         Initialize ->
