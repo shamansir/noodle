@@ -463,13 +463,13 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                         IsOverControlButton -> 20.0 /\ "✣"
                                         _ -> case keyboardFocus of
                                             KL.NoFocusedNode ->      22.0 /\ "●" -- "✣"
-                                            KL.NodeOpen n ->         22.0 /\ KL.indexToChar n
-                                            KL.NodeSemiOpen n ->     22.0 /\ KL.indexToChar n
+                                            KL.NodeOpen n ->         22.0 /\ KL.showAsAxis n
+                                            KL.NodeSemiOpen n ->     22.0 /\ KL.showAsAxis n
                                             KL.NodeSelected ->       22.0 /\ "◉"
                                             KL.InletsOpen ->         20.0 /\ "⊥"
-                                            KL.InletSelected in_ ->  14.0 /\ ("⊥" <> KL.indexToChar in_)
+                                            KL.InletSelected in_ ->  14.0 /\ ("⊥" <> KL.showAsAxis in_)
                                             KL.OutletsOpen ->        20.0 /\ "⊤"
-                                            KL.OutletSelected on_ -> 14.0 /\ ("⊤" <> KL.indexToChar on_)
+                                            KL.OutletSelected on_ -> 14.0 /\ ("⊤" <> KL.showAsAxis on_)
 
         renderInlet idx inletDef rect =
             HS.g
@@ -492,7 +492,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                             , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                             ]
                             [ HH.text $ show idx ]
-                    KL.InletSelected in_ ->
+                    KL.InletSelected (KL.InletIndex in_) ->
                         HS.text
                             [ HSA.x $ -3.0
                             , HSA.fill $ Just $ P.hColorOf $ if idx == in_ then _.i50 Palette.red else _.i600 Palette.blue
@@ -554,7 +554,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                             , HSA.font_size $ HSA.FontSizeLength $ HSA.Px channelFontSize
                             ]
                             [ HH.text $ show idx ]
-                    KL.OutletSelected on_ ->
+                    KL.OutletSelected (KL.OutletIndex on_) ->
                         HS.text
                             [ HSA.x $ -3.0
                             , HSA.fill $ Just $ P.hColorOf $ if idx == on_ then _.i50 Palette.red else _.i600 Palette.blue

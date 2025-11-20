@@ -22,6 +22,7 @@ import Test.Spec.Ndf.Codegen (spec) as NdfCodegen
 import Test.Spec.Ndf.CommandInput (spec) as CommandInput
 import Test.Spec.Hydra.ReprParsing (spec) as HydraReprParsing
 import Test.Spec.Hydra.ToCode (spec) as HydraToCode
+import Test.Spec.UI.KeyboardLogic (spec) as KeyboardLogic
 
 
 main :: Effect Unit
@@ -50,3 +51,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     NodesAndRecords.spec
   describe "Command Input"
     CommandInput.spec
+  describe "Keyboard Logic"
+    KeyboardLogic.spec

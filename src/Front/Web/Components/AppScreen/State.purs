@@ -418,7 +418,7 @@ loadKbInput state =
         linksCount = mbCurrentPatch <#> Patch.linksCount # fromMaybe 0
         mbCurrentNode = do
             currentPatch <- mbCurrentPatch
-            selNodeIdx <- KL.selectedNode state.keyboard
+            (KL.NodeIndex selNodeIdx) <- KL.selectedNode state.keyboard
             selNode <- Patch.allNodes currentPatch # flip Array.index selNodeIdx -- FIXME: relies only on the fact that `PatchArea` uses `Patch.allNodes` to enumerate them
             pure { inletsCount : RawNode.inletsCount selNode, outletsCount : RawNode.outletsCount selNode }
         familiesCount = Array.length state.families
@@ -441,7 +441,7 @@ findNodeIndexInCurrentPatch nodeR state =
     currentPatch state >>= \patch ->
         Patch.allNodes patch
             <#> RawNode.id
-            # Array.findIndex (_ == nodeR)
+             # Array.findIndex (_ == nodeR)
 
 
 resetKeyboardFocus :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m

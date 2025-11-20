@@ -360,7 +360,7 @@ _makeNodesWithCells state =
                 , zIndex
                 , size
                 , inFocus : Set.member nodeR state.focusedNodes
-                , keyboardFocus : KL.loadNodeFocus nodeIndex state.keyboardFocus
+                , keyboardFocus : KL.loadNodeFocus (KL.NodeIndex nodeIndex) state.keyboardFocus
                 , isDragging
                 , layout : fromMaybe NodeBox.emptyNodeLayout $ _.layout <$> mbGeometry
                 }

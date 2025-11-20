@@ -2,7 +2,6 @@ module Web.Components.AppScreen.KeyboardLogic where
 
 import Prelude
 
-import Blessed.UI.Base.Element.Option (input)
 import Data.Array (head, takeEnd) as Array
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
@@ -14,11 +13,16 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.String as String
 import Data.String.CodePoints as CP
+import Data.String.CodeUnits as CU
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Newtype (class Newtype, wrap, unwrap)
+
+import Noodle.Network (hasPatch)
+
 import Front.Shared.HelpText (Context(..), empty) as HelpText
 import Front.Shared.HelpText (class ProvidesHelp)
 import Front.Shared.HelpText as HT
-import Noodle.Network (hasPatch)
+
 import Web.Components.AppScreen.UiMode (UiMode(..)) as UiMode
 import Web.Components.AppScreen.UiMode (UiMode)
 import Web.UIEvent.KeyboardEvent as KE
@@ -26,47 +30,104 @@ import Web.UIEvent.KeyboardEvent as KE
 -- import Web.Components.PatchArea.Types (LockingTask) as PA
 
 
+data Axis
+    = Number Int -- digits 0-9
+    | Letter String -- chars a-z
+    | Unassigned
+derive instance Eq Axis
+
+instance Show Axis where
+    show = case _ of
+        Number n -> show n
+        Letter s -> s
+        Unassigned -> "?"
+
+class ToAxis a where toAxis :: a -> Axis
+showAsAxis :: forall a. ToAxis a => a -> String
+showAsAxis = toAxis >>> show
+
+
+newtype NodeAxis = NodeAxis Axis
+newtype FamilyAxis = FamilyAxis Axis
+newtype PatchAxis = PatchAxis Axis
+newtype InletAxis = InletAxis Axis
+newtype OutletAxis = OutletAxis Axis
+newtype LinkAxis = LinkAxis Axis
+derive instance Newtype NodeAxis _
+derive instance Newtype FamilyAxis _
+derive instance Newtype PatchAxis _
+derive instance Newtype InletAxis _
+derive instance Newtype OutletAxis _
+derive instance Newtype LinkAxis _
+
+
+newtype NodeIndex = NodeIndex Int
+newtype FamilyIndex = FamilyIndex Int
+newtype PatchIndex = PatchIndex Int
+newtype InletIndex = InletIndex Int
+newtype OutletIndex = OutletIndex Int
+newtype LinkIndex = LinkIndex Int
+derive instance Newtype NodeIndex _
+derive instance Newtype FamilyIndex _
+derive instance Newtype PatchIndex _
+derive instance Newtype InletIndex _
+derive instance Newtype OutletIndex _
+derive instance Newtype LinkIndex _
+derive newtype instance Eq NodeIndex
+derive newtype instance Eq FamilyIndex
+derive newtype instance Eq PatchIndex
+derive newtype instance Eq InletIndex
+derive newtype instance Eq OutletIndex
+derive newtype instance Eq LinkIndex
+instance ToAxis NodeIndex where toAxis = unwrap >>> indexToAxis
+instance ToAxis FamilyIndex where toAxis = unwrap >>> indexToAxis
+instance ToAxis PatchIndex where toAxis = unwrap >>> indexToAxis
+instance ToAxis InletIndex where toAxis = unwrap >>> indexToAxis
+instance ToAxis OutletIndex where toAxis = unwrap >>> indexToAxis
+instance ToAxis LinkIndex where toAxis = unwrap >>> indexToAxis
+
+
 data Focus
     = Free
     | CommandInput
     | ValueEditor
     | Library
-    | LibraryFamily Int
+    | LibraryFamily FamilyIndex
     -- | SidePanels
     -- | SidePanel Int
     | PatchesBar
-    | Patch Int
+    | Patch PatchIndex
     | NodesArea
-    | Node Int
-    | NodeInlets Int
-    | NodeOutlets Int
-    | NodeInlet (Int /\ Int)
-    | NodeOutlet (Int /\ Int)
-    | Connecting (Int /\ Int) ConnectTo
-    | SomeNodes (NonEmptyArray Int)
+    | Node NodeIndex
+    | NodeInlets NodeIndex
+    | NodeOutlets NodeIndex
+    | NodeInlet (NodeIndex /\ InletIndex)
+    | NodeOutlet (NodeIndex /\ OutletIndex)
+    | Connecting (NodeIndex /\ OutletIndex) ConnectTo
+    | SomeNodes (NonEmptyArray NodeIndex)
 
 
 data NodeFocus
     = NoFocusedNode
     | NodeSelected
-    | NodeOpen Int
-    | NodeSemiOpen Int
+    | NodeOpen NodeIndex
+    | NodeSemiOpen NodeIndex
     | InletsOpen
     | OutletsOpen
-    | InletSelected Int
-    | OutletSelected Int
+    | InletSelected InletIndex
+    | OutletSelected OutletIndex
 
 
 data LibraryFocus
     = NoFocusedFamily
     | LibraryOpen
-    | FamilySelected Int
+    | FamilySelected FamilyIndex
 
 
 data ConnectTo
     = NoTarget
-    | ToNode Int
-    | ToInlet (Int /\ Int)
+    | ToNode NodeIndex
+    | ToInlet (NodeIndex /\ InletIndex)
 
 
 type Input =
@@ -112,12 +173,6 @@ instance Show Dir where
         DRight -> "→"
 
 
-newtype FamilyIndex = FamilyIndex Int
-newtype NodeIndex = NodeIndex Int
-newtype InletIndex = InletIndex Int -- TODO: duplicates `Id.InletIndex``
-newtype OutletIndex = OutletIndex Int -- TODO: duplicates `Id.OutletIndex``
-
-
 data Action
     -- = OpenCommandInput
     -- | CloseCommandInput
@@ -147,7 +202,7 @@ data Action
     -- |
 
 
-loadNodeFocus :: Int -> Focus -> NodeFocus
+loadNodeFocus :: NodeIndex -> Focus -> NodeFocus
 loadNodeFocus nodeIdx = case _ of
     NodesArea           -> NodeOpen nodeIdx
     Node n              -> if n == nodeIdx then NodeSelected else NoFocusedNode
@@ -252,20 +307,20 @@ trackKeyDown input state kevt =
             case nextState.focus of
                 ValueEditor ->
                     nextState /\ if input.valueEditorOpened then [ CloseValueEditor ] else []
-                LibraryFamily idx ->
+                LibraryFamily fidx ->
                     nextState
                         { focus = Free }
-                    /\ [ SpawnNode $ FamilyIndex idx ]
+                    /\ [ SpawnNode fidx ]
                 Connecting (nidx /\ oidx)
                     (ToInlet (nidx' /\ iidx)) ->
                     nextState
                         { focus = Free }
                     -- /\ [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
                     /\ []
-                NodeInlet (n /\ i) ->
+                NodeInlet (nidx /\ iidx) ->
                     nextState
                     /\ [ if not input.valueEditorOpened
-                          then OpenValueEditor (NodeIndex n) (InletIndex i)
+                          then OpenValueEditor nidx iidx
                           else CloseValueEditor
                        ]
                 _ -> nextState /\ []
@@ -318,20 +373,20 @@ trackKeyDown input state kevt =
                     NodeOutlet (nidx /\ oidx) ->
                         nextState
                             { focus = Connecting (nidx /\ oidx) NoTarget }
-                        /\ [ StartConnecting (NodeIndex nidx) (OutletIndex oidx) ]
+                        /\ [ StartConnecting nidx oidx ]
                     _ -> nextState /\ []
 
             else if (keyName == "d") || (keyName == "r") then
                 case nextState.focus of
-                    Node nidx -> nextState { focus = Free } /\ [ RemoveNode $ NodeIndex nidx ]
+                    Node nidx -> nextState { focus = Free } /\ [ RemoveNode nidx ]
                     _ -> nextState /\ []
 
             else
 
                 case keyToDir kevt /\ nextState.focus of
 
-                    Just dir /\ Node n ->
-                       nextState /\ [ MoveNode (NodeIndex n) dir ]
+                    Just dir /\ Node nidx ->
+                       nextState /\ [ MoveNode nidx dir ]
 
                     _ -> nextState /\ []
 
@@ -345,7 +400,7 @@ trackKeyDown input state kevt =
                     let nextState' = nextState { focus = navigateIfNeeded eitherNav input nextState.focus }
                     in nextState' /\ case (nextState.focus /\ nextState'.focus) of
                            Connecting _ (ToNode _) /\ Connecting (nidx /\ oidx) (ToInlet (nidx' /\ iidx)) ->
-                                [ FinishConnecting (NodeIndex nidx) (OutletIndex oidx) (NodeIndex nidx') (InletIndex iidx) ]
+                                [ FinishConnecting nidx oidx nidx' iidx ]
                            _ -> []
 
                 Nothing -> nextState /\ []
@@ -393,7 +448,7 @@ waitingForIndex = case _ of
     SomeNodes _ -> true -- waits for next nodes indices
 
 
-selectedNode :: State -> Maybe Int
+selectedNode :: State -> Maybe NodeIndex
 selectedNode = _.focus >>> case _ of
     Node n -> Just n
     NodeInlets n -> Just n
@@ -407,33 +462,39 @@ selectedNode = _.focus >>> case _ of
     _ -> Nothing
 
 
-toggleNodeSelect :: Int -> State -> State
+toggleNodeSelect :: NodeIndex -> State -> State
 toggleNodeSelect n = _ { focus = Node n } -- TODO: implement
 
 
 navigateIfNeeded :: Either Dir Int -> Input -> Focus -> Focus
 navigateIfNeeded (Right num) input curFocus =
     case curFocus of
-        Library         -> LibraryFamily $ min num (input.familiesCount - 1)
-        LibraryFamily _ -> LibraryFamily $ min num (input.familiesCount - 1)
-        PatchesBar      -> Patch $ min num (input.patchesCount - 1)
-        Patch _         -> Patch $ min num (input.patchesCount - 1)
-        NodesArea       -> Node $ min num (input.nodesCount - 1)
-        Node _          -> Node $ min num (input.nodesCount - 1)
+        Library         -> LibraryFamily $ FamilyIndex $ min num (input.familiesCount - 1)
+        LibraryFamily _ -> LibraryFamily $ FamilyIndex $ min num (input.familiesCount - 1)
+        PatchesBar      -> Patch $ PatchIndex $ min num (input.patchesCount - 1)
+        Patch _         -> Patch $ PatchIndex $ min num (input.patchesCount - 1)
+        NodesArea       -> Node $ NodeIndex $ min num (input.nodesCount - 1)
+        Node _          -> Node $ NodeIndex $ min num (input.nodesCount - 1)
         NodeInlet _     -> curFocus
         NodeOutlet _    -> curFocus
-        NodeInlets  nodeIdx -> NodeInlet  $ nodeIdx /\ (min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode)
-        NodeOutlets nodeIdx -> NodeOutlet $ nodeIdx /\ (min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode)
-        Connecting (n /\ o)
-                   NoTarget -> Connecting (n /\ o) $ ToNode $ min num (input.nodesCount - 1)
-        Connecting (n /\ o)
-                (ToNode n') -> Connecting (n /\ o) $ ToInlet (n' /\ (min num $ fromMaybe 0 $ _.inletsCount <$> input.mbCurrentNode))
-        Connecting (n /\ o)
+        NodeInlets  nodeIdx -> NodeInlet  $ nodeIdx /\ (InletIndex  $ min num $ fromMaybe 0 $ _.inletsCount  <$> input.mbCurrentNode)
+        NodeOutlets nodeIdx -> NodeOutlet $ nodeIdx /\ (OutletIndex $ min num $ fromMaybe 0 $ _.outletsCount <$> input.mbCurrentNode)
+        Connecting (NodeIndex n /\ OutletIndex o)
+                NoTarget ->
+                    Connecting (NodeIndex n /\ OutletIndex o)
+                        $ ToNode $ NodeIndex $ min num (input.nodesCount - 1)
+        Connecting (NodeIndex n /\ OutletIndex o)
+                (ToNode (NodeIndex n')) ->
+                    Connecting (NodeIndex n /\ OutletIndex o)
+                        $ ToInlet (NodeIndex n'
+                               /\ (InletIndex $ min num $ fromMaybe 0 $ _.inletsCount <$> input.mbCurrentNode)
+                          )
+        Connecting (NodeIndex n /\ OutletIndex o)
                 (ToInlet _) -> Free -- TODO: investigate, why not keep current focus
         Free -> curFocus
         CommandInput -> curFocus
         ValueEditor -> curFocus
-        SomeNodes nodes -> SomeNodes $ NEA.snoc nodes $ min num (input.nodesCount - 1)
+        SomeNodes nodes -> SomeNodes $ NEA.snoc nodes $ NodeIndex $ min num (input.nodesCount - 1)
 
 navigateIfNeeded (Left dir)  input state = state -- TODO: implement
 
@@ -447,48 +508,52 @@ keyToDir = KE.code >>> String.toLower >>> case _ of
     _ -> Nothing
 
 
+keyToAxis :: KE.KeyboardEvent -> Axis
+keyToAxis =
+    -- KE.which >>> ?wh --
+    KE.code >>> String.toLower >>> case _ of
+        "digit0" -> Number 0
+        "digit1" -> Number 1
+        "digit2" -> Number 2
+        "digit3" -> Number 3
+        "digit4" -> Number 4
+        "digit5" -> Number 5
+        "digit6" -> Number 6
+        "digit7" -> Number 7
+        "digit8" -> Number 8
+        "digit9" -> Number 9
+        "keya"   -> Letter "a"
+        "keyb"   -> Letter "b"
+        "keyc"   -> Letter "c"
+        "keyd"   -> Letter "d"
+        "keye"   -> Letter "e"
+        "keyf"   -> Letter "f"
+        "keyg"   -> Letter "g"
+        "keyh"   -> Letter "h"
+        "keyi"   -> Letter "i"
+        "keyj"   -> Letter "j"
+        "keyk"   -> Letter "k"
+        "keyl"   -> Letter "l"
+        "keym"   -> Letter "m"
+        "keyn"   -> Letter "n"
+        "keyo"   -> Letter "o"
+        "keyp"   -> Letter "p"
+        "keyq"   -> Letter "q"
+        "keyr"   -> Letter "r"
+        "keys"   -> Letter "s"
+        "keyt"   -> Letter "t"
+        "keyu"   -> Letter "u"
+        "keyv"   -> Letter "v"
+        "keyw"   -> Letter "w"
+        "keyx"   -> Letter "x"
+        "keyy"   -> Letter "y"
+        "keyz"   -> Letter "z"
+        _ -> Unassigned
+
+
 keyToNum :: KE.KeyboardEvent -> Maybe Int
 keyToNum =
-    -- KE.which >>> ?wh
-  KE.code >>> String.toLower >>> case _ of
-    "digit0" -> Just 0
-    "digit1" -> Just 1
-    "digit2" -> Just 2
-    "digit3" -> Just 3
-    "digit4" -> Just 4
-    "digit5" -> Just 5
-    "digit6" -> Just 6
-    "digit7" -> Just 7
-    "digit8" -> Just 8
-    "digit9" -> Just 9
-    "keya"   -> Just 10
-    "keyb"   -> Just 11
-    "keyc"   -> Just 12
-    "keyd"   -> Just 13
-    "keye"   -> Just 14
-    "keyf"   -> Just 15
-    "keyg"   -> Just 16
-    "keyh"   -> Just 17
-    "keyi"   -> Just 18
-    "keyj"   -> Just 19
-    "keyk"   -> Just 20
-    "keyl"   -> Just 21
-    "keym"   -> Just 22
-    "keyn"   -> Just 23
-    "keyo"   -> Just 24
-    "keyp"   -> Just 25
-    "keyq"   -> Just 26
-    "keyr"   -> Just 27
-    "keys"   -> Just 28
-    "keyt"   -> Just 29
-    "keyu"   -> Just 30
-    "keyv"   -> Just 31
-    "keyw"   -> Just 32
-    "keyx"   -> Just 33
-    "keyy"   -> Just 34
-    "keyz"   -> Just 35
-    _ -> Nothing
-
+    keyToAxis >>> axisToIndex
 
 
 tryLevelUp :: Focus -> Focus
@@ -556,19 +621,28 @@ lowerAPos = 97 :: Int
 lowerZPos = 122 :: Int
 
 
-indexToChar :: Int -> String
-indexToChar idx =
+indexToAxis :: Int -> Axis
+indexToAxis idx =
     if idx < 10 then
-        show idx
+        Number idx
     else if idx < (10 + 26) then
-        toEnum (idx - 10 + lowerAPos) <#> CP.singleton # fromMaybe "."
+        Letter $ toEnum (idx - 10 + lowerAPos) <#> CP.singleton # fromMaybe "."
     -- else if idx < (10 + 26 * 2) then
     --    toEnum (idx - 10 + lowerAPos) <#> CP.singleton # fromMaybe "."
-    else "."
+    else Unassigned
 
 
-whichToIndex :: Int -> Int
-whichToIndex which =
+axisToIndex :: Axis -> Maybe Int
+axisToIndex = case _ of
+    Number n -> Just n
+    Letter s ->
+        let mbChar = CU.charAt 0 s
+        in _charEnumToIndex <$> fromEnum <$> mbChar
+    Unassigned -> Nothing
+
+
+_charEnumToIndex :: Int -> Int
+_charEnumToIndex which =
     if which >= digit0Pos && which <= digit9Pos then which - digit0Pos
     else if which >= upperAPos && which <= upperZPos then 10 + which - upperAPos
     else if which >= lowerAPos && which <= lowerZPos then 10 + which - lowerAPos
@@ -581,22 +655,22 @@ focusToString = case _ of
     CommandInput -> "CMD"
     ValueEditor -> "EDIT"
     PatchesBar -> "PTCH"
-    Patch pr -> "PTCH" <> show pr
+    Patch pr -> "PTCH" <> showAsAxis pr
     Library -> "LIB"
-    LibraryFamily f -> "LIB-" <> indexToChar f
+    LibraryFamily f -> "LIB-" <> showAsAxis f
     NodesArea -> "NOD"
-    Node n -> "NOD-" <> indexToChar n
-    NodeInlets n -> "NOD-" <> indexToChar n <> "-I-"
-    NodeOutlets n -> "NOD-" <> indexToChar n <> "-O-"
-    NodeInlet (n /\ i) -> "NOD-" <> indexToChar n <> "-I-" <> indexToChar i
-    NodeOutlet (n /\ o) -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o
+    Node n -> "NOD-" <> showAsAxis n
+    NodeInlets n -> "NOD-" <> showAsAxis n <> "-I-"
+    NodeOutlets n -> "NOD-" <> showAsAxis n <> "-O-"
+    NodeInlet (n /\ i) -> "NOD-" <> showAsAxis n <> "-I-" <> showAsAxis i
+    NodeOutlet (n /\ o) -> "NOD-" <> showAsAxis n <> "-O-" <> showAsAxis o
     Connecting (n /\ o)
-        NoTarget              -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON"
+        NoTarget              -> "NOD-" <> showAsAxis n <> "-O-" <> showAsAxis o <> "-CON"
     Connecting (n /\ o)
-        (ToNode n')        -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n'
+        (ToNode n')        -> "NOD-" <> showAsAxis n <> "-O-" <> showAsAxis o <> "-CON-NOD-" <> showAsAxis n'
     Connecting (n /\ o)
-        (ToInlet (n' /\ i))   -> "NOD-" <> indexToChar n <> "-O-" <> indexToChar o <> "-CON-NOD-" <> indexToChar n' <> "-I-" <> indexToChar i
-    SomeNodes nodes -> "NOD-" <> indexToChar (NEA.head nodes) <> "-A-" <> (String.joinWith "-" $ indexToChar <$> NEA.tail nodes)
+        (ToInlet (n' /\ i))   -> "NOD-" <> showAsAxis n <> "-O-" <> showAsAxis o <> "-CON-NOD-" <> showAsAxis n' <> "-I-" <> showAsAxis i
+    SomeNodes nodes -> "NOD-" <> showAsAxis (NEA.head nodes) <> "-A-" <> (String.joinWith "-" $ showAsAxis <$> NEA.tail nodes)
 
 
 toSequence :: Focus -> Array String
@@ -605,24 +679,24 @@ toSequence = case _ of
     CommandInput ->              [ "CMD" ]
     ValueEditor ->               [ "VAL" ]
     Library ->                   [ "l" ]
-    LibraryFamily fidx ->        [ "l", show fidx ]
+    LibraryFamily fidx ->        [ "l", showAsAxis fidx ]
     PatchesBar ->                [ "p" ]
-    Patch pidx ->                [ "p", show pidx ]
+    Patch pidx ->                [ "p", showAsAxis pidx ]
     NodesArea ->                 [ "n" ]
-    Node nidx ->                 [ "n", show nidx ]
-    NodeInlets nidx ->           [ "n", show nidx, "i" ] -- ⊥
-    NodeOutlets nidx ->          [ "n", show nidx, "o" ] -- ⊤
-    NodeInlet  (nidx /\ iidx) -> [ "n", show nidx, "i", show iidx ]
-    NodeOutlet (nidx /\ oidx) -> [ "n", show nidx, "o", show oidx ]
+    Node nidx ->                 [ "n", showAsAxis nidx ]
+    NodeInlets nidx ->           [ "n", showAsAxis nidx, "i" ] -- ⊥
+    NodeOutlets nidx ->          [ "n", showAsAxis nidx, "o" ] -- ⊤
+    NodeInlet  (nidx /\ iidx) -> [ "n", showAsAxis nidx, "i", showAsAxis iidx ]
+    NodeOutlet (nidx /\ oidx) -> [ "n", showAsAxis nidx, "o", showAsAxis oidx ]
     Connecting (nidx /\ oidx)
-        NoTarget              -> [ "n", show nidx, "o", show oidx, "c" ]
+        NoTarget              -> [ "n", showAsAxis nidx, "o", showAsAxis oidx, "c" ]
     Connecting (nidx /\ oidx)
-        (ToNode nidx')        -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx' ]
+        (ToNode nidx')        -> [ "n", showAsAxis nidx, "o", showAsAxis oidx, "c", "n", showAsAxis nidx' ]
     Connecting (nidx /\ oidx)
         (ToInlet (nidx' /\ iidx))
-                              -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx', "i", show iidx ]
+                              -> [ "n", showAsAxis nidx, "o", showAsAxis oidx, "c", "n", showAsAxis nidx', "i", showAsAxis iidx ]
     SomeNodes nodes ->
-        [ "n", show (NEA.head nodes), "a" ] <> (show <$> NEA.tail nodes)
+        [ "n", showAsAxis (NEA.head nodes), "a" ] <> (showAsAxis <$> NEA.tail nodes)
 
 
 resetFocus :: State -> State

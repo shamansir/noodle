@@ -714,7 +714,7 @@ handleAction ploc = case _ of
     FromPatchArea (Just patchR) (PatchArea.ToggleNodeSelect nodeR) -> do
         state <- H.get
         whenJust (CState.findNodeIndexInCurrentPatch nodeR state) \nodeIndex ->
-            H.modify_ \s -> s { keyboard = KL.toggleNodeSelect nodeIndex s.keyboard }
+            H.modify_ \s -> s { keyboard = KL.toggleNodeSelect (KL.NodeIndex nodeIndex) s.keyboard }
     FromPatchArea _ PatchArea.CloseValueEditor ->
         H.modify_ $ _ { mbCurrentEditor = Nothing }
     FromPatchArea (Just patchR) (PatchArea.TrackValueSend nodeR inletR value) -> do

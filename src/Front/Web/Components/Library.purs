@@ -199,7 +199,7 @@ render ptk HTML state =
                             -- CSS.borderRadius (CSS.px 4.0) (CSS.px 4.0) (CSS.px 4.0) (CSS.px 4.0)
                         ]
                         -- [ HH.text $ show idx ]
-                        [ HH.text $ KL.indexToChar idx ]
+                        [ HH.text $ show $ KL.indexToAxis idx ]
                 selectedIndexMarker =
                     indexMarker $ _.i300 Palette.green
                 suggestedIndexMarker =
@@ -215,7 +215,7 @@ render ptk HTML state =
                 , HE.onClick $ const $ RaiseSelectFamily familyR
                 ]
                 [ case state.focus of
-                      KL.FamilySelected n ->
+                      KL.FamilySelected (KL.FamilyIndex n) ->
                           if n == idx then
                               HH.span_
                                   [ familyNameRendered
