@@ -30,7 +30,7 @@ import Web.UIEvent.KeyboardEvent as KE
 -- import Web.Components.PatchArea.Types (LockingTask) as PA
 
 
-data Axis
+data Axis -- TODO: use `Char` for letters, allow two letters
     = Number Int -- digits 0-9
     | Letter String -- chars a-z
     | Unassigned
@@ -783,7 +783,7 @@ nextActions input { focus } =
             comboBackAndCancel
         NodeOutlet (nidx /\ oidx) ->
             when hasNodes
-            [ HT.PatchArea $ HT.KB_SelectNodeToConnectTo ]
+            [ HT.PatchArea $ HT.G_OneNode HT.KB_StartLinkFromOutlet ]
             <>
             comboBackAndCancel
         Connecting (nidx /\ oidx) NoTarget ->

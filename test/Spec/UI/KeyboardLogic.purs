@@ -34,8 +34,9 @@ spec = do
     describe "keyboard logic" $ do
 
         it "properly converts index to a letter" $ do
-            KL.toAxis (KL.InletIndex 0) `shouldEqual` (KL.Number 0)
-            KL.toAxis (KL.InletIndex 10) `shouldEqual` (KL.Letter "a")
-            KL.toAxis (KL.InletIndex 15) `shouldEqual` (KL.Letter "f")
-            KL.toAxis (KL.InletIndex 20) `shouldEqual` (KL.Letter "k")
-            KL.toAxis (KL.InletIndex 35) `shouldEqual` (KL.Letter "z")
+            KL.toAxis (KL.NodeIndex 0) `shouldEqual` (KL.Number 0)
+            KL.toAxis (KL.NodeIndex 10) `shouldEqual` (KL.Letter "a")
+            KL.toAxis (KL.NodeIndex 15) `shouldEqual` (KL.Letter "f")
+            KL.toAxis (KL.NodeIndex 20) `shouldEqual` (KL.Letter "k")
+            KL.toAxis (KL.NodeIndex 35) `shouldEqual` (KL.Letter "z")
+            KL.toAxis (KL.NodeIndex 36) `shouldEqual` KL.Unassigned

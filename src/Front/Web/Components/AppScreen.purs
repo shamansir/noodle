@@ -218,8 +218,11 @@ initialState :: forall input loc tk ps fs sr cr m. Toolkit.HoldsFamilies sr cr m
 initialState _ toolkit _ = CState.init toolkit
 
 
-canvasRef :: H.RefLabel
-canvasRef = H.RefLabel "target-canvas"
+sceneCanvasId = "target-canvas" :: String
+nodesBodyCanvasId = "nodes-body-canvas" :: String
+
+sceneCanvasRef = H.RefLabel sceneCanvasId :: H.RefLabel
+nodesBodyCanvasRef = H.RefLabel nodesBodyCanvasId :: H.RefLabel
 
 
 render
@@ -249,7 +252,7 @@ render ploc _ state =
             $ "background-color: " <> HC.printColor (Just solidBackground) <> ";"
             <> HHP.position_ HHP.Abs { x : 0.0, y : 0.0 }
         ]
-        [ HH.canvas [ HHP.id "target-canvas", HHP.ref canvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
+        [ HH.canvas [ HHP.id sceneCanvasId, HHP.ref sceneCanvasRef, HHP.width $ Int.round width, HHP.height $ Int.round height ]
         , HH.div
             [ HHP.position HHP.Abs { x : 0.0, y : 0.0 } ]
             [ HS.svg [ HSA.width width, HSA.height height ]
@@ -376,6 +379,13 @@ render ploc _ state =
                     )
 
                     <> [ HH.slot _commandInput unit (CommandInput.component toolkit) commandInputInput FromCommandInput ]
+
+                    <> [ HH.canvas
+                            [ HHP.style "position: fixed; top: 0; left: 0; pointer-events: none;"
+                            , HHP.id nodesBodyCanvasId, HHP.ref nodesBodyCanvasRef
+                            , HHP.width $ Int.round width, HHP.height $ Int.round height
+                            ]
+                        ]
 
                     {-
                     [ HH.div

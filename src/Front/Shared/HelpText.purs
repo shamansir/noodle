@@ -88,6 +88,7 @@ data NodeAction
     | KB_SelectOutletsSide
     | KB_SelectInlet
     | KB_SelectOutlet
+    | KB_StartLinkFromOutlet
     | M_SpawnValueEditor
     -- | KB_SpawnValueEditor
     | KB_EditInletValue
@@ -329,6 +330,10 @@ helpText = Tuple.uncurry ht <<< case _ of
     PatchArea (G_OneNode KB_SelectOutlet) ->
         5 /\
         [ st, cont "Press the corresponding ", hindex Outlet, cont " that is shown close in the connector near the outlet name"
+        ]
+    PatchArea (G_OneNode KB_StartLinkFromOutlet) ->
+        5 /\
+        [ st, cont "Press ", seq [ skey $ K.key "c", so ], cont " to start creating a link from this outlet to some inlet of another node"
         ]
     PatchArea (G_OneNode M_SpawnValueEditor) ->
         -5 /\
