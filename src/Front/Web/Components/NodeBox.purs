@@ -2,11 +2,6 @@ module Web.Components.NodeBox where
 
 import Prelude
 
-import Debug as Debug
-
-import Effect.Class (class MonadEffect)
-import Type.Proxy (Proxy)
-
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
@@ -20,7 +15,16 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-
+import Debug as Debug
+import Effect.Class (class MonadEffect)
+import Front.Shared.Bounds (Position, PositionXY, Size)
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
+import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.Extra as HSX
 import Noodle.Fn.Generic.Tracker (inlets)
 import Noodle.Fn.Shape (I)
 import Noodle.Fn.Signature (class PossiblyToSignature)
@@ -39,18 +43,8 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-
-import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
-import Halogen.Svg.Elements as HS
-import Halogen.Svg.Elements.Extra as HSX
-
 import Play as Play
-
-import Front.Shared.Bounds (Position, PositionXY, Size)
+import Type.Proxy (Proxy)
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.AppScreen.KeyboardLogic as KL
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
@@ -296,7 +290,16 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                 (if controlButtonActive then Just ControlButtonClick else Nothing)
                                 IsOverControlButton
                             ]
-
+                    Layouts.Button Layouts.RemoveButton ->
+                        nodeButton rect.pos rect.size { active : "x", inactive : "." } $ Just Skip
+                        -- let
+                        --     removeButtonActive = inMouseFocus || inKeyboardFocus
+                        -- in HS.g
+                        --     [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
+                        --     ]
+                        --     []
+                    Layouts.Button Layouts.CollapseButton ->
+                        nodeButton rect.pos rect.size { active : "v", inactive : "." } $ Just Skip
                     _ ->
                         HSX.none
 
@@ -382,6 +385,8 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
         channelFontSize = 9.0
         valueFontSize = 9.0
         titleFontSize = 11.0
+        nodeButtonFontSize = 7.0
+        nodeButtonRadius = 6.0
         maxChannelsCount = max inletsCount outletsCount
         bodyWidth = channelStep * Int.toNumber maxChannelsCount
         nodeWidth = titleWidth + bodyWidth
@@ -588,6 +593,29 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                 , HE.onMouseOut $ const ClearMouseFocus
                 , HE.onClick $ fromMaybe (const Skip) mbClick
                 , HSA.class_ $ H.ClassName "noodle-capture-events"
+                ]
+        nodeButton pos size { active, inactive } mbClick =
+            let
+                centerX = pos.x + (nodeButtonRadius / 2.0) + 10.0 -- FIXME: why we need to transpose it?
+                centerY = pos.y + (nodeButtonRadius / 2.0)
+                isActive = inMouseFocus || inKeyboardFocus
+            in HS.g
+                [ HSA.transform [ HSA.Translate centerX centerY ]
+                ]
+                [ HS.circle
+                    [ HSA.fill $ if isActive then Just $ P.hColorOf $ _.i900 Palette.blue else Nothing
+                    , HSA.stroke $ Just $ P.hColorOf $ _.i150 Palette.green
+                    , HSA.strokeWidth 1.0
+                    , HSA.r nodeButtonRadius
+                    ]
+                , HS.text
+                    [ HSA.fill $ if isActive then Just $ P.hColorOf $ _.i400 Palette.blue else Nothing
+                    , HSA.dominant_baseline HSA.Central
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px nodeButtonFontSize
+                    , HSA.x $ -2.0
+                    ]
+                    [ HH.text active ]
+                -- , hoverCatchingRect pos size mbClick ?wh
                 ]
 
 
