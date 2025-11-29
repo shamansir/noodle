@@ -57,7 +57,7 @@ import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
 import Web.Event.Event (preventDefault, stopPropagation) as WE
 import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
-import Web.Layouts (NodePart(..), horzNodeUI) as Layouts
+import Web.Layouts (NodePart(..), NodeButton(..), horzNodeUI) as Layouts
 import Web.Paths as Paths
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
@@ -246,7 +246,29 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                 ]
                                 [ HH.text $ fitTitle $ Id.family $ Id.familyOf $ RawNode.id node ]
                             ]
-                    Layouts.ControlButton ->
+                    Layouts.Inlet n def ->
+                        renderInlet n def rect
+                    Layouts.Outlet n def ->
+                        renderOutlet n def rect
+                    Layouts.Inlets ->
+                        if inletsCount == 0 then HSX.none else
+                        HS.g
+                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                            [ HS.path
+                                [ HSA.d $ Paths.channelBarTop { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
+                                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
+                                ]
+                            ]
+                    Layouts.Outlets ->
+                        if outletsCount == 0 then HSX.none else
+                        HS.g
+                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
+                            [ HS.path
+                                [ HSA.d $ Paths.channelBarBottom { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
+                                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
+                                ]
+                            ]
+                    Layouts.Button Layouts.ControlButton ->
                         let
                             controlButtonActive = inMouseFocus || inKeyboardFocus
                         in HS.g
@@ -273,28 +295,6 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                 rect.size
                                 (if controlButtonActive then Just ControlButtonClick else Nothing)
                                 IsOverControlButton
-                            ]
-                    Layouts.Inlet n def ->
-                        renderInlet n def rect
-                    Layouts.Outlet n def ->
-                        renderOutlet n def rect
-                    Layouts.Inlets ->
-                        if inletsCount == 0 then HSX.none else
-                        HS.g
-                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                            [ HS.path
-                                [ HSA.d $ Paths.channelBarTop { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
-                                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
-                                ]
-                            ]
-                    Layouts.Outlets ->
-                        if outletsCount == 0 then HSX.none else
-                        HS.g
-                            [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ] ]
-                            [ HS.path
-                                [ HSA.d $ Paths.channelBarBottom { slope : slopeFactor, width : rect.size.width, height : rect.size.height }
-                                , HSA.fill $ Just $ P.hColorOf $ _.i900 Palette.blue
-                                ]
                             ]
 
                     _ ->

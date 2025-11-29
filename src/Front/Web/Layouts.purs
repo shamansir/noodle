@@ -2,23 +2,19 @@ module Web.Layouts where
 
 import Prelude
 
+import Blessed.Internal.BlessedSubj (Node)
 import Data.Array (length, range) as Array
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Int (toNumber) as Int
 import Data.Set (Set)
 import Data.Set (toUnfoldable) as Set
-import Data.FunctorWithIndex (mapWithIndex)
-
-import Web.Components.StatusBar as SB
--- import Web.Components.AppScreen.UiMode (UiMode(..)) as CState
-import Web.Layer (TargetLayer(..))
-
 import Front.Shared.Panels as Panels
 import Front.Shared.StatusBarCells as SBC
 import Noodle.Raw.Fn.Shape (InletDefRec, OutletDefRec)
-
 import Play (Play, (~*))
-
 import Play as Play
+import Web.Components.StatusBar as SB
+import Web.Layer (TargetLayer(..))
 
 
 
@@ -147,10 +143,15 @@ _fullLayout params =
             ]
 
 
+data NodeButton
+    = RemoveButton
+    | CollapseButton
+    | ControlButton
+
+
 data NodePart
     = Title
     | TitleArea -- Title + Paddings
-    | ControlButton
     | TitlePadding
     | Inlet Int InletDefRec
     | InletName
@@ -164,6 +165,8 @@ data NodePart
     | Outlets
     | BodyBackground
     | Body
+    | ButtonsArea
+    | Button NodeButton
 
 
 type NodeParams =
@@ -185,6 +188,7 @@ horzNodeUI params =
         connectorWidth = 15.0
         -- inletsCount = 5
         --outletsCount = 7
+        buttonSide = 20.0
 
         inlet n def =
             Play.i (Inlet n def)
@@ -214,6 +218,15 @@ horzNodeUI params =
                 ]
         outlets = mapWithIndex outlet params.outlets
 
+        buttons =
+            [ Play.i (Button RemoveButton)
+                ~* Play.widthGrow
+                ~* Play.height buttonSide
+            , Play.i (Button CollapseButton)
+                ~* Play.widthGrow
+                ~* Play.height buttonSide
+            ]
+
     in Play.i NodeBackground
         ~* Play.widthFit
         ~* Play.heightFit
@@ -224,7 +237,7 @@ horzNodeUI params =
                 ~* Play.heightFit
                 ~* Play.topToBottom
             ~* Play.with
-                [ Play.i ControlButton -- TitlePadding
+                [ Play.i (Button ControlButton) -- TitlePadding
                     ~* Play.widthGrow
                     ~* Play.height channelsHeight
                 , Play.i Title
@@ -251,6 +264,12 @@ horzNodeUI params =
                             [ Play.i Body
                                 ~* Play.width  params.bodyWidth
                                 ~* Play.height params.bodyHeight
+                            , Play.i ButtonsArea
+                                ~* Play.width 30.0
+                                ~* Play.heightGrow
+                                ~* Play.childGap 5.0
+                                ~* Play.topToBottom
+                                ~* Play.with buttons
                             ]
                     , Play.i Outlets
                         ~* Play.widthFit
