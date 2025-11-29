@@ -2,6 +2,12 @@ module Web.Components.NodeBox where
 
 import Prelude
 
+import Debug as Debug
+
+import Effect.Class (class MonadEffect)
+
+import Type.Proxy (Proxy)
+
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
@@ -15,9 +21,11 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug as Debug
-import Effect.Class (class MonadEffect)
-import Front.Shared.Bounds (Position, PositionXY, Size)
+
+import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.MouseEvent (toEvent) as ME
+
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -25,6 +33,11 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.FontSize (FontSize(..)) as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
+
+import Play as Play
+
+import Front.Shared.Bounds (Position, PositionXY, Size)
+
 import Noodle.Fn.Generic.Tracker (inlets)
 import Noodle.Fn.Shape (I)
 import Noodle.Fn.Signature (class PossiblyToSignature)
@@ -43,8 +56,7 @@ import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging as T
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-import Play as Play
-import Type.Proxy (Proxy)
+
 import Web.Class.WebRenderer (class WebEditor)
 import Web.Components.AppScreen.KeyboardLogic as KL
 import Web.Components.ValueEditor (EditorId(..)) as ValueEditor
@@ -53,9 +65,6 @@ import Web.Formatting as WF
 import Web.Layer (TargetLayer(..))
 import Web.Layouts (NodePart(..), NodeButton(..), horzNodeUI) as Layouts
 import Web.Paths as Paths
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-import Web.UIEvent.MouseEvent (toEvent) as ME
 
 
 
@@ -75,7 +84,8 @@ data MouseFocus chrepr -- TODO: merge with KeyboardFocus
     | IsOverInlet RawShape.InletDefR (ValueInChannel chrepr)
     | IsOverOutlet RawShape.OutletDefR (ValueInChannel chrepr)
     | IsOverBody
-    | IsOverControlButton
+    | IsOverButton Layouts.NodeButton
+    | IsOverButtonsArea
     | BeingDragged
 
 
@@ -98,6 +108,7 @@ data Action sterpr chrepr m
     | BodyClick MouseEvent
     | ControlButtonClick MouseEvent
     | RemoveButtonClick MouseEvent
+    | CollapseButtonClick MouseEvent
     | InletClick MouseEvent Id.InletR
     | InletValueClick MouseEvent PositionXY Id.InletR (ValueInChannel chrepr)
     | OutletClick MouseEvent Id.OutletR
@@ -288,10 +299,10 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                 { x : 0.0, y : 0.0 }
                                 rect.size
                                 (if controlButtonActive then Just ControlButtonClick else Nothing)
-                                IsOverControlButton
+                                $ IsOverButton Layouts.ControlButton
                             ]
                     Layouts.Button Layouts.RemoveButton ->
-                        nodeButton rect.pos rect.size { active : "x", inactive : "." } $ Just Skip
+                        nodeButton rect.pos rect.size { active : "x", inactive : "." } (Just RemoveButtonClick) $ IsOverButton Layouts.RemoveButton
                         -- let
                         --     removeButtonActive = inMouseFocus || inKeyboardFocus
                         -- in HS.g
@@ -299,7 +310,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                         --     ]
                         --     []
                     Layouts.Button Layouts.CollapseButton ->
-                        nodeButton rect.pos rect.size { active : "v", inactive : "." } $ Just Skip
+                        nodeButton rect.pos rect.size { active : "v", inactive : "." } (Just CollapseButtonClick) $ IsOverButton Layouts.CollapseButton
                     _ ->
                         HSX.none
 
@@ -417,11 +428,11 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
         inMouseFocus = case mouseFocus of
                            BeingDragged -> false
                            NoMouseFocus -> false
-
-                           IsOverControlButton -> true
                            IsOverBody -> true
                            IsOverInlet _ _ -> true
                            IsOverOutlet _ _ -> true
+                           IsOverButtonsArea -> true
+                           IsOverButton _ -> true
         inKeyboardFocus = case keyboardFocus of
                           KL.NoFocusedNode -> false
                           _ -> true
@@ -441,7 +452,8 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
 
         controlButtonBackColor    = P.hColorOf $ if beingDragged then _.i900 Palette.magenta else
                                     case mouseFocus of
-                                        IsOverControlButton -> _.i900 Palette.yellow
+                                        IsOverButton Layouts.ControlButton ->
+                                            _.i900 Palette.yellow
                                         _ -> case keyboardFocus of
                                             KL.NoFocusedNode ->    _.i800 Palette.base_
                                             KL.NodeSelected ->     _.i900 Palette.blue
@@ -453,7 +465,8 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                             KL.OutletSelected _ -> _.i900 Palette.blue
         controlButtonContentColor = P.hColorOf $ if beingDragged then _.i100 Palette.magenta else
                                     case mouseFocus of
-                                        IsOverControlButton -> _.i500 Palette.yellow
+                                        IsOverButton Layouts.ControlButton ->
+                                            _.i500 Palette.yellow
                                         _ -> case keyboardFocus of
                                             KL.NoFocusedNode ->    _.i500 Palette.base_
                                             KL.NodeOpen _ ->       _.i300 Palette.blue
@@ -465,7 +478,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                             KL.OutletSelected _ -> _.i100 Palette.purple
         controlButtonFontSize /\ controlButtonContent =
                                     case mouseFocus of
-                                        IsOverControlButton -> 20.0 /\ "✣"
+                                        IsOverButton Layouts.ControlButton -> 20.0 /\ "✣"
                                         _ -> case keyboardFocus of
                                             KL.NoFocusedNode ->      22.0 /\ "●" -- "✣"
                                             KL.NodeOpen n ->         22.0 /\ KL.showAsAxis n
@@ -582,19 +595,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                     (Just $ flip OutletClick outletDef.name)
                     (IsOverOutlet (NT.wrap outletDef) $ valueOfOutlet outletDef.name)
                 ]
-        hoverCatchingRect pos size mbClick mFocus =
-            HS.rect
-                [ HSA.fill $ Just $ P.hColorOf P.transparent
-                , HSA.width size.width
-                , HSA.height size.height
-                , HSA.x pos.x
-                , HSA.y pos.y
-                , HE.onMouseOver $ const $ ChangeMouseFocus mFocus
-                , HE.onMouseOut $ const ClearMouseFocus
-                , HE.onClick $ fromMaybe (const Skip) mbClick
-                , HSA.class_ $ H.ClassName "noodle-capture-events"
-                ]
-        nodeButton pos size { active, inactive } mbClick =
+        nodeButton pos size { active, inactive } mbClick mFocus =
             let
                 centerX = pos.x + (nodeButtonRadius / 2.0) + 10.0 -- FIXME: why we need to transpose it?
                 centerY = pos.y + (nodeButtonRadius / 2.0)
@@ -615,8 +616,21 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                     , HSA.x $ -2.0
                     ]
                     [ HH.text active ]
-                -- , hoverCatchingRect pos size mbClick ?wh
+                , hoverCatchingRect pos size mbClick mFocus
                 ]
+        hoverCatchingRect pos size mbClick mFocus =
+            HS.rect
+                [ HSA.fill $ Just $ P.hColorOf P.transparent
+                , HSA.width size.width
+                , HSA.height size.height
+                , HSA.x pos.x
+                , HSA.y pos.y
+                , HE.onMouseOver $ const $ ChangeMouseFocus mFocus
+                , HE.onMouseOut $ const ClearMouseFocus
+                , HE.onClick $ fromMaybe (const Skip) mbClick
+                , HSA.class_ $ H.ClassName "noodle-capture-events"
+                ]
+
 
 
 nodeUiLayout :: Raw.Shape -> Play.Layout Layouts.NodePart
@@ -678,6 +692,10 @@ handleAction ptk = case _ of
     RemoveButtonClick mevt -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked
+    CollapseButtonClick mevt -> do
+        H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
+        pure unit
+        -- TODO
     InletClick mevt inletR -> do
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ InletWasClicked inletR
@@ -695,7 +713,8 @@ handleAction ptk = case _ of
         case focus of
             NoMouseFocus -> pure unit
             BeingDragged -> pure unit
-            IsOverControlButton -> pure unit
+            IsOverButton _ -> pure unit
+            IsOverButtonsArea -> pure unit
             IsOverInlet inletDef vic -> do
                 state <- H.get
                 let inlet = NT.unwrap inletDef
