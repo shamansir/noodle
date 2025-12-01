@@ -160,10 +160,12 @@ data NodePart
     | OutletName
     | OutletConnector
     | NodeBackground
-    | BodyArea -- Body + Inlets + Outltets
+    | BodyArea -- Inlets + BodyBackground + Outlets
+    | BodyConstraint -- Body: fits body to min width
+    | BodyGrow -- area that grows to fill space for the buttons
     | Inlets
     | Outlets
-    | BodyBackground
+    | BodyBackground -- BodyConstraint (Body) + BodyGrow + ButtonsArea
     | Body
     | ButtonsArea
     | Button NodeButton
@@ -189,6 +191,7 @@ horzNodeUI params =
         -- inletsCount = 5
         --outletsCount = 7
         buttonSide = 20.0
+        minBodyWidth = 300.0
 
         inlet n def =
             Play.i (Inlet n def)
@@ -261,8 +264,16 @@ horzNodeUI params =
                         ~* Play.widthFitGrow
                         ~* Play.height params.bodyHeight
                         ~* Play.with
-                            [ Play.i Body
-                                ~* Play.width  params.bodyWidth
+                            [ Play.i BodyConstraint
+                                ~* Play.widthFitMin minBodyWidth
+                                ~* Play.height params.bodyHeight
+                                ~* Play.with
+                                    [ Play.i Body
+                                        ~* Play.width  params.bodyWidth
+                                        ~* Play.height params.bodyHeight
+                                    ]
+                            , Play.i BodyGrow
+                                ~* Play.widthGrow
                                 ~* Play.height params.bodyHeight
                             , Play.i ButtonsArea
                                 ~* Play.width 30.0

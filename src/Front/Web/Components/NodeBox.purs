@@ -5,6 +5,7 @@ import Prelude
 import Debug as Debug
 
 import Effect.Class (class MonadEffect)
+import Effect.Console as Console
 
 import Type.Proxy (Proxy)
 
@@ -690,9 +691,11 @@ handleAction ptk = case _ of
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise $ ControlButtonWasClicked mevt
     RemoveButtonClick mevt -> do
+        H.liftEffect $ Console.log "RemoveButtonClick"
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         H.raise RemoveButtonWasClicked
     CollapseButtonClick mevt -> do
+        H.liftEffect $ Console.log "CollapseButtonClick"
         H.liftEffect $ WE.stopPropagation $ ME.toEvent mevt
         pure unit
         -- TODO

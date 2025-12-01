@@ -825,7 +825,7 @@
       },
       "play": {
         "git": "https://github.com/shamansir/purescript-play.git",
-        "ref": "d1e2c0e2149bc9f18466448fd43190e448f1ca0f"
+        "ref": "70401548036d0c911fef20f0ce3b98f62acbb6ac"
       },
       "text-formatting": {
         "git": "https://github.com/shamansir/purescript-text-formatting.git",
@@ -2383,7 +2383,7 @@
     "play": {
       "type": "git",
       "url": "https://github.com/shamansir/purescript-play.git",
-      "rev": "d1e2c0e2149bc9f18466448fd43190e448f1ca0f",
+      "rev": "70401548036d0c911fef20f0ce3b98f62acbb6ac",
       "dependencies": [
         "arrays",
         "foldable-traversable",

@@ -137,7 +137,7 @@ workspace:
         - halogen
     play:
       git: https://github.com/shamansir/purescript-play.git
-      ref: d1e2c0e2149bc9f18466448fd43190e448f1ca0f
+      ref: 70401548036d0c911fef20f0ce3b98f62acbb6ac
     wire:
       dependencies:
         - aff
