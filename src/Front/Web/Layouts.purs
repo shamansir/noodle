@@ -160,15 +160,19 @@ data NodePart
     | OutletName
     | OutletConnector
     | NodeBackground
-    | BodyArea -- Inlets + BodyBackground + Outlets
+    | FunctionalArea -- Inlets + BodyBackground + Outlets
     | BodyConstraint -- Body: fits body to min width
     | BodyGrow -- area that grows to fill space for the buttons
     | Inlets
     | Outlets
-    | BodyBackground -- BodyConstraint (Body) + BodyGrow + ButtonsArea
+    | BodyAndButtons -- BodyConstraint (Body) + BodyGrow + ButtonsArea
     | Body
     | ButtonsArea
     | Button NodeButton
+
+
+derive instance Eq NodeButton
+derive instance Eq NodePart
 
 
 type NodeParams =
@@ -191,7 +195,7 @@ horzNodeUI params =
         -- inletsCount = 5
         --outletsCount = 7
         buttonSide = 20.0
-        minBodyWidth = 300.0
+        minBodyWidth = 150.0
 
         inlet n def =
             Play.i (Inlet n def)
@@ -250,7 +254,7 @@ horzNodeUI params =
                     ~* Play.widthGrow
                     ~* Play.height channelsHeight
                 ]
-            , Play.i BodyArea
+            , Play.i FunctionalArea
                 ~* Play.widthFit
                 ~* Play.heightFit
                 ~* Play.topToBottom
@@ -260,7 +264,7 @@ horzNodeUI params =
                         ~* Play.widthFit
                         ~* Play.height channelsHeight
                         ~* Play.with inlets
-                    , Play.i BodyBackground
+                    , Play.i BodyAndButtons
                         ~* Play.widthFitGrow
                         ~* Play.height params.bodyHeight
                         ~* Play.with
@@ -351,7 +355,7 @@ vertNodeUI params =
                         ~* Play.heightGrow
                     ]
 
-            , Play.i BodyArea
+            , Play.i FunctionalArea
                 ~* Play.widthFit
                 ~* Play.heightFit
                 ~* Play.leftToRight
@@ -361,7 +365,7 @@ vertNodeUI params =
                         ~* Play.heightFit
                         ~* Play.topToBottom
                         ~* Play.with inlets
-                    , Play.i BodyBackground
+                    , Play.i BodyAndButtons
                         ~* Play.width params.bodyWidth
                         ~* Play.heightFitGrow
                         ~* Play.with
