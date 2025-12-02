@@ -436,22 +436,14 @@ render ploc _ state =
             curPatchNodesGeometry = mbCurrentPatchInfo <#> _.nodesGeometry # fromMaybe Map.empty
             curPatchState = CState.currentPatchState' state
 
-            patchesBarX = 0.0
-            patchesBarY = 0.0
             patchAreaX = Library.width + 20.0
             patchAreaY = PatchesBar.height + 15.0
-            libraryX = 5.0
-            libraryY = PatchesBar.height + 15.0
-            statusBarX = 0.0
-            statusBarY = height - StatusBar.height - 10.0
-            panelTogglesX = width - PanelTogglesBar.width
-            panelTogglesY = 0.0
             patchAreaHeight = height - PatchesBar.height - 15.0 - StatusBar.height - 10.0
             patchAreaWidth = width - Library.width - 20.0
             statusBarWidth = width * 0.99
             sidePanelWidth = 350.0
             sidePanelHeight = sidePanelsHeight / Int.toNumber panelsCount
-            sidePanelsX = width - sidePanelWidth
+            -- sidePanelsX = width - sidePanelWidth
             sidePanelsY = PatchesBar.height + 15.0
             sidePanelsHeight = height - sidePanelsY - StatusBar.height - 20.0
 
@@ -500,7 +492,7 @@ render ploc _ state =
 
             collectedSymbols = Map.fromFoldable $ (/\) <*> panelSymbol state <$> Panels.allPanels
             panelsCount = Set.size state.openPanels
-            sidePanelY panelIdx = (Int.toNumber panelIdx / Int.toNumber panelsCount) * sidePanelsHeight
+            {-
             wrapSvgWithPos panelIdx content =
                 HS.g
                     [ HSA.transform [ HSA.Translate sidePanelsX $ sidePanelsY + sidePanelY panelIdx ]
@@ -516,6 +508,7 @@ render ploc _ state =
                         <> " min-width: " <> show sidePanelWidth <> "px;"
                     ]
                     $ pure content
+            -}
 
 
 handleAction

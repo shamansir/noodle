@@ -1,9 +1,9 @@
-// https://codepen.io/shamansir/pen/JoXrGOo
+// https://codepen.io/shamansir/pen/OPNwoVO
 
-const INSTANCES_COLS = 20;
-const INSTANCES_ROWS = 25;
-const TOTAL_WIDTH = 600;
-const TOTAL_HEIGHT = 300;
+const INSTANCES_COLS = 10;
+const INSTANCES_ROWS = 15;
+const TOTAL_WIDTH = 1200;
+const TOTAL_HEIGHT = 780;
 const INSTANCE_WIDTH  = TOTAL_WIDTH  / INSTANCES_COLS;
 const INSTANCE_HEIGHT = TOTAL_HEIGHT / INSTANCES_ROWS;
 
@@ -16,9 +16,6 @@ const hg = new Hydra({ makeGlobal : false, detectAudio: false, width : TOTAL_WID
 
 console.log('------');
 
-const start = hg.solid(1,0,1,0);
-const theMask = function() { return hg.shape(4, 1, 0.0001) };
-
 let index;
 let x, y;
 let col, row, revCol, revRow;
@@ -28,6 +25,13 @@ let scaleYFactor = 1 / INSTANCES_ROWS;
 let xPos, yPos;
 let scrollX, scrollY;
 let mask, instance;
+// let widthFactor = TOTAL_WIDTH / TOTAL_HEIGHT;
+// let minScaleFactor = Math.min(scaleXFactor, scaleYFactor);
+
+const start = hg.solid(0,0,0,1);
+// const theMask = function() { return hg.shape(4, 1, 0.0001).scale(1, scaleXFactor, scaleYFactor); };
+const theMask = function() { return hg.shape(999, 1.0, 0.6).scale(1, 0.5, 0.5); };
+// const theMask = function() { return hg.shape(999, 1.0, 0.08).scale(1, scaleXFactor, scaleYFactor); };
 
 console.log('cols', INSTANCES_COLS, 'rows', INSTANCES_ROWS, 'count', INSTANCES_COUNT);
 console.log('scaleX', scaleXFactor, 'scaleY', scaleYFactor);
@@ -40,8 +44,11 @@ function positionAt(left, top, scaleX, scaleY, whatFn) {
 
 function positionByScroll(scrollX, scrollY, scaleX, scaleY, whatFn) {
     console.log('scrollX', scrollX, 'scrollY', scrollY);
+    mask = theMask();
+    instance = whatFn();
+    /*
     mask = theMask()
-                   .scale(1, scaleX, scaleY)
+                   // .scale(1, scaleX, scaleY)
                    .scrollX(scrollX)
                    .scrollY(scrollY);
     instance = whatFn()
@@ -49,6 +56,8 @@ function positionByScroll(scrollX, scrollY, scaleX, scaleY, whatFn) {
                    .scrollX(scrollX)
                    .scrollY(scrollY);
     start.layer(instance.mask(mask));
+    */
+    start.layer(instance.mask(mask).scale(1, scaleX, scaleY).scrollX(scrollX).scrollY(scrollY));
 }
 
 

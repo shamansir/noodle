@@ -8,9 +8,13 @@ import * as jsEnv from "browser-or-node";
 var hydraInstance = null;
 var lastExecuted = '';
 
+const CURRENT_SCENE_CVS_ID = 'target-canvas';
+const NODES_BODY_CVS_ID = 'nodes-body-canvas';
+
+
 const runHydra_ = function() {
     if (!jsEnv.isBrowser) return;
-    const targetCanvas = document.getElementById('target-canvas');
+    const targetCanvas = document.getElementById(CURRENT_SCENE_CVS_ID);
     console.log(targetCanvas);
     hydraInstance = new Hydra({ canvas : targetCanvas, detectAudio: false });
 
