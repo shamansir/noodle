@@ -108,7 +108,7 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import Front.Shared.StatusBarCells as SPCells
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
-import HydraTk.Patch (resize, executeHydra) as Hydra -- FIXME
+import HydraTk.Synth (resize, executeHydra) as HydraSynth
 
 import WebSocket.Types (WebSocket)
 import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
@@ -568,7 +568,7 @@ handleAction ploc = case _ of
         newWidth  <- H.liftEffect $ Window.innerWidth window
         newHeight <- H.liftEffect $ Window.innerHeight window
         H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
-        H.liftEffect $ Hydra.resize newWidth newHeight
+        H.liftEffect $ HydraSynth.resize newWidth newHeight
         pure unit
     CreatePatch -> do
         state <- H.get
@@ -637,7 +637,7 @@ handleAction ploc = case _ of
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
             when (Map.size collectedCommands > 0) $ H.liftEffect $ do
                 let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
-                Hydra.executeHydra program
+                HydraSynth.executeHydra program
                 Console.log program
     LoadCurrentPatchChanges -> do
         H.liftEffect $ Console.log "load current patch changes"

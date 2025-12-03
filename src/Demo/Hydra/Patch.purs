@@ -2,14 +2,13 @@ module HydraTk.Patch where
 
 import Prelude
 
-import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Maybe (Maybe(..))
 
 import Halogen (RefLabel)
 
-import Front.Shared.Bounds (Bounds)
+import HydraTk.Synth (runHydra) as HydraSynth
 
 
 newtype PState =
@@ -19,11 +18,5 @@ newtype PState =
 
 init :: forall m. MonadEffect m => m PState
 init =
-    liftEffect runHydra *> pure (PState { canvasRef : Nothing })
+    liftEffect HydraSynth.runHydra *> pure (PState { canvasRef : Nothing })
     -- liftEffect runHydra >>= (const $ pure (PState { canvasRef : Nothing }))
-
-
-foreign import runHydra :: Effect Unit
-foreign import resize :: Int -> Int -> Effect Unit
-foreign import executeHydra :: String -> Effect Unit
-foreign import drawSceneAt :: Bounds -> Unit -> Effect Unit

@@ -59,7 +59,7 @@ import Web.Paths as Paths
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.MouseEvent (toEvent) as ME
-import HydraTk.Patch (drawSceneAt) as Hydra
+import HydraTk.Synth (drawSceneAt) as HydraSynth
 
 
 type Input strepr chrepr m =
@@ -763,7 +763,7 @@ handleQuery = case _ of
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     RenderChanges bounds changes a -> do
-        H.liftEffect $ Hydra.drawSceneAt bounds unit
+        H.liftEffect $ HydraSynth.drawSceneAt bounds unit
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
