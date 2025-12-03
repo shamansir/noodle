@@ -210,18 +210,21 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
             nodeUiLayoutItems <#> \{ rect, v } ->
 
                 case v of
+
                     Layouts.BodyAndButtons ->
                         HS.path
                             [ HSA.transform [ HSA.Translate (rect.pos.x + bodyLeftPadding) rect.pos.y ]
                             , HSA.d $ Paths.nodeBodyBg { slope : slopeFactor, width : rect.size.width {- bodyWidth -}, height : rect.size.height }
                             , HSA.fill $ Just $ P.hColorOf $ _.i950 Palette.base_
                             ]
+
                     Layouts.BodyConstraint ->
                         hoverCatchingRect
                                 { x : rect.pos.x + bodyLeftPadding, y : rect.pos.y }
                                 rect.size
                                 (Just BodyClick)
                                 IsOverBody
+
                     Layouts.Title ->
                         HS.g
                             [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
@@ -246,8 +249,10 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                             ]
                     Layouts.Inlet n def ->
                         renderInlet n def rect
+
                     Layouts.Outlet n def ->
                         renderOutlet n def rect
+
                     Layouts.Inlets ->
                         if inletsCount == 0 then HSX.none else
                         HS.g
@@ -294,6 +299,7 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                                 (if controlButtonActive then Just $ ButtonClick Layouts.ControlButton else Nothing)
                                 $ IsOverButton Layouts.ControlButton
                             ]
+
                     Layouts.Button Layouts.RemoveButton ->
                         nodeButton rect.pos rect.size { active : "x", inactive : "." } Layouts.RemoveButton
                         -- let
@@ -302,8 +308,10 @@ render { node, position, latestUpdate, mouseFocus, keyboardFocus, layout } =
                         --     [ HSA.transform [ HSA.Translate rect.pos.x rect.pos.y ]
                         --     ]
                         --     []
+
                     Layouts.Button Layouts.CollapseButton ->
                         nodeButton rect.pos rect.size { active : "v", inactive : "." } Layouts.CollapseButton
+
                     Layouts.ButtonsArea ->
                         hoverCatchingRect
                                 { x : rect.pos.x, y : rect.pos.y }

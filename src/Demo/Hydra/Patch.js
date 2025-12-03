@@ -98,13 +98,19 @@ function positionByScroll_(scrollX, scrollY, scaleX, scaleY, whatFn) {
     start.out(hg.o0);
 }
 
+let scaleX, scaleY = 1.0;
+let posX, posY = 0.0;
 
 const drawSceneAt_ = function(rect) {
     return function(what) {
         return function() {
             console.log('drawSceneAt', rect.left, rect.top, rect.width, rect.height, what);
+            posX = rect.left / lastWidth;
+            posY = rect.top / lastHeight;
+            scaleX = rect.width / lastWidth;
+            scaleY = rect.height / lastHeight;
             // positionAt_(rect.left, rect.top, 1.0 / rect.width, 1.0 / rect.height, function() { return hg.osc(60.0, 0.1, 1.0); });
-            positionAt_(rect.left, rect.top, 1.0, 1.0, function() { return hg.osc(60.0, 0.1, 1.0); });
+            positionAt_(posX, posY, scaleX, scaleY, function() { return hg.osc(60.0, 0.1, 1.0); });
         }
     }
 
