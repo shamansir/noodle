@@ -17,6 +17,11 @@ const NODES_BODY_CVS_ID = 'nodes-body-canvas';
 let start = null;
 
 
+let state =
+    { nodes : {}
+    };
+
+
 const runHydra_ = function() {
     if (!jsEnv.isBrowser) return;
     const targetCanvas    = document.getElementById(CURRENT_SCENE_CVS_ID);
@@ -69,19 +74,20 @@ const hydraScene_ = function() {
 }
 
 // const theMask = function() { return hg.shape(4, 1, 0.0001).scale(1, scaleXFactor, scaleYFactor); };
-const theMask = function() { return hg.shape(999, 1.0, 0.6).scale(1, 0.5, 0.5); };
+const ovalMask = function() { return hg.shape(999, 1.0, 0.6).scale(1, 0.5, 0.5); };
 
 
-function positionAt_(left, top, scaleX, scaleY, whatFn) {
-    scrollX = ((1.0 - left) - 0.5) - (scaleX / 2);
-    scrollY = ((1.0 - top) - 0.5) - (scaleY / 2);
-    positionByScroll_(scrollX, scrollY, scaleX, scaleY, whatFn);
+function positionAt_(rect, maskFn, whatFn) {
+    // scrollX = ((1.0 - left) - 0.5) - (scaleX / 2);
+    // scrollY = ((1.0 - top) - 0.5) - (scaleY / 2);
+
+    positionByScroll_(scrollParams(rect), rect, maskFn, whatFn);
 }
 
-function positionByScroll_(scrollX, scrollY, scaleX, scaleY, whatFn) {
+function positionByScroll_(scroll, rect, maskFn, whatFn) {
     if (!hg || !start) return;
-    console.log('scrollX', scrollX, 'scrollY', scrollY);
-    mask = theMask();
+    console.log('scrollX', scroll.x, 'scrollY', scroll.y);
+    mask = maskFn();
     instance = whatFn();
     /*
     mask = theMask()
@@ -94,26 +100,54 @@ function positionByScroll_(scrollX, scrollY, scaleX, scaleY, whatFn) {
                    .scrollY(scrollY);
     start.layer(instance.mask(mask));
     */
-    start.layer(instance.mask(mask).scale(1, scaleX, scaleY).scrollX(scrollX).scrollY(scrollY));
-    start.out(hg.o0);
+    //start.layer(instance.mask(mask).scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y));
+    start.layer(transformInstance(instance.mask(mask), scroll, rect));
 }
 
 let scaleX, scaleY = 1.0;
 let posX, posY = 0.0;
+let nodeRect, nodeBodyRect = null;
 
-const drawSceneAt_ = function(rect) {
-    return function(what) {
-        return function() {
-            console.log('drawSceneAt', rect.left, rect.top, rect.width, rect.height, what);
-            posX = rect.left / lastWidth;
-            posY = rect.top / lastHeight;
-            scaleX = rect.width / lastWidth;
-            scaleY = rect.height / lastHeight;
-            // positionAt_(rect.left, rect.top, 1.0 / rect.width, 1.0 / rect.height, function() { return hg.osc(60.0, 0.1, 1.0); });
-            positionAt_(posX, posY, scaleX, scaleY, function() { return hg.osc(60.0, 0.1, 1.0); });
+function transformBounds(rect, toWidth, toHeight) {
+    return {
+        left: rect.left / toWidth,
+        top: rect.top   / toHeight,
+        width: rect.width  / toWidth,
+        height: rect.height / toHeight
+    };
+}
+
+function scrollParams(rect) {
+    return { x : ((1.0 - rect.left) - 0.5) - (rect.width / 2), y: ((1.0 - rect.top) - 0.5) - (rect.height / 2) };
+}
+
+function transformInstance(instance, rect) {
+    return transformInstanceScroll(instance, scrollParams(rect), rect);
+}
+
+function transformInstanceScroll(instance, scroll, rect) {
+    return instance.scale(1, rect.width, rect.height)
+                   .scrollX(scroll.x)
+                   .scrollY(scroll.y);
+}
+
+const drawSceneAt_ = function (nodeId) {
+    return function(geom) {
+        return function(what) {
+            return function() {
+                let nodeRect = transformBounds(geom.node, lastWidth, lastHeight);
+                let nodeBodyRect = transformBounds(geom.body, lastWidth, lastHeight);
+                start.mask(hg.solid(1,1,1,1).layer(transformInstance(hg.shape(4,1.0), nodeRect)).invert());
+                console.log('drawSceneAt', nodeId, geom, what);
+                // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
+                // start.mask(hg.solid(1,1,1,1).layer(hg.shape(4,1.0).scale(1, rect.width, rect.height).scrollX()).invert());
+                positionAt_(nodeBodyRect, ovalMask, function() { return hg.osc(60.0, 0.1, 1.0); });
+                // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
+                //hg.shape(4,0.6).invert().color(1,1,1,1);
+                start.out(hg.o0);
+            }
         }
     }
-
 }
 
 

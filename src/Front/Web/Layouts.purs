@@ -8,6 +8,7 @@ import Data.FunctorWithIndex (mapWithIndex)
 import Data.Int (toNumber) as Int
 import Data.Set (Set)
 import Data.Set (toUnfoldable) as Set
+import Front.Shared.Bounds (Bounds)
 import Front.Shared.Panels as Panels
 import Front.Shared.StatusBarCells as SBC
 import Noodle.Raw.Fn.Shape (InletDefRec, OutletDefRec)
@@ -380,3 +381,12 @@ vertNodeUI params =
                         ~* Play.with outlets
                     ]
             ]
+
+
+toBounds :: Play.Rect -> Bounds
+toBounds { pos, size } =
+    { left : pos.x
+    , top : pos.y
+    , width : size.width
+    , height : size.height
+    }

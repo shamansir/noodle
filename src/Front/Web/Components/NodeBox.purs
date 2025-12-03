@@ -125,7 +125,7 @@ data Output strepr chrepr
 
 data Query strepr chrepr a
     = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
-    | RenderChanges Bounds (RawNode.NodeChanges strepr chrepr) a
+    | RenderChanges { node :: Bounds, body :: Bounds } (RawNode.NodeChanges strepr chrepr) a
     | ApplyDragStart a
     | ApplyDragEnd a
     | QueryInletData Id.InletR
@@ -763,7 +763,7 @@ handleQuery = case _ of
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     RenderChanges bounds changes a -> do
-        H.liftEffect $ HydraSynth.drawSceneAt bounds unit
+        H.liftEffect $ HydraSynth.drawSceneAt bounds.body unit
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do

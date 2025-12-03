@@ -3,7 +3,7 @@ module Web.Components.PatchArea where
 import Prelude
 import Web.Components.PatchArea.Types
 
-import Control.Monad.Extra (whenJust)
+import Control.Monad.Extra (whenJust, whenJust2)
 import Control.Monad.State (get, put, modify, modify_) as State
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
 import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
@@ -63,7 +63,7 @@ import Web.Components.Link as LinkCmp
 import Web.Components.NodeBox as NodeBox
 import Web.Components.ValueEditor as ValueEditor
 import Web.Layer (TargetLayer(..))
-import Web.Layouts (NodePart(..)) as Layout
+import Web.Layouts (NodePart(..), toBounds) as Layout
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 import Yoga.Tree.Extended (value) as Tree
@@ -517,9 +517,12 @@ handleAction = case _ of
     PassUpdate nodeR update -> do
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
         state <- H.get
-        let mbNodeBodyBounds = absoluteBoundsOfLayoutPart nodeR Layout.Body state
-        whenJust mbNodeBodyBounds \nodeBodyBounds ->
-            H.tell _nodeBox nodeR $ NodeBox.RenderChanges nodeBodyBounds update
+        let mbNodeGeom = findGeometry nodeR state
+        let mbNodeBodyBounds = mbNodeGeom >>= findInNode Layout.Body
+        whenJust2 mbNodeGeom mbNodeBodyBounds \nodeGeom nodeBodyBounds -> do
+            let absNodeBounds = nodeGeom.bounds # Bounds.modifyPosition (_ + state.offset)
+            let absNodeBodyBounds = nodeBodyBounds # Bounds.modifyPosition (_ + state.offset)
+            H.tell _nodeBox nodeR $ NodeBox.RenderChanges { node: absNodeBounds, body: absNodeBodyBounds } update
     FromLink linkR (LinkCmp.WasClicked) ->
         H.raise $ Disconnect linkR
     FromValueEditor nodeR inletR (ValueEditor.SendValue value) -> do
@@ -610,28 +613,22 @@ boundsOf :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe Bounds
 boundsOf nodeR state = findGeometry nodeR state <#> _.bounds
 
 
-boundsOfLayoutPart :: forall ps sr cr m. Id.NodeR -> Layout.NodePart -> State ps sr cr m -> Maybe Bounds
-boundsOfLayoutPart nodeR nodePart state = findGeometry nodeR state >>= \nodeGeom ->
+findInNode :: Layout.NodePart -> NodeGeometry -> Maybe Bounds
+findInNode nodePart nodeGeom =
     Play.findInLayout nodePart nodeGeom.layout
         <#> Tuple.snd
         <#> Tree.value
         <#> _.rect
-        <#> toBounds
+        <#> Layout.toBounds
         <#> shiftBoundsTo nodeGeom.bounds
     where
-        toBounds { pos, size } =
-            { left : pos.x
-            , top : pos.y
-            , width : size.width
-            , height : size.height
-            }
         shiftBoundsTo nodeBounds =
             Bounds.modifyPosition (_ + Bounds.getPosition nodeBounds)
 
 
-absoluteBoundsOfLayoutPart :: forall ps sr cr m. Id.NodeR -> Layout.NodePart -> State ps sr cr m -> Maybe Bounds
-absoluteBoundsOfLayoutPart nodeR nodePart state =
-    boundsOfLayoutPart nodeR nodePart state <#> Bounds.modifyPosition (_ + state.offset)
+-- absoluteBoundsOfLayoutPart :: forall ps sr cr m. Id.NodeR -> Layout.NodePart -> State ps sr cr m -> Maybe Bounds
+-- absoluteBoundsOfLayoutPart nodeR nodePart state =
+--     boundsOfLayoutPart nodeR nodePart state <#> Bounds.modifyPosition (_ + state.offset)
 
 
 storeGeometry :: Id.NodeR -> Bounds -> Play.Layout Layout.NodePart -> NodesGeometry -> NodesGeometry
