@@ -20,7 +20,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Debug as Debug
 import Effect.Class (class MonadEffect)
 import Effect.Console as Console
-import Front.Shared.Bounds (Position, PositionXY, Size)
+import Front.Shared.Bounds (Bounds, Position, PositionXY, Size)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -59,7 +59,7 @@ import Web.Paths as Paths
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.MouseEvent (toEvent) as ME
-
+import HydraTk.Patch (drawSceneAt) as Hydra
 
 
 type Input strepr chrepr m =
@@ -125,6 +125,7 @@ data Output strepr chrepr
 
 data Query strepr chrepr a
     = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
+    | RenderChanges Bounds (RawNode.NodeChanges strepr chrepr) a
     | ApplyDragStart a
     | ApplyDragEnd a
     | QueryInletData Id.InletR
@@ -748,10 +749,14 @@ handleAction ptk = case _ of
         H.raise $ ReportMouseMove evt
 
 
-handleQuery :: forall action strepr chrepr m a. Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
+handleQuery :: forall action strepr chrepr m a. MonadEffect m => Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
+        pure $ Just a
+    RenderChanges bounds changes a -> do
+        H.liftEffect $ Hydra.drawSceneAt bounds unit
+        -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
         H.modify_ _ { mouseFocus = BeingDragged }

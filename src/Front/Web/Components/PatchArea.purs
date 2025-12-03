@@ -1,80 +1,72 @@
 module Web.Components.PatchArea where
 
 import Prelude
+import Web.Components.PatchArea.Types
 
-import Type.Proxy (Proxy(..))
-
-import Effect.Class (class MonadEffect)
-
-import Control.Monad.State (get, put, modify, modify_) as State
 import Control.Monad.Extra (whenJust)
-
-import Data.Maybe (Maybe(..), fromMaybe)
+import Control.Monad.State (get, put, modify, modify_) as State
+import DOM.HTML.Indexed.InputType (InputType(..)) as I
+import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
+import Data.Array (sortWith, find, index) as Array
+import Data.Bifunctor (lmap)
+import Data.Foldable (foldl, foldr)
+import Data.FunctorWithIndex (mapWithIndex)
+import Data.Int (toNumber) as Int
 import Data.Map (Map)
 import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values) as Map
 import Data.Map.Extra (update') as MapX
-import Data.Tuple (fst, snd, uncurry) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (sortWith, find, index) as Array
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (unwrap) as NT
 import Data.Set (Set)
 import Data.Set (empty, insert, member, fromFoldable) as Set
-import Data.Int (toNumber) as Int
-import Data.Bifunctor (lmap)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Foldable (foldl, foldr)
-import Data.Newtype (unwrap) as NT
 import Data.Text.Format (Tag) as T
-
+import Data.Tuple (fst, snd, uncurry) as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
+import Effect.Class (class MonadEffect)
+import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
+import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
+import Front.Shared.DocumentationFocus (DocumentationFocus)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HHP
 import Halogen.HTML.Properties.Extra (Position(..), position, position_) as HHP
-import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Attributes.Color.Extra as HCColorX
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
-
-import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
-import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
-import DOM.HTML.Indexed.InputType (InputType(..)) as I
-import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
-
-import Play (Layout) as Play
-import Play.Extra (findByInLayout) as Play
-
-import Yoga.Tree.Extended (value) as Tree
-
-import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
-import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
 import Noodle.Fn.Signature (class PossiblyToSignature)
+import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
+import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Raw.Link (Link) as Raw
 import Noodle.Raw.Link (id, connector) as RawLink
 import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, sendIn) as RawNode
-import Noodle.Raw.Fn.Shape as RawShape
 import Noodle.Repr.ChRepr (class WriteChannelRepr)
 import Noodle.Repr.HasFallback (class HasFallback)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
 import Noodle.Repr.ValueInChannel (toFallback) as ViC
+import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
 import Noodle.Ui.Tagging.At (ChannelLabel, StatusLine) as At
 import Noodle.Ui.Tagging.At (class At) as T
-
-import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
-import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
-import Web.Layer (TargetLayer(..))
-import Web.Layouts (NodePart(..)) as Layout
-import Web.Components.NodeBox as NodeBox
-import Web.Components.Link as LinkCmp
-import Web.Components.ValueEditor as ValueEditor
+import Play (Layout) as Play
+import Play (w)
+import Play.Extra (findByInLayout) as Play
+import Type.Proxy (Proxy(..))
 import Web.Class.WebRenderer (class WebEditor, spawnWebEditor)
 import Web.Class.WebRenderer (firstLocation, locateNext) as Web
-import Front.Shared.DocumentationFocus (DocumentationFocus)
 import Web.Components.AppScreen.KeyboardLogic as KL
-import Web.Components.PatchArea.Types
+import Web.Components.Link as LinkCmp
+import Web.Components.NodeBox as NodeBox
+import Web.Components.ValueEditor as ValueEditor
+import Web.Layer (TargetLayer(..))
+import Web.Layouts (NodePart(..)) as Layout
+import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
+import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
+import Yoga.Tree.Extended (value) as Tree
 
 
 type Slots sr cr =
@@ -522,8 +514,12 @@ handleAction = case _ of
         H.raise $ RemoveNode nodeR
     FromNodeBox nodeR (NodeBox.RequestDocumentation mbUpdate) -> do
         H.raise $ RequestDocumentation { node : nodeR, curUpdate : mbUpdate }
-    PassUpdate nodeR update ->
+    PassUpdate nodeR update -> do
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
+        state <- H.get
+        let mbNodeArea = findGeometry nodeR state
+        whenJust mbNodeArea \nodeArea ->
+            H.tell _nodeBox nodeR $ NodeBox.RenderChanges nodeArea.bounds update
     FromLink linkR (LinkCmp.WasClicked) ->
         H.raise $ Disconnect linkR
     FromValueEditor nodeR inletR (ValueEditor.SendValue value) -> do
@@ -608,6 +604,15 @@ creatingLink = _.lockOn >>> case _ of
 
 findGeometry :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe NodeGeometry
 findGeometry nodeR = _.nodesGeometry >>> Map.lookup nodeR
+
+
+boundsOf :: forall ps sr cr m. Id.NodeR -> State ps sr cr m -> Maybe Bounds
+boundsOf nodeR state = findGeometry nodeR state <#> _.bounds
+
+
+-- TODO:
+-- absoluteBoundsOf :: forall ps sr cr m. Id.NodeR -> NodePart -> State ps sr cr m -> Maybe Bounds
+-- absoluteBoundsOf nodeR state = findGeometry nodeR state <#> _.bounds
 
 
 storeGeometry :: Id.NodeR -> Bounds -> Play.Layout Layout.NodePart -> NodesGeometry -> NodesGeometry

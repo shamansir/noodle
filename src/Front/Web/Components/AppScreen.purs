@@ -630,7 +630,7 @@ handleAction ploc = case _ of
             handleAction ploc $ PassUpdate (Patch.id curPatch) nodeR $ Debug.spy "Cur change" curChanges
     PassUpdate patchR nodeR update -> do
         H.liftEffect $ Console.log "pass update"
-        H.get >>= CState.currentPatch >>> Debug.spy ("Current Patch, expected: " <> show patchR)  >>> whenJust_ \curPatch -> do
+        H.get >>= CState.currentPatch >>> Debug.spy ("Current Patch, expected: " <> show patchR) >>> whenJust_ \curPatch -> do
             H.liftEffect $ Console.log "got update"
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update

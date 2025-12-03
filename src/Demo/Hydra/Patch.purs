@@ -9,6 +9,8 @@ import Data.Maybe (Maybe(..))
 
 import Halogen (RefLabel)
 
+import Front.Shared.Bounds (Bounds)
+
 
 newtype PState =
     PState
@@ -24,3 +26,4 @@ init =
 foreign import runHydra :: Effect Unit
 foreign import resize :: Int -> Int -> Effect Unit
 foreign import executeHydra :: String -> Effect Unit
+foreign import drawSceneAt :: Bounds -> Unit -> Effect Unit
