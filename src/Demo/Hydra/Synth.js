@@ -147,8 +147,9 @@ const drawNodeSceneOf_ = function (nodeId) {
 }
 
 const clearNodeScenes_ = function() {
-    if (!nodesBodyCanvas) return;
-    hg.solid(0,0,0,0).out(hg.o0);
+    if (!start) return;
+    start = hg.solid(0,0,0,0);
+    start.out(hg.o0);
     // const ctx = nodesBodyCanvas.getContext('webgl');
     // ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
     // ctx.clearRect(0, 0, nodesBodyCanvas.width, nodesBodyCanvas.height);

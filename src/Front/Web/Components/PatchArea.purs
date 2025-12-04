@@ -547,10 +547,10 @@ handleAction = case _ of
             H.liftEffect $ HydraSynth.clearNodeScenes
             state <- H.get
             state.nodesGeometry
-                 # Map.toUnfoldable
-                 # Array.sortWith (Tuple.snd >>> _.z)
+                 #  Map.toUnfoldable
+                 #  Array.sortWith (Tuple.snd >>> _.z)
                 <#> Tuple.fst
-                 # traverse_ redrawNodeBody
+                 #  traverse_ redrawNodeBody
 
     {-
     FromValueEditor _ _ ValueEditor.CloseEditor -> do

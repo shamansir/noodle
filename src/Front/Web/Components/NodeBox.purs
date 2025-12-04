@@ -765,7 +765,7 @@ handleQuery = case _ of
     RenderLatestChange bounds a -> do
         state <- H.get
         let mbLatestUpdate = state.latestUpdate
-        let nodeId = RawNode.id state.node
+        let nodeId = Debug.spy "Redraw node: " $ RawNode.id state.node
         H.liftEffect $ HydraSynth.drawNodeSceneOf nodeId bounds unit
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
