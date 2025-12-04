@@ -81,12 +81,11 @@ function positionAt_(rect, maskFn, whatFn) {
     // scrollX = ((1.0 - left) - 0.5) - (scaleX / 2);
     // scrollY = ((1.0 - top) - 0.5) - (scaleY / 2);
 
-    positionByScroll_(scrollParams(rect), rect, maskFn, whatFn);
+    positionByScroll_(rect, maskFn, whatFn);
 }
 
-function positionByScroll_(scroll, rect, maskFn, whatFn) {
+function positionByScroll_(rect, maskFn, whatFn) {
     if (!hg || !start) return;
-    console.log('scrollX', scroll.x, 'scrollY', scroll.y);
     mask = maskFn();
     instance = whatFn();
     /*
@@ -101,7 +100,7 @@ function positionByScroll_(scroll, rect, maskFn, whatFn) {
     start.layer(instance.mask(mask));
     */
     //start.layer(instance.mask(mask).scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y));
-    start.layer(transformInstance(instance.mask(mask), scroll, rect));
+    start.layer(transformInstance(instance.mask(mask), rect));
 }
 
 let scaleX, scaleY = 1.0;
@@ -126,9 +125,8 @@ function transformInstance(instance, rect) {
 }
 
 function transformInstanceScroll(instance, scroll, rect) {
-    return instance.scale(1, rect.width, rect.height)
-                   .scrollX(scroll.x)
-                   .scrollY(scroll.y);
+    console.log('scrollX', scroll.x, 'scrollY', scroll.y);
+    return instance.scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y);
 }
 
 const drawSceneAt_ = function (nodeId) {
@@ -137,6 +135,7 @@ const drawSceneAt_ = function (nodeId) {
             return function() {
                 let nodeRect = transformBounds(geom.node, lastWidth, lastHeight);
                 let nodeBodyRect = transformBounds(geom.body, lastWidth, lastHeight);
+                // start.layer(hg.solid(1,1,1,1));
                 start.mask(hg.solid(1,1,1,1).layer(transformInstance(hg.shape(4,1.0), nodeRect)).invert());
                 console.log('drawSceneAt', nodeId, geom, what);
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));

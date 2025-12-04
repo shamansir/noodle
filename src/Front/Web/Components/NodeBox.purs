@@ -763,7 +763,9 @@ handleQuery = case _ of
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     RenderChanges bounds changes a -> do
-        H.liftEffect $ HydraSynth.drawSceneAt bounds.body unit
+        state <- H.get
+        let nodeId = RawNode.id state.node
+        H.liftEffect $ HydraSynth.drawSceneAt nodeId bounds unit
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
