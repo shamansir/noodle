@@ -13,15 +13,16 @@ import Data.Foldable (foldl, foldr)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Int (toNumber) as Int
 import Data.Map (Map)
-import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, values) as Map
+import Data.Map (empty, lookup, insert, size, fromFoldable, toUnfoldable, keys, values) as Map
 import Data.Map.Extra (update') as MapX
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap) as NT
 import Data.Set (Set)
-import Data.Set (empty, insert, member, fromFoldable) as Set
+import Data.Set (empty, insert, member, fromFoldable, toUnfoldable) as Set
 import Data.Text.Format (Tag) as T
 import Data.Tuple (fst, snd, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (for_, traverse_)
 import Effect.Class (class MonadEffect)
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
 import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
@@ -67,6 +68,7 @@ import Web.Layouts (NodePart(..), toBounds) as Layout
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 import Yoga.Tree.Extended (value) as Tree
+import HydraTk.Synth (clearNodeScenes) as HydraSynth
 
 
 type Slots sr cr =
@@ -447,6 +449,7 @@ handleAction = case _ of
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
                 H.raise $ MoveNode nodeR { left : lastPos.dx, top : lastPos.dy }
+                redrawAllNodesBodies
                 H.raise RefreshHelp
         whenJust (creatingLink state)
             \_ -> do
@@ -462,6 +465,7 @@ handleAction = case _ of
                     -- bounds = findBounds nodeR state <#> Tuple.fst # fromMaybe zeroBounds
                     mouseX = (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
                     mouseY = (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
+                H.liftEffect $ HydraSynth.clearNodeScenes
                 H.modify_ _ { lockOn = DraggingNode nodeR { dx : mouseX, dy : mouseY } } -- { dx : bounds.left - state.offset.left, dy : bounds.top - state.offset.top } }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
                 H.raise RefreshHelp
@@ -516,13 +520,7 @@ handleAction = case _ of
         H.raise $ RequestDocumentation { node : nodeR, curUpdate : mbUpdate }
     PassUpdate nodeR update -> do
         H.tell _nodeBox nodeR $ NodeBox.ApplyChanges update
-        state <- H.get
-        let mbNodeGeom = findGeometry nodeR state
-        let mbNodeBodyBounds = mbNodeGeom >>= findInNode Layout.Body
-        whenJust2 mbNodeGeom mbNodeBodyBounds \nodeGeom nodeBodyBounds -> do
-            let absNodeBounds = nodeGeom.bounds # Bounds.modifyPosition (_ + state.offset)
-            let absNodeBodyBounds = nodeBodyBounds # Bounds.modifyPosition (_ + state.offset)
-            H.tell _nodeBox nodeR $ NodeBox.RenderChanges { node: absNodeBounds, body: absNodeBodyBounds } update
+        redrawNodeBody nodeR
     FromLink linkR (LinkCmp.WasClicked) ->
         H.raise $ Disconnect linkR
     FromValueEditor nodeR inletR (ValueEditor.SendValue value) -> do
@@ -530,6 +528,30 @@ handleAction = case _ of
         whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
             $ RawNode.sendIn inletR value -- (Debug.spy "send value" value)
         H.raise $ TrackValueSend nodeR inletR value
+
+    where
+        findAbsoluteNodeBounds nodeR state =
+            findGeometry nodeR state
+            >>= \nodeGeom -> findInNode Layout.Body nodeGeom <#> \bodyBounds ->
+                { node : nodeGeom.bounds # Bounds.modifyPosition (_ + state.offset)
+                , body : bodyBounds      # Bounds.modifyPosition (_ + state.offset)
+                }
+
+        redrawNodeBody nodeR = do
+            state <- H.get
+            let mbAbsNodeBounds = findAbsoluteNodeBounds nodeR state
+            whenJust mbAbsNodeBounds $
+                H.tell _nodeBox nodeR <<< NodeBox.RenderLatestChange
+
+        redrawAllNodesBodies = do
+            H.liftEffect $ HydraSynth.clearNodeScenes
+            state <- H.get
+            state.nodesGeometry
+                 # Map.toUnfoldable
+                 # Array.sortWith (Tuple.snd >>> _.z)
+                <#> Tuple.fst
+                 # traverse_ redrawNodeBody
+
     {-
     FromValueEditor _ _ ValueEditor.CloseEditor -> do
         H.raise CloseValueEditor

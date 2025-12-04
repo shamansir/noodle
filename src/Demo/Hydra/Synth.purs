@@ -13,4 +13,5 @@ import Front.Shared.Bounds (Bounds)
 foreign import runHydra :: Effect Unit
 foreign import resize :: Int -> Int -> Effect Unit
 foreign import executeHydra :: String -> Effect Unit
-foreign import drawSceneAt :: Id.NodeR -> { node :: Bounds, body :: Bounds } -> Unit -> Effect Unit
+foreign import drawNodeSceneOf :: Id.NodeR -> { node :: Bounds, body :: Bounds } -> Unit -> Effect Unit
+foreign import clearNodeScenes :: Effect Unit

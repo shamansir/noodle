@@ -14,18 +14,15 @@ let lastWidth, lastHeight = 0;
 const CURRENT_SCENE_CVS_ID = 'target-canvas';
 const NODES_BODY_CVS_ID = 'nodes-body-canvas';
 
+let targetCanvas, nodesBodyCanvas = null;
+
 let start = null;
-
-
-let state =
-    { nodes : {}
-    };
 
 
 const runHydra_ = function() {
     if (!jsEnv.isBrowser) return;
-    const targetCanvas    = document.getElementById(CURRENT_SCENE_CVS_ID);
-    const nodesBodyCanvas = document.getElementById(NODES_BODY_CVS_ID);
+    targetCanvas    = document.getElementById(CURRENT_SCENE_CVS_ID);
+    nodesBodyCanvas = document.getElementById(NODES_BODY_CVS_ID);
     console.log(targetCanvas);
     hydraPatchInstance = new Hydra({ canvas : targetCanvas, detectAudio: false });
     hydraNodesInstance = new Hydra({ canvas : nodesBodyCanvas, makeGlobal : false, detectAudio: false });
@@ -33,7 +30,7 @@ const runHydra_ = function() {
     start = hg.solid(0,0,0,0);
 
     console.log(hydraPatchInstance);
-    hydraScene_();
+    _hydraScene();
 };
 
 
@@ -61,7 +58,7 @@ const executeHydra_ = function(programString) {
     }
 }
 
-const hydraScene_ = function() {
+const _hydraScene = function() {
     // osc(4, 0.1, 1.2).out();
     var n = 50;
     var func = () => osc(30,0.1,1).modulate(noise(4,0.1));
@@ -74,17 +71,17 @@ const hydraScene_ = function() {
 }
 
 // const theMask = function() { return hg.shape(4, 1, 0.0001).scale(1, scaleXFactor, scaleYFactor); };
-const ovalMask = function() { return hg.shape(999, 1.0, 0.6).scale(1, 0.5, 0.5); };
+const _ovalMask = function() { return hg.shape(999, 1.0, 0.6).scale(1, 0.5, 0.5); };
 
 
-function positionAt_(rect, maskFn, whatFn) {
+function _positionAt(rect, maskFn, whatFn) {
     // scrollX = ((1.0 - left) - 0.5) - (scaleX / 2);
     // scrollY = ((1.0 - top) - 0.5) - (scaleY / 2);
 
-    positionByScroll_(rect, maskFn, whatFn);
+    _positionByScroll(rect, maskFn, whatFn);
 }
 
-function positionByScroll_(rect, maskFn, whatFn) {
+function _positionByScroll(rect, maskFn, whatFn) {
     if (!hg || !start) return;
     mask = maskFn();
     instance = whatFn();
@@ -100,14 +97,14 @@ function positionByScroll_(rect, maskFn, whatFn) {
     start.layer(instance.mask(mask));
     */
     //start.layer(instance.mask(mask).scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y));
-    start.layer(transformInstance(instance.mask(mask), rect));
+    start.layer(_transformInstance(instance.mask(mask), rect));
 }
 
 let scaleX, scaleY = 1.0;
 let posX, posY = 0.0;
 let nodeRect, nodeBodyRect = null;
 
-function transformBounds(rect, toWidth, toHeight) {
+function _transformBounds(rect, toWidth, toHeight) {
     return {
         left: rect.left / toWidth,
         top: rect.top   / toHeight,
@@ -116,31 +113,31 @@ function transformBounds(rect, toWidth, toHeight) {
     };
 }
 
-function scrollParams(rect) {
+function _scrollParams(rect) {
     return { x : ((1.0 - rect.left) - 0.5) - (rect.width / 2), y: ((1.0 - rect.top) - 0.5) - (rect.height / 2) };
 }
 
-function transformInstance(instance, rect) {
-    return transformInstanceScroll(instance, scrollParams(rect), rect);
+function _transformInstance(instance, rect) {
+    return _transformInstanceScroll(instance, _scrollParams(rect), rect);
 }
 
-function transformInstanceScroll(instance, scroll, rect) {
+function _transformInstanceScroll(instance, scroll, rect) {
     console.log('scrollX', scroll.x, 'scrollY', scroll.y);
     return instance.scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y);
 }
 
-const drawSceneAt_ = function (nodeId) {
+const drawNodeSceneOf_ = function (nodeId) {
     return function(geom) {
         return function(what) {
             return function() {
-                let nodeRect = transformBounds(geom.node, lastWidth, lastHeight);
-                let nodeBodyRect = transformBounds(geom.body, lastWidth, lastHeight);
+                let nodeRect = _transformBounds(geom.node, lastWidth, lastHeight);
+                let nodeBodyRect = _transformBounds(geom.body, lastWidth, lastHeight);
                 // start.layer(hg.solid(1,1,1,1));
-                start.mask(hg.solid(1,1,1,1).layer(transformInstance(hg.shape(4,1.0), nodeRect)).invert());
+                start.mask(hg.solid(1,1,1,1).layer(_transformInstance(hg.shape(4,1.0), nodeRect)).invert());
                 console.log('drawSceneAt', nodeId, geom, what);
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
                 // start.mask(hg.solid(1,1,1,1).layer(hg.shape(4,1.0).scale(1, rect.width, rect.height).scrollX()).invert());
-                positionAt_(nodeBodyRect, ovalMask, function() { return hg.osc(60.0, 0.1, 1.0); });
+                _positionAt(nodeBodyRect, _ovalMask, function() { return hg.osc(60.0, 0.1, 1.0); });
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
                 //hg.shape(4,0.6).invert().color(1,1,1,1);
                 start.out(hg.o0);
@@ -149,8 +146,17 @@ const drawSceneAt_ = function (nodeId) {
     }
 }
 
+const clearNodeScenes_ = function() {
+    if (!nodesBodyCanvas) return;
+    hg.solid(0,0,0,0).out(hg.o0);
+    // const ctx = nodesBodyCanvas.getContext('webgl');
+    // ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+    // ctx.clearRect(0, 0, nodesBodyCanvas.width, nodesBodyCanvas.height);
+}
+
 
 export const runHydra = runHydra_;
 export const resize = resize_;
 export const executeHydra = executeHydra_;
-export const drawSceneAt = drawSceneAt_;
+export const drawNodeSceneOf = drawNodeSceneOf_;
+export const clearNodeScenes = clearNodeScenes_;

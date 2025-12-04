@@ -59,7 +59,7 @@ import Web.Paths as Paths
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.MouseEvent (toEvent) as ME
-import HydraTk.Synth (drawSceneAt) as HydraSynth
+import HydraTk.Synth (drawNodeSceneOf) as HydraSynth
 
 
 type Input strepr chrepr m =
@@ -125,7 +125,7 @@ data Output strepr chrepr
 
 data Query strepr chrepr a
     = ApplyChanges (RawNode.NodeChanges strepr chrepr) a
-    | RenderChanges { node :: Bounds, body :: Bounds } (RawNode.NodeChanges strepr chrepr) a
+    | RenderLatestChange { node :: Bounds, body :: Bounds } a
     | ApplyDragStart a
     | ApplyDragEnd a
     | QueryInletData Id.InletR
@@ -762,10 +762,11 @@ handleQuery = case _ of
     ApplyChanges changes a -> do
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
-    RenderChanges bounds changes a -> do
+    RenderLatestChange bounds a -> do
         state <- H.get
+        let mbLatestUpdate = state.latestUpdate
         let nodeId = RawNode.id state.node
-        H.liftEffect $ HydraSynth.drawSceneAt nodeId bounds unit
+        H.liftEffect $ HydraSynth.drawNodeSceneOf nodeId bounds unit
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
