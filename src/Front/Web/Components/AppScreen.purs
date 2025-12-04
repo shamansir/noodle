@@ -108,7 +108,7 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import Front.Shared.StatusBarCells as SPCells
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
-import HydraTk.Synth (resize, executeHydra) as HydraSynth
+import HydraTk.Synth (resizeSynth, executeHydraCode, clearNodeBodies) as HydraSynth
 
 import WebSocket.Types (WebSocket)
 import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
@@ -567,8 +567,10 @@ handleAction ploc = case _ of
         window    <- H.liftEffect $ Web.window
         newWidth  <- H.liftEffect $ Window.innerWidth window
         newHeight <- H.liftEffect $ Window.innerHeight window
-        H.modify_ $ _ { size = Just { width : Int.toNumber newWidth, height : Int.toNumber newHeight } }
-        H.liftEffect $ HydraSynth.resize newWidth newHeight
+        let nextSize = { width : Int.toNumber newWidth, height : Int.toNumber newHeight }
+        H.modify_ $ _ { size = Just nextSize }
+        H.tell _patchArea SVG $ PatchArea.PassToSynth $ HydraSynth.resizeSynth newWidth newHeight
+        H.tell _patchArea SVG $ PatchArea.TryRedrawNodeBodies {- nextSize -}
         pure unit
     CreatePatch -> do
         state <- H.get
@@ -635,10 +637,10 @@ handleAction ploc = case _ of
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
-            when (Map.size collectedCommands > 0) $ H.liftEffect $ do
+            when (Map.size collectedCommands > 0) $ do
                 let program = Hydra.printToJavaScript $ Hydra.formProgram collectedCommands
-                HydraSynth.executeHydra program
-                Console.log program
+                H.tell _patchArea SVG $ PatchArea.PassToSynth $ HydraSynth.executeHydraCode program
+                H.liftEffect $ Console.log program
     LoadCurrentPatchChanges -> do
         H.liftEffect $ Console.log "load current patch changes"
         mbCurrentPatch <- CState.currentPatch <$> H.get
@@ -857,7 +859,9 @@ performKbAction ploc = case _ of
                                     pinfo.nodesGeometry
                         }
                 Nothing -> pinfo
-        pure unit
+        -- FIXME: doesn't work properly
+        H.tell _patchArea SVG $ PatchArea.PassToSynth HydraSynth.clearNodeBodies
+        H.tell _patchArea SVG PatchArea.TryRedrawNodeBodies
     KL.StartConnecting nodeIndex outletIndex ->
         pure unit
     KL.OpenValueEditor (KL.NodeIndex nodeIndex) (KL.InletIndex inletIndex) -> do

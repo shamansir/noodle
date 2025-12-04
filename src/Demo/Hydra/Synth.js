@@ -156,8 +156,8 @@ const clearNodeScenes_ = function() {
 }
 
 
-export const runHydra = runHydra_;
-export const resize = resize_;
-export const executeHydra = executeHydra_;
-export const drawNodeSceneOf = drawNodeSceneOf_;
-export const clearNodeScenes = clearNodeScenes_;
+export const h_runHydra = runHydra_;
+export const h_resize = resize_;
+export const h_executeHydra = executeHydra_;
+export const h_drawNodeSceneOf = drawNodeSceneOf_;
+export const h_clearNodeScenes = clearNodeScenes_;

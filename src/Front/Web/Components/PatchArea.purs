@@ -68,7 +68,7 @@ import Web.Layouts (NodePart(..), toBounds) as Layout
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
 import Yoga.Tree.Extended (value) as Tree
-import HydraTk.Synth (clearNodeScenes) as HydraSynth
+import HydraTk.Synth as HydraSynth
 
 
 type Slots sr cr =
@@ -128,6 +128,8 @@ data Action ps sr cr m
     | FromNodeBox Id.NodeR (NodeBox.Output sr cr)
     | FromLink Id.LinkR LinkCmp.Output
     | FromValueEditor Id.NodeR Id.InletR (ValueEditor.Output cr)
+    | RedrawNodeBodies -- FIXME: join with `SynthAction`
+    | WithSynth HydraSynth.SynthAction
 
 
 data Output sr cr
@@ -154,6 +156,8 @@ data Query sr cr a
     -- | RequestNodeMove KL.NodeIndex KL.Dir a
     | QueryLock (LockingTask -> a)
     | CallInletValueEditor Id.NodeR Id.InletR a
+    | TryRedrawNodeBodies a -- FIXME: join with `SynthAction`
+    | PassToSynth HydraSynth.SynthAction a
 
 
 component
@@ -449,7 +453,7 @@ handleAction = case _ of
                 H.modify_ _ { lockOn = NoLock }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragEnd
                 H.raise $ MoveNode nodeR { left : lastPos.dx, top : lastPos.dy }
-                redrawAllNodesBodies
+                handleAction RedrawNodeBodies
                 H.raise RefreshHelp
         whenJust (creatingLink state)
             \_ -> do
@@ -465,7 +469,7 @@ handleAction = case _ of
                     -- bounds = findBounds nodeR state <#> Tuple.fst # fromMaybe zeroBounds
                     mouseX = (Int.toNumber $ Mouse.clientX mevt) - state.offset.left
                     mouseY = (Int.toNumber $ Mouse.clientY mevt) - state.offset.top
-                H.liftEffect $ HydraSynth.clearNodeScenes
+                handleAction $ WithSynth $ HydraSynth.clearNodeBodies
                 H.modify_ _ { lockOn = DraggingNode nodeR { dx : mouseX, dy : mouseY } } -- { dx : bounds.left - state.offset.left, dy : bounds.top - state.offset.top } }
                 H.tell _nodeBox nodeR NodeBox.ApplyDragStart
                 H.raise RefreshHelp
@@ -528,6 +532,11 @@ handleAction = case _ of
         whenJust (state.nodes # Array.find (RawNode.id >>> (_ == nodeR)))
             $ RawNode.sendIn inletR value -- (Debug.spy "send value" value)
         H.raise $ TrackValueSend nodeR inletR value
+    RedrawNodeBodies -> do
+        redrawAllNodesBodies
+    WithSynth synthAction -> do
+        H.liftEffect $ HydraSynth.perform synthAction
+
 
     where
         findAbsoluteNodeBounds nodeR state =
@@ -544,7 +553,6 @@ handleAction = case _ of
                 H.tell _nodeBox nodeR <<< NodeBox.RenderLatestChange
 
         redrawAllNodesBodies = do
-            H.liftEffect $ HydraSynth.clearNodeScenes
             state <- H.get
             state.nodesGeometry
                  #  Map.toUnfoldable
@@ -602,7 +610,12 @@ handleQuery = case _ of
                     }
             H.raise $ RequestValueEditor nodeR editorDef
         pure $ Just a
-
+    TryRedrawNodeBodies a -> do
+        handleAction RedrawNodeBodies
+        pure $ Just a
+    PassToSynth synthAction a -> do
+        handleAction $ WithSynth synthAction
+        pure $ Just a
 
 findFocusedNodes :: PositionXY -> NodesGeometry -> Set Id.NodeR
 findFocusedNodes pos = convertMap >>> foldr foldF Set.empty

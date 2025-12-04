@@ -8,7 +8,8 @@ import Data.Maybe (Maybe(..))
 
 import Halogen (RefLabel)
 
-import HydraTk.Synth (runHydra) as HydraSynth
+import HydraTk.Synth (perform, startSynth) as HydraSynth
+
 
 
 newtype PState =
@@ -18,5 +19,5 @@ newtype PState =
 
 init :: forall m. MonadEffect m => m PState
 init =
-    liftEffect HydraSynth.runHydra *> pure (PState { canvasRef : Nothing })
+    liftEffect (HydraSynth.perform HydraSynth.startSynth) *> pure (PState { canvasRef : Nothing })
     -- liftEffect runHydra >>= (const $ pure (PState { canvasRef : Nothing }))

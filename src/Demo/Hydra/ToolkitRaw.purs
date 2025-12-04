@@ -33,7 +33,7 @@ import HydraTk.Patch (init) as Patch
 import HydraTk.Types as HYDRA
 import HydraTk.Repr.Wrap as HYDRAW
 import HydraTk.Lang.Program (Program(..), formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra
-import HydraTk.Synth (resize, executeHydra) as HydraSynth
+import HydraTk.Synth (perform, resizeSynth, executeHydraCode) as HydraSynth
 import HydraTk.Lang.Command as Hydra
 import Data.Tuple.Nested ((/\))
 
@@ -1041,7 +1041,7 @@ toolkit = Toolkit.empty (Proxy :: _ HYDRA) (Id.toolkitR "Hydra")
             what <- RP.receive "what"
             -- target <- RP.receive "target"
             let program = Hydra.printToJavaScript $ Hydra.Program [ Hydra.Chain HYDRA.Output0 {- target -} what ]
-            liftEffect $ HydraSynth.executeHydra program
+            liftEffect $ HydraSynth.perform $ HydraSynth.executeHydraCode program
             liftEffect $ Console.log program
             pure unit
     )
