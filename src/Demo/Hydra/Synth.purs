@@ -31,6 +31,7 @@ data ScenePreviewAction
 
 data NodeBodiesAction
     = DrawNodeBody Id.NodeR { node :: Bounds, body :: Bounds }
+    -- | RedrawAllNodeBodies (Array (Id.NodeR /\ { node :: Bounds, body :: Bounds })) -- TODO
     | ClearNodeBodies
 
 

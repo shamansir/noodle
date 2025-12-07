@@ -38,6 +38,9 @@ import Noodle.Ui.Palette.Set.X11 as X11
 import Noodle.Text.ToCode (class ToCode, toPureScript, toPureScript', toJavaScript, toJavaScript')
 import Noodle.Text.Code.Target (PS, JS, pureScript, javaScript)
 
+import Foreign (Foreign)
+import Yoga.JSON (readImpl, writeImpl, class ReadForeign, class WriteForeign, undefined)
+
 
 
 {-
@@ -727,7 +730,7 @@ hydraType_ :: forall a. Partial => String -> CST.Type a
 hydraType_ ctor = typeCtor $ hydraPrefix_ <> ctor
 
 
-data HydraApiArguments v
+data HydraApiArguments v -- FIXME: merge into array
     = Zero
     | One v
     | OneN String v
@@ -1520,3 +1523,94 @@ instance ToCode PS opts EOrV where
 
 instance ToCode JS opts FnArg where
     toCode = const $ const $ fnArgToJavaScript
+
+
+instance WriteForeign EaseType where
+    writeImpl = case _ of
+        Linear -> writeImpl "linear"
+        InOutCubic -> writeImpl "inOutCubic"
+
+
+instance WriteForeign Ease where
+    writeImpl e = writeImpl { ease : typeOf e, value : valueOf e }
+        where
+            typeOf = case _ of
+                NoEase -> "none"
+                Ease _ -> "ease"
+                Fast _ -> "fast"
+                Smooth _ -> "smooth"
+                Fit _ -> "fit"
+                Offset _ -> "offset"
+            valueOf = case _ of
+                NoEase -> undefined
+                Ease easeType -> writeImpl easeType
+                Fast val -> writeImpl val
+                Smooth val -> writeImpl val
+                Fit { low, high } ->
+                    writeImpl
+                        { low: writeImpl low
+                        , high: writeImpl high
+                        }
+                Offset val -> writeImpl val
+
+
+instance WriteForeign Value where
+    -- FIXME: we may use string encoding for JSON as well?
+    writeImpl v = writeImpl { type : typeOf v, value : valueOf v }
+        where
+            typeOf = case _ of
+                None -> "none"
+                Undefined -> "undefined"
+                Number _ -> "number"
+                VArray _ _ -> "array"
+                Time -> "time"
+                MouseX -> "mouseX"
+                MouseY -> "mouseY"
+                Width -> "width"
+                Height -> "height"
+                Pi -> "pi"
+                Fft _ -> "fft"
+                Dep _ -> "depFn"
+            valueOf = case _ of
+                None -> undefined
+                Undefined -> undefined
+                Number n -> writeImpl n
+                VArray (Values vals) ease ->
+                    writeImpl
+                        { values: (writeImpl <$> vals)
+                        , ease: writeImpl ease
+                        }
+                Time -> undefined
+                MouseX -> undefined
+                MouseY -> undefined
+                Width -> undefined
+                Height -> undefined
+                Pi -> undefined
+                Fft (AudioBin bin) -> writeImpl bin
+                Dep _ -> undefined -- FIXME
+
+
+hydraFnToForeign :: forall a. HydraApiFunction a => a -> Foreign
+hydraFnToForeign a = case hydraFunction a of
+    name /\ arguments ->
+        writeImpl
+            { name
+            , arguments: case arguments of
+                Zero -> []
+                One v -> [ { name : "", value : v } ]
+                OneN n v -> [ { name : n, value : v } ]
+                Rec args -> (\(n /\ v) -> { name : n, value : v }) <$> args
+            }
+
+
+hydraMethodToForeign :: forall @over @arg a. WriteForeign arg => HydraApiMethod over arg a => a -> Foreign
+hydraMethodToForeign a = case hydraMethod a of
+    name /\ arguments ->
+        writeImpl
+            { name
+            , arguments : case arguments of
+                Zero -> []
+                One v -> [ { name : "", value : v } ]
+                OneN n v -> [ { name : n, value : v } ]
+                Rec args -> (\(n /\ v) -> { name : n, value : v }) <$> args
+            }
