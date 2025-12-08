@@ -135,6 +135,7 @@ const drawNodeSceneOf_ = function (nodeId) {
                 // start.layer(hg.solid(1,1,1,1));
                 start.mask(hg.solid(1,1,1,1).layer(_transformInstance(hg.shape(4,1.0), nodeRect)).invert());
                 console.log('drawSceneAt', nodeId, geom, what);
+                console.log('~~what~~', JSON.stringify(what, null, 2));
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
                 // start.mask(hg.solid(1,1,1,1).layer(hg.shape(4,1.0).scale(1, rect.width, rect.height).scrollX()).invert());
                 _positionAt(nodeBodyRect, _ovalMask, function() { return hg.osc(60.0, 0.1, 1.0); });
@@ -155,6 +156,104 @@ const clearNodeScenes_ = function() {
     // ctx.clearRect(0, 0, nodesBodyCanvas.width, nodesBodyCanvas.height);
 }
 
+const _unpackVal = function(h, v) {
+    if (v.type === 'tex') {
+        return _unpackTex(h, v.value);
+    } else if (v.type === 'number') {
+        return v.value;
+    } else if (v.type === 'pi') {
+        return h.pi;
+    } else if (v.type === 'none') {
+        return null;
+    }
+}
+
+const _unpackTex = function(h, t) {
+    if (t.type === 'empty') {
+        return h.solid(0,0,0,0);
+    } else if (t.type === 'start') {
+        return _unpackStart(h, t.tex);
+    } else if (t.type === 'geometry') {
+        return _unpackApply(h, t.tex);
+    } else if (t.type === 'color') {
+        return _unpackApply(h, t.tex);
+    } else if (t.type === 'blend') {
+        return _unpackApplyWith(h, t.tex);
+    } else if (t.type === 'modulate') {
+        return _unpackApplyWith(h, t.tex);
+    }
+}
+
+const _unpackStart = function(h, s) {
+    if (s.type === 'from') {
+        return _callSourceFn(h, s.src);
+    } else if (s.type === 'load') {
+        return _unpackOut(h, s.src);
+    }
+}
+
+const _unpackApply = function(h, a) {
+    const _what = _unpackTex(h, a.what);
+    return _callApplyFn(h, _what, _with, a.fn);
+}
+
+const _unpackApplyWith = function(h, a) {
+    const _what = _unpackTex(h, a.what);
+    const _with = _unpackTex(h, a.with);
+    return _callApplyWithFn(h, _what, _with, a.fn);
+}
+
+const _unpackOut = function(h, o) {
+    if (o.out === 0) return h.o0;
+    if (o.out === 1) return h.o1;
+    if (o.out === 2) return h.o2;
+    if (o.out === 3) return h.o3;
+}
+
+const _hydraSourceFn =
+    {
+        'osc': function(h, args) { return h.osc(args[0], args[1], args[2]); },
+        'voronoi': function(h, args) { return h.voronoi(args[0], args[1], args[2]); },
+        'noise': function(h, args) { return h.noise(args[0], args[1]); },
+        'gradient': function(h, args) { return h.gradient(args[0]); },
+        'solid': function(h, args) { return h.solid(args[0], args[1], args[2], args[3]); },
+        'src': function(h, args) { return h.src(args[0]); }
+    };
+
+const _hydraApplyFn =
+    {
+        'color': function(h, _what, args) { return _what.color(args[0], args[1], args[2], args[3]); },
+        'pixelate': function(h, _what, args) { return _what.pixelate(args[0], args[1], args[2], args[3]); }
+    };
+
+const _hydraApplyWithFn =
+    {
+        'blend': function(h, _what, _with, args) { return _what.blend(_with, args[0]); }
+    };
+
+const _callSourceFn = function(h, fn) {
+    if (!_hydraSourceFn.hasOwnProperty(fn.name)) {
+        console.warn('Unknown hydra source fn:', fn.name);
+        return null;
+    }
+    return _hydraSourceFn[fn.name](h, fn.args.map((arg) => _unpackVal(h, arg.value)));
+}
+
+const _callApplyFn = function(h, _what, fn) {
+    if (!_hydraApplyFn.hasOwnProperty(fn.name)) {
+        console.warn('Unknown hydra apply fn:', fn.name);
+        return null;
+    }
+    return _hydraApplyFn[fn.name](h, _what, fn.args.map((arg) => _unpackVal(h, arg.value)));
+}
+
+const _callApplyWithFn = function(h, _what, _with, fn) {
+    if (!_hydraApplyWithFn.hasOwnProperty(fn.name)) {
+        console.warn('Unknown hydra apply-with fn:', fn.name);
+        return null;
+    }
+    return _hydraApplyWithFn[fn.name](h, _what, _with, fn.args.map((arg) => _unpackVal(h, arg.value)));
+}
 
 export const h_runHydra = runHydra_;
 export const h_resize = resize_;
