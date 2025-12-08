@@ -6,6 +6,8 @@ import Type.Proxy (Proxy(..))
 
 import Partial.Unsafe (unsafePartial)
 
+import Foreign (Foreign)
+
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodePoints as String
 import Data.Number as Number
@@ -46,9 +48,12 @@ import HydraTk.Repr.Parser as RP
 import HydraTk.Repr.Target (HYDRA_V, hydraV)
 import HydraTk.Repr.Target (_encode) as H
 import HydraTk.Repr.Show (class HydraShow, hShow, class HydraToChannelLabel, toChannelLabel, HChannelLabel)
+import HydraTk.Synth (HydraScene(..), class ToHydraScene)
 
 import PureScript.CST.Types as CST
 import Tidy.Codegen (exprApp, exprCtor, exprIdent, exprRecord, exprString, typeCtor)
+import Yoga.JSON (class WriteForeign, class ReadForeign, writeImpl, readImpl)
+import Yoga.JSON (undefined) as F
 
 
 -- import CompArts.Product as CAI
@@ -761,3 +766,68 @@ instance HydraToChannelLabel WrapRepr where
         -- Product product -> toChannelLabel product
         CBS cbs -> toChannelLabel cbs
         WRError err -> "ERR"
+
+
+instance ToHydraScene WrapRepr where
+    toHydraScene :: WrapRepr -> HydraScene
+    toHydraScene = _encodeWrapRepr >>> writeImpl >>> HydraScene
+
+
+type WrapReprEnc = { type :: String, value :: Foreign }
+
+
+_encodeWrapRepr :: WrapRepr -> WrapReprEnc
+_encodeWrapRepr v = { type : typeOf v, value : valueOf v }
+    where
+        typeOf = case _ of
+            Value _ -> "val"
+            Unit _ -> "unit"
+            Texture _ -> "tex"
+            TOrV (HT.T _) -> "tex"
+            TOrV (HT.V _) -> "val"
+            OutputN _ -> "out"
+            SourceN _ -> "src"
+            TODO _ -> "todo"
+            Context _ -> "ctx"
+            UpdateFn _ -> "update-fn"
+            Source _ -> "src"
+            Url _ -> "url"
+            GlslFn _ -> "glsl"
+            SourceOptions _ -> "src-opts"
+            Values _ -> "vals"
+            Ease _ -> "ease"
+            Audio _ -> "aud"
+            AudioBin _ -> "bin"
+            ExtSource _ -> "ext"
+            Target _ -> "trg"
+            DepFn _ -> "dep-fn"
+            -- Products products -> ?wh products
+            -- Product product -> ?wh product
+            CBS _ -> "cbs"
+            WRError _ -> "err"
+        valueOf = case _ of
+            Value val -> writeImpl val
+            Unit u -> writeImpl F.undefined
+            Texture tex -> writeImpl tex
+            TOrV (HT.T tex) -> writeImpl tex
+            TOrV (HT.V val) -> writeImpl val
+            OutputN on -> writeImpl on
+            SourceN sn -> writeImpl sn
+            TODO todo -> writeImpl F.undefined
+            Context ctx -> writeImpl F.undefined -- FIXME
+            UpdateFn fn -> writeImpl F.undefined -- FIXME
+            Source src -> writeImpl src
+            Url url -> writeImpl F.undefined -- FIXME
+            GlslFn glsl -> writeImpl F.undefined -- FIXME
+            SourceOptions opts -> writeImpl F.undefined -- FIXME
+            Values (HT.Values vals) -> writeImpl vals
+            Ease ease -> writeImpl ease
+            Audio audio -> writeImpl F.undefined -- FIXME
+            AudioBin bin -> writeImpl F.undefined -- FIXME
+            ExtSource ext -> writeImpl F.undefined -- FIXME
+            Target trg -> writeImpl F.undefined -- FIXME
+            DepFn fn -> writeImpl F.undefined -- FIXME
+            -- Products products -> ?wh products
+            -- Product product -> ?wh product
+            CBS cbs -> writeImpl F.undefined -- FIXME
+            WRError err -> writeImpl F.undefined -- FIXME

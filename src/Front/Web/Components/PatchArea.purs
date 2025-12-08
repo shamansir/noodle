@@ -169,6 +169,7 @@ component
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => HydraSynth.ToHydraScene cr
     => WebEditor tk cr m
     => Proxy tk
     -> TargetLayer
@@ -212,6 +213,7 @@ render
     => PossiblyToSignature tk (ValueInChannel cr) (ValueInChannel cr) Id.FamilyR
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
+    => HydraSynth.ToHydraScene cr
     => WebEditor tk cr m
     => TargetLayer
     -> Proxy tk

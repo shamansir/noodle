@@ -186,7 +186,7 @@ data Blend
     | Add Value -- amount
     | Diff
     | Layer Value -- amount
-    | Mask
+    | Mask -- TODO: has parameters! see first example https://ojack.xyz/hydra-functions/
     | Mult Value -- amount
     | Sub Value -- amount
 
@@ -1525,92 +1525,177 @@ instance ToCode JS opts FnArg where
     toCode = const $ const $ fnArgToJavaScript
 
 
-instance WriteForeign EaseType where
-    writeImpl = case _ of
-        Linear -> writeImpl "linear"
-        InOutCubic -> writeImpl "inOutCubic"
+type EaseEnc = { ease :: String, value :: Foreign }
+type ValueEnc = { type :: String, value :: Foreign }
+type SourceEnc = { type :: String, src :: Foreign }
+type TextureEnc = { type :: String, tex :: Foreign }
+type FnEnc a = { name :: String, arguments :: Array { name :: String, value :: a } }
 
+
+_encodeEase :: Ease -> EaseEnc
+_encodeEase e = { ease : typeOf e, value : valueOf e }
+    where
+        typeOf = case _ of
+            NoEase -> "none"
+            Ease _ -> "ease"
+            Fast _ -> "fast"
+            Smooth _ -> "smooth"
+            Fit _ -> "fit"
+            Offset _ -> "offset"
+        valueOf = case _ of
+            NoEase -> undefined
+            Ease easeType -> writeImpl easeType
+            Fast val -> writeImpl val
+            Smooth val -> writeImpl val
+            Fit { low, high } ->
+                writeImpl
+                    { low: writeImpl low
+                    , high: writeImpl high
+                    }
+            Offset val -> writeImpl val
+
+
+_encodeSource :: Source -> SourceEnc
+_encodeSource src = { type : typeOf src, src : valueOf src }
+    where
+        typeOf = case _ of
+            From _ -> "from"
+            Load _ -> "load"
+            External _ -> "ext"
+        valueOf = case _ of
+            From from -> hydraFnToForeign from
+            Load outputN -> writeImpl outputN
+            External sourceN -> writeImpl sourceN
+
+
+_encodeValue :: Value -> ValueEnc
+_encodeValue v = { type : typeOf v, value : valueOf v }
+    where
+        typeOf = case _ of
+            None -> "none"
+            Undefined -> "undefined"
+            Number _ -> "number"
+            VArray _ _ -> "array"
+            Time -> "time"
+            MouseX -> "mouseX"
+            MouseY -> "mouseY"
+            Width -> "width"
+            Height -> "height"
+            Pi -> "pi"
+            Fft _ -> "fft"
+            Dep _ -> "depFn"
+        valueOf = case _ of
+            None -> undefined
+            Undefined -> undefined
+            Number n -> writeImpl n
+            VArray (Values vals) ease ->
+                writeImpl
+                    { values: (writeImpl <$> vals)
+                    , ease: writeImpl ease
+                    }
+            Time -> undefined
+            MouseX -> undefined
+            MouseY -> undefined
+            Width -> undefined
+            Height -> undefined
+            Pi -> undefined
+            Fft (AudioBin bin) -> writeImpl bin
+            Dep _ -> undefined -- FIXME
+
+
+_encodeFn :: forall arg. WriteForeign arg => String /\ HydraApiArguments arg -> FnEnc arg
+_encodeFn (name /\ arguments) =
+    { name
+    , arguments: case arguments of
+        Zero -> []
+        One v -> [ { name : "", value : v } ]
+        OneN n v -> [ { name : n, value : v } ]
+        Rec args -> (\(n /\ v) -> { name : n, value : v }) <$> args
+    }
+
+
+_encodeTexture :: Texture -> TextureEnc
+_encodeTexture tex = { type : typeOf tex, tex : valueOf tex }
+    where
+        typeOf = case _ of
+            Empty -> "empty"
+            Start _ -> "start"
+            BlendOf _ _ -> "blend"
+            Filter _ _ -> "filter"
+            ModulateWith _ _ -> "modulate"
+            Geometry _ _ -> "geometry"
+            CallGlslFn _ _ -> "glsl-fn"
+        valueOf = case _ of
+            Empty -> undefined
+            Start src -> writeImpl src
+            BlendOf { what, with } blend ->
+                writeImpl
+                    { what: writeImpl what
+                    , with: writeImpl with
+                    , fn: hydraFnToForeign blend
+                    }
+            Filter texture colorOp ->
+                writeImpl
+                    { what: writeImpl texture
+                    , fn: hydraFnToForeign colorOp
+                    }
+            ModulateWith { what, with } modulate ->
+                writeImpl
+                    { what: writeImpl what
+                    , with: writeImpl with
+                    , fn: hydraFnToForeign modulate
+                    }
+            Geometry texture geometry ->
+                writeImpl
+                    { what: writeImpl texture
+                    , fn: hydraFnToForeign geometry
+                    }
+            CallGlslFn { over, mbWith } glslFnRef ->
+                {-
+                writeImpl
+                    { over: writeImpl over
+                    , mbWith: case mbWith of
+                        Just tx -> Just (writeImpl tx)
+                        Nothing -> Nothing
+                    , glslFnRef: writeImpl glslFnRef
+                    }
+                -} undefined -- FIXME
+
+instance WriteForeign Texture where
+    writeImpl = writeImpl <<< _encodeTexture
+
+instance WriteForeign OutputN where
+    writeImpl = writeImpl <<< case _ of
+        Output0 -> { out : 0 }
+        Output1 -> { out : 1 }
+        Output2 -> { out : 2 }
+        Output3 -> { out : 3 }
+        Output4 -> { out : 4 }
+
+instance WriteForeign SourceN where
+    writeImpl = writeImpl <<< case _ of
+        Source0 -> { src : 0 }
+
+instance WriteForeign Source where
+    writeImpl = writeImpl <<< _encodeSource
+
+instance WriteForeign EaseType where
+    writeImpl = writeImpl <<< case _ of
+        Linear -> "linear"
+        InOutCubic -> "inOutCubic"
 
 instance WriteForeign Ease where
-    writeImpl e = writeImpl { ease : typeOf e, value : valueOf e }
-        where
-            typeOf = case _ of
-                NoEase -> "none"
-                Ease _ -> "ease"
-                Fast _ -> "fast"
-                Smooth _ -> "smooth"
-                Fit _ -> "fit"
-                Offset _ -> "offset"
-            valueOf = case _ of
-                NoEase -> undefined
-                Ease easeType -> writeImpl easeType
-                Fast val -> writeImpl val
-                Smooth val -> writeImpl val
-                Fit { low, high } ->
-                    writeImpl
-                        { low: writeImpl low
-                        , high: writeImpl high
-                        }
-                Offset val -> writeImpl val
-
+    writeImpl = writeImpl <<< _encodeEase
 
 instance WriteForeign Value where
     -- FIXME: we may use string encoding for JSON as well?
-    writeImpl v = writeImpl { type : typeOf v, value : valueOf v }
-        where
-            typeOf = case _ of
-                None -> "none"
-                Undefined -> "undefined"
-                Number _ -> "number"
-                VArray _ _ -> "array"
-                Time -> "time"
-                MouseX -> "mouseX"
-                MouseY -> "mouseY"
-                Width -> "width"
-                Height -> "height"
-                Pi -> "pi"
-                Fft _ -> "fft"
-                Dep _ -> "depFn"
-            valueOf = case _ of
-                None -> undefined
-                Undefined -> undefined
-                Number n -> writeImpl n
-                VArray (Values vals) ease ->
-                    writeImpl
-                        { values: (writeImpl <$> vals)
-                        , ease: writeImpl ease
-                        }
-                Time -> undefined
-                MouseX -> undefined
-                MouseY -> undefined
-                Width -> undefined
-                Height -> undefined
-                Pi -> undefined
-                Fft (AudioBin bin) -> writeImpl bin
-                Dep _ -> undefined -- FIXME
+    writeImpl = writeImpl <<< _encodeValue
+
 
 
 hydraFnToForeign :: forall a. HydraApiFunction a => a -> Foreign
-hydraFnToForeign a = case hydraFunction a of
-    name /\ arguments ->
-        writeImpl
-            { name
-            , arguments: case arguments of
-                Zero -> []
-                One v -> [ { name : "", value : v } ]
-                OneN n v -> [ { name : n, value : v } ]
-                Rec args -> (\(n /\ v) -> { name : n, value : v }) <$> args
-            }
+hydraFnToForeign = hydraFunction >>> _encodeFn >>> writeImpl
 
 
 hydraMethodToForeign :: forall @over @arg a. WriteForeign arg => HydraApiMethod over arg a => a -> Foreign
-hydraMethodToForeign a = case hydraMethod a of
-    name /\ arguments ->
-        writeImpl
-            { name
-            , arguments : case arguments of
-                Zero -> []
-                One v -> [ { name : "", value : v } ]
-                OneN n v -> [ { name : n, value : v } ]
-                Rec args -> (\(n /\ v) -> { name : n, value : v }) <$> args
-            }
+hydraMethodToForeign = hydraMethod >>> _encodeFn >>> writeImpl

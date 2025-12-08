@@ -108,7 +108,7 @@ import Front.Shared.WsLocation (host, port) as WSLoc
 import Front.Shared.StatusBarCells as SPCells
 
 import HydraTk.Lang.Program (formProgram, printToJavaScript, class ToHydraCommand, collectHydraCommands) as Hydra -- FIXME
-import HydraTk.Synth (resizeSynth, executeHydraCode, clearNodeBodies) as HydraSynth
+import HydraTk.Synth (resizeSynth, executeHydraCode, clearNodeBodies, class ToHydraScene) as HydraSynth
 
 import WebSocket.Types (WebSocket)
 import WebSocket.Client.Socket (handleEv, createWebSocket, Event(..)) as WSocket
@@ -180,6 +180,7 @@ component
     => Ndf.ValueEncode cr
     => Ndf.ParseableRepr cr
     => Hydra.ToHydraCommand sr
+    => HydraSynth.ToHydraScene cr
     => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps
@@ -241,6 +242,7 @@ render
     => T.At At.StatusLine cr
     => T.At At.ChannelLabel cr
     => T.At At.Documentation cr
+    => HydraSynth.ToHydraScene cr
     => WebEditor tk cr m
     => Proxy loc
     -> Proxy ps

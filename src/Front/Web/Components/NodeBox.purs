@@ -4,13 +4,14 @@ import Prelude
 
 import Blessed.Internal.BlessedSubj (Button)
 import Blessed.UI.DataDisplay.ProgressBar.Option (mouse)
+import Control.Monad.Extra (whenJust)
 import Data.Array ((:))
 import Data.Array (length, snoc) as Array
 import Data.Foldable (foldl)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Int (toNumber) as Int
 import Data.Map (lookup) as Map
-import Data.Map.Extra (mapKeys) as MapX
+import Data.Map.Extra (mapKeys, lookupBy) as MapX
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Newtype (unwrap, wrap) as NT
 import Data.String (length, toUpper, drop) as String
@@ -39,7 +40,7 @@ import Noodle.Raw.Node (Node) as Raw
 import Noodle.Raw.Node (NodeChanges, id, shape, family) as RawNode
 import Noodle.Repr.ChRepr (class WriteChannelRepr, writeChannelRepr)
 import Noodle.Repr.ValueInChannel (ValueInChannel)
-import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey) as ViC
+import Noodle.Repr.ValueInChannel (resolve, _reportMissingKey, toMaybe) as ViC
 import Noodle.Toolkit (class MarkToolkit, class HasChRepr)
 import Noodle.Ui.Palette.Item as P
 import Noodle.Ui.Palette.Set.Flexoki as Palette
@@ -60,6 +61,7 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.MouseEvent (toEvent) as ME
 import HydraTk.Synth (perform, drawNodeBody) as HydraSynth
+import HydraTk.Synth (HydraScene(..), class ToHydraScene, toHydraScene)
 
 
 type Input strepr chrepr m =
@@ -143,6 +145,7 @@ component
      . MonadEffect m
     => MarkToolkit tk
     => HasChRepr tk chrepr
+    => ToHydraScene chrepr
     => PossiblyToSignature tk (ValueInChannel chrepr) (ValueInChannel chrepr) Id.FamilyR
     => T.At At.StatusLine chrepr
     => T.At At.ChannelLabel chrepr
@@ -757,16 +760,20 @@ handleAction ptk = case _ of
         H.raise $ ReportMouseMove evt
 
 
-handleQuery :: forall action strepr chrepr m a. MonadEffect m => Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
+handleQuery :: forall action strepr chrepr m a. MonadEffect m => ToHydraScene chrepr => Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
         H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     RenderLatestChange bounds a -> do
         state <- H.get
-        let mbLatestUpdate = state.latestUpdate
+        let mbOutScene =
+                (state.latestUpdate <#> _.outlets)
+                >>= MapX.lookupBy (Tuple.snd >>> Id.outletRName >>> (_ == "out"))
+                >>= ViC.toMaybe
         let nodeId = Debug.spy "Redraw node: " $ RawNode.id state.node
-        H.liftEffect $ HydraSynth.perform $ HydraSynth.drawNodeBody nodeId bounds
+        whenJust mbOutScene
+            $ H.liftEffect <<< HydraSynth.perform <<< HydraSynth.drawNodeBody nodeId bounds <<< toHydraScene
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
         pure $ Just a
     ApplyDragStart a -> do
