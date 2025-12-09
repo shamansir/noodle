@@ -5,8 +5,6 @@ import Prelude
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write) as Ref
 
-import Debug as Debug
-
 import Type.Proxy (Proxy(..))
 
 import Control.Monad.Rec.Class (class MonadRec)
@@ -165,8 +163,8 @@ _runOnInletUpdates node =
   where
     runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
     isHotUpdate = Tuple.fst >>> case _ of
-        Fn.AllInlets          -> Debug.spy "all hot" $ RawShape.hasHotInlets $ shape node
-        Fn.SingleInlet inletR -> Debug.spy ("single hot" <> show inletR) $ fromMaybe false $ RawShape.isHotInlet inletR $ shape node
+        Fn.AllInlets          -> RawShape.hasHotInlets $ shape node
+        Fn.SingleInlet inletR -> fromMaybe false $ RawShape.isHotInlet inletR $ shape node
 
 
 -- TODO: private

@@ -2,8 +2,6 @@ module Web.Components.AppScreen where
 
 import Prelude
 
-import Debug as Debug
-
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
 
@@ -613,7 +611,7 @@ handleAction ploc = case _ of
                 H.liftEffect
                     $  Signal.runSignal
                     $  RawNode.subscribeChanges rawNode
-                    ~> Debug.spy "Node change"
+                    -- ~> Debug.spy "Node change"
                     ~> PassUpdate (Patch.id curPatch) nodeR
                     ~> HSS.notify listener
                 -- H.liftEffect $ HSS.notify listener $ PassUpdate (Patch.id curPatch) nodeR $ Debug.spy "Cur change" curChanges
@@ -631,11 +629,11 @@ handleAction ploc = case _ of
 
             H.lift $ RawNode.run rawNode
 
-            handleAction ploc $ PassUpdate (Patch.id curPatch) nodeR $ Debug.spy "Cur change" curChanges
+            handleAction ploc $ PassUpdate (Patch.id curPatch) nodeR curChanges
     PassUpdate patchR nodeR update -> do
-        H.liftEffect $ Console.log "pass update"
-        H.get >>= CState.currentPatch >>> Debug.spy ("Current Patch, expected: " <> show patchR) >>> whenJust_ \curPatch -> do
-            H.liftEffect $ Console.log "got update"
+        -- H.liftEffect $ Console.log "pass update"
+        H.get >>= CState.currentPatch >>> whenJust_ \curPatch -> do
+            -- H.liftEffect $ Console.log "got update"
             when (Patch.id curPatch == patchR) $
                 H.tell _patchArea SVG $ PatchArea.ApplyUpdate nodeR update
             collectedCommands <- H.lift $ Hydra.collectHydraCommands curPatch
@@ -644,7 +642,7 @@ handleAction ploc = case _ of
                 H.tell _patchArea SVG $ PatchArea.PassToSynth $ HydraSynth.executeHydraCode program
                 H.liftEffect $ Console.log program
     LoadCurrentPatchChanges -> do
-        H.liftEffect $ Console.log "load current patch changes"
+        -- H.liftEffect $ Console.log "load current patch changes"
         mbCurrentPatch <- CState.currentPatch <$> H.get
         whenJust mbCurrentPatch \curPatch -> do
             void $ for (Patch.allNodes curPatch) $ \rawNode -> do

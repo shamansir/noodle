@@ -18,7 +18,6 @@ import Data.String (length, toUpper, drop) as String
 import Data.Text.Format as T
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug as Debug
 import Effect.Class (class MonadEffect)
 import Effect.Console as Console
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size)
@@ -763,7 +762,7 @@ handleAction ptk = case _ of
 handleQuery :: forall action strepr chrepr m a. MonadEffect m => ToHydraScene chrepr => Query strepr chrepr a -> H.HalogenM (State strepr chrepr m) action () (Output strepr chrepr) m (Maybe a)
 handleQuery = case _ of
     ApplyChanges changes a -> do
-        H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }
+        H.modify_ _ { latestUpdate = Just changes }
         pure $ Just a
     RenderLatestChange bounds a -> do
         state <- H.get
@@ -771,7 +770,7 @@ handleQuery = case _ of
                 (state.latestUpdate <#> _.outlets)
                 >>= MapX.lookupBy (Tuple.snd >>> Id.outletRName >>> (_ == "out"))
                 >>= ViC.toMaybe
-        let nodeId = Debug.spy "Redraw node: " $ RawNode.id state.node
+        let nodeId = RawNode.id state.node
         whenJust mbOutScene
             $ H.liftEffect <<< HydraSynth.perform <<< HydraSynth.drawNodeBody nodeId bounds <<< toHydraScene
         -- H.modify_ _ { latestUpdate = Just $ Debug.spy "changes" changes }

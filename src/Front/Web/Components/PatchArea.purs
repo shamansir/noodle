@@ -20,9 +20,9 @@ import Data.Newtype (unwrap) as NT
 import Data.Set (Set)
 import Data.Set (empty, insert, member, fromFoldable, toUnfoldable) as Set
 import Data.Text.Format (Tag) as T
+import Data.Traversable (for_, traverse_)
 import Data.Tuple (fst, snd, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (for_, traverse_)
 import Effect.Class (class MonadEffect)
 import Front.Shared.Bounds (Bounds, Position, PositionXY, Size, Delta, zeroBounds)
 import Front.Shared.Bounds (getPosition, getSize, modifyPosition) as Bounds
@@ -37,6 +37,7 @@ import Halogen.Svg.Attributes.Color as HC
 import Halogen.Svg.Attributes.Color.Extra as HCColorX
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.Extra as HSX
+import HydraTk.Synth as HydraSynth
 import Noodle.Fn.Signature (class PossiblyToSignature)
 import Noodle.Id (NodeR, InletR, OutletR, LinkR, FamilyR) as Id
 import Noodle.Raw.Fn.Shape as RawShape
@@ -67,8 +68,8 @@ import Web.Layer (TargetLayer(..))
 import Web.Layouts (NodePart(..), toBounds) as Layout
 import Web.UIEvent.MouseEvent (clientX, clientY) as Mouse
 import Web.UIEvent.WheelEvent (deltaX, deltaY) as Wheel
+import Web.UIEvent.WheelEvent.EventTypes (wheel)
 import Yoga.Tree.Extended (value) as Tree
-import HydraTk.Synth as HydraSynth
 
 
 type Slots sr cr =
@@ -545,7 +546,7 @@ handleAction = case _ of
             findGeometry nodeR state
             >>= \nodeGeom -> findInNode Layout.Body nodeGeom <#> \bodyBounds ->
                 { node : nodeGeom.bounds # Bounds.modifyPosition (_ + state.offset)
-                , body : bodyBounds      # Bounds.modifyPosition (_ + state.offset)
+                , body : bodyBounds      # Bounds.modifyPosition (_ + state.offset) # Bounds.modifyPosition (\p -> p { top = p.top + 5.0 }) -- FIXME: why we have to shift body down?
                 }
 
         redrawNodeBody nodeR = do

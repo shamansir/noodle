@@ -16,7 +16,7 @@ const NODES_BODY_CVS_ID = 'nodes-body-canvas';
 
 const HYDRA_SKIP = Symbol('HYDRA_SKIP');
 
-const LOG = true;
+const LOG = false;
 
 let targetCanvas, nodesBodyCanvas = null;
 
@@ -111,7 +111,7 @@ let nodeRect, nodeBodyRect = null;
 function _transformBounds(rect, toWidth, toHeight) {
     return {
         left: rect.left / toWidth,
-        top: rect.top   / toHeight,
+        top: rect.top / toHeight,
         width: rect.width  / toWidth,
         height: rect.height / toHeight
     };
@@ -203,7 +203,7 @@ const _unpackStart = function(h, s) {
 
 const _unpackApply = function(h, a) {
     const _what = _unpackTex(h, a.what);
-    return _callApplyFn(h, _what, _with, a.fn);
+    return _callApplyFn(h, _what, a.fn);
 }
 
 const _unpackApplyWith = function(h, a) {
@@ -220,26 +220,69 @@ const _unpackOut = function(h, o) {
     return HYDRA_SKIP;
 }
 
+// TODO: auto-generate these mappings from `Hydra` definitions
+
 const _hydraSourceFn =
     {
-        'osc': function(h, args) { return h.osc.apply(null, args); },
-        'voronoi': function(h, args) { return h.voronoi.apply(null, args) },
         'noise': function(h, args) { return h.noise.apply(null, args) },
-        'gradient': function(h, args) { return h.gradient.apply(null, args) },
-        'solid': function(h, args) { return h.solid.apply(null, args); },
+        'voronoi': function(h, args) { return h.voronoi.apply(null, args) },
+        'osc': function(h, args) { return h.osc.apply(null, args); },
         'shape': function(h, args) { return h.shape.apply(null, args); },
-        'src': function(h, args) { return h.src.apply(null, args); }
+        'gradient': function(h, args) { return h.gradient.apply(null, args) },
+        'src': function(h, args) { return h.src.apply(null, args); },
+        'solid': function(h, args) { return h.solid.apply(null, args); },
     };
 
 const _hydraApplyFn =
     {
-        'color': function(h, _what, args) { return _what.color.apply(null, args); },
-        'pixelate': function(h, _what, args) { return _what.pixelate.apply(null, args); }
+        // geometry
+        'rotate': function(h, _what, args) { return _what.rotate.apply(_what, args); },
+        'scale': function(h, _what, args) { return _what.scale.apply(_what, args); },
+        'pixelate': function(h, _what, args) { return _what.pixelate.apply(_what, args); },
+        'repeat': function(h, _what, args) { return _what.repeat.apply(_what, args); },
+        'repeatX': function(h, _what, args) { return _what.repeatX.apply(_what, args); },
+        'repeatY': function(h, _what, args) { return _what.repeatY.apply(_what, args); },
+        'kaleid': function(h, _what, args) { return _what.kaleid.apply(_what, args); },
+        'scrollX': function(h, _what, args) { return _what.scrollX.apply(_what, args); },
+        'scrollY': function(h, _what, args) { return _what.scrollY.apply(_what, args); },
+
+        // color
+        'posterize': function(h, _what, args) { return _what.posterize.apply(_what, args); },
+        'shift': function(h, _what, args) { return _what.shift.apply(_what, args); },
+        'invert': function(h, _what, args) { return _what.invert.apply(_what, args); },
+        'contrast': function(h, _what, args) { return _what.contrast.apply(_what, args); },
+        'brightness': function(h, _what, args) { return _what.brightness.apply(_what, args); },
+        'luma': function(h, _what, args) { return _what.luma.apply(_what, args); },
+        'thresh': function(h, _what, args) { return _what.thresh.apply(_what, args); },
+        'color': function(h, _what, args) { return _what.color.apply(_what, args); },
+        'saturate': function(h, _what, args) { return _what.saturate.apply(_what, args); },
+        'hue': function(h, _what, args) { return _what.hue.apply(_what, args); },
+        'colorama': function(h, _what, args) { return _what.colorama.apply(_what, args); },
+
     };
 
 const _hydraApplyWithFn =
     {
-        'blend': function(h, _what, _with, args) { return _what.blend.apply(null, [_with].concat(args)); }
+        // blend
+        'add': function(h, _what, _with, args) { return _what.add.apply(_what, [_with].concat(args)); },
+        'layer': function(h, _what, _with, args) { return _what.layer.apply(_what, [_with].concat(args)); },
+        'blend': function(h, _what, _with, args) { return _what.blend.apply(_what, [_with].concat(args)); },
+        'mult': function(h, _what, _with, args) { return _what.mult.apply(_what, [_with].concat(args)); },
+        'diff': function(h, _what, _with, args) { return _what.diff.apply(_what, [_with].concat(args)); },
+        'mask': function(h, _what, _with, args) { return _what.mask.apply(_what, [_with].concat(args)); },
+
+        // modulate
+        'modulateRepeat': function(h, _what, _with, args) { return _what.modulateRepeat.apply(_what, [_with].concat(args)); },
+        'modulateRepeatX': function(h, _what, _with, args) { return _what.modulateRepeatX.apply(_what, [_with].concat(args)); },
+        'modulateRepeatY': function(h, _what, _with, args) { return _what.modulateRepeatY.apply(_what, [_with].concat(args)); },
+        'modulateKaleid': function(h, _what, _with, args) { return _what.modulateKaleid.apply(_what, [_with].concat(args)); },
+        'modulateScrollX': function(h, _what, _with, args) { return _what.modulateScrollX.apply(_what, [_with].concat(args)); },
+        'modulateScrollY': function(h, _what, _with, args) { return _what.modulateScrollY.apply(_what, [_with].concat(args)); },
+        'modulate': function(h, _what, _with, args) { return _what.modulate.apply(_what, [_with].concat(args)); },
+        'modulateScale': function(h, _what, _with, args) { return _what.modulateScale.apply(_what, [_with].concat(args)); },
+        'modulatePixelate': function(h, _what, _with, args) { return _what.modulatePixelate.apply(_what, [_with].concat(args)); },
+        'modulateRotate': function(h, _what, _with, args) { return _what.modulateRotate.apply(_what, [_with].concat(args)); },
+        'modulateHue': function(h, _what, _with, args) { return _what.modulateHue.apply(_what, [_with].concat(args)); },
     };
 
 const _callSourceFn = function(h, fn) {
