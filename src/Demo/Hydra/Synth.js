@@ -7,12 +7,16 @@ import * as jsEnv from "browser-or-node";
 
 let hydraPatchInstance = null; // the instance to render global patch scene
 let hydraNodesInstance = null; // the instance for rendering nodes' previews
-let hg = hydraNodesInstance; // shorthand for calling `hydra` on `hydraNodesInstance`
+let hg = null; // shorthand for calling `hydra` on `hydraNodesInstance`
 let lastExecuted = '';
 let lastWidth, lastHeight = 0;
 
 const CURRENT_SCENE_CVS_ID = 'target-canvas';
 const NODES_BODY_CVS_ID = 'nodes-body-canvas';
+
+const HYDRA_SKIP = Symbol('HYDRA_SKIP');
+
+const LOG = true;
 
 let targetCanvas, nodesBodyCanvas = null;
 
@@ -23,13 +27,13 @@ const runHydra_ = function() {
     if (!jsEnv.isBrowser) return;
     targetCanvas    = document.getElementById(CURRENT_SCENE_CVS_ID);
     nodesBodyCanvas = document.getElementById(NODES_BODY_CVS_ID);
-    console.log(targetCanvas);
+    if (LOG) console.log(targetCanvas);
     hydraPatchInstance = new Hydra({ canvas : targetCanvas, detectAudio: false });
     hydraNodesInstance = new Hydra({ canvas : nodesBodyCanvas, makeGlobal : false, detectAudio: false });
     hg = hydraNodesInstance.synth;
     start = hg.solid(0,0,0,0);
 
-    console.log(hydraPatchInstance);
+    if (LOG) console.log(hydraPatchInstance);
     _hydraScene();
 };
 
@@ -50,10 +54,10 @@ const executeHydra_ = function(programString) {
     return function() {
         if (hydraPatchInstance && (lastExecuted != programString)) {
 
-            console.log('to execute:' + programString);
+            if (LOG) console.log('to execute:' + programString);
             // window.eval(programString);
             let evaluation = hydraPatchInstance.sandbox.sandbox.eval(programString);
-            console.log('evaluation:', evaluation);
+            if (LOG) console.log('evaluation:', evaluation);
         }
     }
 }
@@ -122,7 +126,7 @@ function _transformInstance(instance, rect) {
 }
 
 function _transformInstanceScroll(instance, scroll, rect) {
-    console.log('scrollX', scroll.x, 'scrollY', scroll.y);
+    if (LOG) console.log('scrollX', scroll.x, 'scrollY', scroll.y);
     return instance.scale(1, rect.width, rect.height).scrollX(scroll.x).scrollY(scroll.y);
 }
 
@@ -134,11 +138,11 @@ const drawNodeSceneOf_ = function (nodeId) {
                 let nodeBodyRect = _transformBounds(geom.body, lastWidth, lastHeight);
                 // start.layer(hg.solid(1,1,1,1));
                 start.mask(hg.solid(1,1,1,1).layer(_transformInstance(hg.shape(4,1.0), nodeRect)).invert());
-                console.log('drawSceneAt', nodeId, geom, what);
-                console.log('~~what~~', JSON.stringify(what, null, 2));
+                if (LOG) console.log('drawSceneAt', nodeId, geom, what);
+                if (LOG) console.log('~~what~~', JSON.stringify(what, null, 2));
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
                 // start.mask(hg.solid(1,1,1,1).layer(hg.shape(4,1.0).scale(1, rect.width, rect.height).scrollX()).invert());
-                _positionAt(nodeBodyRect, _ovalMask, function() { return hg.osc(60.0, 0.1, 1.0); });
+                _positionAt(nodeBodyRect, _ovalMask, function() { return _unpackVal(hg, what); });
                 // start.mask(hg.shape(4,0.6).invert().color(1,1,1,1));
                 //hg.shape(4,0.6).invert().color(1,1,1,1);
                 start.out(hg.o0);
@@ -157,15 +161,18 @@ const clearNodeScenes_ = function() {
 }
 
 const _unpackVal = function(h, v) {
+    if (!v || v.type === 'none' || v.type === 'undefined') {
+        return HYDRA_SKIP;
+    }
+    // debugger;
     if (v.type === 'tex') {
         return _unpackTex(h, v.value);
     } else if (v.type === 'number') {
         return v.value;
     } else if (v.type === 'pi') {
         return h.pi;
-    } else if (v.type === 'none') {
-        return null;
     }
+    return HYDRA_SKIP;
 }
 
 const _unpackTex = function(h, t) {
@@ -182,6 +189,7 @@ const _unpackTex = function(h, t) {
     } else if (t.type === 'modulate') {
         return _unpackApplyWith(h, t.tex);
     }
+    return HYDRA_SKIP;
 }
 
 const _unpackStart = function(h, s) {
@@ -190,6 +198,7 @@ const _unpackStart = function(h, s) {
     } else if (s.type === 'load') {
         return _unpackOut(h, s.src);
     }
+    return HYDRA_SKIP;
 }
 
 const _unpackApply = function(h, a) {
@@ -208,27 +217,29 @@ const _unpackOut = function(h, o) {
     if (o.out === 1) return h.o1;
     if (o.out === 2) return h.o2;
     if (o.out === 3) return h.o3;
+    return HYDRA_SKIP;
 }
 
 const _hydraSourceFn =
     {
-        'osc': function(h, args) { return h.osc(args[0], args[1], args[2]); },
-        'voronoi': function(h, args) { return h.voronoi(args[0], args[1], args[2]); },
-        'noise': function(h, args) { return h.noise(args[0], args[1]); },
-        'gradient': function(h, args) { return h.gradient(args[0]); },
-        'solid': function(h, args) { return h.solid(args[0], args[1], args[2], args[3]); },
-        'src': function(h, args) { return h.src(args[0]); }
+        'osc': function(h, args) { return h.osc.apply(null, args); },
+        'voronoi': function(h, args) { return h.voronoi.apply(null, args) },
+        'noise': function(h, args) { return h.noise.apply(null, args) },
+        'gradient': function(h, args) { return h.gradient.apply(null, args) },
+        'solid': function(h, args) { return h.solid.apply(null, args); },
+        'shape': function(h, args) { return h.shape.apply(null, args); },
+        'src': function(h, args) { return h.src.apply(null, args); }
     };
 
 const _hydraApplyFn =
     {
-        'color': function(h, _what, args) { return _what.color(args[0], args[1], args[2], args[3]); },
-        'pixelate': function(h, _what, args) { return _what.pixelate(args[0], args[1], args[2], args[3]); }
+        'color': function(h, _what, args) { return _what.color.apply(null, args); },
+        'pixelate': function(h, _what, args) { return _what.pixelate.apply(null, args); }
     };
 
 const _hydraApplyWithFn =
     {
-        'blend': function(h, _what, _with, args) { return _what.blend(_with, args[0]); }
+        'blend': function(h, _what, _with, args) { return _what.blend.apply(null, [_with].concat(args)); }
     };
 
 const _callSourceFn = function(h, fn) {
@@ -236,7 +247,8 @@ const _callSourceFn = function(h, fn) {
         console.warn('Unknown hydra source fn:', fn.name);
         return null;
     }
-    return _hydraSourceFn[fn.name](h, fn.args.map((arg) => _unpackVal(h, arg.value)));
+    if (LOG) console.log('calling source fn:', fn.name, fn.args);
+    return _hydraSourceFn[fn.name](h, _prepareHydraFnArgs(fn.args));
 }
 
 const _callApplyFn = function(h, _what, fn) {
@@ -244,7 +256,8 @@ const _callApplyFn = function(h, _what, fn) {
         console.warn('Unknown hydra apply fn:', fn.name);
         return null;
     }
-    return _hydraApplyFn[fn.name](h, _what, fn.args.map((arg) => _unpackVal(h, arg.value)));
+    if (LOG) console.log('calling apply fn:', fn.name, _what, fn.args);
+    return _hydraApplyFn[fn.name](h, _what, _prepareHydraFnArgs(fn.args));
 }
 
 const _callApplyWithFn = function(h, _what, _with, fn) {
@@ -252,7 +265,12 @@ const _callApplyWithFn = function(h, _what, _with, fn) {
         console.warn('Unknown hydra apply-with fn:', fn.name);
         return null;
     }
-    return _hydraApplyWithFn[fn.name](h, _what, _with, fn.args.map((arg) => _unpackVal(h, arg.value)));
+    if (LOG) console.log('calling apply with fn:', fn.name, _what, _with, fn.args);
+    return _hydraApplyWithFn[fn.name](h, _what, _with, _prepareHydraFnArgs(fn.args));
+}
+
+const _prepareHydraFnArgs = function(args) {
+    return args.map((arg) => _unpackVal(hg, arg.value)).filter((v) => v !== HYDRA_SKIP);
 }
 
 export const h_runHydra = runHydra_;

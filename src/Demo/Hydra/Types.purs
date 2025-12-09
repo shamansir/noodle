@@ -1529,7 +1529,7 @@ type EaseEnc = { ease :: String, value :: Foreign }
 type ValueEnc = { type :: String, value :: Foreign }
 type SourceEnc = { type :: String, src :: Foreign }
 type TextureEnc = { type :: String, tex :: Foreign }
-type FnEnc a = { name :: String, arguments :: Array { name :: String, value :: a } }
+type FnEnc a = { name :: String, args :: Array { name :: String, value :: a } }
 
 
 _encodeEase :: Ease -> EaseEnc
@@ -1606,7 +1606,7 @@ _encodeValue v = { type : typeOf v, value : valueOf v }
 _encodeFn :: forall arg. WriteForeign arg => String /\ HydraApiArguments arg -> FnEnc arg
 _encodeFn (name /\ arguments) =
     { name
-    , arguments: case arguments of
+    , args: case arguments of
         Zero -> []
         One v -> [ { name : "", value : v } ]
         OneN n v -> [ { name : n, value : v } ]
