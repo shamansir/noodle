@@ -234,5 +234,8 @@ workspace:
     yoga-tree-utils:
       git: https://github.com/shamansir/purescript-yoga-tree-utils.git
       ref: e4f72ec0ee62ae63912b346560047947a68f0053
+    hyrule:
+      git: https://github.com/shamansir/purescript-hyrule.git
+      ref: f508363b9ad7e2389ea8b3433f7e2ee1b1f8fa25
   buildOpts:
     censorLibraryWarnings: all

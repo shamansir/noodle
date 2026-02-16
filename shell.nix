@@ -6,7 +6,7 @@ in
 stdenv.mkDerivation {
     name = "node";
     packages = with pkgs; [
-        nodejs-24
+        nodejs-22
         nodePackages.firebase-tools
         nodePackages.node-gyp
     ];
