@@ -40,6 +40,7 @@ package:
     - halogen-subscriptions
     - halogen-svg-elems
     - heterogeneous
+    - hyrule
     - identity
     - integers
     - invariant

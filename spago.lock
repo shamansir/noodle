@@ -44,6 +44,7 @@
             "halogen-subscriptions",
             "halogen-svg-elems",
             "heterogeneous",
+            "hyrule",
             "identity",
             "integers",
             "invariant",
@@ -165,6 +166,7 @@
             "halogen-vdom",
             "heterogeneous",
             "http-methods",
+            "hyrule",
             "identity",
             "integers",
             "invariant",
@@ -172,6 +174,7 @@
             "js-date",
             "js-fileio",
             "js-promise",
+            "js-timers",
             "js-uri",
             "language-cst-parser",
             "lazy",
@@ -1751,6 +1754,38 @@
         "strings"
       ]
     },
+    "hyrule": {
+      "type": "registry",
+      "version": "2.3.8",
+      "integrity": "sha256-DPCeYX0bdqcxINNi1E4Pfu5ie3pdgfyPdVSKTX7IF4I=",
+      "dependencies": [
+        "arrays",
+        "control",
+        "datetime",
+        "debug",
+        "effect",
+        "either",
+        "filterable",
+        "foldable-traversable",
+        "js-timers",
+        "lists",
+        "maybe",
+        "newtype",
+        "now",
+        "ordered-collections",
+        "partial",
+        "prelude",
+        "record",
+        "refs",
+        "st",
+        "tuples",
+        "unsafe-coerce",
+        "unsafe-reference",
+        "web-events",
+        "web-html",
+        "web-uievents"
+      ]
+    },
     "identity": {
       "type": "registry",
       "version": "6.0.0",
@@ -1825,6 +1860,14 @@
         "functions",
         "maybe",
         "prelude"
+      ]
+    },
+    "js-timers": {
+      "type": "registry",
+      "version": "6.1.0",
+      "integrity": "sha256-znHWLSSOYw15P5DTcsAdal2lf7nGA2yayLdOZ2t5r7o=",
+      "dependencies": [
+        "effect"
       ]
     },
     "js-uri": {
