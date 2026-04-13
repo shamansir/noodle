@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noodle TUI — Wireframe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=VT323&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0f1318;
+    --bg3: #141920;
+    --border: #1e2a38;
+    --border-active: #4a8fa8;
+    --text: #8baabb;
+    --text-bright: #c8dde8;
+    --text-dim: #3a5060;
+    --accent: #f0c040;
+    --accent2: #e05050;
+    --accent3: #50b8e0;
+    --accent4: #80c880;
+    --node-bg: #111820;
+    --node-border: #2a3a4a;
+    --node-active: #1a2a3a;
+    --panel-w: 180px;
+    --right-w: 260px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    user-select: none;
+  }
+
+  /* TOPBAR */
+  #topbar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .tab {
+    padding: 0 14px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-right: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.1s;
+    position: relative;
+  }
+  .tab:hover { background: var(--bg3); color: var(--text); }
+  .tab.active { background: var(--bg3); color: var(--accent); border-bottom: 2px solid var(--accent); }
+  .tab .tab-num {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+  .tab.active .tab-num { border-color: var(--accent); color: var(--accent); }
+
+  #tab-add {
+    padding: 0 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    border-right: 1px solid var(--border);
+  }
+  #tab-add:hover { color: var(--accent4); }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 100%;
+    border-left: 1px solid var(--border);
+  }
+
+  .mode-btn {
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-dim);
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { background: var(--bg3); color: var(--text); }
+  .mode-btn.active { color: var(--accent3); background: rgba(80,184,224,0.05); }
+  .mode-btn .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* STATUS BAR */
+  #statusbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 10px;
+    height: 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .status-item { display: flex; align-items: center; gap: 4px; }
+  .status-item .label { color: var(--text-dim); }
+  .status-item .val { color: var(--text); }
+  .status-item.ok .val { color: var(--accent4); }
+  .status-item.err .val { color: var(--accent2); }
+  #statusbar .kbd {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0 4px;
+    font-size: 9px;
+    color: var(--text);
+    border-radius: 2px;
+  }
+  #cmd-hint { margin-left: auto; color: var(--text-dim); font-size: 10px; }
+
+  /* MAIN LAYOUT */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL — LIBRARY */
+  #panel-lib {
+    width: var(--panel-w);
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.2s;
+  }
+  #panel-lib.collapsed { width: 28px; }
+
+  .panel-header {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-bright);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .panel-header .panel-title { display: flex; align-items: center; gap: 6px; }
+  .panel-header .panel-title .bracket { color: var(--accent); font-weight: 700; }
+  .panel-toggle {
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px;
+  }
+  .panel-toggle:hover { color: var(--text); }
+
+  #lib-search {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  #lib-search input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-bright);
+    font-family: inherit;
+    font-size: 11px;
+    width: 100%;
+  }
+  #lib-search input::placeholder { color: var(--text-dim); }
+  #lib-search .search-icon { color: var(--text-dim); font-size: 10px; }
+
+  #lib-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 0;
+  }
+  #lib-list::-webkit-scrollbar { width: 3px; }
+  #lib-list::-webkit-scrollbar-track { background: transparent; }
+  #lib-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .lib-section-header {
+    padding: 6px 8px 2px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .lib-item {
+    padding: 3px 8px 3px 12px;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.08s;
+    border-left: 2px solid transparent;
+  }
+  .lib-item:hover { background: var(--bg3); color: var(--text-bright); border-left-color: var(--border-active); }
+  .lib-item.selected { background: var(--node-active); color: var(--accent3); border-left-color: var(--accent3); }
+  .lib-item .type-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+  /* CENTER — CANVAS */
+  #canvas-wrap {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+  }
+
+  /* Grid background */
+  #canvas-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /* COMMAND PALETTE */
+  #cmd-palette {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    background: var(--bg2);
+    border: 1px solid var(--border-active);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+  }
+  #cmd-palette.open { display: flex; }
+  #cmd-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  #cmd-input-wrap .prompt { color: var(--accent); font-weight: 700; }
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-bright);
+    font-family: inherit;
+    font-size: 13px;
+    caret-color: var(--accent);
+  }
+  #cmd-results {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .cmd-item {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+  }
+  .cmd-item:hover, .cmd-item.highlighted { background: var(--node-active); color: var(--accent3); }
+  .cmd-item .cmd-keys { color: var(--text-dim); font-size: 10px; }
+  .cmd-item .cmd-category { color: var(--text-dim); font-size: 9px; padding: 1px 4px; border: 1px solid var(--border); }
+
+  /* NODE */
+  .node {
+    position: absolute;
+    background: var(--node-bg);
+    border: 1px solid var(--node-border);
+    min-width: 200px;
+    cursor: pointer;
+    transition: border-color 0.1s, box-shadow 0.1s;
+  }
+  .node:hover { border-color: var(--border-active); }
+  .node.selected {
+    border-color: var(--accent3);
+    box-shadow: 0 0 0 1px var(--accent3), 0 4px 20px rgba(80,184,224,0.15);
+  }
+  .node.focused {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 4px 20px rgba(240,192,64,0.15);
+  }
+
+  .node-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--node-border);
+    background: rgba(255,255,255,0.02);
+  }
+  .node-label-tab {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    font-size: 9px;
+    padding: 2px 6px;
+    letter-spacing: 0.05em;
+  }
+  .node-id { color: var(--text-dim); font-size: 9px; }
+  .node-nav-hint { margin-left: auto; font-size: 9px; color: var(--text-dim); display: none; }
+  .node.focused .node-nav-hint { display: block; }
+
+  .node-ports {
+    padding: 6px 0;
+  }
+  .port-row {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    gap: 6px;
+    font-size: 10px;
+    position: relative;
+  }
+  .port-row:hover { background: rgba(255,255,255,0.03); }
+  .port-row.focused-port { background: rgba(240,192,64,0.08); }
+  .port {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--border-active);
+    background: var(--bg);
+    flex-shrink: 0;
+    position: relative;
+    cursor: crosshair;
+  }
+  .port.out { border-color: var(--accent4); }
+  .port.connected { background: var(--border-active); }
+  .port.out.connected { background: var(--accent4); }
+  .port-name { color: var(--text-dim); font-size: 10px; min-width: 60px; }
+  .port-value {
+    color: var(--text);
+    font-size: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid transparent;
+    padding: 0 4px;
+    border-radius: 1px;
+    cursor: text;
+    min-width: 36px;
+    text-align: right;
+  }
+  .port-value:hover { border-color: var(--border); }
+  .port-value.editing { border-color: var(--accent); color: var(--accent); background: rgba(240,192,64,0.08); }
+
+  .node-preview {
+    margin: 6px 8px 8px;
+    height: 70px;
+    background: #050608;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--text-dim);
+    overflow: hidden;
+    position: relative;
+  }
+  .preview-canvas { width: 100%; height: 100%; }
+
+  /* SVG connections */
+  #connections-svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .connection-line {
+    fill: none;
+    stroke: var(--accent2);
+    stroke-width: 1.5;
+    opacity: 0.7;
+  }
+  .connection-line.active { stroke: var(--accent3); opacity: 1; stroke-width: 2; }
+
+  /* PORT LABELS (node) */
+  .port-label-out {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 8px;
+    border-top: 1px solid var(--node-border);
+    font-size: 10px;
+  }
+  .port-label-out .port-type { color: var(--accent4); font-size: 9px; }
+
+  /* RIGHT PANELS */
+  #right-panels {
+    width: var(--right-w);
+    border-left: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .right-panel {
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .right-panel.grow { flex: 1; overflow: hidden; }
+  .right-panel-header {
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text);
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid transparent;
+  }
+  .right-panel-header:hover { background: var(--bg3); }
+  .right-panel-header.open { border-bottom-color: var(--border); }
+  .right-panel-header .ph-title { display: flex; gap: 6px; align-items: center; }
+  .right-panel-header .ph-title .bracket { color: var(--accent); }
+  .right-panel-header .collapse-arrow { color: var(--text-dim); font-size: 10px; transition: transform 0.15s; }
+  .right-panel-header.open .collapse-arrow { transform: rotate(90deg); }
+  .right-panel-body { padding: 6px 8px; overflow-y: auto; font-size: 10px; line-height: 1.7; }
+  .right-panel-body::-webkit-scrollbar { width: 2px; }
+  .right-panel-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* HISTORY */
+  .history-item {
+    display: flex;
+    gap: 6px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    cursor: pointer;
+    font-size: 10px;
+  }
+  .history-item:hover { background: rgba(255,255,255,0.02); }
+  .history-item .h-func { color: var(--accent3); }
+  .history-item .h-args { color: var(--text); }
+  .history-item .h-idx { color: var(--text-dim); min-width: 20px; font-size: 9px; }
+  .history-item.current { background: rgba(80,184,224,0.06); }
+  .history-item.current .h-func { color: var(--accent); }
+
+  /* DOC */
+  .doc-name { color: var(--accent); font-size: 12px; margin-bottom: 4px; font-weight: 700; }
+  .doc-sig { color: var(--text-dim); font-size: 10px; margin-bottom: 6px; }
+  .doc-body { color: var(--text); font-size: 10px; line-height: 1.6; }
+  .doc-param { display: flex; gap: 8px; padding: 2px 0; }
+  .doc-param .dp-name { color: var(--accent3); min-width: 70px; }
+  .doc-param .dp-default { color: var(--text-dim); }
+
+  /* TREE */
+  .tree-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 0;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .tree-line:hover .tree-node-name { color: var(--text-bright); }
+  .tree-indent { color: var(--text-dim); white-space: pre; }
+  .tree-node-name { color: var(--text); }
+  .tree-node-name.src { color: var(--accent4); }
+  .tree-node-name.io { color: var(--accent3); }
+  .tree-node-name.type-n { color: var(--accent); }
+  .tree-node-name.type-i { color: var(--text-dim); padding-left: 4px; font-size: 9px; }
+  .tree-node-name.type-o { color: var(--accent2); font-size: 9px; padding-left: 4px; }
+
+  /* KEYBOARD LEGEND */
+  #kbd-legend {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(15,19,24,0.92);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-size: 9px;
+    z-index: 50;
+    display: none;
+    backdrop-filter: blur(4px);
+    min-width: 200px;
+  }
+  #kbd-legend.open { display: block; }
+  #kbd-legend h3 { color: var(--accent); margin-bottom: 6px; font-size: 10px; }
+  .kbd-row { display: flex; justify-content: space-between; gap: 16px; padding: 1px 0; }
+  .kbd-row .kb { background: var(--bg3); border: 1px solid var(--border); padding: 0 4px; border-radius: 2px; color: var(--text); font-size: 9px; white-space: nowrap; }
+  .kbd-row .kb-desc { color: var(--text-dim); }
+
+  /* NOTIFICATION */
+  #notification {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg2);
+    border: 1px solid var(--accent4);
+    color: var(--accent4);
+    padding: 5px 14px;
+    font-size: 11px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  #notification.show { opacity: 1; }
+
+  /* mode tab marker */
+  .mode-marker {
+    position: absolute;
+    top: 2px; right: 2px;
+    font-size: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 1px 3px;
+  }
+
+  /* Canvas nav indicator */
+  #nav-mode-badge {
+    position: absolute;
+    bottom: 28px;
+    left: 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    font-size: 10px;
+    padding: 4px 8px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+  }
+  #nav-mode-badge .nmode { color: var(--accent3); font-weight: 700; }
+
+  /* Focus ring animation */
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 1px var(--accent), 0 4px 20px rgba(240,192,64,0.15); }
+    50% { box-shadow: 0 0 0 2px var(--accent), 0 4px 28px rgba(240,192,64,0.3); }
+  }
+  .node.focused { animation: pulse-border 2s ease-in-out infinite; }
+
+  /* Scrollbar for panels */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Section labels for wireframe mode hints */
+  .wf-badge {
+    position: absolute;
+    font-size: 8px;
+    color: var(--text-dim);
+    border: 1px dashed var(--text-dim);
+    padding: 2px 5px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Minimap */
+  #minimap {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    width: 100px;
+    height: 60px;
+    background: rgba(15,19,24,0.9);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 10;
+  }
+  #minimap-viewport {
+    position: absolute;
+    border: 1px solid var(--accent3);
+    background: rgba(80,184,224,0.1);
+    left: 10%; top: 20%; width: 60%; height: 50%;
+  }
+  .minimap-node {
+    position: absolute;
+    background: var(--node-border);
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="tab active">
+    <span class="tab-num">1</span>
+    <span>patch-01</span>
+  </div>
+  <div class="tab" onclick="notify('Tab 2 activated')">
+    <span class="tab-num">2</span>
+    <span>patch-02</span>
+  </div>
+  <div id="tab-add" onclick="notify('New patch created')">+</div>
+
+  <div class="topbar-right">
+    <div class="mode-btn active" id="btn-kbd-mouse" onclick="setNavMode('kbd+mouse')">
+      <div class="dot"></div> kbd+mouse
+    </div>
+    <div class="mode-btn" id="btn-kbd" onclick="setNavMode('kbd')">
+      <div class="dot"></div> kbd only
+    </div>
+    <div class="mode-btn" id="btn-mouse" onclick="setNavMode('mouse')">
+      <div class="dot"></div> mouse only
+    </div>
+    <div class="mode-btn" onclick="toggleKbdLegend()" style="border-right:none; color:var(--text-dim);">
+      ? legend
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT: LIBRARY -->
+  <div id="panel-lib">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="bracket">:</span>
+        <span>library</span>
+      </div>
+      <span class="panel-toggle" onclick="toggleLib()">◁</span>
+    </div>
+    <div id="lib-search">
+      <span class="search-icon">/</span>
+      <input type="text" placeholder="filter nodes..." id="lib-filter" oninput="filterLib(this.value)" />
+    </div>
+    <div id="lib-list">
+      <div class="lib-section-header">sources</div>
+      <div class="lib-item" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>noise</div>
+      <div class="lib-item" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>osc</div>
+      <div class="lib-item selected" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>voronoi</div>
+      <div class="lib-item" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>shape</div>
+      <div class="lib-item" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>solid</div>
+      <div class="lib-item" style="--c:var(--accent4)"><div class="type-dot" style="background:var(--accent4)"></div>src</div>
+      <div class="lib-section-header">geometry</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>pixelate</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>repeat</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>repeatX</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>repeatY</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>rotate</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>scale</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent3)"></div>scroll</div>
+      <div class="lib-section-header">color</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent)"></div>brightness</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent)"></div>contrast</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent)"></div>saturate</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent)"></div>hue</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent)"></div>invert</div>
+      <div class="lib-section-header">blend</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent2)"></div>add</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent2)"></div>blend</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent2)"></div>mult</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent2)"></div>diff</div>
+      <div class="lib-section-header">modulate</div>
+      <div class="lib-item"><div class="type-dot" style="background:#9080e0"></div>modulateKaleid</div>
+      <div class="lib-item"><div class="type-dot" style="background:#9080e0"></div>modulateRotate</div>
+      <div class="lib-item"><div class="type-dot" style="background:#9080e0"></div>modulateScale</div>
+      <div class="lib-section-header">output</div>
+      <div class="lib-item"><div class="type-dot" style="background:var(--accent2)"></div>out</div>
+    </div>
+  </div>
+
+  <!-- CENTER: CANVAS -->
+  <div id="canvas-wrap">
+
+    <!-- COMMAND PALETTE -->
+    <div id="cmd-palette">
+      <div id="cmd-input-wrap">
+        <span class="prompt">▶</span>
+        <input id="cmd-input" type="text" placeholder="add node, connect, run..." autofocus />
+      </div>
+      <div id="cmd-results">
+        <div class="cmd-item highlighted"><span>Add node: <b>osc</b></span><span class="cmd-category">node</span></div>
+        <div class="cmd-item"><span>Add node: <b>noise</b></span><span class="cmd-category">node</span></div>
+        <div class="cmd-item"><span>Add node: <b>voronoi</b></span><span class="cmd-category">node</span></div>
+        <div class="cmd-item"><span>Connect selected outlet → inlet</span><span class="cmd-keys">C</span></div>
+        <div class="cmd-item"><span>Run patch</span><span class="cmd-keys">Ctrl+Enter</span></div>
+        <div class="cmd-item"><span>Toggle preview</span><span class="cmd-keys">P</span></div>
+        <div class="cmd-item"><span>Delete selected node</span><span class="cmd-keys">Del / X</span></div>
+        <div class="cmd-item"><span>Open documentation</span><span class="cmd-keys">Shift+D</span></div>
+      </div>
+    </div>
+
+    <div id="canvas">
+      <!-- SVG CONNECTIONS -->
+      <svg id="connections-svg">
+        <path id="wire1" class="connection-line" d=""/>
+        <path id="wire2" class="connection-line active" d=""/>
+      </svg>
+
+      <!-- NODE: voronoi -->
+      <div class="node focused" id="node-voronoi" style="left:180px; top:60px; min-width:210px; z-index:3;" onclick="selectNode('voronoi')">
+        <div class="node-header">
+          <div class="node-label-tab">voronoi</div>
+          <div class="node-id">#v1z7r</div>
+          <div class="node-nav-hint">↑↓ ports · Tab next</div>
+        </div>
+        <div class="node-ports">
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">SCALE</div>
+            <div class="port-value">5.0</div>
+          </div>
+          <div class="port-row focused-port">
+            <div class="port"></div>
+            <div class="port-name">SPEED</div>
+            <div class="port-value editing">0.3</div>
+          </div>
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">BLENDING</div>
+            <div class="port-value">0.3</div>
+          </div>
+        </div>
+        <div class="node-preview">
+          <canvas class="preview-canvas" id="prev-voronoi"></canvas>
+        </div>
+        <div class="port-label-out">
+          <div class="port out connected"></div>
+          <div class="port-name">OUT</div>
+          <div class="port-type">VRN</div>
+        </div>
+      </div>
+
+      <!-- NODE: pixelate -->
+      <div class="node selected" id="node-pixelate" style="left:440px; top:210px; min-width:220px; z-index:2;" onclick="selectNode('pixelate')">
+        <div class="node-header">
+          <div class="node-label-tab" style="background:var(--accent3); color:#000">pixelate</div>
+          <div class="node-id">#f8sd0l</div>
+        </div>
+        <div class="node-ports">
+          <div class="port-row">
+            <div class="port connected"></div>
+            <div class="port-name">WHAT</div>
+            <div class="port-value" style="color:var(--accent3)">VRN</div>
+          </div>
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">PIXELX</div>
+            <div class="port-value">20.0</div>
+          </div>
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">PIXELY</div>
+            <div class="port-value">20.0</div>
+          </div>
+        </div>
+        <div class="node-preview">
+          <canvas class="preview-canvas" id="prev-pixelate"></canvas>
+        </div>
+        <div class="port-label-out">
+          <div class="port out connected"></div>
+          <div class="port-name">OUT</div>
+          <div class="port-type">GMT</div>
+        </div>
+      </div>
+
+      <!-- NODE: modulateKaleid -->
+      <div class="node" id="node-kaleid" style="left:440px; top:430px; min-width:210px;" onclick="selectNode('kaleid')">
+        <div class="node-header">
+          <div class="node-label-tab" style="background:#9080e0; color:#000">modulateKaleid</div>
+          <div class="node-id">#mk1hw</div>
+        </div>
+        <div class="node-ports">
+          <div class="port-row">
+            <div class="port connected"></div>
+            <div class="port-name">WHAT</div>
+            <div class="port-value" style="color:var(--accent3)">GMT</div>
+          </div>
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">WITH</div>
+            <div class="port-value">—</div>
+          </div>
+          <div class="port-row">
+            <div class="port"></div>
+            <div class="port-name">NSIDES</div>
+            <div class="port-value">3.0</div>
+          </div>
+        </div>
+        <div class="port-label-out">
+          <div class="port out connected"></div>
+          <div class="port-name">OUT</div>
+          <div class="port-type">MOD</div>
+        </div>
+      </div>
+
+      <!-- NODE: out -->
+      <div class="node" id="node-out" style="left:700px; top:480px; min-width:160px;" onclick="selectNode('out')">
+        <div class="node-header">
+          <div class="node-label-tab" style="background:var(--accent2); color:#fff">out</div>
+          <div class="node-id">#o0</div>
+        </div>
+        <div class="node-ports">
+          <div class="port-row">
+            <div class="port connected"></div>
+            <div class="port-name">SRC</div>
+            <div class="port-value" style="color:#9080e0">MOD</div>
+          </div>
+        </div>
+        <div style="padding: 6px 8px; font-size:9px; color:var(--text-dim); border-top:1px solid var(--node-border)">
+          → o0 · output buffer
+        </div>
+      </div>
+
+      <!-- Minimap -->
+      <div id="minimap">
+        <div class="minimap-node" style="left:12%;top:10%;width:22%;height:18%;"></div>
+        <div class="minimap-node" style="left:38%;top:30%;width:24%;height:18%; background:var(--accent3); opacity:0.4"></div>
+        <div class="minimap-node" style="left:38%;top:58%;width:24%;height:14%;"></div>
+        <div class="minimap-node" style="left:65%;top:62%;width:18%;height:10%;"></div>
+        <div id="minimap-viewport"></div>
+      </div>
+
+      <!-- Nav mode badge -->
+      <div id="nav-mode-badge">
+        <span>nav:</span><span class="nmode" id="nmode-label">kbd+mouse</span>
+        <span style="color:var(--text-dim)">· Space: cmd palette</span>
+      </div>
+
+      <!-- Keyboard legend -->
+      <div id="kbd-legend">
+        <h3>⌨ keyboard map</h3>
+        <div id="kbd-content"></div>
+      </div>
+
+    </div><!-- /canvas -->
+  </div><!-- /canvas-wrap -->
+
+  <!-- RIGHT PANELS -->
+  <div id="right-panels">
+
+    <!-- HISTORY -->
+    <div class="right-panel">
+      <div class="right-panel-header open" onclick="togglePanel(this)">
+        <div class="ph-title"><span class="bracket">:</span> history</div>
+        <span class="collapse-arrow">▶</span>
+      </div>
+      <div class="right-panel-body" style="max-height:130px">
+        <div class="history-item"><span class="h-idx">1</span><span class="h-func">voronoi</span><span class="h-args">1 0 0 0.3</span></div>
+        <div class="history-item"><span class="h-idx">2</span><span class="h-func">pixelate</span><span class="h-args">20 20</span></div>
+        <div class="history-item"><span class="h-idx">3</span><span class="h-func">modulateKaleid</span><span class="h-args">3</span></div>
+        <div class="history-item current"><span class="h-idx">4</span><span class="h-func">out</span><span class="h-args">o0</span></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTATION -->
+    <div class="right-panel grow">
+      <div class="right-panel-header open" onclick="togglePanel(this)">
+        <div class="ph-title"><span class="bracket">:</span> documentation</div>
+        <span class="collapse-arrow">▶</span>
+      </div>
+      <div class="right-panel-body">
+        <div class="doc-name">voronoi</div>
+        <div class="doc-sig">voronoi( scale, speed, blending )</div>
+        <div class="doc-body" style="margin-bottom:8px;">Generate a voronoi noise texture. Output is a gradient-based cellular pattern driven by the given parameters.</div>
+        <div class="doc-param"><span class="dp-name">scale</span><span>size of cells</span><span class="dp-default">·5.0</span></div>
+        <div class="doc-param"><span class="dp-name">speed</span><span>animation rate</span><span class="dp-default">·0.3</span></div>
+        <div class="doc-param"><span class="dp-name">blending</span><span>edge softness</span><span class="dp-default">·0.3</span></div>
+      </div>
+    </div>
+
+    <!-- TREE -->
+    <div class="right-panel">
+      <div class="right-panel-header open" onclick="togglePanel(this)">
+        <div class="ph-title"><span class="bracket">:</span> tree</div>
+        <span class="collapse-arrow">▶</span>
+      </div>
+      <div class="right-panel-body" style="max-height:150px">
+        <div class="tree-line"><span class="tree-indent">├─N </span><span class="tree-node-name type-n">voronoi</span><span class="tree-node-name" style="color:var(--text-dim);font-size:9px;padding-left:4px">#v1z7r</span></div>
+        <div class="tree-line"><span class="tree-indent">│ ├─I </span><span class="tree-node-name type-i">scale</span></div>
+        <div class="tree-line"><span class="tree-indent">│ ├─I </span><span class="tree-node-name type-i">speed</span></div>
+        <div class="tree-line"><span class="tree-indent">│ ├─I </span><span class="tree-node-name type-i">blending</span></div>
+        <div class="tree-line"><span class="tree-indent">│ └─O </span><span class="tree-node-name type-o">out →</span></div>
+        <div class="tree-line"><span class="tree-indent">├─N </span><span class="tree-node-name type-n" style="color:var(--accent3)">pixelate</span><span class="tree-node-name" style="color:var(--text-dim);font-size:9px;padding-left:4px">#f8sd0l</span></div>
+        <div class="tree-line"><span class="tree-indent">│ ├─I </span><span class="tree-node-name type-i">what ◀</span></div>
+        <div class="tree-line"><span class="tree-indent">│ ├─I </span><span class="tree-node-name type-i">pixelX</span></div>
+        <div class="tree-line"><span class="tree-indent">│ └─O </span><span class="tree-node-name type-o">out →</span></div>
+        <div class="tree-line"><span class="tree-indent">├─N </span><span class="tree-node-name type-n" style="color:#9080e0">modulateKaleid</span></div>
+        <div class="tree-line"><span class="tree-indent">└─N </span><span class="tree-node-name" style="color:var(--accent2)">out</span><span class="tree-node-name" style="font-size:9px;padding-left:4px;color:var(--text-dim)">o0</span></div>
+      </div>
+    </div>
+
+    <!-- NEXT ACTIONS -->
+    <div class="right-panel">
+      <div class="right-panel-header open" onclick="togglePanel(this)">
+        <div class="ph-title"><span class="bracket">:</span> next-actions</div>
+        <span class="collapse-arrow">▶</span>
+      </div>
+      <div class="right-panel-body" style="color:var(--text-dim); line-height:2">
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">Tab</span> next node &nbsp;
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">↑↓</span> navigate ports<br>
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">C</span> connect port &nbsp;
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">Enter</span> edit value<br>
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">Space</span> command palette<br>
+        <span style="background:var(--bg3);border:1px solid var(--border);padding:1px 4px;color:var(--text);border-radius:2px">Del</span> delete selected
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="status-item ok"><span class="label">status</span><span class="val">● live</span></div>
+  <div class="status-item"><span class="label">nodes</span><span class="val" id="node-count">4</span></div>
+  <div class="status-item"><span class="label">fps</span><span class="val">60</span></div>
+  <div class="status-item"><span class="label">res</span><span class="val">1920×1080</span></div>
+  <div class="status-item"><span class="label">focus</span><span class="val" id="focus-label">voronoi#v1z7r · port:SPEED</span></div>
+  <span id="cmd-hint">
+    <span class="kbd">Space</span> cmd palette &nbsp;
+    <span class="kbd">?</span> kbd legend &nbsp;
+    <span class="kbd">Tab</span> next node
+  </span>
+</div>
+
+<!-- NOTIFICATION -->
+<div id="notification"></div>
+
+<script>
+  // ── DRAW SVG WIRES ──────────────────────────────────────────────
+  function getPortPos(nodeId, portType) {
+    const node = document.getElementById('node-' + nodeId);
+    if (!node) return {x:0, y:0};
+    const rect = node.getBoundingClientRect();
+    const wrap = document.getElementById('canvas-wrap').getBoundingClientRect();
+    if (portType === 'out') {
+      return { x: rect.left - wrap.left + 20, y: rect.bottom - wrap.top - 14 };
+    }
+    return { x: rect.left - wrap.left + 20, y: rect.top - wrap.top + 36 };
+  }
+
+  function cubicBezier(x1, y1, x2, y2) {
+    const dx = Math.abs(x2 - x1) * 0.5;
+    return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`;
+  }
+
+  function drawWires() {
+    const svg = document.getElementById('connections-svg');
+    const wrap = document.getElementById('canvas-wrap');
+    svg.setAttribute('width', wrap.offsetWidth);
+    svg.setAttribute('height', wrap.offsetHeight);
+
+    const p1 = getPortPos('voronoi', 'out');
+    const p2 = getPortPos('pixelate', 'in');
+    document.getElementById('wire1').setAttribute('d', cubicBezier(p1.x, p1.y, p2.x + 180, p2.y));
+
+    const p3 = getPortPos('pixelate', 'out');
+    const p4 = getPortPos('kaleid', 'in');
+    document.getElementById('wire2').setAttribute('d', cubicBezier(p3.x, p3.y, p4.x, p4.y + 30));
+  }
+
+  // ── PREVIEWS ─────────────────────────────────────────────────────
+  function drawVoronoi(canvas) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const w = canvas.width, h = canvas.height;
+    const pts = Array.from({length:12}, () => [Math.random()*w, Math.random()*h]);
+    const img = ctx.createImageData(w, h);
+    for (let y=0; y<h; y++) for (let x=0; x<w; x++) {
+      let min1=1e9, min2=1e9;
+      for (const [px,py] of pts) {
+        const d = (x-px)**2 + (y-py)**2;
+        if (d<min1){min2=min1;min1=d;}else if(d<min2)min2=d;
+      }
+      const v = Math.min(255, (Math.sqrt(min2)-Math.sqrt(min1)) * 3);
+      const i = (y*w+x)*4;
+      img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function drawPixelate(canvas) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const w = canvas.width, h = canvas.height;
+    const bw = 10, bh = 8;
+    for (let y=0; y<h; y+=bh) for (let x=0; x<w; x+=bw) {
+      const v = Math.random() * 200 + 30;
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(x, y, bw, bh);
+    }
+  }
+
+  // ── PANELS ────────────────────────────────────────────────────────
+  function togglePanel(header) {
+    const body = header.nextElementSibling;
+    if (!body) return;
+    const isOpen = header.classList.contains('open');
+    header.classList.toggle('open', !isOpen);
+    body.style.display = isOpen ? 'none' : '';
+  }
+
+  let libCollapsed = false;
+  function toggleLib() {
+    libCollapsed = !libCollapsed;
+    const p = document.getElementById('panel-lib');
+    p.classList.toggle('collapsed', libCollapsed);
+    p.querySelector('.panel-toggle').textContent = libCollapsed ? '▷' : '◁';
+    setTimeout(drawWires, 210);
+  }
+
+  // ── NODE SELECTION ────────────────────────────────────────────────
+  let focusedNode = 'voronoi';
+  const nodes = ['voronoi', 'pixelate', 'kaleid', 'out'];
+
+  function selectNode(id) {
+    document.querySelectorAll('.node').forEach(n => {
+      n.classList.remove('focused', 'selected');
+    });
+    const el = document.getElementById('node-' + id);
+    if (el) { el.classList.add('focused', 'selected'); }
+    focusedNode = id;
+    document.getElementById('focus-label').textContent = id + ' · port:WHAT';
+  }
+
+  // ── NAV MODES ─────────────────────────────────────────────────────
+  const kbdMaps = {
+    'kbd+mouse': [
+      ['Tab', 'next node'],
+      ['Shift+Tab', 'prev node'],
+      ['↑ ↓', 'navigate ports'],
+      ['Enter', 'edit port value'],
+      ['C', 'connect port'],
+      ['Space', 'command palette'],
+      ['Del / X', 'delete node'],
+      ['G', 'grab & move node'],
+      ['Shift+D', 'open docs'],
+      ['P', 'toggle preview'],
+      ['?', 'toggle legend'],
+      ['Ctrl+Z', 'undo'],
+    ],
+    'kbd': [
+      ['Tab', 'next node'],
+      ['Shift+Tab', 'prev node'],
+      ['↑ ↓', 'navigate ports'],
+      ['H J K L', 'pan canvas'],
+      ['Enter', 'edit value'],
+      ['C', 'connect port'],
+      ['Space', 'command palette'],
+      ['Del', 'delete node'],
+      ['N', 'new node (cmd)'],
+      ['?', 'toggle legend'],
+    ],
+    'mouse': [
+      ['Click', 'select node'],
+      ['Drag', 'move node'],
+      ['Port drag', 'draw wire'],
+      ['Right-click', 'context menu'],
+      ['Scroll', 'zoom canvas'],
+      ['Drag bg', 'pan canvas'],
+      ['Dbl-click bg', 'add node'],
+    ],
+  };
+
+  let navMode = 'kbd+mouse';
+  function setNavMode(mode) {
+    navMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + mode.replace('+','-')).classList.add('active');
+    document.getElementById('nmode-label').textContent = mode;
+    updateKbdLegend();
+    notify('Mode: ' + mode);
+  }
+
+  function updateKbdLegend() {
+    const map = kbdMaps[navMode] || [];
+    document.getElementById('kbd-content').innerHTML = map.map(([k,d]) =>
+      `<div class="kbd-row"><span class="kb">${k}</span><span class="kb-desc">${d}</span></div>`
+    ).join('');
+  }
+
+  let legendOpen = false;
+  function toggleKbdLegend() {
+    legendOpen = !legendOpen;
+    document.getElementById('kbd-legend').classList.toggle('open', legendOpen);
+  }
+
+  // ── COMMAND PALETTE ───────────────────────────────────────────────
+  let cmdOpen = false;
+  function toggleCmd() {
+    cmdOpen = !cmdOpen;
+    const el = document.getElementById('cmd-palette');
+    el.classList.toggle('open', cmdOpen);
+    if (cmdOpen) document.getElementById('cmd-input').focus();
+  }
+
+  // ── NOTIFICATIONS ─────────────────────────────────────────────────
+  let notifTimer;
+  function notify(msg) {
+    const el = document.getElementById('notification');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(notifTimer);
+    notifTimer = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  // ── FILTER LIBRARY ────────────────────────────────────────────────
+  function filterLib(q) {
+    document.querySelectorAll('.lib-item').forEach(item => {
+      item.style.display = item.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+    document.querySelectorAll('.lib-section-header').forEach(h => {
+      let next = h.nextElementSibling;
+      let anyVisible = false;
+      while (next && !next.classList.contains('lib-section-header')) {
+        if (next.style.display !== 'none') anyVisible = true;
+        next = next.nextElementSibling;
+      }
+      h.style.display = anyVisible ? '' : 'none';
+    });
+  }
+
+  // ── KEYBOARD ──────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === ' ') { e.preventDefault(); toggleCmd(); return; }
+    if (e.key === '?') { toggleKbdLegend(); return; }
+    if (e.key === 'Escape') {
+      if (cmdOpen) toggleCmd();
+      if (legendOpen) toggleKbdLegend();
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const idx = nodes.indexOf(focusedNode);
+      const next = nodes[(idx + (e.shiftKey ? -1 : 1) + nodes.length) % nodes.length];
+      selectNode(next);
+      notify('focus → ' + next);
+    }
+  });
+
+  // ── DRAGGABLE NODES ───────────────────────────────────────────────
+  document.querySelectorAll('.node').forEach(node => {
+    let dragging = false, ox, oy, sx, sy;
+    node.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('port') || e.target.classList.contains('port-value')) return;
+      dragging = true;
+      sx = parseInt(node.style.left); sy = parseInt(node.style.top);
+      ox = e.clientX; oy = e.clientY;
+      node.style.zIndex = 10;
+      e.stopPropagation();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      node.style.left = (sx + e.clientX - ox) + 'px';
+      node.style.top = (sy + e.clientY - oy) + 'px';
+      drawWires();
+    });
+    document.addEventListener('mouseup', () => { dragging = false; node.style.zIndex = ''; });
+  });
+
+  // ── INIT ──────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      drawWires();
+      drawVoronoi(document.getElementById('prev-voronoi'));
+      drawPixelate(document.getElementById('prev-pixelate'));
+    }, 50);
+    updateKbdLegend();
+  });
+
+  window.addEventListener('resize', drawWires);
+</script>
+</body>
+</html>
