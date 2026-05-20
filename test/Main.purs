@@ -23,6 +23,7 @@ import Test.Spec.Ndf.CommandInput (spec) as CommandInput
 import Test.Spec.Hydra.ReprParsing (spec) as HydraReprParsing
 import Test.Spec.Hydra.ToCode (spec) as HydraToCode
 import Test.Spec.UI.KeyboardLogic (spec) as KeyboardLogic
+import Test.Spec.RapidInletEdits (spec) as RapidInletEdits
 
 
 main :: Effect Unit
@@ -53,3 +54,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     CommandInput.spec
   describe "Keyboard Logic"
     KeyboardLogic.spec
+  describe "Rapid Inlet Edits"
+    RapidInletEdits.spec
