@@ -16,7 +16,7 @@ import Test.Spec.Assertions (shouldEqual)
 
 import Noodle.Fn.Process (receive, send) as Fn
 import Noodle.Node ((#->), (<-@))
-import Noodle.Node (_listenUpdatesAndRun, toRaw) as Node
+import Noodle.Node (_listenUpdatesAndRun, connect, toRaw) as Node
 import Noodle.Raw.Node (subscribeChanges) as RawNode
 
 import Example.Toolkit.Minimal.Node.Sum as Sum
@@ -110,3 +110,88 @@ spec =
                 (count5  - countBefore) `shouldEqual` 10
                 (count10 - count5)      `shouldEqual` 10
                 (count20 - count10)     `shouldEqual` 20
+
+    describe "rapid inlet edits through a connected chain" do
+
+        -- Simulates Web UI: user creates two nodes, connects upstream outlet to
+        -- downstream inlet, then rapidly types into the upstream inlet text field.
+        -- Each keystroke should trigger the chain exactly once: upstream fires once,
+        -- its outlet propagates to downstream inlet, downstream fires once.
+        -- Subscription accumulation bugs would cause counts to grow batch-over-batch.
+        it "each node in a two-node chain fires exactly once per inlet edit across batches" $
+            liftEffect do
+                nodeACounter <- Ref.new (0 :: Int)
+                nodeBCounter <- Ref.new (0 :: Int)
+                let
+                    countingProcessA = do
+                        liftEffect $ Ref.modify_ (_ + 1) nodeACounter
+                        a <- Fn.receive Sum.a_in
+                        b <- Fn.receive Sum.b_in
+                        Fn.send Sum.sum_out $ a + b
+                    countingProcessB = do
+                        liftEffect $ Ref.modify_ (_ + 1) nodeBCounter
+                        a <- Fn.receive Sum.a_in
+                        b <- Fn.receive Sum.b_in
+                        Fn.send Sum.sum_out $ a + b
+
+                nodeA <- Sum.makeNode_ { a: 0, b: 5 } { sum: 0 } countingProcessA
+                nodeB <- Sum.makeNode_ { a: 3, b: 0 } { sum: 0 } countingProcessB
+
+                nodeA # Node._listenUpdatesAndRun
+                nodeB # Node._listenUpdatesAndRun
+                -- connect nodeA.sum_out → nodeB.b_in; initial value is sent to nodeB at this point
+                _ <- Node.connect Sum.sum_out Sum.b_in nodeA nodeB
+
+                -- snapshot counters after setup so initial runs don't pollute the delta check
+                countABefore <- Ref.read nodeACounter
+                countBBefore <- Ref.read nodeBCounter
+
+                for_ (range 1 5) \i ->
+                    nodeA #-> Sum.a_in /\ i
+                countA5 <- Ref.read nodeACounter
+                countB5 <- Ref.read nodeBCounter
+
+                for_ (range 6 10) \i ->
+                    nodeA #-> Sum.a_in /\ i
+                countA10 <- Ref.read nodeACounter
+                countB10 <- Ref.read nodeBCounter
+
+                for_ (range 11 20) \i ->
+                    nodeA #-> Sum.a_in /\ i
+                countA20 <- Ref.read nodeACounter
+                countB20 <- Ref.read nodeBCounter
+
+                -- upstream node: one fire per edit, constant across batches
+                (countA5  - countABefore) `shouldEqual` 5
+                (countA10 - countA5)      `shouldEqual` 5
+                (countA20 - countA10)     `shouldEqual` 10
+
+                -- downstream node: one fire per upstream propagation, same counts
+                (countB5  - countBBefore) `shouldEqual` 5
+                (countB10 - countB5)      `shouldEqual` 5
+                (countB20 - countB10)     `shouldEqual` 10
+
+        -- After 20 rapid edits the downstream outlet must reflect the result of the
+        -- LAST edit propagated through the chain, not a stale or intermediate value.
+        it "downstream outlet reflects the correct final value after 20 rapid edits through chain" $
+            liftEffect do
+                -- nodeA: a varies (1..20), b=5 constant → sum = a+5
+                -- nodeA.sum_out is wired to nodeB.b_in
+                -- nodeB: a=3 constant, b from nodeA.sum_out → sum = 3+(a+5)
+                nodeA <- Sum.makeNode_ { a: 0, b: 5 } { sum: 0 } Sum.sumBoth
+                nodeB <- Sum.makeNode_ { a: 3, b: 0 } { sum: 0 } Sum.sumBoth
+
+                nodeA # Node._listenUpdatesAndRun
+                nodeB # Node._listenUpdatesAndRun
+                _ <- Node.connect Sum.sum_out Sum.b_in nodeA nodeB
+
+                for_ (range 1 20) \i ->
+                    nodeA #-> Sum.a_in /\ i
+
+                resultA <- nodeA <-@ Sum.sum_out
+                resultB <- nodeB <-@ Sum.sum_out
+
+                -- last edit: a_nodeA=20, b_nodeA=5 → sum_nodeA=25
+                resultA `shouldEqual` (20 + 5)
+                -- nodeB.a=3, nodeB.b=sum_nodeA=25 → sum_nodeB=28
+                resultB `shouldEqual` (3 + 20 + 5)
