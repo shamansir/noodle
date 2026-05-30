@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array (range)
 import Data.Traversable (for_)
+import Data.Tuple.Nested ((/\))
 
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
@@ -23,7 +24,7 @@ import Example.Toolkit.Minimal.Node.Sum as Sum
 
 
 spec :: Spec Unit
-spec =
+spec = do
 
     describe "rapid inlet edits" do
 
