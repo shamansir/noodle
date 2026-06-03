@@ -158,8 +158,11 @@ _runOnInletUpdates
     => HasFallback chrepr
     => Node state chrepr m
     -> m Unit
-_runOnInletUpdates node =
-  SignalX.runSignal $ _subscribeInlets node ~> isHotUpdate ~> runOnlyIfHasHotInlet
+_runOnInletUpdates node@(Node _ _ tracker _ _) = do
+  alreadyListening <- liftEffect $ Ref.read tracker.listenRef
+  when (not alreadyListening) $ do
+    liftEffect $ Ref.write true tracker.listenRef
+    SignalX.runSignal $ _subscribeInlets node ~> isHotUpdate ~> runOnlyIfHasHotInlet
   where
     runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
     isHotUpdate = Tuple.fst >>> case _ of

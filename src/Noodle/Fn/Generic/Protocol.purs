@@ -8,6 +8,7 @@ import Data.Functor.Extra ((<$$>), (<$$$>))
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (new) as Ref
 
 import Signal (Signal)
 import Signal as Signal
@@ -53,6 +54,7 @@ make state inlets outlets =
         inletsCh  <- channel inletsInit
         outletsCh <- channel outletsInit
         -- allChangesCh <- channel initAll
+        listenRef <- Ref.new false
 
         let
             stateSig   = Channel.subscribe stateCh
@@ -71,6 +73,7 @@ make state inlets outlets =
                 , inlets  : inletsSig
                 , outlets : outletsSig
                 , all     : Signal.foldp U.fold (U.startCollecting state inlets outlets) updatesSig
+                , listenRef
                 }
 
             protocol :: Protocol state inlets outlets

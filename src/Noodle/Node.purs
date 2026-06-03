@@ -156,9 +156,12 @@ _runOnInletUpdates
     => HasFallback chrepr
     => Node f state is os chrepr m
     -> m Unit
-_runOnInletUpdates node =
-    -- FIXME: use the same method from RawNode
-    SignalX.runSignal $ _subscribeInletsRaw node ~> isHotUpdate ~> runOnlyIfHasHotInlet
+_runOnInletUpdates node@(Node _ _ tracker _ _) = do
+    alreadyListening <- liftEffect $ Ref.read tracker.listenRef
+    when (not alreadyListening) $ do
+        liftEffect $ Ref.write true tracker.listenRef
+        -- FIXME: use the same method from RawNode
+        SignalX.runSignal $ _subscribeInletsRaw node ~> isHotUpdate ~> runOnlyIfHasHotInlet
     where
         runOnlyIfHasHotInlet isHot = if isHot then run node else pure unit
         isHotUpdate = Tuple.fst >>> case _ of

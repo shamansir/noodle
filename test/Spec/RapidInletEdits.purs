@@ -112,6 +112,84 @@ spec = do
                 (count10 - count5)      `shouldEqual` 10
                 (count20 - count10)     `shouldEqual` 20
 
+    -- _runOnInletUpdates is idempotent: calling _listenUpdatesAndRun twice on the
+    -- same node must not add a second subscriber. The signal library has no
+    -- unsubscribe primitive; the fix is a listenRef guard in _runOnInletUpdates
+    -- so only the first call wires up the subscription.
+    describe "subscription accumulation: double-init causes extra process fires" do
+
+        it "process still fires exactly once per edit even if _listenUpdatesAndRun is called twice" $
+            liftEffect do
+                runCounter <- Ref.new (0 :: Int)
+                let
+                    countingProcess = do
+                        liftEffect $ Ref.modify_ (_ + 1) runCounter
+                        a <- Fn.receive Sum.a_in
+                        b <- Fn.receive Sum.b_in
+                        Fn.send Sum.sum_out $ a + b
+
+                node <- Sum.makeNode' countingProcess
+                -- double-init: simulates a component that initialises the same node
+                -- twice (e.g. re-render / re-mount in the CLI or Web UI)
+                node # Node._listenUpdatesAndRun
+                node # Node._listenUpdatesAndRun
+                countBefore <- Ref.read runCounter
+
+                for_ (range 1 5) \i ->
+                    node #-> Sum.a_in /\ i
+                count5 <- Ref.read runCounter
+
+                for_ (range 6 10) \i ->
+                    node #-> Sum.a_in /\ i
+                count10 <- Ref.read runCounter
+
+                -- must still be exactly 1 fire per edit regardless of double-init
+                (count5  - countBefore) `shouldEqual` 5
+                (count10 - count5)      `shouldEqual` 5
+
+        it "upstream double-init does not cause downstream node to fire twice per edit" $
+            liftEffect do
+                nodeACounter <- Ref.new (0 :: Int)
+                nodeBCounter <- Ref.new (0 :: Int)
+                let
+                    countingProcessA = do
+                        liftEffect $ Ref.modify_ (_ + 1) nodeACounter
+                        a <- Fn.receive Sum.a_in
+                        b <- Fn.receive Sum.b_in
+                        Fn.send Sum.sum_out $ a + b
+                    countingProcessB = do
+                        liftEffect $ Ref.modify_ (_ + 1) nodeBCounter
+                        a <- Fn.receive Sum.a_in
+                        b <- Fn.receive Sum.b_in
+                        Fn.send Sum.sum_out $ a + b
+
+                nodeA <- Sum.makeNode_ { a: 0, b: 5 } { sum: 0 } countingProcessA
+                nodeB <- Sum.makeNode_ { a: 3, b: 0 } { sum: 0 } countingProcessB
+
+                -- double-init on nodeA only; nodeB is normal
+                nodeA # Node._listenUpdatesAndRun
+                nodeA # Node._listenUpdatesAndRun
+                nodeB # Node._listenUpdatesAndRun
+                _ <- Node.connect Sum.sum_out Sum.b_in nodeA nodeB
+
+                countABefore <- Ref.read nodeACounter
+                countBBefore <- Ref.read nodeBCounter
+
+                for_ (range 1 5) \i ->
+                    nodeA #-> Sum.a_in /\ i
+                countA5 <- Ref.read nodeACounter
+                countB5 <- Ref.read nodeBCounter
+
+                for_ (range 6 10) \i ->
+                    nodeA #-> Sum.a_in /\ i
+                countA10 <- Ref.read nodeACounter
+                countB10 <- Ref.read nodeBCounter
+
+                -- nodeA fires exactly once per edit (idempotency guard);
+                -- nodeB must therefore also fire exactly once per edit
+                (countB5  - countBBefore) `shouldEqual` 5
+                (countB10 - countB5)      `shouldEqual` 5
+
     describe "rapid inlet edits through a connected chain" do
 
         -- Simulates Web UI: user creates two nodes, connects upstream outlet to

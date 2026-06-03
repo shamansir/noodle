@@ -3,6 +3,7 @@ module Noodle.Fn.Generic.Tracker where
 import Prelude ((<#>), (<$>), map)
 
 import Effect (Effect)
+import Effect.Ref (Ref)
 import Signal (Signal)
 import Signal (get) as Signal
 
@@ -20,6 +21,7 @@ type Tracker state inlets outlets =
     , inlets :: Signal (U.InletsUpdate /\ inlets)
     , outlets :: Signal (U.OutletsUpdate /\ outlets)
     , all :: Signal (U.MergedUpdate state inlets outlets)
+    , listenRef :: Ref Boolean
     }
 
 
@@ -44,27 +46,30 @@ state tracker = Signal.get tracker.state
 
 
 mapState :: forall state state' inlets outlets. (state -> state') -> Tracker state inlets outlets -> Tracker state' inlets outlets
-mapState f { state, inlets, outlets, all } =
+mapState f { state, inlets, outlets, all, listenRef } =
     { state : f <$> state
     , inlets
     , outlets
     , all : U.mergedMapState f <$> all
+    , listenRef
     }
 
 
 mapInlets :: forall state inlets inlets' outlets. (inlets -> inlets') -> Tracker state inlets outlets -> Tracker state inlets' outlets
-mapInlets f { state, inlets, outlets, all } =
+mapInlets f { state, inlets, outlets, all, listenRef } =
     { state
     , inlets : f <$$> inlets
     , outlets
     , all : U.mergedMapInlets f <$> all
+    , listenRef
     }
 
 
 mapOutlets :: forall state inlets outlets outlets'. (outlets -> outlets') -> Tracker state inlets outlets -> Tracker state inlets outlets'
-mapOutlets f { state, inlets, outlets, all } =
+mapOutlets f { state, inlets, outlets, all, listenRef } =
     { state
     , inlets
     , outlets : f <$$> outlets
     , all : U.mergedMapOutlets f <$> all
+    , listenRef
     }
